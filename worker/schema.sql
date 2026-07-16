@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS slots (
   duration   INTEGER NOT NULL,  -- minutes
   done       INTEGER DEFAULT 0,
   note       TEXT,
+  url        TEXT,              -- carried over when the slot came from an activity
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_slots_day ON slots(day, start_min);
@@ -107,6 +108,35 @@ CREATE TABLE IF NOT EXISTS otp_codes (
   sent_at    INTEGER NOT NULL
 );
 
+-- Life Areas and Priorities, mirrored from Tana by the agent.
+-- The +New form needs real node ids to reference, and the worker can't read
+-- Tana. Same shape as `tasks`: a mirror, never the truth.
+CREATE TABLE IF NOT EXISTS tana_options (
+  node_id TEXT PRIMARY KEY,
+  kind    TEXT NOT NULL,   -- 'area' | 'priority'
+  name    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_tana_options ON tana_options(kind, name);
+
+-- Repeatable things with a URL and a usual length, attached to a lane.
+-- Not tasks: a task is done once and disappears, an activity is done again
+-- tomorrow. Yoga, chi kung, a sit. Owned here, never synced to Tana.
+CREATE TABLE IF NOT EXISTS activities (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  lane     TEXT NOT NULL,
+  title    TEXT NOT NULL,
+  url      TEXT,
+  duration INTEGER NOT NULL DEFAULT 30,   -- minutes
+  position INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_activities_lane ON activities(lane, position);
+
+INSERT OR IGNORE INTO activities (id, lane, title, url, duration, position) VALUES
+  (1, 'body', 'Yoga Download',      'https://www.yogadownload.com/', 45, 0),
+  (2, 'body', 'Apple Health+',      NULL, 45, 1),
+  -- Ba Duan Jin. Eight, not seven.
+  (3, 'body', '8 Pieces of Brocade', NULL, 15, 2);
+
 -- Per-lane daily minute targets, and misc settings. Editable in the UI.
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
@@ -116,13 +146,14 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Zazen is an hour, and is the only target Robin has actually specified.
 -- The rest are starting guesses, all editable.
 INSERT OR IGNORE INTO settings (key, value) VALUES
-  ('target_zazen', '60'),
-  ('target_body',  '30'),
-  ('target_music', '30'),
-  ('target_art',   '30'),
-  ('target_forro', '30'),
-  ('target_work',  '180'),
-  ('target_admin', '30'),
-  ('target_rest',  '60'),
+  ('target_zazen',      '60'),
+  ('target_body',       '45'),
+  ('target_music',      '30'),
+  ('target_art',        '30'),
+  ('target_forro',      '30'),
+  ('target_portuguese', '30'),
+  ('target_work',       '180'),
+  ('target_mylife',     '30'),
+  ('target_rest',       '60'),
   ('day_start',    '360'),   -- 06:00
   ('day_end',      '1380');  -- 23:00

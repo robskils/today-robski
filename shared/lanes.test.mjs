@@ -20,12 +20,25 @@ for (const l of LANES.filter((x) => x.practice)) {
 console.log('\nZen study is not zazen');
 eq(laneForArea('Well-being / Mind / Spirit'), 'other', 'Well-being / Mind / Spirit -> other');
 
+console.log('\nBody tasks are life admin, not workouts');
+// "Book a physio" belongs in My Life. The Body ring is filled by activities.
+eq(laneForArea('Body / Health'), 'mylife', 'Body / Health -> mylife');
+eq(laneForArea('Somatic Studio'), 'mylife', 'Somatic Studio -> mylife');
+
 console.log('\nsanity');
-eq(laneForArea('Body / Health'), 'body', 'Body / Health -> body');
-eq(laneForArea('My Life'), 'admin', 'My Life -> admin');
+eq(laneForArea('My Life'), 'mylife', 'My Life -> mylife');
+eq(laneForArea('Money'), 'mylife', 'Money -> mylife');
+eq(laneForArea('Língua Portuguesa'), 'portuguese', 'Língua Portuguesa -> portuguese');
 eq(laneForArea('Dance'), 'forro', 'Dance -> forro');
+eq(laneForArea('Business'), 'work', 'Business -> work');
 eq(laneForArea(null), 'other', 'no area -> other');
 eq(laneForArea('Nonsense'), 'other', 'unknown area -> other');
+
+console.log('\nno stale lane keys left behind');
+// A renamed lane that something still points at would silently vanish from
+// the rail, since the client only draws lanes that exist.
+eq(LANES.some((l) => l.key === 'admin'), false, "'admin' is gone, renamed to mylife");
+eq(LANES.some((l) => l.key === 'mylife'), true, "'mylife' exists");
 
 console.log('\nevery mapping targets a real lane');
 const keys = new Set(LANES.map((l) => l.key));

@@ -97,6 +97,19 @@ function isValidDay(s) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
 
+// Activity URLs end up in an href. Anything but http(s) is refused, because
+// `javascript:` in a link is a script you didn't write running as you.
+function safeUrl(u) {
+  const s = String(u ?? '').trim();
+  if (!s) return null;
+  try {
+    const url = new URL(s);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Google Calendar ───────────────────────────────────────────────────
 
 let tokenCache = { token: null, expires: 0 };
@@ -204,7 +217,7 @@ async function handleDay(request, env, url) {
   const day = url.searchParams.get('date') || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
 
-  const [slotsRes, settings, cal, quote] = await Promise.all([
+  const [slotsRes, settings, cal, quote, actsRes] = await Promise.all([
     // Floating blocks (start_min NULL) sort last; the client splits them out.
     env.DB.prepare(
       'SELECT * FROM slots WHERE day = ? ORDER BY start_min IS NULL, start_min',
@@ -212,6 +225,7 @@ async function handleDay(request, env, url) {
     getSettings(env),
     calendarEvents(env, day),
     quoteForDay(env, day),
+    env.DB.prepare('SELECT * FROM activities ORDER BY lane, position, id').all(),
   ]);
 
   const slots = slotsRes.results;
@@ -239,6 +253,7 @@ async function handleDay(request, env, url) {
     settings,
     lanes: LANES,
     quote,
+    activities: actsRes.results,
     last_sync: syncedAt?.t || null,
   }, request);
 }
@@ -287,11 +302,11 @@ async function createSlot(request, env) {
   if (!Number.isFinite(duration) || duration < 5 || duration > 720) return err('bad duration', request);
 
   const res = await env.DB.prepare(
-    `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
   ).bind(
     day, b.lane, b.tana_id || null, b.title,
-    startMin, Math.round(duration), b.note || null,
+    startMin, Math.round(duration), b.note || null, safeUrl(b.url),
     new Date().toISOString(),
   ).first();
 
@@ -319,9 +334,11 @@ async function updateSlot(request, env, id) {
   if (b.lane !== undefined && !LANES.some((l) => l.key === b.lane)) return err('bad lane', request);
   if (b.title !== undefined && !String(b.title).trim()) return err('title required', request);
 
+  if (b.url !== undefined) b.url = safeUrl(b.url);
+
   const fields = [];
   const binds = [];
-  for (const k of ['title', 'lane', 'start_min', 'duration', 'note']) {
+  for (const k of ['title', 'lane', 'start_min', 'duration', 'note', 'url']) {
     if (b[k] !== undefined) { fields.push(`${k} = ?`); binds.push(b[k]); }
   }
   if (b.done !== undefined) { fields.push('done = ?'); binds.push(b.done ? 1 : 0); }
@@ -370,6 +387,142 @@ async function updateTask(request, env, tanaId) {
 
   await setTaskDone(env, tanaId, !!b.done);
   return json({ ok: true, tana_id: tanaId, done: b.done ? 1 : 0 }, request);
+}
+
+// ── activities ────────────────────────────────────────────────────────
+
+async function createActivity(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const title = String(b.title || '').trim();
+  if (!title) return err('title required', request);
+  if (!LANES.some((l) => l.key === b.lane)) return err('bad lane', request);
+
+  const duration = Number(b.duration);
+  if (!Number.isFinite(duration) || duration < 5 || duration > 720) return err('bad duration', request);
+
+  const next = await env.DB.prepare(
+    'SELECT COALESCE(MAX(position), -1) + 1 AS p FROM activities WHERE lane = ?',
+  ).bind(b.lane).first();
+
+  const row = await env.DB.prepare(
+    `INSERT INTO activities (lane, title, url, duration, position)
+     VALUES (?, ?, ?, ?, ?) RETURNING *`,
+  ).bind(b.lane, title, safeUrl(b.url), Math.round(duration), next.p).first();
+
+  return json(row, request, 201);
+}
+
+async function updateActivity(request, env, id) {
+  const b = await request.json().catch(() => ({}));
+  if (b.lane !== undefined && !LANES.some((l) => l.key === b.lane)) return err('bad lane', request);
+  if (b.title !== undefined && !String(b.title).trim()) return err('title required', request);
+  if (b.duration !== undefined) {
+    const d = Number(b.duration);
+    if (!Number.isFinite(d) || d < 5 || d > 720) return err('bad duration', request);
+    b.duration = Math.round(d);
+  }
+  if (b.url !== undefined) b.url = safeUrl(b.url);
+
+  const fields = [];
+  const binds = [];
+  for (const k of ['lane', 'title', 'url', 'duration', 'position']) {
+    if (b[k] !== undefined) { fields.push(`${k} = ?`); binds.push(b[k]); }
+  }
+  if (!fields.length) return err('nothing to update', request);
+
+  binds.push(id);
+  const row = await env.DB.prepare(
+    `UPDATE activities SET ${fields.join(', ')} WHERE id = ? RETURNING *`,
+  ).bind(...binds).first();
+  if (!row) return err('not found', request, 404);
+  return json(row, request);
+}
+
+// ── new task -> Tana ──────────────────────────────────────────────────
+
+// Tana's API is write-only, which stops us *reading* the graph but not writing
+// to it. So a new task goes straight in via the Input API and appears in Tana
+// immediately, even with the Mac asleep. Reading it back still waits for the
+// agent, hence the optimistic row below.
+const TANA_TASK_TAG = '-ESIZpZjQpNx';
+const TANA_FIELDS = {
+  area: 'LTJ3jUP44jDx',
+  priority: '26tfBPLpiSWh',
+  duration: 'iOVl90NPxuDU',
+};
+
+async function createTask(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const title = String(b.title || '').trim();
+  if (!title) return err('title required', request);
+  if (!env.TANA_API_TOKEN) return err('Tana API token not configured', request, 503);
+
+  const children = [];
+  // Area and Priority are references to real nodes, so the client sends ids it
+  // got from /api/tana-options rather than free text.
+  if (b.area_id) {
+    children.push({ type: 'field', attributeId: TANA_FIELDS.area, children: [{ dataType: 'reference', id: b.area_id }] });
+  }
+  if (b.priority_id) {
+    children.push({ type: 'field', attributeId: TANA_FIELDS.priority, children: [{ dataType: 'reference', id: b.priority_id }] });
+  }
+  if (b.duration) {
+    const d = Number(b.duration);
+    if (Number.isFinite(d) && d > 0) {
+      children.push({ type: 'field', attributeId: TANA_FIELDS.duration, children: [{ dataType: 'plain', name: String(Math.round(d)) }] });
+    }
+  }
+
+  const res = await fetch('https://europe-west1-tagr-prod.cloudfunctions.net/addToNodeV2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.TANA_API_TOKEN}` },
+    body: JSON.stringify({
+      targetNodeId: 'INBOX',
+      nodes: [{ name: title, supertags: [{ id: TANA_TASK_TAG }], children }],
+    }),
+  });
+
+  if (!res.ok) {
+    console.error('tana input api:', res.status, await res.text());
+    return err('Could not add it to Tana. Try again shortly.', 502);
+  }
+
+  // Tana has it either way at this point. The response shape isn't documented,
+  // so failing here because we couldn't find an id would be a lie: it would
+  // report failure on a task that exists.
+  const data = await res.json().catch(() => ({}));
+  const tanaId = data?.children?.[0]?.nodeId || data?.nodeId || null;
+
+  if (!tanaId) {
+    console.error('tana input api: no node id in', JSON.stringify(data).slice(0, 300));
+    return json({ ok: true, tana_id: null, mirrored: false }, request, 201);
+  }
+
+  // Mirror it now so it shows up without waiting for the agent. The next sync
+  // overwrites this row from Tana, which stays the source of truth.
+  await env.DB.prepare(
+    `INSERT INTO tasks (tana_id, title, area, lane, priority, status, duration, done, breadcrumb, created, synced_at)
+     VALUES (?, ?, ?, ?, ?, 'Backlog', ?, 0, 'Inbox', ?, ?)
+     ON CONFLICT(tana_id) DO NOTHING`,
+  ).bind(
+    tanaId, title, b.area || null, laneForArea(b.area), b.priority || null,
+    b.duration ? Math.round(Number(b.duration)) : null,
+    new Date().toISOString(), new Date().toISOString(),
+  ).run();
+
+  return json({ ok: true, tana_id: tanaId, mirrored: true }, request, 201);
+}
+
+// The Area and Priority pickers need real node ids. They're mirrored by the
+// agent so the worker can serve them without reaching Tana.
+async function tanaOptions(request, env) {
+  const { results } = await env.DB.prepare(
+    'SELECT kind, node_id, name FROM tana_options ORDER BY kind, name',
+  ).all();
+  return json({
+    areas: results.filter((r) => r.kind === 'area'),
+    priorities: results.filter((r) => r.kind === 'priority'),
+  }, request);
 }
 
 async function handleSettings(request, env) {
@@ -428,6 +581,29 @@ async function syncTasks(request, env) {
 
 const MAX_ATTEMPTS = 5;
 
+async function syncOptions(request, env) {
+  const b = await request.json().catch(() => ({}));
+  if (!Array.isArray(b.options)) return err('options[] required', request);
+
+  const stmts = b.options.map((o) =>
+    env.DB.prepare(
+      `INSERT INTO tana_options (node_id, kind, name) VALUES (?, ?, ?)
+       ON CONFLICT(node_id) DO UPDATE SET kind = excluded.kind, name = excluded.name`,
+    ).bind(o.node_id, o.kind, o.name),
+  );
+  if (stmts.length) await env.DB.batch(stmts);
+
+  // Drop anything renamed or deleted in Tana.
+  if (b.options.length) {
+    const ids = b.options.map((o) => o.node_id);
+    await env.DB.prepare(
+      `DELETE FROM tana_options WHERE node_id NOT IN (${ids.map(() => '?').join(',')})`,
+    ).bind(...ids).run();
+  }
+
+  return json({ ok: true, count: b.options.length }, request);
+}
+
 async function syncPending(request, env) {
   const { results } = await env.DB.prepare(
     'SELECT * FROM pending_writes WHERE applied_at IS NULL AND attempts < ? ORDER BY id LIMIT 100',
@@ -476,6 +652,7 @@ export default {
     if (path.startsWith('/api/sync/')) {
       if (!env.SYNC_KEY || !safeEqual(token, env.SYNC_KEY)) return err('unauthorized', request, 401);
       if (path === '/api/sync/tasks' && request.method === 'POST') return syncTasks(request, env);
+      if (path === '/api/sync/options' && request.method === 'POST') return syncOptions(request, env);
       if (path === '/api/sync/pending' && request.method === 'GET') return syncPending(request, env);
       if (path === '/api/sync/ack' && request.method === 'POST') return syncAck(request, env);
       return err('not found', request, 404);
@@ -496,13 +673,26 @@ export default {
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/tasks' && request.method === 'GET') return handleTasks(request, env, url);
+      if (path === '/api/tasks' && request.method === 'POST') return createTask(request, env);
+      if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
+      if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);
 
       // Tana ids look like -2io-VjFpQOl: word chars and hyphens.
       const taskMatch = path.match(/^\/api\/tasks\/([\w-]+)$/);
       if (taskMatch && request.method === 'PATCH') return updateTask(request, env, taskMatch[1]);
+
+      const actMatch = path.match(/^\/api\/activities\/(\d+)$/);
+      if (actMatch) {
+        const id = Number(actMatch[1]);
+        if (request.method === 'PATCH') return updateActivity(request, env, id);
+        if (request.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM activities WHERE id = ?').bind(id).run();
+          return json({ ok: true }, request);
+        }
+      }
 
       const slotMatch = path.match(/^\/api\/slots\/(\d+)$/);
       if (slotMatch) {

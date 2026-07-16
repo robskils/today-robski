@@ -19,6 +19,19 @@ flowing reads as a choice, not a failure.
 When a block is placed and the work is going well, **Push 15m / 30m / 1h** in
 the editor moves it later without unpicking it.
 
+## Activities
+
+Repeatable things with a link and a usual length, attached to a lane. Not
+tasks: a task is done once and disappears, an activity is done again tomorrow.
+Body ships with Yoga Download, Apple Health+ and 8 Pieces of Brocade.
+
+Click a lane's ring (or **+ Block**) and its activities appear as chips. Picking
+one fills in the title, duration and link; the placed block carries an ↗ through
+to the site. Add and remove them in the same place - `+ Add` and the `×`. To
+change one, remove it and add it back.
+
+They live in D1 and never go near Tana.
+
 ## Zen elements
 
 - **One teaching a day.** Chosen from the date, so it's the same on every device
@@ -76,17 +89,18 @@ Tana stays the source of truth for tasks. This app owns the day.
 Tana has 20 Life Areas that grew organically and don't line up with the seven
 lanes, so `shared/lanes.js` maps them. Tana is never re-tagged.
 
-| Lane | Life Areas | Open tasks |
-|---|---|---|
-| Zazen | *(none - sitting is a practice, not a backlog)* | 0 |
-| Body | Body / Health, Somatic Studio | 26 |
-| Music | Music | 25 |
-| Art | Art | 32 |
-| Forró | Dance | 5 |
-| Work | Business, Stone Grinder, Incremento, Portugal Portfolio, Lisbon Sintra Tours | 34 |
-| Admin | Tool / Admin, My Life, Portugal, Money | 86 |
-| Rest | *(none - siesta is a block, not a task)* | 0 |
-| Other | People, Society, Maya Das, Tara L-S, Língua Portuguesa, Well-being / Mind / Spirit, *no area* | 36 |
+| Lane | Life Areas | Open tasks | Target |
+|---|---|---|---|
+| Zazen | *(none - a practice)* | 0 | 60m |
+| Body | *(none - a practice)* | 0 | 45m |
+| Music | Music | 27 | 30m |
+| Art | Art | 34 | 30m |
+| Forró | Dance | 4 | 30m |
+| Portuguese | Língua Portuguesa | 12 | 30m |
+| Work | Business, Stone Grinder, Incremento, Portugal Portfolio, Lisbon Sintra Tours | 38 | 3h |
+| My Life | My Life, Tool / Admin, Portugal, Money, Body / Health, Somatic Studio | 123 | 30m |
+| Rest | *(none - a practice)* | 0 | 60m |
+| Other | People, Society, Maya Das, Tara L-S, Well-being / Mind / Spirit, *no area* | 24 | - |
 
 Two things to know about the data:
 

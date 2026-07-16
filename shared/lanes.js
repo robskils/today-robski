@@ -13,16 +13,21 @@ export const LANES = [
   // should ever map an Area onto it.
   { key: 'zazen', label: 'Zazen', hue: 268, practice: true,
     zen: { kanji: '坐禅', romaji: 'zazen', gloss: 'just sitting' } },
-  { key: 'body',  label: 'Body',  hue: 145,
+  // Body is a practice too: yoga, HIT, chi kung. They're done from the app's
+  // own activity list, not from a Tana backlog.
+  { key: 'body',  label: 'Body',  hue: 145, practice: true,
     zen: { kanji: '体操', romaji: 'taisō', gloss: 'the body prepared' } },
   { key: 'music', label: 'Music', hue: 25 },
   { key: 'art',   label: 'Art',   hue: 345 },
   { key: 'forro', label: 'Forró', hue: 70 },
+  { key: 'portuguese', label: 'Portuguese', hue: 110 },
   // Samu is work as practice, not work as interruption to practice. Which is
   // the whole reason earning a living belongs on this schedule at all.
   { key: 'work',  label: 'Work',  hue: 220,
     zen: { kanji: '作務', romaji: 'samu', gloss: 'work as practice' } },
-  { key: 'admin', label: 'Admin', hue: 190 },
+  // Everything that is just living: admin, money, Portugal, the body's upkeep.
+  // Was called Admin, which undersold it.
+  { key: 'mylife', label: 'My Life', hue: 190 },
   // Optional by design: an hour's siesta is what peak form needs, but it must
   // never read as a failure when the work is going well. Hōsan is the
   // monastery's own word for a period released from the formal schedule.
@@ -36,19 +41,18 @@ export const LANE_KEYS = LANES.map((l) => l.key);
 // Tana Life Area name -> lane key. Anything unlisted falls through to 'other',
 // which is shown but carries no daily target.
 export const AREA_TO_LANE = {
-  // Nothing maps to zazen. Well-being / Mind / Spirit used to, but its tasks
-  // are Zen *study* - sutras, a dojo video, journaling, framing a print - and
-  // none of them are sitting. Zazen is a daily practice, not a backlog, so it
-  // falls through to 'other' rather than pretending.
-
-  'Body / Health': 'body',
-  'Somatic Studio': 'body',
+  // Nothing maps to zazen or body. Both are practices: sitting, and yoga /
+  // HIT / chi kung. They're filled from the app's own activity list, not from
+  // a Tana backlog. Body's old areas moved to My Life, because "book a
+  // physio" is life admin, not a workout.
 
   'Music': 'music',
   'Art': 'art',
 
-  // Forró: no Life Area of that name either; it's the dance area.
+  // Forró: no Life Area of that name; it's the dance area.
   'Dance': 'forro',
+
+  'Língua Portuguesa': 'portuguese',
 
   // Work is the earning lane only, so its progress ring means actual earning time.
   'Business': 'work',
@@ -57,17 +61,18 @@ export const AREA_TO_LANE = {
   'Portugal Portfolio': 'work',
   'Lisbon Sintra Tours': 'work',
 
-  // Admin is personal admin, which is where the big organic catch-alls really sit.
-  'Tool / Admin': 'admin',
-  'Tool': 'admin',        // stray near-duplicate of the above, 1 task
-  'My Life': 'admin',
-  'Portugal': 'admin',
-  'Money': 'admin',       // personal finance, not income
+  // My Life is everything that is simply living.
+  'My Life': 'mylife',
+  'Tool / Admin': 'mylife',
+  'Tool': 'mylife',           // stray near-duplicate of the above, 1 task
+  'Portugal': 'mylife',
+  'Money': 'mylife',          // personal finance, not income
+  'Body / Health': 'mylife',
+  'Somatic Studio': 'mylife',
 
-  // Deliberately unmapped -> 'other': relationships, language study and Zen
-  // study have no lane of their own, and ~35 tasks carry no Area at all.
-  // Maya Das, Tara L-S, People, Society, Língua Portuguesa,
-  // Well-being / Mind / Spirit
+  // Deliberately unmapped -> 'other': relationships and Zen study have no lane
+  // of their own, and ~35 tasks carry no Area at all.
+  // Maya Das, Tara L-S, People, Society, Well-being / Mind / Spirit
 };
 
 export function laneForArea(area) {

@@ -336,6 +336,8 @@ function renderTimeline() {
         <div class="slot-t">${esc(s.title)}</div>
         ${h >= 44 ? `<div class="slot-m">${hhmm(s.start_min)}–${hhmm(s.start_min + s.duration)} · ${esc(l.label)}${s.tana_id ? ' · Tana' : ''}</div>` : ''}
       </div>
+      ${s.url ? `<a class="slot-link" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"
+                    aria-label="Open ${esc(s.title)}">↗</a>` : ''}
     </div>`);
   }
 
@@ -413,6 +415,85 @@ function syncFloatUI() {
   $('sheet-push').hidden = floating || !state.editing?.slot;
 }
 
+// Activities are the lane's repeatable things. Picking one fills the form;
+// it doesn't commit anything until the block is saved.
+function renderActs() {
+  const lane = $('sheet-lane').value;
+  const acts = (state.data?.activities || []).filter((a) => a.lane === lane);
+
+  $('sheet-acts').hidden = false;
+  $('sheet-acts-list').innerHTML = acts.map((a) => `
+    <span class="act" data-act="${a.id}">
+      <button type="button" class="act-pick" data-act-pick="${a.id}">
+        ${esc(a.title)} <span class="act-min">${humanMin(a.duration)}</span>
+      </button>
+      <button type="button" class="act-del" data-act-del="${a.id}" aria-label="Remove ${esc(a.title)}">×</button>
+    </span>`).join('') + `
+    <button type="button" class="act-add" id="act-add">+ Add</button>`;
+}
+
+function actById(id) {
+  return (state.data?.activities || []).find((a) => a.id === Number(id));
+}
+
+$('sheet-acts-list').addEventListener('click', async (e) => {
+  const pick = e.target.closest('[data-act-pick]');
+  if (pick) {
+    const a = actById(pick.dataset.actPick);
+    if (!a) return;
+    state.editing.activity = a;
+    $('sheet-task').textContent = a.title;
+    $('sheet-task').hidden = false;
+    $('sheet-duration').value = a.duration;
+    // Highlight what's picked, since the form fields don't say where they came from.
+    $('sheet-acts-list').querySelectorAll('.act').forEach((el) =>
+      el.classList.toggle('on', el.dataset.act === String(a.id)));
+    return;
+  }
+
+  const add = e.target.closest('#act-add');
+  if (add) {
+    $('act-new').hidden = !$('act-new').hidden;
+    if (!$('act-new').hidden) $('act-title').focus();
+    return;
+  }
+
+  const del = e.target.closest('[data-act-del]');
+  if (del) {
+    const a = actById(del.dataset.actDel);
+    if (!a) return;
+    try {
+      await api(`/api/activities/${a.id}`, { method: 'DELETE' });
+      state.data.activities = state.data.activities.filter((x) => x.id !== a.id);
+      renderActs();
+      toast(`Removed ${a.title}`);
+    } catch (e2) { toast(e2.message); }
+  }
+});
+
+$('act-save').addEventListener('click', async () => {
+  const title = $('act-title').value.trim();
+  if (!title) { toast('Give it a name'); return; }
+  try {
+    const a = await api('/api/activities', {
+      method: 'POST',
+      body: JSON.stringify({
+        lane: $('sheet-lane').value,
+        title,
+        url: $('act-url').value.trim() || null,
+        duration: Number($('act-duration').value) || 30,
+      }),
+    });
+    state.data.activities.push(a);
+    $('act-title').value = '';
+    $('act-url').value = '';
+    $('act-duration').value = 30;
+    $('act-new').hidden = true;
+    renderActs();
+    toast(`Added ${a.title}`);
+  } catch (e) { toast(e.message); }
+});
+
 // Quietly name the practice, for the lanes where a Sōtō name is honest.
 function syncZenNote() {
   const zen = laneMeta($('sheet-lane').value).zen;
@@ -448,6 +529,8 @@ function openSheet({ slot, task, lane }) {
 
   syncFloatUI();
   syncZenNote();
+  renderActs();
+  $('act-new').hidden = true;
   $('sheet-bg').hidden = false;
   if (!floating) $('sheet-start').focus();
 }
@@ -474,6 +557,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('shee
 $('sheet-float').addEventListener('change', syncFloatUI);
 $('sheet-lane').addEventListener('change', () => {
   syncZenNote();
+  renderActs();
   // A siesta wants an hour; don't make him retype it.
   const lane = $('sheet-lane').value;
   if (!state.editing?.slot && !state.editing?.task) $('sheet-duration').value = defaultDuration(lane);
@@ -489,7 +573,7 @@ $('sheet-push').addEventListener('click', (e) => {
 
 $('sheet').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const { slot, task } = state.editing;
+  const { slot, task, activity } = state.editing;
   const floating = $('sheet-float').checked;
   const body = {
     lane: $('sheet-lane').value,
@@ -507,8 +591,10 @@ $('sheet').addEventListener('submit', async (e) => {
         method: 'POST',
         body: JSON.stringify({
           ...body, day: state.day,
-          title: task?.title || laneMeta(body.lane).label,
+          // A bare block is just the lane's name: "Zazen", "Rest".
+          title: task?.title || activity?.title || laneMeta(body.lane).label,
           tana_id: task?.tana_id || null,
+          url: activity?.url || null,
         }),
       });
       toast('Added to the day');
@@ -621,6 +707,72 @@ $('task-search').addEventListener('input', (e) => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(loadTasks, 220);
 });
+
+// ── new task ──────────────────────────────────────────────────────────
+
+// Areas and priorities are real Tana nodes, so the form has to reference them
+// by id. The agent mirrors them; fetched once and kept.
+async function loadTanaOptions() {
+  if (state.tanaOptions) return state.tanaOptions;
+  state.tanaOptions = await api('/api/tana-options');
+  return state.tanaOptions;
+}
+
+$('new-task').addEventListener('click', async () => {
+  $('new-title').value = '';
+  $('new-duration').value = '';
+  $('new-bg').hidden = false;
+  $('new-title').focus();
+
+  try {
+    const { areas, priorities } = await loadTanaOptions();
+    $('new-area').innerHTML = '<option value="">(no area)</option>' +
+      areas.map((a) => `<option value="${esc(a.node_id)}">${esc(a.name)}</option>`).join('');
+    $('new-priority').innerHTML =
+      priorities.map((p) => `<option value="${esc(p.node_id)}"${p.name === 'P3' ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+  } catch (e) {
+    toast(`Couldn't load areas: ${e.message}`);
+  }
+});
+
+const closeNew = () => { $('new-bg').hidden = true; };
+$('new-cancel').addEventListener('click', closeNew);
+$('new-bg').addEventListener('click', (e) => { if (e.target === $('new-bg')) closeNew(); });
+
+$('new-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('new-save');
+  const areaSel = $('new-area').selectedOptions[0];
+  const prioSel = $('new-priority').selectedOptions[0];
+
+  btn.disabled = true;
+  btn.textContent = 'Adding...';
+  try {
+    const res = await api('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: $('new-title').value.trim(),
+        area_id: $('new-area').value || null,
+        area: areaSel && $('new-area').value ? areaSel.textContent : null,
+        priority_id: $('new-priority').value || null,
+        priority: prioSel ? prioSel.textContent : null,
+        duration: Number($('new-duration').value) || null,
+      }),
+    });
+    closeNew();
+    // mirrored: false means Tana took it but didn't hand back an id, so it
+    // can't appear here until the agent next reads the graph.
+    toast(res.mirrored ? 'Added to Tana' : 'Added to Tana. Shows here after the next sync.');
+    await loadTasks();
+  } catch (e2) {
+    toast(e2.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add to Tana';
+  }
+});
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('new-bg').hidden) closeNew(); });
 
 $('add-block').addEventListener('click', () => openSheet({}));
 

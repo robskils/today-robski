@@ -94,6 +94,7 @@
     <aside class="col-tasks">
       <div class="col-head">
         <h2>Tasks <span class="count" id="task-count"></span></h2>
+        <button class="ghost-btn" id="new-task">+ New</button>
       </div>
       <input type="search" id="task-search" class="input input-sm" placeholder="Search tasks">
       <div class="chips" id="lane-filter"></div>
@@ -113,6 +114,21 @@
       <select id="sheet-lane" class="input"></select>
       <span class="zen-note" id="sheet-zen" hidden></span>
     </label>
+
+    <!-- Repeatable things for this lane: yoga, chi kung, a sit. Not tasks. -->
+    <div class="acts" id="sheet-acts" hidden>
+      <span class="acts-label">Or pick one</span>
+      <div class="acts-list" id="sheet-acts-list"></div>
+    </div>
+
+    <div class="act-new" id="act-new" hidden>
+      <input type="text" id="act-title" class="input input-sm" placeholder="Name">
+      <input type="url" id="act-url" class="input input-sm" placeholder="Link (optional)">
+      <div class="field-row">
+        <input type="number" id="act-duration" class="input input-sm" min="5" max="720" step="5" placeholder="Minutes" value="30">
+        <button type="button" class="btn btn-ghost" id="act-save">Add it</button>
+      </div>
+    </div>
 
     <div class="field-row">
       <label class="field" id="sheet-start-field">
@@ -144,6 +160,40 @@
       <button type="button" class="btn btn-ghost" id="sheet-cancel">Cancel</button>
       <button type="button" class="btn btn-danger" id="sheet-delete" hidden>Delete</button>
       <button type="submit" class="btn btn-primary" id="sheet-save">Add</button>
+    </div>
+  </form>
+</div>
+
+<!-- New task. Goes straight into the Tana Inbox via the Input API. -->
+<div class="sheet-bg" id="new-bg" hidden>
+  <form class="sheet" id="new-form">
+    <h3>New task</h3>
+    <p class="sheet-sub">Lands in your Tana Inbox, tagged #Task.</p>
+
+    <label class="field">
+      <span>Task</span>
+      <input type="text" id="new-title" class="input" placeholder="What needs doing" required>
+    </label>
+
+    <label class="field">
+      <span>Area</span>
+      <select id="new-area" class="input"></select>
+    </label>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Priority</span>
+        <select id="new-priority" class="input"></select>
+      </label>
+      <label class="field">
+        <span>Minutes</span>
+        <input type="number" id="new-duration" class="input" min="5" max="720" step="5" placeholder="optional">
+      </label>
+    </div>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-ghost" id="new-cancel">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="new-save">Add to Tana</button>
     </div>
   </form>
 </div>

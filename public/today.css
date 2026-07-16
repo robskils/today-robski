@@ -510,6 +510,43 @@ select.input { appearance: none; background-image: none; }
 
 .quick { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
 .push-label { font-size: 14px; color: var(--ink-3); margin-right: 2px; }
+.sheet-sub { font-size: 14.5px; color: var(--ink-3); margin-top: -8px; }
+
+/* ── activities ───────────────────────────────────────────────────── */
+
+.acts-label { font-size: 14px; color: var(--ink-2); font-weight: 500; display: block; margin-bottom: 8px; }
+.acts-list { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.act {
+  display: inline-flex; align-items: stretch;
+  border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden;
+  transition: border-color .15s, background .15s;
+}
+.act:hover { border-color: var(--accent); }
+.act.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.act-pick { padding: 7px 4px 7px 13px; font-size: 14.5px; color: var(--ink); }
+.act-min { color: var(--ink-3); font-size: 13px; }
+.act-del {
+  padding: 0 10px 0 6px; font-size: 17px; color: var(--ink-3); line-height: 1;
+}
+.act-del:hover { color: var(--accent); }
+.act-add {
+  padding: 7px 13px; border-radius: 999px; font-size: 14.5px;
+  border: 1px dashed var(--line-2); color: var(--ink-3);
+}
+.act-add:hover { border-color: var(--accent); color: var(--accent); }
+
+.act-new {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px; border-radius: var(--radius-sm);
+  background: var(--paper); border: 1px dashed var(--line-2);
+}
+
+.slot-link {
+  flex: none; align-self: center; text-decoration: none;
+  color: var(--c); font-size: 17px; padding: 4px 6px; border-radius: 6px;
+}
+.slot-link:hover { background: color-mix(in srgb, var(--c) 18%, transparent); }
 .quick button {
   padding: 6px 12px; border-radius: 999px; font-size: 14.5px;
   border: 1px solid var(--line-2); color: var(--ink-2);

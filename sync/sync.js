@@ -20,7 +20,17 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { laneForArea } from '../shared/lanes.js';
 
-const TASK_TAG_ID = '-ESIZpZjQpNx'; // #Task supertag
+const TASK_TAG_ID = '-ESIZpZjQpNx';      // #Task supertag
+const LIFE_AREA_TAG_ID = 'xDNFnP8E93AG'; // #Life Area supertag
+
+// Priority is an options field, so its values are fixed nodes rather than
+// something searchable. Straight off the tag schema.
+const PRIORITIES = [
+  { node_id: '_oxDPBzb59Zy', kind: 'priority', name: 'P1' },
+  { node_id: 'dKfdZMCnBNGe', kind: 'priority', name: 'P2' },
+  { node_id: 'jUaTC8QrebSg', kind: 'priority', name: 'P3' },
+  { node_id: 'Rso83bdTANFF', kind: 'priority', name: 'P4' },
+];
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const VERBOSE = process.argv.includes('--verbose');
@@ -179,6 +189,21 @@ async function pullTasks() {
   return { tasks, failures };
 }
 
+// The +New form needs real node ids to reference, and the worker can't read
+// Tana, so the Life Areas come up with the tasks.
+async function pullOptions() {
+  const nodes = await tanaJSON('search_nodes', {
+    query: { hasType: LIFE_AREA_TAG_ID }, limit: 200,
+  });
+  if (!Array.isArray(nodes)) throw new Error('unexpected search_nodes response');
+
+  const areas = nodes
+    .filter((n) => !n.inTrash && (n.name || '').trim())
+    .map((n) => ({ node_id: n.id, kind: 'area', name: n.name.trim() }));
+
+  return [...areas, ...PRIORITIES];
+}
+
 // ── push ──────────────────────────────────────────────────────────────
 
 async function api(path, options = {}) {
@@ -265,6 +290,15 @@ async function main() {
     method: 'POST',
     body: JSON.stringify({ tasks, full }),
   });
+
+  // Non-fatal: the tasks are the point, the pickers are a convenience.
+  try {
+    const options = await pullOptions();
+    await api('/api/sync/options', { method: 'POST', body: JSON.stringify({ options }) });
+    log(`  ${options.length} areas + priorities for the +New form`);
+  } catch (e) {
+    console.error(`  options sync failed: ${e.message}`);
+  }
 
   log(`Pushed ${res.count} tasks in ${((Date.now() - started) / 1000).toFixed(1)}s`);
 }
