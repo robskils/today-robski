@@ -432,14 +432,36 @@ select.input { appearance: none; background-image: none; }
 
 .task {
   --c: hsl(var(--h) var(--lane-s) var(--lane-l));
-  text-align: left; width: 100%;
-  padding: 12px 14px; border-radius: var(--radius-sm);
+  width: 100%;
+  border-radius: var(--radius-sm);
   background: var(--card); border: 1px solid var(--line);
   border-left: 3px solid var(--c);
-  display: flex; align-items: flex-start; gap: 10px;
-  transition: border-color .15s, transform .12s, box-shadow .12s;
+  display: flex; align-items: stretch;
+  transition: border-color .15s, transform .12s, box-shadow .12s, opacity .3s;
 }
 .task:hover { transform: translateX(2px); box-shadow: var(--shadow); border-color: var(--c); }
+.task.done { opacity: .4; }
+.task.done .task-t { text-decoration: line-through; }
+.task.done .task-check { background: var(--done); border-color: var(--done); color: #fff; }
+
+/* Ticking finishes the task; the rest of the card schedules it. The tick gets
+   its own padded column so a thumb can hit it without opening the editor. */
+.task-check {
+  flex: none; align-self: flex-start;
+  margin: 12px 0 12px 12px;
+  width: 24px; height: 24px;
+  border: 2px solid var(--c); border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 15px; color: transparent;
+  transition: background .15s, color .15s;
+}
+.task-check:hover { background: color-mix(in srgb, var(--c) 20%, transparent); color: var(--c); }
+
+.task-open {
+  flex: 1; min-width: 0; text-align: left;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  display: flex; align-items: flex-start; gap: 10px;
+}
 .task-body { min-width: 0; flex: 1; }
 .task-t { font-size: 16px; line-height: 1.35; }
 .task-m { font-size: 13px; color: var(--ink-3); margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -504,7 +526,15 @@ select.input { appearance: none; background-image: none; }
   padding: 12px 20px; border-radius: 999px; font-size: 16px;
   z-index: 70; box-shadow: var(--shadow);
   animation: rise .25s ease;
+  display: flex; align-items: center; gap: 14px;
+  max-width: calc(100vw - 32px);
 }
+.toast-action {
+  color: var(--accent); font-weight: 600; font-size: 16px;
+  padding: 2px 4px; flex: none;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.toast-action:hover { filter: brightness(1.2); }
 @keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } }
 
 @media (prefers-reduced-motion: reduce) {

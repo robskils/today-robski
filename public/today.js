@@ -46,12 +46,24 @@ function esc(s) {
     .replace(/'/g, '&#39;');
 }
 
-function toast(msg) {
+// action = { label, fn }. Given an undo has to be reachable before the toast
+// goes, it lingers longer than a plain message.
+function toast(msg, action) {
   const t = $('toast');
-  t.textContent = msg;
+  t.textContent = '';
+  t.append(msg);
+
+  if (action) {
+    const b = document.createElement('button');
+    b.className = 'toast-action';
+    b.textContent = action.label;
+    b.addEventListener('click', () => { t.hidden = true; action.fn(); }, { once: true });
+    t.append(b);
+  }
+
   t.hidden = false;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => { t.hidden = true; }, 2600);
+  toast._t = setTimeout(() => { t.hidden = true; }, action ? 7000 : 2600);
 }
 
 function localToday() {
@@ -366,14 +378,21 @@ function renderTasks() {
     const meta = [esc(l.label)];
     if (t.duration) meta.push(humanMin(t.duration));
     if (t.area && t.area !== l.label) meta.push(esc(t.area));
+    const id = esc(t.tana_id);
 
-    return `<button class="task" style="--h:${l.hue}" data-task="${esc(t.tana_id)}">
-      <div class="task-body">
-        <div class="task-t">${esc(t.title)}</div>
-        <div class="task-m">${meta.map((m) => `<span>${m}</span>`).join('')}</div>
-      </div>
-      ${t.priority ? `<span class="prio ${esc(t.priority)}">${esc(t.priority)}</span>` : ''}
-    </button>`;
+    // The tick and the body are separate controls: one finishes the task, the
+    // other schedules it. Nesting them would make the whole card ambiguous.
+    return `<div class="task" style="--h:${l.hue}" data-task-row="${id}">
+      <button class="task-check" data-task-check="${id}"
+              aria-label="Mark done: ${esc(t.title)}">✓</button>
+      <button class="task-open" data-task="${id}">
+        <div class="task-body">
+          <div class="task-t">${esc(t.title)}</div>
+          <div class="task-m">${meta.map((m) => `<span>${m}</span>`).join('')}</div>
+        </div>
+        ${t.priority ? `<span class="prio ${esc(t.priority)}">${esc(t.priority)}</span>` : ''}
+      </button>
+    </div>`;
   }).join('');
 }
 
@@ -540,12 +559,53 @@ async function onSlotAreaClick(e) {
 $('timeline').addEventListener('click', onSlotAreaClick);
 $('tray-items').addEventListener('click', onSlotAreaClick);
 
-$('task-list').addEventListener('click', (e) => {
+$('task-list').addEventListener('click', async (e) => {
+  const check = e.target.closest('[data-task-check]');
+  if (check) {
+    e.stopPropagation();
+    await tickTask(check.dataset.taskCheck);
+    return;
+  }
   const el = e.target.closest('[data-task]');
   if (!el) return;
   const task = state.tasks.find((t) => t.tana_id === el.dataset.task);
   if (task) openSheet({ task });
 });
+
+async function tickTask(tanaId) {
+  const task = state.tasks.find((t) => t.tana_id === tanaId);
+  if (!task) return;
+
+  // Strike it through straight away, then let it go on the next load. Waiting
+  // for the round trip makes a tick feel like it didn't register.
+  const row = document.querySelector(`[data-task-row="${CSS.escape(tanaId)}"]`);
+  if (row) row.classList.add('done');
+
+  try {
+    await api(`/api/tasks/${encodeURIComponent(tanaId)}`, {
+      method: 'PATCH', body: JSON.stringify({ done: true }),
+    });
+  } catch (e) {
+    if (row) row.classList.remove('done');
+    toast(e.message);
+    return;
+  }
+
+  // Undoable: a mis-tap here writes to Tana, and this is a phone-sized target.
+  toast(`Done. Ticks in Tana within 15 min.`, {
+    label: 'Undo',
+    fn: async () => {
+      try {
+        await api(`/api/tasks/${encodeURIComponent(tanaId)}`, {
+          method: 'PATCH', body: JSON.stringify({ done: false }),
+        });
+        await Promise.all([loadTasks(), loadDay()]);
+      } catch (e2) { toast(e2.message); }
+    },
+  });
+
+  await Promise.all([loadTasks(), loadDay()]);
+}
 
 $('lane-filter').addEventListener('click', (e) => {
   const b = e.target.closest('[data-lane]');

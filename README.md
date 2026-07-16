@@ -65,6 +65,8 @@ Consequences worth knowing:
 - **Tasks are only as fresh as the last sync.** No Mac awake, no new tasks.
 - **Ticking a task in the web app does not reach Tana immediately.** It queues in
   `pending_writes`; the agent replays it on the next pass (within 15 minutes).
+  Tick either the checkbox on a task in the list, or its scheduled block - both
+  go through the same queue. Tana sets `Task status: Done` itself on the way in.
 - The schedule itself (`slots`) lives only in D1 and never goes to Tana.
 
 Tana stays the source of truth for tasks. This app owns the day.

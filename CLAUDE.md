@@ -30,6 +30,9 @@ no handshake needed). So:
 - `tasks` in D1 is a **mirror**, written only by the agent. Tana is the truth.
 - Web-app completions queue in `pending_writes` and are replayed by the agent.
   Never assume a tick reaches Tana synchronously.
+- `setTaskDone` in worker/index.js is the single door for "a Tana task changed
+  state": it queues the write, updates the mirror, and syncs linked slots. Both
+  the task checkbox and the slot checkbox go through it. Don't add a third path.
 - `slots` (the day itself) are owned here and never sync to Tana.
 
 The agent applies write-backs **before** pulling, otherwise the pull would see

@@ -332,18 +332,44 @@ async function updateSlot(request, env, id) {
     `UPDATE slots SET ${fields.join(', ')} WHERE id = ? RETURNING *`,
   ).bind(...binds).first();
 
-  // Ticking off a slot that came from Tana queues a write-back. The Tana API is
-  // write-only from out here, so the Mac agent is the only thing that can apply it.
   if (b.done !== undefined && existing.tana_id && !!b.done !== !!existing.done) {
-    await env.DB.prepare(
-      'INSERT INTO pending_writes (tana_id, op, created_at) VALUES (?, ?, ?)',
-    ).bind(existing.tana_id, b.done ? 'complete' : 'uncomplete', new Date().toISOString()).run();
-
-    await env.DB.prepare('UPDATE tasks SET done = ? WHERE tana_id = ?')
-      .bind(b.done ? 1 : 0, existing.tana_id).run();
+    await setTaskDone(env, existing.tana_id, !!b.done);
   }
 
   return json(updated, request);
+}
+
+// One place for "a Tana task changed state", so ticking a task in the list and
+// ticking its scheduled block behave identically.
+//
+// The Tana API is write-only from out here, so the queue is the only way home:
+// the Mac agent replays pending_writes on its next pass.
+async function setTaskDone(env, tanaId, done) {
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO pending_writes (tana_id, op, created_at) VALUES (?, ?, ?)')
+      .bind(tanaId, done ? 'complete' : 'uncomplete', new Date().toISOString()),
+    env.DB.prepare('UPDATE tasks SET done = ? WHERE tana_id = ?')
+      .bind(done ? 1 : 0, tanaId),
+    // A finished task's blocks are finished. Without this the ring would ignore
+    // work you just said you'd done, and the timeline would still show it open.
+    env.DB.prepare('UPDATE slots SET done = ? WHERE tana_id = ?')
+      .bind(done ? 1 : 0, tanaId),
+  ]);
+}
+
+async function updateTask(request, env, tanaId) {
+  const b = await request.json().catch(() => ({}));
+  if (b.done === undefined) return err('done required', request);
+
+  const existing = await env.DB.prepare('SELECT done FROM tasks WHERE tana_id = ?')
+    .bind(tanaId).first();
+  if (!existing) return err('not found', request, 404);
+
+  // Don't queue a no-op write to Tana on a double tap.
+  if (!!b.done === !!existing.done) return json({ ok: true, unchanged: true }, request);
+
+  await setTaskDone(env, tanaId, !!b.done);
+  return json({ ok: true, tana_id: tanaId, done: b.done ? 1 : 0 }, request);
 }
 
 async function handleSettings(request, env) {
@@ -473,6 +499,10 @@ export default {
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);
+
+      // Tana ids look like -2io-VjFpQOl: word chars and hyphens.
+      const taskMatch = path.match(/^\/api\/tasks\/([\w-]+)$/);
+      if (taskMatch && request.method === 'PATCH') return updateTask(request, env, taskMatch[1]);
 
       const slotMatch = path.match(/^\/api\/slots\/(\d+)$/);
       if (slotMatch) {
