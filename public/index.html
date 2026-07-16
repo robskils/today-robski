@@ -8,7 +8,7 @@
 <title>Today</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/today.css">
 <link rel="icon" href="/favicon.svg">
 </head>
@@ -64,6 +64,12 @@
       <div class="timeline-wrap">
         <div class="timeline" id="timeline"></div>
       </div>
+
+      <!-- One teaching for the day. Same on every device, all day. -->
+      <figure class="quote" id="quote" hidden>
+        <blockquote id="quote-text"></blockquote>
+        <figcaption id="quote-author"></figcaption>
+      </figure>
     </section>
 
     <aside class="col-tasks">
@@ -86,6 +92,7 @@
     <label class="field">
       <span>Lane</span>
       <select id="sheet-lane" class="input"></select>
+      <span class="zen-note" id="sheet-zen" hidden></span>
     </label>
 
     <div class="field-row">

@@ -50,6 +50,10 @@ flexibility to keep working on something if I am in the zone."* So:
   choice. Nothing in the UI should nag about it.
 - Lane targets are guidance, not debt. There is deliberately no overdue state,
   no streak, and no red.
+- The quote is **per day, not per load** (`dayHash(day) % count` in the worker).
+  Don't make it random; a teaching that reshuffles on refresh is a slot machine.
+- `lanes.zen` is only set where a Sōtō name is genuine. Do not invent one for
+  Music, Art or Forró.
 
 ## Data facts worth remembering
 

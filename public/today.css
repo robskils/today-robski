@@ -328,6 +328,44 @@ select.input { appearance: none; background-image: none; }
 .slot.tiny { padding: 4px 12px; align-items: center; }
 .slot.tiny .slot-m { display: none; }
 
+/* ── quote of the day ─────────────────────────────────────────────── */
+
+/* Sits below the day, in the margin of attention. Present, not shouting. */
+.quote {
+  margin: 34px auto 0; max-width: 500px; text-align: center;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.quote.in { opacity: 1; }
+.quote blockquote {
+  font-family: var(--serif); font-style: italic; font-weight: 400;
+  font-size: 21px; line-height: 1.6; color: var(--ink-2);
+  text-wrap: balance;
+}
+.quote figcaption {
+  margin-top: 10px; font-size: 14px; color: var(--ink-3); letter-spacing: .02em;
+}
+
+/* ── ensō ─────────────────────────────────────────────────────────── */
+
+.enso-empty {
+  position: absolute; inset: 0; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; color: var(--line-2); pointer-events: none;
+}
+.enso-empty svg { width: 82px; height: 82px; opacity: .8; }
+.enso-empty p {
+  font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--ink-3);
+}
+
+.zen-note {
+  font-size: 13.5px; color: var(--ink-3); margin-top: 6px; letter-spacing: .01em;
+}
+.zen-note .kanji {
+  font-size: 15px; color: var(--accent); margin-right: 3px;
+  /* Let the system reach for a Japanese face before falling back. */
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}
+
 /* ── tasks ────────────────────────────────────────────────────────── */
 
 .chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0 14px; }

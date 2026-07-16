@@ -176,6 +176,24 @@ async function calendarEvents(env, day) {
 
 // ── handlers ──────────────────────────────────────────────────────────
 
+// FNV-1a. Any stable hash will do; the point is that a given date always picks
+// the same quote, on every device, all day.
+function dayHash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+async function quoteForDay(env, day) {
+  const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM quotes').first();
+  if (!row?.n) return null;
+  return env.DB.prepare('SELECT text, author FROM quotes ORDER BY id LIMIT 1 OFFSET ?')
+    .bind(dayHash(day) % row.n).first();
+}
+
 async function getSettings(env) {
   const { results } = await env.DB.prepare('SELECT key, value FROM settings').all();
   return Object.fromEntries(results.map((r) => [r.key, r.value]));
@@ -185,13 +203,14 @@ async function handleDay(request, env, url) {
   const day = url.searchParams.get('date') || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
 
-  const [slotsRes, settings, cal] = await Promise.all([
+  const [slotsRes, settings, cal, quote] = await Promise.all([
     // Floating blocks (start_min NULL) sort last; the client splits them out.
     env.DB.prepare(
       'SELECT * FROM slots WHERE day = ? ORDER BY start_min IS NULL, start_min',
     ).bind(day).all(),
     getSettings(env),
     calendarEvents(env, day),
+    quoteForDay(env, day),
   ]);
 
   const slots = slotsRes.results;
@@ -218,6 +237,7 @@ async function handleDay(request, env, url) {
     progress,
     settings,
     lanes: LANES,
+    quote,
     last_sync: syncedAt?.t || null,
   }, request);
 }

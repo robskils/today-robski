@@ -4,17 +4,27 @@
 // Rather than re-tagging the graph, we map areas -> lanes here. Tana stays untouched.
 
 // Hues sit ~40 apart so no two lanes read as the same colour at ring size.
+//
+// `zen` is the Sōtō name for the practice, and only appears where it's honest.
+// A monastery has no word for forró, and inventing one would be costume.
 export const LANES = [
-  { key: 'zazen', label: 'Zazen', hue: 268 },
-  { key: 'body',  label: 'Body',  hue: 145 },
+  { key: 'zazen', label: 'Zazen', hue: 268,
+    zen: { kanji: '坐禅', romaji: 'zazen', gloss: 'just sitting' } },
+  { key: 'body',  label: 'Body',  hue: 145,
+    zen: { kanji: '体操', romaji: 'taisō', gloss: 'the body prepared' } },
   { key: 'music', label: 'Music', hue: 25 },
   { key: 'art',   label: 'Art',   hue: 345 },
   { key: 'forro', label: 'Forró', hue: 70 },
-  { key: 'work',  label: 'Work',  hue: 220 },
+  // Samu is work as practice, not work as interruption to practice. Which is
+  // the whole reason earning a living belongs on this schedule at all.
+  { key: 'work',  label: 'Work',  hue: 220,
+    zen: { kanji: '作務', romaji: 'samu', gloss: 'work as practice' } },
   { key: 'admin', label: 'Admin', hue: 190 },
   // Optional by design: an hour's siesta is what peak form needs, but it must
-  // never read as a failure when the work is going well.
-  { key: 'rest',  label: 'Rest',  hue: 305, optional: true },
+  // never read as a failure when the work is going well. Hōsan is the
+  // monastery's own word for a period released from the formal schedule.
+  { key: 'rest',  label: 'Rest',  hue: 305, optional: true,
+    zen: { kanji: '放参', romaji: 'hōsan', gloss: 'released from the schedule' } },
   { key: 'other', label: 'Other', hue: 0, untracked: true },
 ];
 

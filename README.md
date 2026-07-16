@@ -19,6 +19,21 @@ flowing reads as a choice, not a failure.
 When a block is placed and the work is going well, **Push 15m / 30m / 1h** in
 the editor moves it later without unpicking it.
 
+## Zen elements
+
+- **One teaching a day.** Chosen from the date, so it's the same on every device
+  and stays with you all day rather than reshuffling on each reload. Seeded in
+  `worker/schema.sql` (Dōgen, Sawaki, Suzuki - the same set as the LST admin
+  dashboard), served on `/api/day`.
+- **Ensō** as the favicon, and as the empty state: an unscheduled day collapses
+  to a circle and *Nothing scheduled. Just this.* rather than seventeen hours of
+  blank ruled paper.
+- **Sōtō names** appear in the block editor for the lanes where they're honest:
+  zazen 坐禅, taisō 体操, samu 作務 (work as practice), hōsan 放参 (released from
+  the schedule). Music, Art and Forró have none, because a monastery has no word
+  for forró and inventing one would be costume.
+- Warm paper and sumi ink, in light and dark. No red, no streaks, no overdue.
+
 ## How it fits together
 
 ```

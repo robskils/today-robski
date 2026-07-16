@@ -52,6 +52,51 @@ CREATE TABLE IF NOT EXISTS pending_writes (
 );
 CREATE INDEX IF NOT EXISTS idx_pending ON pending_writes(applied_at, attempts);
 
+-- One is chosen per day, deterministically from the date, so it stays with you
+-- all day rather than reshuffling on every reload.
+CREATE TABLE IF NOT EXISTS quotes (
+  id     INTEGER PRIMARY KEY AUTOINCREMENT,
+  text   TEXT NOT NULL UNIQUE,
+  author TEXT
+);
+
+-- Mostly Sōtō: Dōgen, Sawaki, Suzuki. Same set as the LST admin dashboard.
+INSERT OR IGNORE INTO quotes (text, author) VALUES
+  ('To study the Way is to study the self. To study the self is to forget the self.', 'Dōgen Zenji'),
+  ('Think not-thinking.', 'Dōgen Zenji'),
+  ('Being is time, time is being.', 'Dōgen Zenji'),
+  ('If you cannot find the truth right where you are, where else do you expect to find it?', 'Dōgen Zenji'),
+  ('The whole moon and the entire sky are reflected in one dewdrop on the grass.', 'Dōgen Zenji'),
+  ('A flower falls, even though we love it; and a weed grows, even though we do not love it.', 'Dōgen Zenji'),
+  ('We are always in the midst of the Way.', 'Dōgen Zenji'),
+  ('Mountains are mountains, waters are waters.', 'Dōgen Zenji'),
+  ('Do not think you will necessarily be aware of your own enlightenment.', 'Dōgen Zenji'),
+  ('Before enlightenment, chop wood, carry water. After enlightenment, chop wood, carry water.', 'Zen proverb'),
+  ('Sitting quietly, doing nothing, spring comes, and the grass grows by itself.', 'Zenrin Kushū'),
+  ('When you eat, eat. When you walk, walk.', 'Zen teaching'),
+  ('Not knowing is most intimate.', 'Dizang Guichen'),
+  ('The great way is not difficult for those who have no preferences.', 'Sengcan'),
+  ('Do not seek the truth; only cease to cherish opinions.', 'Sengcan'),
+  ('Wash your bowl.', 'Zhaozhou'),
+  ('In the beginner''s mind there are many possibilities, but in the expert''s there are few.', 'Shunryu Suzuki'),
+  ('Each moment is absolute, alive, and significant.', 'Shunryu Suzuki'),
+  ('The most important thing is to find out what is the most important thing.', 'Shunryu Suzuki'),
+  ('Without accepting the fact that everything changes, we cannot find perfect composure.', 'Shunryu Suzuki'),
+  ('Each of you is perfect the way you are — and you can use a little improvement.', 'Shunryu Suzuki'),
+  ('Seek not to follow in the footsteps of the wise. Seek what they sought.', 'Matsuo Bashō'),
+  ('The obstacle is the path.', 'Zen proverb'),
+  ('What was your face before your parents were born?', 'Zen koan'),
+  ('To be a lamp unto yourself is to light the way for others.', 'Sōtō teaching'),
+  ('Just this. Just this moment, nothing more.', 'Zen teaching'),
+  ('The way out is through.', 'Zen proverb'),
+  ('Zazen is good for nothing.', 'Kōdō Sawaki'),
+  ('Do not be too hard, lest you break. Do not be too soft, lest you be squeezed.', 'Zen proverb'),
+  ('Gaining is delusion, losing is enlightenment.', 'Kōdō Sawaki'),
+  ('You cannot exchange even a single fart with the next person.', 'Kōdō Sawaki'),
+  ('Practice is the whole of the Way, not a means to it.', 'Sōtō teaching'),
+  ('Sit without expectation. That is shikantaza.', 'Sōtō teaching'),
+  ('When walking, just walk. Above all, do not wobble.', 'Yunmen');
+
 -- Per-lane daily minute targets, and misc settings. Editable in the UI.
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,

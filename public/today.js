@@ -190,10 +190,32 @@ function renderTray() {
   }).join('');
 }
 
+function renderQuote() {
+  const q = state.data.quote;
+  $('quote').hidden = !q;
+  if (!q) return;
+  $('quote-text').textContent = `“${q.text}”`;
+  $('quote-author').textContent = q.author ? `— ${q.author}` : '';
+  requestAnimationFrame(() => $('quote').classList.add('in'));
+}
+
+const ENSO_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true">
+  <path d="M44 14a24 24 0 1 0 9 18" fill="none" stroke="currentColor"
+        stroke-width="3.5" stroke-linecap="round"/></svg>`;
+
 function renderTimeline() {
   const { events, settings } = state.data;
   const slots = state.data.slots.filter((s) => s.start_min !== null);
   const PPM = 1.5;
+  const el = $('timeline');
+
+  // An empty day isn't a gap to apologise for, and it shouldn't render as
+  // seventeen hours of blank ruled paper either. Collapse to an ensō.
+  if (!slots.length && !events.length) {
+    el.style.height = '300px';
+    el.innerHTML = `<div class="enso-empty">${ENSO_SVG}<p>Nothing scheduled. Just this.</p></div>`;
+    return;
+  }
 
   // Widen the window if anything falls outside the configured day.
   let start = Number(settings.day_start || 360);
@@ -204,7 +226,6 @@ function renderTimeline() {
   }
 
   const top = (m) => (m - start) * PPM;
-  const el = $('timeline');
   el.style.height = `${(end - start) * PPM + 20}px`;
 
   const parts = [];
@@ -310,6 +331,14 @@ function syncFloatUI() {
   $('sheet-push').hidden = floating || !state.editing?.slot;
 }
 
+// Quietly name the practice, for the lanes where a Sōtō name is honest.
+function syncZenNote() {
+  const zen = laneMeta($('sheet-lane').value).zen;
+  $('sheet-zen').hidden = !zen;
+  if (zen) $('sheet-zen').innerHTML =
+    `<span class="kanji">${esc(zen.kanji)}</span> ${esc(zen.romaji)} · ${esc(zen.gloss)}`;
+}
+
 function openSheet({ slot, task, lane }) {
   state.editing = { slot, task };
 
@@ -336,6 +365,7 @@ function openSheet({ slot, task, lane }) {
     .map((m) => `<button type="button" data-min="${m}">${m}m</button>`).join('');
 
   syncFloatUI();
+  syncZenNote();
   $('sheet-bg').hidden = false;
   if (!floating) $('sheet-start').focus();
 }
@@ -360,6 +390,12 @@ $('sheet-bg').addEventListener('click', (e) => { if (e.target === $('sheet-bg'))
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet-bg').hidden) closeSheet(); });
 
 $('sheet-float').addEventListener('change', syncFloatUI);
+$('sheet-lane').addEventListener('change', () => {
+  syncZenNote();
+  // A siesta wants an hour; don't make him retype it.
+  const lane = $('sheet-lane').value;
+  if (!state.editing?.slot && !state.editing?.task) $('sheet-duration').value = defaultDuration(lane);
+});
 
 // Push moves the block later without unpicking it. For when it's going well.
 $('sheet-push').addEventListener('click', (e) => {
@@ -517,6 +553,7 @@ async function loadDay() {
   renderRail();
   renderTray();
   renderTimeline();
+  renderQuote();
 
   if (state.data.calendar_error === 'not_configured') {
     $('sync-status').textContent = 'calendar not connected';
