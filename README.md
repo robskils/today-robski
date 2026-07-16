@@ -116,27 +116,23 @@ Two separate keys on purpose: a leaked browser key can't rewrite the task mirror
 
 ### 3. Google Calendar
 
-Read-only, via a refresh token. **You do the consent step yourself.**
-
-1. In [Google Cloud Console](https://console.cloud.google.com/), create a project
-2. Enable the **Google Calendar API**
-3. Create an **OAuth client ID** → *Desktop app* (or *Web app* with redirect
-   `http://127.0.0.1:8790/callback`)
-4. Mint a refresh token:
+Read-only. **You do the consent step yourself.**
 
 ```bash
-export GOOGLE_CLIENT_ID=...
-export GOOGLE_CLIENT_SECRET=...
-npm run google-auth          # opens Google consent, prints a refresh token
+npm run google-auth
 ```
 
-5. Store all three:
+That is the whole command - no `export` first. It prints the Google Cloud
+Console steps, asks for the Client ID and secret, opens the consent screen,
+then offers to set all three secrets and deploy for you.
 
-```bash
-npx wrangler secret put GOOGLE_CLIENT_ID
-npx wrangler secret put GOOGLE_CLIENT_SECRET
-npx wrangler secret put GOOGLE_REFRESH_TOKEN
-```
+The worker needs **all three** (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`GOOGLE_REFRESH_TOKEN`), not just the refresh token: it trades the refresh
+token for an access token on every cold start. The script handles that; if you
+decline, it prints the token and the three commands.
+
+Pick **Desktop app** as the OAuth client type - it permits the loopback
+redirect (`http://127.0.0.1:8790/callback`) without registering one.
 
 Until this is done the app shows *calendar not connected* and works fine
 otherwise. `GOOGLE_CALENDAR_ID` is set in `wrangler.toml`.
