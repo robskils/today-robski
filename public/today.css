@@ -90,23 +90,61 @@ button { cursor: pointer; background: none; border: 0; }
 
 /* ── gate ─────────────────────────────────────────────────────────── */
 
+/* The gate is Robski: graffiti, the gradient off robski.uk, dark. It is
+   deliberately nothing like the app behind it. Threshold, not room. */
 .gate {
   position: fixed; inset: 0; display: grid; place-items: center;
-  padding: 24px; background: var(--paper); z-index: 60;
+  padding: 24px; z-index: 60;
+  background: #15161a;
+  /* the robski.uk gradient, way down so the card still reads */
+  background-image: linear-gradient(150deg,
+    #4a1d7a 0%, #2440b0 28%, #1784c4 52%, #14a9b8 72%, #e0732e 100%);
+  background-attachment: fixed;
+}
+/* Just enough scrim to seat the card. Any heavier and the gradient turns to
+   mud, which defeats the point of using it. */
+.gate::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(8,8,10,.15) 0%, rgba(8,8,10,.62) 100%);
 }
 .gate-card {
-  width: 100%; max-width: 380px; background: var(--card);
-  border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 36px 32px 32px; box-shadow: var(--shadow);
+  position: relative; width: 100%; max-width: 380px;
+  background: #1f2025; border: 1px solid #2c2d34;
+  border-radius: 18px; overflow: hidden;
+  box-shadow: 0 24px 60px -12px rgba(0,0,0,.7);
   text-align: center;
 }
-.gate-enso { width: 44px; height: 44px; color: var(--accent); margin-bottom: 14px; }
-.gate-title { font-size: 32px; margin-bottom: 22px; }
-.gate-sub { color: var(--ink-2); font-size: 15.5px; margin-bottom: 14px; text-wrap: balance; }
-.gate-sub span { color: var(--ink); }
+.gate-mark { display: block; width: 100%; height: auto; }
+.gate-stripe {
+  height: 4px;
+  background: linear-gradient(90deg,
+    #4a1d7a 0%, #2440b0 25%, #1784c4 50%, #14a9b8 75%, #e0732e 100%);
+}
+.gate-body { padding: 30px 32px 32px; }
+
+.gate-title {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  letter-spacing: .34em; text-transform: uppercase;
+  color: #8b8d98; margin-bottom: 20px;
+}
+.gate-sub { color: #c9ccd4; font-size: 15.5px; margin-bottom: 14px; text-wrap: balance; }
+.gate-sub span { color: #fff; }
 .gate-card form { display: flex; flex-direction: column; gap: 12px; }
-.gate-err { color: var(--accent); font-size: 15px; margin-top: 14px; text-wrap: balance; }
+.gate-err { color: #ff8a8a; font-size: 15px; margin-top: 14px; text-wrap: balance; }
 .btn:disabled { opacity: .6; cursor: default; }
+
+/* Dark-card overrides: the gate doesn't follow the app's theme, in either mode. */
+.gate .input {
+  background: #15161a; border-color: #33343c; color: #fff;
+}
+.gate .input::placeholder { color: #6b6d76; }
+.gate .input:focus-visible {
+  border-color: #38c5ff; box-shadow: 0 0 0 3px rgba(56,197,255,.2);
+}
+.gate .btn-primary { background: #38c5ff; color: #0b1a22; font-weight: 600; }
+.gate .btn-ghost { border-color: #33343c; color: #8b8d98; }
+.gate .btn-ghost:hover { background: #26272e; color: #fff; }
+.gate .code-input { color: #38c5ff; }
 
 /* Six digits, spaced out so they're easy to check against the email. */
 .code-input {
