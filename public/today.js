@@ -201,13 +201,10 @@ function renderRail() {
     const pct = Math.min(1, p.done / target);
     const planPct = Math.min(1, Math.max(p.planned, p.done) / target);
     const hit = p.done >= target;
-    const stretch = Number(settings[`stretch_${l.key}`] || 0);
 
-    // Kept short so all seven lanes fit without scrolling. The planned arc
+    // Kept short so all the lanes fit without scrolling. The planned arc
     // carries what the text used to say.
-    let sub = `${humanMin(p.done)} / ${humanMin(target)}`;
-    if (hit && stretch && p.done < stretch) sub = `${humanMin(p.done)} · ${humanMin(stretch)}?`;
-    else if (hit) sub = `${humanMin(p.done)} ✓`;
+    const sub = hit ? `${humanMin(p.done)} ✓` : `${humanMin(p.done)} / ${humanMin(target)}`;
 
     const planned = p.planned > p.done ? `, ${humanMin(p.planned - p.done)} more planned` : '';
     const opt = l.optional ? ' (optional)' : '';

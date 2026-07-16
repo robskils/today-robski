@@ -76,7 +76,7 @@ lanes, so `shared/lanes.js` maps them. Tana is never re-tagged.
 
 | Lane | Life Areas | Open tasks |
 |---|---|---|
-| Zazen | Well-being / Mind / Spirit | 4 |
+| Zazen | *(none - sitting is a practice, not a backlog)* | 0 |
 | Body | Body / Health, Somatic Studio | 26 |
 | Music | Music | 25 |
 | Art | Art | 32 |
@@ -84,12 +84,13 @@ lanes, so `shared/lanes.js` maps them. Tana is never re-tagged.
 | Work | Business, Stone Grinder, Incremento, Portugal Portfolio, Lisbon Sintra Tours | 34 |
 | Admin | Tool / Admin, My Life, Portugal, Money | 86 |
 | Rest | *(none - siesta is a block, not a task)* | 0 |
-| Other | People, Society, Maya Das, Tara L-S, Língua Portuguesa, *no area* | 66 |
+| Other | People, Society, Maya Das, Tara L-S, Língua Portuguesa, Well-being / Mind / Spirit, *no area* | 36 |
 
 Two things to know about the data:
 
-- **Zazen, Forró and Rest barely exist as tasks** (4, 5 and 0). They're
-  practices, not todos. That's why a slot doesn't need a task: use **+ Block**,
+- **Zazen and Rest have no tasks at all, by design** (`practice: true` in
+  lanes.js - nothing may map onto them). Forró has 5. They're practices, not
+  todos. That's why a slot doesn't need a task: use **+ Block**,
   or click a lane's ring, for bare practice time.
 - **Only ~24 of 278 tasks have a `Duration` set.** The slot editor falls back to
   30 minutes. Setting `Duration` in Tana makes the editor pre-fill correctly.
@@ -252,7 +253,7 @@ Agent endpoints need `Authorization: Bearer $SYNC_KEY`.
 ## Tuning
 
 Lane targets live in the `settings` table (`target_zazen` etc, in minutes) and
-are editable via `PATCH /api/settings`. Zazen ships at 40 with a 60 stretch;
+are editable via `PATCH /api/settings`. Zazen is 60;
 the rest are guesses.
 
 ```bash

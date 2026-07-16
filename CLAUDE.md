@@ -70,8 +70,9 @@ Measured July 2026 against the live graph, 278 open tasks:
 - `Duration` is set on only ~24. Anything that schedules by length must have a
   fallback (the slot editor uses 30 min).
 - ~35 tasks have no `Area` and land in the untracked `other` lane.
-- Zazen (4 tasks) and Forró (5) barely exist as tasks. They're practices, hence
-  bare `+ Block` slots with no `tana_id`.
+- Zazen and Rest are `practice: true` in lanes.js: no Area may map onto them,
+  ever. Sitting is done daily, it is not a backlog. `npm test` enforces it.
+  Forró has 5 tasks. All three are filled with bare `+ Block` slots.
 - Field ids: Priority `26tfBPLpiSWh`, Task status `6yXD6FBXzbR3`,
   Area `LTJ3jUP44jDx`, Duration `iOVl90NPxuDU`. `#Task` tag is `-ESIZpZjQpNx`.
 - Ticking a node via `check_node` makes Tana set `Task status` to Done by itself.

@@ -6,7 +6,7 @@
   "description": "today.robski.uk - a one-day retreat schedule pulling Google Calendar + Tana tasks",
   "scripts": {
     "dev": "wrangler dev",
-    "test": "node worker/time.test.mjs && node worker/auth.test.mjs",
+    "test": "node worker/time.test.mjs && node worker/auth.test.mjs && node shared/lanes.test.mjs",
     "deploy": "wrangler deploy",
     "sync": "node sync/sync.js",
     "sync:dry": "node sync/sync.js --dry-run",

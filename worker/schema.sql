@@ -113,10 +113,10 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
--- Zazen is the only target Robin specified: 40 min floor, 60 preferred.
+-- Zazen is an hour, and is the only target Robin has actually specified.
 -- The rest are starting guesses, all editable.
 INSERT OR IGNORE INTO settings (key, value) VALUES
-  ('target_zazen', '40'),
+  ('target_zazen', '60'),
   ('target_body',  '30'),
   ('target_music', '30'),
   ('target_art',   '30'),
@@ -124,6 +124,5 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('target_work',  '180'),
   ('target_admin', '30'),
   ('target_rest',  '60'),
-  ('stretch_zazen','60'),
   ('day_start',    '360'),   -- 06:00
   ('day_end',      '1380');  -- 23:00
