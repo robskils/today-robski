@@ -108,13 +108,42 @@ npx wrangler d1 execute today-robski --file worker/schema.sql --remote
 ### 2. Keys
 
 ```bash
-npx wrangler secret put TODAY_KEY   # you type this into the app once
-npx wrangler secret put SYNC_KEY    # the Mac agent uses this
+npx wrangler secret put AUTH_SECRET  # signs session tokens; any long random string
+npx wrangler secret put SYNC_KEY     # the Mac agent uses this
 ```
 
-Two separate keys on purpose: a leaked browser key can't rewrite the task mirror.
+Separate on purpose: a leaked sync key can't mint a browser session, and
+rotating `AUTH_SECRET` signs every device out at once.
 
-### 3. Google Calendar
+### 3. Sign-in email
+
+Email sign-in: enter your address, get a six-digit code, exchange it for a
+seven-day session. Allowed addresses are `ADMIN_EMAILS` in `wrangler.toml`.
+
+Codes go out through **Cloudflare Email Routing**, not Resend. Sending to a
+*verified destination address* is free on every plan, and the only recipient
+is Robin, so there's nothing to pay for. The `send_email` binding is pinned to
+one `destination_address`, so it physically cannot email anyone else.
+
+Setup, once, in the Cloudflare dashboard:
+
+1. **robski.uk → Email → Email Routing → Enable** (adds the MX/SPF records)
+2. **Destination addresses → Add** `robin@lumley-savile.com`, then click the
+   link Cloudflare emails you
+
+Adding a second person later means verifying their address the same way.
+That's the trade for it being free.
+
+**You cannot lock yourself out.** The code is written to D1 *before* the email
+is sent, so if email breaks entirely:
+
+```bash
+npx wrangler d1 execute today-robski --remote --command "SELECT code FROM otp_codes"
+```
+
+The break-glass is your Cloudflare login, not a shared secret.
+
+### 4. Google Calendar
 
 Read-only. **You do the consent step yourself.**
 
@@ -137,7 +166,7 @@ redirect (`http://127.0.0.1:8790/callback`) without registering one.
 Until this is done the app shows *calendar not connected* and works fine
 otherwise. `GOOGLE_CALENDAR_ID` is set in `wrangler.toml`.
 
-### 4. Deploy
+### 5. Deploy
 
 ```bash
 npm run deploy    # worker + static assets, one shot
@@ -145,7 +174,7 @@ npm run deploy    # worker + static assets, one shot
 
 Then point `today.robski.uk` at the worker in the Cloudflare dashboard.
 
-### 5. The sync agent
+### 6. The sync agent
 
 ```bash
 ./sync/install.sh          # writes ~/.today-robski.env, then run it again
@@ -165,7 +194,7 @@ launchctl bootout gui/$UID/uk.robski.today-sync        # stop
 
 ```bash
 cat > .dev.vars <<EOF
-TODAY_KEY=dev-today-key
+AUTH_SECRET=dev-auth-secret
 SYNC_KEY=dev-sync-key
 EOF
 
@@ -179,7 +208,7 @@ npm test                                       # timezone / DST maths
 
 ## API
 
-Browser endpoints need `Authorization: Bearer $TODAY_KEY`.
+Browser endpoints need `Authorization: Bearer <session token>` from `/auth/verify`.
 
 | | |
 |---|---|

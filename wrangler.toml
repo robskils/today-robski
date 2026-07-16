@@ -19,6 +19,21 @@ GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 ADMIN_EMAILS = "robin@lumley-savile.com"
 FROM_EMAIL   = "today@robski.uk"
 
+# ── Email ─────────────────────────────────────────────────────────────
+# Cloudflare Email Routing, not Resend. Sending to a *verified destination*
+# is free on every plan, and the only recipient here is Robin, so there is
+# nothing to pay for and no third party in the loop.
+#
+# destination_address pins the recipient at the platform level: this binding
+# physically cannot email anyone else, whatever the code above it does. That
+# is a tighter blast radius than an API key that can mail the world.
+#
+# SETUP: robski.uk needs Email Routing enabled, and the address below has to
+# be verified in Cloudflare (Email > Email Routing > Destination addresses).
+[[send_email]]
+name = "EMAIL"
+destination_address = "robin@lumley-savile.com"
+
 # ── D1 ────────────────────────────────────────────────────────────────
 # Created in WEUR. Schema: npx wrangler d1 execute today-robski --file worker/schema.sql --remote
 [[d1_databases]]
@@ -29,7 +44,6 @@ database_id = "22cfad75-5c6f-463c-9dfc-fb96c9257ee8"
 # ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
 #   AUTH_SECRET           signs the 7-day session JWTs. Rotating it signs
 #                         everyone out, which is the panic button.
-#   RESEND_API_KEY        sends the sign-in codes.
 #   SYNC_KEY              Mac sync agent -> API.
 #   GOOGLE_CLIENT_ID      OAuth client, see README.
 #   GOOGLE_CLIENT_SECRET

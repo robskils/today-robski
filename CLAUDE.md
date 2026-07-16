@@ -10,7 +10,10 @@ Read README.md first: it explains the architecture and why the sync agent exists
 - **Worker + static assets:** one `wrangler deploy` serves `public/` and `/api/*`
   from `today.robski.uk`. There is no Pages project.
 - **D1** `today-robski`. Schema in `worker/schema.sql`.
-- **Auth:** two bearer keys, `TODAY_KEY` (browser) and `SYNC_KEY` (Mac agent).
+- **Auth:** email OTP -> 7-day HS256 JWT signed with `AUTH_SECRET` (browser),
+  plus `SYNC_KEY` (Mac agent). Codes go via the Cloudflare `send_email`
+  binding, pinned to one verified destination. Not Resend: its free tier is
+  one domain and incremento.co has it.
 - **Sync agent:** `sync/sync.js`, plain Node, launchd every 15 min.
 
 ## The constraint that shapes everything

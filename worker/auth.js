@@ -1,11 +1,17 @@
-// Email OTP login. Same shape as the Incremento admin: request a 6-digit code,
-// exchange it for a 7-day HS256 JWT, send that as `Authorization: Bearer`.
+// Email OTP login: request a 6-digit code, exchange it for a 7-day HS256 JWT,
+// send that as `Authorization: Bearer`.
 //
-// Differences from that one, both deliberate:
+// The Incremento admin does this with Resend. This does not, on purpose. Its
+// free tier is one domain and incremento.co already has it, so robski.uk would
+// have meant $20/mo to post six digits to one person. Cloudflare Email Routing
+// sends to a verified destination for free on any plan, and the binding is
+// pinned to Robin's address in wrangler.toml, so it cannot reach anyone else.
+//
+// Two other departures from that implementation, both deliberate:
 //   - codes are rate limited (see verifyCode). A 6-digit code is only 10^6
 //     guesses, and Workers will happily serve a fast parallel brute force.
-//   - there is no fallback key. The break-glass is D1: if the email never
-//     arrives you can read the code out of otp_codes with wrangler, which
+//   - there is no fallback key. The break-glass is D1: if email breaks
+//     entirely you can read the code out of otp_codes with wrangler, which
 //     needs your Cloudflare login rather than a shared secret.
 
 const enc = new TextEncoder();
@@ -98,22 +104,23 @@ export async function requestCode(request, env, json, err) {
        code = excluded.code, expires_at = excluded.expires_at, attempts = 0, sent_at = excluded.sent_at`,
   ).bind(email, code, now + CODE_TTL, now).run();
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.RESEND_API_KEY}` },
-    body: JSON.stringify({
+  try {
+    await env.EMAIL.send({
       from: `Today <${env.FROM_EMAIL}>`,
-      to: [email],
-      subject: `${code} — your Today sign-in code`,
+      to: email,
+      // ASCII only: a non-ASCII subject needs RFC 2047 encoding, and a hyphen
+      // reads the same as a dash for the sake of it.
+      subject: `${code} - your Today sign-in code`,
       html: codeEmail(code),
       text: `Your Today sign-in code is ${code}. It expires in 10 minutes.`,
-    }),
-  });
-
-  if (!res.ok) {
-    console.error('resend:', res.status, await res.text());
+    });
+  } catch (e) {
+    // The code is already in D1 at this point, so a send failure is recoverable:
+    //   npx wrangler d1 execute today-robski --remote --command "SELECT code FROM otp_codes"
+    console.error('send_email:', e.message);
     return err('Could not send the code. Try again shortly.', 502);
   }
+
   return json({ ok: true });
 }
 
