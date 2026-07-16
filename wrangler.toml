@@ -29,7 +29,7 @@ ADMIN_EMAILS = "robin@lumley-savile.com"
 #
 # onboarding@resend.dev would not work here: it only delivers to the Resend
 # account's own address, and codes go to robin@lumley-savile.com.
-FROM_EMAIL = "Today <today@incremento.co>"
+FROM_EMAIL = "Robski Today <today@incremento.co>"
 
 # ── D1 ────────────────────────────────────────────────────────────────
 # Created in WEUR. Schema: npx wrangler d1 execute today-robski --file worker/schema.sql --remote
