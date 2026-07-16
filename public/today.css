@@ -97,12 +97,22 @@ button { cursor: pointer; background: none; border: 0; }
 .gate-card {
   width: 100%; max-width: 380px; background: var(--card);
   border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 32px; box-shadow: var(--shadow);
-  display: flex; flex-direction: column; gap: 14px;
+  padding: 36px 32px 32px; box-shadow: var(--shadow);
+  text-align: center;
 }
-.gate-title { font-size: 34px; }
-.gate-sub { color: var(--ink-2); font-size: 16px; margin-bottom: 4px; }
-.gate-err { color: var(--accent); font-size: 15px; }
+.gate-enso { width: 44px; height: 44px; color: var(--accent); margin-bottom: 14px; }
+.gate-title { font-size: 32px; margin-bottom: 22px; }
+.gate-sub { color: var(--ink-2); font-size: 15.5px; margin-bottom: 14px; text-wrap: balance; }
+.gate-sub span { color: var(--ink); }
+.gate-card form { display: flex; flex-direction: column; gap: 12px; }
+.gate-err { color: var(--accent); font-size: 15px; margin-top: 14px; text-wrap: balance; }
+.btn:disabled { opacity: .6; cursor: default; }
+
+/* Six digits, spaced out so they're easy to check against the email. */
+.code-input {
+  text-align: center; font-size: 30px; letter-spacing: .32em;
+  font-family: 'Courier New', monospace; padding: 14px 0 14px .32em;
+}
 
 /* ── controls ─────────────────────────────────────────────────────── */
 

@@ -97,6 +97,16 @@ INSERT OR IGNORE INTO quotes (text, author) VALUES
   ('Sit without expectation. That is shikantaza.', 'Sōtō teaching'),
   ('When walking, just walk. Above all, do not wobble.', 'Yunmen');
 
+-- Email sign-in codes. One outstanding code per address; deleted on use.
+-- attempts caps brute force, sent_at throttles resends.
+CREATE TABLE IF NOT EXISTS otp_codes (
+  email      TEXT PRIMARY KEY,
+  code       TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,   -- unix seconds
+  attempts   INTEGER DEFAULT 0,
+  sent_at    INTEGER NOT NULL
+);
+
 -- Per-lane daily minute targets, and misc settings. Editable in the UI.
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,

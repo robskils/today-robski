@@ -1,4 +1,5 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
+import { isAuthed, requestCode, verifyCode } from './auth.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -454,8 +455,18 @@ export default {
       return err('not found', request, 404);
     }
 
+    // Public: getting in. Rate limited inside; see auth.js.
+    if (path === '/auth/request-code' && request.method === 'POST') {
+      return requestCode(request, env,
+        (d) => json(d, request), (m, s) => err(m, request, s));
+    }
+    if (path === '/auth/verify' && request.method === 'POST') {
+      return verifyCode(request, env,
+        (d) => json(d, request), (m, s) => err(m, request, s));
+    }
+
     if (path.startsWith('/api/')) {
-      if (!env.TODAY_KEY || !safeEqual(token, env.TODAY_KEY)) return err('unauthorized', request, 401);
+      if (!(await isAuthed(request, env))) return err('unauthorized', request, 401);
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/tasks' && request.method === 'GET') return handleTasks(request, env, url);

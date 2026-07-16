@@ -14,15 +14,31 @@
 </head>
 <body>
 
-<!-- Key gate. Single user, so one bearer token kept in localStorage. -->
+<!-- Email sign-in. Code by email, then a 7-day session token in localStorage. -->
 <div id="gate" class="gate" hidden>
-  <form class="gate-card" id="gate-form">
+  <div class="gate-card">
+    <svg class="gate-enso" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M44 14a24 24 0 1 0 9 18" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round"/>
+    </svg>
     <h1 class="gate-title">Today</h1>
-    <p class="gate-sub">Enter your key to continue.</p>
-    <input type="password" id="gate-key" class="input" placeholder="Access key" autocomplete="current-password" required>
-    <button class="btn btn-primary" type="submit">Enter</button>
+
+    <form id="gate-email-form">
+      <p class="gate-sub">Sign in with your email.</p>
+      <input type="email" id="gate-email" class="input" placeholder="you@example.com"
+             autocomplete="email" inputmode="email" required>
+      <button class="btn btn-primary" type="submit" id="gate-send">Send me a code</button>
+    </form>
+
+    <form id="gate-code-form" hidden>
+      <p class="gate-sub">Code sent to <span id="gate-sent-to"></span>. It expires in 10 minutes.</p>
+      <input type="text" id="gate-code" class="input code-input" placeholder="000000"
+             inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+      <button class="btn btn-primary" type="submit" id="gate-verify">Sign in</button>
+      <button class="btn btn-ghost" type="button" id="gate-back">Use another email</button>
+    </form>
+
     <p class="gate-err" id="gate-err" hidden></p>
-  </form>
+  </div>
 </div>
 
 <div id="app" hidden>

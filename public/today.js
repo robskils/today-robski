@@ -1,7 +1,8 @@
 // today.robski.uk
 
 const $ = (id) => document.getElementById(id);
-const KEY_STORE = 'today.key';
+const KEY_STORE = 'today.token';
+const EMAIL_STORE = 'today.email';
 const THEME_STORE = 'today.theme';
 
 const state = {
@@ -76,7 +77,8 @@ async function api(path, options = {}) {
       ...options.headers,
     },
   });
-  if (res.status === 401) { gateOut('That key was not accepted.'); throw new Error('unauthorized'); }
+  // Sessions last 7 days, so this is nearly always a natural expiry.
+  if (res.status === 401) { gateOut('Your session has expired. Sign in again.'); throw new Error('unauthorized'); }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `HTTP ${res.status}`);
@@ -91,24 +93,88 @@ function gateOut(msg) {
   localStorage.removeItem(KEY_STORE);
   $('app').hidden = true;
   $('gate').hidden = false;
-  if (msg) { $('gate-err').textContent = msg; $('gate-err').hidden = false; }
+  showStep('email');
+  if (msg) gateErr(msg);
 }
 
-$('gate-form').addEventListener('submit', async (e) => {
+function gateErr(msg) {
+  $('gate-err').textContent = msg || '';
+  $('gate-err').hidden = !msg;
+}
+
+function showStep(step) {
+  $('gate-email-form').hidden = step !== 'email';
+  $('gate-code-form').hidden = step !== 'code';
+  gateErr('');
+}
+
+// The API returns the same shape for both, so one helper covers both steps.
+async function authPost(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+$('gate-email-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  state.key = $('gate-key').value.trim();
-  $('gate-err').hidden = true;
+  const email = $('gate-email').value.trim().toLowerCase();
+  const btn = $('gate-send');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
   try {
-    await api('/api/day');
-    localStorage.setItem(KEY_STORE, state.key);
+    await authPost('/auth/request-code', { email });
+    localStorage.setItem(EMAIL_STORE, email);
+    $('gate-sent-to').textContent = email;
+    showStep('code');
+    $('gate-code').focus();
+  } catch (e2) {
+    gateErr(e2.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send me a code';
+  }
+});
+
+$('gate-code-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('gate-verify');
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  try {
+    const { token } = await authPost('/auth/verify', {
+      email: localStorage.getItem(EMAIL_STORE),
+      code: $('gate-code').value.trim(),
+    });
+    state.key = token;
+    localStorage.setItem(KEY_STORE, token);
     $('gate').hidden = true;
     $('app').hidden = false;
     boot();
-  } catch {
-    $('gate-err').textContent = 'That key was not accepted.';
-    $('gate-err').hidden = false;
+  } catch (e2) {
+    gateErr(e2.message);
+    $('gate-code').select();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
   }
 });
+
+$('gate-back').addEventListener('click', () => {
+  $('gate-code').value = '';
+  showStep('email');
+  $('gate-email').focus();
+});
+
+// Pre-fill the address so signing in again is one tap.
+{
+  const last = localStorage.getItem(EMAIL_STORE);
+  if (last) $('gate-email').value = last;
+}
 
 // ── render: rail ──────────────────────────────────────────────────────
 

@@ -14,6 +14,11 @@ custom_domain = true
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
+# Only these addresses can be sent a sign-in code. Anything else gets the same
+# "ok" response, so the list can't be probed from outside.
+ADMIN_EMAILS = "robin@lumley-savile.com"
+FROM_EMAIL   = "today@robski.uk"
+
 # ── D1 ────────────────────────────────────────────────────────────────
 # Created in WEUR. Schema: npx wrangler d1 execute today-robski --file worker/schema.sql --remote
 [[d1_databases]]
@@ -22,7 +27,9 @@ database_name = "today-robski"
 database_id = "22cfad75-5c6f-463c-9dfc-fb96c9257ee8"
 
 # ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
-#   TODAY_KEY             browser -> API. You type this into the app once.
+#   AUTH_SECRET           signs the 7-day session JWTs. Rotating it signs
+#                         everyone out, which is the panic button.
+#   RESEND_API_KEY        sends the sign-in codes.
 #   SYNC_KEY              Mac sync agent -> API.
 #   GOOGLE_CLIENT_ID      OAuth client, see README.
 #   GOOGLE_CLIENT_SECRET
