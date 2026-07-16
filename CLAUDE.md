@@ -11,9 +11,11 @@ Read README.md first: it explains the architecture and why the sync agent exists
   from `today.robski.uk`. There is no Pages project.
 - **D1** `today-robski`. Schema in `worker/schema.sql`.
 - **Auth:** email OTP -> 7-day HS256 JWT signed with `AUTH_SECRET` (browser),
-  plus `SYNC_KEY` (Mac agent). Codes go via the Cloudflare `send_email`
-  binding, pinned to one verified destination. Not Resend: its free tier is
-  one domain and incremento.co has it.
+  plus `SYNC_KEY` (Mac agent). Codes go via Resend from
+  `Today <today@incremento.co>` - the one domain verified on the free tier.
+  Sender domain is incidental; the Robski branding is in the body. Don't
+  "fix" it to robski.uk: that's $20/mo, and the Cloudflare alternative means
+  editing the SPF record Purelymail depends on.
 - **Sync agent:** `sync/sync.js`, plain Node, launchd every 15 min.
 
 ## The constraint that shapes everything

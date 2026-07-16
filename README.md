@@ -120,22 +120,31 @@ rotating `AUTH_SECRET` signs every device out at once.
 Email sign-in: enter your address, get a six-digit code, exchange it for a
 seven-day session. Allowed addresses are `ADMIN_EMAILS` in `wrangler.toml`.
 
-Codes go out through **Cloudflare Email Routing**, not Resend. Sending to a
-*verified destination address* is free on every plan, and the only recipient
-is Robin, so there's nothing to pay for. The `send_email` binding is pinned to
-one `destination_address`, so it physically cannot email anyone else.
+Codes go out via **Resend**, the same as Career Club and the Incremento admin.
 
-Setup, once, in the Cloudflare dashboard:
+`FROM_EMAIL` is `Today <today@incremento.co>`, because incremento.co is the one
+domain verified on Resend's free tier and a verified domain can send anywhere.
+The sender domain is incidental - Career Club posts its codes from
+`onboarding@resend.dev` and carries its brand in the body, which is what this
+does too. The email is Robski-branded regardless of what it's sent from.
 
-1. **robski.uk → Email → Email Routing → Enable** (adds the MX/SPF records)
-2. **Destination addresses → Add** `robin@lumley-savile.com`, then click the
-   link Cloudflare emails you
+Two paths that were considered and rejected:
 
-Adding a second person later means verifying their address the same way.
-That's the trade for it being free.
+- **Verify robski.uk on Resend** - the free tier is one domain and incremento.co
+  has it, so this is $20/mo to post six digits to one person.
+- **Cloudflare Email Sending** - free, but robski.uk already has real mail on
+  Purelymail with a single SPF record, and onboarding would mean editing it.
+  Not worth the risk to a working inbox.
+
+`onboarding@resend.dev` won't work here: it only delivers to the Resend
+account's own address, and codes go to robin@lumley-savile.com.
+
+```bash
+npx wrangler secret put RESEND_API_KEY    # same key as the other admins
+```
 
 **You cannot lock yourself out.** The code is written to D1 *before* the email
-is sent, so if email breaks entirely:
+is sent, so if Resend breaks entirely:
 
 ```bash
 npx wrangler d1 execute today-robski --remote --command "SELECT code FROM otp_codes"

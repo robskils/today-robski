@@ -1,13 +1,17 @@
 // Email OTP login: request a 6-digit code, exchange it for a 7-day HS256 JWT,
 // send that as `Authorization: Bearer`.
 //
-// The Incremento admin does this with Resend. This does not, on purpose. Its
-// free tier is one domain and incremento.co already has it, so robski.uk would
-// have meant $20/mo to post six digits to one person. Cloudflare Email Routing
-// sends to a verified destination for free on any plan, and the binding is
-// pinned to Robin's address in wrangler.toml, so it cannot reach anyone else.
+// Sends via Resend, same as the Incremento admin and Career Club.
 //
-// Two other departures from that implementation, both deliberate:
+// FROM_EMAIL is on incremento.co because that is the one domain verified on the
+// free tier, and a verified domain can send anywhere. The sender address is
+// incidental: Career Club posts its codes from onboarding@resend.dev and carries
+// its brand in the body, which is what this does too. Verifying robski.uk would
+// mean $20/mo, and Cloudflare's free path would mean editing the SPF record that
+// robski.uk's real mail already depends on. Neither is worth it to post six
+// digits to one person.
+//
+// Two departures from the Incremento implementation, both deliberate:
 //   - codes are rate limited (see verifyCode). A 6-digit code is only 10^6
 //     guesses, and Workers will happily serve a fast parallel brute force.
 //   - there is no fallback key. The break-glass is D1: if email breaks
@@ -104,20 +108,27 @@ export async function requestCode(request, env, json, err) {
        code = excluded.code, expires_at = excluded.expires_at, attempts = 0, sent_at = excluded.sent_at`,
   ).bind(email, code, now + CODE_TTL, now).run();
 
-  try {
-    await env.EMAIL.send({
-      from: `Today <${env.FROM_EMAIL}>`,
-      to: email,
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.FROM_EMAIL,
+      to: [email],
       // ASCII only: a non-ASCII subject needs RFC 2047 encoding, and a hyphen
       // reads the same as a dash for the sake of it.
       subject: `${code} - your Today sign-in code`,
       html: codeEmail(code),
       text: `Your Today sign-in code is ${code}. It expires in 10 minutes.`,
-    });
-  } catch (e) {
-    // The code is already in D1 at this point, so a send failure is recoverable:
+    }),
+  });
+
+  if (!res.ok) {
+    // The code is already in D1 at this point, so this is recoverable:
     //   npx wrangler d1 execute today-robski --remote --command "SELECT code FROM otp_codes"
-    console.error('send_email:', e.message);
+    console.error('resend:', res.status, await res.text());
     return err('Could not send the code. Try again shortly.', 502);
   }
 

@@ -17,22 +17,19 @@ GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 # Only these addresses can be sent a sign-in code. Anything else gets the same
 # "ok" response, so the list can't be probed from outside.
 ADMIN_EMAILS = "robin@lumley-savile.com"
-FROM_EMAIL   = "today@robski.uk"
 
-# ── Email ─────────────────────────────────────────────────────────────
-# Cloudflare Email Routing, not Resend. Sending to a *verified destination*
-# is free on every plan, and the only recipient here is Robin, so there is
-# nothing to pay for and no third party in the loop.
+# Resend, same as Career Club and the Incremento admin.
 #
-# destination_address pins the recipient at the platform level: this binding
-# physically cannot email anyone else, whatever the code above it does. That
-# is a tighter blast radius than an API key that can mail the world.
+# incremento.co because it is the one domain verified on the free tier, and a
+# verified domain can send to any address. The sender domain is incidental:
+# Career Club posts its codes from onboarding@resend.dev and carries its brand
+# in the body, which is what this does. Verifying robski.uk would cost $20/mo;
+# Cloudflare's free path would mean editing the SPF record that robski.uk's
+# real Purelymail inbox depends on.
 #
-# SETUP: robski.uk needs Email Routing enabled, and the address below has to
-# be verified in Cloudflare (Email > Email Routing > Destination addresses).
-[[send_email]]
-name = "EMAIL"
-destination_address = "robin@lumley-savile.com"
+# onboarding@resend.dev would not work here: it only delivers to the Resend
+# account's own address, and codes go to robin@lumley-savile.com.
+FROM_EMAIL = "Today <today@incremento.co>"
 
 # ── D1 ────────────────────────────────────────────────────────────────
 # Created in WEUR. Schema: npx wrangler d1 execute today-robski --file worker/schema.sql --remote
@@ -44,6 +41,7 @@ database_id = "22cfad75-5c6f-463c-9dfc-fb96c9257ee8"
 # ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
 #   AUTH_SECRET           signs the 7-day session JWTs. Rotating it signs
 #                         everyone out, which is the panic button.
+#   RESEND_API_KEY        sends the sign-in codes. Same key as the other admins.
 #   SYNC_KEY              Mac sync agent -> API.
 #   GOOGLE_CLIENT_ID      OAuth client, see README.
 #   GOOGLE_CLIENT_SECRET
