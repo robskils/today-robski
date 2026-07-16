@@ -14,9 +14,13 @@ custom_domain = true
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
-# Only these addresses can be sent a sign-in code. Anything else gets the same
-# "ok" response, so the list can't be probed from outside.
-ADMIN_EMAILS = "robin@lumley-savile.com"
+# Who can be sent a sign-in code. Anything else gets the same "ok" response,
+# so the list can't be probed from outside.
+#
+# `*@domain` allows any mailbox on that domain. It's exactly as safe as the
+# domain itself: the code goes to the address typed, so signing in still means
+# reading that inbox. Only put a domain here whose mail you receive.
+ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk"
 
 # Resend, same as Career Club and the Incremento admin.
 #

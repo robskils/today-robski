@@ -118,7 +118,20 @@ rotating `AUTH_SECRET` signs every device out at once.
 ### 3. Sign-in email
 
 Email sign-in: enter your address, get a six-digit code, exchange it for a
-seven-day session. Allowed addresses are `ADMIN_EMAILS` in `wrangler.toml`.
+seven-day session. Who's allowed is `ADMIN_EMAILS` in `wrangler.toml`: whole
+addresses, or `*@domain` for any mailbox on a domain.
+
+```
+ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk"
+```
+
+A wildcard is exactly as safe as the domain behind it - the code goes to the
+address typed, so signing in still means reading that inbox. Only wildcard a
+domain whose mail you receive. Domains match exactly, so `*@robski.uk` covers
+neither `mail.robski.uk` nor `notrobski.uk` (`npm test` proves it).
+
+The allowlist is re-checked on every request, not just at sign-in, so removing
+an address kills its live sessions rather than waiting out the seven days.
 
 Codes go out via **Resend**, the same as Career Club and the Incremento admin.
 

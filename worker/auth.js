@@ -67,8 +67,22 @@ export async function verifyJWT(token, secret) {
   }
 }
 
-const allowed = (env) =>
+const patterns = (env) =>
   (env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+
+// An entry is either a whole address, or `*@domain` for any mailbox on it.
+//
+// The wildcard is only as safe as the domain: whoever can read mail at
+// robski.uk can sign in, because that's where the code goes. Which is the
+// point - possession of the mailbox is the proof. Match the domain exactly,
+// so *@robski.uk covers neither mail.robski.uk nor notrobski.uk.
+export function isAllowed(email, env) {
+  const e = String(email || '').trim().toLowerCase();
+  const at = e.lastIndexOf('@');
+  if (at < 1) return false;
+  const domain = e.slice(at + 1);
+  return patterns(env).some((p) => (p.startsWith('*@') ? domain === p.slice(2) : p === e));
+}
 
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
@@ -76,7 +90,9 @@ export async function isAuthed(request, env) {
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ') || !env.AUTH_SECRET) return false;
   const payload = await verifyJWT(auth.slice(7), env.AUTH_SECRET);
-  return !!payload && allowed(env).includes((payload.sub || '').toLowerCase());
+  // Re-check on every request, not just at sign-in: dropping an address from
+  // ADMIN_EMAILS should kill its live sessions, not wait out the 7 days.
+  return !!payload && isAllowed(payload.sub, env);
 }
 
 // ── POST /auth/request-code ───────────────────────────────────────────
@@ -90,7 +106,7 @@ export async function requestCode(request, env, json, err) {
 
   // Deliberately the same response either way. Telling a stranger which
   // addresses are allowed is free reconnaissance.
-  if (!allowed(env).includes(email)) return json({ ok: true });
+  if (!isAllowed(email, env)) return json({ ok: true });
 
   const now = Math.floor(Date.now() / 1000);
   const existing = await env.DB.prepare('SELECT sent_at FROM otp_codes WHERE email = ?')

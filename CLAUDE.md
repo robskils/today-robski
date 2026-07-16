@@ -17,6 +17,9 @@ Read README.md first: it explains the architecture and why the sync agent exists
   "fix" it to robski.uk: that's $20/mo, and the Cloudflare alternative means
   editing the SPF record Purelymail depends on.
 - **Sync agent:** `sync/sync.js`, plain Node, launchd every 15 min.
+- `ADMIN_EMAILS` takes whole addresses or `*@domain`. `isAllowed` in auth.js
+  matches the domain exactly - never loosen it to endsWith, that would let
+  `robski.uk.evil.com` in. `npm test` covers it.
 
 ## The constraint that shapes everything
 
