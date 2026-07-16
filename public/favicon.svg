@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- ensō: the one-stroke circle. Open at the top right, as it should be. -->
+  <path d="M44 14a24 24 0 1 0 9 18"
+        fill="none" stroke="#b4553a" stroke-width="6.5" stroke-linecap="round"/>
+</svg>

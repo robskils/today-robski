@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16151a" media="(prefers-color-scheme: dark)">
+<title>Today</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/today.css">
+<link rel="icon" href="/favicon.svg">
+</head>
+<body>
+
+<!-- Key gate. Single user, so one bearer token kept in localStorage. -->
+<div id="gate" class="gate" hidden>
+  <form class="gate-card" id="gate-form">
+    <h1 class="gate-title">Today</h1>
+    <p class="gate-sub">Enter your key to continue.</p>
+    <input type="password" id="gate-key" class="input" placeholder="Access key" autocomplete="current-password" required>
+    <button class="btn btn-primary" type="submit">Enter</button>
+    <p class="gate-err" id="gate-err" hidden></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+
+  <header class="bar">
+    <div class="bar-date">
+      <button class="nav-btn" id="prev-day" aria-label="Previous day">&#8249;</button>
+      <div class="bar-title">
+        <h1 id="day-title">Today</h1>
+        <p id="day-sub"></p>
+      </div>
+      <button class="nav-btn" id="next-day" aria-label="Next day">&#8250;</button>
+    </div>
+    <div class="bar-actions">
+      <button class="ghost-btn" id="today-btn" hidden>Today</button>
+      <span class="sync" id="sync-status" title="Tana only syncs while your Mac is awake"></span>
+      <button class="ghost-btn" id="theme-btn" aria-label="Toggle theme">&#9789;</button>
+    </div>
+  </header>
+
+  <!-- The seven lanes. This is the whole point of the tool: a glance tells you
+       which part of your life you've been starving. -->
+  <section class="rail" id="rail" aria-label="Lane progress"></section>
+
+  <main class="grid">
+    <section class="col-day">
+      <div class="col-head">
+        <h2>Schedule</h2>
+        <button class="ghost-btn" id="add-block">+ Block</button>
+      </div>
+      <!-- Intentions for today with no clock against them yet. -->
+      <div class="tray" id="tray" hidden>
+        <div class="tray-head">
+          <span id="tray-label">Any time today</span>
+        </div>
+        <div class="tray-items" id="tray-items"></div>
+      </div>
+
+      <div class="timeline-wrap">
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </section>
+
+    <aside class="col-tasks">
+      <div class="col-head">
+        <h2>Tasks <span class="count" id="task-count"></span></h2>
+      </div>
+      <input type="search" id="task-search" class="input input-sm" placeholder="Search tasks">
+      <div class="chips" id="lane-filter"></div>
+      <div class="task-list" id="task-list"></div>
+    </aside>
+  </main>
+</div>
+
+<!-- Slot editor. Doubles as create + edit. -->
+<div class="sheet-bg" id="sheet-bg" hidden>
+  <form class="sheet" id="sheet">
+    <h3 id="sheet-title">Add to today</h3>
+    <p class="sheet-task" id="sheet-task"></p>
+
+    <label class="field">
+      <span>Lane</span>
+      <select id="sheet-lane" class="input"></select>
+    </label>
+
+    <div class="field-row">
+      <label class="field" id="sheet-start-field">
+        <span>Start</span>
+        <input type="time" id="sheet-start" class="input" step="300">
+      </label>
+      <label class="field">
+        <span>Minutes</span>
+        <input type="number" id="sheet-duration" class="input" min="5" max="720" step="5" required>
+      </label>
+    </div>
+
+    <label class="toggle">
+      <input type="checkbox" id="sheet-float">
+      <span>Any time today - decide later</span>
+    </label>
+
+    <div class="quick" id="sheet-quick"></div>
+
+    <!-- For when the work is going well and the block can wait. -->
+    <div class="quick push" id="sheet-push" hidden>
+      <span class="push-label">Push</span>
+      <button type="button" data-push="15">15m</button>
+      <button type="button" data-push="30">30m</button>
+      <button type="button" data-push="60">1h</button>
+    </div>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-ghost" id="sheet-cancel">Cancel</button>
+      <button type="button" class="btn btn-danger" id="sheet-delete" hidden>Delete</button>
+      <button type="submit" class="btn btn-primary" id="sheet-save">Add</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="/today.js"></script>
+</body>
+</html>

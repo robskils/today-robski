@@ -1,0 +1,29 @@
+name = "today-robski"
+main = "worker/index.js"
+compatibility_date = "2026-05-07"
+
+# One deploy serves both the page and the API. Static files win by path, and
+# anything without a matching file (ie /api/*) falls through to the worker.
+[assets]
+directory = "./public"
+
+[[routes]]
+pattern = "today.robski.uk"
+custom_domain = true
+
+[vars]
+GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
+
+# ── D1 ────────────────────────────────────────────────────────────────
+# SETUP: wrangler d1 create today-robski   then paste the id below
+[[d1_databases]]
+binding = "DB"
+database_name = "today-robski"
+database_id = "PASTE_DATABASE_ID_HERE"
+
+# ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
+#   TODAY_KEY             browser -> API. You type this into the app once.
+#   SYNC_KEY              Mac sync agent -> API.
+#   GOOGLE_CLIENT_ID      OAuth client, see README.
+#   GOOGLE_CLIENT_SECRET
+#   GOOGLE_REFRESH_TOKEN  from `npm run google-auth`
