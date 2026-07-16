@@ -39,10 +39,25 @@ function setSecret(name, value) {
   });
 }
 
+// A real client id looks like 1234567890-abc123.apps.googleusercontent.com.
+// Anything else is a leftover or a typo, and sending it to Google just earns an
+// opaque "invalid_client" after you have already clicked through a consent page.
+const looksLikeClientId = (s) => /^[\w-]+\.apps\.googleusercontent\.com$/.test(s || '');
+
 async function credentials() {
-  let id = process.env.GOOGLE_CLIENT_ID;
-  let secret = process.env.GOOGLE_CLIENT_SECRET;
-  if (id && secret) return { id, secret };
+  const envId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const envSecret = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+
+  if (looksLikeClientId(envId) && envSecret) {
+    console.log(`\n  Using GOOGLE_CLIENT_ID from the environment: ${envId.slice(0, 24)}...`);
+    return { id: envId, secret: envSecret };
+  }
+
+  if (envId || envSecret) {
+    console.log(`\n  Ignoring GOOGLE_CLIENT_ID="${envId}" in your environment: that is not a`);
+    console.log('  Google client id. Asking instead. To silence this permanently:');
+    console.log('    unset GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET');
+  }
 
   console.log(`
 Google Calendar needs an OAuth client. If you have not made one yet:
@@ -58,14 +73,24 @@ Google Calendar needs an OAuth client. If you have not made one yet:
   5. Copy the Client ID and Client secret it shows you.
 `);
 
-  id = (await rl.question('  Client ID: ')).trim();
-  secret = (await rl.question('  Client secret: ')).trim();
+  const id = (await rl.question('  Client ID: ')).trim();
+  const secret = (await rl.question('  Client secret: ')).trim();
 
   if (!id || !secret) {
     finishing = true;
     console.error('\nBoth are needed. Nothing done.');
     process.exit(1);
   }
+
+  // Catch it here rather than after a pointless round trip to the consent screen.
+  if (!looksLikeClientId(id)) {
+    finishing = true;
+    console.error(`\n  "${id}" is not a Google client id.`);
+    console.error('  It should end in .apps.googleusercontent.com - copy it from');
+    console.error('  APIs & Services > Credentials. Nothing done.');
+    process.exit(1);
+  }
+
   return { id, secret };
 }
 
@@ -157,6 +182,22 @@ const server = createServer(async (req, res) => {
   finishing = true;
   rl.close();
   process.exit(0);
+});
+
+// An abandoned run sits here holding the port, waiting for a callback that never
+// arrives. Say so, instead of throwing a stack trace at someone who just wants
+// their calendar connected.
+server.on('error', (e) => {
+  finishing = true;
+  if (e.code === 'EADDRINUSE') {
+    console.error(`\n  Port ${PORT} is already in use, almost certainly an earlier`);
+    console.error('  google-auth still waiting for a callback. Stop it with:\n');
+    console.error(`    pkill -f google-auth.js\n`);
+    console.error('  then run this again.');
+  } else {
+    console.error(`\n  Could not listen on ${PORT}: ${e.message}`);
+  }
+  process.exit(1);
 });
 
 server.listen(PORT, '127.0.0.1', () => {
