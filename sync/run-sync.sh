@@ -6,6 +6,10 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$HOME/.today-robski.env"
 
+# launchd runs with a bare PATH (/usr/bin:/bin:/usr/sbin:/sbin), so node is not
+# on it. Put the usual install dirs back before anything tries to find it.
+export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+
 if [ ! -f "$ENV_FILE" ]; then
   echo "$(date -Iseconds) missing $ENV_FILE" >&2
   exit 1
@@ -25,4 +29,10 @@ if ! curl -sf -o /dev/null --max-time 4 \
   exit 0
 fi
 
-exec /usr/bin/env node "$REPO/sync/sync.js"
+NODE_BIN="${NODE_BIN:-$(command -v node || true)}"
+if [ -z "$NODE_BIN" ]; then
+  echo "$(date -Iseconds) node not found on PATH; set NODE_BIN in $ENV_FILE" >&2
+  exit 1
+fi
+
+exec "$NODE_BIN" "$REPO/sync/sync.js"

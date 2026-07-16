@@ -15,11 +15,11 @@ custom_domain = true
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
 # ── D1 ────────────────────────────────────────────────────────────────
-# SETUP: wrangler d1 create today-robski   then paste the id below
+# Created in WEUR. Schema: npx wrangler d1 execute today-robski --file worker/schema.sql --remote
 [[d1_databases]]
 binding = "DB"
 database_name = "today-robski"
-database_id = "PASTE_DATABASE_ID_HERE"
+database_id = "22cfad75-5c6f-463c-9dfc-fb96c9257ee8"
 
 # ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
 #   TODAY_KEY             browser -> API. You type this into the app once.
