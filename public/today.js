@@ -999,7 +999,7 @@ $('new-form').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Adding...';
   try {
-    const res = await api('/api/tasks', {
+    await api('/api/tasks', {
       method: 'POST',
       body: JSON.stringify({
         title: $('new-title').value.trim(),
@@ -1011,9 +1011,8 @@ $('new-form').addEventListener('submit', async (e) => {
       }),
     });
     closeNew();
-    // mirrored: false means Tana took it but didn't hand back an id, so it
-    // can't appear here until the agent next reads the graph.
-    toast(res.mirrored ? 'Added to Tana' : 'Added to Tana. Shows here after the next sync.');
+    // It's usable here straight away; only Tana waits for the Mac agent.
+    toast('Added. Reaches Tana within 15 min.');
     await loadTasks();
   } catch (e2) {
     toast(e2.message);

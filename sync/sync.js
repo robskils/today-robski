@@ -163,30 +163,38 @@ async function pullTasks() {
 
   // search_nodes gives names but no field values, so each node needs a read.
   // These are localhost calls, so 8 at a time is plenty and stays polite.
-  const { results: tasks, failures } = await mapWithConcurrency(live, 8, async (n) => {
-    const md = await tana('read_node', { nodeId: n.id });
-    const parsed = parseNode(md);
-    const area = parsed.fields['Area'] || null;
-    const durationRaw = parsed.fields['Duration'];
-    const duration = durationRaw && /^\d+$/.test(durationRaw) ? Number(durationRaw) : null;
-
-    vlog(`${n.name.slice(0, 48)} [${area || 'no area'}] ${duration ? duration + 'm' : ''}`);
-
-    return {
-      tana_id: n.id,
-      title: n.name.trim(),
-      area,
-      lane: laneForArea(area),
-      priority: parsed.fields['Priority'] || null,
-      status: parsed.fields['Task status'] || null,
-      duration,
-      done: parsed.done,
-      breadcrumb: (n.breadcrumb || []).join(' / '),
-      created: n.created || null,
-    };
-  });
+  const { results: tasks, failures } = await mapWithConcurrency(live, 8, readTask);
 
   return { tasks, failures };
+}
+
+// n is a search hit, or just { id } when we already know the node.
+async function readTask(n) {
+  const md = await tana('read_node', { nodeId: n.id });
+  const parsed = parseNode(md);
+  const area = parsed.fields['Area'] || null;
+  const durationRaw = parsed.fields['Duration'];
+  const duration = durationRaw && /^\d+$/.test(durationRaw) ? Number(durationRaw) : null;
+
+  // The title line, when the caller didn't come from search.
+  const name = (n.name
+    ?? md.split('\n')[0].replace(/^-\s*\[[ xX]\]\s*/, '').replace(/\s*#\S+.*$/, '')
+  ).trim();
+
+  vlog(`${name.slice(0, 48)} [${area || 'no area'}] ${duration ? duration + 'm' : ''}`);
+
+  return {
+    tana_id: n.id,
+    title: name,
+    area,
+    lane: laneForArea(area),
+    priority: parsed.fields['Priority'] || null,
+    status: parsed.fields['Task status'] || null,
+    duration,
+    done: parsed.done,
+    breadcrumb: (n.breadcrumb || []).join(' / ') || 'Inbox',
+    created: n.created || null,
+  };
 }
 
 // The +New form needs real node ids to reference, and the worker can't read
@@ -221,21 +229,81 @@ async function api(path, options = {}) {
 
 // ── write-back ────────────────────────────────────────────────────────
 
+// A task typed into +New. The worker can't reach Tana, so it queues the shape
+// and we build it here, then hand back the real node id so every reference to
+// the local: placeholder can move across.
+const TANA_FIELDS = {
+  area: 'LTJ3jUP44jDx',
+  priority: '26tfBPLpiSWh',
+  duration: 'iOVl90NPxuDU',
+};
+
+// The Inbox id is derived from the workspace id, so ask rather than hardcode.
+let workspaceId = null;
+async function inboxId() {
+  if (!workspaceId) {
+    const ws = await tanaJSON('list_workspaces', {});
+    workspaceId = ws?.[0]?.id;
+    if (!workspaceId) throw new Error('no Tana workspace loaded');
+  }
+  return `${workspaceId}_CAPTURE_INBOX`;
+}
+
+async function createInTana(p) {
+  const spec = JSON.parse(p.payload || '{}');
+  if (!spec.title) throw new Error('create with no title');
+
+  // Tana Paste. Fields reference real nodes by id, which is why the worker
+  // mirrors Life Areas and Priorities in the first place.
+  const lines = [`- ${spec.title} #[[^${TASK_TAG_ID}]]`];
+  if (spec.area_id) lines.push(`  - [[^${TANA_FIELDS.area}]]:: [[^${spec.area_id}]]`);
+  if (spec.priority_id) lines.push(`  - [[^${TANA_FIELDS.priority}]]:: [[^${spec.priority_id}]]`);
+  if (spec.duration) lines.push(`  - [[^${TANA_FIELDS.duration}]]:: ${spec.duration}`);
+
+  const out = await tana('import_tana_paste', {
+    parentNodeId: await inboxId(),
+    content: lines.join('\n') + '\n',
+  });
+
+  // The reply lists what it made: "- <id> ("<name>")". The first is the task,
+  // the rest are its fields.
+  const m = out.match(/^-\s+([\w-]+)\s+\(/m);
+  if (!m) throw new Error(`created, but no node id came back: ${out.slice(0, 120)}`);
+  return m[1];
+}
+
 async function applyPending() {
   const { pending } = await api('/api/sync/pending');
-  if (!pending.length) return 0;
+  if (!pending.length) return { acked: 0, created: [] };
 
-  log(`Applying ${pending.length} completion(s) back into Tana...`);
+  log(`Applying ${pending.length} change(s) to Tana...`);
   const acked = [];
   const failed = [];
+  const created = [];
 
   for (const p of pending) {
     try {
-      await tana(p.op === 'complete' ? 'check_node' : 'uncheck_node', { nodeId: p.tana_id });
+      if (p.op === 'create') {
+        const tanaId = await createInTana(p);
+        // Tell the worker before acking: if this call fails, the row stays
+        // pending and gets retried, rather than leaving a task stranded on a
+        // local: id that no longer matches anything in Tana.
+        await api('/api/sync/created', {
+          method: 'POST',
+          body: JSON.stringify({ local_id: p.tana_id, tana_id: tanaId }),
+        });
+        created.push(tanaId);
+        vlog(`created ${tanaId}`);
+      } else {
+        // A local: id here means the task hasn't been built yet. Its create is
+        // earlier in the queue, so leave this and catch it next pass.
+        if (p.tana_id.startsWith('local:')) continue;
+        await tana(p.op === 'complete' ? 'check_node' : 'uncheck_node', { nodeId: p.tana_id });
+        vlog(`${p.op} ${p.tana_id}`);
+      }
       acked.push(p.id);
-      vlog(`${p.op} ${p.tana_id}`);
     } catch (e) {
-      console.error(`   ! ${p.tana_id}: ${e.message}`);
+      console.error(`   ! ${p.op} ${p.tana_id}: ${e.message}`);
       failed.push({ id: p.id, error: e.message });
     }
   }
@@ -243,7 +311,7 @@ async function applyPending() {
   if (acked.length || failed.length) {
     await api('/api/sync/ack', { method: 'POST', body: JSON.stringify({ ids: acked, failed }) });
   }
-  return acked.length;
+  return { acked: acked.length, created };
 }
 
 // ── main ──────────────────────────────────────────────────────────────
@@ -258,16 +326,31 @@ async function main() {
 
   // Write-back first: otherwise a completion made in the app gets clobbered by
   // the pull, which would still see the task as open in Tana.
+  let created = [];
   if (!DRY_RUN) {
     try {
-      const n = await applyPending();
-      if (n) log(`  applied ${n}`);
+      const r = await applyPending();
+      created = r.created;
+      if (r.acked) log(`  applied ${r.acked}`);
     } catch (e) {
       console.error(`  write-back failed: ${e.message}`);
     }
   }
 
   const { tasks, failures } = await pullTasks();
+
+  // A node made seconds ago may not be in the search index yet, so the pull
+  // can miss it and the full-sync prune would then delete the row as gone.
+  // Read anything we just made, directly.
+  for (const id of created) {
+    if (tasks.some((t) => t.tana_id === id)) continue;
+    try {
+      tasks.push(await readTask({ id }));
+      vlog(`re-read just-created ${id}`);
+    } catch (e) {
+      console.error(`   ! re-read ${id}: ${e.message}`);
+    }
+  }
 
   const byLane = tasks.reduce((a, t) => (a[t.lane] = (a[t.lane] || 0) + 1, a), {});
   log('  by lane:', Object.entries(byLane).map(([k, v]) => `${k} ${v}`).join(', '));

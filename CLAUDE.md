@@ -38,6 +38,14 @@ no handshake needed). So:
   Ticking a block only queues the tasks whose state actually changes, or a
   half-finished block re-queues writes Tana already has.
 - `slots` (the day itself) are owned here and never sync to Tana.
+- **+ New** queues `op='create'` with a JSON payload and a `local:` placeholder
+  id, so the task is usable instantly. The agent builds it via
+  `import_tana_paste`, then `POST /api/sync/created` swaps the placeholder for
+  the real id everywhere. Don't reach for the Input API: its workspace token
+  isn't findable in Tana's current UI, and this needs no credential at all.
+- The prune skips `local:%` rows, and the agent re-reads anything it just
+  created. Tana's search index lags a create by a moment, so the pull misses it
+  and `full: true` would delete the task you just typed.
 
 The agent applies write-backs **before** pulling, otherwise the pull would see
 the task still open in Tana and clobber the completion.

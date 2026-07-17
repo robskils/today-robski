@@ -113,8 +113,12 @@ app. So the Mac is the only place the sync can run.
 Consequences worth knowing:
 
 - **Tasks are only as fresh as the last sync.** No Mac awake, no new tasks.
-- **Ticking a task in the web app does not reach Tana immediately.** It queues in
-  `pending_writes`; the agent replays it on the next pass (within 15 minutes).
+- **Writing to Tana is never immediate.** Ticks and new tasks queue in
+  `pending_writes`; the agent replays them on the next pass (within 15 minutes).
+  **+ New** works the same way: the task is usable here at once under a `local:`
+  id, and the agent swaps in the real node id once Tana has minted it. The Input
+  API would have been instant, but its workspace token isn't findable in the
+  current Tana UI, and the Mac already has write access through the MCP bridge.
   Tick either the checkbox on a task in the list, or its scheduled block - both
   go through the same queue. Tana sets `Task status: Done` itself on the way in.
 - The schedule itself (`slots`) lives only in D1 and never goes to Tana.

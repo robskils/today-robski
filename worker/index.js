@@ -515,77 +515,69 @@ async function updateActivity(request, env, id) {
 
 // ── new task -> Tana ──────────────────────────────────────────────────
 
-// Tana's API is write-only, which stops us *reading* the graph but not writing
-// to it. So a new task goes straight in via the Input API and appears in Tana
-// immediately, even with the Mac asleep. Reading it back still waits for the
-// agent, hence the optimistic row below.
-const TANA_TASK_TAG = '-ESIZpZjQpNx';
-const TANA_FIELDS = {
-  area: 'LTJ3jUP44jDx',
-  priority: '26tfBPLpiSWh',
-  duration: 'iOVl90NPxuDU',
-};
-
+// The Input API would put a task into Tana instantly, but it needs a workspace
+// token that isn't findable in the current Tana UI. The Mac already has write
+// access through the MCP bridge - it's how ticks get home - so a new task takes
+// the same road: queue it, the agent builds it, within 15 minutes.
+//
+// The row is written here first with a local: id so the task shows up straight
+// away. The agent swaps in the real node id once Tana has it, and the mirror
+// prune skips local: rows so an unsent one isn't swept away meanwhile.
 async function createTask(request, env) {
   const b = await request.json().catch(() => ({}));
   const title = String(b.title || '').trim();
   if (!title) return err('title required', request);
-  if (!env.TANA_API_TOKEN) return err('Tana API token not configured', request, 503);
 
-  const children = [];
+  const duration = b.duration ? Math.round(Number(b.duration)) : null;
+  if (duration !== null && (!Number.isFinite(duration) || duration <= 0)) {
+    return err('bad duration', request);
+  }
+
+  const localId = `local:${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+
   // Area and Priority are references to real nodes, so the client sends ids it
   // got from /api/tana-options rather than free text.
-  if (b.area_id) {
-    children.push({ type: 'field', attributeId: TANA_FIELDS.area, children: [{ dataType: 'reference', id: b.area_id }] });
-  }
-  if (b.priority_id) {
-    children.push({ type: 'field', attributeId: TANA_FIELDS.priority, children: [{ dataType: 'reference', id: b.priority_id }] });
-  }
-  if (b.duration) {
-    const d = Number(b.duration);
-    if (Number.isFinite(d) && d > 0) {
-      children.push({ type: 'field', attributeId: TANA_FIELDS.duration, children: [{ dataType: 'plain', name: String(Math.round(d)) }] });
-    }
-  }
-
-  const res = await fetch('https://europe-west1-tagr-prod.cloudfunctions.net/addToNodeV2', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.TANA_API_TOKEN}` },
-    body: JSON.stringify({
-      targetNodeId: 'INBOX',
-      nodes: [{ name: title, supertags: [{ id: TANA_TASK_TAG }], children }],
-    }),
+  const payload = JSON.stringify({
+    title,
+    area_id: b.area_id || null,
+    priority_id: b.priority_id || null,
+    duration,
   });
 
-  if (!res.ok) {
-    console.error('tana input api:', res.status, await res.text());
-    return err('Could not add it to Tana. Try again shortly.', 502);
-  }
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO tasks (tana_id, title, area, lane, priority, status, duration, done, breadcrumb, created, synced_at)
+       VALUES (?, ?, ?, ?, ?, 'Backlog', ?, 0, 'Inbox', ?, ?)`,
+    ).bind(localId, title, b.area || null, laneForArea(b.area), b.priority || null, duration, now, now),
+    env.DB.prepare(
+      'INSERT INTO pending_writes (tana_id, op, payload, created_at) VALUES (?, ?, ?, ?)',
+    ).bind(localId, 'create', payload, now),
+  ]);
 
-  // Tana has it either way at this point. The response shape isn't documented,
-  // so failing here because we couldn't find an id would be a lie: it would
-  // report failure on a task that exists.
-  const data = await res.json().catch(() => ({}));
-  const tanaId = data?.children?.[0]?.nodeId || data?.nodeId || null;
+  return json({ ok: true, tana_id: localId, pending: true }, request, 201);
+}
 
-  if (!tanaId) {
-    console.error('tana input api: no node id in', JSON.stringify(data).slice(0, 300));
-    return json({ ok: true, tana_id: null, mirrored: false }, request, 201);
-  }
+// The agent calls this once Tana has minted the real node id, so every
+// reference to the placeholder moves across in one go.
+async function syncCreated(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const localId = String(b.local_id || '');
+  const tanaId = String(b.tana_id || '');
+  if (!localId.startsWith('local:') || !tanaId) return err('local_id and tana_id required', request);
 
-  // Mirror it now so it shows up without waiting for the agent. The next sync
-  // overwrites this row from Tana, which stays the source of truth.
-  await env.DB.prepare(
-    `INSERT INTO tasks (tana_id, title, area, lane, priority, status, duration, done, breadcrumb, created, synced_at)
-     VALUES (?, ?, ?, ?, ?, 'Backlog', ?, 0, 'Inbox', ?, ?)
-     ON CONFLICT(tana_id) DO NOTHING`,
-  ).bind(
-    tanaId, title, b.area || null, laneForArea(b.area), b.priority || null,
-    b.duration ? Math.round(Number(b.duration)) : null,
-    new Date().toISOString(), new Date().toISOString(),
-  ).run();
+  await env.DB.batch([
+    env.DB.prepare('UPDATE tasks SET tana_id = ? WHERE tana_id = ?').bind(tanaId, localId),
+    env.DB.prepare('UPDATE slot_tasks SET tana_id = ? WHERE tana_id = ?').bind(tanaId, localId),
+    env.DB.prepare('UPDATE slots SET tana_id = ? WHERE tana_id = ?').bind(tanaId, localId),
+    // Any tick made while it was still local: has to point at the real node too,
+    // or the completion is replayed against an id Tana has never heard of.
+    env.DB.prepare(
+      "UPDATE pending_writes SET tana_id = ? WHERE tana_id = ? AND op != 'create'",
+    ).bind(tanaId, localId),
+  ]);
 
-  return json({ ok: true, tana_id: tanaId, mirrored: true }, request, 201);
+  return json({ ok: true }, request);
 }
 
 // The Area and Priority pickers need real node ids. They're mirrored by the
@@ -640,7 +632,12 @@ async function syncTasks(request, env) {
   // Anything the agent didn't mention is gone from Tana (deleted or trashed).
   // The agent only sets full when every node read cleanly.
   if (b.full === true && b.tasks.length) {
-    await env.DB.prepare('DELETE FROM tasks WHERE synced_at < ?').bind(now).run();
+    // Skip local: rows. They're tasks made in +New that Tana hasn't minted an
+    // id for yet, so the agent's pull can't mention them, and pruning them
+    // would delete a task you just typed.
+    await env.DB.prepare(
+      "DELETE FROM tasks WHERE synced_at < ? AND tana_id NOT LIKE 'local:%'",
+    ).bind(now).run();
   }
 
   // A tick landing between the agent's read and this push would be overwritten
@@ -730,6 +727,7 @@ export default {
       if (path === '/api/sync/options' && request.method === 'POST') return syncOptions(request, env);
       if (path === '/api/sync/pending' && request.method === 'GET') return syncPending(request, env);
       if (path === '/api/sync/ack' && request.method === 'POST') return syncAck(request, env);
+      if (path === '/api/sync/created' && request.method === 'POST') return syncCreated(request, env);
       return err('not found', request, 404);
     }
 
