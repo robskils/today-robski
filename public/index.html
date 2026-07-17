@@ -59,13 +59,17 @@
 <div id="app" hidden>
 
   <header class="bar">
-    <div class="bar-date">
-      <button class="nav-btn" id="prev-day" aria-label="Previous day">&#8249;</button>
-      <div class="bar-title">
-        <h1 id="day-title">Today</h1>
-        <p id="day-sub"></p>
+    <div class="bar-left">
+      <!-- The 禅 seal from the dojo site. Home for the eye, top left. -->
+      <div class="seal" aria-label="Zen" title="禅"><span>禅</span></div>
+      <div class="bar-date">
+        <button class="nav-btn" id="prev-day" aria-label="Previous day">&#8249;</button>
+        <div class="bar-title">
+          <h1 id="day-title">Today</h1>
+          <p id="day-sub"></p>
+        </div>
+        <button class="nav-btn" id="next-day" aria-label="Next day">&#8250;</button>
       </div>
-      <button class="nav-btn" id="next-day" aria-label="Next day">&#8250;</button>
     </div>
     <div class="bar-actions">
       <button class="ghost-btn" id="today-btn" hidden>Today</button>
