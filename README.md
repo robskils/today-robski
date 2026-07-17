@@ -18,6 +18,8 @@ doesn't fire on a phone.
 **Drag a lane off the rail** onto the schedule for a bare practice block, no
 editor involved.
 
+**Drag a block up or down** to move it to another time, its length unchanged.
+
 **Drag a block's top or bottom edge** to set its start and end. The top edge
 moves the start and pins the end; the bottom moves the end. Quarter-hour snap.
 Pointer events, so this one does work on touch.

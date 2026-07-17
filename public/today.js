@@ -755,6 +755,10 @@ $('sheet-delete').addEventListener('click', async () => {
 // ── events ────────────────────────────────────────────────────────────
 
 async function onSlotAreaClick(e) {
+  // A drag or resize that just finished leaves a click behind. Ignore it, or
+  // moving a block would also pop the editor.
+  if (Date.now() - (state.slotGestureAt || 0) < 400) return;
+
   // A task listed inside a block: tick it on its own.
   const taskCheck = e.target.closest('[data-check-task]');
   if (taskCheck) {
@@ -959,64 +963,115 @@ $('timeline').addEventListener('drop', async (e) => {
 // would be nonsense for a resize.
 
 let resize = null;
+let move = null;
+
+// The controls inside a block that a press should belong to, not a move.
+const SLOT_CONTROLS = '[data-check],[data-check-task],[data-unlink],[data-more],.slot-link';
 
 $('timeline').addEventListener('pointerdown', (e) => {
   const grip = e.target.closest('[data-slot-grip]');
-  if (!grip) return;
-  const slot = state.data.slots.find((s) => s.id === Number(grip.dataset.slotGrip));
-  if (!slot || slot.start_min === null) return;
+  if (grip) {
+    const slot = state.data.slots.find((s) => s.id === Number(grip.dataset.slotGrip));
+    if (!slot || slot.start_min === null) return;
+    e.preventDefault();
+    // Capture keeps the drag alive when the pointer leaves the grip, but it
+    // throws if the pointer isn't active. Never let that stop the resize arming.
+    try { grip.setPointerCapture(e.pointerId); } catch {}
+    resize = {
+      id: slot.id, edge: grip.dataset.grip, y0: e.clientY,
+      start0: slot.start_min, dur0: slot.duration,
+      el: grip.closest('.slot'),
+    };
+    resize.el.classList.add('resizing');
+    return;
+  }
 
-  e.preventDefault();
-  // Capture keeps the drag alive when the pointer leaves the grip, but it
-  // throws if the pointer isn't active. Never let that stop the resize arming.
-  try { grip.setPointerCapture(e.pointerId); } catch {}
-  resize = {
-    id: slot.id, edge: grip.dataset.grip, y0: e.clientY,
-    start0: slot.start_min, dur0: slot.duration,
-    el: grip.closest('.slot'),
+  // Drag the body to move the whole block. Mouse and pen only: on touch a
+  // vertical drag on a block is how you'd scroll the page, so a tap opens the
+  // editor there instead. A tick, a link, a task row don't start a move.
+  if (e.pointerType === 'touch' || (e.button !== undefined && e.button !== 0)) return;
+  const slotEl = e.target.closest('[data-slot]');
+  if (!slotEl || e.target.closest(SLOT_CONTROLS)) return;
+  const slot = state.data.slots.find((s) => s.id === Number(slotEl.dataset.slot));
+  if (!slot || slot.start_min === null) return;   // floating blocks live in the tray
+  const mEl = slotEl.querySelector('.slot-m');
+  move = {
+    id: slot.id, ptr: e.pointerId, y0: e.clientY,
+    start0: slot.start_min, dur: slot.duration, el: slotEl, moved: false,
+    mEl,
+    // "· Work · 2 tasks" - everything after the time range, kept as the time
+    // changes under the drag.
+    mSuffix: mEl ? mEl.textContent.replace(/^[^·]*/, '') : '',
   };
-  resize.el.classList.add('resizing');
 });
 
 $('timeline').addEventListener('pointermove', (e) => {
-  if (!resize) return;
-  const delta = Math.round(((e.clientY - resize.y0) / PPM) / SNAP) * SNAP;
-  let { start0: start, dur0: dur } = resize;
-
-  if (resize.edge === 'top') {
-    // Dragging the top moves the start and keeps the end put.
-    const end = start + dur;
-    start = Math.min(Math.max(start + delta, 0), end - SNAP);
-    dur = end - start;
-  } else {
-    dur = Math.max(SNAP, Math.min(dur + delta, 1440 - start));
+  if (resize) {
+    const delta = Math.round(((e.clientY - resize.y0) / PPM) / SNAP) * SNAP;
+    let { start0: start, dur0: dur } = resize;
+    if (resize.edge === 'top') {
+      // Dragging the top moves the start and keeps the end put.
+      const end = start + dur;
+      start = Math.min(Math.max(start + delta, 0), end - SNAP);
+      dur = end - start;
+    } else {
+      dur = Math.max(SNAP, Math.min(dur + delta, 1440 - start));
+    }
+    resize.next = { start_min: start, duration: dur };
+    resize.el.style.top = `${(start - state.tl.start) * PPM}px`;
+    resize.el.style.height = `${Math.max(30, dur * PPM - 3)}px`;
+    const m = resize.el.querySelector('.slot-m');
+    if (m) m.textContent = `${hhmm(start)}–${hhmm(start + dur)}`;
+    return;
   }
 
-  resize.next = { start_min: start, duration: dur };
-  resize.el.style.top = `${(start - state.tl.start) * PPM}px`;
-  resize.el.style.height = `${Math.max(30, dur * PPM - 3)}px`;
-  const m = resize.el.querySelector('.slot-m');
-  if (m) m.textContent = `${hhmm(start)}–${hhmm(start + dur)}`;
+  if (!move) return;
+  if (!move.moved) {
+    // A few pixels of slop, so a click that jitters isn't read as a drag.
+    if (Math.abs(e.clientY - move.y0) < 4) return;
+    move.moved = true;
+    try { move.el.setPointerCapture(move.ptr); } catch {}
+    move.el.classList.add('moving');
+  }
+  const delta = Math.round(((e.clientY - move.y0) / PPM) / SNAP) * SNAP;
+  const start = Math.min(Math.max(move.start0 + delta, 0), 1440 - move.dur);
+  move.next = start;
+  move.el.style.top = `${(start - state.tl.start) * PPM}px`;
+  if (move.mEl) move.mEl.textContent = `${hhmm(start)}–${hhmm(start + move.dur)} ${move.mSuffix}`.trim();
 });
 
-async function endResize() {
-  if (!resize) return;
-  const { id, next, start0, dur0, el } = resize;
-  resize = null;
-  el.classList.remove('resizing');
-  if (!next || (next.start_min === start0 && next.duration === dur0)) return;
-
-  try {
-    await api(`/api/slots/${id}`, { method: 'PATCH', body: JSON.stringify(next) });
-    await loadDay();
-  } catch (e) {
-    toast(e.message);
-    await loadDay();   // put it back where it really is
+async function endPointer() {
+  if (resize) {
+    const { id, next, start0, dur0, el } = resize;
+    resize = null;
+    el.classList.remove('resizing');
+    if (!next || (next.start_min === start0 && next.duration === dur0)) return;
+    state.slotGestureAt = Date.now();
+    return persistSlot(id, next);
+  }
+  if (move) {
+    const { id, next, start0, el, moved } = move;
+    move = null;
+    el.classList.remove('moving');
+    // No real drag: leave it, the click that follows opens the editor.
+    if (!moved || next === undefined || next === start0) return;
+    state.slotGestureAt = Date.now();   // and swallow that click
+    return persistSlot(id, { start_min: next });
   }
 }
 
-$('timeline').addEventListener('pointerup', endResize);
-$('timeline').addEventListener('pointercancel', endResize);
+async function persistSlot(id, patch) {
+  try {
+    await api(`/api/slots/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    await loadDay();
+  } catch (e) {
+    toast(e.message);
+    await loadDay();   // snap back to where it really is
+  }
+}
+
+$('timeline').addEventListener('pointerup', endPointer);
+$('timeline').addEventListener('pointercancel', endPointer);
 
 async function tickTask(tanaId) {
   const task = state.tasks.find((t) => t.tana_id === tanaId);

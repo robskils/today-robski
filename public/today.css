@@ -465,10 +465,16 @@ select.input { appearance: none; background-image: none; }
   background: hsl(var(--h) var(--lane-s) var(--lane-l) / var(--lane-wash-a));
   border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
   border-left: 4px solid var(--c);
-  cursor: pointer; transition: transform .12s, box-shadow .12s;
+  cursor: grab; transition: transform .12s, box-shadow .12s;
   display: flex; align-items: flex-start; gap: 10px;
 }
 .slot:hover { transform: translateX(2px); box-shadow: var(--shadow); z-index: 5; }
+/* Being dragged up or down. No transform, so it tracks the pointer exactly. */
+.slot.moving {
+  cursor: grabbing; box-shadow: var(--shadow); z-index: 9;
+  transform: none; transition: none; opacity: .9;
+}
+.slot.moving:hover { transform: none; }
 .slot.done { opacity: .55; }
 .slot.done .slot-t { text-decoration: line-through; }
 
