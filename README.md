@@ -1,12 +1,12 @@
 # today.robski.uk
 
 A one-day retreat schedule. Google Calendar events and Tana tasks on a single
-day timeline, with seven lanes that show at a glance which part of life is
-being starved.
+day timeline, with lanes that show at a glance which part of life is being
+starved.
 
-Lanes: **Zazen · Body · Music · Art · Forró · Work · Admin · Rest** (plus an
-untracked *Other*). Each has a daily minute target. A ring fills as you tick
-blocks off.
+Lanes: **Zazen · Body · Music · Art · Forró · Portuguese · Work · My Life ·
+Rest** (plus an untracked *Other*). Each has a daily minute target. A ring
+fills as you tick blocks off.
 
 ## Scheduling a task
 
@@ -117,10 +117,10 @@ lanes, so `shared/lanes.js` maps them. Tana is never re-tagged.
 
 Two things to know about the data:
 
-- **Zazen and Rest have no tasks at all, by design** (`practice: true` in
-  lanes.js - nothing may map onto them). Forró has 5. They're practices, not
-  todos. That's why a slot doesn't need a task: use **+ Block**,
-  or click a lane's ring, for bare practice time.
+- **Zazen, Body and Rest have no tasks at all, by design** (`practice: true` in
+  lanes.js - nothing may map onto them, and `npm test` enforces it). They're
+  practices, not todos. Fill them with **+ Block**, or click the lane's ring to
+  pick an activity.
 - **Only ~24 of 278 tasks have a `Duration` set.** The slot editor falls back to
   30 minutes. Setting `Duration` in Tana makes the editor pre-fill correctly.
 - **~35 tasks have no `Area`**, so they land in *Other*. Tag them in Tana to pull
