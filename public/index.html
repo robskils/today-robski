@@ -127,7 +127,11 @@
 <div class="sheet-bg" id="sheet-bg" hidden>
   <form class="sheet" id="sheet">
     <h3 id="sheet-title">Add to today</h3>
-    <p class="sheet-task" id="sheet-task"></p>
+    <!-- The name, editable. Renaming a task writes back to Tana; renaming a bare
+         block just changes its own label. -->
+    <input type="text" class="input sheet-name" id="sheet-name" hidden
+           aria-label="Name" autocomplete="off">
+    <p class="sheet-task" id="sheet-task" hidden></p>
 
     <!-- Every task in this block. The block's inline view only shows what fits;
          this is the full list, where they can be ticked or taken out. -->

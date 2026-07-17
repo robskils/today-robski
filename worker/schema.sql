@@ -60,8 +60,8 @@ INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position)
 CREATE TABLE IF NOT EXISTS pending_writes (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   tana_id    TEXT NOT NULL,     -- for 'create', the local: placeholder id
-  op         TEXT NOT NULL,     -- 'complete' | 'uncomplete' | 'create'
-  payload    TEXT,              -- 'create' only: the task to build, as JSON
+  op         TEXT NOT NULL,     -- 'complete' | 'uncomplete' | 'create' | 'rename'
+  payload    TEXT,              -- create: the task to build; rename: {old,new}
   created_at TEXT NOT NULL,
   applied_at TEXT,
   attempts   INTEGER NOT NULL DEFAULT 0,

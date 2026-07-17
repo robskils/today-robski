@@ -298,7 +298,12 @@ async function applyPending() {
         // A local: id here means the task hasn't been built yet. Its create is
         // earlier in the queue, so leave this and catch it next pass.
         if (p.tana_id.startsWith('local:')) continue;
-        await tana(p.op === 'complete' ? 'check_node' : 'uncheck_node', { nodeId: p.tana_id });
+        if (p.op === 'rename') {
+          const { old, new: next } = JSON.parse(p.payload || '{}');
+          await tana('edit_node', { nodeId: p.tana_id, name: { old_string: old, new_string: next } });
+        } else {
+          await tana(p.op === 'complete' ? 'check_node' : 'uncheck_node', { nodeId: p.tana_id });
+        }
         vlog(`${p.op} ${p.tana_id}`);
       }
       acked.push(p.id);

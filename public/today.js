@@ -551,9 +551,18 @@ function openSheet({ slot, task, lane }) {
   $('sheet-save').textContent = slot ? 'Save' : 'Add';
   $('sheet-delete').hidden = !slot;
 
+  // The name field. A single Tana task behind the sheet (clicked in the list,
+  // or a sole-task block) renames in Tana; anything else edits only its own
+  // block label.
+  const blockTasks = slot?.tasks || [];
+  const renameTaskId = task?.tana_id
+    ?? (blockTasks.length === 1 ? blockTasks[0].tana_id : null);
   const label = slot?.title || task?.title || '';
-  $('sheet-task').textContent = label;
-  $('sheet-task').hidden = !label;
+
+  state.editing.rename = { taskId: renameTaskId, slotId: slot?.id ?? null, orig: label };
+  $('sheet-name').value = label;
+  $('sheet-name').hidden = false;
+  $('sheet-task').hidden = true;
 
   $('sheet-lane').innerHTML = state.lanes
     .map((l) => `<option value="${l.key}">${esc(l.label)}</option>`).join('');
@@ -635,6 +644,48 @@ $('sheet-cancel').addEventListener('click', closeSheet);
 $('sheet-bg').addEventListener('click', (e) => { if (e.target === $('sheet-bg')) closeSheet(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet-bg').hidden) closeSheet(); });
 
+// Enter commits the rename in place, without submitting the schedule form or
+// closing the sheet. Saving commits it too (see the submit handler). A plain
+// blur or Cancel doesn't, so clicking away isn't a silent rename.
+$('sheet-name').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  commitRename();
+});
+
+async function commitRename() {
+  const r = state.editing?.rename;
+  if (!r) return;
+  const title = $('sheet-name').value.trim();
+  if (!title || title === r.orig) { $('sheet-name').value = r.orig; return; }
+  r.orig = title;   // so a second blur doesn't re-send
+
+  try {
+    if (r.taskId) {
+      // Renaming the task rewrites Tana; the block titled after it follows.
+      await api(`/api/tasks/${encodeURIComponent(r.taskId)}`, {
+        method: 'PATCH', body: JSON.stringify({ title }),
+      });
+      toast('Renamed. Reaches Tana within 15 min.');
+      await Promise.all([loadTasks(), loadDay()]);
+    } else if (r.slotId) {
+      // A bare block's name is its own; nothing goes to Tana.
+      await api(`/api/slots/${r.slotId}`, {
+        method: 'PATCH', body: JSON.stringify({ title }),
+      });
+      await loadDay();
+    }
+    // Keep the open editor pointed at the fresh copy.
+    if (state.editing?.slot) {
+      const fresh = state.data.slots.find((s) => s.id === state.editing.slot.id);
+      if (fresh) state.editing.slot = fresh;
+    }
+  } catch (e) {
+    toast(e.message);
+    $('sheet-name').value = r.orig;
+  }
+}
+
 $('sheet-float').addEventListener('change', syncFloatUI);
 $('sheet-lane').addEventListener('change', () => {
   syncZenNote();
@@ -654,7 +705,10 @@ $('sheet-push').addEventListener('click', (e) => {
 
 $('sheet').addEventListener('submit', async (e) => {
   e.preventDefault();
+  // Save commits a pending rename first, so the block gets the new name.
+  await commitRename();
   const { slot, task, activity } = state.editing;
+  const name = $('sheet-name').value.trim();
   const floating = $('sheet-float').checked;
   const body = {
     lane: $('sheet-lane').value,
@@ -672,8 +726,8 @@ $('sheet').addEventListener('submit', async (e) => {
         method: 'POST',
         body: JSON.stringify({
           ...body, day: state.day,
-          // A bare block is just the lane's name: "Zazen", "Rest".
-          title: task?.title || activity?.title || laneMeta(body.lane).label,
+          // The edited name if given, else the lane's own ("Zazen", "Rest").
+          title: name || task?.title || activity?.title || laneMeta(body.lane).label,
           tana_id: task?.tana_id || null,
           url: activity?.url || null,
         }),

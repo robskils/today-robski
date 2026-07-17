@@ -25,6 +25,9 @@ Pointer events, so this one does work on touch.
 **Drop tasks onto an existing block** and it holds them, any number. A block is
 a container of time; the tasks are what you'll do in it.
 
+- **Rename a task** by clicking it: the name is editable at the top of the
+  sheet. Enter (or Save) commits it, and the new name reaches Tana on the next
+  sync. Renaming a bare block just changes its own label - nothing goes to Tana.
 - A block **lists the tasks in it**. What fits shows in the block; the rest fold
   into a **Show N tasks** / **+N more** line that opens the editor, where the
   full list lives with ticks and a × to take a task back out.

@@ -457,17 +457,34 @@ async function setTaskDone(env, tanaId, done) {
 
 async function updateTask(request, env, tanaId) {
   const b = await request.json().catch(() => ({}));
-  if (b.done === undefined) return err('done required', request);
-
-  const existing = await env.DB.prepare('SELECT done FROM tasks WHERE tana_id = ?')
+  const existing = await env.DB.prepare('SELECT done, title FROM tasks WHERE tana_id = ?')
     .bind(tanaId).first();
   if (!existing) return err('not found', request, 404);
 
-  // Don't queue a no-op write to Tana on a double tap.
-  if (!!b.done === !!existing.done) return json({ ok: true, unchanged: true }, request);
+  // Rename: flows to Tana as a search-and-replace, so it carries the old title
+  // (the mirror's current one) and the new. Successive renames chain, each old
+  // being the previous new, so edit_node always finds its target.
+  if (b.title !== undefined) {
+    const title = String(b.title).trim();
+    if (!title) return err('title required', request);
+    if (title !== existing.title) {
+      await env.DB.batch([
+        env.DB.prepare('UPDATE tasks SET title = ? WHERE tana_id = ?').bind(title, tanaId),
+        // A block titled after the task keeps in step; a category block that
+        // merely holds it keeps its own name.
+        env.DB.prepare('UPDATE slots SET title = ? WHERE tana_id = ? AND title = ?')
+          .bind(title, tanaId, existing.title),
+        env.DB.prepare('INSERT INTO pending_writes (tana_id, op, payload, created_at) VALUES (?, ?, ?, ?)')
+          .bind(tanaId, 'rename', JSON.stringify({ old: existing.title, new: title }), new Date().toISOString()),
+      ]);
+    }
+  }
 
-  await setTaskDone(env, tanaId, !!b.done);
-  return json({ ok: true, tana_id: tanaId, done: b.done ? 1 : 0 }, request);
+  if (b.done !== undefined && !!b.done !== !!existing.done) {
+    await setTaskDone(env, tanaId, !!b.done);
+  }
+
+  return json({ ok: true, tana_id: tanaId }, request);
 }
 
 // ── activities ────────────────────────────────────────────────────────
