@@ -10,7 +10,8 @@
     "deploy": "wrangler deploy",
     "sync": "node sync/sync.js",
     "sync:dry": "node sync/sync.js --dry-run",
-    "google-auth": "node sync/google-auth.js"
+    "google-auth": "node sync/google-auth.js",
+    "audit": "node worker/audit-schema.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.87.0"

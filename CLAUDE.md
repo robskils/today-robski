@@ -107,6 +107,13 @@ Measured July 2026 against the live graph, 278 open tasks:
   long task title stretches the page.
 - `compatibility_date` must not exceed what the installed wrangler runtime
   supports, or `wrangler dev` refuses to boot.
+- **`CREATE TABLE IF NOT EXISTS` never adds a column to an existing table.** A
+  column appended to schema.sql is silently absent on the live D1 until an
+  `ALTER TABLE ... ADD COLUMN` runs - and local dev rebuilds the schema each
+  time, so it always looks fine there. The gap only surfaces as a 500 on the
+  first insert naming the column. After any column addition, run `npm run audit`
+  (or `node worker/audit-schema.mjs --fix`) against remote. `slots.url`,
+  `pending_writes.payload` were both caught this way.
 - Calendar events are instants; slots are wall-clock minutes. Convert with
   `localParts`, never with an elapsed delta from the day start, or events shift
   an hour around a DST change. `npm test` covers both Lisbon transitions.
