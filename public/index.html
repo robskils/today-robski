@@ -125,6 +125,13 @@
     <h3 id="sheet-title">Add to today</h3>
     <p class="sheet-task" id="sheet-task"></p>
 
+    <!-- Every task in this block. The block's inline view only shows what fits;
+         this is the full list, where they can be ticked or taken out. -->
+    <div class="sheet-tasks" id="sheet-tasks" hidden>
+      <span class="sheet-tasks-label" id="sheet-tasks-label"></span>
+      <div class="sheet-tasks-list" id="sheet-tasks-list"></div>
+    </div>
+
     <label class="field">
       <span>Lane</span>
       <select id="sheet-lane" class="input"></select>

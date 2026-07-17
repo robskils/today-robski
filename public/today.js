@@ -338,10 +338,15 @@ function renderTimeline() {
     const h = Math.max(30, s.duration * PPM - 3);
     const tasks = s.tasks || [];
 
-    // Only list the contents when there's room, and only when the block is more
-    // than the task itself. A one-task block already says its name in the title.
-    const roomFor = Math.floor((h - 52) / 22);
-    const showTasks = tasks.length > 1 && roomFor > 0;
+    // List the contents whenever there are any, so dropping one task on a block
+    // shows it. The exception is a block that *is* a single task - its title is
+    // already that task, so repeating it says nothing. roomFor is how many rows
+    // the block's height allows; the rest fold into a "+N more" that opens the
+    // editor, where the full list lives.
+    const titled = tasks.length === 1 && tasks[0].title === s.title;
+    const listTasks = titled ? [] : tasks;
+    const roomFor = Math.max(0, Math.floor((h - 52) / 22));
+    const showTasks = listTasks.length > 0;
 
     // A category block (bare practice) counts by being here; no tick. Anything
     // carrying tasks keeps its checkbox. `practice` comes from the server.
@@ -354,7 +359,7 @@ function renderTimeline() {
       <div class="slot-body">
         <div class="slot-t">${esc(s.title)}</div>
         ${h >= 44 ? `<div class="slot-m">${hhmm(s.start_min)}–${hhmm(s.start_min + s.duration)} · ${esc(l.label)}${tasks.length ? ` · ${tasks.length} task${tasks.length === 1 ? '' : 's'}` : ''}</div>` : ''}
-        ${showTasks ? `<div class="slot-tasks">${tasks.slice(0, roomFor).map((t) => `
+        ${showTasks ? `<div class="slot-tasks">${listTasks.slice(0, roomFor).map((t) => `
           <div class="slot-task ${t.done ? 'done' : ''}">
             <button class="slot-task-check" data-check-task="${esc(t.tana_id)}"
                     aria-label="Mark done: ${esc(t.title)}">✓</button>
@@ -362,7 +367,11 @@ function renderTimeline() {
             <button class="slot-task-x" data-unlink="${s.id}:${esc(t.tana_id)}"
                     aria-label="Take out of this block">×</button>
           </div>`).join('')}
-          ${tasks.length > roomFor ? `<div class="slot-more">+${tasks.length - roomFor} more</div>` : ''}
+          ${listTasks.length > roomFor
+            ? `<button class="slot-more" data-more="${s.id}">${roomFor === 0
+                ? `Show ${listTasks.length} task${listTasks.length === 1 ? '' : 's'}`
+                : `+${listTasks.length - roomFor} more`}</button>`
+            : ''}
         </div>` : ''}
       </div>
       ${s.url ? `<a class="slot-link" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"
@@ -560,6 +569,7 @@ function openSheet({ slot, task, lane }) {
   $('sheet-quick').innerHTML = [15, 25, 30, 45, 60, 90]
     .map((m) => `<button type="button" data-min="${m}">${m}m</button>`).join('');
 
+  renderSheetTasks(slot);
   syncFloatUI();
   syncZenNote();
   renderActs();
@@ -567,6 +577,44 @@ function openSheet({ slot, task, lane }) {
   $('sheet-bg').hidden = false;
   if (!floating) $('sheet-start').focus();
 }
+
+// The full task list for a block, ticks and remove buttons and all. Anything
+// that didn't fit in the block's inline view is here.
+function renderSheetTasks(slot) {
+  const tasks = slot?.tasks || [];
+  $('sheet-tasks').hidden = !tasks.length;
+  if (!tasks.length) return;
+
+  $('sheet-tasks-label').textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} in this block`;
+  $('sheet-tasks-list').innerHTML = tasks.map((t) => `
+    <div class="sheet-task-row ${t.done ? 'done' : ''}" style="--h:${laneMeta(t.lane).hue}">
+      <button type="button" class="slot-task-check" data-sheet-check="${esc(t.tana_id)}"
+              aria-label="Mark done: ${esc(t.title)}">✓</button>
+      <span class="sheet-task-name">${esc(t.title)}</span>
+      <button type="button" class="slot-task-x" data-sheet-unlink="${slot.id}:${esc(t.tana_id)}"
+              aria-label="Take out of this block">×</button>
+    </div>`).join('');
+}
+
+$('sheet-tasks-list').addEventListener('click', async (e) => {
+  const check = e.target.closest('[data-sheet-check]');
+  const unlink = e.target.closest('[data-sheet-unlink]');
+  try {
+    if (check) {
+      await tickTask(check.dataset.sheetCheck);
+    } else if (unlink) {
+      const [slotId, tanaId] = unlink.dataset.sheetUnlink.split(':');
+      await api(`/api/slots/${slotId}/tasks/${encodeURIComponent(tanaId)}`, { method: 'DELETE' });
+      await Promise.all([loadDay(), loadTasks()]);
+    } else {
+      return;
+    }
+    // Keep the open sheet in step with what just changed.
+    const fresh = state.data.slots.find((s) => s.id === state.editing?.slot?.id);
+    if (fresh) { state.editing.slot = fresh; renderSheetTasks(fresh); }
+    else closeSheet();
+  } catch (e2) { toast(e2.message); }
+});
 
 // A siesta is an hour by default; everything else is 30 minutes.
 function defaultDuration(lane) {

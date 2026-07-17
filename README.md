@@ -25,6 +25,9 @@ Pointer events, so this one does work on touch.
 **Drop tasks onto an existing block** and it holds them, any number. A block is
 a container of time; the tasks are what you'll do in it.
 
+- A block **lists the tasks in it**. What fits shows in the block; the rest fold
+  into a **Show N tasks** / **+N more** line that opens the editor, where the
+  full list lives with ticks and a × to take a task back out.
 - A **category block** - a bare practice with no task behind it - has no tick.
   It counts toward its lane's ring the moment it's on the schedule: you don't
   complete an hour of Music, you just do it. Move or delete it if plans change.

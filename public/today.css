@@ -386,7 +386,32 @@ select.input { appearance: none; background-image: none; }
 }
 .slot:hover .slot-task-x { opacity: 1; }
 .slot-task-x:hover { color: var(--accent); }
-.slot-more { font-size: 12px; color: var(--ink-3); padding-left: 22px; }
+.slot-more {
+  font-size: 12px; color: var(--ink-3); padding: 1px 22px;
+  text-decoration: underline; text-underline-offset: 2px; text-align: left;
+}
+.slot-more:hover { color: var(--accent); }
+
+/* ── block's full task list, in the editor ────────────────────────── */
+
+.sheet-tasks {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.sheet-tasks-label {
+  display: block; font-size: 13px; color: var(--ink-3);
+  letter-spacing: .02em; margin-bottom: 8px;
+}
+.sheet-tasks-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+.sheet-task-row {
+  --c: hsl(var(--h) var(--lane-s) var(--lane-l));
+  display: flex; align-items: center; gap: 9px;
+  font-size: 15px; color: var(--ink);
+}
+.sheet-task-row.done { opacity: .5; }
+.sheet-task-row.done .sheet-task-name { text-decoration: line-through; }
+.sheet-task-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-task-row .slot-task-x { opacity: .7; }
 /* A grab cursor only on the body: the tick is a click target, not a handle. */
 .task-open { cursor: grab; }
 .task-open:active { cursor: grabbing; }
