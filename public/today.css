@@ -321,6 +321,25 @@ select.input { appearance: none; background-image: none; }
 .hour.half { border-top-style: dotted; opacity: .5; }
 .hour.half span { display: none; }
 
+/* Where a dragged task will land, with the time spelled out so you don't have
+   to read it off the hour lines. */
+.drop-line {
+  position: absolute; left: 62px; right: 6px; height: 2px;
+  background: var(--accent); z-index: 8; pointer-events: none;
+  border-radius: 2px;
+}
+.drop-line::after {
+  content: attr(data-at);
+  position: absolute; right: 0; top: -11px;
+  background: var(--accent); color: var(--accent-ink);
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  padding: 2px 8px; border-radius: 999px;
+}
+.task.dragging { opacity: .4; }
+/* A grab cursor only on the body: the tick is a click target, not a handle. */
+.task-open { cursor: grab; }
+.task-open:active { cursor: grabbing; }
+
 .now {
   position: absolute; left: 54px; right: 4px; height: 2px;
   background: var(--accent); z-index: 6; pointer-events: none;
@@ -427,8 +446,20 @@ select.input { appearance: none; background-image: none; }
 .chip.on { background: var(--c); border-color: var(--c); color: var(--card); font-weight: 500; }
 .chip-n { opacity: .6; font-size: 13px; margin-left: 3px; font-variant-numeric: tabular-nums; }
 
-.task-list { display: flex; flex-direction: column; gap: 8px; max-height: 62vh; overflow-y: auto; }
-@media (max-width: 900px) { .task-list { max-height: none; } }
+/* The schedule is far taller than the task list, so the list would scroll off
+   and leave you dragging into nothing. Pin it under the bar instead. */
+.col-tasks {
+  position: sticky; top: var(--bar-h, 76px);
+  max-height: calc(100vh - var(--bar-h, 76px) - 24px);
+  display: flex; flex-direction: column;
+}
+.task-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; }
+
+@media (max-width: 900px) {
+  /* One column: sticking it would cover the schedule it's meant to fill. */
+  .col-tasks { position: static; max-height: none; }
+  .task-list { max-height: none; overflow-y: visible; }
+}
 
 .task {
   --c: hsl(var(--h) var(--lane-s) var(--lane-l));

@@ -278,10 +278,12 @@ const ENSO_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true">
   <path d="M44 14a24 24 0 1 0 9 18" fill="none" stroke="currentColor"
         stroke-width="3.5" stroke-linecap="round"/></svg>`;
 
+const PPM = 1.5;        // pixels per minute
+const SNAP = 15;        // drops land on the nearest quarter hour
+
 function renderTimeline() {
   const { events, settings } = state.data;
   const slots = state.data.slots.filter((s) => s.start_min !== null);
-  const PPM = 1.5;
   const el = $('timeline');
 
   // An empty day isn't a gap to apologise for, and it shouldn't render as
@@ -289,6 +291,9 @@ function renderTimeline() {
   if (!slots.length && !events.length) {
     el.style.height = '300px';
     el.innerHTML = `<div class="enso-empty">${ENSO_SVG}<p>Nothing scheduled. Just this.</p></div>`;
+    // Collapsed, so there's no time axis to drop onto. A drop here falls back
+    // to the next half hour rather than guessing from a meaningless y.
+    state.tl = { empty: true };
     return;
   }
 
@@ -302,6 +307,7 @@ function renderTimeline() {
 
   const top = (m) => (m - start) * PPM;
   el.style.height = `${(end - start) * PPM + 20}px`;
+  state.tl = { empty: false, start, end };
 
   const parts = [];
 
@@ -384,7 +390,9 @@ function renderTasks() {
 
     // The tick and the body are separate controls: one finishes the task, the
     // other schedules it. Nesting them would make the whole card ambiguous.
-    return `<div class="task" style="--h:${l.hue}" data-task-row="${id}">
+    // The row is also draggable onto the timeline, which is the same action as
+    // clicking the body, just with the time chosen by where you let go.
+    return `<div class="task" style="--h:${l.hue}" data-task-row="${id}" draggable="true">
       <button class="task-check" data-task-check="${id}"
               aria-label="Mark done: ${esc(t.title)}">✓</button>
       <button class="task-open" data-task="${id}">
@@ -658,6 +666,92 @@ $('task-list').addEventListener('click', async (e) => {
   if (task) openSheet({ task });
 });
 
+// ── drag a task onto the timeline ─────────────────────────────────────
+//
+// Same outcome as clicking the card, but you pick the time by where you let go
+// rather than typing it. Touch doesn't fire HTML5 drag events, so the click
+// path stays: on a phone you tap and get the editor.
+
+function dropMinutes(e) {
+  if (state.tl?.empty) return nextFreeSlot();
+  const r = $('timeline').getBoundingClientRect();
+  const raw = state.tl.start + (e.clientY - r.top) / PPM;
+  const snapped = Math.round(raw / SNAP) * SNAP;
+  return Math.min(Math.max(snapped, state.tl.start), state.tl.end);
+}
+
+$('task-list').addEventListener('dragstart', (e) => {
+  const row = e.target.closest('[data-task-row]');
+  if (!row) return;
+  state.dragging = row.dataset.taskRow;
+  e.dataTransfer.effectAllowed = 'copy';
+  // Firefox won't start a drag without data set.
+  e.dataTransfer.setData('text/plain', row.dataset.taskRow);
+  row.classList.add('dragging');
+});
+
+$('task-list').addEventListener('dragend', (e) => {
+  e.target.closest('[data-task-row]')?.classList.remove('dragging');
+  state.dragging = null;
+  hideDropLine();
+});
+
+function hideDropLine() {
+  document.getElementById('drop-line')?.remove();
+}
+
+function showDropLine(min) {
+  let line = document.getElementById('drop-line');
+  if (!line) {
+    line = document.createElement('div');
+    line.id = 'drop-line';
+    line.className = 'drop-line';
+    $('timeline').append(line);
+  }
+  line.style.top = `${(min - state.tl.start) * PPM}px`;
+  line.dataset.at = hhmm(min);
+}
+
+$('timeline').addEventListener('dragover', (e) => {
+  if (!state.dragging) return;
+  e.preventDefault();                    // without this, drop never fires
+  e.dataTransfer.dropEffect = 'copy';
+  if (!state.tl?.empty) showDropLine(dropMinutes(e));
+});
+
+$('timeline').addEventListener('dragleave', (e) => {
+  if (!$('timeline').contains(e.relatedTarget)) hideDropLine();
+});
+
+$('timeline').addEventListener('drop', async (e) => {
+  e.preventDefault();
+  const id = state.dragging || e.dataTransfer.getData('text/plain');
+  hideDropLine();
+  if (!id) return;
+
+  const task = state.tasks.find((t) => t.tana_id === id);
+  if (!task) return;
+
+  const start = dropMinutes(e);
+  try {
+    await api('/api/slots', {
+      method: 'POST',
+      body: JSON.stringify({
+        day: state.day,
+        lane: task.lane,
+        title: task.title,
+        tana_id: task.tana_id,
+        start_min: start,
+        duration: task.duration || defaultDuration(task.lane),
+      }),
+    });
+    toast(`Scheduled ${hhmm(start)}`);
+    await loadDay();
+  } catch (e2) {
+    toast(e2.message);
+  }
+});
+
 async function tickTask(tanaId) {
   const task = state.tasks.find((t) => t.tana_id === tanaId);
   if (!task) return;
@@ -829,6 +923,7 @@ async function loadDay() {
   renderTray();
   renderTimeline();
   renderQuote();
+  measureBar();
 
   if (state.data.calendar_error === 'not_configured') {
     $('sync-status').textContent = 'calendar not connected';
@@ -861,6 +956,14 @@ async function boot() {
     if (e.message !== 'unauthorized') toast(e.message);
   }
 }
+
+// The tasks column sticks below the bar, so it needs the bar's real height
+// rather than a guess that breaks when the date wraps to two lines.
+function measureBar() {
+  const h = $('app').querySelector('.bar')?.offsetHeight;
+  if (h) document.documentElement.style.setProperty('--bar-h', `${h}px`);
+}
+addEventListener('resize', measureBar);
 
 // Keep the now-line honest without hammering the API.
 setInterval(() => { if (state.data && state.day === state.today) renderTimeline(); }, 60_000);

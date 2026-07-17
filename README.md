@@ -8,6 +8,19 @@ Lanes: **Zazen · Body · Music · Art · Forró · Work · Admin · Rest** (plu
 untracked *Other*). Each has a daily minute target. A ring fills as you tick
 blocks off.
 
+## Scheduling a task
+
+Drag a task from the list onto the timeline: it snaps to the nearest quarter
+hour and the drop line tells you the time before you let go. Clicking the card
+does the same thing with the editor, which is the path touch takes - HTML5 drag
+doesn't fire on a phone.
+
+The tick and the card body are separate controls on purpose: one finishes the
+task, the other schedules it.
+
+The task list is sticky below the bar, because the schedule is far taller than
+it is and you'd otherwise be dragging into nothing.
+
 ## Floating blocks
 
 A block doesn't need a time. Tick **Any time today** and it sits in a tray above
