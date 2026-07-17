@@ -58,7 +58,14 @@ They live in D1 and never go near Tana.
   zazen 坐禅, taisō 体操, samu 作務 (work as practice), hōsan 放参 (released from
   the schedule). Music, Art and Forró have none, because a monastery has no word
   for forró and inventing one would be costume.
-- Warm paper and sumi ink, in light and dark. No red, no streaks, no overdue.
+- **The Dojo Zen de Lisboa palette**, lifted from `dzl-site`: warm paper
+  (#f5f0e8), sumi ink, vermillion (#c4412e) and gold. Cormorant Garamond for
+  anything that speaks, Inter for anything that labels. Dark is proper sumi
+  black (#0e0d0b), not a bluish grey.
+- **只管打坐** (*shikantaza*, "just sitting") as a watermark down the right edge,
+  the same one the dojo site carries. Hidden below 1400px, where it would
+  collide with the task column.
+- No streaks, no overdue, nothing that nags.
 
 ## How it fits together
 

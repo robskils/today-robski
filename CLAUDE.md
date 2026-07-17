@@ -65,6 +65,12 @@ flexibility to keep working on something if I am in the zone."* So:
   Don't make it random; a teaching that reshuffles on refresh is a slot machine.
 - `lanes.zen` is only set where a Sōtō name is genuine. Do not invent one for
   Music, Art or Forró.
+- The palette is Dojo Zen de Lisboa's (`~/GitHub/dzl-site/css/dzl.css`), which
+  Robin loves. Keep them aligned rather than drifting a second Zen palette.
+- Themes are defined **once each** in today.css under `[data-theme=...]`. An
+  inline script in index.html stamps the attribute before first paint. Don't
+  reintroduce a `prefers-color-scheme` block: there used to be four copies of
+  every token and they drift.
 
 ## Data facts worth remembering
 

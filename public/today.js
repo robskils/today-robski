@@ -879,12 +879,18 @@ $('prev-day').addEventListener('click', () => go(shiftDay(state.day, -1)));
 $('next-day').addEventListener('click', () => go(shiftDay(state.day, 1)));
 $('today-btn').addEventListener('click', () => go(state.today));
 
+// The inline script in index.html has already stamped data-theme before paint,
+// so this only ever flips it.
 $('theme-btn').addEventListener('click', () => {
-  const cur = document.documentElement.dataset.theme
-    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  const next = cur === 'dark' ? 'light' : 'dark';
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
   localStorage.setItem(THEME_STORE, next);
+});
+
+// Follow the system until the toggle is used, then stop second-guessing it.
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  if (localStorage.getItem(THEME_STORE)) return;
+  document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
 });
 
 // ── load ──────────────────────────────────────────────────────────────
@@ -968,8 +974,6 @@ addEventListener('resize', measureBar);
 // Keep the now-line honest without hammering the API.
 setInterval(() => { if (state.data && state.day === state.today) renderTimeline(); }, 60_000);
 
-const savedTheme = localStorage.getItem(THEME_STORE);
-if (savedTheme) document.documentElement.dataset.theme = savedTheme;
 
 if (state.key) {
   $('app').hidden = false;

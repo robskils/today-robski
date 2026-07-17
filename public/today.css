@@ -1,69 +1,61 @@
 /* today.robski.uk
-   Warm paper and sumi ink. Calm, generous, and large: nothing here should
-   need squinting at. Base is 18px on purpose. */
+   The Dojo Zen de Lisboa palette: warm paper, sumi ink, vermillion and gold.
+   Cormorant Garamond for anything that speaks, Inter for anything that labels.
+   Calm, generous, and large: nothing here should need squinting at.
 
-:root {
-  --paper:      #f7f4ee;
-  --paper-2:    #efeade;
-  --card:       #fffdf8;
-  --ink:        #23201b;
-  --ink-2:      #5d574e;
-  --ink-3:      #8d8578;
-  --line:       #e0d9c8;
-  --line-2:     #cec5b0;
-  --accent:     #b4553a;   /* persimmon */
+   Themes are defined exactly once each. An inline script in index.html resolves
+   light/dark before first paint and stamps data-theme, so there's no
+   prefers-color-scheme copy here to drift out of sync with these. */
+
+:root[data-theme='light'] {
+  --paper:      #f5f0e8;
+  --paper-2:    #ede8df;
+  --card:       #faf7f1;
+  --ink:        #1c1812;
+  --ink-2:      rgba(28, 24, 18, .62);
+  --ink-3:      rgba(28, 24, 18, .42);
+  --line:       rgba(28, 24, 18, .10);
+  --line-2:     rgba(28, 24, 18, .20);
+  --accent:     #c4412e;   /* vermillion */
   --accent-ink: #fff;
-  --done:       #3f7d52;
-  --shadow:     0 1px 2px rgba(60,50,30,.05), 0 8px 24px -12px rgba(60,50,30,.18);
-  --radius:     14px;
-  --radius-sm:  10px;
+  --gold:       #a8844a;
+  --done:       #4a7a52;
+  --shadow:     0 1px 2px rgba(28,24,18,.04), 0 8px 24px -12px rgba(28,24,18,.16);
 
   --lane-l: 42%;   /* lightness for lane colours in this theme */
   --lane-s: 46%;
   --lane-wash-a: .10;
+}
 
-  --serif: 'Fraunces', Georgia, serif;
+:root[data-theme='dark'] {
+  --paper:      #0e0d0b;
+  --paper-2:    #131210;
+  --card:       #1a1815;
+  --ink:        #ddd7cc;
+  --ink-2:      rgba(221, 215, 204, .60);
+  --ink-3:      rgba(221, 215, 204, .38);
+  --line:       rgba(221, 215, 204, .10);
+  --line-2:     rgba(221, 215, 204, .20);
+  --accent:     #d4553f;
+  --accent-ink: #0e0d0b;
+  --gold:       #b8945a;
+  --done:       #6fa877;
+  --shadow:     0 1px 2px rgba(0,0,0,.4), 0 10px 30px -12px rgba(0,0,0,.7);
+
+  --lane-l: 66%;
+  --lane-s: 48%;
+  --lane-wash-a: .14;
+}
+
+:root {
+  --radius:     14px;
+  --radius-sm:  10px;
+  --serif: 'Cormorant Garamond', Georgia, serif;
   --sans:  'Inter', system-ui, -apple-system, sans-serif;
-
   --px-per-min: 1.5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper:   #16151a;
-    --paper-2: #1d1c22;
-    --card:    #232128;
-    --ink:     #f0ebe2;
-    --ink-2:   #b3ab9e;
-    --ink-3:   #7d7669;
-    --line:    #322f38;
-    --line-2:  #45414c;
-    --accent:  #e08163;
-    --accent-ink: #1a1013;
-    --done:    #6fb185;
-    --shadow:  0 1px 2px rgba(0,0,0,.3), 0 10px 30px -12px rgba(0,0,0,.6);
-    --lane-l: 68%;
-    --lane-s: 55%;
-    --lane-wash-a: .16;
-  }
-}
-
-:root[data-theme='light'] {
-  --paper: #f7f4ee; --paper-2: #efeade; --card: #fffdf8;
-  --ink: #23201b; --ink-2: #5d574e; --ink-3: #8d8578;
-  --line: #e0d9c8; --line-2: #cec5b0;
-  --accent: #b4553a; --accent-ink: #fff; --done: #3f7d52;
-  --shadow: 0 1px 2px rgba(60,50,30,.05), 0 8px 24px -12px rgba(60,50,30,.18);
-  --lane-l: 42%; --lane-s: 46%; --lane-wash-a: .10;
-}
-:root[data-theme='dark'] {
-  --paper: #16151a; --paper-2: #1d1c22; --card: #232128;
-  --ink: #f0ebe2; --ink-2: #b3ab9e; --ink-3: #7d7669;
-  --line: #322f38; --line-2: #45414c;
-  --accent: #e08163; --accent-ink: #1a1013; --done: #6fb185;
-  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -12px rgba(0,0,0,.6);
-  --lane-l: 68%; --lane-s: 55%; --lane-wash-a: .16;
-}
+html { transition: background-color .35s ease, color .35s ease; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -83,7 +75,7 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; letter-spacing: -.005em; }
 
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: 0; }
@@ -204,7 +196,7 @@ select.input { appearance: none; background-image: none; }
 }
 .bar-date { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .bar-title { min-width: 0; text-align: center; }
-.bar-title h1 { font-size: 27px; line-height: 1.2; white-space: nowrap; }
+.bar-title h1 { font-size: 34px; line-height: 1.1; white-space: nowrap; }
 .bar-title p { font-size: 14px; color: var(--ink-3); white-space: nowrap; }
 .bar-actions { display: flex; align-items: center; gap: 10px; flex: none; }
 
@@ -272,8 +264,13 @@ select.input { appearance: none; background-image: none; }
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 14px; gap: 12px;
 }
-.col-head h2 { font-size: 21px; }
-.count { color: var(--ink-3); font-size: 15px; font-family: var(--sans); font-weight: 400; }
+.col-head h2 { font-size: 27px; line-height: 1.1; }
+.col-head .count {
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--gold);
+  vertical-align: 3px; margin-left: 4px;
+}
+
 
 /* ── timeline ─────────────────────────────────────────────────────── */
 
@@ -395,6 +392,20 @@ select.input { appearance: none; background-image: none; }
 .slot.tiny { padding: 4px 12px; align-items: center; }
 .slot.tiny .slot-m { display: none; }
 
+/* ── kanji watermark ──────────────────────────────────────────────── */
+
+/* Fixed to the right edge, faint enough to be atmosphere rather than content.
+   Vanishes below 1100px, where it would collide with the task column. */
+.kanji-watermark {
+  position: fixed; right: 22px; top: 50%; transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Songti SC', serif;
+  font-size: 42px; letter-spacing: .22em;
+  color: color-mix(in srgb, var(--accent) 16%, transparent);
+  pointer-events: none; user-select: none; z-index: 0;
+}
+@media (max-width: 1400px) { .kanji-watermark { display: none; } }
+
 /* ── quote of the day ─────────────────────────────────────────────── */
 
 /* Sits below the day, in the margin of attention. Present, not shouting. */
@@ -404,12 +415,13 @@ select.input { appearance: none; background-image: none; }
 }
 .quote.in { opacity: 1; }
 .quote blockquote {
-  font-family: var(--serif); font-style: italic; font-weight: 400;
-  font-size: 21px; line-height: 1.6; color: var(--ink-2);
+  font-family: var(--serif); font-style: italic; font-weight: 300;
+  font-size: 27px; line-height: 1.5; color: var(--ink-2);
   text-wrap: balance;
 }
 .quote figcaption {
-  margin-top: 10px; font-size: 14px; color: var(--ink-3); letter-spacing: .02em;
+  margin-top: 14px; font-family: var(--sans); font-size: 11px; font-weight: 500;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--gold);
 }
 
 /* ── ensō ─────────────────────────────────────────────────────────── */
@@ -421,7 +433,8 @@ select.input { appearance: none; background-image: none; }
 }
 .enso-empty svg { width: 82px; height: 82px; opacity: .8; }
 .enso-empty p {
-  font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--ink-3);
+  font-family: var(--serif); font-style: italic; font-weight: 300;
+  font-size: 24px; color: var(--ink-3);
 }
 
 .zen-note {
@@ -521,7 +534,7 @@ select.input { appearance: none; background-image: none; }
   display: flex; flex-direction: column; gap: 15px;
   max-height: calc(100dvh - 40px); overflow-y: auto;
 }
-.sheet h3 { font-size: 23px; }
+.sheet h3 { font-size: 29px; }
 .sheet-task {
   font-size: 16px; color: var(--ink-2); padding: 11px 13px;
   background: var(--paper); border-radius: var(--radius-sm); border: 1px solid var(--line);
