@@ -25,6 +25,9 @@ Pointer events, so this one does work on touch.
 **Drop tasks onto an existing block** and it holds them, any number. A block is
 a container of time; the tasks are what you'll do in it.
 
+- A **category block** - a bare practice with no task behind it - has no tick.
+  It counts toward its lane's ring the moment it's on the schedule: you don't
+  complete an hour of Music, you just do it. Move or delete it if plans change.
 - Ticking a block ticks everything in it. The block is the session, so saying it
   happened says its contents happened.
 - Ticking one task in a multi-task block leaves the block open. One of five

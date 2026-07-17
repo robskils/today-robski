@@ -252,13 +252,19 @@ async function handleDay(request, env, url) {
   }
   for (const s of slots) s.tasks = byslot.get(s.id) || [];
 
-  // Progress per lane = minutes of slots marked done today.
+  // Progress per lane.
+  //
+  // A block carrying tasks is done when it's ticked. A category block - a bare
+  // practice, no task behind it - is done the moment it's on the schedule: you
+  // don't complete an hour of Music, you just do it, so it counts on placement
+  // and shows no tick. `practice` tells the client to leave the checkbox off.
   const progress = {};
   for (const l of LANES) progress[l.key] = { planned: 0, done: 0 };
   for (const s of slots) {
+    s.practice = !((s.tasks && s.tasks.length) || s.tana_id);
     const p = progress[s.lane] || (progress[s.lane] = { planned: 0, done: 0 });
     p.planned += s.duration;
-    if (s.done) p.done += s.duration;
+    if (s.practice || s.done) p.done += s.duration;
   }
 
   const syncedAt = await env.DB.prepare(

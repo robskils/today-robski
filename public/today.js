@@ -248,15 +248,16 @@ function renderTray() {
   $('tray').hidden = !floating.length;
   if (!floating.length) return;
 
-  const left = floating.filter((s) => !s.done).length;
+  // Category blocks already count, so only task blocks can be "waiting".
+  const left = floating.filter((s) => !s.practice && !s.done).length;
   $('tray-label').textContent = left
     ? `Any time today · ${left} waiting`
-    : 'Any time today · all done';
+    : 'Any time today';
 
   $('tray-items').innerHTML = floating.map((s) => {
     const l = laneMeta(s.lane);
-    return `<div class="float ${s.done ? 'done' : ''}" style="--h:${l.hue}" data-slot="${s.id}">
-      <div class="slot-check" data-check="${s.id}">✓</div>
+    return `<div class="float ${!s.practice && s.done ? 'done' : ''} ${s.practice ? 'practice' : ''}" style="--h:${l.hue}" data-slot="${s.id}">
+      ${s.practice ? '' : `<div class="slot-check" data-check="${s.id}">✓</div>`}
       <div class="slot-body">
         <div class="slot-t">${esc(s.title)}</div>
         <div class="slot-m">${esc(l.label)} · ${humanMin(s.duration)}</div>
@@ -342,12 +343,14 @@ function renderTimeline() {
     const roomFor = Math.floor((h - 52) / 22);
     const showTasks = tasks.length > 1 && roomFor > 0;
 
-    parts.push(`<div class="slot ${s.done ? 'done' : ''} ${h < 44 ? 'tiny' : ''}"
+    // A category block (bare practice) counts by being here; no tick. Anything
+    // carrying tasks keeps its checkbox. `practice` comes from the server.
+    parts.push(`<div class="slot ${!s.practice && s.done ? 'done' : ''} ${h < 44 ? 'tiny' : ''} ${s.practice ? 'practice' : ''}"
         style="--h:${l.hue};top:${top(s.start_min)}px;height:${h}px"
         data-slot="${s.id}" data-drop-slot="${s.id}">
       <div class="slot-grip slot-grip-top" data-grip="top" data-slot-grip="${s.id}"
            title="Drag to change the start"></div>
-      <div class="slot-check" data-check="${s.id}">✓</div>
+      ${s.practice ? '' : `<div class="slot-check" data-check="${s.id}">✓</div>`}
       <div class="slot-body">
         <div class="slot-t">${esc(s.title)}</div>
         ${h >= 44 ? `<div class="slot-m">${hhmm(s.start_min)}–${hhmm(s.start_min + s.duration)} · ${esc(l.label)}${tasks.length ? ` · ${tasks.length} task${tasks.length === 1 ? '' : 's'}` : ''}</div>` : ''}
