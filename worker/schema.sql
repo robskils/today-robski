@@ -37,6 +37,21 @@ CREATE TABLE IF NOT EXISTS slots (
 );
 CREATE INDEX IF NOT EXISTS idx_slots_day ON slots(day, start_min);
 
+-- Tasks dropped into a block. A block is a container of time; any number of
+-- tasks can live in it. slots.tana_id is the legacy one-task link and is kept
+-- only so old rows still read: everything new goes through here.
+CREATE TABLE IF NOT EXISTS slot_tasks (
+  slot_id  INTEGER NOT NULL,
+  tana_id  TEXT NOT NULL,
+  position INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (slot_id, tana_id)
+);
+CREATE INDEX IF NOT EXISTS idx_slot_tasks ON slot_tasks(slot_id, position);
+
+-- Old one-task slots become one-row containers, so there's a single code path.
+INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position)
+  SELECT id, tana_id, 0 FROM slots WHERE tana_id IS NOT NULL;
+
 -- Completions made in the web app, queued for the sync agent to replay into Tana.
 -- Needed because the Tana API is write-only from the cloud: only the Mac can write back.
 -- attempts guards against a poison row: if a node is trashed in Tana after its
@@ -135,7 +150,11 @@ INSERT OR IGNORE INTO activities (id, lane, title, url, duration, position) VALU
   (1, 'body', 'Yoga Download',      'https://www.yogadownload.com/', 45, 0),
   (2, 'body', 'Apple Health+',      NULL, 45, 1),
   -- Ba Duan Jin. Eight, not seven.
-  (3, 'body', '8 Pieces of Brocade', NULL, 15, 2);
+  (3, 'body', '8 Pieces of Brocade', NULL, 15, 2),
+  (4, 'music', 'Forró',       NULL, 60, 0),
+  (5, 'music', 'Percussion',  NULL, 30, 1),
+  (6, 'music', 'Singing',     NULL, 30, 2),
+  (7, 'music', 'Songwriting', NULL, 60, 3);
 
 -- Per-lane daily minute targets, and misc settings. Editable in the UI.
 CREATE TABLE IF NOT EXISTS settings (
@@ -148,9 +167,8 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT OR IGNORE INTO settings (key, value) VALUES
   ('target_zazen',      '60'),
   ('target_body',       '45'),
-  ('target_music',      '30'),
+  ('target_music',      '60'),   -- Music & Dance, one hour a day
   ('target_art',        '30'),
-  ('target_forro',      '30'),
   ('target_portuguese', '30'),
   ('target_work',       '180'),
   ('target_mylife',     '30'),

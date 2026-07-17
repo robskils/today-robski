@@ -17,9 +17,11 @@ export const LANES = [
   // own activity list, not from a Tana backlog.
   { key: 'body',  label: 'Body',  hue: 145, practice: true,
     zen: { kanji: '体操', romaji: 'taisō', gloss: 'the body prepared' } },
-  { key: 'music', label: 'Music', hue: 25 },
+  // Music & Dance is a practice too, and one lane rather than two: forró,
+  // percussion, singing and songwriting are all the same hour of the day
+  // competing for the same attention. Splitting them just split the ring.
+  { key: 'music', label: 'Music & Dance', hue: 25, practice: true },
   { key: 'art',   label: 'Art',   hue: 345 },
-  { key: 'forro', label: 'Forró', hue: 70 },
   { key: 'portuguese', label: 'Portuguese', hue: 110 },
   // Samu is work as practice, not work as interruption to practice. Which is
   // the whole reason earning a living belongs on this schedule at all.
@@ -41,17 +43,17 @@ export const LANE_KEYS = LANES.map((l) => l.key);
 // Tana Life Area name -> lane key. Anything unlisted falls through to 'other',
 // which is shown but carries no daily target.
 export const AREA_TO_LANE = {
-  // Nothing maps to zazen or body. Both are practices: sitting, and yoga /
-  // HIT / chi kung. They're filled from the app's own activity list, not from
-  // a Tana backlog. Body's old areas moved to My Life, because "book a
-  // physio" is life admin, not a workout.
+  // Nothing maps to zazen, body or music. All three are practices: sitting;
+  // yoga / HIT / chi kung; forró / percussion / singing / songwriting. They're
+  // filled from the app's own activity list, not from a Tana backlog.
+  //
+  // Their old areas moved to My Life, because "sort out playlists" is life
+  // admin, not an hour of playing. Same reasoning as "book a physio" not being
+  // a workout.
+  'Music': 'mylife',
+  'Dance': 'mylife',
 
-  'Music': 'music',
   'Art': 'art',
-
-  // Forró: no Life Area of that name; it's the dance area.
-  'Dance': 'forro',
-
   'Língua Portuguesa': 'portuguese',
 
   // Work is the earning lane only, so its progress ring means actual earning time.

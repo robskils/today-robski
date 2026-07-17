@@ -203,7 +203,7 @@ function renderRail() {
     // Untracked lanes (Other) have no target, so show a plain count.
     if (!target) {
       if (!p.planned) return '';
-      return `<button class="lane" style="--h:${l.hue}" data-lane-add="${l.key}">
+      return `<button class="lane" style="--h:${l.hue}" data-lane-add="${l.key}" draggable="true">
         <div class="lane-txt">
           <span class="lane-name">${esc(l.label)}</span>
           <span class="lane-min">${humanMin(p.done)} done</span>
@@ -222,8 +222,8 @@ function renderRail() {
     const opt = l.optional ? ' (optional)' : '';
 
     return `<button class="lane ${hit ? 'hit' : ''} ${l.optional ? 'optional' : ''}"
-        style="--h:${l.hue}" data-lane-add="${l.key}"
-        title="${esc(l.label)}${opt}: ${humanMin(p.done)} of ${humanMin(target)} done${planned}. Click to add a block.">
+        style="--h:${l.hue}" data-lane-add="${l.key}" draggable="true"
+        title="${esc(l.label)}${opt}: ${humanMin(p.done)} of ${humanMin(target)} done${planned}. Click to add a block, or drag it onto the schedule.">
       <svg class="lane-ring" viewBox="0 0 34 34" aria-hidden="true">
         <circle class="track" cx="17" cy="17" r="${R}"></circle>
         <circle class="plan" cx="17" cy="17" r="${R}"
@@ -335,15 +335,37 @@ function renderTimeline() {
   for (const s of slots) {
     const l = laneMeta(s.lane);
     const h = Math.max(30, s.duration * PPM - 3);
+    const tasks = s.tasks || [];
+
+    // Only list the contents when there's room, and only when the block is more
+    // than the task itself. A one-task block already says its name in the title.
+    const roomFor = Math.floor((h - 52) / 22);
+    const showTasks = tasks.length > 1 && roomFor > 0;
+
     parts.push(`<div class="slot ${s.done ? 'done' : ''} ${h < 44 ? 'tiny' : ''}"
-        style="--h:${l.hue};top:${top(s.start_min)}px;height:${h}px" data-slot="${s.id}">
+        style="--h:${l.hue};top:${top(s.start_min)}px;height:${h}px"
+        data-slot="${s.id}" data-drop-slot="${s.id}">
+      <div class="slot-grip slot-grip-top" data-grip="top" data-slot-grip="${s.id}"
+           title="Drag to change the start"></div>
       <div class="slot-check" data-check="${s.id}">✓</div>
       <div class="slot-body">
         <div class="slot-t">${esc(s.title)}</div>
-        ${h >= 44 ? `<div class="slot-m">${hhmm(s.start_min)}–${hhmm(s.start_min + s.duration)} · ${esc(l.label)}${s.tana_id ? ' · Tana' : ''}</div>` : ''}
+        ${h >= 44 ? `<div class="slot-m">${hhmm(s.start_min)}–${hhmm(s.start_min + s.duration)} · ${esc(l.label)}${tasks.length ? ` · ${tasks.length} task${tasks.length === 1 ? '' : 's'}` : ''}</div>` : ''}
+        ${showTasks ? `<div class="slot-tasks">${tasks.slice(0, roomFor).map((t) => `
+          <div class="slot-task ${t.done ? 'done' : ''}">
+            <button class="slot-task-check" data-check-task="${esc(t.tana_id)}"
+                    aria-label="Mark done: ${esc(t.title)}">✓</button>
+            <span class="slot-task-t">${esc(t.title)}</span>
+            <button class="slot-task-x" data-unlink="${s.id}:${esc(t.tana_id)}"
+                    aria-label="Take out of this block">×</button>
+          </div>`).join('')}
+          ${tasks.length > roomFor ? `<div class="slot-more">+${tasks.length - roomFor} more</div>` : ''}
+        </div>` : ''}
       </div>
       ${s.url ? `<a class="slot-link" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"
                     aria-label="Open ${esc(s.title)}">↗</a>` : ''}
+      <div class="slot-grip slot-grip-bottom" data-grip="bottom" data-slot-grip="${s.id}"
+           title="Drag to change the end"></div>
     </div>`);
   }
 
@@ -628,6 +650,26 @@ $('sheet-delete').addEventListener('click', async () => {
 // ── events ────────────────────────────────────────────────────────────
 
 async function onSlotAreaClick(e) {
+  // A task listed inside a block: tick it on its own.
+  const taskCheck = e.target.closest('[data-check-task]');
+  if (taskCheck) {
+    e.stopPropagation();
+    await tickTask(taskCheck.dataset.checkTask);
+    return;
+  }
+
+  // Take a task back out of a block. Doesn't touch the task itself.
+  const unlink = e.target.closest('[data-unlink]');
+  if (unlink) {
+    e.stopPropagation();
+    const [slotId, tanaId] = unlink.dataset.unlink.split(':');
+    try {
+      await api(`/api/slots/${slotId}/tasks/${encodeURIComponent(tanaId)}`, { method: 'DELETE' });
+      await loadDay();
+    } catch (e2) { toast(e2.message); }
+    return;
+  }
+
   const check = e.target.closest('[data-check]');
   if (check) {
     e.stopPropagation();
@@ -636,9 +678,12 @@ async function onSlotAreaClick(e) {
     try {
       await api(`/api/slots/${slot.id}`, { method: 'PATCH', body: JSON.stringify({ done: !slot.done }) });
       // Write-back to Tana is queued, not immediate: only the Mac can talk to Tana.
-      if (slot.tana_id && !slot.done) toast('Done. Will tick in Tana on next sync.');
-      await loadDay();
-      if (slot.tana_id) await loadTasks();
+      const n = (slot.tasks || []).length;
+      if (n && !slot.done) {
+        toast(n === 1 ? 'Done. Ticks in Tana within 15 min.'
+                      : `Done, with ${n} tasks. They tick in Tana within 15 min.`);
+      }
+      await Promise.all([loadDay(), n ? loadTasks() : null]);
     } catch (e2) { toast(e2.message); }
     return;
   }
@@ -683,7 +728,7 @@ function dropMinutes(e) {
 $('task-list').addEventListener('dragstart', (e) => {
   const row = e.target.closest('[data-task-row]');
   if (!row) return;
-  state.dragging = row.dataset.taskRow;
+  state.dragging = { kind: 'task', id: row.dataset.taskRow };
   e.dataTransfer.effectAllowed = 'copy';
   // Firefox won't start a drag without data set.
   e.dataTransfer.setData('text/plain', row.dataset.taskRow);
@@ -692,9 +737,31 @@ $('task-list').addEventListener('dragstart', (e) => {
 
 $('task-list').addEventListener('dragend', (e) => {
   e.target.closest('[data-task-row]')?.classList.remove('dragging');
+  endDrag();
+});
+
+// Lanes drag off the rail too, which is how a bare practice block gets made
+// without opening the editor at all.
+$('rail').addEventListener('dragstart', (e) => {
+  const chip = e.target.closest('[data-lane-add]');
+  if (!chip) return;
+  state.dragging = { kind: 'lane', id: chip.dataset.laneAdd };
+  e.dataTransfer.effectAllowed = 'copy';
+  e.dataTransfer.setData('text/plain', chip.dataset.laneAdd);
+  chip.classList.add('dragging');
+});
+
+$('rail').addEventListener('dragend', (e) => {
+  e.target.closest('[data-lane-add]')?.classList.remove('dragging');
+  endDrag();
+});
+
+function endDrag() {
   state.dragging = null;
   hideDropLine();
-});
+  document.querySelectorAll('.slot.drop-target')
+    .forEach((s) => s.classList.remove('drop-target'));
+}
 
 function hideDropLine() {
   document.getElementById('drop-line')?.remove();
@@ -716,41 +783,131 @@ $('timeline').addEventListener('dragover', (e) => {
   if (!state.dragging) return;
   e.preventDefault();                    // without this, drop never fires
   e.dataTransfer.dropEffect = 'copy';
-  if (!state.tl?.empty) showDropLine(dropMinutes(e));
+
+  // Dropping a task onto an existing block puts it *in* the block. Dropping it
+  // on bare timeline makes a new one. Lanes always make a new block.
+  const over = state.dragging.kind === 'task' ? e.target.closest('[data-drop-slot]') : null;
+  document.querySelectorAll('.slot.drop-target')
+    .forEach((s) => s !== over && s.classList.remove('drop-target'));
+
+  if (over) {
+    over.classList.add('drop-target');
+    hideDropLine();
+  } else if (!state.tl?.empty) {
+    showDropLine(dropMinutes(e));
+  }
 });
 
 $('timeline').addEventListener('dragleave', (e) => {
-  if (!$('timeline').contains(e.relatedTarget)) hideDropLine();
+  if (!$('timeline').contains(e.relatedTarget)) endDrag();
 });
 
 $('timeline').addEventListener('drop', async (e) => {
   e.preventDefault();
-  const id = state.dragging || e.dataTransfer.getData('text/plain');
-  hideDropLine();
-  if (!id) return;
-
-  const task = state.tasks.find((t) => t.tana_id === id);
-  if (!task) return;
-
+  const drag = state.dragging;
+  const over = drag?.kind === 'task' ? e.target.closest('[data-drop-slot]') : null;
   const start = dropMinutes(e);
+  endDrag();
+  if (!drag) return;
+
   try {
-    await api('/api/slots', {
-      method: 'POST',
-      body: JSON.stringify({
-        day: state.day,
-        lane: task.lane,
-        title: task.title,
-        tana_id: task.tana_id,
-        start_min: start,
-        duration: task.duration || defaultDuration(task.lane),
-      }),
-    });
-    toast(`Scheduled ${hhmm(start)}`);
-    await loadDay();
+    if (over) {
+      await api(`/api/slots/${over.dataset.dropSlot}/tasks`, {
+        method: 'POST', body: JSON.stringify({ tana_id: drag.id }),
+      });
+      toast('Added to the block');
+    } else if (drag.kind === 'lane') {
+      const l = laneMeta(drag.id);
+      await api('/api/slots', {
+        method: 'POST',
+        body: JSON.stringify({
+          day: state.day, lane: l.key, title: l.label,
+          start_min: start, duration: defaultDuration(l.key),
+        }),
+      });
+      toast(`${l.label} at ${hhmm(start)}`);
+    } else {
+      const task = state.tasks.find((t) => t.tana_id === drag.id);
+      if (!task) return;
+      await api('/api/slots', {
+        method: 'POST',
+        body: JSON.stringify({
+          day: state.day, lane: task.lane, title: task.title, tana_id: task.tana_id,
+          start_min: start, duration: task.duration || defaultDuration(task.lane),
+        }),
+      });
+      toast(`Scheduled ${hhmm(start)}`);
+    }
+    await Promise.all([loadDay(), loadTasks()]);
   } catch (e2) {
     toast(e2.message);
   }
 });
+
+// ── resize a block by its edges ────────────────────────────────────────
+//
+// Pointer events, not HTML5 drag: this works on touch too, and a drag image
+// would be nonsense for a resize.
+
+let resize = null;
+
+$('timeline').addEventListener('pointerdown', (e) => {
+  const grip = e.target.closest('[data-slot-grip]');
+  if (!grip) return;
+  const slot = state.data.slots.find((s) => s.id === Number(grip.dataset.slotGrip));
+  if (!slot || slot.start_min === null) return;
+
+  e.preventDefault();
+  // Capture keeps the drag alive when the pointer leaves the grip, but it
+  // throws if the pointer isn't active. Never let that stop the resize arming.
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+  resize = {
+    id: slot.id, edge: grip.dataset.grip, y0: e.clientY,
+    start0: slot.start_min, dur0: slot.duration,
+    el: grip.closest('.slot'),
+  };
+  resize.el.classList.add('resizing');
+});
+
+$('timeline').addEventListener('pointermove', (e) => {
+  if (!resize) return;
+  const delta = Math.round(((e.clientY - resize.y0) / PPM) / SNAP) * SNAP;
+  let { start0: start, dur0: dur } = resize;
+
+  if (resize.edge === 'top') {
+    // Dragging the top moves the start and keeps the end put.
+    const end = start + dur;
+    start = Math.min(Math.max(start + delta, 0), end - SNAP);
+    dur = end - start;
+  } else {
+    dur = Math.max(SNAP, Math.min(dur + delta, 1440 - start));
+  }
+
+  resize.next = { start_min: start, duration: dur };
+  resize.el.style.top = `${(start - state.tl.start) * PPM}px`;
+  resize.el.style.height = `${Math.max(30, dur * PPM - 3)}px`;
+  const m = resize.el.querySelector('.slot-m');
+  if (m) m.textContent = `${hhmm(start)}–${hhmm(start + dur)}`;
+});
+
+async function endResize() {
+  if (!resize) return;
+  const { id, next, start0, dur0, el } = resize;
+  resize = null;
+  el.classList.remove('resizing');
+  if (!next || (next.start_min === start0 && next.duration === dur0)) return;
+
+  try {
+    await api(`/api/slots/${id}`, { method: 'PATCH', body: JSON.stringify(next) });
+    await loadDay();
+  } catch (e) {
+    toast(e.message);
+    await loadDay();   // put it back where it really is
+  }
+}
+
+$('timeline').addEventListener('pointerup', endResize);
+$('timeline').addEventListener('pointercancel', endResize);
 
 async function tickTask(tanaId) {
   const task = state.tasks.find((t) => t.tana_id === tanaId);

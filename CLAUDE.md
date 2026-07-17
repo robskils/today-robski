@@ -31,8 +31,12 @@ no handshake needed). So:
 - Web-app completions queue in `pending_writes` and are replayed by the agent.
   Never assume a tick reaches Tana synchronously.
 - `setTaskDone` in worker/index.js is the single door for "a Tana task changed
-  state": it queues the write, updates the mirror, and syncs linked slots. Both
-  the task checkbox and the slot checkbox go through it. Don't add a third path.
+  state": it queues the write, updates the mirror, and closes a *sole-task*
+  block. Both checkboxes go through it. Don't add a third path.
+- `slot_tasks` is the link table: a block holds any number of tasks.
+  `slots.tana_id` is legacy, kept so old rows read; new links go in slot_tasks.
+  Ticking a block only queues the tasks whose state actually changes, or a
+  half-finished block re-queues writes Tana already has.
 - `slots` (the day itself) are owned here and never sync to Tana.
 
 The agent applies write-backs **before** pulling, otherwise the pull would see

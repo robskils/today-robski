@@ -217,7 +217,7 @@ async function handleDay(request, env, url) {
   const day = url.searchParams.get('date') || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
 
-  const [slotsRes, settings, cal, quote, actsRes] = await Promise.all([
+  const [slotsRes, settings, cal, quote, actsRes, linksRes] = await Promise.all([
     // Floating blocks (start_min NULL) sort last; the client splits them out.
     env.DB.prepare(
       'SELECT * FROM slots WHERE day = ? ORDER BY start_min IS NULL, start_min',
@@ -226,9 +226,31 @@ async function handleDay(request, env, url) {
     calendarEvents(env, day),
     quoteForDay(env, day),
     env.DB.prepare('SELECT * FROM activities ORDER BY lane, position, id').all(),
+    // The tasks inside each of today's blocks, in one query rather than one
+    // per block.
+    env.DB.prepare(
+      `SELECT st.slot_id, st.position, t.tana_id, t.title, t.lane, t.priority, t.done
+         FROM slot_tasks st
+         JOIN slots s ON s.id = st.slot_id
+         LEFT JOIN tasks t ON t.tana_id = st.tana_id
+        WHERE s.day = ?
+        ORDER BY st.slot_id, st.position`,
+    ).bind(day).all(),
   ]);
 
   const slots = slotsRes.results;
+
+  const byslot = new Map();
+  for (const r of linksRes.results) {
+    // LEFT JOIN: a task trashed in Tana leaves the link but no row.
+    if (!r.tana_id) continue;
+    if (!byslot.has(r.slot_id)) byslot.set(r.slot_id, []);
+    byslot.get(r.slot_id).push({
+      tana_id: r.tana_id, title: r.title, lane: r.lane,
+      priority: r.priority, done: r.done,
+    });
+  }
+  for (const s of slots) s.tasks = byslot.get(s.id) || [];
 
   // Progress per lane = minutes of slots marked done today.
   const progress = {};
@@ -310,7 +332,43 @@ async function createSlot(request, env) {
     new Date().toISOString(),
   ).first();
 
+  // A block created from a task starts as a one-task container.
+  if (b.tana_id) {
+    await env.DB.prepare(
+      'INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position) VALUES (?, ?, 0)',
+    ).bind(res.id, b.tana_id).run();
+  }
+
+  res.tasks = [];
   return json(res, request, 201);
+}
+
+// Drop a task into an existing block. Blocks hold any number.
+async function addSlotTask(request, env, slotId) {
+  const b = await request.json().catch(() => ({}));
+  const tanaId = String(b.tana_id || '').trim();
+  if (!tanaId) return err('tana_id required', request);
+
+  const slot = await env.DB.prepare('SELECT id FROM slots WHERE id = ?').bind(slotId).first();
+  if (!slot) return err('not found', request, 404);
+  const task = await env.DB.prepare('SELECT tana_id FROM tasks WHERE tana_id = ?').bind(tanaId).first();
+  if (!task) return err('no such task', request, 404);
+
+  const next = await env.DB.prepare(
+    'SELECT COALESCE(MAX(position) + 1, 0) AS p FROM slot_tasks WHERE slot_id = ?',
+  ).bind(slotId).first();
+
+  await env.DB.prepare(
+    'INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position) VALUES (?, ?, ?)',
+  ).bind(slotId, tanaId, next.p).run();
+
+  return json({ ok: true }, request);
+}
+
+async function removeSlotTask(env, request, slotId, tanaId) {
+  await env.DB.prepare('DELETE FROM slot_tasks WHERE slot_id = ? AND tana_id = ?')
+    .bind(slotId, tanaId).run();
+  return json({ ok: true }, request);
 }
 
 async function updateSlot(request, env, id) {
@@ -349,8 +407,18 @@ async function updateSlot(request, env, id) {
     `UPDATE slots SET ${fields.join(', ')} WHERE id = ? RETURNING *`,
   ).bind(...binds).first();
 
-  if (b.done !== undefined && existing.tana_id && !!b.done !== !!existing.done) {
-    await setTaskDone(env, existing.tana_id, !!b.done);
+  // Ticking a block ticks everything in it. The block is the session; saying it
+  // happened says its contents happened. A block you only half finished is one
+  // you leave open, and tick the tasks inside individually.
+  if (b.done !== undefined && !!b.done !== !!existing.done) {
+    // Only the ones actually changing. A task already ticked inside the block
+    // would otherwise queue a second identical write to Tana.
+    const { results } = await env.DB.prepare(
+      `SELECT st.tana_id FROM slot_tasks st
+         JOIN tasks t ON t.tana_id = st.tana_id
+        WHERE st.slot_id = ? AND t.done != ?`,
+    ).bind(id, b.done ? 1 : 0).all();
+    for (const r of results) await setTaskDone(env, r.tana_id, !!b.done);
   }
 
   return json(updated, request);
@@ -367,10 +435,17 @@ async function setTaskDone(env, tanaId, done) {
       .bind(tanaId, done ? 'complete' : 'uncomplete', new Date().toISOString()),
     env.DB.prepare('UPDATE tasks SET done = ? WHERE tana_id = ?')
       .bind(done ? 1 : 0, tanaId),
-    // A finished task's blocks are finished. Without this the ring would ignore
-    // work you just said you'd done, and the timeline would still show it open.
-    env.DB.prepare('UPDATE slots SET done = ? WHERE tana_id = ?')
-      .bind(done ? 1 : 0, tanaId),
+
+    // A block holding exactly this one task *is* this task, so it follows: tick
+    // the task and the ring counts the time, which is what you meant.
+    //
+    // A block holding several is a session. Finishing one of five tasks doesn't
+    // finish the hour, so it stays open and you tick the block when it's over.
+    env.DB.prepare(
+      `UPDATE slots SET done = ?
+        WHERE id IN (SELECT slot_id FROM slot_tasks WHERE tana_id = ?)
+          AND (SELECT COUNT(*) FROM slot_tasks x WHERE x.slot_id = slots.id) = 1`,
+    ).bind(done ? 1 : 0, tanaId),
   ]);
 }
 
@@ -694,12 +769,27 @@ export default {
         }
       }
 
+      // Tasks inside a block.
+      const slotTasksMatch = path.match(/^\/api\/slots\/(\d+)\/tasks$/);
+      if (slotTasksMatch && request.method === 'POST') {
+        return addSlotTask(request, env, Number(slotTasksMatch[1]));
+      }
+      const slotTaskMatch = path.match(/^\/api\/slots\/(\d+)\/tasks\/([\w-]+)$/);
+      if (slotTaskMatch && request.method === 'DELETE') {
+        return removeSlotTask(env, request, Number(slotTaskMatch[1]), slotTaskMatch[2]);
+      }
+
       const slotMatch = path.match(/^\/api\/slots\/(\d+)$/);
       if (slotMatch) {
         const id = Number(slotMatch[1]);
         if (request.method === 'PATCH') return updateSlot(request, env, id);
         if (request.method === 'DELETE') {
-          await env.DB.prepare('DELETE FROM slots WHERE id = ?').bind(id).run();
+          // No FK cascade in D1 by default, so clear the links by hand or they
+          // outlive the block and leak into the next slot to reuse the id.
+          await env.DB.batch([
+            env.DB.prepare('DELETE FROM slot_tasks WHERE slot_id = ?').bind(id),
+            env.DB.prepare('DELETE FROM slots WHERE id = ?').bind(id),
+          ]);
           return json({ ok: true }, request);
         }
       }

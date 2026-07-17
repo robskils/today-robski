@@ -17,7 +17,8 @@ for (const l of LANES.filter((x) => x.practice)) {
   eq(mapped.length, 0, `nothing maps to ${l.key}${mapped.length ? ` (found: ${mapped})` : ''}`);
 }
 
-console.log('\nZen study is not zazen');
+console.log('\nPractice lanes take no tasks from Tana');
+eq(laneForArea('Music'), 'mylife', 'Music -> mylife');
 eq(laneForArea('Well-being / Mind / Spirit'), 'other', 'Well-being / Mind / Spirit -> other');
 
 console.log('\nBody tasks are life admin, not workouts');
@@ -29,7 +30,7 @@ console.log('\nsanity');
 eq(laneForArea('My Life'), 'mylife', 'My Life -> mylife');
 eq(laneForArea('Money'), 'mylife', 'Money -> mylife');
 eq(laneForArea('Língua Portuguesa'), 'portuguese', 'Língua Portuguesa -> portuguese');
-eq(laneForArea('Dance'), 'forro', 'Dance -> forro');
+eq(laneForArea('Dance'), 'mylife', 'Dance -> mylife (Music & Dance is a practice)');
 eq(laneForArea('Business'), 'work', 'Business -> work');
 eq(laneForArea(null), 'other', 'no area -> other');
 eq(laneForArea('Nonsense'), 'other', 'unknown area -> other');

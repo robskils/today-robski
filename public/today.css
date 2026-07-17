@@ -332,7 +332,61 @@ select.input { appearance: none; background-image: none; }
   font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
   padding: 2px 8px; border-radius: 999px;
 }
-.task.dragging { opacity: .4; }
+.task.dragging, .lane.dragging { opacity: .4; }
+.lane { cursor: grab; }
+.lane:active { cursor: grabbing; }
+
+/* ── blocks: resize grips, contents, drop target ──────────────────── */
+
+/* Fat enough to grab, invisible until hovered. */
+.slot-grip {
+  position: absolute; left: 0; right: 0; height: 9px;
+  cursor: ns-resize; z-index: 7; touch-action: none;
+}
+.slot-grip-top { top: -3px; }
+.slot-grip-bottom { bottom: -3px; }
+.slot-grip::after {
+  content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+  top: 3px; width: 34px; height: 3px; border-radius: 2px;
+  background: var(--c); opacity: 0; transition: opacity .12s;
+}
+.slot:hover .slot-grip::after { opacity: .5; }
+.slot-grip:hover::after { opacity: 1; }
+.slot.resizing { box-shadow: var(--shadow); z-index: 9; }
+.slot.resizing .slot-grip::after { opacity: 1; }
+
+/* A task is about to be dropped into this block. */
+.slot.drop-target {
+  border-color: var(--c);
+  box-shadow: 0 0 0 2px var(--c), var(--shadow);
+  z-index: 7;
+}
+
+.slot-tasks { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.slot-task {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13.5px; color: var(--ink-2); line-height: 1.5;
+}
+.slot-task.done { opacity: .5; }
+.slot-task.done .slot-task-t { text-decoration: line-through; }
+.slot-task-t {
+  flex: 1; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.slot-task-check {
+  flex: none; width: 15px; height: 15px; border-radius: 4px;
+  border: 1.5px solid var(--c); color: transparent;
+  display: grid; place-items: center; font-size: 10px;
+  transition: background .15s, color .15s;
+}
+.slot-task.done .slot-task-check { background: var(--done); border-color: var(--done); color: #fff; }
+.slot-task-x {
+  flex: none; color: var(--ink-3); font-size: 15px; line-height: 1;
+  padding: 0 3px; opacity: 0; transition: opacity .12s, color .12s;
+}
+.slot:hover .slot-task-x { opacity: 1; }
+.slot-task-x:hover { color: var(--accent); }
+.slot-more { font-size: 12px; color: var(--ink-3); padding-left: 22px; }
 /* A grab cursor only on the body: the tick is a click target, not a handle. */
 .task-open { cursor: grab; }
 .task-open:active { cursor: grabbing; }

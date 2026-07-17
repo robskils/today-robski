@@ -15,6 +15,23 @@ hour and the drop line tells you the time before you let go. Clicking the card
 does the same thing with the editor, which is the path touch takes - HTML5 drag
 doesn't fire on a phone.
 
+**Drag a lane off the rail** onto the schedule for a bare practice block, no
+editor involved.
+
+**Drag a block's top or bottom edge** to set its start and end. The top edge
+moves the start and pins the end; the bottom moves the end. Quarter-hour snap.
+Pointer events, so this one does work on touch.
+
+**Drop tasks onto an existing block** and it holds them, any number. A block is
+a container of time; the tasks are what you'll do in it.
+
+- Ticking a block ticks everything in it. The block is the session, so saying it
+  happened says its contents happened.
+- Ticking one task in a multi-task block leaves the block open. One of five
+  isn't the hour.
+- But a block holding exactly one task *is* that task, so ticking either ticks
+  both.
+
 The tick and the card body are separate controls on purpose: one finishes the
 task, the other schedules it.
 
