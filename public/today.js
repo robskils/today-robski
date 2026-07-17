@@ -809,6 +809,10 @@ $('rail').addEventListener('dragend', (e) => {
 
 function endDrag() {
   state.dragging = null;
+  // Some browsers fire a click on the source right after a drag. Note when a
+  // drag ended so the rail's click-to-add-a-block handler can ignore it - a
+  // drag already placed the block, and shouldn't also pop the dialog.
+  state.dragEndedAt = Date.now();
   hideDropLine();
   document.querySelectorAll('.slot.drop-target')
     .forEach((s) => s.classList.remove('drop-target'));
@@ -1079,6 +1083,8 @@ $('add-block').addEventListener('click', () => openSheet({}));
 
 // Clicking a lane's ring drops a block straight into that lane.
 $('rail').addEventListener('click', (e) => {
+  // Ignore the click a drag leaves behind: the drop already made the block.
+  if (Date.now() - (state.dragEndedAt || 0) < 400) return;
   const b = e.target.closest('[data-lane-add]');
   if (b) openSheet({ lane: b.dataset.laneAdd });
 });
