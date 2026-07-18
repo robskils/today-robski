@@ -130,6 +130,9 @@ async function googleAccessToken(env) {
   });
   if (!res.ok) throw new Error(`google token: ${res.status} ${await res.text()}`);
   const data = await res.json();
+  // The scopes a refresh token carries are fixed at consent. Logging them turns
+  // "why is this 403ing" into a one-line answer.
+  console.log('google scope:', data.scope || '(none reported)');
   tokenCache = { token: data.access_token, expires: now + data.expires_in * 1000 };
   return data.access_token;
 }

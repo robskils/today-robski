@@ -148,7 +148,25 @@ const server = createServer(async (req, res) => {
   );
   server.close();
 
-  console.log('\n  Authorised.\n');
+  // Google can hand back a token carrying the scopes it granted *last* time,
+  // rather than the ones just asked for. Saying "Authorised" then would be a
+  // lie you only discover later, as a 403 on the first write.
+  const granted = data.scope || '';
+  if (!granted.includes(SCOPE)) {
+    finishing = true;
+    console.error('\n  Google granted:', granted || '(nothing reported)');
+    console.error(`  Asked for:      ${SCOPE}\n`);
+    console.error('  That token still cannot write to your calendar. Google reissued the');
+    console.error('  scopes from the previous grant. To force a clean one:\n');
+    console.error('    1. https://myaccount.google.com/permissions');
+    console.error('    2. Find "Today", remove its access');
+    console.error('    3. Run npm run google-auth again\n');
+    console.error('  Nothing was changed.');
+    rl.close();
+    process.exit(1);
+  }
+
+  console.log('\n  Authorised, with permission to edit events.\n');
 
   // The worker needs all three, not just the refresh token: it trades the
   // refresh token for an access token on every cold start.
