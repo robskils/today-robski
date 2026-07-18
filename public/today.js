@@ -457,46 +457,92 @@ function syncFloatUI() {
   $('sheet-push').hidden = floating || !state.editing?.slot;
 }
 
-// Activities are the lane's repeatable things. Picking one fills the form;
-// it doesn't commit anything until the block is saved.
-function renderActs() {
-  const lane = $('sheet-lane').value;
-  const acts = (state.data?.activities || []).filter((a) => a.lane === lane);
+// ── the practices column ──────────────────────────────────────────────
+//
+// An activity is a repeating thing: yoga, a sit, percussion. Unlike a task it
+// is never used up, so it stays in the column however many times it's placed.
+// Drag one onto the schedule, or click to pick a time.
 
-  $('sheet-acts').hidden = false;
-  $('sheet-acts-list').innerHTML = acts.map((a) => `
-    <span class="act" data-act="${a.id}">
-      <button type="button" class="act-pick" data-act-pick="${a.id}">
-        ${esc(a.title)} <span class="act-min">${humanMin(a.duration)}</span>
-      </button>
-      <button type="button" class="act-del" data-act-del="${a.id}" aria-label="Remove ${esc(a.title)}">×</button>
-    </span>`).join('') + `
-    <button type="button" class="act-add" id="act-add">+ Add</button>`;
+function renderActivities() {
+  const acts = state.data?.activities || [];
+  // Every practice lane gets a section, even an empty one, so there's always
+  // somewhere to add the first activity.
+  const lanes = state.lanes.filter((l) => l.practice || acts.some((a) => a.lane === l.key));
+
+  $('acts-panel').innerHTML = lanes.map((l) => {
+    const mine = acts.filter((a) => a.lane === l.key);
+    return `<section class="act-group" style="--h:${l.hue}">
+      <h3 class="act-group-h">${esc(l.label)}</h3>
+      ${mine.map((a) => `
+        <div class="act-item" data-act="${a.id}" draggable="true"
+             title="Drag onto the schedule, or click to place it">
+          <button type="button" class="act-item-main" data-act-pick="${a.id}">
+            <span class="act-item-t">${esc(a.title)}</span>
+            <span class="act-item-m">${humanMin(a.duration)}${a.url ? ' ↗' : ''}</span>
+          </button>
+          <button type="button" class="act-item-x" data-act-del="${a.id}"
+                  aria-label="Remove ${esc(a.title)}">×</button>
+        </div>`).join('')}
+      ${state.actNewLane === l.key ? `
+        <div class="act-new">
+          <input type="text" id="act-title" class="input input-sm" placeholder="Name" value="${esc(state.actDraft?.title || '')}">
+          <input type="url" id="act-url" class="input input-sm" placeholder="Link (optional)" value="${esc(state.actDraft?.url || '')}">
+          <div class="field-row">
+            <input type="number" id="act-duration" class="input input-sm" min="5" max="720" step="5"
+                   placeholder="Minutes" value="${Number(state.actDraft?.duration) || 30}">
+            <button type="button" class="btn btn-ghost" id="act-save">Add it</button>
+          </div>
+        </div>`
+        : `<button type="button" class="act-add" data-act-add="${l.key}">+ Add</button>`}
+    </section>`;
+  }).join('');
+
+  if (state.actNewLane) $('act-title')?.focus();
 }
 
 function actById(id) {
   return (state.data?.activities || []).find((a) => a.id === Number(id));
 }
 
-$('sheet-acts-list').addEventListener('click', async (e) => {
+$('acts-panel').addEventListener('click', async (e) => {
+  // Ignore the click a drag leaves behind, or dropping one would also open
+  // the editor.
+  if (Date.now() - (state.dragEndedAt || 0) < 400) return;
+
   const pick = e.target.closest('[data-act-pick]');
   if (pick) {
     const a = actById(pick.dataset.actPick);
-    if (!a) return;
-    state.editing.activity = a;
-    $('sheet-task').textContent = a.title;
-    $('sheet-task').hidden = false;
-    $('sheet-duration').value = a.duration;
-    // Highlight what's picked, since the form fields don't say where they came from.
-    $('sheet-acts-list').querySelectorAll('.act').forEach((el) =>
-      el.classList.toggle('on', el.dataset.act === String(a.id)));
+    if (a) openSheet({ lane: a.lane, activity: a });
     return;
   }
 
-  const add = e.target.closest('#act-add');
+  const add = e.target.closest('[data-act-add]');
   if (add) {
-    $('act-new').hidden = !$('act-new').hidden;
-    if (!$('act-new').hidden) $('act-title').focus();
+    state.actNewLane = add.dataset.actAdd;
+    state.actDraft = null;
+    renderActivities();
+    return;
+  }
+
+  if (e.target.closest('#act-save')) {
+    const title = $('act-title').value.trim();
+    if (!title) { toast('Give it a name'); return; }
+    try {
+      const a = await api('/api/activities', {
+        method: 'POST',
+        body: JSON.stringify({
+          lane: state.actNewLane,
+          title,
+          url: $('act-url').value.trim() || null,
+          duration: Number($('act-duration').value) || 30,
+        }),
+      });
+      state.data.activities.push(a);
+      state.actNewLane = null;
+      state.actDraft = null;
+      renderActivities();
+      toast(`Added ${a.title}`);
+    } catch (e2) { toast(e2.message); }
     return;
   }
 
@@ -507,33 +553,34 @@ $('sheet-acts-list').addEventListener('click', async (e) => {
     try {
       await api(`/api/activities/${a.id}`, { method: 'DELETE' });
       state.data.activities = state.data.activities.filter((x) => x.id !== a.id);
-      renderActs();
+      renderActivities();
       toast(`Removed ${a.title}`);
     } catch (e2) { toast(e2.message); }
   }
 });
 
-$('act-save').addEventListener('click', async () => {
-  const title = $('act-title').value.trim();
-  if (!title) { toast('Give it a name'); return; }
-  try {
-    const a = await api('/api/activities', {
-      method: 'POST',
-      body: JSON.stringify({
-        lane: $('sheet-lane').value,
-        title,
-        url: $('act-url').value.trim() || null,
-        duration: Number($('act-duration').value) || 30,
-      }),
-    });
-    state.data.activities.push(a);
-    $('act-title').value = '';
-    $('act-url').value = '';
-    $('act-duration').value = 30;
-    $('act-new').hidden = true;
-    renderActs();
-    toast(`Added ${a.title}`);
-  } catch (e) { toast(e.message); }
+// Keep what's typed if the panel re-renders mid-entry.
+$('acts-panel').addEventListener('input', () => {
+  if (!state.actNewLane) return;
+  state.actDraft = {
+    title: $('act-title')?.value || '',
+    url: $('act-url')?.value || '',
+    duration: $('act-duration')?.value || 30,
+  };
+});
+
+$('acts-panel').addEventListener('dragstart', (e) => {
+  const item = e.target.closest('[data-act]');
+  if (!item) return;
+  state.dragging = { kind: 'activity', id: Number(item.dataset.act) };
+  e.dataTransfer.effectAllowed = 'copy';
+  e.dataTransfer.setData('text/plain', item.dataset.act);
+  item.classList.add('dragging');
+});
+
+$('acts-panel').addEventListener('dragend', (e) => {
+  e.target.closest('[data-act]')?.classList.remove('dragging');
+  endDrag();
 });
 
 // Quietly name the practice, for the lanes where a Sōtō name is honest.
@@ -544,8 +591,8 @@ function syncZenNote() {
     `<span class="kanji">${esc(zen.kanji)}</span> ${esc(zen.romaji)} · ${esc(zen.gloss)}`;
 }
 
-function openSheet({ slot, task, lane }) {
-  state.editing = { slot, task };
+function openSheet({ slot, task, lane, activity }) {
+  state.editing = { slot, task, activity };
 
   $('sheet-title').textContent = slot ? 'Edit block' : 'Add to the day';
   $('sheet-save').textContent = slot ? 'Save' : 'Add';
@@ -557,7 +604,7 @@ function openSheet({ slot, task, lane }) {
   const blockTasks = slot?.tasks || [];
   const renameTaskId = task?.tana_id
     ?? (blockTasks.length === 1 ? blockTasks[0].tana_id : null);
-  const label = slot?.title || task?.title || '';
+  const label = slot?.title || task?.title || activity?.title || '';
 
   state.editing.rename = { taskId: renameTaskId, slotId: slot?.id ?? null, orig: label };
   $('sheet-name').value = label;
@@ -566,14 +613,15 @@ function openSheet({ slot, task, lane }) {
 
   $('sheet-lane').innerHTML = state.lanes
     .map((l) => `<option value="${l.key}">${esc(l.label)}</option>`).join('');
-  $('sheet-lane').value = slot?.lane || task?.lane || lane || 'zazen';
+  $('sheet-lane').value = slot?.lane || task?.lane || activity?.lane || lane || 'zazen';
 
   const floating = slot ? slot.start_min === null : false;
   $('sheet-float').checked = floating;
   $('sheet-start').value = hhmm(slot && slot.start_min !== null ? slot.start_min : nextFreeSlot());
 
   // Tana Duration is set on only ~9% of tasks, so fall back to 30 minutes.
-  $('sheet-duration').value = slot?.duration || task?.duration || defaultDuration(slot?.lane || task?.lane || lane);
+  $('sheet-duration').value = slot?.duration || task?.duration || activity?.duration
+    || defaultDuration(slot?.lane || task?.lane || activity?.lane || lane);
 
   $('sheet-quick').innerHTML = [15, 25, 30, 45, 60, 90]
     .map((m) => `<button type="button" data-min="${m}">${m}m</button>`).join('');
@@ -581,8 +629,6 @@ function openSheet({ slot, task, lane }) {
   renderSheetTasks(slot);
   syncFloatUI();
   syncZenNote();
-  renderActs();
-  $('act-new').hidden = true;
   $('sheet-bg').hidden = false;
   if (!floating) $('sheet-start').focus();
 }
@@ -689,10 +735,11 @@ async function commitRename() {
 $('sheet-float').addEventListener('change', syncFloatUI);
 $('sheet-lane').addEventListener('change', () => {
   syncZenNote();
-  renderActs();
   // A siesta wants an hour; don't make him retype it.
   const lane = $('sheet-lane').value;
-  if (!state.editing?.slot && !state.editing?.task) $('sheet-duration').value = defaultDuration(lane);
+  if (!state.editing?.slot && !state.editing?.task && !state.editing?.activity) {
+    $('sheet-duration').value = defaultDuration(lane);
+  }
 });
 
 // Push moves the block later without unpicking it. For when it's going well.
@@ -929,6 +976,18 @@ $('timeline').addEventListener('drop', async (e) => {
         method: 'POST', body: JSON.stringify({ tana_id: drag.id }),
       });
       toast('Added to the block');
+    } else if (drag.kind === 'activity') {
+      // The activity itself stays put in the column; this only places a copy.
+      const a = actById(drag.id);
+      if (!a) return;
+      await api('/api/slots', {
+        method: 'POST',
+        body: JSON.stringify({
+          day: state.day, lane: a.lane, title: a.title, url: a.url,
+          start_min: start, duration: a.duration,
+        }),
+      });
+      toast(`${a.title} at ${hhmm(start)}`);
     } else if (drag.kind === 'lane') {
       const l = laneMeta(drag.id);
       await api('/api/slots', {
@@ -1251,6 +1310,7 @@ async function loadDay() {
   renderTray();
   renderTimeline();
   renderQuote();
+  renderActivities();
   measureBar();
 
   if (state.data.calendar_error === 'not_configured') {

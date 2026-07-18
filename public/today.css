@@ -267,8 +267,8 @@ select.input { appearance: none; background-image: none; }
 /* ── layout ───────────────────────────────────────────────────────── */
 
 .grid {
-  display: grid; grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 28px; padding: 24px 20px 60px; max-width: 1240px; margin: 0 auto;
+  display: grid; grid-template-columns: 210px minmax(0, 1fr) 340px;
+  gap: 26px; padding: 24px 20px 60px; max-width: 1440px; margin: 0 auto;
   align-items: start;
 }
 @media (max-width: 900px) {
@@ -667,26 +667,56 @@ select.input { appearance: none; background-image: none; }
 .push-label { font-size: 14px; color: var(--ink-3); margin-right: 2px; }
 .sheet-sub { font-size: 14.5px; color: var(--ink-3); margin-top: -8px; }
 
-/* ── activities ───────────────────────────────────────────────────── */
+/* ── practices column ─────────────────────────────────────────────── */
 
-.acts-label { font-size: 14px; color: var(--ink-2); font-weight: 500; display: block; margin-bottom: 8px; }
-.acts-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.col-acts {
+  position: sticky; top: var(--bar-h, 76px);
+  max-height: calc(100vh - var(--bar-h, 76px) - 24px);
+  display: flex; flex-direction: column;
+}
+.col-acts #acts-panel {
+  display: flex; flex-direction: column; gap: 20px;
+  overflow-y: auto; flex: 1;
+}
 
-.act {
-  display: inline-flex; align-items: stretch;
-  border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden;
-  transition: border-color .15s, background .15s;
+
+.act-group { display: flex; flex-direction: column; gap: 6px; }
+.act-group-h {
+  --c: hsl(var(--h) var(--lane-s) var(--lane-l));
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--c);
 }
-.act:hover { border-color: var(--accent); }
-.act.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.act-pick { padding: 7px 4px 7px 13px; font-size: 14.5px; color: var(--ink); }
-.act-min { color: var(--ink-3); font-size: 13px; }
-.act-del {
-  padding: 0 10px 0 6px; font-size: 17px; color: var(--ink-3); line-height: 1;
+
+.act-item {
+  --c: hsl(var(--h) var(--lane-s) var(--lane-l));
+  display: flex; align-items: stretch;
+  background: var(--card); border: 1px solid var(--line);
+  border-left: 3px solid var(--c); border-radius: var(--radius-sm);
+  cursor: grab; transition: border-color .15s, transform .12s, box-shadow .12s;
 }
-.act-del:hover { color: var(--accent); }
+.act-item:hover { transform: translateX(2px); box-shadow: var(--shadow); border-color: var(--c); }
+.act-item:active { cursor: grabbing; }
+.act-item.dragging { opacity: .4; }
+
+.act-item-main {
+  flex: 1; min-width: 0; text-align: left; padding: 9px 4px 9px 11px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.act-item-t {
+  font-size: 15px; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.act-item-m { font-size: 12.5px; color: var(--ink-3); }
+.act-item-x {
+  flex: none; padding: 0 9px; font-size: 16px; line-height: 1;
+  color: var(--ink-3); opacity: 0; transition: opacity .12s, color .12s;
+}
+.act-item:hover .act-item-x { opacity: 1; }
+.act-item-x:hover { color: var(--accent); }
+
 .act-add {
-  padding: 7px 13px; border-radius: 999px; font-size: 14.5px;
+  padding: 6px 12px; border-radius: 999px; font-size: 13.5px; align-self: flex-start;
   border: 1px dashed var(--line-2); color: var(--ink-3);
 }
 .act-add:hover { border-color: var(--accent); color: var(--accent); }
@@ -695,6 +725,19 @@ select.input { appearance: none; background-image: none; }
   display: flex; flex-direction: column; gap: 8px;
   padding: 12px; border-radius: var(--radius-sm);
   background: var(--paper); border: 1px dashed var(--line-2);
+}
+
+/* Not enough width for three columns: the practices go full width above the
+   schedule, the groups side by side, each still a stack. */
+@media (max-width: 1180px) {
+  .grid { grid-template-columns: minmax(0, 1fr) 340px; }
+  .col-acts { grid-column: 1 / -1; position: static; max-height: none; }
+  .col-acts #acts-panel {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+    gap: 18px 22px; overflow: visible;
+  }
+  /* One line each here, or the strip pushes the schedule off the screen. */
+  .act-item-main { flex-direction: row; align-items: baseline; gap: 8px; padding: 7px 4px 7px 11px; }
 }
 
 .slot-link {

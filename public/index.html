@@ -87,6 +87,15 @@
   <section class="rail" id="rail" aria-label="Lane progress"></section>
 
   <main class="grid">
+    <!-- The repeating practices. Unlike a task, an activity is never used up:
+         drag it onto the schedule as often as the day wants. -->
+    <aside class="col-acts">
+      <div class="col-head">
+        <h2>Practices</h2>
+      </div>
+      <div id="acts-panel"></div>
+    </aside>
+
     <section class="col-day">
       <div class="col-head">
         <h2>Schedule</h2>
@@ -145,21 +154,6 @@
       <select id="sheet-lane" class="input"></select>
       <span class="zen-note" id="sheet-zen" hidden></span>
     </label>
-
-    <!-- Repeatable things for this lane: yoga, chi kung, a sit. Not tasks. -->
-    <div class="acts" id="sheet-acts" hidden>
-      <span class="acts-label">Or pick one</span>
-      <div class="acts-list" id="sheet-acts-list"></div>
-    </div>
-
-    <div class="act-new" id="act-new" hidden>
-      <input type="text" id="act-title" class="input input-sm" placeholder="Name">
-      <input type="url" id="act-url" class="input input-sm" placeholder="Link (optional)">
-      <div class="field-row">
-        <input type="number" id="act-duration" class="input input-sm" min="5" max="720" step="5" placeholder="Minutes" value="30">
-        <button type="button" class="btn btn-ghost" id="act-save">Add it</button>
-      </div>
-    </div>
 
     <div class="field-row">
       <label class="field" id="sheet-start-field">

@@ -60,18 +60,19 @@ flowing reads as a choice, not a failure.
 When a block is placed and the work is going well, **Push 15m / 30m / 1h** in
 the editor moves it later without unpicking it.
 
-## Activities
+## Practices column
 
-Repeatable things with a link and a usual length, attached to a lane. Not
-tasks: a task is done once and disappears, an activity is done again tomorrow.
-Body ships with Yoga Download, Apple Health+ and 8 Pieces of Brocade.
+The left column holds the repeating practices, grouped by lane: Body (Yoga
+Download, Apple Health+, 8 Pieces of Brocade) and Music & Dance (Forró,
+Percussion, Singing, Songwriting). Zazen and Rest are there to add to.
 
-Click a lane's ring (or **+ Block**) and its activities appear as chips. Picking
-one fills in the title, duration and link; the placed block carries an ↗ through
-to the site. Add and remove them in the same place - `+ Add` and the `×`. To
-change one, remove it and add it back.
+Unlike a task, an activity is never used up - drag it onto the schedule as many
+times a day as you like and it stays in the column. Dropping one places a block
+with its name, length and link; clicking one opens the editor to pick a time.
+`+ Add` and the `×` manage them. They live in D1 and never go near Tana.
 
-They live in D1 and never go near Tana.
+Three columns on a wide screen. Below 1180px the practices become a full-width
+strip above the schedule, single-line, so they don't push the day off-screen.
 
 ## Zen elements
 
