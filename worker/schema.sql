@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS settings (
 -- The rest are starting guesses, all editable.
 INSERT OR IGNORE INTO settings (key, value) VALUES
   ('target_zazen',      '60'),
-  ('target_body',       '45'),
+  ('target_body',       '50'),   -- one Body activity, which is 50 minutes
   ('target_music',      '60'),   -- Music & Dance, one hour a day
   ('target_art',        '30'),
   ('target_portuguese', '30'),
