@@ -671,9 +671,11 @@ $('sheet-tasks-list').addEventListener('click', async (e) => {
   } catch (e2) { toast(e2.message); }
 });
 
-// A siesta is an hour by default; everything else is 30 minutes.
+// What a fresh block of this lane is worth, before anything overrides it.
+// A siesta is an hour, a body session 50 minutes; everything else 30.
+const LANE_MINUTES = { rest: 60, body: 50 };
 function defaultDuration(lane) {
-  return lane === 'rest' ? 60 : 30;
+  return LANE_MINUTES[lane] || 30;
 }
 
 function closeSheet() {

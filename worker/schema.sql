@@ -148,8 +148,8 @@ CREATE TABLE IF NOT EXISTS activities (
 CREATE INDEX IF NOT EXISTS idx_activities_lane ON activities(lane, position);
 
 INSERT OR IGNORE INTO activities (id, lane, title, url, duration, position) VALUES
-  (1, 'body', 'Yoga Download',      'https://www.yogadownload.com/', 45, 0),
-  (2, 'body', 'Apple Health+',      NULL, 45, 1),
+  (1, 'body', 'Yoga Download',      'https://www.yogadownload.com/', 50, 0),
+  (2, 'body', 'Apple Health+',      NULL, 50, 1),
   -- Ba Duan Jin. Eight, not seven.
   (3, 'body', '8 Pieces of Brocade', NULL, 15, 2),
   (4, 'music', 'Forró',       NULL, 60, 0),
