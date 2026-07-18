@@ -188,6 +188,65 @@ async function calendarEvents(env, day) {
   }
 }
 
+// Create a real event on the Google calendar. Needs the calendar.events scope:
+// the original consent asked only for calendar.readonly, and a refresh token
+// carries the scopes it was granted with, so this 403s until google-auth is
+// re-run. The error says so rather than leaving you guessing.
+async function createEvent(request, env) {
+  if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+
+  const b = await request.json().catch(() => ({}));
+  const title = String(b.title || '').trim();
+  if (!title) return err('title required', request);
+
+  const day = b.day || todayStr(TZ);
+  if (!isValidDay(day)) return err('bad date', request);
+
+  const startMin = Number(b.start_min);
+  const duration = Number(b.duration);
+  if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
+  if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
+
+  // Wall-clock minutes -> a real instant, via the day's local midnight, so the
+  // event lands at the time meant on either side of a DST change.
+  const base = zonedDayStart(day, TZ).getTime();
+  const startAt = new Date(base + startMin * 60000);
+  const endAt = new Date(base + (startMin + duration) * 60000);
+
+  try {
+    const token = await googleAccessToken(env);
+    const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: title,
+          location: String(b.location || '').trim() || undefined,
+          start: { dateTime: startAt.toISOString(), timeZone: TZ },
+          end: { dateTime: endAt.toISOString(), timeZone: TZ },
+        }),
+      },
+    );
+
+    if (res.status === 401 || res.status === 403) {
+      console.error('google create event:', res.status, await res.text());
+      return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
+    }
+    if (!res.ok) {
+      console.error('google create event:', res.status, await res.text());
+      return err('Google would not take that event.', request, 502);
+    }
+
+    const ev = await res.json();
+    return json({ ok: true, id: ev.id }, request, 201);
+  } catch (e) {
+    console.error('createEvent:', e.message);
+    return err('Could not reach Google Calendar.', request, 502);
+  }
+}
+
 // ── handlers ──────────────────────────────────────────────────────────
 
 // FNV-1a. Any stable hash will do; the point is that a given date always picks
@@ -772,6 +831,7 @@ export default {
       if (path === '/api/tasks' && request.method === 'POST') return createTask(request, env);
       if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
+      if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
       if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);

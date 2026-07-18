@@ -688,7 +688,11 @@ $('sheet-quick').addEventListener('click', (e) => {
 
 $('sheet-cancel').addEventListener('click', closeSheet);
 $('sheet-bg').addEventListener('click', (e) => { if (e.target === $('sheet-bg')) closeSheet(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet-bg').hidden) closeSheet(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!$('sheet-bg').hidden) closeSheet();
+  else if (!$('ev-bg').hidden) closeEvent();
+});
 
 // Enter commits the rename in place, without submitting the schedule form or
 // closing the sheet. Saving commits it too (see the submit handler). A plain
@@ -1248,6 +1252,59 @@ $('new-form').addEventListener('submit', async (e) => {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('new-bg').hidden) closeNew(); });
 
 $('add-block').addEventListener('click', () => openSheet({}));
+
+// ── + Event: a real Google Calendar entry ─────────────────────────────
+//
+// A block is this app's own; an event is a commitment other people can see, so
+// it goes to Google rather than into slots.
+
+function openEvent() {
+  $('ev-title').value = '';
+  $('ev-location').value = '';
+  $('ev-start').value = hhmm(nextFreeSlot());
+  $('ev-duration').value = 60;
+  $('ev-quick').innerHTML = [15, 30, 45, 60, 90, 120]
+    .map((m) => `<button type="button" data-ev-min="${m}">${m}m</button>`).join('');
+  $('ev-bg').hidden = false;
+  $('ev-title').focus();
+}
+
+const closeEvent = () => { $('ev-bg').hidden = true; };
+
+$('add-event').addEventListener('click', openEvent);
+$('ev-cancel').addEventListener('click', closeEvent);
+$('ev-bg').addEventListener('click', (e) => { if (e.target === $('ev-bg')) closeEvent(); });
+$('ev-quick').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ev-min]');
+  if (b) $('ev-duration').value = b.dataset.evMin;
+});
+
+$('ev-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('ev-save');
+  btn.disabled = true;
+  btn.textContent = 'Adding...';
+  try {
+    await api('/api/events', {
+      method: 'POST',
+      body: JSON.stringify({
+        day: state.day,
+        title: $('ev-title').value.trim(),
+        start_min: minOf($('ev-start').value),
+        duration: Number($('ev-duration').value),
+        location: $('ev-location').value.trim() || null,
+      }),
+    });
+    closeEvent();
+    toast('Added to your calendar');
+    await loadDay();
+  } catch (e2) {
+    toast(e2.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add to Calendar';
+  }
+});
 
 // Clicking a lane's ring drops a block straight into that lane.
 $('rail').addEventListener('click', (e) => {

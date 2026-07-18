@@ -99,7 +99,10 @@
     <section class="col-day">
       <div class="col-head">
         <h2>Schedule</h2>
-        <button class="ghost-btn" id="add-block">+ Block</button>
+        <div class="col-head-actions">
+          <button class="ghost-btn" id="add-event">+ Event</button>
+          <button class="ghost-btn" id="add-block">+ Block</button>
+        </div>
       </div>
       <!-- Intentions for today with no clock against them yet. -->
       <div class="tray" id="tray" hidden>
@@ -219,6 +222,43 @@
     <div class="sheet-actions">
       <button type="button" class="btn btn-ghost" id="new-cancel">Cancel</button>
       <button type="submit" class="btn btn-primary" id="new-save">Add to Tana</button>
+    </div>
+  </form>
+</div>
+
+<!-- A real Google Calendar event, not a block. Blocks are this app's own; an
+     event is a commitment other people can see. -->
+<div class="sheet-bg" id="ev-bg" hidden>
+  <form class="sheet" id="ev-form">
+    <h3>New event</h3>
+    <p class="sheet-sub">Goes straight into your Google Calendar.</p>
+
+    <label class="field">
+      <span>Event</span>
+      <input type="text" id="ev-title" class="input" placeholder="What's happening" required>
+    </label>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Start</span>
+        <input type="time" id="ev-start" class="input" step="300" required>
+      </label>
+      <label class="field">
+        <span>Minutes</span>
+        <input type="number" id="ev-duration" class="input" min="5" max="1440" step="5" value="60" required>
+      </label>
+    </div>
+
+    <div class="quick" id="ev-quick"></div>
+
+    <label class="field">
+      <span>Where <span class="field-opt">optional</span></span>
+      <input type="text" id="ev-location" class="input" placeholder="Address or link">
+    </label>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-ghost" id="ev-cancel">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="ev-save">Add to Calendar</button>
     </div>
   </form>
 </div>

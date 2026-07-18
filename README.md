@@ -49,6 +49,16 @@ task, the other schedules it.
 The task list is sticky below the bar, because the schedule is far taller than
 it is and you'd otherwise be dragging into nothing.
 
+## Events vs blocks
+
+**+ Block** makes one of this app's own blocks, in D1. **+ Event** creates a
+real entry in Google Calendar - a commitment other people can see.
+
+Writing needs the `calendar.events` scope; the first setup asked only for
+`calendar.readonly`, and a refresh token carries the scopes it was granted
+with. So + Event 403s with "Calendar is connected read-only" until
+`npm run google-auth` is run again to re-consent.
+
 ## Floating blocks
 
 A block doesn't need a time. Tick **Any time today** and it sits in a tray above

@@ -114,6 +114,10 @@ Measured July 2026 against the live graph, 278 open tasks:
   first insert naming the column. After any column addition, run `npm run audit`
   (or `node worker/audit-schema.mjs --fix`) against remote. `slots.url`,
   `pending_writes.payload` were both caught this way.
+- Google Calendar is **read + write of events** (`calendar.events`). It began as
+  `calendar.readonly`; a refresh token carries the scopes it was granted with,
+  so widening the scope means re-running `npm run google-auth`. `createEvent`
+  turns a 401/403 into "connected read-only" rather than a bare failure.
 - Calendar events are instants; slots are wall-clock minutes. Convert with
   `localParts`, never with an elapsed delta from the day start, or events shift
   an hour around a DST change. `npm test` covers both Lisbon transitions.

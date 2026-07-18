@@ -17,7 +17,10 @@ import { stdin, stdout } from 'node:process';
 
 const PORT = 8790;
 const REDIRECT = `http://127.0.0.1:${PORT}/callback`;
-const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+// calendar.events covers both reading the day and creating an event from
+// + Event. A refresh token carries the scopes it was granted with, so widening
+// this means running google-auth again to re-consent.
+const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 
 const rl = createInterface({ input: stdin, output: stdout });
 
