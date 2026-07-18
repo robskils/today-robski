@@ -118,6 +118,18 @@ Measured July 2026 against the live graph, 278 open tasks:
   `calendar.readonly`; a refresh token carries the scopes it was granted with,
   so widening the scope means re-running `npm run google-auth`. `createEvent`
   turns a 401/403 into "connected read-only" rather than a bare failure.
+- **Revoke first, then re-auth. Never the other way round.** Widening the scope
+  needs the old grant revoked at myaccount.google.com/permissions, because
+  Google otherwise silently reissues the previous scope set. But a revoke kills
+  *every* refresh token for that client, including one issued a minute earlier -
+  so revoking after a successful `google-auth` throws the new token away and
+  breaks reading too. The symptom is `invalid_grant` /
+  "Token has been expired or revoked" on the token exchange, surfaced as
+  `calendar_error` on `/api/day`, with zero events. The cure is simply to run
+  `npm run google-auth` again and touch nothing afterwards.
+- If `invalid_grant` returns every ~7 days rather than once, the cause is
+  different: an OAuth consent screen left in **Testing** publishing status
+  expires refresh tokens after a week. Publishing the app stops it.
 - Calendar events are instants; slots are wall-clock minutes. Convert with
   `localParts`, never with an elapsed delta from the day start, or events shift
   an hour around a DST change. `npm test` covers both Lisbon transitions.

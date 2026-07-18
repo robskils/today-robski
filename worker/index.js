@@ -128,7 +128,16 @@ async function googleAccessToken(env) {
       grant_type: 'refresh_token',
     }),
   });
-  if (!res.ok) throw new Error(`google token: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('google token:', res.status, body);
+    // A dead refresh token is the one failure Robin can actually fix, and it
+    // reads as a wall of JSON otherwise. Say what to do instead.
+    if (body.includes('invalid_grant')) {
+      throw new Error('Calendar sign-in has expired. Run npm run google-auth to reconnect.');
+    }
+    throw new Error(`google token: ${res.status} ${body}`);
+  }
   const data = await res.json();
   // The scopes a refresh token carries are fixed at consent. Logging them turns
   // "why is this 403ing" into a one-line answer.
