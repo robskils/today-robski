@@ -127,9 +127,14 @@ Measured July 2026 against the live graph, 278 open tasks:
   "Token has been expired or revoked" on the token exchange, surfaced as
   `calendar_error` on `/api/day`, with zero events. The cure is simply to run
   `npm run google-auth` again and touch nothing afterwards.
-- If `invalid_grant` returns every ~7 days rather than once, the cause is
-  different: an OAuth consent screen left in **Testing** publishing status
-  expires refresh tokens after a week. Publishing the app stops it.
+- The OAuth client's user type is **Internal**, checked in the console July
+  2026. So there is no publishing status, no test users, and crucially no
+  7-day refresh token expiry - that only bites External apps left in Testing.
+  A refresh token here lives until something revokes it. Don't "fix" this by
+  clicking *Make external* on the Audience page: that opts into the weekly
+  expiry we currently don't have. The setup steps google-auth.js prints are
+  generic first-run text and describe External; they don't describe this
+  project.
 - Calendar events are instants; slots are wall-clock minutes. Convert with
   `localParts`, never with an elapsed delta from the day start, or events shift
   an hour around a DST change. `npm test` covers both Lisbon transitions.
