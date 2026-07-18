@@ -454,7 +454,8 @@ select.input { appearance: none; background-image: none; }
   overflow: hidden; z-index: 3;
 }
 
-/* Calendar events are facts, not choices. Muted, hatched, not clickable. */
+/* Calendar events are facts, not choices: muted and hatched, never dragged or
+   ticked like a block. The one action they take is deletion, on hover. */
 .ev {
   background: repeating-linear-gradient(
     -45deg, transparent, transparent 6px,
@@ -465,6 +466,28 @@ select.input { appearance: none; background-image: none; }
 }
 .ev-t { font-size: 15px; font-weight: 500; color: var(--ink); }
 .ev-m { font-size: 13px; color: var(--ink-3); }
+
+/* Hidden until hover, and only reachable by pointer once shown. */
+.ev-x {
+  position: absolute; top: 4px; right: 6px;
+  padding: 2px 8px; border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--ink-3);
+  font: inherit; font-size: 14px; line-height: 1.4; cursor: pointer;
+  opacity: 0; transition: opacity .12s ease;
+}
+.ev:hover .ev-x, .ev-x:focus-visible { opacity: 1; }
+.ev-x:hover { color: var(--ink); border-color: var(--ink-3); }
+
+/* Armed: the next click deletes, so stop being quiet about it. */
+.ev-x.armed {
+  opacity: 1; font-size: 13px; font-weight: 500;
+  color: var(--accent); border-color: currentColor;
+}
+
+/* No hover on touch, so the button has to be there all along. */
+@media (hover: none) {
+  .ev-x { opacity: 1; }
+}
 
 .slot {
   --c: hsl(var(--h) var(--lane-s) var(--lane-l));

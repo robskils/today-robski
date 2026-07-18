@@ -318,11 +318,18 @@ function renderTimeline() {
       <span>${half ? '' : hhmm(m)}</span></div>`);
   }
 
+  // Hidden until the event is hovered: removing something from the real
+  // calendar shouldn't be a target you can hit while reaching for anything else.
+  const evDel = (e) =>
+    `<button class="ev-x" data-ev-del="${esc(e.id)}" title="Delete from Google Calendar"
+       aria-label="Delete ${esc(e.title)}">×</button>`;
+
   // All-day events read as banners, not blocks.
   const allDay = events.filter((e) => e.allDay);
   for (const e of allDay) {
     parts.push(`<div class="ev" style="top:${top(start) - 4}px;height:30px;z-index:2">
-      <div class="ev-t">${esc(e.title)} <span class="ev-m">all day</span></div></div>`);
+      <div class="ev-t">${esc(e.title)} <span class="ev-m">all day</span></div>
+      ${evDel(e)}</div>`);
   }
 
   for (const e of events.filter((x) => !x.allDay)) {
@@ -330,7 +337,7 @@ function renderTimeline() {
     parts.push(`<div class="ev" style="top:${top(e.start_min)}px;height:${h}px">
       <div class="ev-t">${esc(e.title)}</div>
       ${h > 44 ? `<div class="ev-m">${hhmm(e.start_min)}–${hhmm(e.start_min + e.duration)}${e.location ? ' · ' + esc(e.location) : ''}</div>` : ''}
-    </div>`);
+      ${evDel(e)}</div>`);
   }
 
   for (const s of slots) {
@@ -807,10 +814,47 @@ $('sheet-delete').addEventListener('click', async () => {
 
 // ── events ────────────────────────────────────────────────────────────
 
+// Put an armed delete button back to a plain ×. Safe to call when nothing is
+// armed, which is why every other click path can just call it unconditionally.
+function disarmEvent() {
+  clearTimeout(state.armedTimer);
+  state.armedEvent = null;
+  for (const b of document.querySelectorAll('.ev-x.armed')) {
+    b.classList.remove('armed');
+    b.textContent = '×';
+  }
+}
+
 async function onSlotAreaClick(e) {
   // A drag or resize that just finished leaves a click behind. Ignore it, or
   // moving a block would also pop the editor.
   if (Date.now() - (state.slotGestureAt || 0) < 400) return;
+
+  // Delete a Google Calendar event. Two clicks: the first arms the button and
+  // says so, the second does it. This reaches outside the app into a calendar
+  // other people may be reading, so a stray click must not be enough.
+  const evDel = e.target.closest('[data-ev-del]');
+  if (evDel) {
+    e.stopPropagation();
+    const id = evDel.dataset.evDel;
+    if (state.armedEvent !== id) {
+      disarmEvent();
+      state.armedEvent = id;
+      evDel.classList.add('armed');
+      evDel.textContent = 'Delete?';
+      // Forgetting it was armed and clicking later shouldn't delete anything.
+      state.armedTimer = setTimeout(disarmEvent, 5000);
+      return;
+    }
+    disarmEvent();
+    try {
+      await api(`/api/events/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      toast('Deleted from Google Calendar');
+      await loadDay();
+    } catch (e2) { toast(e2.message); }
+    return;
+  }
+  disarmEvent();
 
   // A task listed inside a block: tick it on its own.
   const taskCheck = e.target.closest('[data-check-task]');

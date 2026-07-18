@@ -259,6 +259,38 @@ async function createEvent(request, env) {
   }
 }
 
+// Google keeps a deleted event in the calendar's bin for 30 days, so this is
+// undoable at their end. Still the only destructive reach this app has outside
+// its own D1, hence the confirm step in the UI.
+async function deleteEvent(request, env, id) {
+  if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+
+  try {
+    const token = await googleAccessToken(env);
+    const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(id)}`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+    );
+
+    // 410 means it was already gone. That is the outcome the caller wanted, so
+    // treat it as success rather than making them look at an error for it.
+    if (res.ok || res.status === 410) return json({ ok: true }, request);
+
+    if (res.status === 401 || res.status === 403) {
+      console.error('google delete event:', res.status, await res.text());
+      return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
+    }
+    if (res.status === 404) return err('That event is not on the calendar.', request, 404);
+
+    console.error('google delete event:', res.status, await res.text());
+    return err('Google would not delete that event.', request, 502);
+  } catch (e) {
+    console.error('deleteEvent:', e.message);
+    return err(e.message.startsWith('Calendar sign-in') ? e.message : 'Could not reach Google Calendar.', request, 502);
+  }
+}
+
 // ── handlers ──────────────────────────────────────────────────────────
 
 // FNV-1a. Any stable hash will do; the point is that a given date always picks
@@ -851,6 +883,10 @@ export default {
       // Tana ids look like -2io-VjFpQOl: word chars and hyphens.
       const taskMatch = path.match(/^\/api\/tasks\/([\w-]+)$/);
       if (taskMatch && request.method === 'PATCH') return updateTask(request, env, taskMatch[1]);
+
+      // Google event ids are base32hex-ish, plus '_' on recurring instances.
+      const evMatch = path.match(/^\/api\/events\/([\w-]+)$/);
+      if (evMatch && request.method === 'DELETE') return deleteEvent(request, env, evMatch[1]);
 
       const actMatch = path.match(/^\/api\/activities\/(\d+)$/);
       if (actMatch) {
