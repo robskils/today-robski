@@ -450,6 +450,9 @@ function renderTimeline() {
       </div>
       ${s.url ? `<a class="slot-link" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"
                     aria-label="Open ${esc(s.title)}">↗</a>` : ''}
+      <button class="slot-x" data-slot-del="${s.id}"
+              title="Take off the schedule. The task itself is untouched."
+              aria-label="Take ${esc(s.title)} off the schedule">×</button>
       <div class="slot-grip slot-grip-bottom" data-grip="bottom" data-slot-grip="${s.id}"
            title="Drag to change the end"></div>
     </div>`);
@@ -881,6 +884,31 @@ $('sheet-delete').addEventListener('click', async () => {
 
 // ── events ────────────────────────────────────────────────────────────
 
+// Put a deleted block back, tasks and all. The new block gets a new id, which
+// is fine: nothing outside the day's own rows refers to a slot id.
+async function restoreSlot(gone) {
+  try {
+    const slot = await api('/api/slots', {
+      method: 'POST',
+      body: JSON.stringify({
+        day: gone.day, lane: gone.lane, title: gone.title,
+        start_min: gone.start_min, duration: gone.duration,
+        note: gone.note, url: gone.url, event_id: gone.event_id,
+      }),
+    });
+    // Sequential, not parallel: slot_tasks.position is what orders the list,
+    // and firing these at once would shuffle it.
+    for (const t of gone.tasks) {
+      await api(`/api/slots/${slot.id}/tasks`, {
+        method: 'POST',
+        body: JSON.stringify({ tana_id: t.tana_id }),
+      });
+    }
+    await loadDay();
+    toast('Back on the schedule');
+  } catch (e) { toast(e.message); }
+}
+
 // Put an armed delete button back to a plain ×. Safe to call when nothing is
 // armed, which is why every other click path can just call it unconditionally.
 function disarmEvent() {
@@ -950,6 +978,29 @@ async function onSlotAreaClick(e) {
         toast(`Counted as ${laneMeta(lane).label}`);
       }
       await loadDay();
+    } catch (e2) { toast(e2.message); }
+    return;
+  }
+
+  // Take a block off the schedule. This deletes the *block*, never the task:
+  // slot_tasks links go, the rows in `tasks` stay exactly as they were, and
+  // nothing is queued for Tana. Rebuilding a block that held several tasks by
+  // hand is tedious enough to be worth an undo.
+  const slotDel = e.target.closest('[data-slot-del]');
+  if (slotDel) {
+    e.stopPropagation();
+    const slot = state.data.slots.find((s) => s.id === Number(slotDel.dataset.slotDel));
+    if (!slot) return;
+
+    // Snapshot before the delete, or there's nothing left to put back.
+    const gone = { ...slot, tasks: [...(slot.tasks || [])] };
+    try {
+      await api(`/api/slots/${slot.id}`, { method: 'DELETE' });
+      await loadDay();
+      toast('Off the schedule. The task is untouched.', {
+        label: 'Undo',
+        fn: () => restoreSlot(gone),
+      });
     } catch (e2) { toast(e2.message); }
     return;
   }
