@@ -33,8 +33,13 @@ CREATE TABLE IF NOT EXISTS slots (
   done       INTEGER DEFAULT 0,
   note       TEXT,
   url        TEXT,              -- carried over when the slot came from an activity
+  event_id   TEXT,              -- Google Calendar event this block was adopted from
   created_at TEXT NOT NULL
 );
+-- One block per calendar event, so clicking a sat Zazen twice can't count it
+-- twice. Partial index: ordinary blocks all have NULL here.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_slots_event
+  ON slots(day, event_id) WHERE event_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_slots_day ON slots(day, start_min);
 
 -- Tasks dropped into a block. A block is a container of time; any number of
@@ -151,7 +156,7 @@ INSERT OR IGNORE INTO activities (id, lane, title, url, duration, position) VALU
   (1, 'body', 'Yoga Download',      'https://www.yogadownload.com/', 50, 0),
   (2, 'body', 'Apple Health+',      NULL, 50, 1),
   -- Ba Duan Jin. Eight, not seven.
-  (3, 'body', '8 Pieces of Brocade', NULL, 15, 2),
+  (3, 'body', '8 Pieces of Brocade', NULL, 30, 2),
   (4, 'music', 'Forró',       NULL, 60, 0),
   (5, 'music', 'Percussion',  NULL, 30, 1),
   (6, 'music', 'Singing',     NULL, 30, 2),

@@ -1,5 +1,9 @@
 // today.robski.uk
 
+// Lives in public/, not shared/, because the browser has to be able to fetch
+// it: only public/ is served as an asset.
+import { laneForEvent } from './event-lane.js';
+
 const $ = (id) => document.getElementById(id);
 const KEY_STORE = 'today.token';
 const EMAIL_STORE = 'today.email';
@@ -239,6 +243,16 @@ function renderRail() {
   }).join('');
 }
 
+// ── adopting calendar events ──────────────────────────────────────────
+
+// The matcher itself lives in shared/event-lane.js, pure and tested.
+const eventLane = (title) =>
+  laneForEvent(title, state.lanes, state.data.activities || []);
+
+// The block standing in for a given calendar event, if it's been adopted.
+const slotForEvent = (id) =>
+  state.data.slots.find((s) => s.event_id === id);
+
 // ── render: timeline ──────────────────────────────────────────────────
 
 // Blocks with no time yet. They still count toward a lane's planned arc, but
@@ -266,6 +280,43 @@ function renderTray() {
   }).join('');
 }
 
+// ── render: what the day held ─────────────────────────────────────────
+
+// A record of the day, not a scoreboard. Time per category, because that's
+// what the practice actually is, and the task count kept deliberately quiet
+// underneath it: Robin's point is that it was never about how many.
+function renderTally() {
+  const { progress } = state.data;
+  const el = $('tally');
+
+  const done = state.lanes
+    .map((l) => ({ l, min: (progress[l.key] || {}).done || 0 }))
+    .filter((x) => x.min > 0)
+    .sort((a, b) => b.min - a.min);
+
+  // Nothing yet is not a failure worth a panel. Say nothing.
+  if (!done.length) { el.hidden = true; return; }
+  el.hidden = false;
+
+  // Count each task once, however many blocks it was dropped into.
+  const ticked = new Set();
+  for (const s of state.data.slots) {
+    for (const t of s.tasks || []) if (t.done) ticked.add(t.tana_id);
+  }
+  const n = ticked.size;
+
+  const total = done.reduce((sum, x) => sum + x.min, 0);
+  const chips = done.map(({ l, min }) =>
+    `<li style="--h:${l.hue}"><span class="tally-dot"></span>
+      <span class="tally-name">${esc(l.label)}</span>
+      <span class="tally-min">${humanMin(min)}</span></li>`).join('');
+
+  el.innerHTML = `
+    <h2 class="tally-h">Today held <span>${humanMin(total)}</span></h2>
+    <ul class="tally-list">${chips}</ul>
+    ${n ? `<p class="tally-tasks">${n} task${n === 1 ? '' : 's'} finished along the way.</p>` : ''}`;
+}
+
 function renderQuote() {
   const q = state.data.quote;
   $('quote').hidden = !q;
@@ -284,7 +335,10 @@ const SNAP = 15;        // drops land on the nearest quarter hour
 
 function renderTimeline() {
   const { events, settings } = state.data;
-  const slots = state.data.slots.filter((s) => s.start_min !== null);
+  // A block adopted from a calendar event is drawn as that event, not a second
+  // time beside it. It still counts toward the lane: the worker totals every
+  // slot, whatever draws it.
+  const slots = state.data.slots.filter((s) => s.start_min !== null && !s.event_id);
   const el = $('timeline');
 
   // An empty day isn't a gap to apologise for, and it shouldn't render as
@@ -334,8 +388,21 @@ function renderTimeline() {
 
   for (const e of events.filter((x) => !x.allDay)) {
     const h = Math.max(26, e.duration * PPM - 3);
-    parts.push(`<div class="ev" style="top:${top(e.start_min)}px;height:${h}px">
-      <div class="ev-t">${esc(e.title)}</div>
+
+    // An all-day event has no length to credit, so only timed ones adopt.
+    const laneKey = eventLane(e.title);
+    const l = laneKey ? laneMeta(laneKey) : null;
+    const taken = !!slotForEvent(e.id);
+
+    const cls = ['ev', l ? 'adoptable' : '', taken ? 'adopted' : ''].filter(Boolean).join(' ');
+    const hue = l ? `--h:${l.hue};` : '';
+    const attr = l ? ` data-ev-adopt="${esc(e.id)}" role="button" tabindex="0"` : '';
+    const hint = l
+      ? ` title="${esc(e.title)} counts as ${esc(l.label)}. Click to ${taken ? 'stop counting it' : 'count it'}."`
+      : '';
+
+    parts.push(`<div class="${cls}" style="${hue}top:${top(e.start_min)}px;height:${h}px"${attr}${hint}>
+      <div class="ev-t">${esc(e.title)}${taken ? ` <span class="ev-tick">✓ ${esc(l.label)}</span>` : ''}</div>
       ${h > 44 ? `<div class="ev-m">${hhmm(e.start_min)}–${hhmm(e.start_min + e.duration)}${e.location ? ' · ' + esc(e.location) : ''}</div>` : ''}
       ${evDel(e)}</div>`);
   }
@@ -855,6 +922,37 @@ async function onSlotAreaClick(e) {
     return;
   }
   disarmEvent();
+
+  // Count a calendar event toward its lane, or stop counting it. Nothing here
+  // touches Google: adopting creates a local block, dropping it deletes that
+  // block, and the event on the calendar is untouched either way.
+  const adopt = e.target.closest('[data-ev-adopt]');
+  if (adopt) {
+    e.stopPropagation();
+    const id = adopt.dataset.evAdopt;
+    const ev = state.data.events.find((x) => x.id === id);
+    if (!ev) return;
+
+    const existing = slotForEvent(id);
+    try {
+      if (existing) {
+        await api(`/api/slots/${existing.id}`, { method: 'DELETE' });
+        toast('No longer counted');
+      } else {
+        const lane = eventLane(ev.title);
+        await api('/api/slots', {
+          method: 'POST',
+          body: JSON.stringify({
+            day: state.day, lane, title: ev.title,
+            start_min: ev.start_min, duration: ev.duration, event_id: id,
+          }),
+        });
+        toast(`Counted as ${laneMeta(lane).label}`);
+      }
+      await loadDay();
+    } catch (e2) { toast(e2.message); }
+    return;
+  }
 
   // A task listed inside a block: tick it on its own.
   const taskCheck = e.target.closest('[data-check-task]');
@@ -1412,6 +1510,7 @@ async function loadDay() {
   renderRail();
   renderTray();
   renderTimeline();
+  renderTally();
   renderQuote();
   renderActivities();
   measureBar();

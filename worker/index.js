@@ -432,14 +432,26 @@ async function createSlot(request, env) {
   const duration = Number(b.duration);
   if (!Number.isFinite(duration) || duration < 5 || duration > 720) return err('bad duration', request);
 
-  const res = await env.DB.prepare(
-    `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
-  ).bind(
-    day, b.lane, b.tana_id || null, b.title,
-    startMin, Math.round(duration), b.note || null, safeUrl(b.url),
-    new Date().toISOString(),
-  ).first();
+  // Adopting a calendar event into a lane. The unique index is what actually
+  // stops a double count, since a double click races past any read-then-write.
+  const eventId = b.event_id ? String(b.event_id).slice(0, 256) : null;
+
+  let res;
+  try {
+    res = await env.DB.prepare(
+      `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, event_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    ).bind(
+      day, b.lane, b.tana_id || null, b.title,
+      startMin, Math.round(duration), b.note || null, safeUrl(b.url), eventId,
+      new Date().toISOString(),
+    ).first();
+  } catch (e) {
+    if (eventId && /UNIQUE|constraint/i.test(e.message)) {
+      return err('That event is already counted.', request, 409);
+    }
+    throw e;
+  }
 
   // A block created from a task starts as a one-task container.
   if (b.tana_id) {

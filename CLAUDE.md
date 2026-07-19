@@ -38,6 +38,17 @@ no handshake needed). So:
   Ticking a block only queues the tasks whose state actually changes, or a
   half-finished block re-queues writes Tana already has.
 - `slots` (the day itself) are owned here and never sync to Tana.
+- **Adopted events.** A calendar event whose title names a lane or one of its
+  activities can be counted as practice: clicking it creates a slot carrying
+  `slots.event_id`. The timeline then draws the event and *skips* that slot, or
+  the same sit appears twice. A unique index on `(day, event_id)` is what stops
+  a double count, not a read-then-write check, because a double click races it.
+  Un-adopting just deletes the slot. Nothing here ever writes to Google.
+  The matcher is `public/event-lane.js` - in public/ rather than shared/
+  because the browser has to fetch it, and only public/ is served as an asset.
+  It matches whole words only: `\b` is ASCII-only and would break on "Forró",
+  hence the explicit `\p{L}\p{N}` boundaries. `npm test` pins the false
+  positives that matter (Workshop, Artichoke, Bodyboarding, Restaurant).
 - **+ New** queues `op='create'` with a JSON payload and a `local:` placeholder
   id, so the task is usable instantly. The agent builds it via
   `import_tana_paste`, then `POST /api/sync/created` swaps the placeholder for

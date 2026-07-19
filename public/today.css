@@ -467,6 +467,22 @@ select.input { appearance: none; background-image: none; }
 .ev-t { font-size: 15px; font-weight: 500; color: var(--ink); }
 .ev-m { font-size: 13px; color: var(--ink-3); }
 
+/* An event that names a lane can be counted as practice. Say so quietly:
+   a hover lift, not a permanent shout. */
+.ev.adoptable { cursor: pointer; }
+.ev.adoptable:hover { border-color: hsl(var(--h) var(--lane-s) var(--lane-l)); }
+
+/* Counted. Now it reads as a block, because that's what it has become. */
+.ev.adopted {
+  background: color-mix(in srgb, hsl(var(--h) var(--lane-s) var(--lane-l)) 12%, transparent);
+  border-color: color-mix(in srgb, hsl(var(--h) var(--lane-s) var(--lane-l)) 45%, transparent);
+  border-left: 3px solid hsl(var(--h) var(--lane-s) var(--lane-l));
+}
+.ev-tick {
+  font-size: 13px; font-weight: 500;
+  color: hsl(var(--h) var(--lane-s) var(--lane-l));
+}
+
 /* Hidden until hover, and only reachable by pointer once shown. */
 .ev-x {
   position: absolute; top: 4px; right: 6px;
@@ -536,6 +552,39 @@ select.input { appearance: none; background-image: none; }
   pointer-events: none; user-select: none; z-index: 0;
 }
 @media (max-width: 1400px) { .kanji-watermark { display: none; } }
+
+/* ── what the day held ────────────────────────────────────────────── */
+
+/* A record, not a scoreboard. No bars, no percentages, no red: just what
+   happened, in the order it happened most. */
+.tally {
+  margin: 30px auto 0; max-width: 560px;
+  padding-top: 24px; border-top: 1px solid var(--line);
+}
+.tally-h {
+  margin: 0 0 16px; font-family: var(--serif); font-weight: 300;
+  font-size: 21px; color: var(--ink-2); letter-spacing: .01em;
+}
+.tally-h span { color: var(--ink); }
+
+.tally-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+}
+.tally-list li { display: flex; align-items: baseline; gap: 9px; }
+.tally-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+  background: hsl(var(--h) var(--lane-s) var(--lane-l));
+  transform: translateY(-1px);
+}
+.tally-name { font-size: 17px; color: var(--ink); }
+.tally-min { font-size: 17px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* Deliberately the quietest line on the page. Robin's whole point is that
+   the count is not the measure, so it is a footnote, not a figure. */
+.tally-tasks {
+  margin: 18px 0 0; font-size: 15px; color: var(--ink-3); font-style: italic;
+}
 
 /* ── quote of the day ─────────────────────────────────────────────── */
 
