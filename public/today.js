@@ -1599,10 +1599,20 @@ async function boot() {
 }
 
 // The tasks column sticks below the bar, so it needs the bar's real height
-// rather than a guess that breaks when the date wraps to two lines.
+// rather than a guess that breaks when the date wraps to two lines. The rail
+// sticks below the bar too, and the columns stick below both, so its height
+// has to be measured for the same reason: the lanes wrap, and how many rows
+// they wrap to depends on the window.
 function measureBar() {
+  const root = document.documentElement.style;
   const h = $('app').querySelector('.bar')?.offsetHeight;
-  if (h) document.documentElement.style.setProperty('--bar-h', `${h}px`);
+  if (h) root.setProperty('--bar-h', `${h}px`);
+
+  // Only when it is actually sticking. Below the breakpoint the rail scrolls
+  // away with everything else, and the columns must not be pushed down by it.
+  const rail = $('rail');
+  const stuck = rail && getComputedStyle(rail).position === 'sticky';
+  root.setProperty('--rail-h', stuck ? `${rail.offsetHeight}px` : '0px');
 }
 addEventListener('resize', measureBar);
 

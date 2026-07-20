@@ -234,10 +234,15 @@ select.input { appearance: none; background-image: none; }
 /* ── lane rail ────────────────────────────────────────────────────── */
 
 /* Wraps rather than scrolls: every lane has to be visible at a glance or the
-   tool isn't doing its job. */
+   tool isn't doing its job. Pinned under the bar for the same reason - what's
+   still owed today shouldn't scroll away with the schedule.
+   Below the bar's z-index, above everything in the day. */
 .rail {
   display: flex; flex-wrap: wrap; gap: 9px; padding: 16px 20px;
   border-bottom: 1px solid var(--line);
+  position: sticky; top: var(--bar-h, 76px); z-index: 15;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(12px);
 }
 
 .lane {
@@ -275,6 +280,11 @@ select.input { appearance: none; background-image: none; }
   /* minmax(0, 1fr), not 1fr: a bare 1fr floors at min-content, which lets a
      long task title stretch the column past the viewport. */
   .grid { grid-template-columns: minmax(0, 1fr); gap: 34px; }
+
+  /* The lanes wrap to three or four rows on a phone. Pinned, they would eat
+     half the screen and hide the schedule they describe. Let them scroll.
+     measureBar reads this back and zeroes --rail-h so nothing is pushed down. */
+  .rail { position: static; }
 }
 
 .col-head {
@@ -665,8 +675,8 @@ select.input { appearance: none; background-image: none; }
 /* The schedule is far taller than the task list, so the list would scroll off
    and leave you dragging into nothing. Pin it under the bar instead. */
 .col-tasks {
-  position: sticky; top: var(--bar-h, 76px);
-  max-height: calc(100vh - var(--bar-h, 76px) - 24px);
+  position: sticky; top: calc(var(--bar-h, 76px) + var(--rail-h, 0px));
+  max-height: calc(100vh - var(--bar-h, 76px) - var(--rail-h, 0px) - 24px);
   display: flex; flex-direction: column;
 }
 .task-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; }
@@ -771,8 +781,8 @@ select.input { appearance: none; background-image: none; }
 /* ── practices column ─────────────────────────────────────────────── */
 
 .col-acts {
-  position: sticky; top: var(--bar-h, 76px);
-  max-height: calc(100vh - var(--bar-h, 76px) - 24px);
+  position: sticky; top: calc(var(--bar-h, 76px) + var(--rail-h, 0px));
+  max-height: calc(100vh - var(--bar-h, 76px) - var(--rail-h, 0px) - 24px);
   display: flex; flex-direction: column;
 }
 .col-acts #acts-panel {
