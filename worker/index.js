@@ -809,11 +809,25 @@ async function syncCreated(request, env) {
 // agent so the worker can serve them without reaching Tana.
 async function tanaOptions(request, env) {
   const { results } = await env.DB.prepare(
-    'SELECT kind, node_id, name FROM tana_options ORDER BY kind, name',
+    'SELECT kind, node_id, name FROM tana_options ORDER BY kind, name, node_id',
   ).all();
+
+  // Tana has more than one node for some Life Areas (two "Art", two "Portugal"),
+  // so the mirror does too. The picker only wants one entry per name - a task's
+  // lane is decided by the area's name, not which duplicate node it points at.
+  // node_id order makes the kept node deterministic across reloads.
+  const dedupe = (kind) => {
+    const seen = new Set();
+    return results.filter((r) => {
+      if (r.kind !== kind || seen.has(r.name)) return false;
+      seen.add(r.name);
+      return true;
+    });
+  };
+
   return json({
-    areas: results.filter((r) => r.kind === 'area'),
-    priorities: results.filter((r) => r.kind === 'priority'),
+    areas: dedupe('area'),
+    priorities: dedupe('priority'),
   }, request);
 }
 
