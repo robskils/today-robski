@@ -301,7 +301,11 @@ async function sendSms(env, message) {
   const to = String(env.ALERT_PHONE || '').replace(/\D/g, '');
   if (!env.GATEWAYAPI_KEY || !to) return { ok: false, skipped: 'not configured' };
 
-  const res = await fetch('https://gatewayapi.com/rest/mtsms', {
+  // Robin's account is on GatewayAPI's EU platform, whose tokens are rejected
+  // by the default gatewayapi.com host with a bare "Invalid token" - the one
+  // difference that had every send 401ing. Overridable, but defaults to EU.
+  const host = env.GATEWAYAPI_HOST || 'gatewayapi.eu';
+  const res = await fetch(`https://${host}/rest/mtsms`, {
     method: 'POST',
     headers: { Authorization: `Token ${env.GATEWAYAPI_KEY}`, ...JSON_HEADERS },
     body: JSON.stringify({
