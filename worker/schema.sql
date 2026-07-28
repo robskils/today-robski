@@ -50,6 +50,11 @@ CREATE TABLE IF NOT EXISTS slot_tasks (
   slot_id  INTEGER NOT NULL,
   tana_id  TEXT NOT NULL,
   position INTEGER NOT NULL DEFAULT 0,
+  -- How long this task is meant to take *in this block*, minutes. Its own
+  -- length, not the block's: a 10-min task in a 90-min block stays 10. App-
+  -- owned, so the Tana pull never overwrites it. NULL = fall back to the task's
+  -- Tana Duration, then a default. Editing it never touches slots.duration.
+  duration INTEGER,
   PRIMARY KEY (slot_id, tana_id)
 );
 CREATE INDEX IF NOT EXISTS idx_slot_tasks ON slot_tasks(slot_id, position);

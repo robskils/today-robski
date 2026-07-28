@@ -404,8 +404,17 @@ select.input { appearance: none; background-image: none; }
 .slot-task.done .slot-task-t { text-decoration: line-through; }
 .slot-task-t {
   flex: 1; min-width: 0; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap;
+  text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
 }
+.slot-task-t:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+/* The task's own length, its own value - not the block's. A quiet chip that
+   opens the same editor as the name. */
+.slot-task-len {
+  flex: none; cursor: pointer;
+  font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums;
+}
+.slot-task-len:hover { color: var(--accent); }
 .slot-task-check {
   flex: none; width: 15px; height: 15px; border-radius: 4px;
   border: 1.5px solid var(--c); color: transparent;
@@ -466,7 +475,9 @@ select.input { appearance: none; background-image: none; }
 }
 .sheet-task-row.done { opacity: .5; }
 .sheet-task-row.done .sheet-task-name { text-decoration: line-through; }
-.sheet-task-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-task-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.sheet-task-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+.sheet-task-row .slot-task-len { font-size: 13px; }
 .sheet-task-row .slot-task-x { opacity: .7; }
 /* A grab cursor only on the body: the tick is a click target, not a handle. */
 .task-open { cursor: grab; }

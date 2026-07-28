@@ -400,7 +400,8 @@ async function handleDay(request, env, url) {
     // The tasks inside each of today's blocks, in one query rather than one
     // per block.
     env.DB.prepare(
-      `SELECT st.slot_id, st.position, t.tana_id, t.title, t.lane, t.priority, t.done
+      `SELECT st.slot_id, st.position, st.duration AS slot_duration,
+              t.tana_id, t.title, t.lane, t.priority, t.done, t.duration AS task_duration
          FROM slot_tasks st
          JOIN slots s ON s.id = st.slot_id
          LEFT JOIN tasks t ON t.tana_id = st.tana_id
@@ -419,6 +420,9 @@ async function handleDay(request, env, url) {
     byslot.get(r.slot_id).push({
       tana_id: r.tana_id, title: r.title, lane: r.lane,
       priority: r.priority, done: r.done,
+      // This task's own length in this block: the per-link value if set, else
+      // its Tana Duration, else null (the client shows a default).
+      duration: r.slot_duration ?? r.task_duration ?? null,
     });
   }
   for (const s of slots) s.tasks = byslot.get(s.id) || [];
@@ -557,6 +561,21 @@ async function addSlotTask(request, env, slotId) {
 async function removeSlotTask(env, request, slotId, tanaId) {
   await env.DB.prepare('DELETE FROM slot_tasks WHERE slot_id = ? AND tana_id = ?')
     .bind(slotId, tanaId).run();
+  return json({ ok: true }, request);
+}
+
+// Set how long a task is meant to take inside a block. Touches only the link,
+// never slots.duration - a task's length and its block's length are separate.
+async function setSlotTaskDuration(env, request, slotId, tanaId) {
+  const b = await request.json().catch(() => ({}));
+  const duration = Number(b.duration);
+  if (!Number.isFinite(duration) || duration < 5 || duration > 720) {
+    return err('bad duration', request);
+  }
+  const res = await env.DB.prepare(
+    'UPDATE slot_tasks SET duration = ? WHERE slot_id = ? AND tana_id = ?',
+  ).bind(Math.round(duration), slotId, tanaId).run();
+  if (!res.meta.changes) return err('not in that block', request, 404);
   return json({ ok: true }, request);
 }
 
@@ -998,6 +1017,9 @@ export default {
       const slotTaskMatch = path.match(/^\/api\/slots\/(\d+)\/tasks\/([\w-]+)$/);
       if (slotTaskMatch && request.method === 'DELETE') {
         return removeSlotTask(env, request, Number(slotTaskMatch[1]), slotTaskMatch[2]);
+      }
+      if (slotTaskMatch && request.method === 'PATCH') {
+        return setSlotTaskDuration(env, request, Number(slotTaskMatch[1]), slotTaskMatch[2]);
       }
 
       const slotMatch = path.match(/^\/api\/slots\/(\d+)$/);

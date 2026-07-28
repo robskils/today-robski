@@ -437,7 +437,10 @@ function renderTimeline() {
           <div class="slot-task ${t.done ? 'done' : ''}">
             <button class="slot-task-check" data-check-task="${esc(t.tana_id)}"
                     aria-label="Mark done: ${esc(t.title)}">✓</button>
-            <span class="slot-task-t">${esc(t.title)}</span>
+            <span class="slot-task-t" data-edit-task="${s.id}:${esc(t.tana_id)}"
+                  title="Edit name and length">${esc(t.title)}</span>
+            <span class="slot-task-len" data-edit-task="${s.id}:${esc(t.tana_id)}"
+                  title="Edit length">${taskLen(t)}m</span>
             <button class="slot-task-x" data-unlink="${s.id}:${esc(t.tana_id)}"
                     aria-label="Take out of this block">×</button>
           </div>`).join('')}
@@ -668,20 +671,30 @@ function syncZenNote() {
     `<span class="kanji">${esc(zen.kanji)}</span> ${esc(zen.romaji)} · ${esc(zen.gloss)}`;
 }
 
-function openSheet({ slot, task, lane, activity }) {
-  state.editing = { slot, task, activity };
+function openSheet({ slot, task, lane, activity, blockTask }) {
+  state.editing = { slot, task, activity, blockTask };
 
-  $('sheet-title').textContent = slot ? 'Edit block' : 'Add to the day';
-  $('sheet-save').textContent = slot ? 'Save' : 'Add';
-  $('sheet-delete').hidden = !slot;
+  // Editing one task that lives inside a block: only its name and its own
+  // length matter. The block's lane, start and the rest don't apply here, and
+  // saving must never touch the block - so those fields are hidden.
+  const bt = blockTask || null;
 
-  // The name field. A single Tana task behind the sheet (clicked in the list,
-  // or a sole-task block) renames in Tana; anything else edits only its own
-  // block label.
+  $('sheet-title').textContent = bt ? 'Edit task' : slot ? 'Edit block' : 'Add to the day';
+  $('sheet-save').textContent = bt || slot ? 'Save' : 'Add';
+  $('sheet-delete').hidden = !slot || !!bt;
+
+  // Block/placement-only fields, off in task mode.
+  $('sheet-lane-field').hidden = !!bt;
+  $('sheet-float-row').hidden = !!bt;
+  $('sheet-start-field').style.display = bt ? 'none' : '';
+
+  // The name field. A Tana task behind the sheet - a task in a block, one
+  // clicked in the list, or a sole-task block - renames in Tana; a bare block
+  // edits only its own label.
   const blockTasks = slot?.tasks || [];
-  const renameTaskId = task?.tana_id
+  const renameTaskId = bt?.tana_id ?? task?.tana_id
     ?? (blockTasks.length === 1 ? blockTasks[0].tana_id : null);
-  const label = slot?.title || task?.title || activity?.title || '';
+  const label = bt?.title || slot?.title || task?.title || activity?.title || '';
 
   state.editing.rename = { taskId: renameTaskId, slotId: slot?.id ?? null, orig: label };
   $('sheet-name').value = label;
@@ -692,22 +705,27 @@ function openSheet({ slot, task, lane, activity }) {
     .map((l) => `<option value="${l.key}">${esc(l.label)}</option>`).join('');
   $('sheet-lane').value = slot?.lane || task?.lane || activity?.lane || lane || 'zazen';
 
-  const floating = slot ? slot.start_min === null : false;
+  const floating = slot && !bt ? slot.start_min === null : false;
   $('sheet-float').checked = floating;
   $('sheet-start').value = hhmm(slot && slot.start_min !== null ? slot.start_min : nextFreeSlot());
 
-  // Tana Duration is set on only ~9% of tasks, so fall back to 30 minutes.
-  $('sheet-duration').value = slot?.duration || task?.duration || activity?.duration
-    || defaultDuration(slot?.lane || task?.lane || activity?.lane || lane);
+  // Task mode shows this task's own length; otherwise the block/task/activity
+  // duration, falling back to 30 (Tana Duration is set on only ~9% of tasks).
+  $('sheet-duration').value = bt
+    ? bt.duration || defaultDuration(bt.lane)
+    : slot?.duration || task?.duration || activity?.duration
+      || defaultDuration(slot?.lane || task?.lane || activity?.lane || lane);
 
-  $('sheet-quick').innerHTML = [15, 25, 30, 45, 60, 90]
+  $('sheet-quick').innerHTML = [10, 15, 25, 30, 45, 60]
     .map((m) => `<button type="button" data-min="${m}">${m}m</button>`).join('');
 
-  renderSheetTasks(slot);
+  renderSheetTasks(bt ? null : slot);
   syncFloatUI();
   syncZenNote();
+  if (bt) $('sheet-push').hidden = true;   // push is a block gesture, not a task one
   $('sheet-bg').hidden = false;
-  if (!floating) $('sheet-start').focus();
+  if (bt) $('sheet-duration').focus();
+  else if (!floating) $('sheet-start').focus();
 }
 
 // The full task list for a block, ticks and remove buttons and all. Anything
@@ -722,13 +740,23 @@ function renderSheetTasks(slot) {
     <div class="sheet-task-row ${t.done ? 'done' : ''}" style="--h:${laneMeta(t.lane).hue}">
       <button type="button" class="slot-task-check" data-sheet-check="${esc(t.tana_id)}"
               aria-label="Mark done: ${esc(t.title)}">✓</button>
-      <span class="sheet-task-name">${esc(t.title)}</span>
+      <span class="sheet-task-name" data-edit-task="${slot.id}:${esc(t.tana_id)}"
+            title="Edit name and length">${esc(t.title)}</span>
+      <span class="slot-task-len" data-edit-task="${slot.id}:${esc(t.tana_id)}"
+            title="Edit length">${taskLen(t)}m</span>
       <button type="button" class="slot-task-x" data-sheet-unlink="${slot.id}:${esc(t.tana_id)}"
               aria-label="Take out of this block">×</button>
     </div>`).join('');
 }
 
 $('sheet-tasks-list').addEventListener('click', async (e) => {
+  // Editing a task swaps this same sheet into task mode.
+  const edit = e.target.closest('[data-edit-task]');
+  if (edit) {
+    openTaskEditor(edit.dataset.editTask);
+    return;
+  }
+
   const check = e.target.closest('[data-sheet-check]');
   const unlink = e.target.closest('[data-sheet-unlink]');
   try {
@@ -753,6 +781,23 @@ $('sheet-tasks-list').addEventListener('click', async (e) => {
 const LANE_MINUTES = { rest: 60, body: 50 };
 function defaultDuration(lane) {
   return LANE_MINUTES[lane] || 30;
+}
+
+// A task's own length, for display: its stored per-block length if set, else a
+// default. Never the block's length - that's deliberately separate.
+function taskLen(t) {
+  return t.duration || defaultDuration(t.lane);
+}
+
+// Open the task editor for a "slotId:tanaId" ref. Splits on the first colon
+// only, so a just-created task's `local:...` id survives intact.
+function openTaskEditor(ref) {
+  const i = ref.indexOf(':');
+  const slotId = Number(ref.slice(0, i));
+  const tanaId = ref.slice(i + 1);
+  const slot = state.data.slots.find((s) => s.id === slotId);
+  const bt = slot?.tasks?.find((t) => t.tana_id === tanaId);
+  if (slot && bt) openSheet({ slot, blockTask: bt });
 }
 
 function closeSheet() {
@@ -837,7 +882,22 @@ $('sheet').addEventListener('submit', async (e) => {
   e.preventDefault();
   // Save commits a pending rename first, so the block gets the new name.
   await commitRename();
-  const { slot, task, activity } = state.editing;
+  const { slot, task, activity, blockTask } = state.editing;
+
+  // Task mode: save only this task's length onto the link. Never the block -
+  // a 10-min task in a 90-min block leaves the block at 90.
+  if (blockTask) {
+    try {
+      await api(`/api/slots/${slot.id}/tasks/${encodeURIComponent(blockTask.tana_id)}`, {
+        method: 'PATCH', body: JSON.stringify({ duration: Number($('sheet-duration').value) }),
+      });
+      toast('Task saved');
+      closeSheet();
+      await loadDay();
+    } catch (e2) { toast(e2.message); }
+    return;
+  }
+
   const name = $('sheet-name').value.trim();
   const floating = $('sheet-float').checked;
   const body = {
@@ -1022,6 +1082,14 @@ async function onSlotAreaClick(e) {
       await api(`/api/slots/${slotId}/tasks/${encodeURIComponent(tanaId)}`, { method: 'DELETE' });
       await loadDay();
     } catch (e2) { toast(e2.message); }
+    return;
+  }
+
+  // Click a task's name to edit its name and its own length, not the block's.
+  const editTask = e.target.closest('[data-edit-task]');
+  if (editTask) {
+    e.stopPropagation();
+    openTaskEditor(editTask.dataset.editTask);
     return;
   }
 
@@ -1224,7 +1292,7 @@ let resize = null;
 let move = null;
 
 // The controls inside a block that a press should belong to, not a move.
-const SLOT_CONTROLS = '[data-check],[data-check-task],[data-unlink],[data-more],.slot-link';
+const SLOT_CONTROLS = '[data-check],[data-check-task],[data-unlink],[data-edit-task],[data-more],.slot-link';
 
 $('timeline').addEventListener('pointerdown', (e) => {
   const grip = e.target.closest('[data-slot-grip]');
