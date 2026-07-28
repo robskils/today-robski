@@ -14,6 +14,12 @@ custom_domain = true
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
+# Every minute, so a block starting in 5 gets a text 5 minutes out. The handler
+# only sends inside a 4-6 minute window and marks each block once, so a minute
+# of ticks with nothing due is a no-op D1 read.
+[triggers]
+crons = ["* * * * *"]
+
 # Who can be sent a sign-in code. Anything else gets the same "ok" response,
 # so the list can't be probed from outside.
 #
@@ -50,3 +56,10 @@ database_id = "22cfad75-5c6f-463c-9dfc-fb96c9257ee8"
 #   GOOGLE_CLIENT_ID      OAuth client, see README.
 #   GOOGLE_CLIENT_SECRET
 #   GOOGLE_REFRESH_TOKEN  from `npm run google-auth`
+#   GATEWAYAPI_KEY        sends the 5-min block alerts. Same GatewayAPI account
+#                         as the LST admin (routes/sms.js). Alerts are simply
+#                         off until this is set.
+#   ALERT_PHONE           where the alerts go: Robin's mobile, full international
+#                         (+351...). Also off until set.
+#   ALERT_SENDER          optional sender id, defaults to "Robski". A number
+#                         here (eg +351920111939) if a network drops letters.

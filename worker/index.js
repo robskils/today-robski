@@ -291,6 +291,71 @@ async function deleteEvent(request, env, id) {
   }
 }
 
+// ── SMS alerts ────────────────────────────────────────────────────────
+
+// Send one SMS through GatewayAPI. Lifted from the LST admin's routes/sms.js,
+// the setup Robin already has credit on: his own number as the sender, so an
+// alert reads as a text from himself. Needs GATEWAYAPI_KEY and ALERT_PHONE
+// (the recipient) as secrets; without either, alerting is simply off.
+async function sendSms(env, message) {
+  const to = String(env.ALERT_PHONE || '').replace(/\D/g, '');
+  if (!env.GATEWAYAPI_KEY || !to) return { ok: false, skipped: 'not configured' };
+
+  const res = await fetch('https://gatewayapi.com/rest/mtsms', {
+    method: 'POST',
+    headers: { Authorization: `Token ${env.GATEWAYAPI_KEY}`, ...JSON_HEADERS },
+    body: JSON.stringify({
+      // Alphanumeric sender: an alert isn't a conversation, and it's the same
+      // brand the rest of the tool carries. Falls back to the LST number if
+      // a network rejects a lettered sender.
+      sender: env.ALERT_SENDER || 'Robski',
+      message,
+      recipients: [{ msisdn: to }],
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text();
+    console.error('gatewayapi:', res.status, detail);
+    return { ok: false, status: res.status, detail };
+  }
+  return { ok: true, ...(await res.json()) };
+}
+
+// Fired by the cron trigger every minute. Finds today's timed blocks starting
+// in about five minutes that haven't been alerted for this start time, and
+// texts one line about each. alerted_min holds the start it fired for: move a
+// block and it re-arms, leave it and it never fires twice, even if the cron
+// runs late and the block appears in two consecutive windows.
+async function runAlerts(env) {
+  const now = localParts(new Date(), TZ);          // { date, min } in Lisbon
+  const target = now.min + 5;
+
+  // A 3-minute window (4-6 min out) absorbs a skipped or late cron tick
+  // without alerting twice, since alerted_min guards the repeat.
+  const due = await env.DB.prepare(
+    `SELECT id, lane, title, start_min FROM slots
+      WHERE day = ? AND start_min IS NOT NULL
+        AND start_min BETWEEN ? AND ?
+        AND (alerted_min IS NULL OR alerted_min != start_min)`,
+  ).bind(now.date, target - 1, target + 1).all();
+
+  const rows = due.results || [];
+  for (const s of rows) {
+    const label = (LANES.find((l) => l.key === s.lane) || {}).label || s.lane;
+    const when = `${String((s.start_min / 60) | 0).padStart(2, '0')}:${String(s.start_min % 60).padStart(2, '0')}`;
+    const mins = s.start_min - now.min;
+    const r = await sendSms(env, `In ${mins} min - ${s.title} (${label}) at ${when}`);
+    // Only mark it sent if it actually sent. A GatewayAPI hiccup should let the
+    // next tick try again while the block is still inside the window.
+    if (r.ok) {
+      await env.DB.prepare('UPDATE slots SET alerted_min = ? WHERE id = ?')
+        .bind(s.start_min, s.id).run();
+    }
+  }
+  return { checked: now, due: rows.length };
+}
+
 // ── handlers ──────────────────────────────────────────────────────────
 
 // FNV-1a. Any stable hash will do; the point is that a given date always picks
@@ -848,6 +913,12 @@ async function syncAck(request, env) {
 // ── router ────────────────────────────────────────────────────────────
 
 export default {
+  // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
+  // keeps the isolate alive until the sends finish.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runAlerts(env).catch((e) => console.error('runAlerts:', e.message)));
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -888,6 +959,12 @@ export default {
       if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
+      // Send one alert now, to prove the SMS path end to end without waiting
+      // for a block to come due. Authed, like everything below the gate.
+      if (path === '/api/alert/test' && request.method === 'POST') {
+        const r = await sendSms(env, 'Test from Robski Today. Alerts are working.');
+        return json(r, request, r.ok ? 200 : 502);
+      }
       if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);

@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS slots (
   note       TEXT,
   url        TEXT,              -- carried over when the slot came from an activity
   event_id   TEXT,              -- Google Calendar event this block was adopted from
+  alerted_min INTEGER,          -- the start_min a 5-min SMS was sent for; NULL = none
   created_at TEXT NOT NULL
 );
 -- One block per calendar event, so clicking a sat Zazen twice can't count it
