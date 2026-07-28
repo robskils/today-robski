@@ -14,12 +14,6 @@ custom_domain = true
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
-# Every minute, so a block starting in 5 gets a text 5 minutes out. The handler
-# only sends inside a 4-6 minute window and marks each block once, so a minute
-# of ticks with nothing due is a no-op D1 read.
-[triggers]
-crons = ["* * * * *"]
-
 # Who can be sent a sign-in code. Anything else gets the same "ok" response,
 # so the list can't be probed from outside.
 #
@@ -40,6 +34,16 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk"
 # onboarding@resend.dev would not work here: it only delivers to the Resend
 # account's own address, and codes go to robin@lumley-savile.com.
 FROM_EMAIL = "Robski Today <today@incremento.co>"
+
+# Every minute, so a block starting in 5 gets a text 5 minutes out. The handler
+# only sends inside a 4-6 minute window and marks each block once, so a minute
+# of ticks with nothing due is a no-op D1 read.
+#
+# MUST stay its own table, below the whole [vars] block. Slot it between two
+# [vars] keys and TOML folds every key beneath it into [triggers] - which is
+# how ADMIN_EMAILS once went missing and silently broke sign-in.
+[triggers]
+crons = ["* * * * *"]
 
 # ── D1 ────────────────────────────────────────────────────────────────
 # Created in WEUR. Schema: npx wrangler d1 execute today-robski --file worker/schema.sql --remote
