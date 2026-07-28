@@ -205,8 +205,13 @@ async function pullOptions() {
   });
   if (!Array.isArray(nodes)) throw new Error('unexpected search_nodes response');
 
+  // hasType also returns old nodes Tana still associates with the type but
+  // that no longer carry the tag - three Nov-2025 "Art"/"Portugal"/"Society"
+  // nodes, which showed up as phantom duplicates in the picker. Keep only nodes
+  // that genuinely carry #Life Area now.
   const areas = nodes
-    .filter((n) => !n.inTrash && (n.name || '').trim())
+    .filter((n) => !n.inTrash && (n.name || '').trim()
+      && (n.tagIds || []).includes(LIFE_AREA_TAG_ID))
     .map((n) => ({ node_id: n.id, kind: 'area', name: n.name.trim() }));
 
   return [...areas, ...PRIORITIES];
