@@ -346,10 +346,9 @@ async function runAlerts(env) {
 
   const rows = due.results || [];
   for (const s of rows) {
-    const label = (LANES.find((l) => l.key === s.lane) || {}).label || s.lane;
     const when = `${String((s.start_min / 60) | 0).padStart(2, '0')}:${String(s.start_min % 60).padStart(2, '0')}`;
     const mins = s.start_min - now.min;
-    const r = await sendSms(env, `In ${mins} min - ${s.title} (${label}) at ${when}`);
+    const r = await sendSms(env, `You have ${s.title} starting in ${mins} minutes (${when}).`);
     // Only mark it sent if it actually sent. A GatewayAPI hiccup should let the
     // next tick try again while the block is still inside the window.
     if (r.ok) {
@@ -966,7 +965,7 @@ export default {
       // Send one alert now, to prove the SMS path end to end without waiting
       // for a block to come due. Authed, like everything below the gate.
       if (path === '/api/alert/test' && request.method === 'POST') {
-        const r = await sendSms(env, 'Test from Robski Today. Alerts are working.');
+        const r = await sendSms(env, 'You have Zazen starting in 5 minutes (07:00). [test]');
         return json(r, request, r.ok ? 200 : 502);
       }
       if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
