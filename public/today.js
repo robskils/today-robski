@@ -204,13 +204,17 @@ function renderRail() {
     const p = progress[l.key] || { planned: 0, done: 0 };
     const target = Number(settings[`target_${l.key}`] || 0);
 
-    // Untracked lanes (Other) have no target, so show a plain count.
+    // No-target lanes show a plain count, no ring. The catch-all (Other) only
+    // appears once it holds something; a named lane like Maya is always there,
+    // just without a goal - a relationship owes no daily quota of minutes.
     if (!target) {
-      if (!p.planned) return '';
-      return `<button class="lane" style="--h:${l.hue}" data-lane-add="${l.key}" draggable="true">
+      if (l.untracked && !p.planned) return '';
+      const sub = p.done ? `${humanMin(p.done)} done` : 'no set time';
+      return `<button class="lane" style="--h:${l.hue}" data-lane-add="${l.key}" draggable="true"
+          title="${esc(l.label)}: no daily target. Click to add a block, or drag it onto the schedule.">
         <div class="lane-txt">
           <span class="lane-name">${esc(l.label)}</span>
-          <span class="lane-min">${humanMin(p.done)} done</span>
+          <span class="lane-min">${sub}</span>
         </div></button>`;
     }
 

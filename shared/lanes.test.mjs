@@ -32,6 +32,7 @@ eq(laneForArea('Money'), 'mylife', 'Money -> mylife');
 eq(laneForArea('Língua Portuguesa'), 'portuguese', 'Língua Portuguesa -> portuguese');
 eq(laneForArea('Dance'), 'mylife', 'Dance -> mylife (Music & Dance is a practice)');
 eq(laneForArea('Business'), 'work', 'Business -> work');
+eq(laneForArea('Maya Das'), 'maya', 'Maya Das -> maya');
 eq(laneForArea(null), 'other', 'no area -> other');
 eq(laneForArea('Nonsense'), 'other', 'unknown area -> other');
 

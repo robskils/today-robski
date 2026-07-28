@@ -30,6 +30,10 @@ export const LANES = [
   // Everything that is just living: admin, money, Portugal, the body's upkeep.
   // Was called Admin, which undersold it.
   { key: 'mylife', label: 'My Life', hue: 190 },
+  // Maya. A person, so no daily target - you don't owe a relationship a quota
+  // of minutes. No `target_maya` setting exists, which is what leaves its ring
+  // off; the rail shows a plain count instead.
+  { key: 'maya', label: 'Maya', hue: 70 },
   // Optional by design: an hour's siesta is what peak form needs, but it must
   // never read as a failure when the work is going well. Hōsan is the
   // monastery's own word for a period released from the formal schedule.
@@ -64,6 +68,9 @@ export const AREA_TO_LANE = {
   'Lisbon Sintra Tours': 'work',
 
   // My Life is everything that is simply living.
+  // A person gets her own lane, no target. See the 'maya' lane.
+  'Maya Das': 'maya',
+
   'My Life': 'mylife',
   'Tool / Admin': 'mylife',
   'Tool': 'mylife',           // stray near-duplicate of the above, 1 task
@@ -72,9 +79,9 @@ export const AREA_TO_LANE = {
   'Body / Health': 'mylife',
   'Somatic Studio': 'mylife',
 
-  // Deliberately unmapped -> 'other': relationships and Zen study have no lane
-  // of their own, and ~35 tasks carry no Area at all.
-  // Maya Das, Tara L-S, People, Society, Well-being / Mind / Spirit
+  // Deliberately unmapped -> 'other': these relationships and Zen study have no
+  // lane of their own, and ~35 tasks carry no Area at all.
+  // Tara L-S, People, Society, Well-being / Mind / Spirit
 };
 
 export function laneForArea(area) {
