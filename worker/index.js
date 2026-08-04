@@ -1,5 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, requestCode, verifyCode } from './auth.js';
+import { briefDue, briefEmail, briefSubject } from './brief.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -357,6 +358,90 @@ async function runAlerts(env) {
     }
   }
   return { checked: now, due: rows.length };
+}
+
+// ── the morning brief ─────────────────────────────────────────────────
+
+// Sent once a day at 08:45, off the same every-minute cron as the alerts.
+//
+// It lives here rather than in a Claude routine because a routine in the cloud
+// cannot read Tana: the API is write-only and the MCP bridge is on the Mac. The
+// worker has both halves already, the calendar through its own refresh token
+// and the tasks through the D1 mirror, so the brief is complete rather than
+// half a day.
+//
+// The tasks side is a mirror the Mac agent refreshes every 15 minutes. If the
+// Mac slept all night the P1 list is however old the last sync was, which is
+// the same staleness the web app has always had and is fine for a list that
+// changes daily, not hourly.
+// `force` is the preview button: it sends today's brief on demand and never
+// touches last_brief_day, so testing it at noon cannot swallow tomorrow's.
+async function runDailyBrief(env, { force = false } = {}) {
+  const now = localParts(new Date(), TZ);
+  if (!force) {
+    const last = await env.DB.prepare("SELECT value FROM settings WHERE key = 'last_brief_day'").first();
+    if (!briefDue(now.min, now.date, last?.value)) return { sent: false, reason: 'not due' };
+
+    // Claim the day before sending, not after. Two ticks a minute apart both
+    // reading "not sent yet" would otherwise send twice, and a duplicate brief
+    // is worse than a late one. The UPDATE only fires when the stored day is
+    // actually different, so `changes` tells us whether this tick won the claim.
+    const claim = await env.DB.prepare(
+      `INSERT INTO settings (key, value) VALUES ('last_brief_day', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value
+          WHERE settings.value <> excluded.value`,
+    ).bind(now.date).run();
+    if (!claim.meta?.changes) return { sent: false, reason: 'already claimed' };
+  }
+
+  try {
+    const [cal, quote, tasksRes] = await Promise.all([
+      calendarEvents(env, now.date),
+      quoteForDay(env, now.date),
+      // Every open P1. Ordered oldest first: a P1 that has sat for a month is
+      // the one that most deserves to be read first.
+      env.DB.prepare(
+        `SELECT title, lane FROM tasks
+          WHERE done = 0 AND priority = 'P1'
+          ORDER BY created IS NULL, created LIMIT 25`,
+      ).all(),
+    ]);
+
+    // A calendar failure must not cost Robin the rest of the brief. The empty
+    // list reads as "nothing scheduled", so say so explicitly instead.
+    if (cal.error) console.error('brief calendar:', cal.error);
+
+    const labels = Object.fromEntries(LANES.map((l) => [l.key, l.label]));
+    const tasks = (tasksRes.results || []).map((t) => ({
+      title: t.title,
+      lane_label: t.lane && t.lane !== 'other' ? labels[t.lane] : null,
+    }));
+
+    const payload = { day: now.date, events: cal.events, tasks, quote };
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: env.FROM_EMAIL,
+        to: [env.BRIEF_EMAIL],
+        subject: briefSubject(payload),
+        html: briefEmail(payload),
+      }),
+    });
+    if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
+    return { sent: true, events: cal.events.length, tasks: tasks.length };
+  } catch (e) {
+    // Hand the day back so a later tick inside the window can try again. A
+    // Resend blip before 10:15 should cost a few minutes, not the brief.
+    if (!force) {
+      await env.DB.prepare("DELETE FROM settings WHERE key = 'last_brief_day' AND value = ?")
+        .bind(now.date).run();
+    }
+    throw e;
+  }
 }
 
 // ── handlers ──────────────────────────────────────────────────────────
@@ -953,6 +1038,9 @@ export default {
   // keeps the isolate alive until the sends finish.
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runAlerts(env).catch((e) => console.error('runAlerts:', e.message)));
+    // Both run off the same every-minute tick. The brief returns immediately on
+    // all but one tick a day, so this costs a single indexed D1 read a minute.
+    ctx.waitUntil(runDailyBrief(env).catch((e) => console.error('runDailyBrief:', e.message)));
   },
 
   async fetch(request, env) {
@@ -1000,6 +1088,15 @@ export default {
       if (path === '/api/alert/test' && request.method === 'POST') {
         const r = await sendSms(env, 'You have Zazen starting in 5 minutes (07:00). [test]');
         return json(r, request, r.ok ? 200 : 502);
+      }
+      // Send today's brief now, to see it in the inbox without waiting for
+      // 08:45. Does not consume the day: tomorrow's still goes out.
+      if (path === '/api/brief/test' && request.method === 'POST') {
+        try {
+          return json(await runDailyBrief(env, { force: true }), request);
+        } catch (e) {
+          return err(String(e.message || e), request, 502);
+        }
       }
       if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);

@@ -35,6 +35,11 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk"
 # account's own address, and codes go to robin@lumley-savile.com.
 FROM_EMAIL = "Robski Today <today@incremento.co>"
 
+# Where the 08:45 morning brief lands. One address, not the ADMIN_EMAILS list:
+# that list is who may sign in, which is a different question from who gets
+# post every morning.
+BRIEF_EMAIL = "robin@lumley-savile.com"
+
 # Every minute, so a block starting in 5 gets a text 5 minutes out. The handler
 # only sends inside a 4-6 minute window and marks each block once, so a minute
 # of ticks with nothing due is a no-op D1 read.

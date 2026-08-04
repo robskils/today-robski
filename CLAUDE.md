@@ -61,11 +61,40 @@ no handshake needed). So:
 The agent applies write-backs **before** pulling, otherwise the pull would see
 the task still open in Tana and clobber the completion.
 
+## The morning brief
+
+`worker/brief.js` renders one email a day, sent at 08:45 Europe/Lisbon off the
+same every-minute cron as the SMS alerts: the day's calendar, every open P1,
+and the day's quote.
+
+It lives in the worker rather than in a Claude routine because a routine in the
+cloud cannot read Tana, for the reason above. The worker has both halves
+already. A routine would deliver half a brief, which is what the old one did.
+
+- `briefDue` opens a window from 08:45 to 10:15 rather than matching 08:45
+  exactly, so a dropped cron tick delays the brief instead of losing the day.
+  An evening brief is worse than none, hence the closing edge.
+- The window is 90 ticks wide, so `runDailyBrief` **claims the day in
+  `settings.last_brief_day` before sending**, not after. The conditional UPDATE
+  is the lock: `meta.changes` says whether this tick won it. A send failure
+  hands the day back so a later tick retries.
+- `POST /api/brief/test` sends it now and deliberately does *not* claim the
+  day, so testing at noon cannot swallow tomorrow's.
+- Everything in brief.js is pure, and `npm test` renders the page without a
+  worker or a clock. The escaping tests matter: a calendar invite title is
+  somebody else's text.
+- Base size is 17px and the quote is 27px, and a test pins the floor. Robin's
+  eyesight is the reason; don't let a tidy-up shrink it.
+- `longDate` composes weekday and date from two formatters rather than asking
+  en-GB for both: Node renders that without the comma and workerd need not
+  agree, so the header would differ between the test and the inbox.
+
 ## Layout
 
 ```
 shared/lanes.js     LANES + AREA_TO_LANE. Imported by both worker and agent.
 worker/index.js     API. Router at the bottom.
+worker/brief.js     The 08:45 email. Pure: renders, sends nothing.
 worker/schema.sql   tasks, slots, pending_writes, settings
 public/             index.html, today.css, today.js, favicon.svg
 sync/sync.js        Tana <-> API. Parses read_node markdown.
