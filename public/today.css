@@ -175,6 +175,8 @@ select.input { appearance: none; background-image: none; }
   transition: background .15s, color .15s;
 }
 .ghost-btn:hover { background: var(--paper-2); color: var(--ink); }
+/* The Life link is an anchor wearing the button's clothes. */
+a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; }
 
 .nav-btn {
   width: 44px; height: 44px; border-radius: 50%; font-size: 26px; line-height: 1;
