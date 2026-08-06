@@ -120,6 +120,61 @@ button { cursor:pointer; background:none; border:0; }
 
 .empty { text-align:center; color:var(--ink-3); padding:60px 20px; font-family:'Cormorant Garamond',serif; font-size:22px; font-style:italic; }
 
+/* ── tabs (Tasks / Tables) ───────────────────────── */
+.tabs { display:flex; gap:4px; margin-left:6px; }
+.tab {
+  padding:7px 15px; border-radius:999px; font-size:15.5px; color:var(--ink-3);
+  text-decoration:none; border:1px solid transparent; transition:background .12s,color .12s;
+}
+.tab:hover { color:var(--ink); background:var(--paper-2); }
+.tab.on { color:var(--ink); background:var(--card); border-color:var(--line); font-weight:500; }
+
+/* ── tables ──────────────────────────────────────── */
+.tbl-grid { max-width:1180px; margin:0 auto; padding:24px max(18px,env(safe-area-inset-left)) 90px; display:grid; grid-template-columns:230px minmax(0,1fr); gap:30px; align-items:start; }
+.tbl-list { position:sticky; top:96px; display:flex; flex-direction:column; gap:2px; }
+.tbl-item { display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; color:var(--ink-2); font-size:16.5px; text-align:left; width:100%; transition:background .12s; }
+.tbl-item:hover { background:var(--paper-2); color:var(--ink); }
+.tbl-item.on { background:var(--paper-2); color:var(--ink); font-weight:500; }
+.tbl-item .n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tbl-item .x { opacity:0; color:var(--ink-3); font-size:16px; }
+.tbl-item:hover .x { opacity:1; } .tbl-item .x:hover { color:var(--accent); }
+
+.tbl-main { min-width:0; }
+.tbl-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.tbl-head h1 { font-size:30px; }
+.tbl-head input.rename { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:500; background:transparent; border:0; border-bottom:1px solid var(--line-2); color:var(--ink); padding:2px 0; min-width:200px; }
+
+.tbl-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
+table.recs { border-collapse:collapse; width:100%; font-size:16px; }
+table.recs th, table.recs td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:0; text-align:left; vertical-align:middle; }
+table.recs th:last-child, table.recs td:last-child { border-right:0; }
+table.recs tr:last-child td { border-bottom:0; }
+table.recs thead th { background:var(--paper-2); font-weight:600; white-space:nowrap; }
+.thh { display:flex; align-items:center; gap:6px; padding:10px 12px; }
+.thh input { flex:1; min-width:60px; background:transparent; border:0; font:inherit; font-weight:600; color:var(--ink); }
+.thh .ty { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:500; }
+.thh .x { opacity:.35; color:var(--ink-3); font-size:15px; } .thh .x:hover { opacity:1; color:var(--accent); }
+.th-add { width:44px; text-align:center; }
+.th-add button, .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; } .th-add button:hover { color:var(--accent); }
+
+table.recs td .cell { width:100%; border:0; background:transparent; font:inherit; color:var(--ink); padding:11px 12px; }
+table.recs td .cell:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; border-radius:4px; }
+table.recs td.num .cell { font-variant-numeric:tabular-nums; }
+table.recs td.check { text-align:center; }
+table.recs td.check input { width:19px; height:19px; accent-color:var(--accent); }
+table.recs select.cell { appearance:none; cursor:pointer; }
+.row-del { text-align:center; } .row-del button { opacity:0; color:var(--ink-3); font-size:16px; } tr:hover .row-del button { opacity:1; } .row-del button:hover { color:var(--accent); }
+.row-add td { padding:0; } .row-add button { width:100%; text-align:left; padding:12px; color:var(--ink-3); font-size:15px; } .row-add button:hover { color:var(--accent); background:var(--paper-2); }
+
+/* add-column popover */
+.colnew { display:flex; gap:8px; align-items:center; padding:10px 12px; }
+.colnew input, .colnew select { padding:8px 10px; font-size:15px; background:var(--paper); border:1px solid var(--line-2); border-radius:8px; color:var(--ink); }
+.colnew input { width:130px; }
+
+.tbl-empty { text-align:center; color:var(--ink-3); padding:70px 20px; font-family:'Cormorant Garamond',serif; font-size:22px; font-style:italic; }
+
+@media (max-width:760px){ .tbl-grid { grid-template-columns:1fr; } .tbl-list { position:static; flex-flow:row wrap; } }
+
 /* ── toast ───────────────────────────────────────── */
 .toast {
   position:fixed; left:50%; bottom:26px; transform:translateX(-50%);

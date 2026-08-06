@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Robski · Life · Tables</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/life.css">
+<script>
+  try {
+    const t = localStorage.getItem('today.theme');
+    const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  } catch (e) {}
+  if (!localStorage.getItem('today.token')) location.replace('/');
+</script>
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-l">
+      <span class="mark">Robski<span class="dot">·</span><em>Life</em></span>
+      <nav class="tabs">
+        <a class="tab" href="/life.html">Tasks</a>
+        <a class="tab on" href="/tables.html">Tables</a>
+      </nav>
+    </div>
+    <div class="search"></div>
+    <div class="bar-r">
+      <a class="ghost" href="/" title="Your day">Today →</a>
+      <button class="ghost icon" id="theme" title="Light / dark" aria-label="Toggle theme">◑</button>
+      <a class="ghost" href="/api/export" title="Download a full backup">Backup</a>
+    </div>
+  </header>
+
+  <main class="tbl-grid">
+    <aside class="tbl-list-wrap">
+      <h2 class="col-h" style="padding:0 4px 10px;font-size:15px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-3);font-family:'Inter',sans-serif;font-weight:600;">Tables</h2>
+      <div id="tables" class="tbl-list"></div>
+      <form id="new-table" class="add-area" style="margin-top:12px">
+        <input id="new-name" type="text" placeholder="New table…" aria-label="New table" autocomplete="off">
+        <button class="add-btn" type="submit" title="Create table">+</button>
+      </form>
+    </aside>
+
+    <section class="tbl-main" id="main"></section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/tables.js"></script>
+</body>
+</html>
