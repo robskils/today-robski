@@ -171,6 +171,27 @@ table.recs select.cell { appearance:none; cursor:pointer; }
 .colnew input, .colnew select { padding:8px 10px; font-size:15px; background:var(--paper); border:1px solid var(--line-2); border-radius:8px; color:var(--ink); }
 .colnew input { width:130px; }
 
+/* open-as-card handle, first cell of each row */
+.th-open, td.row-open { width:38px; text-align:center; }
+td.row-open button { opacity:0; color:var(--ink-3); font-size:15px; padding:8px 6px; transition:opacity .12s,color .12s; }
+tr:hover td.row-open button { opacity:.7; }
+td.row-open button:hover { opacity:1; color:var(--accent); }
+@media (hover:none){ td.row-open button { opacity:.7; } }
+
+/* the row, opened as a card */
+.card { max-width:660px; }
+.card [data-back] { margin-bottom:22px; }
+.card-title { font-size:clamp(28px,4vw,38px); margin:4px 0 26px; text-wrap:balance; }
+.card-fields { display:flex; flex-direction:column; }
+.crow { display:grid; grid-template-columns:190px minmax(0,1fr); gap:18px; align-items:center; padding:13px 0; border-bottom:1px solid var(--line); }
+.crow:last-child { border-bottom:0; }
+.clabel { display:flex; flex-direction:column; gap:3px; color:var(--ink-2); font-size:16.5px; }
+.clabel em { font-style:normal; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); }
+.cval input, .cval select { width:100%; padding:10px 13px; font-size:16.5px; background:var(--card); border:1px solid var(--line-2); border-radius:9px; color:var(--ink); }
+.cval input:focus-visible, .cval select:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent); }
+.cval input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent); }
+@media (max-width:620px){ .crow { grid-template-columns:1fr; gap:6px; } }
+
 .tbl-empty { text-align:center; color:var(--ink-3); padding:70px 20px; font-family:'Cormorant Garamond',serif; font-size:22px; font-style:italic; }
 
 @media (max-width:760px){ .tbl-grid { grid-template-columns:1fr; } .tbl-list { position:static; flex-flow:row wrap; } }

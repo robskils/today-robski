@@ -8,7 +8,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Checkbox'], ['select', 'Select']];
-const state = { tables: [], current: null, rows: [], addingCol: false };
+const state = { tables: [], current: null, rows: [], addingCol: false, openRow: null };
 const token = () => localStorage.getItem(KEY) || '';
 
 async function api(path, opts = {}) {
@@ -49,14 +49,36 @@ function renderList() {
 }
 
 // ── the grid ─────────────────────────────────────────
-function cellTd(r, col) {
+// One input per cell, shared by the grid and the card, so an edit in either
+// saves the same way (the #main change handler is delegated).
+function cellInput(r, col) {
   const v = (r.props.values || {})[col.id];
   const k = `${r.id}:${col.id}`;
-  if (col.type === 'checkbox') return `<td class="check"><input type="checkbox" data-cell="${k}" ${v ? 'checked' : ''}></td>`;
-  if (col.type === 'number') return `<td class="num"><input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}"></td>`;
-  if (col.type === 'date') return `<td><input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}"></td>`;
-  if (col.type === 'select') return `<td><select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></td>`;
-  return `<td><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}"></td>`;
+  if (col.type === 'checkbox') return `<input type="checkbox" data-cell="${k}" ${v ? 'checked' : ''}>`;
+  if (col.type === 'number') return `<input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
+  if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
+  if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  return `<input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
+}
+function cellTd(r, col) {
+  const cls = col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : '';
+  return `<td class="${cls}">${cellInput(r, col)}</td>`;
+}
+
+// The row as a card: every field, labelled and editable, with a way back.
+function cardHTML() {
+  const r = state.rows.find((x) => x.id === state.openRow);
+  const c = cols();
+  const title = (r.props.values || {})[c[0] && c[0].id] || 'Untitled';
+  const fields = c.map((col) => `<label class="crow">
+    <span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span>
+    <span class="cval">${cellInput(r, col)}</span>
+  </label>`).join('');
+  return `<div class="card">
+    <button class="ghost" data-back>← ${esc(state.current.title || 'table')}</button>
+    <h1 class="card-title">${esc(title)}</h1>
+    <div class="card-fields">${fields}</div>
+  </div>`;
 }
 
 function colHead(col) {
@@ -83,6 +105,10 @@ function renderMain() {
     m.innerHTML = `<div class="tbl-empty">${state.tables.length ? 'Pick a table on the left.' : 'No tables yet. Name one on the left to begin.'}</div>`;
     return;
   }
+  // A stale openRow (row deleted elsewhere) falls back to the grid.
+  if (state.openRow && !state.rows.some((x) => x.id === state.openRow)) state.openRow = null;
+  if (state.openRow) { m.innerHTML = cardHTML(); return; }
+
   const c = cols();
   const head = `<div class="tbl-head">
     <input class="rename" value="${esc(state.current.title || '')}" data-rename aria-label="Table name">
@@ -90,10 +116,10 @@ function renderMain() {
   </div>`;
 
   const body = `<div class="tbl-scroll"><table class="recs">
-    <thead><tr>${c.map(colHead).join('')}${addColCell()}</tr></thead>
+    <thead><tr><th class="th-open"></th>${c.map(colHead).join('')}${addColCell()}</tr></thead>
     <tbody>
-      ${state.rows.map((r) => `<tr data-row="${r.id}">${c.map((col) => cellTd(r, col)).join('')}<td class="row-del"><button data-del-row="${r.id}" title="Delete row">×</button></td></tr>`).join('')}
-      <tr class="row-add"><td colspan="${c.length + 1}"><button data-add-row>+ Row</button></td></tr>
+      ${state.rows.map((r) => `<tr data-row="${r.id}"><td class="row-open"><button data-open-row="${r.id}" title="Open as card">⤢</button></td>${c.map((col) => cellTd(r, col)).join('')}<td class="row-del"><button data-del-row="${r.id}" title="Delete row">×</button></td></tr>`).join('')}
+      <tr class="row-add"><td colspan="${c.length + 2}"><button data-add-row>+ Row</button></td></tr>
     </tbody>
   </table></div>`;
 
@@ -153,6 +179,9 @@ $('#tables').addEventListener('click', (e) => {
 });
 
 $('#main').addEventListener('click', (e) => {
+  const op = e.target.closest('[data-open-row]');
+  if (op) { state.openRow = op.dataset.openRow; renderMain(); window.scrollTo(0, 0); return; }
+  if (e.target.closest('[data-back]')) { state.openRow = null; renderMain(); return; }
   if (e.target.closest('[data-add-col]')) { state.addingCol = true; renderMain(); return; }
   const dc = e.target.closest('[data-del-col]');
   if (dc) { if (confirm('Delete this column?')) saveColumns(cols().filter((c) => c.id !== dc.dataset.delCol)).then(renderMain).catch((x) => toast(x.message)); return; }
