@@ -292,6 +292,42 @@ async function deleteEvent(request, env, id) {
   }
 }
 
+// ── backup / export ───────────────────────────────────────────────────
+
+// Everything the app owns, in one JSON file. The escape hatch: whatever happens
+// to this worker, the data is downloadable and portable. otp_codes is left out
+// (transient login codes, nothing to preserve); everything else goes in.
+const EXPORT_TABLES = [
+  'blocks', 'block_links',
+  'tasks', 'slots', 'slot_tasks',
+  'activities', 'settings', 'tana_options', 'quotes', 'pending_writes',
+];
+
+async function handleExport(request, env) {
+  const dump = {};
+  for (const t of EXPORT_TABLES) {
+    // Table names here are a fixed allow-list, never user input.
+    const { results } = await env.DB.prepare(`SELECT * FROM ${t}`).all();
+    dump[t] = results;
+  }
+  const now = new Date();
+  const payload = {
+    app: 'robski-life',
+    version: 1,
+    exported_at: now.toISOString(),
+    counts: Object.fromEntries(Object.entries(dump).map(([k, v]) => [k, v.length])),
+    tables: dump,
+  };
+  const day = now.toISOString().slice(0, 10);
+  return new Response(JSON.stringify(payload, null, 2), {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Disposition': `attachment; filename="robski-backup-${day}.json"`,
+      ...cors(request),
+    },
+  });
+}
+
 // ── SMS alerts ────────────────────────────────────────────────────────
 
 // Send one SMS through GatewayAPI. Lifted from the LST admin's routes/sms.js,
@@ -1078,6 +1114,7 @@ export default {
       if (!(await isAuthed(request, env))) return err('unauthorized', request, 401);
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
+      if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
       if (path === '/api/tasks' && request.method === 'GET') return handleTasks(request, env, url);
       if (path === '/api/tasks' && request.method === 'POST') return createTask(request, env);
       if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);

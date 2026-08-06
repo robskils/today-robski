@@ -187,3 +187,35 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('target_rest',       '60'),
   ('day_start',    '360'),   -- 06:00
   ('day_end',      '1380');  -- 23:00
+
+-- ── Robski Life: the block core ───────────────────────────────────────
+-- The one model the whole Life app sits on. A task, a note, a table, a table
+-- row - all the same thing: a block. This is what lets a note hold a task and
+-- a task link to a table row without three separate silos.
+--
+-- Unlike `tasks` (a Tana mirror), blocks are OWNED here. This is the source of
+-- truth we're building toward; nothing syncs it from anywhere.
+CREATE TABLE IF NOT EXISTS blocks (
+  id         TEXT PRIMARY KEY,        -- app-generated, crypto.randomUUID()
+  kind       TEXT NOT NULL,           -- task | note | table | row | text ...
+  parent_id  TEXT,                    -- nesting; NULL = top level
+  position   REAL NOT NULL DEFAULT 0, -- order among siblings; REAL so a new
+                                      -- block slots between two by averaging
+  title      TEXT,                    -- name / first line
+  body       TEXT,                    -- markdown or long content (notes)
+  props      TEXT,                    -- JSON: typed fields (status, due, cols…)
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived   INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_blocks_parent ON blocks(parent_id, position);
+CREATE INDEX IF NOT EXISTS idx_blocks_kind   ON blocks(kind, archived);
+
+-- [[links]] between blocks. Directed: from references to. The reverse read
+-- (who points at me) is the backlink panel, hence the index on to_id.
+CREATE TABLE IF NOT EXISTS block_links (
+  from_id TEXT NOT NULL,
+  to_id   TEXT NOT NULL,
+  PRIMARY KEY (from_id, to_id)
+);
+CREATE INDEX IF NOT EXISTS idx_block_links_to ON block_links(to_id);
