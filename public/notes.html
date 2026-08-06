@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Robski · Life · Tables</title>
+<title>Robski · Life · Notes</title>
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/life.css">
 <script>
@@ -21,32 +21,28 @@
       <span class="mark">Robski<span class="dot">·</span><em>Life</em></span>
       <nav class="tabs">
         <a class="tab" href="/life.html">Tasks</a>
-        <a class="tab on" href="/tables.html">Tables</a>
-        <a class="tab" href="/notes.html">Notes</a>
+        <a class="tab" href="/tables.html">Tables</a>
+        <a class="tab on" href="/notes.html">Notes</a>
       </nav>
     </div>
-    <div class="search"></div>
+    <div class="search"><input id="q" type="search" placeholder="Search everything…" aria-label="Search" autocomplete="off"></div>
     <div class="bar-r">
       <a class="ghost" href="/" title="Your day">Today →</a>
       <button class="ghost icon" id="theme" title="Light / dark" aria-label="Toggle theme">◑</button>
-      <a class="ghost" href="/api/export" title="Download a full backup">Backup</a>
+      <a class="ghost" id="export" href="/api/export" title="Download a full backup">Backup</a>
     </div>
   </header>
 
-  <main class="tbl-grid">
-    <aside class="tbl-list-wrap">
-      <h2 class="col-h" style="padding:0 4px 10px;font-size:15px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-3);font-family:'Inter',sans-serif;font-weight:600;">Tables</h2>
-      <div id="tables" class="tbl-list"></div>
-      <form id="new-table" class="add-area" style="margin-top:12px">
-        <input id="new-name" type="text" placeholder="New table…" aria-label="New table" autocomplete="off">
-        <button class="add-btn" type="submit" title="Create table">+</button>
-      </form>
+  <main class="notes-grid">
+    <aside class="notes-side">
+      <h2 class="col-h">Notes</h2>
+      <div id="tops" class="notes-tops"></div>
+      <button class="add-btn wide" id="new-top" style="margin-top:12px">+ New note</button>
     </aside>
-
-    <section class="tbl-main" id="main"></section>
+    <section class="notes-main" id="main"></section>
   </main>
 
   <div id="toast" class="toast" hidden></div>
-  <script src="/tables.js"></script>
+  <script src="/notes.js"></script>
 </body>
 </html>
