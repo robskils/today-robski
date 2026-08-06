@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Robski · Life</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/life.css">
+<script>
+  // Stamp the theme before first paint so there's no flash.
+  try {
+    const t = localStorage.getItem('today.theme');
+    const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  } catch (e) {}
+  // Shared login with Today: same origin, same token. No token → sign in on Today.
+  if (!localStorage.getItem('today.token')) location.replace('/');
+</script>
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-l">
+      <span class="mark">Robski<span class="dot">·</span><em>Life</em></span>
+    </div>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search everything…" aria-label="Search" autocomplete="off">
+    </div>
+    <div class="bar-r">
+      <a class="ghost" href="/" title="Your day">Today →</a>
+      <button class="ghost icon" id="theme" title="Light / dark" aria-label="Toggle theme">◑</button>
+      <a class="ghost" id="export" href="/api/export" title="Download a full backup">Backup</a>
+    </div>
+  </header>
+
+  <main class="grid">
+    <aside class="col-areas">
+      <h2 class="col-h">Life areas</h2>
+      <div id="areas" class="areas"></div>
+      <form id="area-form" class="add-area">
+        <input id="area-name" type="text" placeholder="New area…" aria-label="New life area" autocomplete="off">
+        <button class="add-btn" type="submit" title="Add area">+</button>
+      </form>
+    </aside>
+
+    <section class="col-main">
+      <form id="task-form" class="add-task">
+        <input id="task-title" type="text" placeholder="Add a task…" aria-label="Task" autocomplete="off" required>
+        <select id="task-area" class="sel" aria-label="Life area"></select>
+        <select id="task-prio" class="sel" aria-label="Priority">
+          <option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option>
+        </select>
+        <button class="add-btn wide" type="submit">Add</button>
+      </form>
+
+      <div id="scope" class="scope"></div>
+      <div id="list" class="list"></div>
+      <div id="empty" class="empty" hidden></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/life.js"></script>
+</body>
+</html>

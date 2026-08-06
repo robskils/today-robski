@@ -328,6 +328,143 @@ async function handleExport(request, env) {
   });
 }
 
+// ── blocks: the Robski Life core API ──────────────────────────────────
+//
+// One set of endpoints for everything the Life app owns. A task, a note, an
+// area, a table, a row - all blocks, told apart by `kind`. props is a JSON bag
+// of typed fields (a task's status/area, an area's colour), so new field types
+// need no schema change. This is native, owned data - nothing syncs it.
+
+function parseBlock(row) {
+  if (!row) return null;
+  let props = {};
+  try { props = row.props ? JSON.parse(row.props) : {}; } catch { props = {}; }
+  return { ...row, props, archived: !!row.archived };
+}
+
+async function getBlock(env, id) {
+  const row = await env.DB.prepare('SELECT * FROM blocks WHERE id = ?').bind(id).first();
+  if (!row) return null;
+  const block = parseBlock(row);
+  // Backlinks: who points at me. Cheap, and the notes/links phase will lean on it.
+  const links = await env.DB.prepare('SELECT to_id FROM block_links WHERE from_id = ?').bind(id).all();
+  const back = await env.DB.prepare('SELECT from_id FROM block_links WHERE to_id = ?').bind(id).all();
+  block.links = links.results.map((r) => r.to_id);
+  block.backlinks = back.results.map((r) => r.from_id);
+  return block;
+}
+
+async function createBlock(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const kind = String(b.kind || '').trim();
+  if (!kind) return err('kind required', request);
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const parent = b.parent_id || null;
+
+  // Default position: after the last sibling, so a new block lands at the end.
+  let position = Number(b.position);
+  if (!Number.isFinite(position)) {
+    const row = await env.DB.prepare(
+      'SELECT COALESCE(MAX(position) + 1, 0) AS p FROM blocks WHERE parent_id IS ?',
+    ).bind(parent).first();
+    position = row.p;
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+  ).bind(id, kind, parent, position, b.title ?? null, b.body ?? null,
+    b.props ? JSON.stringify(b.props) : null, now, now).run();
+
+  if (Array.isArray(b.links)) {
+    for (const to of b.links) {
+      await env.DB.prepare('INSERT OR IGNORE INTO block_links (from_id, to_id) VALUES (?, ?)')
+        .bind(id, String(to)).run();
+    }
+  }
+  return json(await getBlock(env, id), request, 201);
+}
+
+async function listBlocks(request, env, url) {
+  const clauses = [];
+  const args = [];
+  const kind = url.searchParams.get('kind');
+  if (kind) { clauses.push('kind = ?'); args.push(kind); }
+  if (url.searchParams.has('parent_id')) {
+    clauses.push('parent_id IS ?'); args.push(url.searchParams.get('parent_id') || null);
+  }
+  if (url.searchParams.get('archived') !== '1') clauses.push('archived = 0');
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM blocks ${where} ORDER BY position, created_at`,
+  ).bind(...args).all();
+  return json(results.map(parseBlock), request);
+}
+
+async function updateBlock(request, env, id) {
+  const existing = await env.DB.prepare('SELECT * FROM blocks WHERE id = ?').bind(id).first();
+  if (!existing) return err('not found', request, 404);
+  const b = await request.json().catch(() => ({}));
+
+  const sets = [];
+  const args = [];
+  if ('title' in b) { sets.push('title = ?'); args.push(b.title); }
+  if ('body' in b) { sets.push('body = ?'); args.push(b.body); }
+  if ('position' in b) { sets.push('position = ?'); args.push(Number(b.position)); }
+  if ('parent_id' in b) { sets.push('parent_id = ?'); args.push(b.parent_id || null); }
+  if ('archived' in b) { sets.push('archived = ?'); args.push(b.archived ? 1 : 0); }
+  if ('props' in b) {
+    // Merge, so a caller can set one field without resending the whole bag.
+    let cur = {};
+    try { cur = existing.props ? JSON.parse(existing.props) : {}; } catch { cur = {}; }
+    sets.push('props = ?'); args.push(JSON.stringify({ ...cur, ...b.props }));
+  }
+  sets.push('updated_at = ?'); args.push(new Date().toISOString());
+  args.push(id);
+  await env.DB.prepare(`UPDATE blocks SET ${sets.join(', ')} WHERE id = ?`).bind(...args).run();
+
+  if (Array.isArray(b.links)) {
+    await env.DB.prepare('DELETE FROM block_links WHERE from_id = ?').bind(id).run();
+    for (const to of b.links) {
+      await env.DB.prepare('INSERT OR IGNORE INTO block_links (from_id, to_id) VALUES (?, ?)')
+        .bind(id, String(to)).run();
+    }
+  }
+  return json(await getBlock(env, id), request);
+}
+
+async function deleteBlock(env, request, id) {
+  // Re-parent orphaned children to this block's parent, so a deleted area or
+  // note doesn't strand whatever lived under it.
+  const row = await env.DB.prepare('SELECT parent_id FROM blocks WHERE id = ?').bind(id).first();
+  if (!row) return err('not found', request, 404);
+  await env.DB.batch([
+    env.DB.prepare('UPDATE blocks SET parent_id = ? WHERE parent_id = ?').bind(row.parent_id, id),
+    env.DB.prepare('DELETE FROM block_links WHERE from_id = ? OR to_id = ?').bind(id, id),
+    env.DB.prepare('DELETE FROM blocks WHERE id = ?').bind(id),
+  ]);
+  return json({ ok: true }, request);
+}
+
+// One box to find anything. Searches every block by title and body, so tasks,
+// notes, table rows and areas all come back from the same query. LIKE for now;
+// swap to SQLite FTS if it ever feels slow.
+async function searchBlocks(request, env, url) {
+  const q = (url.searchParams.get('q') || '').trim();
+  if (q.length < 1) return json([], request);
+  // Strip LIKE wildcards from the query so a stray % or _ can't match everything.
+  const like = `%${q.replace(/[%_\\]/g, '')}%`;
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM blocks
+      WHERE archived = 0 AND (title LIKE ? OR body LIKE ?)
+      ORDER BY updated_at DESC LIMIT 50`,
+  ).bind(like, like).all();
+  return json(results.map(parseBlock), request);
+}
+
 // ── SMS alerts ────────────────────────────────────────────────────────
 
 // Send one SMS through GatewayAPI. Lifted from the LST admin's routes/sms.js,
@@ -1115,6 +1252,21 @@ export default {
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
+
+      // Robski Life block core + search.
+      if (path === '/api/blocks' && request.method === 'GET') return listBlocks(request, env, url);
+      if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
+      if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
+      const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);
+      if (blockMatch) {
+        const id = blockMatch[1];
+        if (request.method === 'GET') {
+          const block = await getBlock(env, id);
+          return block ? json(block, request) : err('not found', request, 404);
+        }
+        if (request.method === 'PATCH') return updateBlock(request, env, id);
+        if (request.method === 'DELETE') return deleteBlock(env, request, id);
+      }
       if (path === '/api/tasks' && request.method === 'GET') return handleTasks(request, env, url);
       if (path === '/api/tasks' && request.method === 'POST') return createTask(request, env);
       if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);
