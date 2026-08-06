@@ -103,13 +103,30 @@ function parseFields(md) {
   return fields;
 }
 
+const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+const THIS_YEAR = new Date().getFullYear();
+
+// Tana renders a date field two ways: a plain ISO date (2026-06-07), or a
+// localized display like "Thu, 2 Apr, 09:45 → 10:45" (Google events), which
+// omits the year when it's the current one and may be a range. Reduce both to
+// a bare YYYY-MM-DD (the start, for a range) for the HTML date input.
+function toISODate(raw) {
+  const s = String(raw);
+  const iso = s.match(/\d{4}-\d{2}-\d{2}/);
+  if (iso) return iso[0];
+  const m = s.match(/(\d{1,2})\s+([A-Za-z]{3,})(?:,?\s*(\d{4}))?/); // "2 Apr" / "2 Apr 2025" / "25 Dec, 2024"
+  if (m) {
+    const day = +m[1], mon = MONTHS[m[2].slice(0, 3).toLowerCase()], year = m[3] ? +m[3] : THIS_YEAR;
+    if (mon && day >= 1 && day <= 31) return `${year}-${String(mon).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  return null;
+}
+
 const coerce = (raw, type) => {
   if (raw == null || raw === '') return null;
   if (type === 'number') { const n = Number(String(raw).replace(/[^\d.-]/g, '')); return Number.isFinite(n) ? n : null; }
   if (type === 'checkbox') return /^(true|yes|x|\[x\]|done)$/i.test(String(raw).trim());
-  // A date field wants a bare YYYY-MM-DD for the HTML date input; pull it out
-  // of whatever Tana rendered (a plain date, a range, or a datetime).
-  if (type === 'date') { const m = String(raw).match(/\d{4}-\d{2}-\d{2}/); return m ? m[0] : null; }
+  if (type === 'date') return toISODate(raw);
   return String(raw);
 };
 
