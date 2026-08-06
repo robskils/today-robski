@@ -387,6 +387,25 @@ async function createBlock(request, env) {
   return json(await getBlock(env, id), request, 201);
 }
 
+// Insert many blocks in one call - the supertag import creates a table's rows
+// in a couple of requests instead of hundreds.
+async function createBlocksBulk(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const blocks = Array.isArray(b.blocks) ? b.blocks : [];
+  const now = new Date().toISOString();
+  const stmts = blocks.map((bl, i) => env.DB.prepare(
+    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+  ).bind(
+    crypto.randomUUID(), String(bl.kind || 'row'), bl.parent_id || null,
+    Number.isFinite(bl.position) ? bl.position : i,
+    bl.title ?? null, bl.body ?? null, bl.props ? JSON.stringify(bl.props) : null,
+    bl.created_at || now, now,
+  ));
+  for (let j = 0; j < stmts.length; j += 40) await env.DB.batch(stmts.slice(j, j + 40));
+  return json({ created: stmts.length }, request, 201);
+}
+
 async function listBlocks(request, env, url) {
   const clauses = [];
   const args = [];
@@ -1299,6 +1318,7 @@ export default {
       // Robski Life block core + search.
       if (path === '/api/blocks' && request.method === 'GET') return listBlocks(request, env, url);
       if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
+      if (path === '/api/blocks/bulk' && request.method === 'POST') return createBlocksBulk(request, env);
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
       if (path === '/api/migrate/tasks' && request.method === 'POST') return migrateTasks(request, env);
       const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);
