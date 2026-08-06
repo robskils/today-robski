@@ -449,6 +449,49 @@ async function deleteBlock(env, request, id) {
   return json({ ok: true }, request);
 }
 
+// One-time (idempotent) import of the Tana task mirror into native blocks.
+// Additive: the `tasks` mirror and Tana itself are untouched. Keyed on
+// props.tana_id, so running it twice imports nothing the second time.
+async function migrateTasks(request, env) {
+  const areas = await env.DB.prepare("SELECT id, title FROM blocks WHERE kind = 'area'").all();
+  const areaByName = new Map(areas.results.map((a) => [a.title, a.id]));
+
+  const existing = await env.DB.prepare("SELECT props FROM blocks WHERE kind = 'task'").all();
+  const seen = new Set();
+  for (const r of existing.results) {
+    try { const p = JSON.parse(r.props || '{}'); if (p.tana_id) seen.add(p.tana_id); } catch {}
+  }
+
+  const tasks = await env.DB.prepare('SELECT * FROM tasks').all();
+  const now = new Date().toISOString();
+  const stmts = [];
+  let imported = 0, skipped = 0, i = 0;
+
+  for (const t of tasks.results) {
+    if (seen.has(t.tana_id)) { skipped++; continue; }
+    const props = {
+      tana_id: t.tana_id,
+      area: t.area ? (areaByName.get(t.area) || null) : null,
+      area_name: t.area || null,
+      priority: t.priority || null,
+      status: t.status || null,
+      duration: t.duration || null,
+      done: !!t.done,
+      source: 'tana',
+      breadcrumb: t.breadcrumb || null,
+    };
+    stmts.push(env.DB.prepare(
+      `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
+       VALUES (?, 'task', NULL, ?, ?, NULL, ?, ?, ?, 0)`,
+    ).bind(crypto.randomUUID(), i++, t.title, JSON.stringify(props), t.created || now, now));
+    imported++;
+  }
+
+  // D1 caps statements per batch; chunk to stay well under it.
+  for (let j = 0; j < stmts.length; j += 40) await env.DB.batch(stmts.slice(j, j + 40));
+  return json({ imported, skipped, total: tasks.results.length }, request);
+}
+
 // One box to find anything. Searches every block by title and body, so tasks,
 // notes, table rows and areas all come back from the same query. LIKE for now;
 // swap to SQLite FTS if it ever feels slow.
@@ -1257,6 +1300,7 @@ export default {
       if (path === '/api/blocks' && request.method === 'GET') return listBlocks(request, env, url);
       if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
+      if (path === '/api/migrate/tasks' && request.method === 'POST') return migrateTasks(request, env);
       const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);
       if (blockMatch) {
         const id = blockMatch[1];
