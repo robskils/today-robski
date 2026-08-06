@@ -146,12 +146,18 @@ button { cursor:pointer; background:none; border:0; }
 
 .tbl-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
 table.recs { border-collapse:collapse; width:100%; font-size:16px; }
-table.recs th, table.recs td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:0; text-align:left; vertical-align:middle; }
+/* Fixed layout so the colgroup widths are honoured (resizable columns). */
+table.recs.fixed { table-layout:fixed; }
+table.recs th { position:relative; }
+table.recs th, table.recs td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:0; text-align:left; vertical-align:middle; overflow:hidden; }
+/* Drag handle straddling each header's right border. */
+.resizer { position:absolute; top:0; right:-4px; width:9px; height:100%; cursor:col-resize; z-index:3; touch-action:none; }
+.resizer:hover { background:color-mix(in srgb,var(--accent) 45%,transparent); }
 table.recs th:last-child, table.recs td:last-child { border-right:0; }
 table.recs tr:last-child td { border-bottom:0; }
 table.recs thead th { background:var(--paper-2); font-weight:600; white-space:nowrap; }
 .thh { display:flex; align-items:center; gap:6px; padding:10px 12px; }
-.thh input { flex:1; min-width:60px; background:transparent; border:0; font:inherit; font-weight:600; color:var(--ink); }
+.thh input { flex:1; min-width:0; background:transparent; border:0; font:inherit; font-weight:600; color:var(--ink); }
 .thh .ty { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:500; }
 .thh .x { opacity:.35; color:var(--ink-3); font-size:15px; } .thh .x:hover { opacity:1; color:var(--accent); }
 .th-add { width:44px; text-align:center; }

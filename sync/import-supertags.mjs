@@ -77,7 +77,9 @@ function columnsFromSchema(md) {
     } else if (/Instance of #Number/.test(rest)) type = 'number';
     else if (/^Date\b/.test(rest) || /Instance of #Date/.test(rest)) type = 'date';
     else if (/Instance of #Checkbox/.test(rest) || /^Checkbox/.test(rest)) type = 'checkbox';
-    const col = { id: uid(), name, type };
+    // A required field shows a trailing '*' in Tana; strip it so the column
+    // name matches the field name parsed out of each node.
+    const col = { id: uid(), name: name.replace(/\*+$/, '').trim(), type };
     if (type === 'select' && opts.length) col.options = opts;
     cols.push(col);
   }
@@ -94,7 +96,9 @@ function parseFields(md) {
     const m = line.match(FIELD_RE); if (!m) continue;
     let raw = m[2].replace(COMMENT_RE, '').trim();
     const ref = raw.match(REF_RE);
-    fields[m[1].trim()] = ref ? ref[1].replace(/\s*#[\w-]+\s*$/, '').trim() : raw;
+    // Strip the required-field '*' so names match the schema's column names.
+    const name = m[1].replace(/\*+$/, '').trim();
+    fields[name] = ref ? ref[1].replace(/\s*#[\w-]+\s*$/, '').trim() : raw;
   }
   return fields;
 }
@@ -103,6 +107,9 @@ const coerce = (raw, type) => {
   if (raw == null || raw === '') return null;
   if (type === 'number') { const n = Number(String(raw).replace(/[^\d.-]/g, '')); return Number.isFinite(n) ? n : null; }
   if (type === 'checkbox') return /^(true|yes|x|\[x\]|done)$/i.test(String(raw).trim());
+  // A date field wants a bare YYYY-MM-DD for the HTML date input; pull it out
+  // of whatever Tana rendered (a plain date, a range, or a datetime).
+  if (type === 'date') { const m = String(raw).match(/\d{4}-\d{2}-\d{2}/); return m ? m[0] : null; }
   return String(raw);
 };
 

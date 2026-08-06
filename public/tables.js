@@ -86,8 +86,11 @@ function colHead(col) {
     <input value="${esc(col.name)}" data-colname="${col.id}" aria-label="Column name">
     <span class="ty">${esc(col.type)}</span>
     <button class="x" data-del-col="${col.id}" title="Delete column">×</button>
-  </div></th>`;
+  </div><span class="resizer" data-resize="${col.id}" title="Drag to resize"></span></th>`;
 }
+
+// A column's width, defaulting Name wider than the rest.
+const colWidth = (col, first) => col.width || (first ? 230 : 170);
 
 function addColCell() {
   if (!state.addingCol) return `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
@@ -115,7 +118,9 @@ function renderMain() {
     <button class="ghost" data-del-cur title="Delete this table">Delete</button>
   </div>`;
 
-  const body = `<div class="tbl-scroll"><table class="recs">
+  const colgroup = `<colgroup><col style="width:38px">${c.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:46px"></colgroup>`;
+  const body = `<div class="tbl-scroll"><table class="recs fixed">
+    ${colgroup}
     <thead><tr><th class="th-open"></th>${c.map(colHead).join('')}${addColCell()}</tr></thead>
     <tbody>
       ${state.rows.map((r) => `<tr data-row="${r.id}"><td class="row-open"><button data-open-row="${r.id}" title="Open as card">⤢</button></td>${c.map((col) => cellTd(r, col)).join('')}<td class="row-del"><button data-del-row="${r.id}" title="Delete row">×</button></td></tr>`).join('')}
@@ -176,6 +181,37 @@ $('#tables').addEventListener('click', (e) => {
   if (del) { e.stopPropagation(); deleteTable(del.dataset.delTable).catch((x) => toast(x.message)); return; }
   const it = e.target.closest('[data-tid]');
   if (it) select(it.dataset.tid).catch((x) => toast(x.message));
+});
+
+// Drag a header border to resize its column. Pointer events so it works on
+// touch; the new width is saved onto the column when you let go.
+let resizing = null;
+$('#main').addEventListener('pointerdown', (e) => {
+  const h = e.target.closest('[data-resize]');
+  if (!h) return;
+  e.preventDefault();
+  const th = h.closest('th');
+  resizing = {
+    colId: h.dataset.resize,
+    colEl: $(`col[data-cw="${h.dataset.resize}"]`),
+    startX: e.clientX,
+    startW: th.getBoundingClientRect().width,
+  };
+  try { h.setPointerCapture(e.pointerId); } catch {}
+  document.body.style.cursor = 'col-resize';
+});
+$('#main').addEventListener('pointermove', (e) => {
+  if (!resizing) return;
+  const w = Math.max(64, Math.round(resizing.startW + (e.clientX - resizing.startX)));
+  if (resizing.colEl) resizing.colEl.style.width = `${w}px`;
+});
+$('#main').addEventListener('pointerup', () => {
+  if (!resizing) return;
+  const w = resizing.colEl ? parseInt(resizing.colEl.style.width, 10) : null;
+  const id = resizing.colId;
+  resizing = null;
+  document.body.style.cursor = '';
+  if (w) saveColumns(cols().map((c) => c.id === id ? { ...c, width: w } : c)).catch((x) => toast(x.message));
 });
 
 $('#main').addEventListener('click', (e) => {
