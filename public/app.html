@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Robski · Life</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/life.css">
+<script>
+  try {
+    const t = localStorage.getItem('today.theme');
+    const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  } catch (e) {}
+  if (!localStorage.getItem('today.token')) location.replace('/');
+</script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="nav" id="nav"></aside>
+    <main class="pane" id="pane"></main>
+  </div>
+  <div id="palette"></div>
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>

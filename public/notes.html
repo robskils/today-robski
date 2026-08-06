@@ -12,7 +12,7 @@
     const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   } catch (e) {}
-  if (!localStorage.getItem('today.token')) location.replace('/');
+  location.replace('/app.html');
 </script>
 </head>
 <body>

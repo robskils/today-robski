@@ -14,7 +14,8 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   } catch (e) {}
   // Shared login with Today: same origin, same token. No token → sign in on Today.
-  if (!localStorage.getItem('today.token')) location.replace('/');
+  // Retired: the Life app is now one unified surface at /app.html.
+  location.replace('/app.html');
 </script>
 </head>
 <body>
