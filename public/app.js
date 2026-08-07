@@ -95,21 +95,23 @@ function navSection(key, v) {
   const collapsed = !!state.nav.collapsed[key];
   const chev = collapsed ? '▸' : '▾';
   const sub = (on, attr, ic, title) => `<button class="nav-sub ${on ? 'on' : ''}" ${attr}><span class="i">${ic}</span><span class="t">${esc(title || 'Untitled')}</span></button>`;
-  let title, titleAttr = `data-sec-toggle="${key}"`, add = '', rows;
+  // The whole header (chevron + word) toggles the section. Index pages live on
+  // the top-level nav items instead, so the word here is purely expand/collapse.
+  let title, add = '', rows;
   if (key === 'favs') {
     title = 'Favourites';
     rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}"`, KIND_IC[f.kind] || '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
-    title = 'Notes'; titleAttr = 'data-open-notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
+    title = 'Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
     rows = state.noteTops.map((n) => sub(v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id, `data-open-note="${n.id}"`, '▸', n.title)).join('') || '<div class="nav-sub muted">No notes yet</div>';
   } else {
-    title = 'Tables'; titleAttr = 'data-open-tables'; add = '<button class="nav-add" data-new-table title="New table">+</button>';
+    title = 'Tables'; add = '<button class="nav-add" data-new-table title="New table">+</button>';
     rows = state.tables.map((t) => sub(v.type === 'table' && state.tables_open && state.tables_open.id === t.id, `data-open-table="${t.id}"`, '▦', t.title)).join('') || '<div class="nav-sub muted">No tables yet</div>';
   }
   return `<div class="nav-sec" data-nav-sec="${key}">
-    <div class="nav-sec-h" draggable="true">
-      <button class="nav-chev" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">${chev}</button>
-      <button class="nav-sec-title" ${titleAttr}>${title}</button>
+    <div class="nav-sec-h" draggable="true" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">
+      <span class="nav-chev">${chev}</span>
+      <span class="nav-sec-title">${title}</span>
       ${add}<span class="nav-grip" title="Drag to reorder">⠿</span>
     </div>
     ${collapsed ? '' : `<div class="nav-sec-body">${rows}</div>`}
@@ -123,6 +125,8 @@ function renderNav() {
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
+    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▸</span> Notes</button>
+    <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
     <div class="nav-spacer"></div>
@@ -576,7 +580,7 @@ document.addEventListener('click', (e) => {
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
   if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); renderNav(); return; }
-  const st = t.closest('[data-sec-toggle]'); if (st) { toggleSec(st.dataset.secToggle); return; }
+  const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }

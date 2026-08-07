@@ -307,13 +307,12 @@ td.row-open button:hover { opacity:1; color:var(--accent); }
 .nav-secs { display:flex; flex-direction:column; }
 .nav-sec { margin-top:14px; }
 .nav-sec.drop-target { box-shadow:inset 0 2px 0 var(--accent); }
-.nav-sec-h { display:flex; align-items:center; gap:1px; padding:2px 4px 2px 6px; border-radius:8px; }
+.nav-sec-h { display:flex; align-items:center; gap:4px; padding:3px 4px 3px 6px; border-radius:8px; cursor:pointer; }
 .nav-sec-h:hover { background:var(--paper); }
+.nav-sec-h:hover .nav-chev, .nav-sec-h:hover .nav-sec-title { color:var(--ink); }
 .nav-sec-h:hover .nav-grip { opacity:.55; }
-.nav-chev { color:var(--ink-3); font-size:11px; width:16px; flex:none; padding:5px 0; }
-.nav-chev:hover { color:var(--accent); }
-.nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; padding:5px 2px; }
-.nav-sec-title:hover { color:var(--ink); }
+.nav-chev { color:var(--ink-2); font-size:13px; width:14px; flex:none; text-align:center; }
+.nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; padding:2px 0; }
 .nav-add { color:var(--ink-3); font-size:18px; line-height:1; padding:0 6px; flex:none; } .nav-add:hover { color:var(--accent); }
 .nav-grip { color:var(--ink-3); font-size:12px; cursor:grab; opacity:0; transition:opacity .12s; flex:none; padding:0 4px; letter-spacing:-2px; }
 .nav-sec-h[draggable]:active { cursor:grabbing; }
