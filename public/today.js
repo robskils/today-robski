@@ -218,9 +218,14 @@ function renderRail() {
         </div></button>`;
     }
 
-    const pct = Math.min(1, p.done / target);
+    // A practice (Zazen, Body, Music, Rest) is fulfilled by being done at all,
+    // not by clearing a minute quota - sitting is something you did today or
+    // didn't, never a debt of minutes. So a practice lights up the moment it
+    // holds any time, and its ring reads full; the target only shapes the ring
+    // before then. Area lanes (My Life, Work...) still hit on reaching target.
+    const hit = l.practice ? p.done > 0 : p.done >= target;
+    const pct = hit ? 1 : Math.min(1, p.done / target);
     const planPct = Math.min(1, Math.max(p.planned, p.done) / target);
-    const hit = p.done >= target;
 
     // Kept short so all the lanes fit without scrolling. The planned arc
     // carries what the text used to say.
@@ -228,10 +233,15 @@ function renderRail() {
 
     const planned = p.planned > p.done ? `, ${humanMin(p.planned - p.done)} more planned` : '';
     const opt = l.optional ? ' (optional)' : '';
+    // A practice never frames its time as "of 60 done" - that's the debt
+    // reading its whole point avoids.
+    const title = l.practice
+      ? `${esc(l.label)}${opt}: ${p.done ? `${humanMin(p.done)} done today` : 'not yet today'}. Click to add a block, or drag it onto the schedule.`
+      : `${esc(l.label)}${opt}: ${humanMin(p.done)} of ${humanMin(target)} done${planned}. Click to add a block, or drag it onto the schedule.`;
 
     return `<button class="lane ${hit ? 'hit' : ''} ${l.optional ? 'optional' : ''}"
         style="--h:${l.hue}" data-lane-add="${l.key}" draggable="true"
-        title="${esc(l.label)}${opt}: ${humanMin(p.done)} of ${humanMin(target)} done${planned}. Click to add a block, or drag it onto the schedule.">
+        title="${title}">
       <svg class="lane-ring" viewBox="0 0 34 34" aria-hidden="true">
         <circle class="track" cx="17" cy="17" r="${R}"></circle>
         <circle class="plan" cx="17" cy="17" r="${R}"

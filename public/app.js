@@ -528,9 +528,9 @@ function showGate(sub) {
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
       <div class="gate2-mark"><em>Life</em><span class="dot">·</span>Robski</div>
       <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
-      <input class="input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
-      <input class="input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
-      <button class="add-btn wide" id="gate-btn" type="submit" style="width:100%">Send code</button>
+      <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
+      <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
+      <button class="gate2-btn" id="gate-btn" type="submit">Send code</button>
       <p class="gate2-err" id="gate-err" hidden></p>
     </form></div>`);
   $('#gate-email').focus();
