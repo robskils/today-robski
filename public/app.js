@@ -17,10 +17,11 @@ let toastT;
 function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2600); }
 
 const state = {
-  view: { type: 'tasks' },
+  view: { type: 'home' },
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null,
   note: null, tables_open: null,
+  home: { favs: [], events: [] },
   pal: { open: false, q: '', items: [], sel: 0 },
 };
 
@@ -53,7 +54,9 @@ function renderNav() {
   $('#nav').innerHTML = `
     <div class="nav-brand"><em>Life</em><span class="dot">·</span>Robski</div>
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
+    <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'tasks' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
+    <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <div class="nav-sec">
       <div class="nav-sec-h">Notes <button data-new-note title="New note">+</button></div>
       ${noteRows || '<div class="nav-sub" style="color:var(--ink-3)">No notes yet</div>'}
@@ -74,8 +77,13 @@ function renderNav() {
 async function openTasks(filter) {
   state.view = { type: 'tasks' };
   if (filter !== undefined) state.taskFilter = filter;
-  if (!state.areas.length) [state.areas, state.tasks] = await Promise.all([api('/api/blocks?kind=area'), api('/api/blocks?kind=task')]);
-  state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  // Always refetch tasks (they change); reuse cached areas.
+  const [areas, tasks] = await Promise.all([
+    state.areas.length ? state.areas : api('/api/blocks?kind=area'),
+    api('/api/blocks?kind=task'),
+  ]);
+  state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  state.tasks = tasks;
   renderNav(); renderTasks();
 }
 async function openNote(id) {
@@ -93,6 +101,113 @@ async function openTable(id) {
   state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false };
   state.view = { type: 'table', id };
   renderNav(); renderTable();
+}
+
+// ── view: home ───────────────────────────────────────
+const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
+const KIND_IC = { note: '▸', table: '▦', task: '✓', row: '▦' };
+
+async function openHome() {
+  state.view = { type: 'home' };
+  const [favs, day] = await Promise.all([
+    api('/api/favorites').catch(() => []),
+    api('/api/day').catch(() => ({ events: [] })),
+  ]);
+  state.home = { favs, events: day.events || [] };
+  renderNav(); renderHome();
+}
+function renderHome() {
+  const favs = state.home.favs || [];
+  const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
+  const favRows = favs.map((f) => `<div class="fav" draggable="true" data-fav-id="${f.id}">
+    <button class="fav-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${KIND_IC[f.kind] || '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button>
+    <button class="fav-x" data-unfav="${f.id}" title="Remove from favourites">×</button></div>`).join('');
+  const evRows = ev.map((e) => `<div class="ev-row"><span class="ev-time">${e.allDay ? 'all day' : hhmm(e.start_min)}</span><span class="ev-t">${esc(e.title)}</span>${e.location ? `<span class="ev-loc">${esc(e.location)}</span>` : ''}</div>`).join('');
+  $('#pane').innerHTML = `
+    <div class="home">
+      <div class="home-head">
+        <h1>${greeting()}</h1>
+        <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button></div>
+      </div>
+      <div id="qt-wrap"></div>
+      <section class="home-sec">
+        <div class="home-sec-h">Favourites ${favs.length ? '<span class="muted">drag to reorder</span>' : ''}</div>
+        <div class="favs" id="favs">${favRows || '<div class="home-empty">Star a task, note or table (the ☆ on it) to pin it here.</div>'}</div>
+      </section>
+      <section class="home-sec">
+        <div class="home-sec-h">Today</div>
+        <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
+      </section>
+      <div class="home-links"><button class="home-link" data-view-tasks>All tasks →</button><button class="home-link" data-open-tables>Tables →</button></div>
+    </div>`;
+}
+function openTablesList() {
+  state.view = { type: 'tables' };
+  renderNav();
+  const favTables = state.tables.filter((t) => t.props && t.props.fav);
+  const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
+  $('#pane').innerHTML = `
+    <div class="pane-head home-head"><h1>Tables</h1><button class="add-btn wide" data-new-table>+ New table</button></div>
+    ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
+    <section class="home-sec"><div class="home-sec-h">All tables · ${state.tables.length}</div><div class="tbl-cards">${cards(state.tables) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+}
+
+function showQuickTask() {
+  $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task" style="margin-bottom:22px">
+    <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
+    <select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select>
+    <button class="add-btn wide" type="submit">Add</button></form>`;
+  $('#qt-title').focus();
+}
+async function homeAddTask(title, priority) {
+  try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { priority: priority || null, done: false } }) }); toast('Task added'); }
+  catch (e) { toast(e.message); }
+}
+
+// favourites: pin any block; cross-kind; ordered by fav_rank.
+function findBlock(id) {
+  return state.tasks.find((b) => b.id === id) || state.tables.find((b) => b.id === id)
+    || state.noteTops.find((b) => b.id === id)
+    || (state.note && state.note.current.id === id ? state.note.current : null)
+    || (state.tables_open && state.tables_open.id === id ? state.tables_open : null)
+    || (state.home.favs || []).find((b) => b.id === id);
+}
+function isFav(id) { const b = findBlock(id); return !!(b && b.props && b.props.fav); }
+async function toggleFav(id) {
+  const b = findBlock(id); if (!b) return;
+  b.props = b.props || {};
+  const fav = !b.props.fav;
+  b.props.fav = fav; if (fav) b.props.fav_rank = Date.now();
+  rerenderCurrent();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav, fav_rank: b.props.fav_rank } }) }); } catch (e) { toast(e.message); }
+}
+async function unfav(id) {
+  const b = findBlock(id); if (b) { b.props = b.props || {}; b.props.fav = false; }
+  state.home.favs = (state.home.favs || []).filter((f) => f.id !== id);
+  renderHome();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav: false } }) }); } catch (e) { toast(e.message); }
+}
+function rerenderCurrent() {
+  const v = state.view.type;
+  if (v === 'tasks') renderTasks(); else if (v === 'note') renderNote();
+  else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList(); else openHome();
+}
+async function reorderFavs(draggedId, beforeId) {
+  const favs = state.home.favs;
+  const from = favs.findIndex((f) => f.id === draggedId); if (from < 0) return;
+  const [moved] = favs.splice(from, 1);
+  let to = beforeId ? favs.findIndex((f) => f.id === beforeId) : favs.length;
+  if (to < 0) to = favs.length;
+  favs.splice(to, 0, moved);
+  renderHome();
+  favs.forEach((f, i) => { f.props = f.props || {}; f.props.fav_rank = i; api(`/api/blocks/${f.id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav_rank: i } }) }).catch(() => {}); });
+}
+function openFav(ref) {
+  const i = ref.indexOf(':'); const kind = ref.slice(0, i); const id = ref.slice(i + 1);
+  if (kind === 'note') return openNote(id);
+  if (kind === 'table') return openTable(id);
+  return openTasks();
 }
 
 // ── view: tasks ──────────────────────────────────────
@@ -113,6 +228,7 @@ function renderTasks() {
       <span class="t" data-edit-task="${t.id}">${esc(t.title)}</span>
       ${p && p !== 'P3' ? `<span class="prio ${p}">${p}</span>` : ''}
       ${a ? `<span class="tag">${esc(a.title)}</span>` : ''}
+      <button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
       <button class="x" data-del-task="${t.id}">×</button></div>`;
   }).join('');
   $('#pane').innerHTML = `
@@ -135,7 +251,8 @@ function renderNote() {
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join('<span class="crumb-sep">/</span>');
   const kids = state.note.children.map((c) => `<button class="subpage" data-open-note="${c.id}"><span class="sp-ico">▸</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb" data-view-tasks>Home</button><span class="crumb-sep">/</span>${crumbs}
+    <div class="note-crumbs"><button class="crumb" data-view-home>Home</button><span class="crumb-sep">/</span>${crumbs}
+      <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></div>
     <input class="note-title" id="note-title" value="${esc(n.title || '')}" placeholder="Untitled">
     <div class="note-body" id="note-body">${state.note.editingBody
@@ -177,7 +294,9 @@ function renderTable() {
   const head = c.map((col) => `<th><div class="thh"><input value="${esc(col.name)}" data-colname="${col.id}"><span class="ty">${esc(col.type)}</span><button class="x" data-del-col="${col.id}">×</button></div><span class="resizer" data-resize="${col.id}"></span></th>`).join('');
   const body = state.tables_rows.map((r) => `<tr><td class="row-open"><button data-open-row="${r.id}" title="Open">⤢</button></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   $('#pane').innerHTML = `
-    <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename><button class="ghost" data-del-cur>Delete</button></div>
+    <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
+      <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
+      <button class="ghost" data-del-cur>Delete</button></div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}
       <thead><tr><th class="th-open"></th>${head}${addCol}</tr></thead>
       <tbody>${body}<tr class="row-add"><td colspan="${c.length + 2}"><button data-add-row>+ Row</button></td></tr></tbody></table></div>`;
@@ -272,7 +391,13 @@ document.addEventListener('click', (e) => {
 
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-tables]')) { openTablesList(); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
+  const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
+  const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
+  const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
+  if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
@@ -315,8 +440,21 @@ document.addEventListener('click', (e) => {
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.id === 'task-form') { const i = $('#task-title'); const v = i.value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); i.value = ''; i.focus(); }
+  if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
 });
+// drag to reorder favourites on the home
+let dragFav = null;
+document.addEventListener('dragstart', (e) => { const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; e.dataTransfer.effectAllowed = 'move'; } });
+document.addEventListener('dragover', (e) => { if (dragFav && e.target.closest('#favs')) e.preventDefault(); });
+document.addEventListener('drop', (e) => {
+  if (!dragFav) return; e.preventDefault();
+  const over = e.target.closest('[data-fav-id]');
+  const beforeId = over && over.dataset.favId !== dragFav ? over.dataset.favId : null;
+  reorderFavs(dragFav, beforeId); dragFav = null;
+});
+document.addEventListener('dragend', () => { dragFav = null; });
+
 // column resize (pointer)
 let resizing = null;
 document.addEventListener('pointerdown', (e) => {
@@ -368,6 +506,6 @@ async function delTable() { const t = state.tables_open; if (!confirm(`Delete th
   try {
     [state.noteTops, state.tables] = await Promise.all([api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table')]);
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    await openTasks();
+    await openHome();
   } catch (e) { toast(e.message); renderNav(); }
 })();

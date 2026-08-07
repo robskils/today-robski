@@ -406,6 +406,17 @@ async function createBlocksBulk(request, env) {
   return json({ created: stmts.length }, request, 201);
 }
 
+// Favourites: any block (task, note or table) with props.fav set, in the order
+// they were pinned/dragged (fav_rank). Cross-kind on purpose - the home pins
+// what matters, whatever it is.
+async function handleFavorites(request, env) {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM blocks WHERE archived = 0 AND json_extract(props, '$.fav') = 1
+      ORDER BY json_extract(props, '$.fav_rank'), updated_at`,
+  ).all();
+  return json(results.map(parseBlock), request);
+}
+
 async function listBlocks(request, env, url) {
   const clauses = [];
   const args = [];
@@ -1317,6 +1328,7 @@ export default {
 
       // Robski Life block core + search.
       if (path === '/api/blocks' && request.method === 'GET') return listBlocks(request, env, url);
+      if (path === '/api/favorites' && request.method === 'GET') return handleFavorites(request, env);
       if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
       if (path === '/api/blocks/bulk' && request.method === 'POST') return createBlocksBulk(request, env);
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
