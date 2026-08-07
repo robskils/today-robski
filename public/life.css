@@ -338,6 +338,28 @@ td.row-open button:hover { opacity:1; color:var(--accent); }
 .area-chip .cd { width:9px; height:9px; border-radius:50%; background:var(--c); }
 .area-chip b { font-weight:600; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 
+/* ── tasks table (sortable) ──────────────────────── */
+table.ttable { border-collapse:collapse; width:100%; font-size:16.5px; }
+table.ttable th { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line-2); font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); font-weight:600; white-space:nowrap; }
+table.ttable th.sortable { cursor:pointer; user-select:none; }
+table.ttable th.sortable:hover { color:var(--ink); }
+.sarrow { color:var(--accent); margin-left:4px; }
+table.ttable td { padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+table.ttable tr:last-child td { border-bottom:0; }
+.tr-task { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.tr-task:hover { background:var(--paper-2); }
+.tr-task.done .tc-title .t { text-decoration:line-through; color:var(--ink-3); }
+.tc-done { width:34px; text-align:center; }
+.tc-title { width:auto; } .tc-title .t { cursor:text; }
+.tc-date { color:var(--ink-3); font-variant-numeric:tabular-nums; white-space:nowrap; width:80px; }
+.tc-act { width:70px; text-align:right; white-space:nowrap; }
+.tr-task .star { opacity:0; } .tr-task:hover .star, .tr-task .star.on { opacity:1; }
+.tr-task .x { opacity:0; margin-left:4px; } .tr-task:hover .x { opacity:1; }
+.ttable .check { width:20px; height:20px; border-radius:6px; border:2px solid var(--c); color:transparent; display:grid; place-items:center; font-size:12px; margin:0 auto; }
+.ttable .tr-task.done .check { background:var(--done); border-color:var(--done); color:#fff; }
+.ttable .tag { font-size:13px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 40%,transparent); padding:3px 10px; border-radius:999px; white-space:nowrap; }
+.ttable .prio { font-size:13px; font-weight:600; color:var(--ink-3); } .ttable .prio.P1 { color:var(--accent); }
+
 /* ── command palette (⌘K) ────────────────────────── */
 .pal-bg { position:fixed; inset:0; z-index:60; background:rgba(20,16,24,.34); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding-top:12vh; }
 .pal { width:min(620px,92vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); overflow:hidden; }

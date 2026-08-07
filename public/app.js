@@ -20,6 +20,7 @@ const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null,
+  taskSort: { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
   home: { favs: [], events: [] },
   pal: { open: false, q: '', items: [], sel: 0 },
@@ -68,7 +69,7 @@ function renderNav() {
     <div class="nav-spacer"></div>
     <div class="nav-foot">
       <a href="/" title="Your day">Today</a>
-      <button data-theme title="Light / dark">Theme</button>
+      <button data-theme-toggle title="Light / dark">Theme</button>
       <a href="/api/export" title="Download a full backup">Backup</a>
     </div>`;
 }
@@ -213,6 +214,17 @@ function openFav(ref) {
 // ── view: tasks ──────────────────────────────────────
 const hueOf = (a) => (a && a.props && Number.isFinite(a.props.hue) ? a.props.hue : 220);
 const areaById = (id) => state.areas.find((a) => a.id === id);
+const PRIO_ORDER = { P1: 1, P2: 2, P3: 3, P4: 4, '': 5 };
+const fmtDate = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`; };
+function sortTasks(ts) {
+  const { col, dir } = state.taskSort; const s = dir === 'asc' ? 1 : -1;
+  const val = (t) => col === 'title' ? (t.title || '').toLowerCase()
+    : col === 'priority' ? (PRIO_ORDER[t.props.priority || ''] || 5)
+    : col === 'area' ? ((areaById(t.props.area) || {}).title || '~~').toLowerCase()
+    : col === 'done' ? (t.props.done ? 1 : 0)
+    : (t.created_at || '');
+  return ts.sort((a, b) => { const x = val(a), y = val(b); return x < y ? -s : x > y ? s : 0; });
+}
 function renderTasks() {
   const openCount = (aid) => state.tasks.filter((t) => !t.props.done && (aid ? t.props.area === aid : true)).length;
   const chips = `<button class="area-chip ${state.taskFilter === null ? 'on' : ''}" data-filter="">All <b>${openCount(null)}</b></button>` +
@@ -220,16 +232,19 @@ function renderTasks() {
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
   let ts = state.tasks.slice();
   if (state.taskFilter) ts = ts.filter((t) => t.props.area === state.taskFilter);
-  ts.sort((a, b) => (a.props.done ? 1 : 0) - (b.props.done ? 1 : 0) || (b.created_at || '').localeCompare(a.created_at || ''));
+  ts = sortTasks(ts);
+  const arrow = (c) => state.taskSort.col === c ? `<span class="sarrow">${state.taskSort.dir === 'asc' ? '↑' : '↓'}</span>` : '';
+  const th = (c, label, cls) => `<th class="${cls || ''} sortable" data-sort="${c}">${label}${arrow(c)}</th>`;
   const rows = ts.map((t) => {
     const a = areaById(t.props.area); const p = t.props.priority;
-    return `<div class="task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}" data-task="${t.id}">
-      <button class="check" data-check="${t.id}">✓</button>
-      <span class="t" data-edit-task="${t.id}">${esc(t.title)}</span>
-      ${p && p !== 'P3' ? `<span class="prio ${p}">${p}</span>` : ''}
-      ${a ? `<span class="tag">${esc(a.title)}</span>` : ''}
-      <button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
-      <button class="x" data-del-task="${t.id}">×</button></div>`;
+    return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}">
+      <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
+      <td class="tc-title"><span class="t" data-edit-task="${t.id}">${esc(t.title)}</span></td>
+      <td>${p ? `<span class="prio ${p}">${p}</span>` : ''}</td>
+      <td>${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</td>
+      <td class="tc-date">${fmtDate(t.created_at)}</td>
+      <td class="tc-act"><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button></td>
+    </tr>`;
   }).join('');
   $('#pane').innerHTML = `
     <div class="pane-head"><h1>Tasks</h1></div>
@@ -240,7 +255,10 @@ function renderTasks() {
       <button class="add-btn wide" type="submit">Add</button>
     </form>
     <div class="area-chips">${chips}</div>
-    <div class="list">${rows || '<div class="empty">No tasks here yet.</div>'}</div>`;
+    <div class="tbl-scroll"><table class="ttable">
+      <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority')}${th('area', 'Area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">No tasks here yet.</td></tr>`}</tbody>
+    </table></div>`;
 }
 
 // ── view: note ───────────────────────────────────────
@@ -387,7 +405,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
-  if (t.closest('[data-theme]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); return; }
+  if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); return; }
 
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
@@ -404,6 +422,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-note]')) { delNote(); return; }
 
   // tasks
+  const sh = t.closest('[data-sort]');
+  if (sh) { const c = sh.dataset.sort; if (state.taskSort.col === c) state.taskSort.dir = state.taskSort.dir === 'asc' ? 'desc' : 'asc'; else state.taskSort = { col: c, dir: c === 'created' ? 'desc' : 'asc' }; renderTasks(); return; }
   const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
   const dt = t.closest('[data-del-task]'); if (dt) { delTask(dt.dataset.delTask); return; }
