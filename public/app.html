@@ -12,7 +12,8 @@
     const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   } catch (e) {}
-  if (!localStorage.getItem('today.token')) location.replace('/');
+  // No redirect here: if there's no token, app.js shows a sign-in gate in place
+  // (the root of life.robski.uk is this app, so a redirect would loop).
 </script>
 </head>
 <body>

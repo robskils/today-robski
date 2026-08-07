@@ -9,7 +9,7 @@ const token = () => localStorage.getItem(KEY) || '';
 
 async function api(path, opts = {}) {
   const res = await fetch(path, { ...opts, headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json', ...opts.headers } });
-  if (res.status === 401) { localStorage.removeItem(KEY); location.replace('/'); throw new Error('unauthorized'); }
+  if (res.status === 401) { localStorage.removeItem(KEY); if (!$('#gate2')) showGate('Your session expired. Sign in again.'); throw new Error('unauthorized'); }
   if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
   return res.status === 204 ? null : res.json();
 }
@@ -501,8 +501,47 @@ async function renameTable(v) { const t = state.tables_open; if (!t || v === t.t
 async function renameColumn(id, v) { const cols = tcols().map((c) => c.id === id ? { ...c, name: v } : c); await saveTableColumns(cols).catch((x) => toast(x.message)); }
 async function delTable() { const t = state.tables_open; if (!confirm(`Delete the table “${t.title}” and its rows?`)) return; for (const r of state.tables_rows) await api(`/api/blocks/${r.id}`, { method: 'DELETE' }); await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); state.tables = state.tables.filter((x) => x.id !== t.id); state.tables_open = null; await openTasks(); }
 
+// ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
+let gateStep = 'email', gateEmail = '';
+function showGate(sub) {
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
+      <div class="gate2-mark"><em>Life</em><span class="dot">·</span>Robski</div>
+      <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
+      <input class="input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
+      <input class="input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
+      <button class="add-btn wide" id="gate-btn" type="submit" style="width:100%">Send code</button>
+      <p class="gate2-err" id="gate-err" hidden></p>
+    </form></div>`);
+  $('#gate-email').focus();
+}
+async function gateSubmit(e) {
+  e.preventDefault();
+  const err = $('#gate-err'), btn = $('#gate-btn');
+  err.hidden = true; btn.disabled = true;
+  try {
+    if (gateStep === 'email') {
+      gateEmail = $('#gate-email').value.trim();
+      const r = await fetch('/auth/request-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail }) });
+      if (!r.ok) throw new Error('Could not send a code. Try again.');
+      gateStep = 'code';
+      $('#gate-sub').textContent = `Code sent to ${gateEmail}.`;
+      $('#gate-email').hidden = true; $('#gate-code').hidden = false; $('#gate-code').focus();
+      btn.textContent = 'Sign in';
+    } else {
+      const r = await fetch('/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, code: $('#gate-code').value.trim() }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.token) throw new Error(d.error || 'That code did not work.');
+      localStorage.setItem(KEY, d.token); location.reload();
+    }
+  } catch (e2) { err.textContent = e2.message; err.hidden = false; }
+  btn.disabled = false;
+}
+document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') gateSubmit(e); });
+
 // ── boot ─────────────────────────────────────────────
 (async function boot() {
+  if (!token()) { showGate(); return; }
   try {
     [state.noteTops, state.tables] = await Promise.all([api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table')]);
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));

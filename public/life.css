@@ -358,6 +358,15 @@ td.row-open button:hover { opacity:1; color:var(--accent); }
   .nav-spacer, .nav-sec { display:none; }
 }
 
+/* ── sign-in gate ────────────────────────────────── */
+.gate2 { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:24px; background:var(--paper); }
+.gate2-card { width:100%; max-width:360px; display:flex; flex-direction:column; gap:14px; text-align:center; }
+.gate2-mark { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:600; margin-bottom:6px; }
+.gate2-mark em { font-style:italic; color:var(--accent); } .gate2-mark .dot { color:var(--gold); margin:0 4px; }
+.gate2-sub { color:var(--ink-2); font-size:16px; text-wrap:balance; }
+.gate2-code { text-align:center; letter-spacing:.3em; font-size:22px; font-family:ui-monospace,Menlo,monospace; }
+.gate2-err { color:var(--accent); font-size:14.5px; text-wrap:balance; }
+
 /* ── toast ───────────────────────────────────────── */
 .toast {
   position:fixed; left:50%; bottom:26px; transform:translateX(-50%);

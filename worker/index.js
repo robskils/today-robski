@@ -1293,6 +1293,17 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // Static assets (the Worker runs first). The root serves a different app
+    // per hostname: life.robski.uk is the Life app; everywhere else is Today.
+    // Everything non-API/auth falls through to the assets binding untouched.
+    if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
+      if (path === '/') {
+        const file = url.hostname === 'life.robski.uk' ? '/app.html' : '/index.html';
+        return env.ASSETS.fetch(new Request(new URL(file, url.origin), request));
+      }
+      return env.ASSETS.fetch(request);
+    }
+
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors(request) });
     }
