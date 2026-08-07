@@ -448,8 +448,8 @@ function renderNote() {
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <input class="note-title" id="note-title" value="${esc(n.title || '')}" placeholder="Untitled">
     <div class="note-body">${proseEditor(n.body, 'note')}</div>
-    <div class="subpages"><div class="sub-h">Pages inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
-      ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New page inside</span></button></div>`;
+    <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
+      ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>`;
 }
 
 // ── view: table ──────────────────────────────────────
