@@ -51,7 +51,7 @@ function renderNav() {
   const noteRows = state.noteTops.map((n) => `<button class="nav-sub ${v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id ? 'on' : ''}" data-open-note="${n.id}"><span class="i">▸</span><span class="t">${esc(n.title || 'Untitled')}</span></button>`).join('');
   const tableRows = state.tables.map((t) => `<button class="nav-sub ${v.type === 'table' && state.tables_open && state.tables_open.id === t.id ? 'on' : ''}" data-open-table="${t.id}"><span class="i">▦</span><span class="t">${esc(t.title || 'Untitled')}</span></button>`).join('');
   $('#nav').innerHTML = `
-    <div class="nav-brand">Robski<span class="dot">·</span><em>Life</em></div>
+    <div class="nav-brand"><em>Life</em><span class="dot">·</span>Robski</div>
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'tasks' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
     <div class="nav-sec">

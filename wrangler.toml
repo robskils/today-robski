@@ -11,6 +11,12 @@ directory = "./public"
 pattern = "today.robski.uk"
 custom_domain = true
 
+# The Robski Life app's own front door. Same worker + D1; the root redirects
+# this hostname to /app.html (see the inline script in index.html).
+[[routes]]
+pattern = "life.robski.uk"
+custom_domain = true
+
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 

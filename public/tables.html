@@ -12,7 +12,7 @@
     const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   } catch (e) {}
-  location.replace('/app.html');
+  location.replace('/app');
 </script>
 </head>
 <body>
