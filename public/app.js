@@ -16,13 +16,18 @@ async function api(path, opts = {}) {
 let toastT;
 function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2600); }
 
+const readLS = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch { return fb; } };
 const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null,
   taskSort: { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
-  home: { favs: [], events: [] },
+  favs: [], home: { events: [] },
+  nav: {
+    order: (() => { const o = readLS('life.nav.order', null); return Array.isArray(o) && o.length === 3 && o.includes('favs') && o.includes('notes') && o.includes('tables') ? o : ['favs', 'notes', 'tables']; })(),
+    collapsed: readLS('life.nav.collapsed', {}),
+  },
   pal: { open: false, q: '', items: [], sel: 0 },
 };
 
@@ -44,36 +49,96 @@ function mdToHtml(md) {
     para.push(ln);
   }
   flush();
-  return out.join('') || '<p class="note-empty">Nothing here yet. Click to write…</p>';
+  return out.join('');
+}
+// Existing notes were imported as Markdown; new ones are saved as clean HTML.
+// Render either: if it already looks like HTML, trust it; else convert once.
+function bodyToHtml(body) {
+  const s = (body || '').trim();
+  if (!s) return '';
+  return /<(p|h[1-3]|strong|em|a|blockquote|br|code|b|i|div|ul|ol|li)\b/i.test(s) ? s : mdToHtml(body);
+}
+// An always-on inline editor. No modes, no markup - you just write, and the
+// selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
+function proseEditor(body, key) {
+  return `<div class="prose" contenteditable="true" spellcheck="true" data-prose="${key}" data-ph="Write something here…">${bodyToHtml(body)}</div>`;
+}
+// Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
+// attributes but a link's href. Content is Robin's own, so this is about
+// tidiness (stray pasted styles) more than security.
+const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1 };
+function sanitizeProse(html) {
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  const walk = (node) => {
+    [...node.childNodes].forEach((c) => {
+      if (c.nodeType === 3) return;
+      if (c.nodeType !== 1) { c.remove(); return; }
+      walk(c);
+      let tag = c.tagName;
+      if (tag === 'B') tag = 'STRONG'; else if (tag === 'I') tag = 'EM';
+      else if (tag === 'DIV') tag = 'P'; else if (tag === 'LI') tag = 'P';
+      if (!PROSE_OK[tag]) { const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }
+      const el = c.tagName === tag ? c : (() => { const n = doc.createElement(tag); while (c.firstChild) n.appendChild(c.firstChild); c.replaceWith(n); return n; })();
+      const href = el.tagName === 'A' ? el.getAttribute('href') : null;
+      [...el.attributes].forEach((a) => el.removeAttribute(a.name));
+      if (href && /^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+    });
+  };
+  walk(doc.body);
+  return doc.body.innerHTML.trim();
 }
 
 // ── sidebar ──────────────────────────────────────────
+// The three lower sections - Favourites, Notes, Tables - are collapsible and
+// can be dragged into any order; both preferences persist in localStorage.
+function navSection(key, v) {
+  const collapsed = !!state.nav.collapsed[key];
+  const chev = collapsed ? '▸' : '▾';
+  const sub = (on, attr, ic, title) => `<button class="nav-sub ${on ? 'on' : ''}" ${attr}><span class="i">${ic}</span><span class="t">${esc(title || 'Untitled')}</span></button>`;
+  let title, titleAttr = `data-sec-toggle="${key}"`, add = '', rows;
+  if (key === 'favs') {
+    title = 'Favourites';
+    rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}"`, KIND_IC[f.kind] || '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
+  } else if (key === 'notes') {
+    title = 'Notes'; titleAttr = 'data-open-notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
+    rows = state.noteTops.map((n) => sub(v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id, `data-open-note="${n.id}"`, '▸', n.title)).join('') || '<div class="nav-sub muted">No notes yet</div>';
+  } else {
+    title = 'Tables'; titleAttr = 'data-open-tables'; add = '<button class="nav-add" data-new-table title="New table">+</button>';
+    rows = state.tables.map((t) => sub(v.type === 'table' && state.tables_open && state.tables_open.id === t.id, `data-open-table="${t.id}"`, '▦', t.title)).join('') || '<div class="nav-sub muted">No tables yet</div>';
+  }
+  return `<div class="nav-sec" data-nav-sec="${key}">
+    <div class="nav-sec-h" draggable="true">
+      <button class="nav-chev" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">${chev}</button>
+      <button class="nav-sec-title" ${titleAttr}>${title}</button>
+      ${add}<span class="nav-grip" title="Drag to reorder">⠿</span>
+    </div>
+    ${collapsed ? '' : `<div class="nav-sec-body">${rows}</div>`}
+  </div>`;
+}
 function renderNav() {
   const v = state.view;
-  const noteRows = state.noteTops.map((n) => `<button class="nav-sub ${v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id ? 'on' : ''}" data-open-note="${n.id}"><span class="i">▸</span><span class="t">${esc(n.title || 'Untitled')}</span></button>`).join('');
-  const tableRows = state.tables.map((t) => `<button class="nav-sub ${v.type === 'table' && state.tables_open && state.tables_open.id === t.id ? 'on' : ''}" data-open-table="${t.id}"><span class="i">▦</span><span class="t">${esc(t.title || 'Untitled')}</span></button>`).join('');
+  const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
-    <div class="nav-brand"><em>Life</em><span class="dot">·</span>Robski</div>
+    <div class="nav-brand" data-view-home title="Home"><em>Life</em><span class="dot">·</span>Robski</div>
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
-    <button class="nav-item ${v.type === 'tasks' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
-    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▸</span> Notes</button>
-    <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
+    <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
-    <div class="nav-sec">
-      <div class="nav-sec-h">Notes <button data-new-note title="New note">+</button></div>
-      ${noteRows || '<div class="nav-sub" style="color:var(--ink-3)">No notes yet</div>'}
-    </div>
-    <div class="nav-sec">
-      <div class="nav-sec-h">Tables <button data-new-table title="New table">+</button></div>
-      ${tableRows || '<div class="nav-sub" style="color:var(--ink-3)">No tables yet</div>'}
-    </div>
+    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
     <div class="nav-spacer"></div>
     <div class="nav-foot">
-      <a href="/" title="Your day">Today</a>
-      <button data-theme-toggle title="Light / dark">Theme</button>
+      <a href="https://today.robski.uk" title="Your day planner">Today</a>
+      <button data-theme-toggle title="Switch to ${dark ? 'daytime' : 'night'}">${dark ? '☀ Day' : '☾ Night'}</button>
       <a href="/api/export" title="Download a full backup">Backup</a>
     </div>`;
+}
+function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
+function reorderSecs(draggedKey, beforeKey) {
+  if (draggedKey === beforeKey) return;
+  const o = state.nav.order.filter((k) => k !== draggedKey);
+  let i = beforeKey ? o.indexOf(beforeKey) : o.length; if (i < 0) i = o.length;
+  o.splice(i, 0, draggedKey); state.nav.order = o;
+  localStorage.setItem('life.nav.order', JSON.stringify(o)); renderNav();
 }
 
 // ── router ───────────────────────────────────────────
@@ -94,7 +159,7 @@ async function openNote(id) {
   const path = [note]; let p = note;
   while (p.parent_id) { p = await api(`/api/blocks/${p.parent_id}`); path.unshift(p); }
   const children = await api(`/api/blocks?kind=note&parent_id=${id}`);
-  state.note = { current: note, path, children, editingBody: false };
+  state.note = { current: note, path, children };
   state.view = { type: 'note', id };
   renderNav(); renderNote();
 }
@@ -109,19 +174,19 @@ async function openTable(id) {
 // ── view: home ───────────────────────────────────────
 const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const KIND_IC = { note: '▸', table: '▦', task: '✓', row: '▦' };
+const KIND_IC = { note: '▸', table: '▦', task: '✓', row: '▦', area: '◈' };
 
 async function openHome() {
   state.view = { type: 'home' };
   const [favs, day] = await Promise.all([
-    api('/api/favorites').catch(() => []),
+    api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
   ]);
-  state.home = { favs, events: day.events || [] };
+  state.favs = favs; state.home = { events: day.events || [] };
   renderNav(); renderHome();
 }
 function renderHome() {
-  const favs = state.home.favs || [];
+  const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
   const favRows = favs.map((f) => `<div class="fav" draggable="true" data-fav-id="${f.id}">
     <button class="fav-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${KIND_IC[f.kind] || '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button>
@@ -142,6 +207,9 @@ function renderHome() {
         <div class="home-sec-h">Today</div>
         <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
       </section>
+      ${favGroup('Favourite areas', favs.filter((f) => f.kind === 'area'))}
+      ${favGroup('Favourite notes', favs.filter((f) => f.kind === 'note'))}
+      ${favGroup('Favourite tables', favs.filter((f) => f.kind === 'table'))}
       <div class="home-links">
         <button class="home-link" data-view-tasks>All tasks →</button>
         <span class="home-link-pair"><button class="home-link" data-open-notes>Notes →</button><button class="home-link plus" data-new-note title="New note">+</button></span>
@@ -149,6 +217,13 @@ function renderHome() {
         <button class="home-link" data-open-areas>Life areas →</button>
       </div>
     </div>`;
+}
+// A type-grouped strip of favourite cards for the home page, shown only when
+// that type has any favourites.
+function favGroup(label, list) {
+  if (!list.length) return '';
+  const cards = list.map((f) => `<button class="tbl-card" data-fav-open="${f.kind}:${f.id}"><span class="tc-ic">${KIND_IC[f.kind] || '•'}</span>${esc(f.title || 'Untitled')}</button>`).join('');
+  return `<section class="home-sec"><div class="home-sec-h">${label}</div><div class="tbl-cards">${cards}</div></section>`;
 }
 function openTablesList() {
   state.view = { type: 'tables' };
@@ -187,11 +262,15 @@ function areaSelect(cur, attr) {
 function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
-  const cards = state.areas.map((a) => `<button class="area-card" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span></button>`).join('');
+  const favAreas = state.areas.filter((a) => a.props && a.props.fav);
+  const card = (a) => `<div class="area-card" style="--h:${hueOf(a)}">
+    <button class="ac-open" data-open-area="${a.id}"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span></button>
+    <button class="star ${a.props && a.props.fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${a.props && a.props.fav ? '★' : '☆'}</button></div>`;
   $('#pane').innerHTML = `
     <div class="pane-head home-head"><h1>Life areas</h1></div>
+    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="area-cards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All areas · ${state.areas.length}</div>
-      <div class="area-cards">${cards || '<div class="empty">No life areas yet.</div>'}</div></section>`;
+      <div class="area-cards">${state.areas.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -214,7 +293,8 @@ function renderArea() {
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
-      <button class="crumb" data-open-areas>Life areas</button>
+      <div class="area-hero-top"><button class="crumb" data-open-areas>Life areas</button>
+        <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span>${esc(area.title)}</h1>
       <p class="area-meta">${openTs.length} open task${openTs.length === 1 ? '' : 's'}${doneN ? ` · ${doneN} done` : ''} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${notes.length} note${notes.length === 1 ? '' : 's'}</p>
     </div>
@@ -234,24 +314,28 @@ async function setBlockArea(kind, id, areaId) {
 }
 
 function showQuickTask() {
+  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task" style="margin-bottom:22px">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
+    <select id="qt-area" class="sel">${opts}</select>
     <select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select>
     <button class="add-btn wide" type="submit">Add</button></form>`;
   $('#qt-title').focus();
 }
-async function homeAddTask(title, priority) {
-  try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { priority: priority || null, done: false } }) }); toast('Task added'); }
+async function homeAddTask(title, area, priority) {
+  try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) }); toast('Task added'); }
   catch (e) { toast(e.message); }
 }
 
 // favourites: pin any block; cross-kind; ordered by fav_rank.
 function findBlock(id) {
   return state.tasks.find((b) => b.id === id) || state.tables.find((b) => b.id === id)
-    || state.noteTops.find((b) => b.id === id)
+    || state.noteTops.find((b) => b.id === id) || state.areas.find((b) => b.id === id)
     || (state.note && state.note.current.id === id ? state.note.current : null)
     || (state.tables_open && state.tables_open.id === id ? state.tables_open : null)
-    || (state.home.favs || []).find((b) => b.id === id);
+    || (state.task_open && state.task_open.task.id === id ? state.task_open.task : null)
+    || (state.area_open && state.area_open.area.id === id ? state.area_open.area : null)
+    || (state.favs || []).find((b) => b.id === id);
 }
 function isFav(id) { const b = findBlock(id); return !!(b && b.props && b.props.fav); }
 async function toggleFav(id) {
@@ -259,13 +343,15 @@ async function toggleFav(id) {
   b.props = b.props || {};
   const fav = !b.props.fav;
   b.props.fav = fav; if (fav) b.props.fav_rank = Date.now();
-  rerenderCurrent();
+  if (fav) { if (!state.favs.find((f) => f.id === id)) state.favs.push({ id, kind: b.kind, title: b.title, props: { ...b.props } }); }
+  else { state.favs = state.favs.filter((f) => f.id !== id); }
+  renderNav(); rerenderCurrent();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav, fav_rank: b.props.fav_rank } }) }); } catch (e) { toast(e.message); }
 }
 async function unfav(id) {
   const b = findBlock(id); if (b) { b.props = b.props || {}; b.props.fav = false; }
-  state.home.favs = (state.home.favs || []).filter((f) => f.id !== id);
-  renderHome();
+  state.favs = state.favs.filter((f) => f.id !== id);
+  renderNav(); rerenderCurrent();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav: false } }) }); } catch (e) { toast(e.message); }
 }
 function rerenderCurrent() {
@@ -273,10 +359,10 @@ function rerenderCurrent() {
   if (v === 'tasks') renderTasks(); else if (v === 'note') renderNote();
   else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList();
   else if (v === 'notes') openNotesList(); else if (v === 'areas') openAreasList();
-  else if (v === 'area') renderArea(); else openHome();
+  else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard(); else openHome();
 }
 async function reorderFavs(draggedId, beforeId) {
-  const favs = state.home.favs;
+  const favs = state.favs;
   const from = favs.findIndex((f) => f.id === draggedId); if (from < 0) return;
   const [moved] = favs.splice(from, 1);
   let to = beforeId ? favs.findIndex((f) => f.id === beforeId) : favs.length;
@@ -289,6 +375,8 @@ function openFav(ref) {
   const i = ref.indexOf(':'); const kind = ref.slice(0, i); const id = ref.slice(i + 1);
   if (kind === 'note') return openNote(id);
   if (kind === 'table') return openTable(id);
+  if (kind === 'area') return openArea(id);
+  if (kind === 'task') return openTaskCard(id);
   return openTasks();
 }
 
@@ -321,10 +409,10 @@ function renderTasks() {
     return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}">
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${esc(t.title)}</span></td>
-      <td>${p ? `<span class="prio ${p}">${p}</span>` : ''}</td>
-      <td>${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</td>
+      <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
+      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add">+</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
-      <td class="tc-act"><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button></td>
+      <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button></td>
     </tr>`;
   }).join('');
   $('#pane').innerHTML = `
@@ -355,14 +443,10 @@ function renderNote() {
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <input class="note-title" id="note-title" value="${esc(n.title || '')}" placeholder="Untitled">
-    <div class="note-body" id="note-body">${state.note.editingBody
-      ? `<textarea id="body-edit" placeholder="Write in Markdown…"># heading, **bold**, *italic*, [link](https://…)">${esc(n.body || '')}</textarea>`
-      : mdToHtml(n.body)}</div>
+    <div class="note-body">${proseEditor(n.body, 'note')}</div>
     <div class="subpages"><div class="sub-h">Pages inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
       ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New page inside</span></button></div>`;
-  if (state.note.editingBody) { const t = $('#body-edit'); t.focus(); autoGrow(t); }
 }
-function autoGrow(t) { t.style.height = 'auto'; t.style.height = `${Math.max(160, t.scrollHeight)}px`; }
 
 // ── view: table ──────────────────────────────────────
 const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Check'], ['select', 'Select']];
@@ -382,7 +466,8 @@ function renderTable() {
     if (r) {
       const title = (r.props.values || {})[c[0] && c[0].id] || 'Untitled';
       $('#pane').innerHTML = `<div class="card"><button class="ghost" data-back-table>← ${esc(t.title || 'table')}</button>
-        <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div></div>`;
+        <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
+        ${notesSection(r.body, 'row')}</div>`;
       return;
     }
   }
@@ -468,7 +553,7 @@ function execItem(it) {
   if (it.kind === 'note') return openNote(it.id).catch((e) => toast(e.message));
   if (it.kind === 'table') return openTable(it.id).catch((e) => toast(e.message));
   if (it.kind === 'area') return openArea(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'task') return openTasks().catch((e) => toast(e.message));
+  if (it.kind === 'task') return openTaskCard(it.id).catch((e) => toast(e.message));
 }
 
 // ── events ───────────────────────────────────────────
@@ -482,14 +567,16 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('input', (e) => {
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
-  if (e.target.id === 'body-edit') autoGrow(e.target);
+  if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
 });
+let proseT;
 document.addEventListener('click', (e) => {
   const t = e.target;
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
-  if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); return; }
+  if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); renderNav(); return; }
+  const st = t.closest('[data-sec-toggle]'); if (st) { toggleSec(st.dataset.secToggle); return; }
 
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
@@ -515,6 +602,10 @@ document.addEventListener('click', (e) => {
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
   const dt = t.closest('[data-del-task]'); if (dt) { delTask(dt.dataset.delTask); return; }
   const et = t.closest('[data-edit-task]'); if (et) { editTaskTitle(et); return; }
+  const ep = t.closest('[data-edit-prio]'); if (ep) { editPrio(ep); return; }
+  const ea = t.closest('[data-edit-area]'); if (ea) { editArea(ea); return; }
+  const ota = t.closest('[data-open-task]'); if (ota) { openTaskCard(ota.dataset.openTask).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-del-task-cur]')) { delTaskCard().catch((x) => toast(x.message)); return; }
 
   // table
   if (t.closest('[data-back-table]')) { state.tables_view.openRow = null; renderTable(); return; }
@@ -530,39 +621,47 @@ document.addEventListener('change', (e) => {
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
   if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
+  if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
+  if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
 });
 // blur saves for titles/bodies
 document.addEventListener('blur', (e) => {
   if (e.target.id === 'note-title') saveNoteTitle(e.target.value.trim());
-  if (e.target.id === 'body-edit') saveNoteBody(e.target.value);
+  if (e.target.id === 'taskcard-title') patchTaskTitle(state.task_open.task.id, e.target.value.trim());
+  if (e.target.dataset && e.target.dataset.prose) saveProse(e.target.dataset.prose, e.target.innerHTML);
   if (e.target.dataset && e.target.dataset.rename !== undefined) renameTable(e.target.value.trim());
   const cn = e.target.dataset && e.target.dataset.colname; if (cn !== undefined && cn) renameColumn(cn, e.target.value.trim());
 }, true);
 document.addEventListener('keydown', (e) => {
   if (e.target.id === 'note-title' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
-  if (e.target.id === 'body-edit' && e.key === 'Escape') { state.note.editingBody = false; renderNote(); }
-});
-// open note body editor / submit forms
-document.addEventListener('click', (e) => {
-  if (e.target.closest('#note-body') && state.note && !state.note.editingBody) { state.note.editingBody = true; renderNote(); }
 });
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.id === 'task-form') { const i = $('#task-title'); const v = i.value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); i.value = ''; i.focus(); }
-  if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-prio').value); i.value = ''; i.focus(); } }
+  if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
 });
-// drag to reorder favourites on the home
-let dragFav = null;
-document.addEventListener('dragstart', (e) => { const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; e.dataTransfer.effectAllowed = 'move'; } });
-document.addEventListener('dragover', (e) => { if (dragFav && e.target.closest('#favs')) e.preventDefault(); });
-document.addEventListener('drop', (e) => {
-  if (!dragFav) return; e.preventDefault();
-  const over = e.target.closest('[data-fav-id]');
-  const beforeId = over && over.dataset.favId !== dragFav ? over.dataset.favId : null;
-  reorderFavs(dragFav, beforeId); dragFav = null;
+// drag to reorder favourites on the home, and to reorder the sidebar sections
+let dragFav = null, dragSec = null;
+document.addEventListener('dragstart', (e) => {
+  const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; e.dataTransfer.effectAllowed = 'move'; return; }
+  const s = e.target.closest('.nav-sec-h'); if (s) { dragSec = s.closest('[data-nav-sec]').dataset.navSec; e.dataTransfer.effectAllowed = 'move'; }
 });
-document.addEventListener('dragend', () => { dragFav = null; });
+document.addEventListener('dragover', (e) => {
+  if (dragFav && e.target.closest('#favs')) e.preventDefault();
+  if (dragSec && e.target.closest('#nav-secs')) e.preventDefault();
+});
+document.addEventListener('drop', (e) => {
+  if (dragFav) {
+    e.preventDefault(); const over = e.target.closest('[data-fav-id]');
+    reorderFavs(dragFav, over && over.dataset.favId !== dragFav ? over.dataset.favId : null); dragFav = null; return;
+  }
+  if (dragSec) {
+    e.preventDefault(); const over = e.target.closest('[data-nav-sec]');
+    reorderSecs(dragSec, over && over.dataset.navSec !== dragSec ? over.dataset.navSec : null); dragSec = null;
+  }
+});
+document.addEventListener('dragend', () => { dragFav = null; dragSec = null; });
 
 // column resize (pointer)
 let resizing = null;
@@ -579,26 +678,103 @@ async function addTask(title, area, priority) {
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) });
   state.tasks.push(b); renderTasks();
 }
-async function toggleTask(id) {
-  // A task can be held in more than one place at once - the Tasks list, an
-  // open area page, the favourites - each a separate object. Flip them all, or
-  // the visible one might be the copy we didn't touch.
-  const copies = [state.tasks, state.area_open && state.area_open.blocks, state.home.favs]
+// A task can be held in more than one place at once - the Tasks list, an open
+// area page, the task focus view, the favourites - each a separate object.
+// Gather every copy so a change updates the one on screen, not just one of them.
+function taskCopies(id) {
+  const out = [state.tasks, state.area_open && state.area_open.blocks, state.favs]
     .filter(Boolean).flatMap((arr) => arr.filter((b) => b.id === id));
-  if (!copies.length) return;
-  const done = !copies[0].props.done;
-  copies.forEach((b) => (b.props.done = done)); rerenderCurrent();
-  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { done } }) }); }
-  catch (e) { copies.forEach((b) => (b.props.done = !done)); rerenderCurrent(); toast(e.message); }
+  if (state.task_open && state.task_open.task.id === id) out.push(state.task_open.task);
+  return out;
 }
-async function delTask(id) { state.tasks = state.tasks.filter((t) => t.id !== id); renderTasks(); try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { toast(e.message); } }
+async function patchTaskProps(id, patch) {
+  const copies = taskCopies(id); if (!copies.length) return;
+  const prev = copies.map((b) => ({ ...b.props }));
+  copies.forEach((b) => Object.assign(b.props, patch)); rerenderCurrent();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: patch }) }); }
+  catch (e) { copies.forEach((b, i) => (b.props = prev[i])); rerenderCurrent(); toast(e.message); }
+}
+async function patchTaskTitle(id, title) {
+  const copies = taskCopies(id); if (!copies.length || !title) return;
+  copies.forEach((b) => (b.title = title)); rerenderCurrent();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }); } catch (e) { toast(e.message); }
+}
+function toggleTask(id) { const t = taskCopies(id)[0]; if (t) patchTaskProps(id, { done: !t.props.done }); }
+async function delTask(id) {
+  state.tasks = state.tasks.filter((t) => t.id !== id);
+  if (state.area_open) state.area_open.blocks = state.area_open.blocks.filter((t) => t.id !== id);
+  rerenderCurrent(); try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { toast(e.message); }
+}
 function editTaskTitle(span) {
-  const id = span.dataset.editTask; const t = state.tasks.find((x) => x.id === id); if (!t) return;
-  const input = document.createElement('input'); input.value = t.title; input.className = 'cell'; input.style.cssText = 'flex:1;font:inherit;font-size:17px;border:1px solid var(--accent);border-radius:6px;padding:2px 6px;background:var(--card)';
+  const id = span.dataset.editTask; const t = taskCopies(id)[0]; if (!t) return;
+  const input = document.createElement('input'); input.value = t.title; input.className = 'cell'; input.style.cssText = 'flex:1;width:100%;font:inherit;font-size:17px;border:1px solid var(--accent);border-radius:6px;padding:2px 6px;background:var(--card)';
   span.replaceWith(input); input.focus(); input.select(); let d = false;
-  const save = async () => { if (d) return; d = true; const v = input.value.trim(); if (v && v !== t.title) { t.title = v; try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); } catch (e) { toast(e.message); } } renderTasks(); };
+  const save = () => { if (d) return; d = true; const v = input.value.trim(); if (v && v !== t.title) patchTaskTitle(id, v); else renderTasks(); };
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { d = true; renderTasks(); } });
   input.addEventListener('blur', save);
+}
+// Inline edit of a constrained field (priority / area): the span becomes a
+// select in place, commits on change, and cancels on blur-without-change.
+function editInlineSelect(span, cur, options, onPick) {
+  const sel = document.createElement('select'); sel.className = 'ie-sel';
+  sel.innerHTML = options.map((o) => `<option value="${esc(o.value)}" ${o.value === (cur || '') ? 'selected' : ''}>${esc(o.label)}</option>`).join('');
+  span.replaceWith(sel); sel.focus(); let d = false;
+  sel.addEventListener('change', () => { if (d) return; d = true; onPick(sel.value || null); });
+  sel.addEventListener('blur', () => { if (!d) { d = true; renderTasks(); } });
+}
+function editPrio(span) {
+  const id = span.dataset.editPrio; const t = taskCopies(id)[0]; if (!t) return;
+  editInlineSelect(span, t.props.priority, [{ value: '', label: '—' }, ...['P1', 'P2', 'P3', 'P4'].map((p) => ({ value: p, label: p }))], (v) => patchTaskProps(id, { priority: v }));
+}
+function editArea(span) {
+  const id = span.dataset.editArea; const t = taskCopies(id)[0]; if (!t) return;
+  editInlineSelect(span, t.props.area, [{ value: '', label: 'No area' }, ...state.areas.map((a) => ({ value: a.id, label: a.title }))], (v) => patchTaskProps(id, { area: v }));
+}
+
+// ── view: task focus (open card) ─────────────────────
+async function openTaskCard(id) {
+  const task = await api(`/api/blocks/${id}`);
+  state.task_open = { task };
+  state.view = { type: 'taskcard', id };
+  renderNav(); renderTaskCard();
+}
+function renderTaskCard() {
+  const t = state.task_open.task; const a = areaById(t.props.area); const p = t.props.priority;
+  $('#pane').innerHTML = `
+    <div class="note-crumbs"><button class="crumb" data-view-home>Home</button><span class="crumb-sep">/</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">/</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
+      <span class="crumb-tools"><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
+      <button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button></span></div>
+    <div class="task-focus">
+      <button class="tf-check ${t.props.done ? 'done' : ''}" data-check="${t.id}" title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
+      <input class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" value="${esc(t.title || '')}" placeholder="Untitled task">
+    </div>
+    <div class="tf-meta">
+      <label class="tf-field"><span class="tf-label">Priority</span>
+        <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Life area</span>
+        <select class="sel" data-area-task="${t.id}"><option value="">No area</option>${state.areas.map((x) => `<option value="${x.id}" ${t.props.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
+    </div>
+    ${notesSection(t.body, 'task')}`;
+}
+
+// A prose Notes section, reused by the task card and the row card. Backed by
+// the block's `body`, edited inline via the shared rich-text editor.
+function notesSection(body, key) {
+  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key)}</section>`;
+}
+// Save a rich-text region back to whichever block it belongs to.
+async function saveProse(key, rawHtml) {
+  const html = sanitizeProse(rawHtml);
+  let id;
+  if (key === 'note') { const n = state.note && state.note.current; if (!n) return; n.body = html; id = n.id; }
+  else if (key === 'task') { const t = state.task_open && state.task_open.task; if (!t) return; t.body = html; id = t.id; }
+  else if (key === 'row') { const r = state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)); if (!r) return; r.body = html; id = r.id; }
+  if (!id) return;
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
+}
+async function delTaskCard() {
+  const t = state.task_open.task; if (!confirm(`Delete “${t.title || 'Untitled'}”?`)) return;
+  await delTask(t.id); await openTasks();
 }
 async function saveNoteTitle(v) {
   const n = state.note.current; if (!n || v === n.title) return; n.title = v;
@@ -606,7 +782,6 @@ async function saveNoteTitle(v) {
   const cr = $('.note-crumbs .crumb.cur'); if (cr) cr.textContent = v || 'Untitled';
   try { await api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); }
 }
-async function saveNoteBody(v) { const n = state.note.current; n.body = v; state.note.editingBody = false; renderNote(); try { await api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ body: v }) }); } catch (e) { toast(e.message); } }
 async function delNote() {
   const n = state.note.current; if (!confirm(`Delete “${n.title || 'Untitled'}”?`)) return;
   const parent = state.note.path.length > 1 ? state.note.path[state.note.path.length - 2].id : null;
@@ -617,6 +792,57 @@ async function addColumn(name, type) { const col = { id: uid(), name: name || 'C
 async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
 async function renameColumn(id, v) { const cols = tcols().map((c) => c.id === id ? { ...c, name: v } : c); await saveTableColumns(cols).catch((x) => toast(x.message)); }
 async function delTable() { const t = state.tables_open; if (!confirm(`Delete the table “${t.title}” and its rows?`)) return; for (const r of state.tables_rows) await api(`/api/blocks/${r.id}`, { method: 'DELETE' }); await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); state.tables = state.tables.filter((x) => x.id !== t.id); state.tables_open = null; await openTasks(); }
+
+// ── inline formatting bubble ─────────────────────────
+// A small toolbar that floats above a text selection inside any .prose editor.
+// execCommand is deprecated but universally supported and exactly right for a
+// one-person app - no library, formats in place, saves clean HTML.
+function ensureBubble() {
+  let b = document.getElementById('bubble'); if (b) return b;
+  b = document.createElement('div'); b.id = 'bubble'; b.className = 'bubble'; b.hidden = true;
+  b.innerHTML = `<button data-fmt="bold" title="Bold  ⌘B"><b>B</b></button>
+    <button data-fmt="italic" title="Italic  ⌘I"><i>I</i></button>
+    <span class="bub-sep"></span>
+    <button data-fmt="h2" title="Heading">H</button>
+    <button data-fmt="quote" title="Quote">&#10077;</button>
+    <button data-fmt="link" title="Add link">&#8599;</button>`;
+  document.body.appendChild(b); return b;
+}
+function activeProse() {
+  const sel = window.getSelection(); if (!sel || !sel.rangeCount) return null;
+  let n = sel.getRangeAt(0).startContainer; n = n.nodeType === 1 ? n : n.parentElement;
+  return n && n.closest ? n.closest('.prose') : null;
+}
+function currentBlockTag() {
+  const sel = window.getSelection(); if (!sel || !sel.rangeCount) return null;
+  let n = sel.getRangeAt(0).startContainer; n = n.nodeType === 1 ? n : n.parentElement;
+  const bl = n && n.closest && n.closest('h1,h2,h3,blockquote,p');
+  return bl ? bl.tagName : null;
+}
+function positionBubble() {
+  const b = ensureBubble(); const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed || !activeProse()) { b.hidden = true; return; }
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
+  if (!rect.width && !rect.height) { b.hidden = true; return; }
+  b.hidden = false;
+  b.style.top = `${window.scrollY + rect.top - b.offsetHeight - 9}px`;
+  b.style.left = `${Math.max(8, window.scrollX + rect.left + rect.width / 2 - b.offsetWidth / 2)}px`;
+}
+function applyFmt(cmd) {
+  const prose = activeProse(); if (!prose) return; prose.focus();
+  if (cmd === 'bold') document.execCommand('bold');
+  else if (cmd === 'italic') document.execCommand('italic');
+  else if (cmd === 'h2') document.execCommand('formatBlock', false, currentBlockTag() === 'H2' ? '<p>' : '<h2>');
+  else if (cmd === 'quote') document.execCommand('formatBlock', false, currentBlockTag() === 'BLOCKQUOTE' ? '<p>' : '<blockquote>');
+  else if (cmd === 'link') { const url = prompt('Link to (URL):'); if (url) document.execCommand('createLink', false, url.trim()); }
+  positionBubble();
+  saveProse(prose.dataset.prose, prose.innerHTML);
+}
+document.addEventListener('selectionchange', positionBubble);
+document.addEventListener('mousedown', (e) => {
+  const fb = e.target.closest && e.target.closest('#bubble [data-fmt]');
+  if (fb) { e.preventDefault(); applyFmt(fb.dataset.fmt); }
+});
 
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
 let gateStep = 'email', gateEmail = '';
@@ -660,8 +886,9 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
 (async function boot() {
   if (!token()) { showGate(); return; }
   try {
-    [state.noteTops, state.tables, state.areas] = await Promise.all([
+    [state.noteTops, state.tables, state.areas, state.favs] = await Promise.all([
       api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table'), api('/api/blocks?kind=area'),
+      api('/api/favorites').catch(() => []),
     ]);
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
