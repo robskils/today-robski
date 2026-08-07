@@ -128,7 +128,7 @@ function renderHome() {
   $('#pane').innerHTML = `
     <div class="home">
       <div class="home-head">
-        <h1>${greeting()}</h1>
+        <h1>${greeting()}, <span class="hi-name">Robski</span></h1>
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button></div>
       </div>
       <div id="qt-wrap"></div>
