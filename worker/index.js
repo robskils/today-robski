@@ -425,6 +425,12 @@ async function listBlocks(request, env, url) {
   if (url.searchParams.has('parent_id')) {
     clauses.push('parent_id IS ?'); args.push(url.searchParams.get('parent_id') || null);
   }
+  // ?area=<id> returns every block tagged with that life area, across kinds -
+  // tasks, notes and tables all carry it in props.area. Rows have no area, so
+  // they never match. This is what an area page queries.
+  if (url.searchParams.has('area')) {
+    clauses.push("json_extract(props, '$.area') = ?"); args.push(url.searchParams.get('area'));
+  }
   if (url.searchParams.get('archived') !== '1') clauses.push('archived = 0');
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';

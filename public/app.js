@@ -57,7 +57,9 @@ function renderNav() {
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'tasks' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
+    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▸</span> Notes</button>
     <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
+    <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
     <div class="nav-sec">
       <div class="nav-sec-h">Notes <button data-new-note title="New note">+</button></div>
       ${noteRows || '<div class="nav-sub" style="color:var(--ink-3)">No notes yet</div>'}
@@ -140,7 +142,12 @@ function renderHome() {
         <div class="home-sec-h">Today</div>
         <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
       </section>
-      <div class="home-links"><button class="home-link" data-view-tasks>All tasks →</button><button class="home-link" data-open-tables>Tables →</button></div>
+      <div class="home-links">
+        <button class="home-link" data-view-tasks>All tasks →</button>
+        <span class="home-link-pair"><button class="home-link" data-open-notes>Notes →</button><button class="home-link plus" data-new-note title="New note">+</button></span>
+        <span class="home-link-pair"><button class="home-link" data-open-tables>Tables →</button><button class="home-link plus" data-new-table title="New table">+</button></span>
+        <button class="home-link" data-open-areas>Life areas →</button>
+      </div>
     </div>`;
 }
 function openTablesList() {
@@ -152,6 +159,78 @@ function openTablesList() {
     <div class="pane-head home-head"><h1>Tables</h1><button class="add-btn wide" data-new-table>+ New table</button></div>
     ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All tables · ${state.tables.length}</div><div class="tbl-cards">${cards(state.tables) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+}
+
+function openNotesList() {
+  state.view = { type: 'notes' };
+  renderNav();
+  const favNotes = state.noteTops.filter((n) => n.props && n.props.fav);
+  const cards = (list) => list.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▸</span>${esc(n.title || 'Untitled')}${areaTag(n)}</button>`).join('');
+  $('#pane').innerHTML = `
+    <div class="pane-head home-head"><h1>Notes</h1><button class="add-btn wide" data-new-note>+ New note</button></div>
+    ${favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
+    <section class="home-sec"><div class="home-sec-h">All notes · ${state.noteTops.length}</div><div class="tbl-cards">${cards(state.noteTops) || '<div class="empty">No notes yet.</div>'}</div></section>`;
+}
+
+// ── view: life areas ─────────────────────────────────
+// A small coloured tag showing a block's life area, if it has one.
+function areaTag(b) {
+  const a = b.props && b.props.area && areaById(b.props.area);
+  return a ? `<span class="area-tag" style="--h:${hueOf(a)}"><span class="cd"></span>${esc(a.title)}</span>` : '';
+}
+// A picker to set a block's life area, used on note and table pages.
+function areaSelect(cur, attr) {
+  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Life area</option>${
+    state.areas.map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}</option>`).join('')
+  }</select></span>`;
+}
+function openAreasList() {
+  state.view = { type: 'areas' };
+  renderNav();
+  const cards = state.areas.map((a) => `<button class="area-card" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span></button>`).join('');
+  $('#pane').innerHTML = `
+    <div class="pane-head home-head"><h1>Life areas</h1></div>
+    <section class="home-sec"><div class="home-sec-h">All areas · ${state.areas.length}</div>
+      <div class="area-cards">${cards || '<div class="empty">No life areas yet.</div>'}</div></section>`;
+}
+async function openArea(id) {
+  state.view = { type: 'area', id };
+  const [area, blocks] = await Promise.all([api(`/api/blocks/${id}`), api(`/api/blocks?area=${id}`)]);
+  state.area_open = { area, blocks };
+  renderNav(); renderArea();
+}
+function renderArea() {
+  const { area, blocks } = state.area_open;
+  const tasks = blocks.filter((b) => b.kind === 'task');
+  const openTs = tasks.filter((t) => !t.props.done).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
+  const doneN = tasks.length - openTs.length;
+  const tables = blocks.filter((b) => b.kind === 'table');
+  const notes = blocks.filter((b) => b.kind === 'note');
+  const h = hueOf(area);
+  const taskRows = openTs.map((t) => `<div class="area-task"><button class="check" data-check="${t.id}">✓</button>
+    <span class="t">${esc(t.title)}</span>${t.props.priority ? `<span class="prio ${t.props.priority}">${t.props.priority}</span>` : ''}</div>`).join('');
+  const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
+  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▸</span>${esc(n.title || 'Untitled')}</button>`).join('');
+  const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
+  $('#pane').innerHTML = `
+    <div class="area-hero" style="--h:${h}">
+      <button class="crumb" data-open-areas>Life areas</button>
+      <h1><span class="ac-dot"></span>${esc(area.title)}</h1>
+      <p class="area-meta">${openTs.length} open task${openTs.length === 1 ? '' : 's'}${doneN ? ` · ${doneN} done` : ''} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${notes.length} note${notes.length === 1 ? '' : 's'}</p>
+    </div>
+    ${sec('Tasks', openTs.length, `<div class="area-tasks">${taskRows}</div>`)}
+    ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
+    ${sec('Notes', notes.length, `<div class="tbl-cards">${noteCards}</div>`)}
+    ${!openTs.length && !tables.length && !notes.length ? '<div class="empty" style="padding:50px">Nothing tagged with this life area yet. Add it to a task, note or table.</div>' : ''}`;
+}
+async function setBlockArea(kind, id, areaId) {
+  try {
+    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { area: areaId || null } }) });
+    const bump = (b) => { if (b) { b.props = b.props || {}; b.props.area = areaId || null; } };
+    if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
+    if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
+    toast(areaId ? 'Life area set' : 'Life area cleared');
+  } catch (e) { toast(e.message); }
 }
 
 function showQuickTask() {
@@ -192,7 +271,9 @@ async function unfav(id) {
 function rerenderCurrent() {
   const v = state.view.type;
   if (v === 'tasks') renderTasks(); else if (v === 'note') renderNote();
-  else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList(); else openHome();
+  else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList();
+  else if (v === 'notes') openNotesList(); else if (v === 'areas') openAreasList();
+  else if (v === 'area') renderArea(); else openHome();
 }
 async function reorderFavs(draggedId, beforeId) {
   const favs = state.home.favs;
@@ -270,8 +351,9 @@ function renderNote() {
   const kids = state.note.children.map((c) => `<button class="subpage" data-open-note="${c.id}"><span class="sp-ico">▸</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs"><button class="crumb" data-view-home>Home</button><span class="crumb-sep">/</span>${crumbs}
+      <span class="crumb-tools">${areaSelect(n.props && n.props.area, 'data-note-area')}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
-      <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></div>
+      <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <input class="note-title" id="note-title" value="${esc(n.title || '')}" placeholder="Untitled">
     <div class="note-body" id="note-body">${state.note.editingBody
       ? `<textarea id="body-edit" placeholder="Write in Markdown…"># heading, **bold**, *italic*, [link](https://…)">${esc(n.body || '')}</textarea>`
@@ -313,6 +395,7 @@ function renderTable() {
   const body = state.tables_rows.map((r) => `<tr><td class="row-open"><button data-open-row="${r.id}" title="Open">⤢</button></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   $('#pane').innerHTML = `
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
+      ${areaSelect(t.props && t.props.area, 'data-table-area')}
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
       <button class="ghost" data-del-cur>Delete</button></div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}
@@ -354,7 +437,8 @@ function buildPalette() {
   if (!q) {
     state.pal.items = [...ACTIONS,
       ...state.noteTops.slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
-      ...state.tables.slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' }))];
+      ...state.tables.slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' })),
+      ...state.areas.slice(0, 6).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }))];
     renderPalette(); return;
   }
   const acts = ACTIONS.filter((a) => a.title.toLowerCase().includes(q.toLowerCase()));
@@ -383,7 +467,7 @@ function execItem(it) {
   if (it.kind === 'action') return it.run().catch((e) => toast(e.message));
   if (it.kind === 'note') return openNote(it.id).catch((e) => toast(e.message));
   if (it.kind === 'table') return openTable(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'area') return openTasks(it.id).catch((e) => toast(e.message));
+  if (it.kind === 'area') return openArea(it.id).catch((e) => toast(e.message));
   if (it.kind === 'task') return openTasks().catch((e) => toast(e.message));
 }
 
@@ -411,6 +495,9 @@ document.addEventListener('click', (e) => {
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openTablesList(); return; }
+  if (t.closest('[data-open-notes]')) { openNotesList(); return; }
+  if (t.closest('[data-open-areas]')) { openAreasList(); return; }
+  const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
@@ -441,6 +528,8 @@ document.addEventListener('click', (e) => {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
+  if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
+  if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
 });
 // blur saves for titles/bodies
 document.addEventListener('blur', (e) => {
@@ -491,8 +580,16 @@ async function addTask(title, area, priority) {
   state.tasks.push(b); renderTasks();
 }
 async function toggleTask(id) {
-  const t = state.tasks.find((x) => x.id === id); if (!t) return; const done = !t.props.done; t.props.done = done; renderTasks();
-  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { done } }) }); } catch (e) { t.props.done = !done; renderTasks(); toast(e.message); }
+  // A task can be held in more than one place at once - the Tasks list, an
+  // open area page, the favourites - each a separate object. Flip them all, or
+  // the visible one might be the copy we didn't touch.
+  const copies = [state.tasks, state.area_open && state.area_open.blocks, state.home.favs]
+    .filter(Boolean).flatMap((arr) => arr.filter((b) => b.id === id));
+  if (!copies.length) return;
+  const done = !copies[0].props.done;
+  copies.forEach((b) => (b.props.done = done)); rerenderCurrent();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { done } }) }); }
+  catch (e) { copies.forEach((b) => (b.props.done = !done)); rerenderCurrent(); toast(e.message); }
 }
 async function delTask(id) { state.tasks = state.tasks.filter((t) => t.id !== id); renderTasks(); try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { toast(e.message); } }
 function editTaskTitle(span) {
@@ -563,8 +660,11 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
 (async function boot() {
   if (!token()) { showGate(); return; }
   try {
-    [state.noteTops, state.tables] = await Promise.all([api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table')]);
+    [state.noteTops, state.tables, state.areas] = await Promise.all([
+      api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table'), api('/api/blocks?kind=area'),
+    ]);
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     await openHome();
   } catch (e) { toast(e.message); renderNav(); }
 })();

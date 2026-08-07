@@ -345,14 +345,46 @@ td.row-open button:hover { opacity:1; color:var(--accent); }
 .ev-t { flex:1; min-width:0; font-size:16.5px; }
 .ev-loc { color:var(--ink-3); font-size:14px; }
 
-.home-links { display:flex; gap:10px; margin-top:30px; flex-wrap:wrap; }
+.home-links { display:flex; gap:10px; margin-top:30px; flex-wrap:wrap; align-items:center; }
 .home-link { padding:9px 16px; border-radius:999px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; }
 .home-link:hover { border-color:var(--accent); color:var(--accent); }
+/* a link and its + share one pill outline, split by a hairline */
+.home-link-pair { display:inline-flex; align-items:stretch; }
+.home-link-pair .home-link { border-radius:999px 0 0 999px; border-right:0; }
+.home-link-pair .home-link.plus { border-radius:0 999px 999px 0; padding:9px 13px; font-size:17px; line-height:1; font-weight:600; }
 
 .tbl-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
 .tbl-card { display:flex; align-items:center; gap:10px; text-align:left; padding:15px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:16.5px; box-shadow:var(--shadow); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tbl-card:hover { border-color:var(--accent); }
 .tc-ic { color:var(--ink-3); flex:none; }
+/* a life-area tag riding on a note card, pushed to the right */
+.area-tag { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 40%,transparent); padding:2px 9px; border-radius:999px; flex:none; }
+.area-tag .cd { width:8px; height:8px; border-radius:50%; background:var(--c); }
+
+/* ── life areas ──────────────────────────────────── */
+/* the area picker on a note / table, styled as a quiet pill */
+.crumb-tools { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.area-sel { padding:7px 12px; font-size:14.5px; background:var(--card); border:1px solid var(--line-2); border-radius:999px; color:var(--ink-2); max-width:200px; }
+.area-sel:hover { border-color:var(--accent); }
+.tbl-head .area-sel { margin-left:auto; }
+
+.area-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+.area-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:center; gap:11px; text-align:left; padding:16px 17px; border:1px solid var(--line); border-left:4px solid var(--c); border-radius:12px; background:var(--card); color:var(--ink); font-size:17px; box-shadow:var(--shadow); transition:border-color .12s,transform .08s; }
+.area-card:hover { border-color:var(--c); transform:translateY(-1px); }
+.ac-dot { width:11px; height:11px; border-radius:50%; background:var(--c); flex:none; }
+.ac-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.area-hero { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-bottom:8px; }
+.area-hero h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(30px,4.5vw,44px); font-weight:500; display:flex; align-items:center; gap:12px; margin-top:4px; }
+.area-hero h1 .ac-dot { width:15px; height:15px; }
+.area-meta { color:var(--ink-3); font-size:15px; margin-top:6px; }
+
+.area-tasks { display:flex; flex-direction:column; }
+.area-task { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:center; gap:13px; padding:12px 4px; border-bottom:1px solid var(--line); }
+.area-task .check { width:21px; height:21px; flex:none; border-radius:6px; border:2px solid var(--c); background:none; color:transparent; display:grid; place-items:center; font-size:12px; cursor:pointer; }
+.area-task .check:hover { background:color-mix(in srgb,var(--c) 16%,transparent); }
+.area-task .t { flex:1; min-width:0; font-size:16.5px; cursor:text; }
+.area-task .prio { font-size:13px; font-weight:600; color:var(--ink-3); } .area-task .prio.P1 { color:var(--accent); }
 
 /* favourite star, shared across views */
 .star { flex:none; color:var(--ink-3); font-size:17px; padding:0 4px; opacity:0; transition:opacity .12s,color .12s; }
