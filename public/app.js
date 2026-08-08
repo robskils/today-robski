@@ -125,19 +125,18 @@ function renderNav() {
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
     <div class="nav-brand" data-view-home title="Home"><em>Life</em><span class="dot">·</span>Robski</div>
+    <div class="nav-foot">
+      <a href="https://today.robski.uk" title="Your day planner">Today</a>
+      <button data-theme-toggle title="Switch to ${dark ? 'daytime' : 'night'}">${dark ? '☀ Day' : '☾ Night'}</button>
+      <a href="/api/export" title="Download a full backup">Backup</a>
+    </div>
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▸</span> Notes</button>
     <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
-    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
-    <div class="nav-spacer"></div>
-    <div class="nav-foot">
-      <a href="https://today.robski.uk" title="Your day planner">Today</a>
-      <button data-theme-toggle title="Switch to ${dark ? 'daytime' : 'night'}">${dark ? '☀ Day' : '☾ Night'}</button>
-      <a href="/api/export" title="Download a full backup">Backup</a>
-    </div>`;
+    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>`;
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
 function reorderSecs(draggedKey, beforeKey) {

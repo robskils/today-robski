@@ -331,7 +331,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-sub .i { color:var(--ink-3); font-size:12px; flex:none; }
 .nav-sub .t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .nav-spacer { flex:1; }
-.nav-foot { display:flex; gap:6px; padding:0 6px; }
+.nav-foot { display:flex; gap:6px; padding:0 6px; margin:2px 0 12px; }
 .nav-foot a, .nav-foot button { font-size:13px; color:var(--ink-3); padding:6px 8px; border-radius:7px; text-decoration:none; }
 .nav-foot a:hover, .nav-foot button:hover { background:var(--paper); color:var(--ink); }
 
