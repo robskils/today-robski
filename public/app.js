@@ -138,6 +138,20 @@ function renderNav() {
     <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>`;
+  renderTabbar(v);
+}
+// The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
+// backdrop-filter, which would make it the containing block for a fixed child
+// and pin the bar to the nav instead of the viewport.
+function renderTabbar(v) {
+  let el = document.getElementById('tabbar');
+  if (!el) { el = document.createElement('nav'); el.id = 'tabbar'; el.className = 'tabbar'; document.body.appendChild(el); }
+  const tab = (on, attr, ic, label) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span>${ic}</span>${label}</button>`;
+  el.innerHTML = tab(v.type === 'home', 'data-view-home', '⌂', 'Home')
+    + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
+    + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
+    + tab(v.type === 'note' || v.type === 'notes', 'data-open-notes', '▸', 'Notes')
+    + tab(false, 'data-palette', '⌕', 'Search');
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
 function reorderSecs(draggedKey, beforeKey) {
@@ -595,7 +609,7 @@ function renderTasks() {
     </form>
     <div class="area-chips">${chips}</div>
     <div class="tbl-scroll"><table class="ttable">
-      <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority')}${th('area', 'Area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
+      <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
       <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">No tasks here yet.</td></tr>`}</tbody>
     </table></div>`;
 }
