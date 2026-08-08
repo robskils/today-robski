@@ -23,7 +23,7 @@ const state = {
   areas: [], tasks: [], taskFilter: null,
   taskSort: { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
-  favs: [], home: { events: [] },
+  favs: [], home: { events: [] }, cal: null,
   nav: {
     order: (() => { const o = readLS('life.nav.order', null); return Array.isArray(o) && o.length === 3 && o.includes('favs') && o.includes('notes') && o.includes('tables') ? o : ['favs', 'notes', 'tables']; })(),
     collapsed: readLS('life.nav.collapsed', {}),
@@ -133,6 +133,7 @@ function renderNav() {
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
+    <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span> Calendar</button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▸</span> Notes</button>
     <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
@@ -207,6 +208,7 @@ function renderHome() {
       <div id="qt-wrap"></div>
       <nav class="home-nav">
         <button class="hn-btn" data-view-tasks><span class="hn-ic">✓</span>Tasks</button>
+        <button class="hn-btn" data-open-calendar><span class="hn-ic">◑</span>Calendar</button>
         <span class="hn-group"><button class="hn-btn" data-open-notes><span class="hn-ic">▸</span>Notes</button><button class="hn-plus" data-new-note title="New note">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-tables><span class="hn-ic">▦</span>Tables</button><button class="hn-plus" data-new-table title="New table">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button><button class="hn-plus" data-new-area title="New life area">+</button></span>
@@ -319,6 +321,140 @@ async function setBlockArea(kind, id, areaId) {
   } catch (e) { toast(e.message); }
 }
 
+// ── view: calendar ───────────────────────────────────
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const p2 = (n) => String(n).padStart(2, '0');
+const ymd = (y, m, d) => `${y}-${p2(m + 1)}-${p2(d)}`; // m is 0-based
+const todayISO = () => { const d = new Date(); return ymd(d.getFullYear(), d.getMonth(), d.getDate()); };
+const addDayISO = (iso, n = 1) => { const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d + n); return ymd(dt.getFullYear(), dt.getMonth(), dt.getDate()); };
+const isoToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const minToLabel = (m) => `${p2(Math.floor(m / 60))}:${p2(m % 60)}`;
+const prettyDate = (iso) => { const [y, mo, d] = iso.split('-').map(Number); const dt = new Date(y, mo - 1, d); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dt.getDay()]} ${d} ${MONTHS_LONG[mo - 1]}`; };
+
+function monthWeeks(y, m) {
+  const startDow = (new Date(y, m, 1).getDay() + 6) % 7; // Monday = 0
+  const gridStart = new Date(y, m, 1 - startDow);
+  const weeks = [];
+  for (let w = 0; w < 6; w++) {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const dt = new Date(gridStart); dt.setDate(gridStart.getDate() + w * 7 + i);
+      const iso = ymd(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      days.push({ iso, day: dt.getDate(), inMonth: dt.getMonth() === m, today: iso === todayISO() });
+    }
+    weeks.push(days);
+  }
+  return weeks;
+}
+function eventsByDay() {
+  const map = {};
+  for (const e of state.cal.events) {
+    const days = [];
+    if (e.allDay) {
+      const end = e.end_date && e.end_date > e.date ? e.end_date : addDayISO(e.date);
+      for (let d = e.date; d < end; d = addDayISO(d)) days.push(d);
+    } else {
+      days.push(e.date);
+      if (e.end_date && e.end_date !== e.date) days.push(e.end_date);
+    }
+    for (const d of (days.length ? days : [e.date])) (map[d] = map[d] || []).push(e);
+  }
+  for (const d in map) map[d].sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || (a.start_min || 0) - (b.start_min || 0));
+  return map;
+}
+async function openCalendar(dateStr) {
+  const base = dateStr || (state.cal && state.cal.selected) || todayISO();
+  const [y, m] = base.split('-').map(Number);
+  state.cal = { y, m: m - 1, selected: dateStr || (state.cal && state.cal.selected) || todayISO(), events: [], error: null, editing: null, adding: false };
+  state.view = { type: 'calendar' };
+  renderNav(); renderCalendar();
+  await loadCalendar();
+}
+async function loadCalendar() {
+  const weeks = monthWeeks(state.cal.y, state.cal.m);
+  const from = weeks[0][0].iso, to = weeks[5][6].iso;
+  try {
+    const r = await api(`/api/calendar?from=${from}&to=${to}`);
+    state.cal.events = r.events || []; state.cal.error = r.error || null;
+  } catch (e) { state.cal.error = e.message; }
+  if (state.view.type === 'calendar') renderCalendar();
+}
+function stepMonth(delta) {
+  let m = state.cal.m + delta, y = state.cal.y;
+  if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
+  state.cal.y = y; state.cal.m = m; state.cal.adding = false; state.cal.editing = null;
+  renderCalendar(); loadCalendar();
+}
+function renderCalendar() {
+  const c = state.cal, byDay = eventsByDay();
+  const chip = (e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`;
+  const cell = (d) => {
+    const evs = byDay[d.iso] || [];
+    const shown = evs.slice(0, 3).map(chip).join('');
+    const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3} more</span>` : '';
+    return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'sel' : ''}" data-cal-day="${d.iso}">
+      <div class="cal-daynum">${d.day}</div><div class="cal-evs">${shown}${more}</div></div>`;
+  };
+  const grid = monthWeeks(c.y, c.m).map((w) => w.map(cell).join('')).join('');
+  const dayEvents = (byDay[c.selected] || []);
+  const agendaRows = dayEvents.length ? dayEvents.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}">
+      <span class="cal-ag-time">${e.allDay ? 'all day' : minToLabel(e.start_min)}</span>
+      <span class="cal-ag-t">${esc(e.title)}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
+    : '<div class="home-empty">Nothing on this day.</div>';
+  $('#pane').innerHTML = `
+    <div class="cal-head">
+      <h1>${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span></h1>
+      <div class="cal-nav">
+        <button class="cal-btn" data-cal-today>Today</button>
+        <button class="cal-btn ic" data-cal-prev title="Previous month">‹</button>
+        <button class="cal-btn ic" data-cal-next title="Next month">›</button>
+      </div>
+    </div>
+    ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
+    <div class="cal-grid">
+      ${WEEKDAYS.map((w) => `<div class="cal-dow">${w}</div>`).join('')}
+      ${grid}
+    </div>
+    <section class="cal-agenda">
+      <div class="cal-ag-head"><h2>${prettyDate(c.selected)}</h2><button class="add-btn wide" data-cal-add>+ Event</button></div>
+      <div id="cal-form"></div>
+      <div class="cal-ag-list">${agendaRows}</div>
+    </section>`;
+  if (c.adding) showCalForm();
+  else if (c.editing) showCalForm(c.editing);
+}
+function showCalForm(ev) {
+  const c = state.cal;
+  const title = ev ? ev.title : '';
+  const time = ev && !ev.allDay ? minToLabel(ev.start_min) : '09:00';
+  const dur = ev && !ev.allDay ? Math.max(15, (ev.end_min ?? ev.start_min + 60) - ev.start_min) : 60;
+  const loc = ev ? (ev.location || '') : '';
+  $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event" data-ev="${ev ? ev.id : ''}">
+    <input id="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
+    <input id="ce-time" type="time" class="sel" value="${time}" required>
+    <select id="ce-dur" class="sel">${[15, 30, 45, 60, 90, 120, 180, 240].map((n) => `<option value="${n}" ${n === dur ? 'selected' : ''}>${n < 60 ? n + ' min' : (n / 60) + (n === 60 ? ' hour' : ' hours')}</option>`).join('')}</select>
+    <input id="ce-loc" class="sel" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
+    <button class="add-btn wide" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
+    ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}</form>`;
+  $('#ce-title').focus();
+}
+async function calSaveEvent(id, title, time, duration, location) {
+  const body = JSON.stringify({ title, day: state.cal.selected, start_min: isoToMin(time), duration: Number(duration), location: location || undefined });
+  try {
+    if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
+    else await api('/api/events', { method: 'POST', body });
+    toast(id ? 'Event updated' : 'Added to your calendar');
+    state.cal.adding = false; state.cal.editing = null;
+    await loadCalendar();
+  } catch (e) { toast(e.message); }
+}
+async function calDeleteEvent(id) {
+  if (!confirm('Delete this event from your Google calendar?')) return;
+  try { await api(`/api/events/${id}`, { method: 'DELETE' }); toast('Event deleted'); state.cal.editing = null; await loadCalendar(); }
+  catch (e) { toast(e.message); }
+}
+
 function showQuickTask() {
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task" style="margin-bottom:22px">
@@ -392,7 +528,8 @@ function rerenderCurrent() {
   if (v === 'tasks') renderTasks(); else if (v === 'note') renderNote();
   else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList();
   else if (v === 'notes') openNotesList(); else if (v === 'areas') openAreasList();
-  else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard(); else openHome();
+  else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard();
+  else if (v === 'calendar') renderCalendar(); else openHome();
 }
 async function reorderFavs(draggedId, beforeId) {
   const favs = state.favs;
@@ -575,6 +712,7 @@ const ACTIONS = [
   { kind: 'action', title: 'New note', run: () => newNote(null) },
   { kind: 'action', title: 'New table', run: () => newTable() },
   { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
+  { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
 ];
 let palT;
 function buildPalette() {
@@ -646,6 +784,16 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
+  // calendar interactions
+  // A chip sits inside a day cell, so match the event before the day.
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; state.cal.editing = e; state.cal.adding = false; renderCalendar(); } return; }
+  const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
+  if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; renderCalendar(); return; }
+  if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
+  if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); return; }
+  if (t.closest('[data-cal-prev]')) { stepMonth(-1); return; }
+  if (t.closest('[data-cal-next]')) { stepMonth(1); return; }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
@@ -704,6 +852,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'task-form') { const i = $('#task-title'); const v = i.value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); i.value = ''; i.focus(); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim()); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
 });
 // drag to reorder favourites on the home, and to reorder the sidebar sections
@@ -957,6 +1106,8 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     ]);
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    await openHome();
+    // Deep link: a home-screen icon pinned to /calendar opens straight there.
+    if (location.pathname.replace(/\/$/, '') === '/calendar') await openCalendar();
+    else await openHome();
   } catch (e) { toast(e.message); renderNav(); }
 })();

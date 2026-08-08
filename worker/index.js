@@ -201,6 +201,44 @@ async function calendarEvents(env, day) {
   }
 }
 
+// Events across a date range, each carrying its real local start/end date - for
+// the calendar app's month/week grid (calendarEvents above clips to one day).
+async function calendarRange(env, from, to) {
+  if (!env.GOOGLE_REFRESH_TOKEN) return { events: [], error: 'not_configured' };
+  if (!isValidDay(from) || !isValidDay(to)) return { events: [], error: 'bad_range' };
+  const start = zonedDayStart(from, TZ);
+  const end = zonedDayStart(nextDayStr(to), TZ);
+  const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+  url.searchParams.set('timeMin', start.toISOString());
+  url.searchParams.set('timeMax', end.toISOString());
+  url.searchParams.set('singleEvents', 'true');
+  url.searchParams.set('orderBy', 'startTime');
+  url.searchParams.set('maxResults', '2500');
+  try {
+    const token = await googleAccessToken(env);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return { events: [], error: `google_${res.status}` };
+    const data = await res.json();
+    const events = (data.items || []).filter((e) => e.status !== 'cancelled').map((e) => {
+      if (e.start?.date) {
+        return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: true, date: e.start.date, end_date: e.end?.date || null };
+      }
+      const s = new Date(e.start.dateTime), en = new Date(e.end.dateTime);
+      const sp = localParts(s, TZ), ep = localParts(en, TZ);
+      return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min };
+    });
+    return { events, error: null };
+  } catch (e) {
+    return { events: [], error: String(e.message || e) };
+  }
+}
+async function handleCalendar(request, env, url) {
+  const from = url.searchParams.get('from'), to = url.searchParams.get('to');
+  if (!from || !to) return err('from and to required', request);
+  return json(await calendarRange(env, from, to), request);
+}
+
 // Create a real event on the Google calendar. Needs the calendar.events scope:
 // the original consent asked only for calendar.readonly, and a refresh token
 // carries the scopes it was granted with, so this 403s until google-auth is
@@ -256,6 +294,41 @@ async function createEvent(request, env) {
     return json({ ok: true, id: ev.id }, request, 201);
   } catch (e) {
     console.error('createEvent:', e.message);
+    return err('Could not reach Google Calendar.', request, 502);
+  }
+}
+
+// Edit an existing calendar event: title, time (day + start_min + duration),
+// and/or location. Only the fields supplied are touched (events.patch).
+async function updateEvent(request, env, id) {
+  if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+  const b = await request.json().catch(() => ({}));
+  const patch = {};
+  if (b.title !== undefined) { const t = String(b.title).trim(); if (!t) return err('title required', request); patch.summary = t; }
+  if (b.location !== undefined) patch.location = String(b.location || '').trim();
+  if (b.day !== undefined) {
+    if (!isValidDay(b.day)) return err('bad date', request);
+    const startMin = Number(b.start_min), duration = Number(b.duration);
+    if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
+    if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
+    const base = zonedDayStart(b.day, TZ).getTime();
+    patch.start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: TZ };
+    patch.end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: TZ };
+  }
+  try {
+    const token = await googleAccessToken(env);
+    const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(id)}`,
+      { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(patch) },
+    );
+    if (res.status === 401 || res.status === 403) return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
+    if (res.status === 404) return err('That event is not on the calendar.', request, 404);
+    if (!res.ok) { console.error('google update event:', res.status, await res.text()); return err('Google would not update that event.', request, 502); }
+    const ev = await res.json();
+    return json({ ok: true, id: ev.id }, request);
+  } catch (e) {
+    console.error('updateEvent:', e.message);
     return err('Could not reach Google Calendar.', request, 502);
   }
 }
@@ -1325,8 +1398,11 @@ export default {
     // per hostname: life.robski.uk is the Life app; everywhere else is Today.
     // Everything non-API/auth falls through to the assets binding untouched.
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
-      if (path === '/') {
-        const file = url.hostname === 'life.robski.uk' ? '/app.html' : '/index.html';
+      const isLife = url.hostname === 'life.robski.uk';
+      // The Life app is a single page; its in-app routes (/calendar, /mail) must
+      // serve the app shell so a pinned home-screen icon can deep-link into one.
+      if (path === '/' || (isLife && /^\/(calendar|mail)(\/|$)/.test(path))) {
+        const file = isLife ? '/app.html' : '/index.html';
         return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
       }
       return withHsts(await env.ASSETS.fetch(request));
@@ -1387,6 +1463,7 @@ export default {
       if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
+      if (path === '/api/calendar' && request.method === 'GET') return handleCalendar(request, env, url);
       // Send one alert now, to prove the SMS path end to end without waiting
       // for a block to come due. Authed, like everything below the gate.
       if (path === '/api/alert/test' && request.method === 'POST') {
@@ -1412,6 +1489,7 @@ export default {
 
       // Google event ids are base32hex-ish, plus '_' on recurring instances.
       const evMatch = path.match(/^\/api\/events\/([\w-]+)$/);
+      if (evMatch && request.method === 'PATCH') return updateEvent(request, env, evMatch[1]);
       if (evMatch && request.method === 'DELETE') return deleteEvent(request, env, evMatch[1]);
 
       const actMatch = path.match(/^\/api\/activities\/(\d+)$/);
