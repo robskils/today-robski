@@ -1285,6 +1285,15 @@ async function syncAck(request, env) {
 
 // ── router ────────────────────────────────────────────────────────────
 
+// One year. No includeSubDomains on purpose: it would force *every* robski.uk
+// web subdomain onto HTTPS forever, and only these two are ours to promise for.
+const HSTS = 'max-age=31536000';
+function withHsts(res) {
+  const h = new Headers(res.headers);
+  h.set('Strict-Transport-Security', HSTS);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 export default {
   // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
   // keeps the isolate alive until the sends finish.
@@ -1297,6 +1306,19 @@ export default {
 
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // Force HTTPS. An http:// visit (an old bookmark, or typing the bare
+    // domain) served over plain HTTP is exactly what shows "Not secure" - even
+    // though the TLS cert itself is fine. Cloudflare hands the Worker a https://
+    // request.url regardless of how the client connected, so the real scheme
+    // comes from cf-visitor / x-forwarded-proto. Redirect http, and set HSTS
+    // below so the browser upgrades on its own from the next visit on.
+    const clientProto = request.headers.get('x-forwarded-proto')
+      || (() => { try { return JSON.parse(request.headers.get('cf-visitor') || '{}').scheme; } catch { return null; } })();
+    if (clientProto === 'http') {
+      url.protocol = 'https:';
+      return new Response(null, { status: 301, headers: { Location: url.toString(), 'Strict-Transport-Security': HSTS } });
+    }
     const path = url.pathname;
 
     // Static assets (the Worker runs first). The root serves a different app
@@ -1305,9 +1327,9 @@ export default {
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
       if (path === '/') {
         const file = url.hostname === 'life.robski.uk' ? '/app.html' : '/index.html';
-        return env.ASSETS.fetch(new Request(new URL(file, url.origin), request));
+        return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
       }
-      return env.ASSETS.fetch(request);
+      return withHsts(await env.ASSETS.fetch(request));
     }
 
     if (request.method === 'OPTIONS') {
