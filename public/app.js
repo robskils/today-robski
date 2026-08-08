@@ -170,7 +170,7 @@ async function openNote(id) {
 async function openTable(id) {
   const table = await api(`/api/blocks/${id}`);
   const rows = await api(`/api/blocks?kind=row&parent_id=${id}`);
-  state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false };
+  state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false, sort: null };
   state.view = { type: 'table', id };
   renderNav(); renderTable();
 }
@@ -463,6 +463,24 @@ function cellInput(r, col) {
   if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
   return `<input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
 }
+// View-only sort by a column (like the Tasks table). Type-aware; empty cells
+// always sink to the bottom whichever way you sort.
+function sortRows(rows) {
+  const s = state.tables_view.sort; if (!s) return rows;
+  const col = tcols().find((x) => x.id === s.colId); if (!col) return rows;
+  const dir = s.dir === 'asc' ? 1 : -1;
+  const raw = (r) => (r.props.values || {})[s.colId];
+  const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
+  return rows.slice().sort((a, b) => {
+    const va = raw(a), vb = raw(b);
+    if (col.type !== 'checkbox') {
+      const ea = va == null || va === '', eb = vb == null || vb === '';
+      if (ea && eb) return 0; if (ea) return 1; if (eb) return -1;
+    }
+    const na = norm(va), nb = norm(vb);
+    return na < nb ? -dir : na > nb ? dir : 0;
+  });
+}
 function renderTable() {
   const t = state.tables_open, c = tcols(), vw = state.tables_view;
   if (vw.openRow) {
@@ -480,8 +498,9 @@ function renderTable() {
   const addCol = vw.addingCol
     ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
-  const head = c.map((col) => `<th><div class="thh"><input value="${esc(col.name)}" data-colname="${col.id}"><span class="ty">${esc(col.type)}</span><button class="x" data-del-col="${col.id}">×</button></div><span class="resizer" data-resize="${col.id}"></span></th>`).join('');
-  const body = state.tables_rows.map((r) => `<tr><td class="row-open"><button data-open-row="${r.id}" title="Open">⤢</button></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
+  const sortOf = (id) => vw.sort && vw.sort.colId === id ? vw.sort.dir : null;
+  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><input value="${esc(col.name)}" data-colname="${col.id}"><button class="th-sort ${sd ? 'on' : ''}" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${sd === 'asc' ? '↑' : sd === 'desc' ? '↓' : '↕'}</button><button class="x" data-del-col="${col.id}">×</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const body = sortRows(state.tables_rows).map((r) => `<tr><td class="row-open"><button data-open-row="${r.id}" title="Open">⤢</button></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   $('#pane').innerHTML = `
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
       ${areaSelect(t.props && t.props.area, 'data-table-area')}
@@ -614,6 +633,8 @@ document.addEventListener('click', (e) => {
   // table
   if (t.closest('[data-back-table]')) { state.tables_view.openRow = null; renderTable(); return; }
   const or = t.closest('[data-open-row]'); if (or) { state.tables_view.openRow = or.dataset.openRow; renderTable(); window.scrollTo(0, 0); return; }
+  const sc = t.closest('[data-sort-col]');
+  if (sc) { const id = sc.dataset.sortCol; const s = state.tables_view.sort; state.tables_view.sort = s && s.colId === id ? { colId: id, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { colId: id, dir: 'asc' }; renderTable(); return; }
   if (t.closest('[data-add-col]')) { state.tables_view.addingCol = true; renderTable(); return; }
   const dcol = t.closest('[data-del-col]'); if (dcol) { if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== dcol.dataset.delCol)).then(renderTable).catch((x) => toast(x.message)); return; }
   const drow = t.closest('[data-del-row]'); if (drow) { const id = drow.dataset.delRow; state.tables_rows = state.tables_rows.filter((r) => r.id !== id); renderTable(); api(`/api/blocks/${id}`, { method: 'DELETE' }).catch((x) => toast(x.message)); return; }

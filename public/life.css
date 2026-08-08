@@ -191,6 +191,10 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .thh input { flex:1; min-width:0; background:transparent; border:0; font:inherit; font-weight:600; color:var(--ink); }
 .thh .ty { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:500; }
 .thh .x { opacity:.35; color:var(--ink-3); font-size:15px; } .thh .x:hover { opacity:1; color:var(--accent); }
+.th-sort { flex:none; font-size:13px; color:var(--ink-3); opacity:.4; padding:0 2px; transition:opacity .12s,color .12s; }
+.thh:hover .th-sort { opacity:.8; }
+.th-sort.on { opacity:1; color:var(--accent); }
+.th-sort:hover { opacity:1; color:var(--accent); }
 .th-add { width:44px; text-align:center; }
 .th-add button, .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; } .th-add button:hover { color:var(--accent); }
 
