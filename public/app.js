@@ -202,7 +202,7 @@ function renderHome() {
     <div class="home">
       <div class="home-head">
         <h1>${greeting()}, <span class="hi-name">Robski</span></h1>
-        <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button></div>
+        <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
       <div id="qt-wrap"></div>
       <nav class="home-nav">
@@ -331,6 +331,33 @@ function showQuickTask() {
 async function homeAddTask(title, area, priority) {
   try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) }); toast('Task added'); }
   catch (e) { toast(e.message); }
+}
+const pad2 = (n) => String(n).padStart(2, '0');
+function showQuickEvent() {
+  const d = new Date();
+  const today = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  // Default to the next quarter-hour, a sensible starting point.
+  const mins = Math.ceil((d.getHours() * 60 + d.getMinutes() + 5) / 15) * 15;
+  const start = `${pad2(Math.floor(mins / 60) % 24)}:${pad2(mins % 60)}`;
+  $('#qt-wrap').innerHTML = `<form id="qe-form" class="add-task add-event" style="margin-bottom:22px">
+    <input id="qe-title" placeholder="Event title…" autocomplete="off" required>
+    <input id="qe-date" type="date" class="sel" value="${today}" required>
+    <input id="qe-time" type="time" class="sel" value="${start}" required>
+    <select id="qe-dur" class="sel"><option value="15">15 min</option><option value="30">30 min</option><option value="60" selected>1 hour</option><option value="90">1½ hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select>
+    <input id="qe-loc" class="sel" placeholder="Location (optional)" autocomplete="off">
+    <button class="add-btn wide" type="submit">Add to calendar</button></form>`;
+  $('#qe-title').focus();
+}
+async function homeAddEvent(title, day, time, duration, location) {
+  const [h, m] = time.split(':').map(Number);
+  try {
+    await api('/api/events', { method: 'POST', body: JSON.stringify({ title, day, start_min: h * 60 + m, duration: Number(duration), location: location || undefined }) });
+    toast('Added to your Google calendar');
+    $('#qt-wrap').innerHTML = '';
+    // If it's for today, pull it straight into the Today panel.
+    const dres = await api('/api/day').catch(() => null);
+    if (dres && state.view.type === 'home') { state.home.events = dres.events || []; renderHome(); }
+  } catch (e) { toast(e.message); }
 }
 
 // favourites: pin any block; cross-kind; ordered by fav_rank.
@@ -623,6 +650,7 @@ document.addEventListener('click', (e) => {
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
+  if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
@@ -675,6 +703,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.id === 'task-form') { const i = $('#task-title'); const v = i.value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); i.value = ''; i.focus(); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
+  if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
 });
 // drag to reorder favourites on the home, and to reorder the sidebar sections
