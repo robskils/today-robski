@@ -213,11 +213,14 @@ table.recs select.cell { appearance:none; cursor:pointer; }
 .colnew input { width:130px; }
 
 /* open-as-card handle, first cell of each row */
-.th-open, td.row-open { width:38px; text-align:center; }
-td.row-open button { opacity:0; color:var(--ink-3); font-size:15px; padding:8px 6px; transition:opacity .12s,color .12s; }
-tr:hover td.row-open button { opacity:.7; }
-td.row-open button:hover { opacity:1; color:var(--accent); }
-@media (hover:none){ td.row-open button { opacity:.7; } }
+.th-open, td.row-open { width:46px; text-align:center; }
+/* The whole left-most cell opens the row - a big, obvious click target, not a
+   tiny button. It lights up on row hover so it reads as clickable. */
+td.row-open { cursor:pointer; color:var(--ink-3); transition:background .12s,color .12s; }
+td.row-open .ro-ic { font-size:16px; opacity:.35; transition:opacity .12s; pointer-events:none; }
+tr:hover td.row-open { background:color-mix(in srgb,var(--accent) 9%,transparent); color:var(--accent); }
+tr:hover td.row-open .ro-ic { opacity:1; }
+@media (hover:none){ td.row-open .ro-ic { opacity:.7; } }
 
 /* the row, opened as a card */
 .card { max-width:660px; }
@@ -360,7 +363,17 @@ td.row-open button:hover { opacity:1; color:var(--accent); }
 .ev-t { flex:1; min-width:0; font-size:16.5px; }
 .ev-loc { color:var(--ink-3); font-size:14px; }
 
-.home-links { display:flex; gap:10px; margin-top:30px; flex-wrap:wrap; align-items:center; }
+/* Quick-launch row above Favourites: go to each index, or + to create. */
+.home-nav { display:flex; gap:10px; margin:4px 0 30px; flex-wrap:wrap; align-items:stretch; }
+.home-nav .hn-group { display:inline-flex; align-items:stretch; }
+.hn-btn { display:inline-flex; align-items:center; gap:9px; padding:11px 18px; font-size:16px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:13px; box-shadow:var(--shadow); transition:border-color .15s,color .15s,transform .08s; }
+.hn-btn:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+.hn-btn:active { transform:translateY(0); }
+.hn-ic { font-size:15px; color:var(--ink-3); }
+.hn-btn:hover .hn-ic { color:var(--accent); }
+.hn-group .hn-btn { border-radius:13px 0 0 13px; border-right:0; }
+.hn-plus { padding:0 15px; font-size:19px; font-weight:600; line-height:1; color:var(--ink-2); background:var(--card); border:1px solid var(--line-2); border-radius:0 13px 13px 0; box-shadow:var(--shadow); transition:background .15s,color .15s; }
+.hn-plus:hover { background:var(--accent); color:var(--accent-ink); border-color:transparent; }
 .home-link { padding:9px 16px; border-radius:999px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; }
 .home-link:hover { border-color:var(--accent); color:var(--accent); }
 /* a link and its + share one pill outline, split by a hairline */
@@ -505,6 +518,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .prose h1 { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:600; margin:22px 0 8px; }
 .prose h2 { font-size:26px; margin:22px 0 8px; }
 .prose h3 { font-size:22px; margin:20px 0 6px; }
+.prose h4, .prose h5, .prose h6 { font-size:18.5px; font-weight:600; margin:16px 0 4px; color:var(--ink-2); }
 .prose a { color:var(--accent); }
 .prose code { font-family:ui-monospace,Menlo,monospace; font-size:.9em; background:var(--paper-2); padding:2px 6px; border-radius:5px; }
 .prose blockquote { border-left:3px solid var(--line-2); padding-left:16px; margin:0 0 14px; color:var(--ink-2); font-style:italic; }

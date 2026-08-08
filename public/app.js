@@ -56,7 +56,10 @@ function mdToHtml(md) {
 function bodyToHtml(body) {
   const s = (body || '').trim();
   if (!s) return '';
-  return /<(p|h[1-3]|strong|em|a|blockquote|br|code|b|i|div|ul|ol|li)\b/i.test(s) ? s : mdToHtml(body);
+  // Only the rich editor's own output (block-wrapped) is treated as HTML.
+  // Imported bodies are Markdown that may contain an inline <a>, so keying on
+  // block tags avoids mis-rendering a whole note as raw HTML.
+  return /<(p|h[1-3]|blockquote|div|ul|ol)[\s>]/i.test(s) ? s : mdToHtml(body);
 }
 // An always-on inline editor. No modes, no markup - you just write, and the
 // selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
@@ -203,6 +206,12 @@ function renderHome() {
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button></div>
       </div>
       <div id="qt-wrap"></div>
+      <nav class="home-nav">
+        <button class="hn-btn" data-view-tasks><span class="hn-ic">✓</span>Tasks</button>
+        <span class="hn-group"><button class="hn-btn" data-open-notes><span class="hn-ic">▸</span>Notes</button><button class="hn-plus" data-new-note title="New note">+</button></span>
+        <span class="hn-group"><button class="hn-btn" data-open-tables><span class="hn-ic">▦</span>Tables</button><button class="hn-plus" data-new-table title="New table">+</button></span>
+        <span class="hn-group"><button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button><button class="hn-plus" data-new-area title="New life area">+</button></span>
+      </nav>
       <section class="home-sec">
         <div class="home-sec-h">Favourites ${favs.length ? '<span class="muted">drag to reorder</span>' : ''}</div>
         <div class="favs" id="favs">${favRows || '<div class="home-empty">Star a task, note or table (the ☆ on it) to pin it here.</div>'}</div>
@@ -214,12 +223,6 @@ function renderHome() {
       ${favGroup('Favourite areas', favs.filter((f) => f.kind === 'area'))}
       ${favGroup('Favourite notes', favs.filter((f) => f.kind === 'note'))}
       ${favGroup('Favourite tables', favs.filter((f) => f.kind === 'table'))}
-      <div class="home-links">
-        <button class="home-link" data-view-tasks>All tasks →</button>
-        <span class="home-link-pair"><button class="home-link" data-open-notes>Notes →</button><button class="home-link plus" data-new-note title="New note">+</button></span>
-        <span class="home-link-pair"><button class="home-link" data-open-tables>Tables →</button><button class="home-link plus" data-new-table title="New table">+</button></span>
-        <button class="home-link" data-open-areas>Life areas →</button>
-      </div>
     </div>`;
 }
 // A type-grouped strip of favourite cards for the home page, shown only when
@@ -494,13 +497,13 @@ function renderTable() {
     }
   }
   const colWidth = (col, first) => col.width || (first ? 230 : 170);
-  const colgroup = `<colgroup><col style="width:38px">${c.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:46px"></colgroup>`;
+  const colgroup = `<colgroup><col style="width:46px">${c.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:46px"></colgroup>`;
   const addCol = vw.addingCol
     ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortOf = (id) => vw.sort && vw.sort.colId === id ? vw.sort.dir : null;
   const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><input value="${esc(col.name)}" data-colname="${col.id}"><button class="th-sort ${sd ? 'on' : ''}" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${sd === 'asc' ? '↑' : sd === 'desc' ? '↓' : '↕'}</button><button class="x" data-del-col="${col.id}">×</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
-  const body = sortRows(state.tables_rows).map((r) => `<tr><td class="row-open"><button data-open-row="${r.id}" title="Open">⤢</button></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
+  const body = sortRows(state.tables_rows).map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   $('#pane').innerHTML = `
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
       ${areaSelect(t.props && t.props.area, 'data-table-area')}
@@ -518,6 +521,14 @@ async function newNote(parentId) {
   if (!parentId) { state.noteTops.push(note); }
   await openNote(note.id);
   const ti = $('#note-title'); if (ti) { ti.focus(); ti.select(); }
+}
+async function newArea() {
+  const name = (prompt('New life area name:') || '').trim(); if (!name) return;
+  // Spread hues by the golden angle so a new area reads distinct from its neighbours.
+  const hue = Math.round((state.areas.length * 137.5) % 360);
+  const a = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'area', title: name, props: { hue } }) });
+  state.areas.push(a); state.areas.sort((x, y) => (x.title || '').localeCompare(y.title || ''));
+  openAreasList();
 }
 async function newTable() {
   const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: 'Untitled table', props: { columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
@@ -615,6 +626,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
 
