@@ -23,7 +23,7 @@ const state = {
   areas: [], tasks: [], taskFilter: null,
   taskSort: { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
-  favs: [], home: { events: [] }, cal: null,
+  favs: [], home: { events: [] }, cal: null, mail: null,
   nav: {
     order: (() => { const o = readLS('life.nav.order', null); return Array.isArray(o) && o.length === 3 && o.includes('favs') && o.includes('notes') && o.includes('tables') ? o : ['favs', 'notes', 'tables']; })(),
     collapsed: readLS('life.nav.collapsed', {}),
@@ -126,6 +126,7 @@ function renderNav() {
   $('#nav').innerHTML = `
     <div class="nav-brand" data-view-home title="Home"><em>Life</em><span class="dot">·</span>Robski</div>
     <div class="nav-foot">
+      <button class="foot-search" data-palette title="Search">⌕</button>
       <a href="https://today.robski.uk" title="Your day planner">Today</a>
       <button data-theme-toggle title="Switch to ${dark ? 'daytime' : 'night'}">${dark ? '☀ Day' : '☾ Night'}</button>
       <a href="/api/export" title="Download a full backup">Backup</a>
@@ -134,6 +135,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
     <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span> Calendar</button>
+    <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span> Mail</button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▸</span> Notes</button>
     <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
@@ -148,10 +150,10 @@ function renderTabbar(v) {
   if (!el) { el = document.createElement('nav'); el.id = 'tabbar'; el.className = 'tabbar'; document.body.appendChild(el); }
   const tab = (on, attr, ic, label) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span>${ic}</span>${label}</button>`;
   el.innerHTML = tab(v.type === 'home', 'data-view-home', '⌂', 'Home')
-    + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
+    + tab(v.type === 'mail', 'data-open-mail', '✉', 'Mail')
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
-    + tab(v.type === 'note' || v.type === 'notes', 'data-open-notes', '▸', 'Notes')
-    + tab(false, 'data-palette', '⌕', 'Search');
+    + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
+    + tab(v.type === 'note' || v.type === 'notes', 'data-open-notes', '▸', 'Notes');
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
 function reorderSecs(draggedKey, beforeKey) {
@@ -223,6 +225,7 @@ function renderHome() {
       <nav class="home-nav">
         <button class="hn-btn" data-view-tasks><span class="hn-ic">✓</span>Tasks</button>
         <button class="hn-btn" data-open-calendar><span class="hn-ic">◑</span>Calendar</button>
+        <button class="hn-btn" data-open-mail><span class="hn-ic">✉</span>Mail</button>
         <span class="hn-group"><button class="hn-btn" data-open-notes><span class="hn-ic">▸</span>Notes</button><button class="hn-plus" data-new-note title="New note">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-tables><span class="hn-ic">▦</span>Tables</button><button class="hn-plus" data-new-table title="New table">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button><button class="hn-plus" data-new-area title="New life area">+</button></span>
@@ -469,6 +472,143 @@ async function calDeleteEvent(id) {
   catch (e) { toast(e.message); }
 }
 
+// ── view: mail ───────────────────────────────────────
+// The mail backend is a separate always-on service (IMAP/SMTP can't run on the
+// Worker). Its URL is stored per-browser; the same Life token authenticates it.
+const mailApiUrl = () => (localStorage.getItem('life.mailApi') || '').replace(/\/$/, '');
+async function mailApi(path, opts = {}) {
+  const base = mailApiUrl(); if (!base) throw new Error('Mail backend not set up yet.');
+  const res = await fetch(base + path, { ...opts, headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json', ...opts.headers } });
+  if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
+  return res.status === 204 ? null : res.json();
+}
+const mailFrom = (m) => m.from ? (m.from.name || m.from.address || '') : '';
+const mailDate = (iso) => { if (!iso) return ''; const d = new Date(iso), now = new Date(); const sameDay = d.toDateString() === now.toDateString(); return sameDay ? `${p2(d.getHours())}:${p2(d.getMinutes())}` : `${d.getDate()} ${MONTHS_LONG[d.getMonth()].slice(0, 3)}`; };
+
+async function openMail() {
+  state.view = { type: 'mail' };
+  if (!mailApiUrl()) { state.mail = { setup: true }; renderNav(); renderMailSetup(); return; }
+  if (!state.mail || state.mail.setup) state.mail = { account: null, mailbox: 'INBOX', messages: [], open: null, composing: false };
+  renderNav(); renderMail(true);
+  try {
+    state.mail.accounts = await mailApi('/accounts');
+    if (!state.mail.accounts.length) { renderMailAccounts('Add a mailbox to get started.'); return; }
+    if (!state.mail.account) state.mail.account = state.mail.accounts[0].id;
+    await loadMessages();
+  } catch (e) { state.mail.error = e.message; renderMail(); }
+}
+async function loadMessages() {
+  state.mail.open = null; state.mail.composing = false; renderMail(true);
+  try {
+    const r = await mailApi(`/messages?account=${state.mail.account}&mailbox=${encodeURIComponent(state.mail.mailbox)}&limit=40`);
+    state.mail.messages = r.messages || []; state.mail.error = null;
+  } catch (e) { state.mail.error = e.message; }
+  renderMail();
+}
+async function openMessage(uid) {
+  renderMail(true);
+  try {
+    const m = await mailApi(`/message?account=${state.mail.account}&mailbox=${encodeURIComponent(state.mail.mailbox)}&uid=${uid}`);
+    state.mail.open = m;
+    const row = state.mail.messages.find((x) => x.uid === uid); if (row && !row.seen) { row.seen = true; mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, seen: true }) }).catch(() => {}); }
+  } catch (e) { toast(e.message); }
+  renderMail();
+}
+async function mailDelete(uid) {
+  if (!confirm('Move this message to Trash?')) return;
+  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null; renderMail(); }
+  catch (e) { toast(e.message); }
+}
+async function mailSend(to, subject, body, inReplyTo) {
+  try { await mailApi('/send', { method: 'POST', body: JSON.stringify({ account: state.mail.account, to, subject, text: body, inReplyTo }) }); toast('Sent'); state.mail.composing = false; renderMail(); }
+  catch (e) { toast(e.message); }
+}
+async function openMailAccounts() {
+  state.view = { type: 'mail' }; renderNav();
+  try { state.mail = (state.mail && !state.mail.setup) ? state.mail : { account: null, mailbox: 'INBOX' }; state.mail.accounts = await mailApi('/accounts'); renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
+  catch (e) { toast(e.message); }
+}
+async function addMailAccount(fields) {
+  try { const a = await mailApi('/accounts', { method: 'POST', body: JSON.stringify(fields) }); toast('Account added'); state.mail.accounts = state.mail.accounts || []; state.mail.accounts.push(a); state.mail.account = a.id; await openMail(); }
+  catch (e) { toast(e.message); }
+}
+async function delMailAccount(id) {
+  if (!confirm('Remove this account?')) return;
+  try { await mailApi(`/accounts/${id}`, { method: 'DELETE' }); state.mail.accounts = (state.mail.accounts || []).filter((a) => a.id !== id); if (state.mail.account === id) state.mail.account = null; renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
+  catch (e) { toast(e.message); }
+}
+function mailReplyStart() {
+  const o = state.mail.open; if (!o) return;
+  const quote = (o.text || '').split('\n').map((l) => `> ${l}`).join('\n');
+  state.mail.composing = { to: o.from ? o.from.address : '', subject: /^re:/i.test(o.subject) ? o.subject : `Re: ${o.subject}`, body: `\n\n---\nOn ${new Date(o.date).toLocaleString()}, ${o.from ? o.from.address : ''} wrote:\n${quote}`, inReplyTo: o.messageId };
+  renderMail();
+}
+
+function renderMailSetup() {
+  $('#pane').innerHTML = `<div class="pane-head"><h1>Mail</h1></div>
+    <div class="card" style="max-width:520px">
+      <p class="scope">Point the app at your mail backend (see mail-backend/SETUP.md). You only do this once per device.</p>
+      <form id="mail-setup-form" class="add-task">
+        <input id="mail-api" type="url" placeholder="https://mail-api.robski.uk" autocomplete="off" required style="flex:1;min-width:240px">
+        <button class="add-btn wide" type="submit">Connect</button>
+      </form></div>`;
+  $('#mail-api').focus();
+}
+function renderMailAccounts(note) {
+  const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span><button class="x" data-mail-del-acct="${a.id}" title="Remove">×</button></div>`).join('');
+  $('#pane').innerHTML = `<div class="pane-head home-head"><h1>Mail</h1><button class="add-btn wide" data-mail-add-acct>+ Account</button></div>
+    ${note ? `<p class="scope">${esc(note)}</p>` : ''}
+    <div class="mail-acct-list">${rows}</div>
+    <div id="mail-acct-form"></div>`;
+}
+function showMailAccountForm() {
+  $('#mail-acct-form').innerHTML = `<form id="mail-acct-form-el" class="add-task" style="flex-direction:column;align-items:stretch;gap:10px;max-width:520px;margin-top:16px">
+    <input id="ma-email" type="email" placeholder="Email address" required>
+    <div style="display:flex;gap:8px"><input id="ma-imaphost" placeholder="IMAP host (imap.gmail.com)" required style="flex:1"><input id="ma-imapport" value="993" style="width:80px"></div>
+    <div style="display:flex;gap:8px"><input id="ma-smtphost" placeholder="SMTP host (smtp.gmail.com)" required style="flex:1"><input id="ma-smtpport" value="465" style="width:80px"></div>
+    <input id="ma-user" placeholder="Username (usually your email)">
+    <input id="ma-pass" type="password" placeholder="Password / app password" required>
+    <button class="add-btn wide" type="submit">Add account</button></form>`;
+  $('#ma-email').focus();
+}
+function renderMail(loading) {
+  const m = state.mail;
+  if (m.setup) return renderMailSetup();
+  if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
+  const accTabs = (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}</button>`).join('');
+  let main;
+  if (m.composing) {
+    const re = m.composing.reply;
+    main = `<form id="mail-compose-form" class="mail-compose">
+      <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" required>
+      <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
+      <textarea id="mc-body" placeholder="Write your message…">${esc(m.composing.body || '')}</textarea>
+      <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-cancel>Cancel</button></div></form>`;
+  } else if (m.open) {
+    const o = m.open;
+    const bodyHtml = o.text ? `<pre class="mail-text">${esc(o.text)}</pre>` : `<div class="mail-text">${esc((o.html || '').replace(/<[^>]+>/g, ' ')).slice(0, 8000)}</div>`;
+    main = `<div class="mail-msg">
+      <button class="ghost" data-mail-back>← Inbox</button>
+      <h1 class="mail-subj">${esc(o.subject)}</h1>
+      <div class="mail-meta"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b> <span>${esc(o.from ? o.from.address : '')}</span><span class="mail-when">${new Date(o.date).toLocaleString()}</span></div>
+      ${o.attachments && o.attachments.length ? `<div class="mail-att">📎 ${o.attachments.map((a) => esc(a.filename || 'attachment')).join(', ')}</div>` : ''}
+      ${bodyHtml}
+      <div class="mail-msg-act"><button class="add-btn wide" data-mail-reply>Reply</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></div></div>`;
+  } else {
+    const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'}" data-mail-open="${x.uid}">
+      <span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span>
+      <span class="mail-subject">${esc(x.subject)}</span>
+      <span class="mail-date">${mailDate(x.date)}</span></button>`).join('');
+    main = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || '<div class="home-empty">No messages.</div>')}</div>`;
+  }
+  $('#pane').innerHTML = `
+    <div class="pane-head home-head"><h1>Mail</h1>
+      <div class="mail-head-act"><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
+    ${accTabs ? `<div class="mail-atabs">${accTabs}</div>` : ''}
+    ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
+    ${main}`;
+}
+
 function showQuickTask() {
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task" style="margin-bottom:22px">
@@ -543,7 +683,7 @@ function rerenderCurrent() {
   else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList();
   else if (v === 'notes') openNotesList(); else if (v === 'areas') openAreasList();
   else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard();
-  else if (v === 'calendar') renderCalendar(); else openHome();
+  else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail(); else openHome();
 }
 async function reorderFavs(draggedId, beforeId) {
   const favs = state.favs;
@@ -727,6 +867,7 @@ const ACTIONS = [
   { kind: 'action', title: 'New table', run: () => newTable() },
   { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
   { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
+  { kind: 'action', title: 'Go to Mail', run: () => openMail() },
 ];
 let palT;
 function buildPalette() {
@@ -799,6 +940,18 @@ document.addEventListener('click', (e) => {
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
+  // mail interactions
+  const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(Number(mo.dataset.mailOpen)); return; }
+  if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
+  if (t.closest('[data-mail-compose]')) { state.mail.composing = {}; renderMail(); return; }
+  if (t.closest('[data-mail-cancel]')) { state.mail.composing = false; renderMail(); return; }
+  if (t.closest('[data-mail-reply]')) { mailReplyStart(); return; }
+  const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(Number(mdl.dataset.mailDel)); return; }
+  if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
+  const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
   const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; state.cal.editing = e; state.cal.adding = false; renderCalendar(); } return; }
@@ -867,6 +1020,9 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim()); }
+  if (e.target.id === 'mail-setup-form') { const u = $('#mail-api').value.trim(); if (u) { localStorage.setItem('life.mailApi', u); openMail().catch((x) => toast(x.message)); } }
+  if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
+  if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) mailSend(to, $('#mc-subject').value.trim(), $('#mc-body').value, state.mail.composing && state.mail.composing.inReplyTo); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
 });
 // drag to reorder favourites on the home, and to reorder the sidebar sections
@@ -1121,7 +1277,9 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
-    if (location.pathname.replace(/\/$/, '') === '/calendar') await openCalendar();
+    const route = location.pathname.replace(/\/$/, '');
+    if (route === '/calendar') await openCalendar();
+    else if (route === '/mail') await openMail();
     else await openHome();
   } catch (e) { toast(e.message); renderNav(); }
 })();
