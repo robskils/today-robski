@@ -1401,7 +1401,7 @@ export default {
       const isLife = url.hostname === 'life.robski.uk';
       // The Life app is a single page; its in-app routes (/calendar, /mail) must
       // serve the app shell so a pinned home-screen icon can deep-link into one.
-      if (path === '/' || (isLife && /^\/(calendar|mail)(\/|$)/.test(path))) {
+      if (path === '/' || (isLife && /^\/(calendar|mail|today)(\/|$)/.test(path))) {
         const file = isLife ? '/app.html' : '/index.html';
         return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
       }

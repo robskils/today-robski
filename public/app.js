@@ -128,11 +128,12 @@ function renderNav() {
     <div class="nav-brand" data-view-home title="Home"><em>Life</em><span class="dot">·</span>Robski</div>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
-      <a href="https://today.robski.uk" title="Your day planner">Today</a>
+      <button data-open-today title="Your day">Today</button>
       <button data-theme-toggle title="Switch to ${dark ? 'daytime' : 'night'}">${dark ? '☀ Day' : '☾ Night'}</button>
     </div>
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
+    <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span> Today</button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
     <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span> Calendar</button>
     <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span> Mail</button>
@@ -223,6 +224,7 @@ function renderHome() {
       </div>
       <div id="qt-wrap"></div>
       <nav class="home-nav">
+        <button class="hn-btn" data-open-today><span class="hn-ic">☀</span>Today</button>
         <button class="hn-btn" data-view-tasks><span class="hn-ic">✓</span>Tasks</button>
         <button class="hn-btn" data-open-calendar><span class="hn-ic">◑</span>Calendar</button>
         <button class="hn-btn" data-open-mail><span class="hn-ic">✉</span>Mail</button>
@@ -231,12 +233,12 @@ function renderHome() {
         <span class="hn-group"><button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button><button class="hn-plus" data-new-area title="New life area">+</button></span>
       </nav>
       <section class="home-sec">
-        <div class="home-sec-h">Favourites ${favs.length ? '<span class="muted">drag to reorder</span>' : ''}</div>
-        <div class="favs" id="favs">${favRows || '<div class="home-empty">Star a task, note or table (the ☆ on it) to pin it here.</div>'}</div>
-      </section>
-      <section class="home-sec">
         <div class="home-sec-h">Today</div>
         <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
+      </section>
+      <section class="home-sec">
+        <div class="home-sec-h">Favourites ${favs.length ? '<span class="muted">drag to reorder</span>' : ''}</div>
+        <div class="favs" id="favs">${favRows || '<div class="home-empty">Star a task, note or table (the ☆ on it) to pin it here.</div>'}</div>
       </section>
       ${favGroup('Favourite areas', favs.filter((f) => f.kind === 'area'))}
       ${favGroup('Favourite notes', favs.filter((f) => f.kind === 'note'))}
@@ -472,6 +474,57 @@ async function calDeleteEvent(id) {
   catch (e) { toast(e.message); }
 }
 
+// ── view: today (the day planner, read view) ─────────
+// Phase 1 of folding today.robski into Life: the day's schedule, lane progress
+// and tally from /api/day. Rich editing (drag-drop) still lives at the full
+// planner, linked from the header.
+const humanMin = (m) => { m = Math.round(m || 0); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
+async function openToday() {
+  state.view = { type: 'today' }; renderNav();
+  try { state.plan = await api('/api/day'); } catch (e) { state.plan = { error: e.message }; }
+  renderToday();
+}
+const planLane = (key) => ((state.plan && state.plan.lanes) || []).find((l) => l.key === key) || { key, label: key, hue: 0 };
+function renderToday() {
+  const d = state.plan; if (!d) return;
+  if (d.error) { $('#pane').innerHTML = `<div class="pane-head"><h1>Today</h1></div><div class="cal-warn">${esc(d.error)}</div>`; return; }
+  const settings = d.settings || {}, progress = d.progress || {};
+  const laneChips = (d.lanes || []).map((l) => {
+    const p = progress[l.key] || { planned: 0, done: 0 };
+    const target = Number(settings[`target_${l.key}`] || 0);
+    if (!p.done && !target) return '';
+    const hit = l.practice ? p.done > 0 : (target && p.done >= target);
+    const sub = target && !(l.practice && hit) ? `${humanMin(p.done)} / ${humanMin(target)}` : `${humanMin(p.done)}${hit ? ' ✓' : ''}`;
+    return `<div class="tp-lane ${hit ? 'hit' : ''}" style="--h:${l.hue}"><span class="tp-dot"></span><span class="tp-name">${esc(l.label)}</span><span class="tp-sub">${sub}</span></div>`;
+  }).join('');
+  const items = [];
+  for (const e of (d.events || [])) items.push({ t: e.allDay ? -1 : e.start_min, kind: 'event', e });
+  for (const s of (d.slots || [])) if (s.start_min != null) items.push({ t: s.start_min, kind: 'slot', s });
+  items.sort((a, b) => a.t - b.t);
+  const floating = (d.slots || []).filter((s) => s.start_min == null);
+  const slotRow = (s) => {
+    const l = planLane(s.lane);
+    const tasks = (s.tasks || []).map((t) => `<div class="tp-task ${t.done ? 'done' : ''}"><span class="tp-check">${t.done ? '✓' : ''}</span><span>${esc(t.title)}</span></div>`).join('');
+    return `<div class="tp-row tp-slot" style="--h:${l.hue}"><span class="tp-time">${s.start_min != null ? hhmm(s.start_min) : '–'}</span><div class="tp-body"><div class="tp-title"><span class="tp-dot"></span>${esc(s.title || l.label)} <span class="tp-dur">${humanMin(s.duration)}</span></div>${tasks}</div></div>`;
+  };
+  const row = (it) => {
+    if (it.kind === 'event') { const e = it.e; return `<div class="tp-row tp-event"><span class="tp-time">${e.allDay ? 'all day' : hhmm(e.start_min)}</span><div class="tp-body"><div class="tp-title">${esc(e.title)}</div>${e.location ? `<div class="tp-loc">${esc(e.location)}</div>` : ''}</div></div>`; }
+    return slotRow(it.s);
+  };
+  const doneLanes = (d.lanes || []).map((l) => ({ l, min: (progress[l.key] || {}).done || 0 })).filter((x) => x.min > 0).sort((a, b) => b.min - a.min);
+  const total = doneLanes.reduce((s, x) => s + x.min, 0);
+  const qt = d.quote && (typeof d.quote === 'string' ? d.quote : d.quote.text);
+  $('#pane').innerHTML = `
+    <div class="pane-head home-head"><h1>Today <span class="tp-date">${prettyDate(d.today)}</span></h1>
+      <a class="ghost" href="https://today.robski.uk" title="Open the full planner with drag-and-drop">Full planner ↗</a></div>
+    ${d.calendar_error ? `<div class="cal-warn">Calendar: ${esc(String(d.calendar_error))}</div>` : ''}
+    ${laneChips ? `<div class="tp-lanes">${laneChips}</div>` : ''}
+    <div class="tp-timeline">${items.map(row).join('') || '<div class="home-empty">Nothing scheduled yet.</div>'}</div>
+    ${floating.length ? `<section class="tp-float"><div class="home-sec-h">Unscheduled blocks</div>${floating.map(slotRow).join('')}</section>` : ''}
+    ${total ? `<section class="tp-tally"><h2>Today held ${humanMin(total)}</h2><div class="tp-tally-list">${doneLanes.map(({ l, min }) => `<span class="tp-tally-item" style="--h:${l.hue}"><span class="tp-dot"></span>${esc(l.label)} · ${humanMin(min)}</span>`).join('')}</div></section>` : ''}
+    ${qt ? `<blockquote class="tp-quote">${esc(qt)}${d.quote.author ? `<cite> — ${esc(d.quote.author)}</cite>` : ''}</blockquote>` : ''}`;
+}
+
 // ── view: mail ───────────────────────────────────────
 // The mail backend is a separate always-on service (IMAP/SMTP can't run on the
 // Worker). Its URL is stored per-browser; the same Life token authenticates it.
@@ -687,7 +740,8 @@ function rerenderCurrent() {
   else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList();
   else if (v === 'notes') openNotesList(); else if (v === 'areas') openAreasList();
   else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard();
-  else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail(); else openHome();
+  else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail();
+  else if (v === 'today') renderToday(); else openHome();
 }
 async function reorderFavs(draggedId, beforeId) {
   const favs = state.favs;
@@ -829,7 +883,7 @@ function renderTable() {
     ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortOf = (id) => vw.sort && vw.sort.colId === id ? vw.sort.dir : null;
-  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><input value="${esc(col.name)}" data-colname="${col.id}"><button class="th-sort ${sd ? 'on' : ''}" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${sd === 'asc' ? '↑' : sd === 'desc' ? '↓' : '↕'}</button><button class="x" data-del-col="${col.id}">×</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${sd ? `<span class="sarrow">${sd === 'asc' ? '↑' : '↓'}</span>` : ''}</button><button class="th-edit" data-edit-col="${col.id}" title="Rename column">✎</button><button class="x" data-del-col="${col.id}">×</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const body = sortRows(state.tables_rows).map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   $('#pane').innerHTML = `
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
@@ -838,7 +892,8 @@ function renderTable() {
       <button class="ghost" data-del-cur>Delete</button></div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}
       <thead><tr><th class="th-open"></th>${head}${addCol}</tr></thead>
-      <tbody>${body}<tr class="row-add"><td colspan="${c.length + 2}"><button data-add-row>+ Row</button></td></tr></tbody></table></div>`;
+      <tbody>${body}<tr class="row-add"><td colspan="${c.length + 2}"><button data-add-row>+ Row</button></td></tr></tbody></table></div>
+    ${vw.colMenu ? colMenuHtml(vw.colMenu) : ''}`;
   if (vw.addingCol) { const n = $('#cn-name'); if (n) n.focus(); }
 }
 
@@ -878,6 +933,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
   { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
   { kind: 'action', title: 'Go to Mail', run: () => openMail() },
+  { kind: 'action', title: 'Go to Today', run: () => openToday() },
 ];
 let palT;
 function buildPalette() {
@@ -950,6 +1006,7 @@ document.addEventListener('click', (e) => {
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-today]')) { openToday().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }
@@ -996,9 +1053,20 @@ document.addEventListener('click', (e) => {
   const ota = t.closest('[data-open-task]'); if (ota) { openTaskCard(ota.dataset.openTask).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-task-cur]')) { delTaskCard().catch((x) => toast(x.message)); return; }
 
+  // table column menu (right-click) actions
+  if (state.tables_view && state.tables_view.colMenu) {
+    const cmId = state.tables_view.colMenu.colId;
+    if (t.closest('[data-cm-rename]')) { state.tables_view.colMenu = null; renderTable(); editColName(cmId); return; }
+    const ctp = t.closest('[data-cm-type]'); if (ctp) { setColType(cmId, ctp.dataset.cmType); return; }
+    const rmo = t.closest('[data-cm-rmopt]'); if (rmo) { removeColOption(cmId, rmo.dataset.cmRmopt); return; }
+    const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.sort = { colId: cmId, dir: cms.dataset.cmSort }; state.tables_view.colMenu = null; renderTable(); return; }
+    if (t.closest('[data-cm-del]')) { state.tables_view.colMenu = null; if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== cmId)).then(renderTable); else renderTable(); return; }
+    if (!t.closest('[data-colmenu]')) { state.tables_view.colMenu = null; renderTable(); } // click outside closes; fall through
+  }
   // table
   if (t.closest('[data-back-table]')) { state.tables_view.openRow = null; renderTable(); return; }
   const or = t.closest('[data-open-row]'); if (or) { state.tables_view.openRow = or.dataset.openRow; renderTable(); window.scrollTo(0, 0); return; }
+  const ec = t.closest('[data-edit-col]'); if (ec) { editColName(ec.dataset.editCol); return; }
   const sc = t.closest('[data-sort-col]');
   if (sc) { const id = sc.dataset.sortCol; const s = state.tables_view.sort; state.tables_view.sort = s && s.colId === id ? { colId: id, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { colId: id, dir: 'asc' }; renderTable(); return; }
   if (t.closest('[data-add-col]')) { state.tables_view.addingCol = true; renderTable(); return; }
@@ -1006,6 +1074,15 @@ document.addEventListener('click', (e) => {
   const drow = t.closest('[data-del-row]'); if (drow) { const id = drow.dataset.delRow; state.tables_rows = state.tables_rows.filter((r) => r.id !== id); renderTable(); api(`/api/blocks/${id}`, { method: 'DELETE' }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-add-row]')) { addRow(); return; }
   if (t.closest('[data-del-cur]')) { delTable(); return; }
+});
+// right-click a column header for its menu (rename / type / options / sort / delete)
+document.addEventListener('contextmenu', (e) => {
+  const th = e.target.closest('[data-sort-col]');
+  if (th && state.view.type === 'table' && state.tables_view && !state.tables_view.openRow) {
+    e.preventDefault();
+    state.tables_view.colMenu = { colId: th.dataset.sortCol, x: Math.min(e.clientX, window.innerWidth - 232), y: e.clientY };
+    renderTable();
+  }
 });
 // change: cells + selects
 document.addEventListener('change', (e) => {
@@ -1037,6 +1114,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) mailSend(to, $('#mc-subject').value.trim(), $('#mc-body').value, state.mail.composing && state.mail.composing.inReplyTo); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
+  if (e.target.matches('[data-cm-addopt]')) { const i = $('#cm-opt-input'); if (i && state.tables_view && state.tables_view.colMenu) addColOption(state.tables_view.colMenu.colId, i.value); }
 });
 // drag to reorder favourites on the home, and to reorder the sidebar sections
 let dragFav = null, dragSec = null;
@@ -1190,6 +1268,46 @@ async function addRow() { const r = await api('/api/blocks', { method: 'POST', b
 async function addColumn(name, type) { const col = { id: uid(), name: name || 'Column', type }; state.tables_view.addingCol = false; await saveTableColumns([...tcols(), col]); renderTable(); }
 async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
 async function renameColumn(id, v) { const cols = tcols().map((c) => c.id === id ? { ...c, name: v } : c); await saveTableColumns(cols).catch((x) => toast(x.message)); }
+async function setColType(id, type) {
+  const cols = tcols().map((c) => c.id === id ? { ...c, type, ...(type === 'select' && !c.options ? { options: [] } : {}) } : c);
+  await saveTableColumns(cols); renderTable();
+}
+async function addColOption(id, opt) {
+  opt = (opt || '').trim(); if (!opt) return;
+  const cols = tcols().map((c) => c.id === id ? { ...c, options: [...(c.options || []), opt].filter((o, i, a) => a.indexOf(o) === i) } : c);
+  await saveTableColumns(cols); renderTable(); const i = $('#cm-opt-input'); if (i) i.focus();
+}
+async function removeColOption(id, opt) {
+  const cols = tcols().map((c) => c.id === id ? { ...c, options: (c.options || []).filter((o) => o !== opt) } : c);
+  await saveTableColumns(cols); renderTable();
+}
+// A right-click menu on a column header: rename, change type (incl. Select and
+// its options), sort, delete.
+function colMenuHtml(cm) {
+  const col = tcols().find((c) => c.id === cm.colId); if (!col) return '';
+  return `<div class="colmenu" data-colmenu style="top:${cm.y}px;left:${cm.x}px">
+    <button class="cm-item" data-cm-rename>Rename column</button>
+    <div class="cm-sep"></div><div class="cm-label">Type</div>
+    ${TYPES.map(([v, l]) => `<button class="cm-item cm-type ${col.type === v ? 'on' : ''}" data-cm-type="${v}">${l}${col.type === v ? ' ✓' : ''}</button>`).join('')}
+    ${col.type === 'select' ? `<div class="cm-sep"></div><div class="cm-label">Options</div>
+      ${(col.options || []).map((o) => `<div class="cm-opt"><span>${esc(o)}</span><button data-cm-rmopt="${esc(o)}" title="Remove">×</button></div>`).join('') || '<div class="cm-empty">None yet</div>'}
+      <form class="cm-addopt" data-cm-addopt><input id="cm-opt-input" placeholder="Add option…" autocomplete="off"><button type="submit">Add</button></form>` : ''}
+    <div class="cm-sep"></div>
+    <button class="cm-item" data-cm-sort="asc">Sort A → Z</button>
+    <button class="cm-item" data-cm-sort="desc">Sort Z → A</button>
+    <div class="cm-sep"></div>
+    <button class="cm-item cm-del" data-cm-del>Delete column</button>
+  </div>`;
+}
+// Click ✎ to rename: the column-name button becomes an input in place.
+function editColName(id) {
+  const btn = $(`.th-name[data-sort-col="${id}"]`); const col = tcols().find((c) => c.id === id); if (!btn || !col) return;
+  const input = document.createElement('input'); input.className = 'th-rename'; input.value = col.name;
+  btn.replaceWith(input); input.focus(); input.select(); let d = false;
+  const save = async () => { if (d) return; d = true; const v = input.value.trim(); if (v && v !== col.name) { await renameColumn(id, v); } renderTable(); };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { d = true; renderTable(); } });
+  input.addEventListener('blur', save);
+}
 async function delTable() { const t = state.tables_open; if (!confirm(`Delete the table “${t.title}” and its rows?`)) return; for (const r of state.tables_rows) await api(`/api/blocks/${r.id}`, { method: 'DELETE' }); await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); state.tables = state.tables.filter((x) => x.id !== t.id); state.tables_open = null; await openTasks(); }
 
 // ── inline formatting bubble ─────────────────────────
@@ -1295,6 +1413,7 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     const route = location.pathname.replace(/\/$/, '');
     if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
+    else if (route === '/today') await openToday();
     else await openHome();
   } catch (e) { toast(e.message); renderNav(); }
 })();

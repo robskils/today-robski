@@ -187,14 +187,29 @@ table.recs th, table.recs td { border-bottom:1px solid var(--line); border-right
 table.recs th:last-child, table.recs td:last-child { border-right:0; }
 table.recs tr:last-child td { border-bottom:0; }
 table.recs thead th { background:var(--paper-2); font-weight:600; white-space:nowrap; }
-.thh { display:flex; align-items:center; gap:6px; padding:10px 12px; }
-.thh input { flex:1; min-width:0; background:transparent; border:0; font:inherit; font-weight:600; color:var(--ink); }
-.thh .ty { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:500; }
+.thh { display:flex; align-items:center; gap:4px; padding:10px 12px; }
+/* The column name IS the sort control: click to sort, click again to reverse. */
+.th-name { flex:1; min-width:0; display:flex; align-items:center; gap:5px; text-align:left; font:inherit; font-weight:600; color:var(--ink); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.th-name:hover { color:var(--accent); }
+.th-name .sarrow { flex:none; color:var(--accent); font-size:12px; }
+.th-rename { flex:1; min-width:0; font:inherit; font-weight:600; color:var(--ink); background:var(--card); border:1px solid var(--accent); border-radius:6px; padding:2px 6px; }
+.th-edit { flex:none; font-size:13px; color:var(--ink-3); opacity:0; padding:0 2px; transition:opacity .12s,color .12s; }
+.thh:hover .th-edit { opacity:.6; } .th-edit:hover { opacity:1; color:var(--accent); }
 .thh .x { opacity:.35; color:var(--ink-3); font-size:15px; } .thh .x:hover { opacity:1; color:var(--accent); }
-.th-sort { flex:none; font-size:13px; color:var(--ink-3); opacity:.4; padding:0 2px; transition:opacity .12s,color .12s; }
-.thh:hover .th-sort { opacity:.8; }
-.th-sort.on { opacity:1; color:var(--accent); }
-.th-sort:hover { opacity:1; color:var(--accent); }
+/* Column header right-click menu. */
+.colmenu { position:fixed; z-index:60; min-width:212px; max-width:240px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 14px 34px -10px rgba(0,0,0,.35); padding:6px; display:flex; flex-direction:column; gap:1px; }
+.colmenu .cm-item { text-align:left; padding:8px 10px; border-radius:8px; font-size:15px; color:var(--ink); }
+.colmenu .cm-item:hover { background:var(--paper-2); }
+.colmenu .cm-item.on { color:var(--accent); font-weight:500; }
+.colmenu .cm-item.cm-del { color:var(--accent); }
+.cm-sep { height:1px; background:var(--line); margin:5px 4px; }
+.cm-label { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); padding:4px 10px 2px; font-weight:600; }
+.cm-opt { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 10px; font-size:14.5px; color:var(--ink-2); }
+.cm-opt button { color:var(--ink-3); font-size:16px; } .cm-opt button:hover { color:var(--accent); }
+.cm-empty { padding:4px 10px; font-size:13.5px; color:var(--ink-3); font-style:italic; }
+.cm-addopt { display:flex; gap:6px; padding:5px 8px 3px; }
+.cm-addopt input { flex:1; min-width:0; padding:6px 8px; font-size:14px; border:1px solid var(--line-2); border-radius:8px; background:var(--paper); color:var(--ink); }
+.cm-addopt button { flex:none; padding:6px 11px; border-radius:8px; background:var(--accent); color:var(--accent-ink); font-size:14px; }
 .th-add { width:44px; text-align:center; }
 .th-add button, .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; } .th-add button:hover { color:var(--accent); }
 
@@ -469,6 +484,35 @@ table.ttable tr:last-child td { border-bottom:0; }
 .pal-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:16.5px; }
 .pal-hint { font-size:12.5px; color:var(--ink-3); flex:none; }
 .pal-empty { padding:26px; text-align:center; color:var(--ink-3); font-style:italic; }
+
+/* ── today (day planner, read view) ──────────────────── */
+.tp-date { font-family:'Cormorant Garamond',serif; font-size:.6em; font-weight:400; font-style:italic; color:var(--ink-3); margin-left:8px; }
+.tp-dot { width:9px; height:9px; border-radius:50%; flex:none; background:hsl(var(--h,220) 45% 52%); }
+.tp-lanes { display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 24px; }
+.tp-lane { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:var(--card); font-size:15px; color:var(--ink-2); }
+.tp-lane.hit { border-color:color-mix(in srgb,hsl(var(--h,220) 45% 52%) 55%,transparent); color:var(--ink); }
+.tp-lane .tp-sub { color:var(--ink-3); font-variant-numeric:tabular-nums; }
+.tp-timeline { display:flex; flex-direction:column; }
+.tp-row { display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:14px; padding:13px 4px; border-bottom:1px solid var(--line); align-items:baseline; }
+.tp-row:last-child { border-bottom:0; }
+.tp-time { color:var(--ink-3); font-size:15px; font-variant-numeric:tabular-nums; }
+.tp-body { min-width:0; }
+.tp-title { display:flex; align-items:center; gap:8px; font-size:16.5px; color:var(--ink); overflow-wrap:anywhere; }
+.tp-slot .tp-title { font-weight:500; }
+.tp-dur { color:var(--ink-3); font-size:13.5px; font-variant-numeric:tabular-nums; }
+.tp-loc { color:var(--ink-3); font-size:14px; margin-top:2px; overflow-wrap:anywhere; }
+.tp-event .tp-title { color:var(--ink-2); }
+.tp-task { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--ink-2); padding:4px 0 0 17px; }
+.tp-task .tp-check { width:17px; height:17px; border:1.5px solid var(--line-2); border-radius:5px; display:grid; place-items:center; font-size:11px; color:var(--done); flex:none; }
+.tp-task.done { color:var(--ink-3); text-decoration:line-through; }
+.tp-task.done .tp-check { background:var(--done); border-color:var(--done); color:#fff; }
+.tp-float { margin-top:22px; }
+.tp-tally { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); }
+.tp-tally h2 { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:500; margin-bottom:12px; }
+.tp-tally-list { display:flex; flex-wrap:wrap; gap:8px; }
+.tp-tally-item { display:inline-flex; align-items:center; gap:7px; font-size:14.5px; color:var(--ink-2); background:var(--paper-2); padding:6px 12px; border-radius:999px; }
+.tp-quote { margin-top:28px; font-family:'Cormorant Garamond',serif; font-size:22px; font-style:italic; color:var(--ink-2); border-left:3px solid var(--gold); padding-left:18px; text-wrap:balance; }
+.tp-quote cite { display:block; font-size:15px; font-style:normal; color:var(--ink-3); margin-top:6px; }
 
 /* ── mail ────────────────────────────────────────────── */
 .mail-head-act { display:flex; gap:8px; align-items:center; }
