@@ -20,8 +20,9 @@ const readLS = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k));
 const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
-  areas: [], tasks: [], taskFilter: null,
-  taskSort: { col: 'created', dir: 'desc' },
+  areas: [], tasks: [], taskFilter: null, taskAdding: false,
+  // Phones default to priority order (P1 first); desktop to most-recently added.
+  taskSort: (typeof window !== 'undefined' && window.innerWidth <= 820) ? { col: 'priority', dir: 'asc' } : { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
   favs: [], home: { events: [] }, cal: null, mail: null,
   nav: {
@@ -129,14 +130,13 @@ function renderNav() {
       <button class="foot-search" data-palette title="Search">⌕</button>
       <a href="https://today.robski.uk" title="Your day planner">Today</a>
       <button data-theme-toggle title="Switch to ${dark ? 'daytime' : 'night'}">${dark ? '☀ Day' : '☾ Night'}</button>
-      <a href="/api/export" title="Download a full backup">Backup</a>
     </div>
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
     <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span> Calendar</button>
     <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span> Mail</button>
-    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▸</span> Notes</button>
+    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span> Notes</button>
     <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>`;
@@ -153,7 +153,7 @@ function renderTabbar(v) {
     + tab(v.type === 'mail', 'data-open-mail', '✉', 'Mail')
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
     + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
-    + tab(v.type === 'note' || v.type === 'notes', 'data-open-notes', '▸', 'Notes');
+    + tab(v.type === 'note' || v.type === 'notes', 'data-open-notes', '▤', 'Notes');
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
 function reorderSecs(draggedKey, beforeKey) {
@@ -226,7 +226,7 @@ function renderHome() {
         <button class="hn-btn" data-view-tasks><span class="hn-ic">✓</span>Tasks</button>
         <button class="hn-btn" data-open-calendar><span class="hn-ic">◑</span>Calendar</button>
         <button class="hn-btn" data-open-mail><span class="hn-ic">✉</span>Mail</button>
-        <span class="hn-group"><button class="hn-btn" data-open-notes><span class="hn-ic">▸</span>Notes</button><button class="hn-plus" data-new-note title="New note">+</button></span>
+        <span class="hn-group"><button class="hn-btn" data-open-notes><span class="hn-ic">▤</span>Notes</button><button class="hn-plus" data-new-note title="New note">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-tables><span class="hn-ic">▦</span>Tables</button><button class="hn-plus" data-new-table title="New table">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button><button class="hn-plus" data-new-area title="New life area">+</button></span>
       </nav>
@@ -450,7 +450,7 @@ function showCalForm(ev) {
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event" data-ev="${ev ? ev.id : ''}">
     <input id="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
     <input id="ce-time" type="time" class="sel" value="${time}" required>
-    <select id="ce-dur" class="sel">${[15, 30, 45, 60, 90, 120, 180, 240].map((n) => `<option value="${n}" ${n === dur ? 'selected' : ''}>${n < 60 ? n + ' min' : (n / 60) + (n === 60 ? ' hour' : ' hours')}</option>`).join('')}</select>
+    <select id="ce-dur" class="sel">${durationOptions(dur)}</select>
     <input id="ce-loc" class="sel" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
     <button class="add-btn wide" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
     ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}</form>`;
@@ -623,6 +623,10 @@ async function homeAddTask(title, area, priority) {
   catch (e) { toast(e.message); }
 }
 const pad2 = (n) => String(n).padStart(2, '0');
+// Event lengths, from 15 minutes up to a full day. Shared by both event forms.
+const DURATIONS = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480, 600, 720, 1440];
+const durLabel = (n) => n === 1440 ? 'All day (24h)' : n < 60 ? `${n} min` : n % 60 === 0 ? `${n / 60} hour${n === 60 ? '' : 's'}` : `${Math.floor(n / 60)}½ hours`;
+const durationOptions = (sel) => DURATIONS.map((n) => `<option value="${n}" ${n === sel ? 'selected' : ''}>${durLabel(n)}</option>`).join('');
 function showQuickEvent() {
   const d = new Date();
   const today = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -633,7 +637,7 @@ function showQuickEvent() {
     <input id="qe-title" placeholder="Event title…" autocomplete="off" required>
     <input id="qe-date" type="date" class="sel" value="${today}" required>
     <input id="qe-time" type="time" class="sel" value="${start}" required>
-    <select id="qe-dur" class="sel"><option value="15">15 min</option><option value="30">30 min</option><option value="60" selected>1 hour</option><option value="90">1½ hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select>
+    <select id="qe-dur" class="sel">${durationOptions(60)}</select>
     <input id="qe-loc" class="sel" placeholder="Location (optional)" autocomplete="off">
     <button class="add-btn wide" type="submit">Add to calendar</button></form>`;
   $('#qe-title').focus();
@@ -743,15 +747,18 @@ function renderTasks() {
   }).join('');
   $('#pane').innerHTML = `
     <div class="pane-head"><h1>Tasks</h1></div>
-    <form id="task-form" class="add-task">
+    ${state.taskAdding
+      ? `<form id="task-form" class="add-task">
       <input id="task-title" type="text" placeholder="Add a task…" autocomplete="off" required>
       <select id="task-area" class="sel">${opts}</select>
       <select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select>
       <button class="add-btn wide" type="submit">Add</button>
-    </form>
+      <button type="button" class="ghost" data-task-add-close>Done</button>
+    </form>`
+      : `<button class="add-btn wide" data-task-add>+ Add task</button>`}
     <div class="area-chips">${chips}</div>
     ${filterSel}
-    <div class="tbl-scroll"><table class="ttable">
+    <div class="tbl-scroll tasks-scroll"><table class="ttable">
       <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
       <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">No tasks here yet.</td></tr>`}</tbody>
     </table></div>`;
@@ -967,6 +974,8 @@ document.addEventListener('click', (e) => {
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
+  if (t.closest('[data-task-add]')) { state.taskAdding = true; renderTasks(); $('#task-title')?.focus(); return; }
+  if (t.closest('[data-task-add-close]')) { state.taskAdding = false; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
@@ -1020,7 +1029,7 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (e.target.id === 'task-form') { const i = $('#task-title'); const v = i.value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); i.value = ''; i.focus(); }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim()); }
@@ -1065,6 +1074,8 @@ document.addEventListener('pointerup', () => { if (!resizing) return; const w = 
 async function addTask(title, area, priority) {
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) });
   state.tasks.push(b); renderTasks();
+  // Keep the form open for adding several in a row.
+  if (state.taskAdding) { const i = $('#task-title'); if (i) i.focus(); }
 }
 // A task can be held in more than one place at once - the Tasks list, an open
 // area page, the task focus view, the favourites - each a separate object.
