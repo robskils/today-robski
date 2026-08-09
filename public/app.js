@@ -1020,14 +1020,16 @@ function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.heig
 function autoGrowSoon(el) { if (!el) return; requestAnimationFrame(() => autoGrow(el)); }
 function renderNote() {
   const n = state.note.current;
+  const sep = '<span class="crumb-sep">›</span>';
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
-    : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join('<span class="crumb-sep">/</span>');
+    : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
   const kids = state.note.children.map((c) => `<button class="subpage" data-open-note="${c.id}"><span class="sp-ico">▸</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb" data-view-home>Home</button><span class="crumb-sep">/</span>${crumbs}
+    <div class="note-crumbs"><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${areaSelect(n.props && n.props.area, 'data-note-area')}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
+      <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
     <div class="note-body">${proseEditor(n.body, 'note')}</div>
@@ -1035,6 +1037,49 @@ function renderNote() {
     <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
       ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>`;
   autoGrowSoon($('#note-title')); loadThumbs();
+}
+
+// ── move a note inside another (re-parent) ───────────
+function openMoveNote() {
+  const cur = state.note && state.note.current; if (!cur) return;
+  api('/api/blocks?kind=note').then((all) => {
+    // Can't move a note into itself or any of its own descendants.
+    const kids = {}; all.forEach((n) => { const p = n.parent_id || ''; (kids[p] = kids[p] || []).push(n.id); });
+    const bad = new Set([cur.id]); const st = [cur.id];
+    while (st.length) { const p = st.pop(); (kids[p] || []).forEach((c) => { if (!bad.has(c)) { bad.add(c); st.push(c); } }); }
+    const opts = all.filter((n) => !bad.has(n.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    state.move = { cur: cur.id, curParent: cur.parent_id || null, opts, q: '' };
+    renderMove();
+  }).catch((e) => toast(e.message));
+}
+function renderMove() {
+  let el = document.getElementById('move-overlay');
+  if (!el) { el = document.createElement('div'); el.id = 'move-overlay'; document.body.appendChild(el); }
+  el.innerHTML = `<div class="pal-bg" data-move-bg><div class="pal">
+    <input id="move-input" placeholder="Move into which note…" value="${esc(state.move.q)}" autocomplete="off">
+    <div class="pal-list" id="move-list"></div></div></div>`;
+  renderMoveList();
+  $('#move-input').focus();
+}
+function renderMoveList() {
+  const el = $('#move-list'); if (!el) return;
+  const q = state.move.q.trim().toLowerCase();
+  const opts = state.move.opts.filter((n) => (n.title || '').toLowerCase().includes(q));
+  const top = !q || 'top level'.includes(q)
+    ? `<button class="pal-item ${state.move.curParent ? '' : 'muted-cur'}" data-move-to=""><span class="pal-kind muted">top</span><span class="pal-t">Top level (not inside any note)</span></button>` : '';
+  el.innerHTML = top + (opts.map((n) => `<button class="pal-item" data-move-to="${n.id}"><span class="pal-kind muted">note</span><span class="pal-t">${esc(n.title || 'Untitled')}</span></button>`).join('') || (top ? '' : '<div class="pal-empty">No notes.</div>'));
+}
+function closeMove() { const el = document.getElementById('move-overlay'); if (el) el.innerHTML = ''; state.move = null; }
+async function moveNote(targetId) {
+  if (!state.move) return;
+  const cur = state.move.cur; closeMove();
+  try {
+    await api(`/api/blocks/${cur}`, { method: 'PATCH', body: JSON.stringify({ parent_id: targetId || null }) });
+    state.noteTops = await api('/api/blocks?kind=note&parent_id=');   // top-level list may have changed
+    await openNote(cur);                                              // rebuild path/crumbs from the new home
+    renderNav();
+    toast('Note moved');
+  } catch (e) { toast(e.message); }
 }
 
 // ── view: table ──────────────────────────────────────
@@ -1213,6 +1258,7 @@ document.addEventListener('keydown', (e) => {
     if (!editing && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); mailReplyStart(false); return; }
     if (!editing && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); mailReplyStart(true); return; }
   }
+  if (state.move && e.key === 'Escape') { closeMove(); return; }
   if (!state.pal.open) return;
   if (e.key === 'Escape') { closePalette(); return; }
   if (e.key === 'ArrowDown') { e.preventDefault(); state.pal.sel = Math.min(state.pal.items.length - 1, state.pal.sel + 1); renderPalItems(); }
@@ -1222,6 +1268,7 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('input', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
+  if (e.target.id === 'move-input') { state.move.q = e.target.value; renderMoveList(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
 });
@@ -1231,7 +1278,17 @@ document.addEventListener('click', (e) => {
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
-  if (alink && /^https?:/i.test(alink.getAttribute('href') || '')) { e.preventDefault(); window.open(alink.href, '_blank', 'noopener'); return; }
+  if (alink && /^https?:/i.test(alink.getAttribute('href') || '')) {
+    e.preventDefault();
+    // Synthesise a real anchor click rather than window.open: an installed PWA
+    // hands this to the OS default browser, and it isn't caught by popup blockers.
+    const a = document.createElement('a'); a.href = alink.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
+    return;
+  }
+  const mbg = t.closest('[data-move-bg]'); if (mbg && !t.closest('.pal')) { closeMove(); return; }
+  const mvt = t.closest('[data-move-to]'); if (mvt) { moveNote(mvt.dataset.moveTo || null); return; }
+  if (t.closest('[data-move-note]')) { openMoveNote(); return; }
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
