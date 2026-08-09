@@ -198,7 +198,8 @@ async function openTable(id) {
 // ── view: home ───────────────────────────────────────
 const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const KIND_IC = { note: '▸', table: '▦', task: '✓', row: '▦', area: '◈' };
+const KIND_IC = { note: '▤', table: '▦', task: '✓', row: '▦', area: '◈' };
+const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
 
 async function openHome() {
   state.view = { type: 'home' };
@@ -212,9 +213,11 @@ async function openHome() {
 function renderHome() {
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
-  const favRows = favs.map((f) => `<div class="fav" draggable="true" data-fav-id="${f.id}">
-    <button class="fav-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${KIND_IC[f.kind] || '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button>
-    <button class="fav-x" data-unfav="${f.id}" title="Remove from favourites">×</button></div>`).join('');
+  // Compact cards, grouped by kind (Tasks, Notes, Tables, Life areas).
+  const favGroups = ['task', 'note', 'table', 'area'].map((k) => {
+    const list = favs.filter((f) => f.kind === k); if (!list.length) return '';
+    return `<div class="fav-group"><div class="fav-group-h">${KIND_LABEL[k]}</div><div class="fav-cards">${list.map((f) => `<div class="fav-card"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${KIND_IC[f.kind] || '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`).join('')}</div></div>`;
+  }).join('');
   const evRows = ev.map((e) => `<div class="ev-row"><span class="ev-time">${e.allDay ? 'all day' : hhmm(e.start_min)}</span><span class="ev-t">${esc(e.title)}</span>${e.location ? `<span class="ev-loc">${esc(e.location)}</span>` : ''}</div>`).join('');
   $('#pane').innerHTML = `
     <div class="home">
@@ -237,20 +240,10 @@ function renderHome() {
         <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
       </section>
       <section class="home-sec">
-        <div class="home-sec-h">Favourites ${favs.length ? '<span class="muted">drag to reorder</span>' : ''}</div>
-        <div class="favs" id="favs">${favRows || '<div class="home-empty">Star a task, note or table (the ☆ on it) to pin it here.</div>'}</div>
+        <div class="home-sec-h">Favourites</div>
+        ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
       </section>
-      ${favGroup('Favourite areas', favs.filter((f) => f.kind === 'area'))}
-      ${favGroup('Favourite notes', favs.filter((f) => f.kind === 'note'))}
-      ${favGroup('Favourite tables', favs.filter((f) => f.kind === 'table'))}
     </div>`;
-}
-// A type-grouped strip of favourite cards for the home page, shown only when
-// that type has any favourites.
-function favGroup(label, list) {
-  if (!list.length) return '';
-  const cards = list.map((f) => `<button class="tbl-card" data-fav-open="${f.kind}:${f.id}"><span class="tc-ic">${KIND_IC[f.kind] || '•'}</span>${esc(f.title || 'Untitled')}</button>`).join('');
-  return `<section class="home-sec"><div class="home-sec-h">${label}</div><div class="tbl-cards">${cards}</div></section>`;
 }
 function openTablesList() {
   state.view = { type: 'tables' };
@@ -382,40 +375,59 @@ function eventsByDay() {
   for (const d in map) map[d].sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || (a.start_min || 0) - (b.start_min || 0));
   return map;
 }
+function weekDays(iso) {
+  const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d);
+  const dow = (dt.getDay() + 6) % 7; // Monday = 0
+  return Array.from({ length: 7 }, (_, i) => { const x = new Date(y, m - 1, d - dow + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), mon: x.getMonth(), dow: WEEKDAYS[i], today: di === todayISO() }; });
+}
 async function openCalendar(dateStr) {
   const base = dateStr || (state.cal && state.cal.selected) || todayISO();
   const [y, m] = base.split('-').map(Number);
-  state.cal = { y, m: m - 1, selected: dateStr || (state.cal && state.cal.selected) || todayISO(), events: [], error: null, editing: null, adding: false };
+  state.cal = { y, m: m - 1, selected: base, mode: localStorage.getItem('life.calMode') === 'week' ? 'week' : 'month', events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
   await loadCalendar();
 }
 async function loadCalendar() {
-  const weeks = monthWeeks(state.cal.y, state.cal.m);
-  const from = weeks[0][0].iso, to = weeks[5][6].iso;
+  let from, to;
+  if (state.cal.mode === 'week') { const wk = weekDays(state.cal.selected); from = wk[0].iso; to = wk[6].iso; }
+  else { const weeks = monthWeeks(state.cal.y, state.cal.m); from = weeks[0][0].iso; to = weeks[5][6].iso; }
   try {
     const r = await api(`/api/calendar?from=${from}&to=${to}`);
     state.cal.events = r.events || []; state.cal.error = r.error || null;
   } catch (e) { state.cal.error = e.message; }
   if (state.view.type === 'calendar') renderCalendar();
 }
-function stepMonth(delta) {
-  let m = state.cal.m + delta, y = state.cal.y;
-  if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
-  state.cal.y = y; state.cal.m = m; state.cal.adding = false; state.cal.editing = null;
-  renderCalendar(); loadCalendar();
+function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); }
+function stepCal(delta) {
+  if (state.cal.mode === 'week') { state.cal.selected = addDayISO(state.cal.selected, delta * 7); const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
+  else { let m = state.cal.m + delta, y = state.cal.y; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.cal.y = y; state.cal.m = m; }
+  state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar();
 }
 function renderCalendar() {
   const c = state.cal, byDay = eventsByDay();
-  const chip = (e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`;
-  const cell = (d) => {
-    const evs = byDay[d.iso] || [];
-    const shown = evs.slice(0, 3).map(chip).join('');
-    const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3} more</span>` : '';
-    return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'sel' : ''}" data-cal-day="${d.iso}">
-      <div class="cal-daynum">${d.day}</div><div class="cal-evs">${shown}${more}</div></div>`;
-  };
-  const grid = monthWeeks(c.y, c.m).map((w) => w.map(cell).join('')).join('');
+  let title, body;
+  if (c.mode === 'week') {
+    const wk = weekDays(c.selected), a = wk[0], b = wk[6];
+    title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
+    body = `<div class="cal-week">${wk.map((d) => {
+      const evs = byDay[d.iso] || [];
+      return `<div class="cw-day ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'sel' : ''}" data-cal-day="${d.iso}">
+        <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span></div>
+        <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
+    }).join('')}</div>`;
+  } else {
+    title = `${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span>`;
+    const cell = (d) => {
+      const evs = byDay[d.iso] || [];
+      const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
+      const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : '';
+      const dots = evs.slice(0, 5).map((e) => `<span class="cal-dot ${e.allDay ? 'allday' : ''}"></span>`).join('');
+      return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'sel' : ''}" data-cal-day="${d.iso}">
+        <div class="cal-daynum">${d.day}</div><div class="cal-evs">${shown}${more}</div><div class="cal-dots">${dots}</div></div>`;
+    };
+    body = `<div class="cal-grid">${WEEKDAYS.map((w) => `<div class="cal-dow">${w}</div>`).join('')}${monthWeeks(c.y, c.m).map((w) => w.map(cell).join('')).join('')}</div>`;
+  }
   const dayEvents = (byDay[c.selected] || []);
   const agendaRows = dayEvents.length ? dayEvents.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}">
       <span class="cal-ag-time">${e.allDay ? 'all day' : minToLabel(e.start_min)}</span>
@@ -423,18 +435,16 @@ function renderCalendar() {
     : '<div class="home-empty">Nothing on this day.</div>';
   $('#pane').innerHTML = `
     <div class="cal-head">
-      <h1>${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span></h1>
+      <h1>${title}</h1>
       <div class="cal-nav">
+        <div class="cal-modes"><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button><button class="cal-mode ${c.mode === 'week' ? 'on' : ''}" data-cal-mode="week">Week</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
-        <button class="cal-btn ic" data-cal-prev title="Previous month">‹</button>
-        <button class="cal-btn ic" data-cal-next title="Next month">›</button>
+        <button class="cal-btn ic" data-cal-prev title="Previous">‹</button>
+        <button class="cal-btn ic" data-cal-next title="Next">›</button>
       </div>
     </div>
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
-    <div class="cal-grid">
-      ${WEEKDAYS.map((w) => `<div class="cal-dow">${w}</div>`).join('')}
-      ${grid}
-    </div>
+    ${body}
     <section class="cal-agenda">
       <div class="cal-ag-head"><h2>${prettyDate(c.selected)}</h2><button class="add-btn wide" data-cal-add>+ Event</button></div>
       <div id="cal-form"></div>
@@ -1025,9 +1035,10 @@ document.addEventListener('click', (e) => {
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
+  const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
   if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); return; }
-  if (t.closest('[data-cal-prev]')) { stepMonth(-1); return; }
-  if (t.closest('[data-cal-next]')) { stepMonth(1); return; }
+  if (t.closest('[data-cal-prev]')) { stepCal(-1); return; }
+  if (t.closest('[data-cal-next]')) { stepCal(1); return; }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }

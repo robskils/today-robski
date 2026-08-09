@@ -363,6 +363,20 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .home-sec-h .muted { font-size:11px; letter-spacing:.04em; text-transform:none; font-weight:400; }
 .home-empty { color:var(--ink-3); font-style:italic; font-family:'Cormorant Garamond',serif; font-size:19px; padding:8px 0; }
 
+/* Favourites: compact cards, grouped by kind, wrapping so many fit. */
+.fav-group { margin-bottom:16px; }
+.fav-group:last-child { margin-bottom:0; }
+.fav-group-h { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; margin-bottom:9px; }
+.fav-cards { display:flex; flex-wrap:wrap; gap:8px; }
+.fav-card { display:inline-flex; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow); max-width:100%; transition:border-color .12s; }
+.fav-card:hover { border-color:var(--line-2); }
+.fav-card-open { display:flex; align-items:center; gap:9px; min-width:0; padding:9px 4px 9px 13px; color:var(--ink); font-size:15.5px; }
+.fav-card-open:hover { color:var(--accent); }
+.fav-card .fav-ic { color:var(--ink-3); font-size:13px; flex:none; }
+.fav-card .fav-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:220px; }
+.fav-card .fav-x { flex:none; opacity:0; color:var(--ink-3); font-size:16px; padding:0 11px 0 4px; transition:opacity .12s,color .12s; }
+.fav-card:hover .fav-x { opacity:.55; } .fav-card .fav-x:hover { opacity:1; color:var(--accent); }
+@media (hover:none){ .fav-card .fav-x { opacity:.55; } }
 .favs { display:flex; flex-direction:column; gap:4px; }
 .fav { display:flex; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow); }
 .fav:hover { border-color:var(--line-2); }
@@ -563,6 +577,7 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-brand { padding:0; font-size:21px; }
   .nav-foot { margin:0; }
   .nav-item, .nav-secs, .nav-spacer, .foot-search { display:none; }
+  [data-open-today] { display:none; }   /* the day planner is desktop-only */
   /* A real, tappable search box on every page (opens the universal palette). */
   .nav-k { display:flex; order:5; flex-basis:100%; margin:10px 0 0; font-size:16px; padding:12px 14px; }
   .pane { padding:20px 18px 96px; }
@@ -716,7 +731,36 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-ag-loc { color:var(--ink-3); font-size:14.5px; }
 .cal-del { color:var(--ink-3); } .cal-del:hover { color:var(--accent); }
 #cal-form:not(:empty) { margin-bottom:14px; }
-@media (max-width:620px){ .cal-cell { min-height:74px; } .cal-chip { font-size:0; padding:3px; } .cal-chip b { font-size:0; } .cal-chip::before { content:''; display:block; width:100%; height:5px; border-radius:3px; background:currentColor; opacity:.5; } }
+/* Month / Week toggle */
+.cal-modes { display:inline-flex; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; }
+.cal-mode { padding:8px 14px; font-size:14.5px; color:var(--ink-2); background:var(--card); }
+.cal-mode.on { background:var(--accent); color:var(--accent-ink); }
+/* Week view: seven day columns */
+.cal-week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+.cw-day { background:var(--card); min-height:230px; padding:8px 8px 12px; cursor:pointer; display:flex; flex-direction:column; gap:7px; transition:background .12s; }
+.cw-day:hover { background:var(--paper-2); }
+.cw-day.sel { outline:2px solid var(--accent); outline-offset:-2px; }
+.cw-head { display:flex; align-items:center; gap:6px; }
+.cw-dow { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
+.cw-num { font-size:16px; color:var(--ink-2); font-variant-numeric:tabular-nums; margin-left:auto; }
+.cw-day.today .cw-num { color:var(--accent-ink); background:var(--accent); min-width:26px; height:26px; padding:0 6px; border-radius:999px; display:inline-grid; place-items:center; font-weight:600; margin-left:auto; }
+.cw-evs { display:flex; flex-direction:column; gap:4px; }
+.cw-ev { text-align:left; font-size:13px; line-height:1.35; padding:5px 8px; border-radius:7px; background:color-mix(in srgb,var(--accent) 13%,transparent); color:var(--ink); overflow:hidden; }
+.cw-ev b { color:var(--accent); font-weight:600; font-variant-numeric:tabular-nums; }
+.cw-ev.allday { background:var(--accent); color:var(--accent-ink); } .cw-ev.allday b { color:var(--accent-ink); }
+.cal-dots { display:none; }
+@media (max-width:640px){
+  .cal-cell { min-height:62px; }
+  .cal-evs, .cal-more { display:none; }            /* month on mobile: dots, tap a day for its agenda */
+  .cal-dots { display:flex; flex-wrap:wrap; gap:3px; justify-content:center; padding-top:3px; }
+  .cal-dot { width:6px; height:6px; border-radius:50%; background:hsl(268 40% 55%); }
+  .cal-dot.allday { background:var(--accent); }
+  .cal-week { grid-template-columns:1fr; }          /* week on mobile: stacked day rows */
+  .cw-day { min-height:0; flex-direction:row; align-items:flex-start; gap:14px; padding:12px 14px; }
+  .cw-head { flex:none; width:56px; flex-direction:column; align-items:flex-start; gap:0; }
+  .cw-num { margin-left:0; } .cw-day.today .cw-num { margin-left:0; }
+  .cw-evs { flex:1; min-width:0; }
+}
 
 /* Mobile: drop the Added column and tighten, so the tasks table fits the
    screen without sideways scrolling and titles stop wrapping to three lines. */
