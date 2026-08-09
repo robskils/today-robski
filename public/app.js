@@ -484,55 +484,13 @@ async function calDeleteEvent(id) {
   catch (e) { toast(e.message); }
 }
 
-// ── view: today (the day planner, read view) ─────────
-// Phase 1 of folding today.robski into Life: the day's schedule, lane progress
-// and tally from /api/day. Rich editing (drag-drop) still lives at the full
-// planner, linked from the header.
-const humanMin = (m) => { m = Math.round(m || 0); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
-async function openToday() {
-  state.view = { type: 'today' }; renderNav();
-  try { state.plan = await api('/api/day'); } catch (e) { state.plan = { error: e.message }; }
-  renderToday();
-}
-const planLane = (key) => ((state.plan && state.plan.lanes) || []).find((l) => l.key === key) || { key, label: key, hue: 0 };
+// ── view: today (the real day planner, embedded) ─────
+// The planner is the actual today app (index.html/today.js), embedded in a
+// same-origin iframe so it stays one codebase - no reimplementation, no drift -
+// while living inside the Life shell. ?embed hides its own header chrome.
+function openToday() { state.view = { type: 'today' }; renderNav(); renderToday(); return Promise.resolve(); }
 function renderToday() {
-  const d = state.plan; if (!d) return;
-  if (d.error) { $('#pane').innerHTML = `<div class="pane-head"><h1>Today</h1></div><div class="cal-warn">${esc(d.error)}</div>`; return; }
-  const settings = d.settings || {}, progress = d.progress || {};
-  const laneChips = (d.lanes || []).map((l) => {
-    const p = progress[l.key] || { planned: 0, done: 0 };
-    const target = Number(settings[`target_${l.key}`] || 0);
-    if (!p.done && !target) return '';
-    const hit = l.practice ? p.done > 0 : (target && p.done >= target);
-    const sub = target && !(l.practice && hit) ? `${humanMin(p.done)} / ${humanMin(target)}` : `${humanMin(p.done)}${hit ? ' ✓' : ''}`;
-    return `<div class="tp-lane ${hit ? 'hit' : ''}" style="--h:${l.hue}"><span class="tp-dot"></span><span class="tp-name">${esc(l.label)}</span><span class="tp-sub">${sub}</span></div>`;
-  }).join('');
-  const items = [];
-  for (const e of (d.events || [])) items.push({ t: e.allDay ? -1 : e.start_min, kind: 'event', e });
-  for (const s of (d.slots || [])) if (s.start_min != null) items.push({ t: s.start_min, kind: 'slot', s });
-  items.sort((a, b) => a.t - b.t);
-  const floating = (d.slots || []).filter((s) => s.start_min == null);
-  const slotRow = (s) => {
-    const l = planLane(s.lane);
-    const tasks = (s.tasks || []).map((t) => `<div class="tp-task ${t.done ? 'done' : ''}"><span class="tp-check">${t.done ? '✓' : ''}</span><span>${esc(t.title)}</span></div>`).join('');
-    return `<div class="tp-row tp-slot" style="--h:${l.hue}"><span class="tp-time">${s.start_min != null ? hhmm(s.start_min) : '–'}</span><div class="tp-body"><div class="tp-title"><span class="tp-dot"></span>${esc(s.title || l.label)} <span class="tp-dur">${humanMin(s.duration)}</span></div>${tasks}</div></div>`;
-  };
-  const row = (it) => {
-    if (it.kind === 'event') { const e = it.e; return `<div class="tp-row tp-event"><span class="tp-time">${e.allDay ? 'all day' : hhmm(e.start_min)}</span><div class="tp-body"><div class="tp-title">${esc(e.title)}</div>${e.location ? `<div class="tp-loc">${esc(e.location)}</div>` : ''}</div></div>`; }
-    return slotRow(it.s);
-  };
-  const doneLanes = (d.lanes || []).map((l) => ({ l, min: (progress[l.key] || {}).done || 0 })).filter((x) => x.min > 0).sort((a, b) => b.min - a.min);
-  const total = doneLanes.reduce((s, x) => s + x.min, 0);
-  const qt = d.quote && (typeof d.quote === 'string' ? d.quote : d.quote.text);
-  $('#pane').innerHTML = `
-    <div class="pane-head home-head"><h1>Today <span class="tp-date">${prettyDate(d.today)}</span></h1>
-      <a class="ghost" href="https://today.robski.uk" title="Open the full planner with drag-and-drop">Full planner ↗</a></div>
-    ${d.calendar_error ? `<div class="cal-warn">Calendar: ${esc(String(d.calendar_error))}</div>` : ''}
-    ${laneChips ? `<div class="tp-lanes">${laneChips}</div>` : ''}
-    <div class="tp-timeline">${items.map(row).join('') || '<div class="home-empty">Nothing scheduled yet.</div>'}</div>
-    ${floating.length ? `<section class="tp-float"><div class="home-sec-h">Unscheduled blocks</div>${floating.map(slotRow).join('')}</section>` : ''}
-    ${total ? `<section class="tp-tally"><h2>Today held ${humanMin(total)}</h2><div class="tp-tally-list">${doneLanes.map(({ l, min }) => `<span class="tp-tally-item" style="--h:${l.hue}"><span class="tp-dot"></span>${esc(l.label)} · ${humanMin(min)}</span>`).join('')}</div></section>` : ''}
-    ${qt ? `<blockquote class="tp-quote">${esc(qt)}${d.quote.author ? `<cite> — ${esc(d.quote.author)}</cite>` : ''}</blockquote>` : ''}`;
+  $('#pane').innerHTML = `<iframe class="today-frame" src="/today?embed=1" title="Today - your day"></iframe>`;
 }
 
 // ── view: mail ───────────────────────────────────────
@@ -943,7 +901,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
   { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
   { kind: 'action', title: 'Go to Mail', run: () => openMail() },
-  { kind: 'action', title: 'Go to Today', run: () => { location.assign('/today'); return Promise.resolve(); } },
+  { kind: 'action', title: 'Go to Today', run: () => openToday() },
 ];
 let palT;
 function buildPalette() {
@@ -1004,7 +962,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
-  if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); renderNav(); return; }
+  if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); renderNav(); if (state.view.type === 'today') renderToday(); return; }
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
@@ -1016,7 +974,7 @@ document.addEventListener('click', (e) => {
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-open-today]')) { location.assign('/today'); return; }
+  if (t.closest('[data-open-today]')) { openToday(); return; }
   if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }

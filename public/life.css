@@ -499,6 +499,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .pal-hint { font-size:12.5px; color:var(--ink-3); flex:none; }
 .pal-empty { padding:26px; text-align:center; color:var(--ink-3); font-style:italic; }
 
+/* The real day planner, embedded edge-to-edge in the Life pane. */
+.today-frame { display:block; width:100%; height:100vh; border:0; background:var(--paper); }
+.pane:has(.today-frame) { padding:0; max-width:none; }
+
 /* ── today (day planner, read view) ──────────────────── */
 .tp-date { font-family:'Cormorant Garamond',serif; font-size:.6em; font-weight:400; font-style:italic; color:var(--ink-3); margin-left:8px; }
 .tp-dot { width:9px; height:9px; border-radius:50%; flex:none; background:hsl(var(--h,220) 45% 52%); }

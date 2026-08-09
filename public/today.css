@@ -197,6 +197,10 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
   position: sticky; top: 0; z-index: 20;
 }
 .bar-left { display: flex; align-items: center; gap: 18px; min-width: 0; }
+/* Embedded in the Life app: Life provides the wordmark, back-link and theme, so
+   the planner keeps only its day navigation. Also drop the sticky top gap. */
+.embed .wordmark, .embed .nav-link, .embed #theme-btn { display: none; }
+.embed .bar { position: static; backdrop-filter: none; background: transparent; padding-top: 20px; }
 
 /* On-brand wordmark, same style as Life · Robski: serif, italic accent word,
    a gold interpunct. */
