@@ -415,10 +415,12 @@ function renderTimeline() {
       ? ` title="${esc(e.title)} counts as ${esc(l.label)}. Click to ${taken ? 'stop counting it' : 'count it'}."`
       : '';
 
-    parts.push(`<div class="${cls}" style="${hue}top:${top(e.start_min)}px;height:${h}px"${attr}${hint}>
+    parts.push(`<div class="${cls}" style="${hue}top:${top(e.start_min)}px;height:${h}px" data-ev-move="${esc(e.id)}"${attr}${hint}>
+      <div class="slot-grip slot-grip-top" data-grip="top" data-ev-grip="${esc(e.id)}"></div>
       <div class="ev-t">${esc(e.title)}${taken ? ` <span class="ev-tick">✓ ${esc(l.label)}</span>` : ''}</div>
       ${h > 44 ? `<div class="ev-m">${hhmm(e.start_min)}–${hhmm(e.start_min + e.duration)}${e.location ? ' · ' + esc(e.location) : ''}</div>` : ''}
-      ${evDel(e)}</div>`);
+      ${evDel(e)}
+      <div class="slot-grip slot-grip-bottom" data-grip="bottom" data-ev-grip="${esc(e.id)}"></div></div>`);
   }
 
   for (const s of slots) {
@@ -1309,6 +1311,7 @@ let move = null;
 const SLOT_CONTROLS = '[data-check],[data-check-task],[data-unlink],[data-edit-task],[data-more],.slot-link';
 
 $('timeline').addEventListener('pointerdown', (e) => {
+  // Resize by an edge grip - a block (slot) or a calendar event.
   const grip = e.target.closest('[data-slot-grip]');
   if (grip) {
     const slot = state.data.slots.find((s) => s.id === Number(grip.dataset.slotGrip));
@@ -1317,32 +1320,42 @@ $('timeline').addEventListener('pointerdown', (e) => {
     // Capture keeps the drag alive when the pointer leaves the grip, but it
     // throws if the pointer isn't active. Never let that stop the resize arming.
     try { grip.setPointerCapture(e.pointerId); } catch {}
-    resize = {
-      id: slot.id, edge: grip.dataset.grip, y0: e.clientY,
-      start0: slot.start_min, dur0: slot.duration,
-      el: grip.closest('.slot'),
-    };
+    resize = { kind: 'slot', id: slot.id, edge: grip.dataset.grip, y0: e.clientY, start0: slot.start_min, dur0: slot.duration, el: grip.closest('.slot') };
+    resize.el.classList.add('resizing');
+    return;
+  }
+  const egrip = e.target.closest('[data-ev-grip]');
+  if (egrip) {
+    const ev = state.data.events.find((x) => x.id === egrip.dataset.evGrip);
+    if (!ev || ev.allDay) return;
+    e.preventDefault();
+    try { egrip.setPointerCapture(e.pointerId); } catch {}
+    resize = { kind: 'event', id: ev.id, edge: egrip.dataset.grip, y0: e.clientY, start0: ev.start_min, dur0: ev.duration, el: egrip.closest('.ev') };
     resize.el.classList.add('resizing');
     return;
   }
 
-  // Drag the body to move the whole block. Mouse and pen only: on touch a
-  // vertical drag on a block is how you'd scroll the page, so a tap opens the
-  // editor there instead. A tick, a link, a task row don't start a move.
+  // Drag the body to move the whole thing. Mouse and pen only: on touch a
+  // vertical drag is how you'd scroll the page, so a tap opens the editor / adopts
+  // instead. A tick, a link, a task row, a delete button don't start a move.
   if (e.pointerType === 'touch' || (e.button !== undefined && e.button !== 0)) return;
   const slotEl = e.target.closest('[data-slot]');
-  if (!slotEl || e.target.closest(SLOT_CONTROLS)) return;
-  const slot = state.data.slots.find((s) => s.id === Number(slotEl.dataset.slot));
-  if (!slot || slot.start_min === null) return;   // floating blocks live in the tray
-  const mEl = slotEl.querySelector('.slot-m');
-  move = {
-    id: slot.id, ptr: e.pointerId, y0: e.clientY,
-    start0: slot.start_min, dur: slot.duration, el: slotEl, moved: false,
-    mEl,
-    // "· Work · 2 tasks" - everything after the time range, kept as the time
-    // changes under the drag.
-    mSuffix: mEl ? mEl.textContent.replace(/^[^·]*/, '') : '',
-  };
+  const evEl = slotEl ? null : e.target.closest('[data-ev-move]');
+  const targetEl = slotEl || evEl;
+  if (!targetEl || e.target.closest(SLOT_CONTROLS) || e.target.closest('[data-ev-del]')) return;
+  if (slotEl) {
+    const slot = state.data.slots.find((s) => s.id === Number(slotEl.dataset.slot));
+    if (!slot || slot.start_min === null) return;   // floating blocks live in the tray
+    const mEl = slotEl.querySelector('.slot-m');
+    move = { kind: 'slot', id: slot.id, ptr: e.pointerId, y0: e.clientY, start0: slot.start_min, dur: slot.duration, el: slotEl, moved: false, mEl,
+      // "· Work · 2 tasks" - everything after the time range, kept as the time changes.
+      mSuffix: mEl ? mEl.textContent.replace(/^[^·]*/, '') : '' };
+  } else {
+    const ev = state.data.events.find((x) => x.id === evEl.dataset.evMove);
+    if (!ev || ev.allDay) return;
+    const mEl = evEl.querySelector('.ev-m');
+    move = { kind: 'event', id: ev.id, ptr: e.pointerId, y0: e.clientY, start0: ev.start_min, dur: ev.duration, el: evEl, moved: false, mEl, mSuffix: ev.location ? `· ${ev.location}` : '' };
+  }
 });
 
 $('timeline').addEventListener('pointermove', (e) => {
@@ -1360,7 +1373,7 @@ $('timeline').addEventListener('pointermove', (e) => {
     resize.next = { start_min: start, duration: dur };
     resize.el.style.top = `${(start - state.tl.start) * PPM}px`;
     resize.el.style.height = `${Math.max(30, dur * PPM - 3)}px`;
-    const m = resize.el.querySelector('.slot-m');
+    const m = resize.el.querySelector('.slot-m, .ev-m');
     if (m) m.textContent = `${hhmm(start)}–${hhmm(start + dur)}`;
     return;
   }
@@ -1382,21 +1395,21 @@ $('timeline').addEventListener('pointermove', (e) => {
 
 async function endPointer() {
   if (resize) {
-    const { id, next, start0, dur0, el } = resize;
+    const { kind, id, next, start0, dur0, el } = resize;
     resize = null;
     el.classList.remove('resizing');
     if (!next || (next.start_min === start0 && next.duration === dur0)) return;
     state.slotGestureAt = Date.now();
-    return persistSlot(id, next);
+    return kind === 'event' ? persistEvent(id, next) : persistSlot(id, next);
   }
   if (move) {
-    const { id, next, start0, el, moved } = move;
+    const { kind, id, next, start0, dur, el, moved } = move;
     move = null;
     el.classList.remove('moving');
-    // No real drag: leave it, the click that follows opens the editor.
+    // No real drag: leave it, the click that follows opens the editor / adopts.
     if (!moved || next === undefined || next === start0) return;
     state.slotGestureAt = Date.now();   // and swallow that click
-    return persistSlot(id, { start_min: next });
+    return kind === 'event' ? persistEvent(id, { start_min: next, duration: dur }) : persistSlot(id, { start_min: next });
   }
 }
 
@@ -1407,6 +1420,16 @@ async function persistSlot(id, patch) {
   } catch (e) {
     toast(e.message);
     await loadDay();   // snap back to where it really is
+  }
+}
+// Moving/resizing a calendar event writes back to Google (day + start + length).
+async function persistEvent(id, patch) {
+  try {
+    await api(`/api/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ day: state.data.day, ...patch }) });
+    await loadDay();
+  } catch (e) {
+    toast(e.message);
+    await loadDay();
   }
 }
 

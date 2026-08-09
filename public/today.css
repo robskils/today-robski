@@ -388,6 +388,13 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 .slot-grip:hover::after { opacity: 1; }
 .slot.resizing { box-shadow: var(--shadow); z-index: 9; }
 .slot.resizing .slot-grip::after { opacity: 1; }
+/* Calendar events are draggable too now (move + resize -> Google). */
+.ev[data-ev-move] { cursor: grab; }
+.ev.moving { cursor: grabbing; }
+.ev.moving, .ev.resizing { box-shadow: var(--shadow); z-index: 9; }
+.ev .slot-grip::after { background: var(--accent); }
+.ev:hover .slot-grip::after { opacity: .5; }
+.ev .slot-grip:hover::after, .ev.resizing .slot-grip::after { opacity: 1; }
 
 /* A task is about to be dropped into this block. */
 .slot.drop-target {
