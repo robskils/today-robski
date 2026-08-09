@@ -1091,7 +1091,9 @@ function cellInput(r, col) {
   if (col.type === 'number') return `<input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
-  return `<input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
+  // A text cell holding a URL gets a small open-link button (still editable).
+  const url = /^\s*https?:\/\/\S+\s*$/i.test(String(v ?? '')) ? String(v).trim() : null;
+  return `<span class="cellwrap${url ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}">${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
 }
 // View-only sort by a column (like the Tasks table). Type-aware; empty cells
 // always sink to the bottom whichever way you sort.
@@ -1131,7 +1133,7 @@ function renderTable() {
     ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortOf = (id) => vw.sort && vw.sort.colId === id ? vw.sort.dir : null;
-  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${sd ? `<span class="sarrow">${sd === 'asc' ? '↑' : '↓'}</span>` : ''}</button><button class="th-edit" data-edit-col="${col.id}" title="Rename column">✎</button><button class="x" data-del-col="${col.id}">×</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd === 'asc' ? '↑' : '↓'}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const body = sortRows(state.tables_rows).map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   $('#pane').innerHTML = `
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
@@ -1363,6 +1365,14 @@ document.addEventListener('click', (e) => {
   const ota = t.closest('[data-open-task]'); if (ota) { openTaskCard(ota.dataset.openTask).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-task-cur]')) { delTaskCard().catch((x) => toast(x.message)); return; }
 
+  // The ▾ on a column header opens the same menu as right-click (toggles it).
+  const cmb = t.closest('[data-col-menu]');
+  if (cmb && state.tables_view) {
+    const id = cmb.dataset.colMenu, open = state.tables_view.colMenu;
+    if (open && open.colId === id) state.tables_view.colMenu = null;
+    else { const r = cmb.getBoundingClientRect(); state.tables_view.colMenu = { colId: id, x: Math.min(r.left, window.innerWidth - 232), y: r.bottom + 4 }; }
+    renderTable(); return;
+  }
   // table column menu (right-click) actions
   if (state.tables_view && state.tables_view.colMenu) {
     const cmId = state.tables_view.colMenu.colId;

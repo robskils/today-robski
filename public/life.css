@@ -203,6 +203,15 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .th-edit { flex:none; font-size:13px; color:var(--ink-3); opacity:0; padding:0 2px; transition:opacity .12s,color .12s; }
 .thh:hover .th-edit { opacity:.6; } .th-edit:hover { opacity:1; color:var(--accent); }
 .thh .x { opacity:.35; color:var(--ink-3); font-size:15px; } .thh .x:hover { opacity:1; color:var(--accent); }
+/* The ▾ opens the full column menu (rename / type / options / sort / delete). */
+.th-menu { flex:none; width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-3); font-size:13px; opacity:.55; transition:opacity .12s,color .12s,background .12s; }
+.thh:hover .th-menu { opacity:1; } .th-menu:hover { color:var(--accent); background:var(--paper); }
+.th-type { flex:none; font-family:var(--sans,inherit); font-size:9.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); border:1px solid var(--line-2); border-radius:4px; padding:1px 4px; }
+/* URL in a text cell: a small open-link button, cell stays editable. */
+.cellwrap { position:relative; display:block; width:100%; }
+.cellwrap.has-link .cell { padding-right:30px; }
+.cell-link { position:absolute; right:8px; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; color:var(--accent); font-size:14px; text-decoration:none; opacity:.7; }
+.cell-link:hover { opacity:1; background:color-mix(in srgb,var(--accent) 14%,transparent); }
 /* Column header right-click menu. */
 .colmenu { position:fixed; z-index:60; min-width:212px; max-width:240px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 14px 34px -10px rgba(0,0,0,.35); padding:6px; display:flex; flex-direction:column; gap:1px; }
 .colmenu .cm-item { text-align:left; padding:8px 10px; border-radius:8px; font-size:15px; color:var(--ink); }
