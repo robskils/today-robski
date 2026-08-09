@@ -1083,7 +1083,7 @@ function buildPalette() {
       const hits = await api(`/api/search?q=${encodeURIComponent(q)}`);
       // A slower earlier search must not overwrite the current query's results.
       if (state.pal.q.trim() !== q) return;
-      state.pal.items = [...acts, ...hits.map((b) => ({ kind: b.kind, id: b.id, title: b.title || '(untitled)' }))];
+      state.pal.items = [...acts, ...hits.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
       state.pal.sel = 0; renderPalItems();
     } catch (e) { toast(e.message); }
   }, 150);
@@ -1114,6 +1114,19 @@ function execItem(it) {
   if (it.kind === 'table') return openTable(it.id).catch((e) => toast(e.message));
   if (it.kind === 'area') return openArea(it.id).catch((e) => toast(e.message));
   if (it.kind === 'task') return openTaskCard(it.id).catch((e) => toast(e.message));
+  if (it.kind === 'row') return openRowResult(it.parent, it.id).catch((e) => toast(e.message));
+}
+// A search hit's display label for a table row: its first filled cell value.
+function rowLabel(b) {
+  const vals = (b.props && b.props.values) || {};
+  const first = Object.values(vals).find((v) => v != null && v !== '' && v !== true && v !== false);
+  return (first != null ? String(first) : '') || 'Row';
+}
+// Open a table row found in search: open its table, then focus the row card.
+async function openRowResult(tableId, rowId) {
+  if (!tableId) return;
+  await openTable(tableId);
+  if (state.tables_view) { state.tables_view.openRow = rowId; renderTable(); window.scrollTo(0, 0); }
 }
 
 // ── events ───────────────────────────────────────────

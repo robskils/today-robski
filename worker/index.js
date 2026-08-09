@@ -611,12 +611,17 @@ async function searchBlocks(request, env, url) {
   if (q.length < 1) return json([], request);
   // Strip LIKE wildcards from the query so a stray % or _ can't match everything.
   const like = `%${q.replace(/[%_\\]/g, '')}%`;
+  // Title + body covers note/table/area/task names and note/task bodies. Table
+  // ROW contents live in props.values (JSON), so match props on rows too - that
+  // makes the cells inside every table searchable. props is only searched for
+  // rows to avoid matching internal flags/ids on other kinds.
   const { results } = await env.DB.prepare(
     `SELECT * FROM blocks
-      WHERE archived = 0 AND (title LIKE ? OR body LIKE ?)
+      WHERE archived = 0
+        AND (title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))
         AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
-      ORDER BY updated_at DESC LIMIT 50`,
-  ).bind(like, like).all();
+      ORDER BY updated_at DESC LIMIT 60`,
+  ).bind(like, like, like).all();
   return json(results.map(parseBlock), request);
 }
 
