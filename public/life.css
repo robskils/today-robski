@@ -277,7 +277,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .crumb-sep { color:var(--ink-3); opacity:.5; }
 .note-del { margin-left:auto; font-size:14px; padding:6px 12px; }
 
-.note-title { display:block; width:100%; font-family:'Cormorant Garamond',serif; font-size:clamp(30px,5vw,44px); font-weight:500; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; }
+.note-title { display:block; width:100%; font-family:'Cormorant Garamond',serif; font-size:clamp(30px,5vw,44px); font-weight:500; line-height:1.08; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; resize:none; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; }
 .note-title:focus-visible { outline:none; }
 
 .note-body { min-height:140px; font-size:18.5px; line-height:1.75; color:var(--ink); cursor:text; }

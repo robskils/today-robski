@@ -909,6 +909,9 @@ function renderTasks() {
 }
 
 // ── view: note ───────────────────────────────────────
+// Title fields are textareas so a long title wraps instead of cropping; grow
+// them to fit their content.
+function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
 function renderNote() {
   const n = state.note.current;
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
@@ -920,12 +923,12 @@ function renderNote() {
       <span class="crumb-tools">${areaSelect(n.props && n.props.area, 'data-note-area')}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
-    <input class="note-title" id="note-title" value="${esc(n.title || '')}" placeholder="Untitled">
+    <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
     <div class="note-body">${proseEditor(n.body, 'note')}</div>
     ${attachSection(n)}
     <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
       ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>`;
-  loadThumbs();
+  autoGrow($('#note-title')); loadThumbs();
 }
 
 // ── view: table ──────────────────────────────────────
@@ -1221,6 +1224,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
+  if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
 });
 // blur saves for titles/bodies
 document.addEventListener('blur', (e) => {
@@ -1231,7 +1235,7 @@ document.addEventListener('blur', (e) => {
   const cn = e.target.dataset && e.target.dataset.colname; if (cn !== undefined && cn) renameColumn(cn, e.target.value.trim());
 }, true);
 document.addEventListener('keydown', (e) => {
-  if (e.target.id === 'note-title' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+  if ((e.target.id === 'note-title' || e.target.id === 'taskcard-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
 });
 document.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -1360,7 +1364,7 @@ function renderTaskCard() {
       <button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button></span></div>
     <div class="task-focus">
       <button class="tf-check ${t.props.done ? 'done' : ''}" data-check="${t.id}" title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
-      <input class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" value="${esc(t.title || '')}" placeholder="Untitled task">
+      <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task">${esc(t.title || '')}</textarea>
     </div>
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Priority</span>
@@ -1370,7 +1374,7 @@ function renderTaskCard() {
     </div>
     ${notesSection(t.body, 'task')}
     ${attachSection(t)}`;
-  loadThumbs();
+  autoGrow($('#taskcard-title')); loadThumbs();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by
