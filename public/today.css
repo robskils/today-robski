@@ -207,6 +207,11 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 .embed #app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .embed .bar, .embed .rail { flex: none; }
 .embed .grid { flex: 1; min-height: 0; overflow-y: auto; }
+/* The grid is the scroll container here, and the bar + rail live OUTSIDE it, so
+   the sticky Practices/Tasks columns must stick to the grid's own top - not
+   offset by bar-h + rail-h, which shoved them ~187px down and left dead space
+   above them while the (non-sticky) Schedule sat at the top. */
+.embed .col-acts, .embed .col-tasks { top: 0; max-height: calc(100vh - var(--bar-h, 76px) - var(--rail-h, 0px) - 24px); }
 
 /* On-brand wordmark, same style as Life · Robski: serif, italic accent word,
    a gold interpunct. */
