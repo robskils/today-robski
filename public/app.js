@@ -53,6 +53,32 @@ function mdToHtml(md) {
   flush();
   return out.join('');
 }
+// Turn any bare http(s) URL into a clickable link, without touching URLs that
+// are already inside an <a> (or a <code> span). Works on rendered HTML.
+const BARE_URL = /\bhttps?:\/\/[^\s<>()]+[^\s<>().,;:!?'"]/gi;
+function linkifyHtml(html) {
+  if (!html || !/https?:\/\//i.test(html)) return html || '';
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  const walk = (node) => {
+    [...node.childNodes].forEach((c) => {
+      if (c.nodeType === 1) { const tn = c.tagName; if (tn !== 'A' && tn !== 'CODE') walk(c); return; }
+      if (c.nodeType !== 3 || !/https?:\/\//i.test(c.nodeValue)) return;
+      const text = c.nodeValue; const frag = doc.createDocumentFragment(); let last = 0; let m;
+      BARE_URL.lastIndex = 0;
+      while ((m = BARE_URL.exec(text))) {
+        if (m.index > last) frag.appendChild(doc.createTextNode(text.slice(last, m.index)));
+        const a = doc.createElement('a');
+        a.setAttribute('href', m[0]); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer');
+        a.textContent = m[0]; frag.appendChild(a); last = m.index + m[0].length;
+      }
+      if (!frag.childNodes.length) return;
+      if (last < text.length) frag.appendChild(doc.createTextNode(text.slice(last)));
+      c.replaceWith(frag);
+    });
+  };
+  walk(doc.body);
+  return doc.body.innerHTML;
+}
 // Existing notes were imported as Markdown; new ones are saved as clean HTML.
 // Render either: if it already looks like HTML, trust it; else convert once.
 function bodyToHtml(body) {
@@ -61,7 +87,8 @@ function bodyToHtml(body) {
   // Only the rich editor's own output (block-wrapped) is treated as HTML.
   // Imported bodies are Markdown that may contain an inline <a>, so keying on
   // block tags avoids mis-rendering a whole note as raw HTML.
-  return /<(p|h[1-3]|blockquote|div|ul|ol)[\s>]/i.test(s) ? s : mdToHtml(body);
+  const html = /<(p|h[1-3]|blockquote|div|ul|ol)[\s>]/i.test(s) ? s : mdToHtml(body);
+  return linkifyHtml(html);
 }
 // An always-on inline editor. No modes, no markup - you just write, and the
 // selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
@@ -856,8 +883,10 @@ function renderNote() {
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <input class="note-title" id="note-title" value="${esc(n.title || '')}" placeholder="Untitled">
     <div class="note-body">${proseEditor(n.body, 'note')}</div>
+    ${attachSection(n)}
     <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
       ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>`;
+  loadThumbs();
 }
 
 // ── view: table ──────────────────────────────────────
@@ -897,7 +926,9 @@ function renderTable() {
       const title = (r.props.values || {})[c[0] && c[0].id] || 'Untitled';
       $('#pane').innerHTML = `<div class="card"><button class="ghost" data-back-table>← ${esc(t.title || 'table')}</button>
         <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
-        ${notesSection(r.body, 'row')}</div>`;
+        ${notesSection(r.body, 'row')}
+        ${attachSection(r)}</div>`;
+      loadThumbs();
       return;
     }
   }
@@ -949,7 +980,7 @@ async function setCell(rowId, colId, value) {
 }
 
 // ── palette (⌘K) ─────────────────────────────────────
-function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0 }; buildPalette(); renderPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
+function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
 const ACTIONS = [
   { kind: 'action', title: 'New note', run: () => newNote(null) },
@@ -967,27 +998,37 @@ function buildPalette() {
       ...state.noteTops.slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
       ...state.tables.slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' })),
       ...state.areas.slice(0, 6).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }))];
-    renderPalette(); return;
+    state.pal.sel = 0; renderPalItems(); return;
   }
   const acts = ACTIONS.filter((a) => a.title.toLowerCase().includes(q.toLowerCase()));
   clearTimeout(palT);
   palT = setTimeout(async () => {
     try {
       const hits = await api(`/api/search?q=${encodeURIComponent(q)}`);
+      // A slower earlier search must not overwrite the current query's results.
+      if (state.pal.q.trim() !== q) return;
       state.pal.items = [...acts, ...hits.map((b) => ({ kind: b.kind, id: b.id, title: b.title || '(untitled)' }))];
-      state.pal.sel = 0; renderPalette();
+      state.pal.sel = 0; renderPalItems();
     } catch (e) { toast(e.message); }
   }, 150);
 }
+// The palette shell (with its <input>) is rendered once. Every keystroke updates
+// only the results list, so the input element - and the caret in it - is never
+// torn down mid-typing.
 function renderPalette() {
   if (!state.pal.open) return;
-  const items = state.pal.items;
   $('#palette').innerHTML = `<div class="pal-bg" data-pal-bg><div class="pal">
     <input id="pal-input" placeholder="Search notes, tables, tasks — or type a command…" value="${esc(state.pal.q)}" autocomplete="off">
-    <div class="pal-list">${items.length ? items.map((it, i) => `<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
-      <span class="pal-kind ${it.kind === 'action' ? '' : 'muted'}">${it.kind === 'action' ? '↵' : esc(it.kind)}</span>
-      <span class="pal-t">${esc(it.title)}</span>${it.kind === 'action' ? '' : '<span class="pal-hint">open</span>'}</div>`).join('') : '<div class="pal-empty">No matches.</div>'}</div></div></div>`;
+    <div class="pal-list" id="pal-list"></div></div></div>`;
+  renderPalItems();
   $('#pal-input').focus();
+}
+function renderPalItems() {
+  const el = $('#pal-list'); if (!el) return;
+  const items = state.pal.items;
+  el.innerHTML = items.length ? items.map((it, i) => `<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
+      <span class="pal-kind ${it.kind === 'action' ? '' : 'muted'}">${it.kind === 'action' ? '↵' : esc(it.kind)}</span>
+      <span class="pal-t">${esc(it.title)}</span>${it.kind === 'action' ? '' : '<span class="pal-hint">open</span>'}</div>`).join('') : '<div class="pal-empty">No matches.</div>';
 }
 function execItem(it) {
   closePalette();
@@ -1007,8 +1048,8 @@ document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyW') { e.preventDefault(); closeTab(state.activeTab); return; }
   if (!state.pal.open) return;
   if (e.key === 'Escape') { closePalette(); return; }
-  if (e.key === 'ArrowDown') { e.preventDefault(); state.pal.sel = Math.min(state.pal.items.length - 1, state.pal.sel + 1); renderPalette(); }
-  if (e.key === 'ArrowUp') { e.preventDefault(); state.pal.sel = Math.max(0, state.pal.sel - 1); renderPalette(); }
+  if (e.key === 'ArrowDown') { e.preventDefault(); state.pal.sel = Math.min(state.pal.items.length - 1, state.pal.sel + 1); renderPalItems(); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); state.pal.sel = Math.max(0, state.pal.sel - 1); renderPalItems(); }
   if (e.key === 'Enter') { e.preventDefault(); execItem(state.pal.items[state.pal.sel]); }
 });
 document.addEventListener('input', (e) => {
@@ -1019,6 +1060,10 @@ document.addEventListener('input', (e) => {
 let proseT;
 document.addEventListener('click', (e) => {
   const t = e.target;
+  // Any http(s) link opens in a new tab / the default browser, even from inside
+  // an always-editable prose region (where a plain click would just set the caret).
+  const alink = t.closest('a[href]');
+  if (alink && /^https?:/i.test(alink.getAttribute('href') || '')) { e.preventDefault(); window.open(alink.href, '_blank', 'noopener'); return; }
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
@@ -1039,6 +1084,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
   if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
+  // attachments (delete wins over open since the × sits inside the tile)
+  const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
+  const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }
   const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(Number(mo.dataset.mailOpen)); return; }
@@ -1126,6 +1174,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
+  const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
 });
 // blur saves for titles/bodies
 document.addEventListener('blur', (e) => {
@@ -1158,8 +1207,17 @@ document.addEventListener('dragstart', (e) => {
 document.addEventListener('dragover', (e) => {
   if (dragFav && e.target.closest('#favs')) e.preventDefault();
   if (dragSec && e.target.closest('#nav-secs')) e.preventDefault();
+  const z = e.target.closest('[data-att-zone]');
+  if (z && !dragFav && !dragSec && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); z.classList.add('att-drag'); }
+});
+document.addEventListener('dragleave', (e) => {
+  const z = e.target.closest('[data-att-zone]'); if (z && !z.contains(e.relatedTarget)) z.classList.remove('att-drag');
 });
 document.addEventListener('drop', (e) => {
+  const z = e.target.closest('[data-att-zone]');
+  if (z && !dragFav && !dragSec && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+    e.preventDefault(); z.classList.remove('att-drag'); uploadFiles(z.dataset.attZone, e.dataTransfer.files); return;
+  }
   if (dragFav) {
     e.preventDefault(); const over = e.target.closest('[data-fav-id]');
     reorderFavs(dragFav, over && over.dataset.favId !== dragFav ? over.dataset.favId : null); dragFav = null; return;
@@ -1264,7 +1322,9 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Life area</span>
         <select class="sel" data-area-task="${t.id}"><option value="">No area</option>${state.areas.map((x) => `<option value="${x.id}" ${t.props.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
     </div>
-    ${notesSection(t.body, 'task')}`;
+    ${notesSection(t.body, 'task')}
+    ${attachSection(t)}`;
+  loadThumbs();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by
@@ -1272,14 +1332,98 @@ function renderTaskCard() {
 function notesSection(body, key) {
   return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key)}</section>`;
 }
+
+// ── attachments (R2-backed files on a block) ─────────
+const fmtBytes = (n) => (n < 1024 ? `${n} B` : n < 1048576 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`);
+const isImgType = (t) => /^image\//.test(t || '');
+const attIcon = (t) => (t === 'application/pdf' ? '📄' : isImgType(t) ? '🖼' : /^audio\//.test(t) ? '🎵' : /^video\//.test(t) ? '🎬' : '📎');
+
+// The block whose props.attachments the current view is showing.
+function attHost() {
+  if (state.view.type === 'note') return state.note && state.note.current;
+  if (state.view.type === 'taskcard') return state.task_open && state.task_open.task;
+  if (state.view.type === 'table' && state.tables_view && state.tables_view.openRow) {
+    return state.tables_rows && state.tables_rows.find((x) => x.id === state.tables_view.openRow);
+  }
+  return null;
+}
+function rerenderHost() {
+  if (state.view.type === 'note') renderNote();
+  else if (state.view.type === 'taskcard') renderTaskCard();
+  else if (state.view.type === 'table') renderTable();
+}
+function attachSection(block) {
+  const list = (block && block.props && block.props.attachments) || [];
+  const tiles = list.map((a) => (isImgType(a.type)
+    ? `<div class="att att-img" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><img data-att-thumb="${a.id}" alt="${esc(a.name)}"><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`
+    : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
+  return `<section class="attachments" data-att-zone="${block.id}">
+    <div class="att-h">Attachments${list.length ? ` · ${list.length}` : ''}</div>
+    <div class="att-grid">${tiles}<label class="att-add"><input type="file" multiple hidden data-att-input="${block.id}"><span class="att-add-ic">+</span><span>Add file</span></label></div></section>`;
+}
+// blob: URLs, so a thumbnail or preview is fetched once and the Bearer token
+// never lands in a URL.
+const attUrls = new Map();
+async function attUrl(blockId, att) {
+  if (attUrls.has(att.id)) return attUrls.get(att.id);
+  const res = await fetch(`/api/attachments/${blockId}/${att.id}`, { headers: { Authorization: `Bearer ${token()}` } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const url = URL.createObjectURL(await res.blob());
+  attUrls.set(att.id, url);
+  return url;
+}
+async function loadThumbs() {
+  const host = attHost(); if (!host) return;
+  for (const a of (host.props && host.props.attachments) || []) {
+    if (!isImgType(a.type)) continue;
+    const img = document.querySelector(`img[data-att-thumb="${a.id}"]`);
+    if (!img || img.dataset.loaded) continue;
+    try { img.src = await attUrl(host.id, a); img.dataset.loaded = '1'; } catch {}
+  }
+}
+async function openAttachment(blockId, attId) {
+  try {
+    const host = attHost();
+    const att = host && (host.props.attachments || []).find((a) => a.id === attId);
+    window.open(await attUrl(blockId, att || { id: attId }), '_blank', 'noopener');
+  } catch (e) { toast('Could not open: ' + e.message); }
+}
+async function uploadFiles(blockId, files) {
+  const host = attHost(); if (!host || host.id !== blockId) return;
+  let ok = 0;
+  for (const f of Array.from(files)) {
+    try {
+      const res = await fetch(`/api/blocks/${blockId}/attachments?name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: f });
+      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
+      const att = await res.json();
+      host.props = host.props || {};
+      host.props.attachments = [...(host.props.attachments || []), att];
+      ok++;
+    } catch (e) { toast('Upload failed: ' + e.message); }
+  }
+  if (ok) { rerenderHost(); loadThumbs(); }
+}
+async function deleteAttachment(blockId, attId) {
+  const host = attHost(); if (!host) return;
+  try { await api(`/api/attachments/${blockId}/${attId}`, { method: 'DELETE' }); } catch (e) { toast(e.message); return; }
+  host.props.attachments = (host.props.attachments || []).filter((a) => a.id !== attId);
+  const u = attUrls.get(attId); if (u) { URL.revokeObjectURL(u); attUrls.delete(attId); }
+  rerenderHost();
+}
 // Save a rich-text region back to whichever block it belongs to.
 async function saveProse(key, rawHtml) {
-  const html = sanitizeProse(rawHtml);
+  const html = linkifyHtml(sanitizeProse(rawHtml));
   let id;
   if (key === 'note') { const n = state.note && state.note.current; if (!n) return; n.body = html; id = n.id; }
   else if (key === 'task') { const t = state.task_open && state.task_open.task; if (!t) return; t.body = html; id = t.id; }
   else if (key === 'row') { const r = state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)); if (!r) return; r.body = html; id = r.id; }
   if (!id) return;
+  // Reflect the linkified/sanitised HTML back into the editor once it's blurred,
+  // so a freshly typed URL becomes a link. Never while focused - that would move
+  // the caret and eat what's being typed.
+  const el = document.querySelector(`.prose[data-prose="${key}"]`);
+  if (el && document.activeElement !== el && el.innerHTML !== html) el.innerHTML = html;
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {

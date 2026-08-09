@@ -111,10 +111,15 @@ async function imapOpen(env, acct) {
         if (!/^\* \d+ FETCH/.test(l)) continue;
         const uid = (l.match(/UID (\d+)/) || [])[1];
         const flags = (l.match(/FLAGS \(([^)]*)\)/) || [])[1] || '';
-        const from = decodeWords((l.match(/^From:\s*(.*)$/mi) || [])[1] || '');
-        const subject = decodeWords((l.match(/^Subject:\s*(.*)$/mi) || [])[1] || '') || '(no subject)';
-        const date = (l.match(/^Date:\s*(.*)$/mi) || [])[1] || '';
-        if (uid) msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), from: parseAddr(from), subject: subject.trim(), date: parseDate(date) });
+        // The header literal is glued straight onto the FETCH prefix, so the
+        // first header (From) is NOT at a line start. Strip the prefix up to the
+        // closing ] of BODY[HEADER.FIELDS (...)] and anchor each header on \n.
+        const hdr = '\n' + l.replace(/^\* \d+ FETCH .*?\]\s*/s, '');
+        const grab = (name) => decodeWords((hdr.match(new RegExp(`\\n${name}:\\s*([^\\r\\n]*)`, 'i')) || [])[1] || '').trim();
+        const from = grab('From');
+        const subject = grab('Subject') || '(no subject)';
+        const date = grab('Date');
+        if (uid) msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), from: parseAddr(from), subject, date: parseDate(date) });
       }
       msgs.sort((a, b) => (a.uid < b.uid ? 1 : -1));
       return msgs.slice(0, limit);

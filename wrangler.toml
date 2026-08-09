@@ -71,6 +71,16 @@ binding = "DB"
 database_name = "today-robski"
 database_id = "22cfad75-5c6f-463c-9dfc-fb96c9257ee8"
 
+# ── R2 ────────────────────────────────────────────────────────────────
+# Note/task/row file attachments. Bytes live here; the per-block list is in
+# props.attachments. ENABLE: turn on R2 in the dashboard, then
+#   npx wrangler r2 bucket create life-attachments
+# and uncomment the binding below + redeploy. Until then the attach button
+# returns a friendly 501 (handleAttachments guards on env.ATTACHMENTS).
+# [[r2_buckets]]
+# binding = "ATTACHMENTS"
+# bucket_name = "life-attachments"
+
 # ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
 #   AUTH_SECRET           signs the 7-day session JWTs. Rotating it signs
 #                         everyone out, which is the panic button.

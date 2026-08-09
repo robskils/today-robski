@@ -2,6 +2,7 @@ import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, requestCode, verifyCode } from './auth.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail } from './mail.js';
+import { handleAttachments } from './attachments.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -1453,6 +1454,9 @@ export default {
       if (path === '/api/favorites' && request.method === 'GET') return handleFavorites(request, env);
       if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
       if (path === '/api/blocks/bulk' && request.method === 'POST') return createBlocksBulk(request, env);
+      // Attachments: upload nests under a block, fetch/delete under /api/attachments.
+      if (path.startsWith('/api/attachments/')) return handleAttachments(request, env, url, json, err);
+      if (/^\/api\/blocks\/[\w-]+\/attachments$/.test(path) && request.method === 'POST') return handleAttachments(request, env, url, json, err);
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
       if (path === '/api/migrate/tasks' && request.method === 'POST') return migrateTasks(request, env);
       const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);
