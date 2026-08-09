@@ -203,6 +203,9 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 .embed .bar { position: static; backdrop-filter: none; background: transparent; padding-top: 20px; }
 /* Embedded, only the schedule scrolls: the header (day + date) and the lane
    rail stay put, the grid below them scrolls on its own. */
+/* Embedded in the Life app: let Life's own paper show through so the day planner
+   sits on the same background as the rest of the app, in either theme. */
+.embed html, .embed body { background: transparent; }
 .embed body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
 .embed #app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .embed .bar, .embed .rail { flex: none; }

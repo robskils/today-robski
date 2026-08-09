@@ -195,6 +195,72 @@ function navSection(key, v) {
     ${collapsed ? '' : `<div class="nav-sec-body">${rows}</div>`}
   </div>`;
 }
+// ── theme: automatic by local sunrise/sunset, overridable by the button ──
+// Mode lives in life.theme.mode ('auto'|'light'|'dark'); the resolved light/dark
+// is mirrored to today.theme so the first-paint inline script and the embedded
+// Today planner match.
+function themeMode() { const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
+function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
+let themeTimer;
+function applyTheme(rerender) {
+  const m = themeMode();
+  const dark = m === 'dark' ? true : m === 'light' ? false : autoIsDark();
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  try { localStorage.setItem('today.theme', dark ? 'dark' : 'light'); } catch {}
+  if (rerender) { renderNav(); if (state.view && state.view.type === 'today') renderToday(); }
+  else { const b = document.querySelector('[data-theme-toggle]'); if (b) b.textContent = themeLabel(); }
+  clearTimeout(themeTimer);
+  // In auto mode, re-check every few minutes so it flips at sunrise/sunset.
+  if (m === 'auto') themeTimer = setTimeout(() => applyTheme(false), 5 * 60 * 1000);
+}
+function cycleTheme() {
+  const order = ['auto', 'light', 'dark'];
+  const next = order[(order.indexOf(themeMode()) + 1) % 3];
+  try { localStorage.setItem('life.theme.mode', next); } catch {}
+  applyTheme(true);
+  if (next === 'auto') ensureLoc();
+}
+function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(); }
+function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
+function ensureLoc() {
+  if (cachedLoc() || !navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    (p) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: p.coords.latitude, lng: p.coords.longitude })); } catch {} applyTheme(false); },
+    () => {}, { maximumAge: 6 * 3600 * 1000, timeout: 8000 });
+}
+function autoIsDark() {
+  const loc = cachedLoc();
+  if (!loc) return matchMedia('(prefers-color-scheme: dark)').matches;   // until we know where you are
+  const now = new Date();
+  const s = sunTimes(now, loc.lat, loc.lng);
+  if (!s.sunrise || !s.sunset) return matchMedia('(prefers-color-scheme: dark)').matches;  // polar day/night
+  const t = now.getTime();
+  return t < s.sunrise.getTime() || t >= s.sunset.getTime();
+}
+// Sunrise/sunset for a date + lat/lng (standard sunrise-equation), returning UTC
+// Date objects. Good to ~a minute, which is plenty for a theme switch.
+function sunTimes(date, lat, lng) {
+  const rad = Math.PI / 180, deg = 180 / Math.PI;
+  const y = date.getUTCFullYear(), mo = date.getUTCMonth(), d = date.getUTCDate();
+  const day = Math.floor((Date.UTC(y, mo, d) - Date.UTC(y, 0, 0)) / 86400000);
+  const zenith = 90.833 * rad, lngHour = lng / 15;
+  const calc = (rise) => {
+    const t = day + ((rise ? 6 : 18) - lngHour) / 24;
+    const M = 0.9856 * t - 3.289;
+    let L = M + 1.916 * Math.sin(M * rad) + 0.020 * Math.sin(2 * M * rad) + 282.634; L = ((L % 360) + 360) % 360;
+    let RA = deg * Math.atan(0.91764 * Math.tan(L * rad)); RA = ((RA % 360) + 360) % 360;
+    RA += Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90; RA /= 15;
+    const sinDec = 0.39782 * Math.sin(L * rad), cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(zenith) - sinDec * Math.sin(lat * rad)) / (cosDec * Math.cos(lat * rad));
+    if (cosH > 1 || cosH < -1) return null;
+    let H = rise ? 360 - deg * Math.acos(cosH) : deg * Math.acos(cosH); H /= 15;
+    let UT = H + RA - 0.06571 * t - 6.622 - lngHour; UT = ((UT % 24) + 24) % 24;
+    return UT;
+  };
+  const mk = (ut) => (ut == null ? null : new Date(Date.UTC(y, mo, d) + ut * 3600000));
+  return { sunrise: mk(calc(true)), sunset: mk(calc(false)) };
+}
+
 function renderNav() {
   const v = state.view;
   const dark = document.documentElement.dataset.theme === 'dark';
@@ -202,8 +268,6 @@ function renderNav() {
     <div class="nav-brand" data-view-home title="Home"><em>Life</em><span class="dot">·</span>Robski</div>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
-      <button data-open-today title="Your day">Today</button>
-      <button data-theme-toggle title="Switch to ${dark ? 'daytime' : 'night'}">${dark ? '☀ Day' : '☾ Night'}</button>
     </div>
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
@@ -214,7 +278,10 @@ function renderNav() {
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span> Notes</button>
     <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
-    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>`;
+    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
+    <div class="nav-bottom">
+      <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
+    </div>`;
   renderTabbar(v);
   syncActiveTab(); renderTabs();
 }
@@ -1171,7 +1238,7 @@ document.addEventListener('click', (e) => {
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
   if (t.closest('[data-tab-new]')) { newTab(); return; }
-  if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); renderNav(); if (state.view.type === 'today') renderToday(); return; }
+  if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
@@ -1304,15 +1371,35 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
   if (e.target.matches('[data-cm-addopt]')) { const i = $('#cm-opt-input'); if (i && state.tables_view && state.tables_view.colMenu) addColOption(state.tables_view.colMenu.colId, i.value); }
 });
-// drag to reorder favourites on the home, and to reorder the sidebar sections
+// drag to reorder favourites on the home, and to reorder the sidebar sections.
+// A dragged item dims; the item it would land next to shows an accent insertion
+// line (above or below, following the pointer) so the drop target is obvious.
 let dragFav = null, dragSec = null;
+function clearDropMarks() {
+  document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
+}
+function markDrop(over, e) {
+  clearDropMarks();
+  if (!over) return;
+  const r = over.getBoundingClientRect();
+  const vertical = r.height >= r.width; // sidebar sections stack; home favs may sit side by side
+  const after = vertical ? e.clientY > r.top + r.height / 2 : e.clientX > r.left + r.width / 2;
+  over.classList.add(after ? 'drop-after' : 'drop-before');
+}
+// The key/id of the sibling to insert BEFORE, given the marked drop target.
+function dropBefore(over, list, idOf) {
+  if (!over) return null;
+  const key = idOf(over);
+  if (over.classList.contains('drop-after')) { const i = list.indexOf(key); return i >= 0 && i + 1 < list.length ? list[i + 1] : null; }
+  return key;
+}
 document.addEventListener('dragstart', (e) => {
-  const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; e.dataTransfer.effectAllowed = 'move'; return; }
-  const s = e.target.closest('.nav-sec-h'); if (s) { dragSec = s.closest('[data-nav-sec]').dataset.navSec; e.dataTransfer.effectAllowed = 'move'; }
+  const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
 });
 document.addEventListener('dragover', (e) => {
-  if (dragFav && e.target.closest('#favs')) e.preventDefault();
-  if (dragSec && e.target.closest('#nav-secs')) e.preventDefault();
+  if (dragFav && e.target.closest('#favs')) { e.preventDefault(); markDrop(e.target.closest('[data-fav-id]'), e); return; }
+  if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e); return; }
   const z = e.target.closest('[data-att-zone]');
   if (z && !dragFav && !dragSec && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); z.classList.add('att-drag'); }
 });
@@ -1326,14 +1413,16 @@ document.addEventListener('drop', (e) => {
   }
   if (dragFav) {
     e.preventDefault(); const over = e.target.closest('[data-fav-id]');
-    reorderFavs(dragFav, over && over.dataset.favId !== dragFav ? over.dataset.favId : null); dragFav = null; return;
+    const before = over && over.dataset.favId !== dragFav ? dropBefore(over, state.favs.map((x) => `${x.kind}:${x.id}`), (el) => el.dataset.favId) : null;
+    clearDropMarks(); reorderFavs(dragFav, before); dragFav = null; return;
   }
   if (dragSec) {
     e.preventDefault(); const over = e.target.closest('[data-nav-sec]');
-    reorderSecs(dragSec, over && over.dataset.navSec !== dragSec ? over.dataset.navSec : null); dragSec = null;
+    const before = over && over.dataset.navSec !== dragSec ? dropBefore(over, state.nav.order, (el) => el.dataset.navSec) : null;
+    clearDropMarks(); reorderSecs(dragSec, before); dragSec = null;
   }
 });
-document.addEventListener('dragend', () => { dragFav = null; dragSec = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); dragFav = null; dragSec = null; });
 
 // column resize (pointer)
 let resizing = null;
@@ -1716,6 +1805,7 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
 
 // ── boot ─────────────────────────────────────────────
 (async function boot() {
+  initTheme();
   if (!token()) { showGate(); return; }
   try {
     [state.noteTops, state.tables, state.areas, state.favs] = await Promise.all([

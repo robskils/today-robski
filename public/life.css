@@ -358,6 +358,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-foot { display:flex; gap:6px; padding:0 6px; margin:2px 0 12px; }
 .nav-foot a, .nav-foot button { font-size:13px; color:var(--ink-3); padding:6px 8px; border-radius:7px; text-decoration:none; }
 .nav-foot a:hover, .nav-foot button:hover { background:var(--paper); color:var(--ink); }
+/* Theme switch pinned to the bottom of the sidebar. */
+.nav-bottom { margin-top:auto; padding-top:12px; }
+.nav-theme { width:100%; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; border-radius:10px; color:var(--ink-2); font-size:14.5px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
+.nav-theme:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
+/* Drag-to-reorder feedback: the dragged item dims and the drop target shows an
+   accent insertion line so it's obvious where it will land. */
+.nav-sec, [data-fav-id] { position:relative; }
+.nav-sec.dragging, [data-fav-id].dragging { opacity:.4; }
+.nav-sec.drop-before::before, .nav-sec.drop-after::after { content:''; position:absolute; left:6px; right:6px; height:3px; border-radius:2px; background:var(--accent); z-index:4; pointer-events:none; }
+.nav-sec.drop-before::before { top:-3px; } .nav-sec.drop-after::after { bottom:-3px; }
+[data-fav-id].drop-before { box-shadow:inset 3px 0 0 var(--accent); }
+[data-fav-id].drop-after { box-shadow:inset -3px 0 0 var(--accent); }
 
 .pane { min-width:0; padding:30px clamp(20px,4vw,52px) 90px; max-width:1100px; }
 
@@ -682,6 +694,9 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-foot { margin:0; }
   .nav-item, .nav-secs, .nav-spacer, .foot-search { display:none; }
   [data-open-today] { display:none; }   /* the day planner is desktop-only */
+  /* No bottom on a horizontal bar: the theme switch sits inline with the brand. */
+  .nav-bottom { margin-top:0; padding-top:0; order:3; }
+  .nav-theme { width:auto; border:0; background:transparent; padding:6px 9px; font-size:14px; }
   /* A real, tappable search box on every page (opens the universal palette). */
   .nav-k { display:flex; order:5; flex-basis:100%; margin:10px 0 0; font-size:16px; padding:12px 14px; }
   .pane { padding:20px 18px 96px; }
