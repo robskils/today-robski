@@ -639,7 +639,10 @@ async function searchBlocks(request, env, url) {
       WHERE archived = 0
         AND (title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))
         AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
-      ORDER BY updated_at DESC LIMIT 60`,
+      ORDER BY
+        CASE kind WHEN 'note' THEN 0 WHEN 'table' THEN 1 WHEN 'area' THEN 2 WHEN 'task' THEN 3 WHEN 'row' THEN 4 ELSE 5 END,
+        updated_at DESC
+      LIMIT 60`,
   ).bind(like, like, like).all();
   return json(results.map(parseBlock), request);
 }
