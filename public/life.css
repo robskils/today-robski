@@ -231,11 +231,11 @@ table.recs select.cell { appearance:none; cursor:pointer; }
 .colnew input { width:130px; }
 
 /* open-as-card handle, first cell of each row */
-.th-open, td.row-open { width:46px; text-align:center; }
+.th-open, td.row-open { width:52px; text-align:center; padding-left:0; padding-right:0; }
 /* The whole left-most cell opens the row - a big, obvious click target, not a
    tiny button. It lights up on row hover so it reads as clickable. */
 td.row-open { cursor:pointer; color:var(--ink-3); transition:background .12s,color .12s; }
-td.row-open .ro-ic { font-size:16px; opacity:.35; transition:opacity .12s; pointer-events:none; }
+td.row-open .ro-ic { display:inline-flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:19px; opacity:.45; transition:opacity .12s; pointer-events:none; }
 tr:hover td.row-open { background:color-mix(in srgb,var(--accent) 9%,transparent); color:var(--accent); }
 tr:hover td.row-open .ro-ic { opacity:1; }
 @media (hover:none){ td.row-open .ro-ic { opacity:.7; } }
@@ -509,8 +509,25 @@ table.ttable tr:last-child td { border-bottom:0; }
 .pal-hint { font-size:12.5px; color:var(--ink-3); flex:none; }
 .pal-empty { padding:26px; text-align:center; color:var(--ink-3); font-style:italic; }
 
+/* Tabs: a strip above the pane; each tab is a saved view. */
+.main { min-width:0; display:flex; flex-direction:column; }
+.tabstrip { position:sticky; top:0; z-index:25; display:flex; align-items:center; gap:4px; height:44px; box-sizing:border-box; padding:6px 10px; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+.tabstrip::-webkit-scrollbar { display:none; }
+.tabstrip .tab { display:inline-flex; align-items:center; gap:7px; max-width:190px; padding:6px 9px 6px 11px; border-radius:9px; color:var(--ink-3); font-size:14px; white-space:nowrap; flex:none; transition:background .12s,color .12s; }
+.tabstrip .tab:hover { background:var(--paper-2); color:var(--ink-2); }
+.tabstrip .tab.on { background:var(--card); color:var(--ink); box-shadow:var(--shadow); font-weight:500; }
+.tabstrip .tab-ic { font-size:11px; color:var(--ink-3); flex:none; }
+.tabstrip .tab.on .tab-ic { color:var(--accent); }
+.tabstrip .tab-t { overflow:hidden; text-overflow:ellipsis; }
+.tabstrip .tab-x { opacity:0; font-size:15px; line-height:1; padding:2px 4px; border-radius:5px; margin-left:2px; transition:opacity .12s,color .12s,background .12s; }
+.tabstrip .tab:hover .tab-x, .tabstrip .tab.on .tab-x { opacity:.5; }
+.tabstrip .tab-x:hover { opacity:1; color:var(--accent); background:var(--paper); }
+.tab-new { flex:none; width:30px; height:30px; border-radius:8px; color:var(--ink-3); font-size:20px; line-height:1; }
+.tab-new:hover { background:var(--paper-2); color:var(--accent); }
+@media (max-width:820px){ .tabstrip { display:none; } }
+
 /* The real day planner, embedded edge-to-edge in the Life pane. */
-.today-frame { display:block; width:100%; height:100vh; border:0; background:var(--paper); }
+.today-frame { display:block; width:100%; height:calc(100vh - 44px); border:0; background:var(--paper); }
 .pane:has(.today-frame) { padding:0; max-width:none; }
 
 /* ── today (day planner, read view) ──────────────────── */
@@ -547,26 +564,54 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-atabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
 .mail-atab { padding:7px 15px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); font-size:15px; }
 .mail-atab.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:var(--shadow); border-color:var(--line-2); }
-.mail-list { border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
-.mail-row { display:grid; grid-template-columns:minmax(90px,150px) 1fr auto; gap:14px; align-items:baseline; width:100%; text-align:left; padding:14px 16px; border-bottom:1px solid var(--line); transition:background .12s; }
+/* Two-pane client: message list on the left, reading pane on the right. */
+.mail-layout { display:flex; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--card); box-shadow:var(--shadow); min-height:64vh; }
+.mail-list-col { flex:none; width:360px; border-right:1px solid var(--line); overflow-y:auto; max-height:calc(100vh - 190px); }
+.mail-reader { flex:1; min-width:0; overflow-y:auto; max-height:calc(100vh - 190px); display:flex; flex-direction:column; }
+.mail-list { display:block; }
+.mail-row { display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left; padding:13px 16px; border-bottom:1px solid var(--line); transition:background .12s; }
 .mail-row:last-child { border-bottom:0; }
 .mail-row:hover { background:var(--paper-2); }
-.mail-from { color:var(--ink-2); font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mail-subject { color:var(--ink); font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mail-date { color:var(--ink-3); font-size:14px; white-space:nowrap; }
-.mail-row.unread .mail-from, .mail-row.unread .mail-subject { font-weight:700; color:var(--ink); }
+.mail-row.sel { background:color-mix(in srgb,var(--accent) 8%,transparent); }
+.mail-avatar { flex:none; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:color-mix(in srgb,var(--accent) 16%,var(--paper-2)); color:var(--accent); font-size:16px; font-weight:600; }
+.mail-avatar.big { width:44px; height:44px; font-size:18px; }
+.mail-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.mail-row-top { display:flex; gap:10px; align-items:baseline; justify-content:space-between; }
+.mail-from { color:var(--ink); font-size:15px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mail-subject { color:var(--ink-2); font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mail-date { color:var(--ink-3); font-size:13px; white-space:nowrap; flex:none; }
 .mail-row.unread { box-shadow:inset 3px 0 0 var(--accent); }
-.mail-msg { max-width:760px; }
-.mail-subj { font-size:clamp(24px,3.5vw,32px); margin:14px 0 10px; text-wrap:balance; }
-.mail-meta { display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; color:var(--ink-3); font-size:15px; margin-bottom:8px; }
-.mail-meta b { color:var(--ink); font-weight:600; } .mail-meta .mail-when { margin-left:auto; }
-.mail-att { color:var(--ink-2); font-size:14.5px; margin-bottom:12px; }
-.mail-text { font-size:16.5px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-wrap:break-word; font-family:inherit; margin:14px 0; }
+.mail-row.unread .mail-from { font-weight:700; } .mail-row.unread .mail-subject { color:var(--ink); font-weight:500; }
+.mail-empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--ink-3); font-size:16px; }
+.mail-msg { padding:20px 26px 28px; }
+.mail-reader-head { display:flex; align-items:center; gap:10px; }
+.mail-reader-head .mail-msg-act { margin-left:auto; margin-top:0; }
+.mail-reader-title { font-weight:500; color:var(--ink-2); }
+.mail-back { display:none; }
+.mail-subj { font-size:clamp(21px,2.6vw,28px); margin:14px 0 14px; text-wrap:balance; }
+.mail-meta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; color:var(--ink-3); font-size:14.5px; margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+.mail-meta-lines { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.mail-meta b { color:var(--ink); font-weight:600; font-size:16px; }
+.mail-meta .mail-addr { color:var(--ink-3); font-size:13.5px; }
+.mail-meta .mail-when { margin-left:auto; white-space:nowrap; }
+.mail-att { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.mail-att-chip { color:var(--ink-2); font-size:14px; padding:5px 11px; border:1px solid var(--line); border-radius:999px; background:var(--paper-2); }
+.mail-body-frame { width:100%; min-height:62vh; border:0; border-radius:10px; background:#fff; }
+.mail-text { font-size:16px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-wrap:break-word; font-family:inherit; margin:4px 0; }
 .mail-msg-act, .mail-compose-act { display:flex; gap:10px; align-items:center; margin-top:22px; }
-.mail-compose { display:flex; flex-direction:column; gap:12px; max-width:680px; }
-.mail-compose input, .mail-compose textarea { width:100%; padding:13px 16px; font-size:16.5px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); }
+.mail-compose { display:flex; flex-direction:column; gap:12px; padding:20px 24px; }
+.mail-compose input, .mail-compose textarea { width:100%; padding:13px 16px; font-size:16.5px; background:var(--paper); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); }
 .mail-compose textarea { min-height:280px; resize:vertical; font-family:inherit; line-height:1.6; }
 .mail-compose input:focus-visible, .mail-compose textarea:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+@media (max-width:820px){
+  .mail-layout { display:block; border:0; box-shadow:none; background:transparent; border-radius:0; min-height:0; }
+  .mail-list-col { width:auto; border-right:0; max-height:none; border:1px solid var(--line); border-radius:14px; background:var(--card); overflow:hidden; }
+  .mail-reader { max-height:none; }
+  .mail-layout:not(.reading) .mail-reader { display:none; }
+  .mail-layout.reading .mail-list-col { display:none; }
+  .mail-msg, .mail-compose { padding:4px 2px; }
+  .mail-back { display:inline-flex; }
+}
 .mail-acct-list { display:flex; flex-direction:column; gap:8px; max-width:520px; }
 .mail-acct { display:flex; align-items:center; gap:11px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
 .ma-dot { width:10px; height:10px; border-radius:50%; flex:none; }

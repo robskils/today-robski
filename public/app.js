@@ -25,6 +25,7 @@ const state = {
   taskSort: (typeof window !== 'undefined' && window.innerWidth <= 820) ? { col: 'priority', dir: 'asc' } : { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
   favs: [], home: { events: [] }, cal: null, mail: null,
+  tabs: [], activeTab: null,
   nav: {
     order: (() => { const o = readLS('life.nav.order', null); return Array.isArray(o) && o.length === 3 && o.includes('favs') && o.includes('notes') && o.includes('tables') ? o : ['favs', 'notes', 'tables']; })(),
     collapsed: readLS('life.nav.collapsed', {}),
@@ -92,6 +93,52 @@ function sanitizeProse(html) {
   return doc.body.innerHTML.trim();
 }
 
+// ── tabs ─────────────────────────────────────────────
+// A tab is a saved destination (view + label), not a whole live instance.
+// Switching re-opens that view; the active tab tracks wherever you navigate.
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈' };
+function labelForView(v) {
+  switch (v.type) {
+    case 'tasks': return 'Tasks';
+    case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
+    case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
+    case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
+    case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
+    case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
+    default: return 'Home';
+  }
+}
+function openView(v) {
+  switch (v.type) {
+    case 'tasks': return openTasks(); case 'taskcard': return openTaskCard(v.id);
+    case 'calendar': return openCalendar(); case 'mail': return openMail(); case 'today': return openToday();
+    case 'note': return openNote(v.id); case 'notes': return openNotesList();
+    case 'table': return openTable(v.id); case 'tables': return openTablesList();
+    case 'area': return openArea(v.id); case 'areas': return openAreasList();
+    default: return openHome();
+  }
+}
+function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); } catch {} }
+function syncActiveTab() {
+  const tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
+  tab.view = { ...state.view }; tab.label = labelForView(state.view); saveTabs();
+}
+function renderTabs() {
+  const el = $('#tabstrip'); if (!el) return;
+  el.innerHTML = state.tabs.map((t) => `<button class="tab ${t.id === state.activeTab ? 'on' : ''}" data-tab="${t.id}">
+    <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${state.tabs.length > 1 ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
+    + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`;
+}
+function newTab() { const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home' }); state.activeTab = id; openHome(); }
+function switchTab(id) { if (id === state.activeTab) return; const tab = state.tabs.find((t) => t.id === id); if (!tab) return; state.activeTab = id; Promise.resolve(openView(tab.view)).catch(() => openHome()); }
+function closeTab(id) {
+  if (state.tabs.length <= 1) return;
+  const i = state.tabs.findIndex((t) => t.id === id); if (i < 0) return;
+  const wasActive = state.activeTab === id; state.tabs.splice(i, 1);
+  if (wasActive) { const next = state.tabs[Math.min(i, state.tabs.length - 1)]; state.activeTab = next.id; Promise.resolve(openView(next.view)).catch(() => openHome()); }
+  else { renderTabs(); saveTabs(); }
+}
+
 // ── sidebar ──────────────────────────────────────────
 // The three lower sections - Favourites, Notes, Tables - are collapsible and
 // can be dragged into any order; both preferences persist in localStorage.
@@ -142,6 +189,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>`;
   renderTabbar(v);
+  syncActiveTab(); renderTabs();
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
 // backdrop-filter, which would make it the containing block for a fixed child
@@ -573,41 +621,55 @@ function showMailAccountForm() {
     <button class="add-btn wide" type="submit">Add account</button></form>`;
   $('#ma-email').focus();
 }
+const initial = (s) => (String(s || '?').trim().charAt(0) || '?').toUpperCase();
+// Email HTML is untrusted: render it in a sandboxed iframe (no scripts, no
+// same-origin) so its own styles show but it can't touch the app.
+function wrapEmailHtml(html) {
+  return `<!doctype html><html><head><base target="_blank"><meta name="color-scheme" content="light">
+    <style>html,body{margin:0}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
+    </head><body>${html}</body></html>`;
+}
 function renderMail(loading) {
   const m = state.mail;
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
   const accTabs = (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}</button>`).join('');
-  let main;
+  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open.uid === x.uid ? 'sel' : ''}" data-mail-open="${x.uid}">
+    <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
+    <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
+    <span class="mail-subject">${esc(x.subject)}</span></span></button>`).join('');
+  const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || '<div class="home-empty">No messages.</div>')}</div>`;
+  let reader;
   if (m.composing) {
-    const re = m.composing.reply;
-    main = `<form id="mail-compose-form" class="mail-compose">
+    reader = `<form id="mail-compose-form" class="mail-compose">
+      <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span></div>
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" required>
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <textarea id="mc-body" placeholder="Write your message…">${esc(m.composing.body || '')}</textarea>
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-cancel>Cancel</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
-    const bodyHtml = o.text ? `<pre class="mail-text">${esc(o.text)}</pre>` : `<div class="mail-text">${esc((o.html || '').replace(/<[^>]+>/g, ' ')).slice(0, 8000)}</div>`;
-    main = `<div class="mail-msg">
-      <button class="ghost" data-mail-back>← Inbox</button>
+    reader = `<div class="mail-msg">
+      <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
+        <span class="mail-msg-act"><button class="ghost" data-mail-reply>Reply</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
-      <div class="mail-meta"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b> <span>${esc(o.from ? o.from.address : '')}</span><span class="mail-when">${new Date(o.date).toLocaleString()}</span></div>
-      ${o.attachments && o.attachments.length ? `<div class="mail-att">📎 ${o.attachments.map((a) => esc(a.filename || 'attachment')).join(', ')}</div>` : ''}
-      ${bodyHtml}
-      <div class="mail-msg-act"><button class="add-btn wide" data-mail-reply>Reply</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></div></div>`;
+      <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
+        <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
+        <span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
+      ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<span class="mail-att-chip">📎 ${esc(a.filename || 'attachment')}</span>`).join('')}</div>` : ''}
+      ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox" title="Message"></iframe>` : `<pre class="mail-text">${esc(o.text || '')}</pre>`}</div>`;
   } else {
-    const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'}" data-mail-open="${x.uid}">
-      <span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span>
-      <span class="mail-subject">${esc(x.subject)}</span>
-      <span class="mail-date">${mailDate(x.date)}</span></button>`).join('');
-    main = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || '<div class="home-empty">No messages.</div>')}</div>`;
+    reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
   }
   $('#pane').innerHTML = `
     <div class="pane-head home-head"><h1>Mail</h1>
       <div class="mail-head-act"><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${accTabs ? `<div class="mail-atabs">${accTabs}</div>` : ''}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
-    ${main}`;
+    <div class="mail-layout ${m.open || m.composing ? 'reading' : ''}">
+      <div class="mail-list-col">${list}</div>
+      <div class="mail-reader">${reader}</div>
+    </div>`;
+  if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html); }
 }
 
 function showQuickTask() {
@@ -940,6 +1002,9 @@ function execItem(it) {
 // ── events ───────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
+  // ⌥⌘T / ⌥⌘W - the browser owns ⌘T/⌘W, so tabs use the Option variant.
+  if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyT') { e.preventDefault(); newTab(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyW') { e.preventDefault(); closeTab(state.activeTab); return; }
   if (!state.pal.open) return;
   if (e.key === 'Escape') { closePalette(); return; }
   if (e.key === 'ArrowDown') { e.preventDefault(); state.pal.sel = Math.min(state.pal.items.length - 1, state.pal.sel + 1); renderPalette(); }
@@ -957,6 +1022,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
+  const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
+  const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
+  if (t.closest('[data-tab-new]')) { newTab(); return; }
   if (t.closest('[data-theme-toggle]')) { const d = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = d ? 'dark' : 'light'; localStorage.setItem('today.theme', d ? 'dark' : 'light'); renderNav(); if (state.view.type === 'today') renderToday(); return; }
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
@@ -1379,9 +1447,14 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
+    const savedTabs = readLS('life.tabs', null);
+    if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
+      state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home' }));
+      state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
+    } else { state.tabs = [{ id: uid(), view: { type: 'home' }, label: 'Home' }]; state.activeTab = state.tabs[0].id; }
     const route = location.pathname.replace(/\/$/, '');
     if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
-    else await openHome();
+    else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
   } catch (e) { toast(e.message); renderNav(); }
 })();
