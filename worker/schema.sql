@@ -163,6 +163,8 @@ INSERT OR IGNORE INTO activities (id, lane, title, url, duration, position) VALU
   (2, 'body', 'Apple Health+',      NULL, 50, 1),
   -- Ba Duan Jin. Eight, not seven.
   (3, 'body', '8 Pieces of Brocade', NULL, 30, 2),
+  (8, 'body', 'Body Strength App', NULL, 20, 3),
+  (9, 'body', 'Holmes Place',      NULL, 90, 4),
   (4, 'music', 'Forró',       NULL, 60, 0),
   (5, 'music', 'Percussion',  NULL, 30, 1),
   (6, 'music', 'Singing',     NULL, 30, 2),
