@@ -123,6 +123,10 @@ button { cursor:pointer; background:none; border:0; }
    omit the attribute, which would leave them browser-white (unreadable in dark). */
 .add-task input:not(.sel):not([type=checkbox]) { flex:1; min-width:180px; padding:12px 16px; font-size:17px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); }
 .add-task input::placeholder { color:var(--ink-3); }
+.ce-allday { display:inline-flex; align-items:center; gap:8px; font-size:15.5px; color:var(--ink-2); cursor:pointer; user-select:none; }
+.ce-allday input { width:17px; height:17px; accent-color:var(--accent); cursor:pointer; }
+.ce-timerow { display:inline-flex; gap:8px; align-items:center; }
+.ce-timerow[hidden] { display:none; }
 .add-task input:focus-visible,.sel:focus-visible,.add-area input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent); }
 .sel { padding:12px 12px; font-size:16px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); max-width:180px; }
 
@@ -213,8 +217,9 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .cm-addopt { display:flex; gap:6px; padding:5px 8px 3px; }
 .cm-addopt input { flex:1; min-width:0; padding:6px 8px; font-size:14px; border:1px solid var(--line-2); border-radius:8px; background:var(--paper); color:var(--ink); }
 .cm-addopt button { flex:none; padding:6px 11px; border-radius:8px; background:var(--accent); color:var(--accent-ink); font-size:14px; }
-.th-add { width:44px; text-align:center; }
-.th-add button, .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; } .th-add button:hover { color:var(--accent); }
+.th-add, .row-del { width:52px; text-align:center; padding-left:0; padding-right:0; }
+.th-add button { display:inline-flex; align-items:center; justify-content:center; width:100%; color:var(--ink-3); font-size:20px; padding:8px 0; } .th-add button:hover { color:var(--accent); }
+.row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; }
 
 table.recs td .cell { width:100%; border:0; background:transparent; font:inherit; color:var(--ink); padding:11px 12px; }
 table.recs td .cell:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; border-radius:4px; }
@@ -222,7 +227,7 @@ table.recs td.num .cell { font-variant-numeric:tabular-nums; }
 table.recs td.check { text-align:center; }
 table.recs td.check input { width:19px; height:19px; accent-color:var(--accent); }
 table.recs select.cell { appearance:none; cursor:pointer; }
-.row-del { text-align:center; } .row-del button { opacity:0; color:var(--ink-3); font-size:16px; } tr:hover .row-del button { opacity:1; } .row-del button:hover { color:var(--accent); }
+.row-del button { display:inline-flex; align-items:center; justify-content:center; width:100%; opacity:0; color:var(--ink-3); font-size:18px; padding:6px 0; } tr:hover .row-del button { opacity:1; } .row-del button:hover { color:var(--accent); }
 .row-add td { padding:0; } .row-add button { width:100%; text-align:left; padding:12px; color:var(--ink-3); font-size:15px; } .row-add button:hover { color:var(--accent); background:var(--paper-2); }
 
 /* add-column popover */
@@ -235,8 +240,8 @@ table.recs select.cell { appearance:none; cursor:pointer; }
 /* The whole left-most cell opens the row - a big, obvious click target, not a
    tiny button. It lights up on row hover so it reads as clickable. */
 td.row-open { cursor:pointer; color:var(--ink-3); transition:background .12s,color .12s; }
-td.row-open .ro-ic { display:inline-flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:19px; opacity:.45; transition:opacity .12s; pointer-events:none; }
-tr:hover td.row-open { background:color-mix(in srgb,var(--accent) 9%,transparent); color:var(--accent); }
+td.row-open .ro-ic { display:inline-flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:22px; opacity:.45; transition:opacity .12s; pointer-events:none; }
+tr:hover td.row-open { background:var(--paper-2); color:var(--ink-2); }
 tr:hover td.row-open .ro-ic { opacity:1; }
 @media (hover:none){ td.row-open .ro-ic { opacity:.7; } }
 
@@ -501,8 +506,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .pal input { width:100%; padding:20px 22px; font-size:19px; background:transparent; border:0; border-bottom:1px solid var(--line); color:var(--ink); }
 .pal input:focus-visible { outline:none; }
 .pal-list { max-height:52vh; overflow-y:auto; padding:8px; }
-.pal-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; cursor:pointer; }
-.pal-item.sel { background:var(--paper-2); }
+.pal-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; cursor:pointer; width:100%; box-sizing:border-box; }
+/* max-width:none resets the global .sel rule (used for <select>s) that this
+   item's "sel" class would otherwise inherit, shrinking + truncating it. */
+.pal-item.sel { background:var(--paper-2); max-width:none; }
 .pal-kind { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--accent-ink); background:var(--accent); border-radius:5px; padding:2px 7px; flex:none; }
 .pal-kind.muted { background:var(--line-2); color:var(--ink-2); }
 .pal-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:16.5px; }
@@ -671,7 +678,7 @@ table.ttable tr:last-child td { border-bottom:0; }
     border-right:0; border-bottom:1px solid var(--line);
     background:color-mix(in srgb,var(--paper-2) 90%,transparent); backdrop-filter:blur(12px);
   }
-  .nav-brand { padding:0; font-size:21px; }
+  .nav-brand { padding:0; font-size:25px; }
   .nav-foot { margin:0; }
   .nav-item, .nav-secs, .nav-spacer, .foot-search { display:none; }
   [data-open-today] { display:none; }   /* the day planner is desktop-only */

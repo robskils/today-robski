@@ -99,6 +99,12 @@ export function localParts(date, tz) {
 function isValidDay(s) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
+// Add n days to a YYYY-MM-DD date, staying date-only (UTC math, no DST drift).
+function addDaysStr(day, n) {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
 
 // Activity URLs end up in an href. Anything but http(s) is refused, because
 // `javascript:` in a link is a script you didn't write running as you.
@@ -255,16 +261,22 @@ async function createEvent(request, env) {
   const day = b.day || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
 
-  const startMin = Number(b.start_min);
-  const duration = Number(b.duration);
-  if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
-  if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
-
-  // Wall-clock minutes -> a real instant, via the day's local midnight, so the
-  // event lands at the time meant on either side of a DST change.
-  const base = zonedDayStart(day, TZ).getTime();
-  const startAt = new Date(base + startMin * 60000);
-  const endAt = new Date(base + (startMin + duration) * 60000);
+  // All-day events use calendar dates (end is exclusive, so a single day spans
+  // day..day+1); timed events use wall-clock minutes -> a real instant.
+  let start, end;
+  if (b.allDay) {
+    const endDay = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(day, 1);
+    start = { date: day };
+    end = { date: endDay };
+  } else {
+    const startMin = Number(b.start_min);
+    const duration = Number(b.duration);
+    if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
+    if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
+    const base = zonedDayStart(day, TZ).getTime();
+    start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: TZ };
+    end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: TZ };
+  }
 
   try {
     const token = await googleAccessToken(env);
@@ -277,8 +289,7 @@ async function createEvent(request, env) {
         body: JSON.stringify({
           summary: title,
           location: String(b.location || '').trim() || undefined,
-          start: { dateTime: startAt.toISOString(), timeZone: TZ },
-          end: { dateTime: endAt.toISOString(), timeZone: TZ },
+          start, end,
         }),
       },
     );
@@ -310,12 +321,20 @@ async function updateEvent(request, env, id) {
   if (b.location !== undefined) patch.location = String(b.location || '').trim();
   if (b.day !== undefined) {
     if (!isValidDay(b.day)) return err('bad date', request);
-    const startMin = Number(b.start_min), duration = Number(b.duration);
-    if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
-    if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
-    const base = zonedDayStart(b.day, TZ).getTime();
-    patch.start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: TZ };
-    patch.end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: TZ };
+    if (b.allDay) {
+      // Switch to (or stay) all-day: set dates, and null the dateTime so Google
+      // drops the timed representation.
+      const endDay = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(b.day, 1);
+      patch.start = { date: b.day, dateTime: null };
+      patch.end = { date: endDay, dateTime: null };
+    } else {
+      const startMin = Number(b.start_min), duration = Number(b.duration);
+      if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
+      if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
+      const base = zonedDayStart(b.day, TZ).getTime();
+      patch.start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: TZ, date: null };
+      patch.end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: TZ, date: null };
+    }
   }
   try {
     const token = await googleAccessToken(env);

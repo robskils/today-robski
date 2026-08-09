@@ -531,20 +531,25 @@ function renderCalendar() {
 function showCalForm(ev) {
   const c = state.cal;
   const title = ev ? ev.title : '';
+  const allDay = ev ? !!ev.allDay : false;
   const time = ev && !ev.allDay ? minToLabel(ev.start_min) : '09:00';
   const dur = ev && !ev.allDay ? Math.max(15, (ev.end_min ?? ev.start_min + 60) - ev.start_min) : 60;
   const loc = ev ? (ev.location || '') : '';
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event" data-ev="${ev ? ev.id : ''}">
     <input id="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-    <input id="ce-time" type="time" class="sel" value="${time}" required>
-    <select id="ce-dur" class="sel">${durationOptions(dur)}</select>
+    <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
+    <span id="ce-timerow" class="ce-timerow" ${allDay ? 'hidden' : ''}>
+      <input id="ce-time" type="time" class="sel" value="${time}">
+      <select id="ce-dur" class="sel">${durationOptions(dur)}</select></span>
     <input id="ce-loc" class="sel" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
     <button class="add-btn wide" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
     ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}</form>`;
   $('#ce-title').focus();
 }
-async function calSaveEvent(id, title, time, duration, location) {
-  const body = JSON.stringify({ title, day: state.cal.selected, start_min: isoToMin(time), duration: Number(duration), location: location || undefined });
+async function calSaveEvent(id, title, time, duration, location, allDay) {
+  const body = JSON.stringify(allDay
+    ? { title, day: state.cal.selected, allDay: true, location: location || undefined }
+    : { title, day: state.cal.selected, start_min: isoToMin(time), duration: Number(duration), location: location || undefined });
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
     else await api('/api/events', { method: 'POST', body });
@@ -1275,6 +1280,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
+  if (e.target.id === 'ce-allday') { const r = $('#ce-timerow'); if (r) r.hidden = e.target.checked; }
 });
 // blur saves for titles/bodies
 document.addEventListener('blur', (e) => {
@@ -1292,7 +1298,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim()); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) mailSend(to, $('#mc-cc').value.trim(), $('#mc-subject').value.trim(), $('#mc-body').value, state.mail.composing && state.mail.composing.inReplyTo); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
