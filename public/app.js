@@ -492,22 +492,15 @@ function renderToday() {
 }
 
 // ── view: mail ───────────────────────────────────────
-// The mail backend is a separate always-on service (IMAP/SMTP can't run on the
-// Worker). Its URL is stored per-browser; the same Life token authenticates it.
-const mailApiUrl = () => (localStorage.getItem('life.mailApi') || '').replace(/\/$/, '');
-async function mailApi(path, opts = {}) {
-  const base = mailApiUrl(); if (!base) throw new Error('Mail backend not set up yet.');
-  const res = await fetch(base + path, { ...opts, headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json', ...opts.headers } });
-  if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
-  return res.status === 204 ? null : res.json();
-}
+// Mail runs on the same Worker (IMAP/SMTP over Cloudflare's TCP sockets), so it's
+// just same-origin /api/mail/* with the Life token - no separate backend.
+const mailApi = (path, opts) => api('/api/mail' + path, opts);
 const mailFrom = (m) => m.from ? (m.from.name || m.from.address || '') : '';
 const mailDate = (iso) => { if (!iso) return ''; const d = new Date(iso), now = new Date(); const sameDay = d.toDateString() === now.toDateString(); return sameDay ? `${p2(d.getHours())}:${p2(d.getMinutes())}` : `${d.getDate()} ${MONTHS_LONG[d.getMonth()].slice(0, 3)}`; };
 
 async function openMail() {
   state.view = { type: 'mail' };
-  if (!mailApiUrl()) { state.mail = { setup: true }; renderNav(); renderMailSetup(); return; }
-  if (!state.mail || state.mail.setup) state.mail = { account: null, mailbox: 'INBOX', messages: [], open: null, composing: false };
+  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', messages: [], open: null, composing: false };
   renderNav(); renderMail(true);
   try {
     state.mail.accounts = await mailApi('/accounts');
@@ -544,7 +537,7 @@ async function mailSend(to, subject, body, inReplyTo) {
 }
 async function openMailAccounts() {
   state.view = { type: 'mail' }; renderNav();
-  try { state.mail = (state.mail && !state.mail.setup) ? state.mail : { account: null, mailbox: 'INBOX' }; state.mail.accounts = await mailApi('/accounts'); renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
+  try { state.mail = state.mail || { account: null, mailbox: 'INBOX' }; state.mail.accounts = await mailApi('/accounts'); renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
   catch (e) { toast(e.message); }
 }
 async function addMailAccount(fields) {
@@ -563,16 +556,6 @@ function mailReplyStart() {
   renderMail();
 }
 
-function renderMailSetup() {
-  $('#pane').innerHTML = `<div class="pane-head"><h1>Mail</h1></div>
-    <div class="card" style="max-width:520px">
-      <p class="scope">Point the app at your mail backend (see mail-backend/SETUP.md). You only do this once per device.</p>
-      <form id="mail-setup-form" class="add-task">
-        <input id="mail-api" type="url" placeholder="https://mail-api.robski.uk" autocomplete="off" required style="flex:1;min-width:240px">
-        <button class="add-btn wide" type="submit">Connect</button>
-      </form></div>`;
-  $('#mail-api').focus();
-}
 function renderMailAccounts(note) {
   const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span><button class="x" data-mail-del-acct="${a.id}" title="Remove">×</button></div>`).join('');
   $('#pane').innerHTML = `<div class="pane-head home-head"><h1>Mail</h1><button class="add-btn wide" data-mail-add-acct>+ Account</button></div>
@@ -583,8 +566,8 @@ function renderMailAccounts(note) {
 function showMailAccountForm() {
   $('#mail-acct-form').innerHTML = `<form id="mail-acct-form-el" class="add-task" style="flex-direction:column;align-items:stretch;gap:10px;max-width:520px;margin-top:16px">
     <input id="ma-email" type="email" placeholder="Email address" required>
-    <div style="display:flex;gap:8px"><input id="ma-imaphost" placeholder="IMAP host (imap.gmail.com)" required style="flex:1"><input id="ma-imapport" value="993" style="width:80px"></div>
-    <div style="display:flex;gap:8px"><input id="ma-smtphost" placeholder="SMTP host (smtp.gmail.com)" required style="flex:1"><input id="ma-smtpport" value="465" style="width:80px"></div>
+    <div style="display:flex;gap:8px"><input id="ma-imaphost" placeholder="IMAP host" value="imap.purelymail.com" required style="flex:1"><input id="ma-imapport" value="993" style="width:80px"></div>
+    <div style="display:flex;gap:8px"><input id="ma-smtphost" placeholder="SMTP host" value="smtp.purelymail.com" required style="flex:1"><input id="ma-smtpport" value="465" style="width:80px"></div>
     <input id="ma-user" placeholder="Username (usually your email)">
     <input id="ma-pass" type="password" placeholder="Password / app password" required>
     <button class="add-btn wide" type="submit">Add account</button></form>`;
@@ -592,7 +575,6 @@ function showMailAccountForm() {
 }
 function renderMail(loading) {
   const m = state.mail;
-  if (m.setup) return renderMailSetup();
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
   const accTabs = (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}</button>`).join('');
   let main;
@@ -1094,7 +1076,6 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim()); }
-  if (e.target.id === 'mail-setup-form') { const u = $('#mail-api').value.trim(); if (u) { localStorage.setItem('life.mailApi', u); openMail().catch((x) => toast(x.message)); } }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) mailSend(to, $('#mc-subject').value.trim(), $('#mc-body').value, state.mail.composing && state.mail.composing.inReplyTo); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }

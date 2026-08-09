@@ -221,3 +221,20 @@ CREATE TABLE IF NOT EXISTS block_links (
   PRIMARY KEY (from_id, to_id)
 );
 CREATE INDEX IF NOT EXISTS idx_block_links_to ON block_links(to_id);
+
+-- Mail accounts for life.robski.uk/mail. The Worker speaks IMAP/SMTP to these
+-- over Cloudflare TCP sockets (worker/mail.js). The password is AES-256-GCM
+-- encrypted at rest with a key derived from AUTH_SECRET - never stored plain.
+CREATE TABLE IF NOT EXISTS mail_accounts (
+  id        TEXT PRIMARY KEY,
+  email     TEXT NOT NULL,
+  name      TEXT,
+  color     TEXT,
+  imap_host TEXT NOT NULL,
+  imap_port INTEGER NOT NULL DEFAULT 993,
+  smtp_host TEXT NOT NULL,
+  smtp_port INTEGER NOT NULL DEFAULT 465,
+  username  TEXT NOT NULL,
+  pass_enc  TEXT NOT NULL,
+  position  INTEGER NOT NULL DEFAULT 0
+);

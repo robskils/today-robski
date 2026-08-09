@@ -1,6 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, requestCode, verifyCode } from './auth.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
+import { handleMail } from './mail.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -1470,6 +1471,7 @@ export default {
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
       if (path === '/api/calendar' && request.method === 'GET') return handleCalendar(request, env, url);
+      if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       // Send one alert now, to prove the SMS path end to end without waiting
       // for a block to come due. Authed, like everything below the gate.
       if (path === '/api/alert/test' && request.method === 'POST') {
