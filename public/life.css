@@ -807,12 +807,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-chip.allday b { color:var(--accent-ink); }
 .cal-more { font-size:11.5px; color:var(--ink-3); padding:0 4px; }
 .cal-agenda { margin-top:26px; }
+.cal-agenda-top { margin-top:6px; margin-bottom:22px; }
 .cal-ag-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:12px; }
 .cal-ag-head h2 { font-family:'Cormorant Garamond',serif; font-size:27px; font-weight:500; }
 .cal-ag-list { display:flex; flex-direction:column; }
 .cal-ag-row { display:flex; align-items:baseline; gap:16px; width:100%; text-align:left; padding:13px 8px; border-bottom:1px solid var(--line); transition:background .12s; }
 .cal-ag-row:hover { background:var(--paper-2); }
-.cal-ag-time { flex:none; width:70px; color:var(--ink-3); font-size:15px; font-variant-numeric:tabular-nums; }
+.cal-ag-time { flex:none; width:112px; color:var(--ink-3); font-size:15px; font-variant-numeric:tabular-nums; }
 .cal-ag-t { flex:1; color:var(--ink); font-size:17px; }
 .cal-ag-loc { color:var(--ink-3); font-size:14.5px; }
 .cal-del { color:var(--ink-3); } .cal-del:hover { color:var(--accent); }

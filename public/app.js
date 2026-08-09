@@ -502,8 +502,10 @@ function renderCalendar() {
     body = `<div class="cal-grid">${WEEKDAYS.map((w) => `<div class="cal-dow">${w}</div>`).join('')}${monthWeeks(c.y, c.m).map((w) => w.map(cell).join('')).join('')}</div>`;
   }
   const dayEvents = (byDay[c.selected] || []);
+  const agTime = (e) => e.allDay ? 'all day'
+    : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}-${minToLabel(e.end_min)}` : minToLabel(e.start_min));
   const agendaRows = dayEvents.length ? dayEvents.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}">
-      <span class="cal-ag-time">${e.allDay ? 'all day' : minToLabel(e.start_min)}</span>
+      <span class="cal-ag-time">${agTime(e)}</span>
       <span class="cal-ag-t">${esc(e.title)}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
     : '<div class="home-empty">Nothing on this day.</div>';
   $('#pane').innerHTML = `
@@ -517,12 +519,12 @@ function renderCalendar() {
       </div>
     </div>
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
-    ${body}
-    <section class="cal-agenda">
+    <section class="cal-agenda cal-agenda-top">
       <div class="cal-ag-head"><h2>${prettyDate(c.selected)}</h2><button class="add-btn wide" data-cal-add>+ Event</button></div>
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
-    </section>`;
+    </section>
+    ${body}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
 }
