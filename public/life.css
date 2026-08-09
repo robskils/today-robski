@@ -357,11 +357,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fav-x { flex:none; color:var(--ink-3); font-size:18px; padding:0 14px; } .fav-x:hover { color:var(--accent); }
 
 .today-cal { display:flex; flex-direction:column; gap:1px; }
-.ev-row { display:flex; align-items:baseline; gap:14px; padding:11px 2px; border-bottom:1px solid var(--line); }
+/* Time in its own column; title and location stack in the second column so a
+   long title or address never collides with the other. */
+.ev-row { display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:12px; row-gap:2px; align-items:baseline; padding:11px 2px; border-bottom:1px solid var(--line); }
 .ev-row:last-child { border-bottom:0; }
-.ev-time { flex:none; width:74px; color:var(--ink-3); font-variant-numeric:tabular-nums; font-size:15px; }
-.ev-t { flex:1; min-width:0; font-size:16.5px; }
-.ev-loc { color:var(--ink-3); font-size:14px; }
+.ev-time { color:var(--ink-3); font-variant-numeric:tabular-nums; font-size:15px; }
+.ev-t { min-width:0; font-size:16.5px; overflow-wrap:anywhere; }
+.ev-loc { grid-column:2; min-width:0; color:var(--ink-3); font-size:14px; overflow-wrap:anywhere; }
 
 /* Quick-launch row above Favourites: go to each index, or + to create. */
 .home-nav { display:flex; gap:10px; margin:4px 0 30px; flex-wrap:wrap; align-items:stretch; }
@@ -424,6 +426,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .pane-head { margin-bottom:20px; }
 .pane-head h1 { font-size:clamp(28px,4vw,38px); }
 .area-chips { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 22px; }
+.area-filter { display:none; }  /* chips on desktop; this dropdown on mobile */
 .area-chip { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); font-size:15px; transition:border-color .12s,color .12s; }
 .area-chip:hover { color:var(--ink); }
 .area-chip.on { border-color:var(--c); color:var(--ink); background:color-mix(in srgb,var(--c) 8%,transparent); }
@@ -514,9 +517,13 @@ table.ttable tr:last-child td { border-bottom:0; }
   }
   .nav-brand { padding:0; font-size:21px; }
   .nav-foot { margin:0; }
-  .nav-k, .nav-item, .nav-secs, .nav-spacer { display:none; }
-  .foot-search { display:inline-flex; align-items:center; font-size:18px; }
-  .pane { padding:22px 18px 96px; }
+  .nav-item, .nav-secs, .nav-spacer, .foot-search { display:none; }
+  /* A real, tappable search box on every page (opens the universal palette). */
+  .nav-k { display:flex; order:5; flex-basis:100%; margin:10px 0 0; font-size:16px; padding:12px 14px; }
+  .pane { padding:20px 18px 96px; }
+  /* Tasks: swap the row of category chips for a single dropdown. */
+  .area-chips { display:none; }
+  .area-filter { display:block; width:100%; max-width:none; margin:14px 0 20px; }
   .tabbar {
     display:flex; position:fixed; left:0; right:0; bottom:0; z-index:40;
     background:color-mix(in srgb,var(--paper-2) 96%,transparent); backdrop-filter:blur(14px);

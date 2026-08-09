@@ -723,6 +723,8 @@ function renderTasks() {
   const chips = `<button class="area-chip ${state.taskFilter === null ? 'on' : ''}" data-filter="">All <b>${openCount(null)}</b></button>` +
     state.areas.filter((a) => openCount(a.id)).map((a) => `<button class="area-chip ${state.taskFilter === a.id ? 'on' : ''}" style="--h:${hueOf(a)}" data-filter="${a.id}"><span class="cd"></span>${esc(a.title)} <b>${openCount(a.id)}</b></button>`).join('');
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  // Same filter as the chips, but a compact dropdown - shown on mobile instead.
+  const filterSel = `<select class="area-filter sel" data-task-filter><option value="" ${state.taskFilter === null ? 'selected' : ''}>All tasks · ${openCount(null)}</option>${state.areas.filter((a) => openCount(a.id)).map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)} · ${openCount(a.id)}</option>`).join('')}</select>`;
   let ts = state.tasks.slice();
   if (state.taskFilter) ts = ts.filter((t) => t.props.area === state.taskFilter);
   ts = sortTasks(ts);
@@ -748,6 +750,7 @@ function renderTasks() {
       <button class="add-btn wide" type="submit">Add</button>
     </form>
     <div class="area-chips">${chips}</div>
+    ${filterSel}
     <div class="tbl-scroll"><table class="ttable">
       <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
       <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">No tasks here yet.</td></tr>`}</tbody>
@@ -1000,6 +1003,7 @@ document.addEventListener('change', (e) => {
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
   if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
+  if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
 });
