@@ -941,8 +941,10 @@ function renderTasks() {
 
 // ── view: note ───────────────────────────────────────
 // Title fields are textareas so a long title wraps instead of cropping; grow
-// them to fit their content.
+// them to fit their content. Measuring right after innerHTML can catch a
+// pre-layout width (wrapping one line into many), so size on the next frame.
 function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
+function autoGrowSoon(el) { if (!el) return; requestAnimationFrame(() => autoGrow(el)); }
 function renderNote() {
   const n = state.note.current;
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
@@ -959,7 +961,7 @@ function renderNote() {
     ${attachSection(n)}
     <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
       ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>`;
-  autoGrow($('#note-title')); loadThumbs();
+  autoGrowSoon($('#note-title')); loadThumbs();
 }
 
 // ── view: table ──────────────────────────────────────
@@ -1436,7 +1438,7 @@ function renderTaskCard() {
     </div>
     ${notesSection(t.body, 'task')}
     ${attachSection(t)}`;
-  autoGrow($('#taskcard-title')); loadThumbs();
+  autoGrowSoon($('#taskcard-title')); loadThumbs();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by
