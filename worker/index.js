@@ -612,6 +612,7 @@ async function searchBlocks(request, env, url) {
   const { results } = await env.DB.prepare(
     `SELECT * FROM blocks
       WHERE archived = 0 AND (title LIKE ? OR body LIKE ?)
+        AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
       ORDER BY updated_at DESC LIMIT 50`,
   ).bind(like, like).all();
   return json(results.map(parseBlock), request);

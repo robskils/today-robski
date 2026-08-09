@@ -460,6 +460,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .pane-head h1 { font-size:clamp(28px,4vw,38px); }
 .area-chips { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 22px; }
 .area-filter { display:none; }  /* chips on desktop; this dropdown on mobile */
+/* Completed tasks: hidden by default, revealed by 'Show completed'. */
+.show-completed { margin-top:18px; font-size:15px; }
+.completed-sec { margin-top:28px; padding-top:20px; border-top:1px solid var(--line); }
+.completed-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.completed-head h2 { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:500; }
+.completed-q { display:block; width:100%; max-width:360px; margin-bottom:14px; }
+.completed-sec .tr-task .tc-title .t { color:var(--ink-3); text-decoration:line-through; }
 .area-chip { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); font-size:15px; transition:border-color .12s,color .12s; }
 .area-chip:hover { color:var(--ink); }
 .area-chip.on { border-color:var(--c); color:var(--ink); background:color-mix(in srgb,var(--c) 8%,transparent); }

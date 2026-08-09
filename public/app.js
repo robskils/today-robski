@@ -20,7 +20,7 @@ const readLS = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k));
 const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
-  areas: [], tasks: [], taskFilter: null, taskAdding: false,
+  areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, completedQuery: '',
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: (typeof window !== 'undefined' && window.innerWidth <= 820) ? { col: 'priority', dir: 'asc' } : { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
@@ -306,21 +306,19 @@ function renderArea() {
   const tables = blocks.filter((b) => b.kind === 'table');
   const notes = blocks.filter((b) => b.kind === 'note');
   const h = hueOf(area);
-  const taskRows = openTs.map((t) => `<div class="area-task"><button class="check" data-check="${t.id}">✓</button>
-    <span class="t">${esc(t.title)}</span>${t.props.priority ? `<span class="prio ${t.props.priority}">${t.props.priority}</span>` : ''}</div>`).join('');
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
-  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▸</span>${esc(n.title || 'Untitled')}</button>`).join('');
+  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}</button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top"><button class="crumb" data-open-areas>Life areas</button>
         <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span>${esc(area.title)}</h1>
-      <p class="area-meta">${openTs.length} open task${openTs.length === 1 ? '' : 's'}${doneN ? ` · ${doneN} done` : ''} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${notes.length} note${notes.length === 1 ? '' : 's'}</p>
+      <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}</p>
     </div>
-    ${sec('Tasks', openTs.length, `<div class="area-tasks">${taskRows}</div>`)}
-    ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
     ${sec('Notes', notes.length, `<div class="tbl-cards">${noteCards}</div>`)}
+    ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
+    ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}
     ${!openTs.length && !tables.length && !notes.length ? '<div class="empty" style="padding:50px">Nothing tagged with this life area yet. Add it to a task, note or table.</div>' : ''}`;
 }
 async function setBlockArea(kind, id, areaId) {
@@ -744,19 +742,12 @@ function sortTasks(ts) {
     : (t.created_at || '');
   return ts.sort((a, b) => { const x = val(a), y = val(b); return x < y ? -s : x > y ? s : 0; });
 }
-function renderTasks() {
-  const openCount = (aid) => state.tasks.filter((t) => !t.props.done && (aid ? t.props.area === aid : true)).length;
-  const chips = `<button class="area-chip ${state.taskFilter === null ? 'on' : ''}" data-filter="">All <b>${openCount(null)}</b></button>` +
-    state.areas.filter((a) => openCount(a.id)).map((a) => `<button class="area-chip ${state.taskFilter === a.id ? 'on' : ''}" style="--h:${hueOf(a)}" data-filter="${a.id}"><span class="cd"></span>${esc(a.title)} <b>${openCount(a.id)}</b></button>`).join('');
-  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
-  // Same filter as the chips, but a compact dropdown - shown on mobile instead.
-  const filterSel = `<select class="area-filter sel" data-task-filter><option value="" ${state.taskFilter === null ? 'selected' : ''}>All tasks · ${openCount(null)}</option>${state.areas.filter((a) => openCount(a.id)).map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)} · ${openCount(a.id)}</option>`).join('')}</select>`;
-  let ts = state.tasks.slice();
-  if (state.taskFilter) ts = ts.filter((t) => t.props.area === state.taskFilter);
-  ts = sortTasks(ts);
+// The sortable tasks table, for a given list. Shared by the Tasks page and a
+// life-area page. Sorting/inline-edit run off the global handlers + state.taskSort.
+function taskTableHtml(list, emptyMsg) {
   const arrow = (c) => state.taskSort.col === c ? `<span class="sarrow">${state.taskSort.dir === 'asc' ? '↑' : '↓'}</span>` : '';
   const th = (c, label, cls) => `<th class="${cls || ''} sortable" data-sort="${c}">${label}${arrow(c)}</th>`;
-  const rows = ts.map((t) => {
+  const rows = sortTasks(list.slice()).map((t) => {
     const a = areaById(t.props.area); const p = t.props.priority;
     return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}">
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
@@ -767,6 +758,29 @@ function renderTasks() {
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button></td>
     </tr>`;
   }).join('');
+  return `<div class="tbl-scroll tasks-scroll"><table class="ttable">
+      <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">${emptyMsg || 'No tasks here yet.'}</td></tr>`}</tbody>
+    </table></div>`;
+}
+function renderTasks() {
+  const openCount = (aid) => state.tasks.filter((t) => !t.props.done && (aid ? t.props.area === aid : true)).length;
+  const chips = `<button class="area-chip ${state.taskFilter === null ? 'on' : ''}" data-filter="">All <b>${openCount(null)}</b></button>` +
+    state.areas.filter((a) => openCount(a.id)).map((a) => `<button class="area-chip ${state.taskFilter === a.id ? 'on' : ''}" style="--h:${hueOf(a)}" data-filter="${a.id}"><span class="cd"></span>${esc(a.title)} <b>${openCount(a.id)}</b></button>`).join('');
+  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  // Same filter as the chips, but a compact dropdown - shown on mobile instead.
+  const filterSel = `<select class="area-filter sel" data-task-filter><option value="" ${state.taskFilter === null ? 'selected' : ''}>All tasks · ${openCount(null)}</option>${state.areas.filter((a) => openCount(a.id)).map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)} · ${openCount(a.id)}</option>`).join('')}</select>`;
+  const inFilter = (t) => !state.taskFilter || t.props.area === state.taskFilter;
+  const open = state.tasks.filter((t) => !t.props.done && inFilter(t));       // ticked tasks vanish from view
+  const completed = state.tasks.filter((t) => t.props.done && inFilter(t));
+  const cq = (state.completedQuery || '').trim().toLowerCase();
+  const completedShown = completed.filter((t) => !cq || (t.title || '').toLowerCase().includes(cq));
+  const completedSection = state.showCompleted
+    ? `<section class="completed-sec">
+        <div class="completed-head"><h2>Completed · ${completed.length}</h2><button class="ghost" data-hide-completed>Hide</button></div>
+        <input class="completed-q sel" data-completed-q placeholder="Search completed…" value="${esc(state.completedQuery || '')}" autocomplete="off">
+        ${taskTableHtml(completedShown, cq ? 'No completed tasks match.' : 'Nothing completed yet.')}</section>`
+    : (completed.length ? `<button class="ghost show-completed" data-show-completed>Show completed · ${completed.length}</button>` : '');
   $('#pane').innerHTML = `
     <div class="pane-head"><h1>Tasks</h1></div>
     ${state.taskAdding
@@ -780,10 +794,8 @@ function renderTasks() {
       : `<button class="add-btn wide" data-task-add>+ Add task</button>`}
     <div class="area-chips">${chips}</div>
     ${filterSel}
-    <div class="tbl-scroll tasks-scroll"><table class="ttable">
-      <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">No tasks here yet.</td></tr>`}</tbody>
-    </table></div>`;
+    ${taskTableHtml(open, 'No open tasks here.')}
+    ${completedSection}`;
 }
 
 // ── view: note ───────────────────────────────────────
@@ -954,6 +966,7 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('input', (e) => {
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
+  if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
 });
 let proseT;
@@ -1012,7 +1025,9 @@ document.addEventListener('click', (e) => {
 
   // tasks
   const sh = t.closest('[data-sort]');
-  if (sh) { const c = sh.dataset.sort; if (state.taskSort.col === c) state.taskSort.dir = state.taskSort.dir === 'asc' ? 'desc' : 'asc'; else state.taskSort = { col: c, dir: c === 'created' ? 'desc' : 'asc' }; renderTasks(); return; }
+  if (sh) { const c = sh.dataset.sort; if (state.taskSort.col === c) state.taskSort.dir = state.taskSort.dir === 'asc' ? 'desc' : 'asc'; else state.taskSort = { col: c, dir: c === 'created' ? 'desc' : 'asc' }; rerenderCurrent(); return; }
+  if (t.closest('[data-show-completed]')) { state.showCompleted = true; renderTasks(); return; }
+  if (t.closest('[data-hide-completed]')) { state.showCompleted = false; state.completedQuery = ''; renderTasks(); return; }
   const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
   const dt = t.closest('[data-del-task]'); if (dt) { delTask(dt.dataset.delTask); return; }
