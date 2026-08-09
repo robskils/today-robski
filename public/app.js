@@ -1378,12 +1378,13 @@ let dragFav = null, dragSec = null;
 function clearDropMarks() {
   document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
 }
-function markDrop(over, e) {
+function markDrop(over, e, axis) {
   clearDropMarks();
   if (!over) return;
   const r = over.getBoundingClientRect();
-  const vertical = r.height >= r.width; // sidebar sections stack; home favs may sit side by side
-  const after = vertical ? e.clientY > r.top + r.height / 2 : e.clientX > r.left + r.width / 2;
+  // Sidebar sections always stack vertically (even a collapsed, wide one), so the
+  // axis is passed explicitly rather than guessed from the element's shape.
+  const after = axis === 'h' ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2;
   over.classList.add(after ? 'drop-after' : 'drop-before');
 }
 // The key/id of the sibling to insert BEFORE, given the marked drop target.
@@ -1398,8 +1399,8 @@ document.addEventListener('dragstart', (e) => {
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
 });
 document.addEventListener('dragover', (e) => {
-  if (dragFav && e.target.closest('#favs')) { e.preventDefault(); markDrop(e.target.closest('[data-fav-id]'), e); return; }
-  if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e); return; }
+  if (dragFav && e.target.closest('#favs')) { e.preventDefault(); markDrop(e.target.closest('[data-fav-id]'), e, 'h'); return; }
+  if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   const z = e.target.closest('[data-att-zone]');
   if (z && !dragFav && !dragSec && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); z.classList.add('att-drag'); }
 });
