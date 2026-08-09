@@ -1289,6 +1289,34 @@ document.addEventListener('pointerdown', (e) => {
 document.addEventListener('pointermove', (e) => { if (!resizing) return; const w = Math.max(64, Math.round(resizing.startW + (e.clientX - resizing.startX))); if (resizing.colEl) resizing.colEl.style.width = `${w}px`; });
 document.addEventListener('pointerup', () => { if (!resizing) return; const w = resizing.colEl ? parseInt(resizing.colEl.style.width, 10) : null; const id = resizing.colId; resizing = null; if (w) saveTableColumns(tcols().map((c) => c.id === id ? { ...c, width: w } : c)).catch((x) => toast(x.message)); });
 
+// Drag a bullet/numbered list item up or down to reorder it. Grabbing happens
+// in the marker gutter (left edge) so clicking the text still edits normally.
+let liDrag = null;
+document.addEventListener('pointerdown', (e) => {
+  const li = e.target.closest && e.target.closest('.prose li');
+  if (!li) return;
+  const rect = li.getBoundingClientRect();
+  if (e.clientX > rect.left + 4) return;               // only from the handle/marker gutter
+  e.preventDefault();
+  liDrag = { li, list: li.parentElement };
+  li.classList.add('li-dragging');
+}, true);
+document.addEventListener('pointermove', (e) => {
+  if (!liDrag) return;
+  const over = document.elementFromPoint(e.clientX, e.clientY);
+  const overLi = over && over.closest && over.closest('.prose li');
+  if (!overLi || overLi === liDrag.li || overLi.parentElement !== liDrag.list) return;
+  const r = overLi.getBoundingClientRect();
+  liDrag.list.insertBefore(liDrag.li, e.clientY > r.top + r.height / 2 ? overLi.nextSibling : overLi);
+});
+document.addEventListener('pointerup', () => {
+  if (!liDrag) return;
+  const prose = liDrag.li.closest('.prose');
+  liDrag.li.classList.remove('li-dragging');
+  liDrag = null;
+  if (prose && prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML);
+});
+
 // ── task/note/table helpers ──────────────────────────
 async function addTask(title, area, priority) {
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) });

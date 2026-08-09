@@ -743,7 +743,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .prose blockquote { border-left:3px solid var(--line-2); padding-left:16px; margin:0 0 14px; color:var(--ink-2); font-style:italic; }
 .prose ul, .prose ol { margin:0 0 14px; padding-left:26px; }
 .prose ul { list-style:disc; } .prose ol { list-style:decimal; }
-.prose li { margin:3px 0; }
+.prose li { margin:3px 0; position:relative; }
+/* A grab handle in the marker gutter: drag a list item up or down to reorder. */
+.prose li::before { content:'⠿'; position:absolute; left:-24px; top:0; width:20px; text-align:center; color:var(--ink-3); opacity:0; cursor:grab; transition:opacity .12s; }
+.prose li:hover::before { opacity:.45; }
+.prose li.li-dragging { opacity:.45; }
+.prose li.li-dragging::before { cursor:grabbing; }
 .note-body { min-height:120px; }
 
 /* selection formatting bubble */
