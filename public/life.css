@@ -627,6 +627,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-sig-ed { min-height:70px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:12px 14px; font-size:15px; }
 .mail-sig-ed:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); }
 .mail-sig-act { display:flex; align-items:center; gap:12px; margin-top:11px; }
+.mail-sig-act .add-btn { width:auto; white-space:nowrap; padding:9px 18px; }
 .sig-hint { color:var(--ink-3); font-size:13px; }
 .mail-sig-note { color:var(--ink-3); font-size:13.5px; padding:2px 2px; }
 .mail-sig-note b { color:var(--ink-2); font-weight:600; }
