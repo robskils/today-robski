@@ -1101,6 +1101,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); execItem(state.pal.items[state.pal.sel]); }
 });
 document.addEventListener('input', (e) => {
+  if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
