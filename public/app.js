@@ -1737,7 +1737,16 @@ async function addColumn(name, type) { const col = { id: uid(), name: name || 'C
 async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
 async function renameColumn(id, v) { const cols = tcols().map((c) => c.id === id ? { ...c, name: v } : c); await saveTableColumns(cols).catch((x) => toast(x.message)); }
 async function setColType(id, type) {
-  const cols = tcols().map((c) => c.id === id ? { ...c, type, ...(type === 'select' && !c.options ? { options: [] } : {}) } : c);
+  let seed = {};
+  if (type === 'select') {
+    const existing = tcols().find((c) => c.id === id);
+    if (!existing.options || !existing.options.length) {
+      // Seed options from the column's existing distinct values so converting a
+      // free-form column to Select doesn't blank out the data already there.
+      seed = { options: [...new Set(state.tables_rows.map((r) => (r.props.values || {})[id]).filter((x) => x != null && x !== '').map(String))] };
+    }
+  }
+  const cols = tcols().map((c) => c.id === id ? { ...c, type, ...seed } : c);
   await saveTableColumns(cols); renderTable();
 }
 async function addColOption(id, opt) {
