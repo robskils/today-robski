@@ -1399,9 +1399,14 @@ export default {
     // Everything non-API/auth falls through to the assets binding untouched.
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
       const isLife = url.hostname === 'life.robski.uk';
+      // life.robski.uk/today IS the real day planner (index.html) - the exact
+      // same app as today.robski.uk, sharing the Life login (same origin/token).
+      if (isLife && /^\/today(\/|$)/.test(path)) {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin), request)));
+      }
       // The Life app is a single page; its in-app routes (/calendar, /mail) must
       // serve the app shell so a pinned home-screen icon can deep-link into one.
-      if (path === '/' || (isLife && /^\/(calendar|mail|today)(\/|$)/.test(path))) {
+      if (path === '/' || (isLife && /^\/(calendar|mail)(\/|$)/.test(path))) {
         const file = isLife ? '/app.html' : '/index.html';
         return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
       }

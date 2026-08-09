@@ -943,7 +943,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
   { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
   { kind: 'action', title: 'Go to Mail', run: () => openMail() },
-  { kind: 'action', title: 'Go to Today', run: () => openToday() },
+  { kind: 'action', title: 'Go to Today', run: () => { location.assign('/today'); return Promise.resolve(); } },
 ];
 let palT;
 function buildPalette() {
@@ -1016,7 +1016,7 @@ document.addEventListener('click', (e) => {
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-open-today]')) { openToday().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-today]')) { location.assign('/today'); return; }
   if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }
@@ -1424,7 +1424,6 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     const route = location.pathname.replace(/\/$/, '');
     if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
-    else if (route === '/today') await openToday();
     else await openHome();
   } catch (e) { toast(e.message); renderNav(); }
 })();

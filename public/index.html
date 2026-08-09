@@ -3,11 +3,10 @@
 <head>
 <meta charset="utf-8">
 <script>
-  // life.robski.uk is the Robski Life app; today.robski.uk is the day planner.
-  // Same worker + assets, split by hostname at the door - before anything paints.
-  // The worker serves the Life app at the life.robski.uk root, so if this page
-  // (index.html) ever loads there - eg /index.html directly - bounce to the root.
-  if (location.hostname === 'life.robski.uk') location.replace('/');
+  // today.robski.uk is the day planner; so is life.robski.uk/today (same app,
+  // shared login). Anywhere else on life.robski.uk, index.html shouldn't show -
+  // bounce to the Life app root.
+  if (location.hostname === 'life.robski.uk' && !location.pathname.startsWith('/today')) location.replace('/');
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
