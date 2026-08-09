@@ -623,7 +623,7 @@ async function openMailAccounts() {
   catch (e) { toast(e.message); }
 }
 async function addMailAccount(fields) {
-  try { const a = await mailApi('/accounts', { method: 'POST', body: JSON.stringify(fields) }); toast('Account added'); state.mail.accounts = state.mail.accounts || []; state.mail.accounts.push(a); state.mail.account = a.id; await openMail(); }
+  try { const a = await mailApi('/accounts', { method: 'POST', body: JSON.stringify(fields) }); toast(a.warning || 'Mailbox added'); state.mail.accounts = state.mail.accounts || []; state.mail.accounts.push(a); state.mail.account = a.id; await openMail(); }
   catch (e) { toast(e.message); }
 }
 async function delMailAccount(id) {
@@ -663,10 +663,11 @@ function renderMailAccounts(note) {
       <div class="mail-sig-ed prose" contenteditable="true" data-sig-acct="${a.id}" data-ph="Your signature…">${a.signature || defaultSignature(a)}</div>
       <div class="mail-sig-act"><button class="add-btn" data-sig-save="${a.id}">Save signature</button><span class="sig-hint">Added to the bottom of messages you send from this address.</span></div>
     </div></div>`).join('');
-  $('#pane').innerHTML = `<div class="pane-head home-head"><h1>Mail</h1><button class="add-btn wide" data-mail-add-acct>+ Account</button></div>
-    ${note ? `<p class="scope">${esc(note)}</p>` : ''}
+  $('#pane').innerHTML = `<div class="pane-head home-head"><h1>Mail</h1><button class="add-btn wide" data-mail-add-acct>+ Add mailbox</button></div>
+    <p class="scope">${note ? esc(note) + ' ' : ''}Connect as many mailboxes as you like - adding one never removes another.</p>
     <div class="mail-acct-list">${rows}</div>
-    <div id="mail-acct-form"></div>`;
+    <div id="mail-acct-form"></div>
+    ${(state.mail.accounts || []).length ? `<button class="mail-add-more" data-mail-add-acct>+ Add another mailbox</button>` : ''}`;
 }
 async function saveSignature(id) {
   const ed = document.querySelector(`[data-sig-acct="${id}"]`); if (!ed) return;

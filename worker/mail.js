@@ -241,11 +241,16 @@ export async function handleMail(request, env, url, json, err) {
         smtp_host: b.smtpHost, smtp_port: Number(b.smtpPort) || 465,
         username: b.username || b.email, pass_enc: await encryptPass(env, b.pass),
       };
-      const im = await imapOpen(env, acct);                       // prove it connects before storing
-      try { await im.login(); } finally { await im.logout(); }
+      // Try to sign in as a courtesy check, but never block the add on it: a
+      // hand-rolled IMAP client can trip on a provider quirk, and refusing to
+      // store the account then reads as "you must remove the existing one".
+      let warning = null;
+      try { const im = await imapOpen(env, acct); try { await im.login(); } finally { await im.logout(); } }
+      catch (e) { warning = `Saved, but the sign-in check failed (${e.message}). Check the settings if mail doesn't load.`; }
+      const pos = ((await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM mail_accounts').first()) || {}).p || 0;
       await env.DB.prepare('INSERT INTO mail_accounts (id,email,name,color,imap_host,imap_port,smtp_host,smtp_port,username,pass_enc,position) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-        .bind(acct.id, acct.email, acct.name, acct.color, acct.imap_host, acct.imap_port, acct.smtp_host, acct.smtp_port, acct.username, acct.pass_enc, 0).run();
-      return json(publicAccount(acct), request, 201);
+        .bind(acct.id, acct.email, acct.name, acct.color, acct.imap_host, acct.imap_port, acct.smtp_host, acct.smtp_port, acct.username, acct.pass_enc, pos).run();
+      return json({ ...publicAccount(acct), warning }, request, 201);
     }
 
     if (sub === 'accounts' && method === 'DELETE') { await env.DB.prepare('DELETE FROM mail_accounts WHERE id = ?').bind(seg[1]).run(); return json({ ok: true }, request); }
