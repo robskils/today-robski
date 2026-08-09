@@ -619,6 +619,17 @@ table.ttable tr:last-child td { border-bottom:0; }
 .ma-dot { width:10px; height:10px; border-radius:50%; flex:none; }
 .ma-e { flex:1; color:var(--ink); font-size:16px; }
 .mail-acct .x { color:var(--ink-3); font-size:18px; } .mail-acct .x:hover { color:var(--accent); }
+.mail-acct-card { max-width:560px; }
+.mail-acct .sig-btn { margin-left:auto; font-size:13.5px; padding:5px 12px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); }
+.mail-acct .sig-btn:hover { border-color:var(--accent); color:var(--accent); }
+.mail-acct-card .mail-acct .x { margin-left:8px; }
+.mail-sig { margin:2px 0 14px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-2); }
+.mail-sig-ed { min-height:70px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:12px 14px; font-size:15px; }
+.mail-sig-ed:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); }
+.mail-sig-act { display:flex; align-items:center; gap:12px; margin-top:11px; }
+.sig-hint { color:var(--ink-3); font-size:13px; }
+.mail-sig-note { color:var(--ink-3); font-size:13.5px; padding:2px 2px; }
+.mail-sig-note b { color:var(--ink-2); font-weight:600; }
 
 /* Attachments: image thumbnails + file chips on notes, task and row cards. */
 .attachments { margin-top:24px; }

@@ -28,7 +28,7 @@ async function decryptPass(env, b64) {
 }
 
 // ── accounts (D1) ─────────────────────────────────────────────────────
-const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color });
+const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '' });
 async function listAccounts(env) {
   const { results } = await env.DB.prepare('SELECT * FROM mail_accounts ORDER BY position, email').all();
   return results;
@@ -190,9 +190,11 @@ async function smtpSend(env, acct, msg) {
   await say('QUIT'); try { await writer.close(); } catch {}
 }
 
-// Build an RFC 822 message. Body is base64 (safe for any UTF-8 content).
+// Build an RFC 822 message. Bodies are base64 (safe for any UTF-8 content).
+// With an html part it's multipart/alternative (plain + html) so a signature
+// renders, while text-only clients still get a clean plain version.
+const b64utf8 = (s) => btoa(unescape(encodeURIComponent(s || ''))).replace(/(.{76})/g, '$1\r\n');
 function buildMessage(acct, msg) {
-  const b64 = btoa(unescape(encodeURIComponent(msg.text || '')));
   const subj = /[^\x00-\x7F]/.test(msg.subject || '') ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(msg.subject)))}?=` : (msg.subject || '(no subject)');
   const headers = [
     `From: ${acct.name ? `${mimeWord(acct.name)} ` : ''}<${acct.email}>`,
@@ -204,10 +206,19 @@ function buildMessage(acct, msg) {
     msg.inReplyTo ? `In-Reply-To: ${msg.inReplyTo}` : null,
     msg.inReplyTo ? `References: ${msg.inReplyTo}` : null,
     'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: base64',
-  ].filter(Boolean).join('\r\n');
-  return `${headers}\r\n\r\n${b64.replace(/(.{76})/g, '$1\r\n')}`;
+  ].filter(Boolean);
+  if (msg.html) {
+    const bnd = `b_${crypto.randomUUID().replace(/-/g, '')}`;
+    const head = [...headers, `Content-Type: multipart/alternative; boundary="${bnd}"`].join('\r\n');
+    const body = [
+      `--${bnd}`, 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b64utf8(msg.text || ''),
+      `--${bnd}`, 'Content-Type: text/html; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b64utf8(msg.html),
+      `--${bnd}--`, '',
+    ].join('\r\n');
+    return `${head}\r\n\r\n${body}`;
+  }
+  const head = [...headers, 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64'].join('\r\n');
+  return `${head}\r\n\r\n${b64utf8(msg.text || '')}`;
 }
 const mimeWord = (s) => /[^\x00-\x7F]/.test(s) ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(s)))}?=` : s;
 
@@ -238,6 +249,17 @@ export async function handleMail(request, env, url, json, err) {
     }
 
     if (sub === 'accounts' && method === 'DELETE') { await env.DB.prepare('DELETE FROM mail_accounts WHERE id = ?').bind(seg[1]).run(); return json({ ok: true }, request); }
+
+    if (sub === 'accounts' && seg[1] && method === 'PATCH') {
+      const b = await request.json();
+      const existing = await getAcct(env, seg[1]); if (!existing) return err('account not found', request, 404);
+      const fields = []; const vals = [];
+      if ('signature' in b) { fields.push('signature = ?'); vals.push(b.signature || ''); }
+      if ('name' in b) { fields.push('name = ?'); vals.push(b.name || existing.name); }
+      if ('color' in b) { fields.push('color = ?'); vals.push(b.color || null); }
+      if (fields.length) { vals.push(seg[1]); await env.DB.prepare(`UPDATE mail_accounts SET ${fields.join(', ')} WHERE id = ?`).bind(...vals).run(); }
+      return json(publicAccount(await getAcct(env, seg[1])), request);
+    }
 
     const acct = await getAcct(env, url.searchParams.get('account') || (await request.clone().json().catch(() => ({}))).account);
     if (!acct) return err('unknown account', request, 400);

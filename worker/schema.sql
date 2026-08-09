@@ -236,5 +236,6 @@ CREATE TABLE IF NOT EXISTS mail_accounts (
   smtp_port INTEGER NOT NULL DEFAULT 465,
   username  TEXT NOT NULL,
   pass_enc  TEXT NOT NULL,
-  position  INTEGER NOT NULL DEFAULT 0
+  position  INTEGER NOT NULL DEFAULT 0,
+  signature TEXT
 );

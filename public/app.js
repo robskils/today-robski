@@ -609,7 +609,12 @@ async function mailDelete(uid) {
   catch (e) { toast(e.message); }
 }
 async function mailSend(to, cc, subject, body, inReplyTo) {
-  try { await mailApi('/send', { method: 'POST', body: JSON.stringify({ account: state.mail.account, to, cc, subject, text: body, inReplyTo }) }); toast('Sent'); state.mail.composing = false; renderMail(); }
+  const acct = (state.mail.accounts || []).find((a) => a.id === state.mail.account);
+  const sig = acct && acct.signature;
+  const payload = { account: state.mail.account, to, cc, subject, text: body + (sig ? `\n\n${sigToText(sig)}` : ''), inReplyTo };
+  // With a signature, send HTML too so it renders; plain text stays the fallback.
+  if (sig) payload.html = `${composeHtml(body)}<br>${sig}`;
+  try { await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) }); toast('Sent'); state.mail.composing = false; renderMail(); }
   catch (e) { toast(e.message); }
 }
 async function openMailAccounts() {
@@ -642,13 +647,38 @@ function mailReplyStart(all) {
   setTimeout(() => $('#mc-body') && $('#mc-body').focus(), 0);
 }
 
+// A tasteful default signature so a new account starts with something real to
+// edit rather than a blank box.
+function defaultSignature(a) {
+  const name = a.name && a.name !== a.email ? a.name : 'Robin Lumley-Savile';
+  const accent = a.color || '#c4412e';
+  return `<table cellpadding="0" cellspacing="0" style="font-family:-apple-system,Segoe UI,Inter,sans-serif"><tr><td style="border-left:3px solid ${accent};padding:2px 0 2px 12px"><div style="font-size:15px;font-weight:600;color:#1b1820">${esc(name)}</div><div style="font-size:13px;color:#8a8580;margin-top:2px"><a href="mailto:${esc(a.email)}" style="color:#8a8580;text-decoration:none">${esc(a.email)}</a></div></td></tr></table>`;
+}
 function renderMailAccounts(note) {
-  const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span><button class="x" data-mail-del-acct="${a.id}" title="Remove">×</button></div>`).join('');
+  const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct-card">
+    <div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span>
+      <button class="ghost sig-btn" data-sig-toggle="${a.id}">Signature</button>
+      <button class="x" data-mail-del-acct="${a.id}" title="Remove">×</button></div>
+    <div class="mail-sig" data-sig-panel="${a.id}" hidden>
+      <div class="mail-sig-ed prose" contenteditable="true" data-sig-acct="${a.id}" data-ph="Your signature…">${a.signature || defaultSignature(a)}</div>
+      <div class="mail-sig-act"><button class="add-btn" data-sig-save="${a.id}">Save signature</button><span class="sig-hint">Added to the bottom of messages you send from this address.</span></div>
+    </div></div>`).join('');
   $('#pane').innerHTML = `<div class="pane-head home-head"><h1>Mail</h1><button class="add-btn wide" data-mail-add-acct>+ Account</button></div>
     ${note ? `<p class="scope">${esc(note)}</p>` : ''}
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>`;
 }
+async function saveSignature(id) {
+  const ed = document.querySelector(`[data-sig-acct="${id}"]`); if (!ed) return;
+  const html = sanitizeEmailHtml(ed.innerHTML);
+  try {
+    const a = await mailApi(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify({ signature: html }) });
+    const i = (state.mail.accounts || []).findIndex((x) => x.id === id); if (i >= 0) state.mail.accounts[i] = a;
+    toast('Signature saved');
+  } catch (e) { toast(e.message); }
+}
+const sigToText = (html) => { const d = document.createElement('div'); d.innerHTML = html || ''; return (d.textContent || '').replace(/\n{3,}/g, '\n\n').trim(); };
+const composeHtml = (text) => `<div style="font-family:-apple-system,Segoe UI,Inter,sans-serif;font-size:15px;line-height:1.55;color:#1b1820;white-space:pre-wrap">${esc(text || '')}</div>`;
 function showMailAccountForm() {
   $('#mail-acct-form').innerHTML = `<form id="mail-acct-form-el" class="add-task" style="flex-direction:column;align-items:stretch;gap:10px;max-width:520px;margin-top:16px">
     <input id="ma-email" type="email" placeholder="Email address" required>
@@ -711,6 +741,7 @@ function renderMail(loading) {
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}">
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <textarea id="mc-body" placeholder="Write your message…">${esc(m.composing.body || '')}</textarea>
+      ${(() => { const a = (m.accounts || []).find((x) => x.id === m.account); return a && a.signature ? `<div class="mail-sig-note">✓ Signature for <b>${esc(a.email)}</b> will be added</div>` : ''; })()}
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-cancel>Cancel</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
@@ -1148,6 +1179,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
+  const sigt = t.closest('[data-sig-toggle]'); if (sigt) { const p = document.querySelector(`[data-sig-panel="${sigt.dataset.sigToggle}"]`); if (p) p.hidden = !p.hidden; return; }
+  const sigs = t.closest('[data-sig-save]'); if (sigs) { saveSignature(sigs.dataset.sigSave); return; }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
   const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; state.cal.editing = e; state.cal.adding = false; renderCalendar(); } return; }
