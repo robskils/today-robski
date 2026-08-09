@@ -70,7 +70,7 @@ function proseEditor(body, key) {
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
 // tidiness (stray pasted styles) more than security.
-const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1 };
+const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1 };
 function sanitizeProse(html) {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   const walk = (node) => {
@@ -80,7 +80,7 @@ function sanitizeProse(html) {
       walk(c);
       let tag = c.tagName;
       if (tag === 'B') tag = 'STRONG'; else if (tag === 'I') tag = 'EM';
-      else if (tag === 'DIV') tag = 'P'; else if (tag === 'LI') tag = 'P';
+      else if (tag === 'DIV') tag = 'P';
       if (!PROSE_OK[tag]) { const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }
       const el = c.tagName === tag ? c : (() => { const n = doc.createElement(tag); while (c.firstChild) n.appendChild(c.firstChild); c.replaceWith(n); return n; })();
       const href = el.tagName === 'A' ? el.getAttribute('href') : null;
@@ -1306,6 +1306,8 @@ function ensureBubble() {
     <span class="bub-sep"></span>
     <button data-fmt="h2" title="Heading">H</button>
     <button data-fmt="quote" title="Quote">&#10077;</button>
+    <button data-fmt="ul" title="Bulleted list">&#8226;</button>
+    <button data-fmt="ol" title="Numbered list" style="font-size:12px">1.</button>
     <button data-fmt="link" title="Add link">&#8599;</button>`;
   document.body.appendChild(b); return b;
 }
@@ -1335,6 +1337,8 @@ function applyFmt(cmd) {
   else if (cmd === 'italic') document.execCommand('italic');
   else if (cmd === 'h2') document.execCommand('formatBlock', false, currentBlockTag() === 'H2' ? '<p>' : '<h2>');
   else if (cmd === 'quote') document.execCommand('formatBlock', false, currentBlockTag() === 'BLOCKQUOTE' ? '<p>' : '<blockquote>');
+  else if (cmd === 'ul') document.execCommand('insertUnorderedList');
+  else if (cmd === 'ol') document.execCommand('insertOrderedList');
   else if (cmd === 'link') { const url = prompt('Link to (URL):'); if (url) document.execCommand('createLink', false, url.trim()); }
   positionBubble();
   saveProse(prose.dataset.prose, prose.innerHTML);

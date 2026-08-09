@@ -201,6 +201,12 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
    the planner keeps only its day navigation. Also drop the sticky top gap. */
 .embed .wordmark, .embed .nav-link, .embed #theme-btn { display: none; }
 .embed .bar { position: static; backdrop-filter: none; background: transparent; padding-top: 20px; }
+/* Embedded, only the schedule scrolls: the header (day + date) and the lane
+   rail stay put, the grid below them scrolls on its own. */
+.embed body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
+.embed #app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.embed .bar, .embed .rail { flex: none; }
+.embed .grid { flex: 1; min-height: 0; overflow-y: auto; }
 
 /* On-brand wordmark, same style as Life · Robski: serif, italic accent word,
    a gold interpunct. */
