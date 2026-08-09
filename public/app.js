@@ -606,8 +606,8 @@ async function mailDelete(uid) {
   try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null; renderMail(); }
   catch (e) { toast(e.message); }
 }
-async function mailSend(to, subject, body, inReplyTo) {
-  try { await mailApi('/send', { method: 'POST', body: JSON.stringify({ account: state.mail.account, to, subject, text: body, inReplyTo }) }); toast('Sent'); state.mail.composing = false; renderMail(); }
+async function mailSend(to, cc, subject, body, inReplyTo) {
+  try { await mailApi('/send', { method: 'POST', body: JSON.stringify({ account: state.mail.account, to, cc, subject, text: body, inReplyTo }) }); toast('Sent'); state.mail.composing = false; renderMail(); }
   catch (e) { toast(e.message); }
 }
 async function openMailAccounts() {
@@ -624,11 +624,20 @@ async function delMailAccount(id) {
   try { await mailApi(`/accounts/${id}`, { method: 'DELETE' }); state.mail.accounts = (state.mail.accounts || []).filter((a) => a.id !== id); if (state.mail.account === id) state.mail.account = null; renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
   catch (e) { toast(e.message); }
 }
-function mailReplyStart() {
+function mailReplyStart(all) {
   const o = state.mail.open; if (!o) return;
+  const me = (((state.mail.accounts || []).find((a) => a.id === state.mail.account) || {}).email || '').toLowerCase();
+  const to = o.from ? o.from.address : '';
+  let cc = '';
+  if (all) {
+    const seen = new Set([to.toLowerCase(), me]);
+    const others = [...(o.to || []), ...(o.cc || [])].map((a) => a.address).filter(Boolean).filter((a) => { const k = a.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+    cc = others.join(', ');
+  }
   const quote = (o.text || '').split('\n').map((l) => `> ${l}`).join('\n');
-  state.mail.composing = { to: o.from ? o.from.address : '', subject: /^re:/i.test(o.subject) ? o.subject : `Re: ${o.subject}`, body: `\n\n---\nOn ${new Date(o.date).toLocaleString()}, ${o.from ? o.from.address : ''} wrote:\n${quote}`, inReplyTo: o.messageId };
+  state.mail.composing = { to, cc, subject: /^re:/i.test(o.subject) ? o.subject : `Re: ${o.subject}`, body: `\n\n---\nOn ${new Date(o.date).toLocaleString()}, ${o.from ? o.from.address : ''} wrote:\n${quote}`, inReplyTo: o.messageId };
   renderMail();
+  setTimeout(() => $('#mc-body') && $('#mc-body').focus(), 0);
 }
 
 function renderMailAccounts(note) {
@@ -649,12 +658,39 @@ function showMailAccountForm() {
   $('#ma-email').focus();
 }
 const initial = (s) => (String(s || '?').trim().charAt(0) || '?').toUpperCase();
-// Email HTML is untrusted: render it in a sandboxed iframe (no scripts, no
-// same-origin) so its own styles show but it can't touch the app.
+// Strip anything executable from an email's own markup before it goes in the
+// frame: no <script>, no inline on* handlers, no javascript: URLs, no <base>.
+// Its <style> is kept (that's what makes the mail look right) and the frame's
+// own sandbox isolates those styles from the app.
+function sanitizeEmailHtml(html) {
+  const doc = new DOMParser().parseFromString(html || '', 'text/html');
+  doc.querySelectorAll('script, base, link[rel="import"], meta[http-equiv]').forEach((n) => n.remove());
+  doc.querySelectorAll('*').forEach((el) => {
+    [...el.attributes].forEach((a) => {
+      const n = a.name.toLowerCase();
+      if (n.startsWith('on')) el.removeAttribute(a.name);
+      else if ((n === 'href' || n === 'src' || n === 'xlink:href') && /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name);
+    });
+  });
+  return doc.head.innerHTML + doc.body.innerHTML;
+}
+// Render the (now script-free) email in a sandboxed frame and have it report its
+// content height, so the frame grows to fit and the whole reading pane - header
+// and body together - scrolls as one. allow-scripts runs only our reporter; the
+// email's own scripts were stripped above, and there is no allow-same-origin.
 function wrapEmailHtml(html) {
   return `<!doctype html><html><head><base target="_blank"><meta name="color-scheme" content="light">
     <style>html,body{margin:0}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
-    </head><body>${html}</body></html>`;
+    </head><body>${sanitizeEmailHtml(html)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);})();<\/script></body></html>`;
+}
+// Grow #mail-body-frame to whatever height it reports (installed once).
+if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
+  window.__mailFrameSizer = true;
+  window.addEventListener('message', (ev) => {
+    if (!ev.data || typeof ev.data.__mailHeight !== 'number') return;
+    const f = document.getElementById('mail-body-frame');
+    if (f) f.style.height = `${Math.max(200, Math.min(ev.data.__mailHeight + 6, 40000))}px`;
+  });
 }
 function renderMail(loading) {
   const m = state.mail;
@@ -670,6 +706,7 @@ function renderMail(loading) {
     reader = `<form id="mail-compose-form" class="mail-compose">
       <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span></div>
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" required>
+      <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}">
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <textarea id="mc-body" placeholder="Write your message…">${esc(m.composing.body || '')}</textarea>
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-cancel>Cancel</button></div></form>`;
@@ -677,13 +714,13 @@ function renderMail(loading) {
     const o = m.open;
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
-        <span class="mail-msg-act"><button class="ghost" data-mail-reply>Reply</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
+        <span class="mail-msg-act"><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
         <span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<span class="mail-att-chip">📎 ${esc(a.filename || 'attachment')}</span>`).join('')}</div>` : ''}
-      ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox" title="Message"></iframe>` : `<pre class="mail-text">${esc(o.text || '')}</pre>`}</div>`;
+      ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<pre class="mail-text">${esc(o.text || '')}</pre>`}</div>`;
   } else {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
   }
@@ -1046,6 +1083,12 @@ document.addEventListener('keydown', (e) => {
   // ⌥⌘T / ⌥⌘W - the browser owns ⌘T/⌘W, so tabs use the Option variant.
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyT') { e.preventDefault(); newTab(); return; }
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyW') { e.preventDefault(); closeTab(state.activeTab); return; }
+  // Mail: R replies to sender, A replies to all - while reading, not while typing.
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && state.view.type === 'mail' && state.mail && state.mail.open && !state.mail.composing) {
+    const editing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+    if (!editing && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); mailReplyStart(false); return; }
+    if (!editing && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); mailReplyStart(true); return; }
+  }
   if (!state.pal.open) return;
   if (e.key === 'Escape') { closePalette(); return; }
   if (e.key === 'ArrowDown') { e.preventDefault(); state.pal.sel = Math.min(state.pal.items.length - 1, state.pal.sel + 1); renderPalItems(); }
@@ -1093,7 +1136,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { state.mail.composing = {}; renderMail(); return; }
   if (t.closest('[data-mail-cancel]')) { state.mail.composing = false; renderMail(); return; }
-  if (t.closest('[data-mail-reply]')) { mailReplyStart(); return; }
+  if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
+  if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
   const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(Number(mdl.dataset.mailDel)); return; }
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
@@ -1194,7 +1238,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim()); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
-  if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) mailSend(to, $('#mc-subject').value.trim(), $('#mc-body').value, state.mail.composing && state.mail.composing.inReplyTo); }
+  if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) mailSend(to, $('#mc-cc').value.trim(), $('#mc-subject').value.trim(), $('#mc-body').value, state.mail.composing && state.mail.composing.inReplyTo); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
   if (e.target.matches('[data-cm-addopt]')) { const i = $('#cm-opt-input'); if (i && state.tables_view && state.tables_view.colMenu) addColOption(state.tables_view.colMenu.colId, i.value); }
 });

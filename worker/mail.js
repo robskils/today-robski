@@ -260,7 +260,9 @@ export async function handleMail(request, env, url, json, err) {
         const p = await PostalMime.parse(raw);
         return json({
           uid, subject: p.subject || '(no subject)', from: p.from || null,
-          to: (p.to || []).map((a) => ({ name: a.name, address: a.address })), date: (p.date ? new Date(p.date).toISOString() : ''),
+          to: (p.to || []).map((a) => ({ name: a.name, address: a.address })),
+          cc: (p.cc || []).map((a) => ({ name: a.name, address: a.address })),
+          date: (p.date ? new Date(p.date).toISOString() : ''),
           messageId: p.messageId || null, html: p.html || null, text: p.text || '',
           attachments: (p.attachments || []).map((a) => ({ filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType })),
         }, request);
