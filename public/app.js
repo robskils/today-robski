@@ -145,6 +145,38 @@ function openView(v) {
     default: return openHome();
   }
 }
+// ── in-app history (Back) + breadcrumbs ──────────────
+let navHist = [], navLastKey = null, navLastView = null;
+const viewKey = (v) => `${v.type}:${v.id || ''}`;
+// Called from renderNav on every render; pushes the previous view when the view
+// actually changes, so Back returns to where you were.
+function recordHistory() {
+  const key = viewKey(state.view);
+  if (key === navLastKey) return;
+  if (navLastView) { navHist.push(navLastView); if (navHist.length > 60) navHist.shift(); }
+  navLastKey = key; navLastView = { ...state.view };
+}
+function navBack() {
+  if (!navHist.length) return;
+  const prev = navHist.pop();
+  navLastKey = null; navLastView = null;           // openView re-seeds without re-pushing
+  Promise.resolve(openView(prev)).catch(() => openHome());
+}
+function areaLinkHtml(areaId) {
+  if (!areaId) return '';
+  const a = areaById(areaId); if (!a) return '';
+  return `<button class="crumb-area" data-open-area="${a.id}" title="Go to the ${esc(a.title)} life area"><span class="ca-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title)}</button>`;
+}
+// A consistent breadcrumb bar: Back + Home › … › current, plus a link to the
+// connected life area when there is one.
+function crumbNav(trail, areaId) {
+  const back = navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : '';
+  const sep = '<span class="crumb-sep">›</span>';
+  const t = trail.map((c, i) => (i === trail.length - 1
+    ? `<span class="crumb cur">${esc(c.label)}</span>`
+    : `<button class="crumb" ${c.attr || ''}>${esc(c.label)}</button>`)).join(sep);
+  return `<div class="crumbbar">${back}<div class="crumbs">${t}</div>${areaLinkHtml(areaId)}</div>`;
+}
 function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); } catch {} }
 function syncActiveTab() {
   const tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
@@ -286,7 +318,7 @@ function renderNav() {
       <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
     </div>`;
   renderTabbar(v);
-  syncActiveTab(); renderTabs();
+  syncActiveTab(); renderTabs(); recordHistory();
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
 // backdrop-filter, which would make it the containing block for a fixed child
@@ -456,9 +488,9 @@ function renderArea() {
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
-      <div class="area-hero-top"><button class="crumb" data-open-areas>Life areas</button>
+      <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
         <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
-      <h1><span class="ac-dot"></span>${esc(area.title)}</h1>
+      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}</p>
     </div>
     ${sec('Notes', notes.length, `<div class="tbl-cards">${noteCards}</div>`)}
@@ -1029,8 +1061,8 @@ function renderNote() {
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
   const kids = state.note.children.map((c) => `<button class="subpage" data-open-note="${c.id}"><span class="sp-ico">▸</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
-      <span class="crumb-tools">${areaSelect(n.props && n.props.area, 'data-note-area')}
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
+      <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
@@ -1122,7 +1154,8 @@ function renderTable() {
     const r = state.tables_rows.find((x) => x.id === vw.openRow) || (vw.openRow = null);
     if (r) {
       const title = (r.props.values || {})[c[0] && c[0].id] || 'Untitled';
-      $('#pane').innerHTML = `<div class="card"><button class="ghost" data-back-table>← ${esc(t.title || 'table')}</button>
+      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
+        <div class="card">
         <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row')}
         ${attachSection(r)}</div>`;
@@ -1139,6 +1172,7 @@ function renderTable() {
   const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd === 'asc' ? '↑' : '↓'}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const body = sortRows(state.tables_rows).map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
       ${areaSelect(t.props && t.props.area, 'data-table-area')}
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
@@ -1291,6 +1325,7 @@ document.addEventListener('click', (e) => {
     document.body.appendChild(a); a.click(); a.remove();
     return;
   }
+  if (t.closest('[data-nav-back]')) { navBack(); return; }
   const mbg = t.closest('[data-move-bg]'); if (mbg && !t.closest('.pal')) { closeMove(); return; }
   const mvt = t.closest('[data-move-to]'); if (mvt) { moveNote(mvt.dataset.moveTo || null); return; }
   if (t.closest('[data-move-note]')) { openMoveNote(); return; }
@@ -1425,10 +1460,11 @@ document.addEventListener('blur', (e) => {
   if (e.target.id === 'taskcard-title') patchTaskTitle(state.task_open.task.id, e.target.value.trim());
   if (e.target.dataset && e.target.dataset.prose) saveProse(e.target.dataset.prose, e.target.innerHTML);
   if (e.target.dataset && e.target.dataset.rename !== undefined) renameTable(e.target.value.trim());
+  if (e.target.id === 'area-title') renameArea(e.target.value.trim());
   const cn = e.target.dataset && e.target.dataset.colname; if (cn !== undefined && cn) renameColumn(cn, e.target.value.trim());
 }, true);
 document.addEventListener('keydown', (e) => {
-  if ((e.target.id === 'note-title' || e.target.id === 'taskcard-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+  if ((e.target.id === 'note-title' || e.target.id === 'taskcard-title' || e.target.id === 'area-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
 });
 document.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -1603,8 +1639,8 @@ async function openTaskCard(id) {
 function renderTaskCard() {
   const t = state.task_open.task; const a = areaById(t.props.area); const p = t.props.priority;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb" data-view-home>Home</button><span class="crumb-sep">/</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">/</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
-      <span class="crumb-tools"><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
+      <span class="crumb-tools">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
       <button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button></span></div>
     <div class="task-focus">
       <button class="tf-check ${t.props.done ? 'done' : ''}" data-check="${t.id}" title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
@@ -1738,6 +1774,11 @@ async function delNote() {
 async function addRow() { const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: state.tables_open.id, props: { values: {} } }) }); state.tables_rows.push(r); renderTable(); }
 async function addColumn(name, type) { const col = { id: uid(), name: name || 'Column', type }; state.tables_view.addingCol = false; await saveTableColumns([...tcols(), col]); renderTable(); }
 async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
+async function renameArea(v) {
+  const a = state.area_open && state.area_open.area; if (!a || !v || v === a.title) return;
+  a.title = v; const s = state.areas.find((x) => x.id === a.id); if (s) s.title = v;
+  try { await api(`/api/blocks/${a.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); }
+}
 async function renameColumn(id, v) { const cols = tcols().map((c) => c.id === id ? { ...c, name: v } : c); await saveTableColumns(cols).catch((x) => toast(x.message)); }
 async function setColType(id, type) {
   let seed = {};

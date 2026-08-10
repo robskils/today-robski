@@ -285,6 +285,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-blank { padding:70px 20px; text-align:center; }
 
 .note-crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; font-size:15px; }
+/* Standard breadcrumb bar (tables, rows, and shared with note/task/area). */
+.crumbbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.crumbbar .crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
+.crumb-back { flex:none; width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-2); font-size:18px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
+.crumb-back:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
+.note-crumbs .crumb-back, .area-hero-top .crumb-back { margin-right:2px; }
+.crumb-area { margin-left:auto; display:inline-flex; align-items:center; gap:7px; padding:5px 12px 5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:14px; transition:background .12s,color .12s,border-color .12s; }
+.crumb-area:hover { border-color:var(--accent); color:var(--ink); }
+.crumb-area .ca-dot { width:9px; height:9px; border-radius:50%; flex:none; }
+.crumb-tools .crumb-area { margin-left:0; }
 .crumb { color:var(--ink-3); background:none; border:0; font:inherit; font-size:15px; padding:2px 4px; border-radius:6px; }
 .crumb:hover { color:var(--accent); }
 .crumb.cur { color:var(--ink-2); }
@@ -469,6 +479,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .area-hero { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-bottom:8px; }
 .area-hero h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(30px,4.5vw,44px); font-weight:500; display:flex; align-items:center; gap:12px; margin-top:4px; }
 .area-hero h1 .ac-dot { width:15px; height:15px; }
+/* The area title is editable in place — click to rename. */
+.area-title-edit { flex:1; min-width:0; font:inherit; color:inherit; background:transparent; border:0; padding:2px 6px; margin:-2px -6px; border-radius:8px; transition:background .12s,box-shadow .12s; }
+.area-title-edit:hover { background:var(--paper-2); }
+.area-title-edit:focus-visible { outline:none; background:var(--card); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
 .area-meta { color:var(--ink-3); font-size:15px; margin-top:6px; }
 
 .area-tasks { display:flex; flex-direction:column; }
