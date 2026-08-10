@@ -182,6 +182,23 @@ button { cursor:pointer; background:none; border:0; }
 
 .tbl-main { min-width:0; }
 .tbl-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+/* Table toolbar: search + filter. */
+.tbl-toolbar { display:flex; align-items:center; gap:10px; margin:0 0 16px; }
+.tbl-search { flex:1; margin:0; }
+.tbl-filter-btn { flex:none; display:inline-flex; align-items:center; gap:7px; padding:11px 16px; border-radius:12px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:15px; transition:border-color .12s,color .12s,background .12s; }
+.tbl-filter-btn:hover { border-color:var(--accent); color:var(--accent); }
+.tbl-filter-btn.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 9%,var(--card)); }
+.tbl-filters { margin:-4px 0 18px; padding:14px 16px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
+.filt-rows { display:flex; flex-direction:column; gap:8px; }
+.filt-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.filt-row select.sel { flex:none; min-width:130px; max-width:210px; }
+.filt-row input.fv { flex:1; min-width:130px; max-width:260px; }
+.filt-row select.fv { flex:none; min-width:130px; }
+.filt-x { flex:none; width:28px; height:28px; border-radius:7px; color:var(--ink-3); font-size:18px; line-height:1; }
+.filt-x:hover { color:var(--accent); background:var(--card); }
+.filt-empty { color:var(--ink-3); font-size:14px; padding:2px 0; }
+.filt-act { display:flex; gap:10px; margin-top:12px; }
+.tbl-noresult td { text-align:center; color:var(--ink-3); padding:22px; font-style:italic; }
 .tbl-head h1 { font-size:30px; }
 .tbl-head input.rename { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:500; background:transparent; border:0; border-bottom:1px solid var(--line-2); color:var(--ink); padding:2px 0; min-width:200px; }
 

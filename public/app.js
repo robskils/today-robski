@@ -1030,18 +1030,33 @@ function findBlock(id) {
     || (state.favs || []).find((b) => b.id === id);
 }
 function isFav(id) { const b = findBlock(id); return !!(b && b.props && b.props.fav); }
+// A block can exist as several in-memory copies: the list entry and the
+// currently-open view object (openTable/openNote fetch fresh). Update them all,
+// or the star you're looking at (rendered from the open object) won't change.
+function favApplyLocal(id, fav, rank) {
+  const copies = [
+    ...state.tasks.filter((x) => x.id === id), ...state.tables.filter((x) => x.id === id),
+    ...state.noteTops.filter((x) => x.id === id), ...state.areas.filter((x) => x.id === id),
+    state.tables_open && state.tables_open.id === id ? state.tables_open : null,
+    state.note && state.note.current && state.note.current.id === id ? state.note.current : null,
+    state.task_open && state.task_open.task && state.task_open.task.id === id ? state.task_open.task : null,
+    state.area_open && state.area_open.area && state.area_open.area.id === id ? state.area_open.area : null,
+  ].filter(Boolean);
+  for (const cp of copies) { cp.props = cp.props || {}; cp.props.fav = fav; if (fav && rank) cp.props.fav_rank = rank; }
+  return copies[0];
+}
 async function toggleFav(id) {
   const b = findBlock(id); if (!b) return;
-  b.props = b.props || {};
-  const fav = !b.props.fav;
-  b.props.fav = fav; if (fav) b.props.fav_rank = Date.now();
-  if (fav) { if (!state.favs.find((f) => f.id === id)) state.favs.push({ id, kind: b.kind, title: b.title, props: { ...b.props } }); }
+  const fav = !(b.props && b.props.fav);
+  const rank = fav ? Date.now() : (b.props && b.props.fav_rank);
+  favApplyLocal(id, fav, rank);
+  if (fav) { if (!state.favs.find((f) => f.id === id)) state.favs.push({ id, kind: b.kind, title: b.title, props: { ...(b.props || {}), fav: true } }); }
   else { state.favs = state.favs.filter((f) => f.id !== id); }
   renderNav(); rerenderCurrent();
-  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav, fav_rank: b.props.fav_rank } }) }); } catch (e) { toast(e.message); }
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav, fav_rank: rank } }) }); } catch (e) { toast(e.message); }
 }
 async function unfav(id) {
-  const b = findBlock(id); if (b) { b.props = b.props || {}; b.props.fav = false; }
+  favApplyLocal(id, false);
   state.favs = state.favs.filter((f) => f.id !== id);
   renderNav(); rerenderCurrent();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav: false } }) }); } catch (e) { toast(e.message); }
@@ -1255,6 +1270,77 @@ function sortRows(rows) {
     return na < nb ? -dir : na > nb ? dir : 0;
   });
 }
+// ── table search + filters ───────────────────────────
+const cellVal = (r, colId) => ((r.props && r.props.values) || {})[colId];
+// Operators offered per column type.
+const FILTER_OPS = {
+  text: [['contains', 'contains'], ['ncontains', "doesn't contain"], ['is', 'is'], ['isnot', 'is not'], ['empty', 'is empty'], ['nempty', 'is not empty']],
+  number: [['is', '='], ['isnot', '≠'], ['gt', '>'], ['lt', '<'], ['gte', '≥'], ['lte', '≤'], ['empty', 'is empty']],
+  date: [['is', 'is'], ['before', 'before'], ['after', 'after'], ['empty', 'is empty'], ['nempty', 'is not empty']],
+  select: [['is', 'is'], ['isnot', 'is not'], ['empty', 'is empty'], ['nempty', 'is not empty']],
+  checkbox: [['checked', 'is checked'], ['unchecked', 'is unchecked']],
+};
+const opsFor = (type) => FILTER_OPS[type] || FILTER_OPS.text;
+const noValueOp = (op) => op === 'empty' || op === 'nempty' || op === 'checked' || op === 'unchecked';
+function matchesFilter(r, f) {
+  const col = tcols().find((c) => c.id === f.colId); if (!col) return true;
+  const v = cellVal(r, f.colId);
+  const sv = String(v ?? '').toLowerCase(), fv = String(f.value ?? '').toLowerCase();
+  switch (f.op) {
+    case 'contains': return sv.includes(fv);
+    case 'ncontains': return !sv.includes(fv);
+    case 'is': return sv === fv;
+    case 'isnot': return sv !== fv;
+    case 'empty': return v == null || v === '' || v === false;
+    case 'nempty': return !(v == null || v === '' || v === false);
+    case 'gt': return Number(v) > Number(f.value);
+    case 'lt': return Number(v) < Number(f.value);
+    case 'gte': return Number(v) >= Number(f.value);
+    case 'lte': return Number(v) <= Number(f.value);
+    case 'checked': return !!v;
+    case 'unchecked': return !v;
+    case 'before': return String(v || '') < String(f.value || '');
+    case 'after': return String(v || '') > String(f.value || '');
+    default: return true;
+  }
+}
+function matchesQuery(r) {
+  const q = (state.tables_view.query || '').trim().toLowerCase();
+  if (!q) return true;
+  const vals = (r.props && r.props.values) || {};
+  return tcols().some((col) => col.type !== 'checkbox' && String(vals[col.id] ?? '').toLowerCase().includes(q))
+    || String(r.body || '').toLowerCase().includes(q);
+}
+function visibleRows() {
+  const filters = state.tables_view.filters || [];
+  return sortRows(state.tables_rows).filter((r) => matchesQuery(r) && filters.every((f) => matchesFilter(r, f)));
+}
+function tableBodyHtml() {
+  const c = tcols();
+  const rows = visibleRows().map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
+  const empty = (state.tables_view.query || (state.tables_view.filters || []).length) && !visibleRows().length
+    ? `<tr class="tbl-noresult"><td colspan="${c.length + 2}">No rows match.</td></tr>` : '';
+  return rows + empty + `<tr class="row-add"><td colspan="${c.length + 2}"><button data-add-row>+ Row</button></td></tr>`;
+}
+function renderTableBody() { const el = $('#tbl-body'); if (el) el.innerHTML = tableBodyHtml(); }
+function filterPanelHtml() {
+  const c = tcols(), filters = state.tables_view.filters || [];
+  const rows = filters.map((f, i) => {
+    const col = c.find((x) => x.id === f.colId) || c[0] || {};
+    const colOpts = c.map((x) => `<option value="${x.id}" ${x.id === f.colId ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+    const opOpts = opsFor(col.type).map(([v, l]) => `<option value="${v}" ${v === f.op ? 'selected' : ''}>${esc(l)}</option>`).join('');
+    let val = '';
+    if (!noValueOp(f.op)) {
+      if (col.type === 'select') val = `<select class="sel fv" data-filt-val="${i}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === f.value ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+      else val = `<input class="sel fv" data-filt-val="${i}" type="${col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'}" value="${esc(f.value || '')}" placeholder="value">`;
+    }
+    return `<div class="filt-row"><select class="sel" data-filt-col="${i}">${colOpts}</select><select class="sel" data-filt-op="${i}">${opOpts}</select>${val}<button class="filt-x" data-filt-del="${i}" title="Remove">×</button></div>`;
+  }).join('');
+  return `<div class="tbl-filters"><div class="filt-rows">${rows || '<div class="filt-empty">No filters yet.</div>'}</div>
+    <div class="filt-act"><button class="ghost" data-filt-add>+ Add filter</button>${filters.length ? '<button class="ghost" data-filt-clear>Clear all</button>' : ''}</div></div>`;
+}
+const FUNNEL = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M1.5 2.5h13l-5 6.2V13l-3 1.5V8.7z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+
 function renderTable() {
   const t = state.tables_open, c = tcols(), vw = state.tables_view;
   if (vw.openRow) {
@@ -1277,16 +1363,21 @@ function renderTable() {
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortOf = (id) => vw.sort && vw.sort.colId === id ? vw.sort.dir : null;
   const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd === 'asc' ? '↑' : '↓'}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
-  const body = sortRows(state.tables_rows).map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
+  const nFilt = (vw.filters || []).length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
       ${areaSelect(t.props && t.props.area, 'data-table-area')}
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
       <button class="ghost" data-del-cur>Delete</button></div>
+    <div class="tbl-toolbar">
+      <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
+      <button class="tbl-filter-btn ${nFilt || vw.filtering ? 'on' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
+    </div>
+    <div id="tbl-filter-panel">${vw.filtering ? filterPanelHtml() : ''}</div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}
       <thead><tr><th class="th-open"></th>${head}${addCol}</tr></thead>
-      <tbody>${body}<tr class="row-add"><td colspan="${c.length + 2}"><button data-add-row>+ Row</button></td></tr></tbody></table></div>
+      <tbody id="tbl-body">${tableBodyHtml()}</tbody></table></div>
     ${vw.colMenu ? colMenuHtml(vw.colMenu) : ''}`;
   if (vw.addingCol) { const n = $('#cn-name'); if (n) n.focus(); }
 }
@@ -1422,6 +1513,9 @@ document.addEventListener('input', (e) => {
   liveSearch('[data-task-q]', (v) => (state.taskQuery = v), renderTasks);
   liveSearch('[data-notes-q]', (v) => (state.notesQuery = v), renderNotesList);
   liveSearch('[data-cal-q]', (v) => (state.calQuery = v), renderCalendar);
+  // Table search + filter value inputs: only the tbody re-renders, so the input keeps focus.
+  if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
+  const fvi = e.target.closest('input[data-filt-val]'); if (fvi) { const i = +fvi.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = e.target.value; renderTableBody(); } }
   if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
 });
 let proseT;
@@ -1542,6 +1636,11 @@ document.addEventListener('click', (e) => {
     if (t.closest('[data-cm-del]')) { state.tables_view.colMenu = null; if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== cmId)).then(renderTable); else renderTable(); return; }
     if (!t.closest('[data-colmenu]')) { state.tables_view.colMenu = null; renderTable(); } // click outside closes; fall through
   }
+  // table search + filters
+  if (t.closest('[data-tbl-filter]')) { state.tables_view.filtering = !state.tables_view.filtering; renderTable(); return; }
+  if (t.closest('[data-filt-add]')) { const col = tcols()[0]; if (col) { state.tables_view.filters = [...(state.tables_view.filters || []), { colId: col.id, op: opsFor(col.type)[0][0], value: '' }]; renderTable(); } return; }
+  const fdel = t.closest('[data-filt-del]'); if (fdel) { state.tables_view.filters.splice(+fdel.dataset.filtDel, 1); renderTable(); return; }
+  if (t.closest('[data-filt-clear]')) { state.tables_view.filters = []; renderTable(); return; }
   // table
   if (t.closest('[data-back-table]')) { state.tables_view.openRow = null; renderTable(); return; }
   const or = t.closest('[data-open-row]'); if (or) { state.tables_view.openRow = or.dataset.openRow; renderTable(); window.scrollTo(0, 0); return; }
@@ -1574,6 +1673,10 @@ document.addEventListener('change', (e) => {
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const r = $('#ce-timerow'); if (r) r.hidden = e.target.checked; }
+  // Table filters
+  const fcol = e.target.closest('[data-filt-col]'); if (fcol) { const i = +fcol.dataset.filtCol, f = state.tables_view.filters[i]; f.colId = fcol.value; const col = tcols().find((x) => x.id === f.colId); f.op = opsFor(col && col.type)[0][0]; f.value = ''; renderTable(); return; }
+  const fop = e.target.closest('[data-filt-op]'); if (fop) { const i = +fop.dataset.filtOp; state.tables_view.filters[i].op = fop.value; renderTable(); return; }
+  const fvs = e.target.closest('select[data-filt-val]'); if (fvs) { const i = +fvs.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = fvs.value; renderTableBody(); } return; }
 });
 // blur saves for titles/bodies
 document.addEventListener('blur', (e) => {
