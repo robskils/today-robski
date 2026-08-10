@@ -682,9 +682,34 @@ const mailApi = (path, opts) => api('/api/mail' + path, opts);
 const mailFrom = (m) => m.from ? (m.from.name || m.from.address || '') : '';
 const mailDate = (iso) => { if (!iso) return ''; const d = new Date(iso), now = new Date(); const sameDay = d.toDateString() === now.toDateString(); return sameDay ? `${p2(d.getHours())}:${p2(d.getMinutes())}` : `${d.getDate()} ${MONTHS_LONG[d.getMonth()].slice(0, 3)}`; };
 
+// Standard folders. Starred is the \Flagged flag surfaced as a view (search),
+// not a real mailbox. Purelymail uses INBOX / Archive / Junk / Trash.
+const MAIL_FOLDERS = [
+  { key: 'inbox', label: 'Inbox', mailbox: 'INBOX' },
+  { key: 'starred', label: '★ Starred', mailbox: 'INBOX', flagged: true },
+  { key: 'archive', label: 'Archive', mailbox: 'Archive' },
+  { key: 'spam', label: 'Spam', mailbox: 'Junk' },
+  { key: 'trash', label: 'Trash', mailbox: 'Trash' },
+];
+const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
+function setMailFolder(key) { state.mail.folder = key; state.mail.mailbox = mailFolder().mailbox; state.mail.open = null; loadMessages(); }
+async function mailStar(uid) {
+  const row = state.mail.messages.find((m) => m.uid === uid);
+  const on = !((row && row.flagged) || (state.mail.open && state.mail.open.uid === uid && state.mail.open.flagged));
+  if (row) row.flagged = on;
+  if (state.mail.open && state.mail.open.uid === uid) state.mail.open.flagged = on;
+  if (!on && state.mail.folder === 'starred') { state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); if (state.mail.open && state.mail.open.uid === uid) state.mail.open = null; }
+  renderMail();
+  try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, flagged: on }) }); }
+  catch (e) { toast(e.message); }
+}
+async function mailMoveTo(uid, target, label) {
+  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, target }) }); toast(label); state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null; renderMail(); }
+  catch (e) { toast(e.message); }
+}
 async function openMail() {
   state.view = { type: 'mail' };
-  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', messages: [], open: null, composing: false };
+  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false };
   renderNav(); renderMail(true);
   try {
     state.mail.accounts = await mailApi('/accounts');
@@ -696,7 +721,8 @@ async function openMail() {
 async function loadMessages() {
   state.mail.open = null; state.mail.composing = false; renderMail(true);
   try {
-    const r = await mailApi(`/messages?account=${state.mail.account}&mailbox=${encodeURIComponent(state.mail.mailbox)}&limit=40`);
+    const f = mailFolder(); state.mail.mailbox = f.mailbox;
+    const r = await mailApi(`/messages?account=${state.mail.account}&mailbox=${encodeURIComponent(f.mailbox)}&limit=40${f.flagged ? '&flagged=1' : ''}`);
     state.mail.messages = r.messages || []; state.mail.error = null;
   } catch (e) { state.mail.error = e.message; }
   renderMail();
@@ -839,7 +865,8 @@ function renderMail(loading) {
   const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open.uid === x.uid ? 'csel' : ''}" data-mail-open="${x.uid}">
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
-    <span class="mail-subject">${esc(x.subject)}</span></span></button>`).join('');
+    <span class="mail-subject">${esc(x.subject)}</span></span>
+    <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${x.uid}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`).join('');
   const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || '<div class="home-empty">No messages.</div>')}</div>`;
   let reader;
   if (m.composing) {
@@ -855,7 +882,7 @@ function renderMail(loading) {
     const o = m.open;
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
-        <span class="mail-msg-act"><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
+        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${o.uid}" title="Star">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${o.uid}" title="Archive — remove from inbox, keep it">Archive</button><button class="ghost" data-mail-spam="${o.uid}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
@@ -869,6 +896,7 @@ function renderMail(loading) {
     <div class="pane-head home-head"><h1>Mail</h1>
       <div class="mail-head-act"><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${accTabs ? `<div class="mail-atabs">${accTabs}</div>` : ''}
+    <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     <div class="mail-layout ${m.open || m.composing ? 'reading' : ''}">
       <div class="mail-list-col">${list}</div>
@@ -1354,6 +1382,10 @@ document.addEventListener('click', (e) => {
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }
+  const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
+  const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(Number(mstar.dataset.mailStar)); return; }   // star sits inside the row button
+  const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(Number(march.dataset.mailArchive), 'Archive', 'Archived'); return; }
+  const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(Number(mspam.dataset.mailSpam), 'Junk', 'Marked as spam'); return; }
   const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(Number(mo.dataset.mailOpen)); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { state.mail.composing = {}; renderMail(); return; }

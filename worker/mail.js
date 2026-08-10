@@ -105,24 +105,17 @@ async function imapOpen(env, acct) {
     },
     async listRecent(limit) {
       const r = await cmd(`FETCH ${Math.max(1, 1)}:* (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
-      // Note: caller SELECTs first; we fetch all then keep the last `limit`.
-      const msgs = [];
-      for (const l of r.lines) {
-        if (!/^\* \d+ FETCH/.test(l)) continue;
-        const uid = (l.match(/UID (\d+)/) || [])[1];
-        const flags = (l.match(/FLAGS \(([^)]*)\)/) || [])[1] || '';
-        // The header literal is glued straight onto the FETCH prefix, so the
-        // first header (From) is NOT at a line start. Strip the prefix up to the
-        // closing ] of BODY[HEADER.FIELDS (...)] and anchor each header on \n.
-        const hdr = '\n' + l.replace(/^\* \d+ FETCH .*?\]\s*/s, '');
-        const grab = (name) => decodeWords((hdr.match(new RegExp(`\\n${name}:\\s*([^\\r\\n]*)`, 'i')) || [])[1] || '').trim();
-        const from = grab('From');
-        const subject = grab('Subject') || '(no subject)';
-        const date = grab('Date');
-        if (uid) msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), from: parseAddr(from), subject, date: parseDate(date) });
-      }
-      msgs.sort((a, b) => (a.uid < b.uid ? 1 : -1));
-      return msgs.slice(0, limit);
+      return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
+    },
+    // Starred = the \Flagged flag. Find them, then fetch their headers.
+    async listFlagged(limit) {
+      const s = await cmd('UID SEARCH FLAGGED');
+      const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
+      const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
+      if (!ids.length) return [];
+      const set = ids.slice(-limit).join(',');
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
+      return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
     },
     async fetchRaw(uid) {
       const t = 'A' + (++tag);
@@ -135,6 +128,7 @@ async function imapOpen(env, acct) {
       return raw;
     },
     async storeSeen(uid, seen) { await cmd(`UID STORE ${uid} ${seen ? '+' : '-'}FLAGS (\\Seen)`); },
+    async storeFlagged(uid, on) { await cmd(`UID STORE ${uid} ${on ? '+' : '-'}FLAGS (\\Flagged)`); },
     async move(uid, target) {
       const r = await cmd(`UID MOVE ${uid} ${imapStr(target)}`);
       if (!r.ok) { await cmd(`UID COPY ${uid} ${imapStr(target)}`); await cmd(`UID STORE ${uid} +FLAGS (\\Deleted)`); await cmd('EXPUNGE'); }
@@ -161,6 +155,22 @@ function parseAddr(s) {
   return m[2] ? { name: m[1].trim(), address: m[2].trim() } : { name: '', address: m[1].trim() };
 }
 function parseDate(s) { const d = new Date(s); return isNaN(d) ? s : d.toISOString(); }
+// Parse the header-fields FETCH lines into message summaries. The header literal
+// is glued straight onto the FETCH prefix, so the first header (From) isn't at a
+// line start: strip the prefix up to the closing ] of BODY[HEADER.FIELDS (...)]
+// and anchor each header on \n.
+function parseFetch(lines) {
+  const msgs = [];
+  for (const l of lines) {
+    if (!/^\* \d+ FETCH/.test(l)) continue;
+    const uid = (l.match(/UID (\d+)/) || [])[1];
+    const flags = (l.match(/FLAGS \(([^)]*)\)/) || [])[1] || '';
+    const hdr = '\n' + l.replace(/^\* \d+ FETCH .*?\]\s*/s, '');
+    const grab = (name) => decodeWords((hdr.match(new RegExp(`\\n${name}:\\s*([^\\r\\n]*)`, 'i')) || [])[1] || '').trim();
+    if (uid) msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), flagged: /\\Flagged/.test(flags), from: parseAddr(grab('From')), subject: grab('Subject') || '(no subject)', date: parseDate(grab('Date')) });
+  }
+  return msgs;
+}
 
 // ── SMTP ──────────────────────────────────────────────────────────────
 async function smtpSend(env, acct, msg) {
@@ -273,9 +283,14 @@ export async function handleMail(request, env, url, json, err) {
 
     if (sub === 'messages') {
       const mailbox = url.searchParams.get('mailbox') || 'INBOX';
+      const flagged = url.searchParams.get('flagged') === '1';   // Starred view
+      const limit = Number(url.searchParams.get('limit')) || 40;
       const im = await imapOpen(env, acct);
-      try { await im.login(); const total = await im.select(mailbox); return json({ total, messages: total ? await im.listRecent(Number(url.searchParams.get('limit')) || 40) : [] }, request); }
-      finally { await im.logout(); }
+      try {
+        await im.login(); const total = await im.select(mailbox);
+        const messages = !total ? [] : (flagged ? await im.listFlagged(limit) : await im.listRecent(limit));
+        return json({ total, messages }, request);
+      } finally { await im.logout(); }
     }
 
     if (sub === 'message') {
@@ -296,7 +311,15 @@ export async function handleMail(request, env, url, json, err) {
       } finally { await im.logout(); }
     }
 
-    if (sub === 'flag' && method === 'POST') { const b = await request.json(); const im = await imapOpen(env, acct); try { await im.login(); await im.select(b.mailbox || 'INBOX'); await im.storeSeen(b.uid, !!b.seen); return json({ ok: true }, request); } finally { await im.logout(); } }
+    if (sub === 'flag' && method === 'POST') {
+      const b = await request.json(); const im = await imapOpen(env, acct);
+      try {
+        await im.login(); await im.select(b.mailbox || 'INBOX');
+        if ('seen' in b) await im.storeSeen(b.uid, !!b.seen);
+        if ('flagged' in b) await im.storeFlagged(b.uid, !!b.flagged);
+        return json({ ok: true }, request);
+      } finally { await im.logout(); }
+    }
 
     if (sub === 'move' && method === 'POST') { const b = await request.json(); const im = await imapOpen(env, acct); try { await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(b.uid, b.target || 'Trash'); return json({ ok: true }, request); } finally { await im.logout(); } }
 

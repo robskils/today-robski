@@ -609,6 +609,16 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-atabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
 .mail-atab { padding:7px 15px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); font-size:15px; }
 .mail-atab.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:var(--shadow); border-color:var(--line-2); }
+/* Folder switcher: Inbox / Starred / Archive / Spam / Trash. */
+.mail-folders { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.mail-folder { padding:6px 14px; border-radius:999px; color:var(--ink-3); font-size:14.5px; border:1px solid transparent; transition:background .12s,color .12s; }
+.mail-folder:hover { background:var(--paper-2); color:var(--ink-2); }
+.mail-folder.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:var(--shadow); border-color:var(--line); }
+/* Star (\Flagged) on a row and in the reading pane. */
+.mail-star { flex:none; align-self:center; font-size:16px; color:var(--ink-3); opacity:0; padding:2px 5px; border-radius:6px; transition:opacity .12s,color .12s; }
+.mail-row:hover .mail-star, .mail-star.on { opacity:1; }
+.mail-star.on, .mail-star:hover, .mail-star-btn.on { color:var(--gold); }
+@media (hover:none){ .mail-star { opacity:.6; } }
 /* Two-pane client: message list on the left, reading pane on the right. */
 .mail-layout { display:flex; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--card); box-shadow:var(--shadow); min-height:64vh; }
 .mail-list-col { flex:none; width:360px; border-right:1px solid var(--line); overflow-y:auto; max-height:calc(100vh - 190px); }
