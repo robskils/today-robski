@@ -503,7 +503,10 @@ function renderArea() {
   const openTs = tasks.filter((t) => !t.props.done).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
   const doneN = tasks.length - openTs.length;
   const tables = blocks.filter((b) => b.kind === 'table');
-  const notes = blocks.filter((b) => b.kind === 'note');
+  // Only the area's TOP-LEVEL notes land here; nested notes carry the area too
+  // (for search / attribution) but are reached by drilling into their parent,
+  // so the landing stays a clean outline instead of a flat wall.
+  const notes = blocks.filter((b) => b.kind === 'note' && !b.parent_id);
   const h = hueOf(area);
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
   const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}</button>`).join('');
@@ -741,28 +744,38 @@ const MAIL_FOLDERS = [
 ];
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
 function setMailFolder(key) { state.mail.folder = key; state.mail.mailbox = mailFolder().mailbox; state.mail.open = null; loadMessages(); }
-async function mailStar(uid) {
-  const row = state.mail.messages.find((m) => m.uid === uid);
-  const on = !((row && row.flagged) || (state.mail.open && state.mail.open.uid === uid && state.mail.open.flagged));
+// Every message row is tagged with the account it came from (_acct / _mailbox /
+// _acctName) and a composite _key = `${account}:${uid}`. IMAP UIDs are only
+// unique within one mailbox, so in the All-accounts view uid alone would clash;
+// keying and acting by _key lets every row carry its own account.
+const mailRow = (key) => (state.mail.messages || []).find((m) => m._key === key)
+  || (state.mail.open && state.mail.open._key === key ? state.mail.open : null);
+async function mailStar(key) {
+  const target = mailRow(key); if (!target) return;
+  const row = (state.mail.messages || []).find((m) => m._key === key);
+  const o = state.mail.open;
+  const on = !target.flagged;
   if (row) row.flagged = on;
-  if (state.mail.open && state.mail.open.uid === uid) state.mail.open.flagged = on;
-  if (!on && state.mail.folder === 'starred') { state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); if (state.mail.open && state.mail.open.uid === uid) state.mail.open = null; }
+  if (o && o._key === key) o.flagged = on;
+  if (!on && state.mail.folder === 'starred') { state.mail.messages = state.mail.messages.filter((m) => m._key !== key); if (o && o._key === key) state.mail.open = null; }
   renderMail();
-  try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, flagged: on }) }); }
+  try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: target._acct, mailbox: target._mailbox, uid: target.uid, flagged: on }) }); }
   catch (e) { toast(e.message); }
 }
-async function mailMoveTo(uid, target, label) {
-  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, target }) }); toast(label); state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null; renderMail(); }
+async function mailMoveTo(key, target, label) {
+  const row = mailRow(key); if (!row) return;
+  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) }); toast(label); state.mail.messages = state.mail.messages.filter((m) => m._key !== key); state.mail.open = null; renderMail(); }
   catch (e) { toast(e.message); }
 }
-async function mailBlock(uid, address) {
+async function mailBlock(key, address) {
+  const row = mailRow(key); if (!row) return;
   if (!address) { toast('No sender address to block'); return; }
   if (!confirm(`Block ${address}?\nTheir mail will be moved to Junk from now on.`)) return;
   try {
-    await mailApi('/block', { method: 'POST', body: JSON.stringify({ account: state.mail.account, address, uid, mailbox: state.mail.mailbox }) });
-    const acc = (state.mail.accounts || []).find((a) => a.id === state.mail.account);
+    await mailApi('/block', { method: 'POST', body: JSON.stringify({ account: row._acct, address, uid: row.uid, mailbox: row._mailbox }) });
+    const acc = (state.mail.accounts || []).find((a) => a.id === row._acct);
     if (acc) acc.blocked = [...new Set([...(acc.blocked || []), address.toLowerCase()])];
-    state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null;
+    state.mail.messages = state.mail.messages.filter((m) => m._key !== key); state.mail.open = null;
     toast(`Blocked ${address}`); renderMail();
   } catch (e) { toast(e.message); }
 }
@@ -787,31 +800,51 @@ async function openMail() {
 }
 async function loadMessages() {
   state.mail.open = null; state.mail.composing = false; renderMail(true);
+  const f = mailFolder(); state.mail.mailbox = f.mailbox;
+  const all = state.mail.account === 'all';
+  const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
   try {
-    const f = mailFolder(); state.mail.mailbox = f.mailbox;
-    const r = await mailApi(`/messages?account=${state.mail.account}&mailbox=${encodeURIComponent(f.mailbox)}&limit=40${f.flagged ? '&flagged=1' : ''}`);
-    state.mail.messages = r.messages || []; state.mail.error = null;
+    const lists = await Promise.all(accts.map(async (a) => {
+      try {
+        const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=40${f.flagged ? '&flagged=1' : ''}`);
+        return (r.messages || []).map((x) => ({ ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: f.mailbox, _key: `${a.id}:${x.uid}` }));
+      } catch { return []; }
+    }));
+    let msgs = lists.flat();
+    if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0)).slice(0, 60);
+    state.mail.messages = msgs; state.mail.error = null;
   } catch (e) { state.mail.error = e.message; }
   renderMail();
 }
-async function openMessage(uid) {
+async function openMessage(key) {
+  const row = (state.mail.messages || []).find((x) => x._key === key); if (!row) return;
   renderMail(true);
   try {
-    const m = await mailApi(`/message?account=${state.mail.account}&mailbox=${encodeURIComponent(state.mail.mailbox)}&uid=${uid}`);
-    state.mail.open = m;
-    const row = state.mail.messages.find((x) => x.uid === uid); if (row && !row.seen) { row.seen = true; mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, seen: true }) }).catch(() => {}); }
+    const m = await mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid}`);
+    state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid };
+    if (!row.seen) { row.seen = true; mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
   } catch (e) { toast(e.message); }
   renderMail();
 }
-async function mailDelete(uid) {
+async function mailDelete(key) {
+  const row = mailRow(key); if (!row) return;
   if (!confirm('Move this message to Trash?')) return;
-  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null; renderMail(); }
+  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m._key !== key); state.mail.open = null; renderMail(); }
   catch (e) { toast(e.message); }
 }
+// Which account a compose sends FROM: the reply's originating account, else the
+// active tab - but never the 'all' sentinel, which falls back to the first box.
+function composeAcctId() {
+  const c = state.mail.composing;
+  if (c && c._acct) return c._acct;
+  if (state.mail.account && state.mail.account !== 'all') return state.mail.account;
+  return ((state.mail.accounts || [])[0] || {}).id;
+}
 async function mailSend(to, cc, subject, body, inReplyTo) {
-  const acct = (state.mail.accounts || []).find((a) => a.id === state.mail.account);
+  const from = composeAcctId();
+  const acct = (state.mail.accounts || []).find((a) => a.id === from);
   const sig = acct && acct.signature;
-  const payload = { account: state.mail.account, to, cc, subject, text: body + (sig ? `\n\n${sigToText(sig)}` : ''), inReplyTo };
+  const payload = { account: from, to, cc, subject, text: body + (sig ? `\n\n${sigToText(sig)}` : ''), inReplyTo };
   // With a signature, send HTML too so it renders; plain text stays the fallback.
   if (sig) payload.html = `${composeHtml(body)}<br>${sig}`;
   try { await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) }); toast('Sent'); state.mail.composing = false; renderMail(); }
@@ -833,7 +866,7 @@ async function delMailAccount(id) {
 }
 function mailReplyStart(all) {
   const o = state.mail.open; if (!o) return;
-  const me = (((state.mail.accounts || []).find((a) => a.id === state.mail.account) || {}).email || '').toLowerCase();
+  const me = (((state.mail.accounts || []).find((a) => a.id === o._acct) || {}).email || '').toLowerCase();
   const to = o.from ? o.from.address : '';
   let cc = '';
   if (all) {
@@ -842,7 +875,7 @@ function mailReplyStart(all) {
     cc = others.join(', ');
   }
   const quote = (o.text || '').split('\n').map((l) => `> ${l}`).join('\n');
-  state.mail.composing = { to, cc, subject: /^re:/i.test(o.subject) ? o.subject : `Re: ${o.subject}`, body: `\n\n---\nOn ${new Date(o.date).toLocaleString()}, ${o.from ? o.from.address : ''} wrote:\n${quote}`, inReplyTo: o.messageId };
+  state.mail.composing = { _acct: o._acct, to, cc, subject: /^re:/i.test(o.subject) ? o.subject : `Re: ${o.subject}`, body: `\n\n---\nOn ${new Date(o.date).toLocaleString()}, ${o.from ? o.from.address : ''} wrote:\n${quote}`, inReplyTo: o.messageId };
   renderMail();
   setTimeout(() => $('#mc-body') && $('#mc-body').focus(), 0);
 }
@@ -930,12 +963,14 @@ if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
 function renderMail(loading) {
   const m = state.mail;
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
-  const accTabs = (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}</button>`).join('');
-  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open.uid === x.uid ? 'csel' : ''}" data-mail-open="${x.uid}">
+  const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All</button>` : '';
+  const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}</button>`).join('');
+  const showAcct = m.account === 'all';
+  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open._key === x._key ? 'csel' : ''}" data-mail-open="${esc(x._key)}">
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
-    <span class="mail-subject">${esc(x.subject)}</span></span>
-    <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${x.uid}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`).join('');
+    <span class="mail-subject">${showAcct ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span></span>
+    <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`).join('');
   const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || '<div class="home-empty">No messages.</div>')}</div>`;
   let reader;
   if (m.composing) {
@@ -945,17 +980,17 @@ function renderMail(loading) {
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}">
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <textarea id="mc-body" placeholder="Write your message…">${esc(m.composing.body || '')}</textarea>
-      ${(() => { const a = (m.accounts || []).find((x) => x.id === m.account); return a && a.signature ? `<div class="mail-sig-note">✓ Signature for <b>${esc(a.email)}</b> will be added</div>` : ''; })()}
+      ${(() => { const a = (m.accounts || []).find((x) => x.id === composeAcctId()); return a && a.signature ? `<div class="mail-sig-note">✓ Signature for <b>${esc(a.email)}</b> will be added</div>` : ''; })()}
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-cancel>Cancel</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
-        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${o.uid}" title="Star">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${o.uid}" title="Archive — remove from inbox, keep it">Archive</button><button class="ghost" data-mail-spam="${o.uid}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${o.uid}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
+        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">Archive</button><button class="ghost" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${esc(o._key)}">Delete</button></span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
-        <span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
+        ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<span class="mail-att-chip">📎 ${esc(a.filename || 'attachment')}</span>`).join('')}</div>` : ''}
       ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<pre class="mail-text">${esc(o.text || '')}</pre>`}</div>`;
   } else {
@@ -1240,7 +1275,7 @@ async function moveNote(targetId) {
 }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Check'], ['select', 'Select']];
+const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select']];
 const tcols = () => (state.tables_open.props.columns || []);
 function cellInput(r, col) {
   const v = ((r.props && r.props.values) || {})[col.id]; const k = `${r.id}:${col.id}`;
@@ -1495,6 +1530,8 @@ document.addEventListener('keydown', (e) => {
     const editing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     if (!editing && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); mailReplyStart(false); return; }
     if (!editing && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); mailReplyStart(true); return; }
+    if (!editing && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); mailMoveTo(state.mail.open._key, 'Archive', 'Archived'); return; }
+    if (!editing && (e.key === 's' || e.key === 'S')) { e.preventDefault(); mailStar(state.mail.open._key); return; }
   }
   if (state.move && e.key === 'Escape') { closeMove(); return; }
   if (!state.pal.open) return;
@@ -1562,18 +1599,18 @@ document.addEventListener('click', (e) => {
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
-  const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(Number(mstar.dataset.mailStar)); return; }   // star sits inside the row button
-  const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(Number(march.dataset.mailArchive), 'Archive', 'Archived'); return; }
-  const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(Number(mspam.dataset.mailSpam), 'Junk', 'Marked as spam'); return; }
-  const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(Number(mblk.dataset.mailBlock), mblk.dataset.mailFrom || ''); return; }
+  const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
+  const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
+  const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
+  const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(mblk.dataset.mailBlock, mblk.dataset.mailFrom || ''); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
-  const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(Number(mo.dataset.mailOpen)); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { state.mail.composing = {}; renderMail(); return; }
   if (t.closest('[data-mail-cancel]')) { state.mail.composing = false; renderMail(); return; }
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
-  const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(Number(mdl.dataset.mailDel)); return; }
+  const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(mdl.dataset.mailDel); return; }
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
