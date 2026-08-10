@@ -1550,28 +1550,67 @@ $('new-form').addEventListener('submit', async (e) => {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('new-bg').hidden) closeNew(); });
 
 // ── Lanes & areas settings ────────────────────────────────────────────
+// hsl(h,55%,55%) <-> hex, so a colour input can drive the lane's hue.
+function hslToHex(h) {
+  const s = 0.55, l = 0.55, a = s * Math.min(l, 1 - l);
+  const f = (n) => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+  const to = (x) => Math.round(x * 255).toString(16).padStart(2, '0');
+  return `#${to(f(0))}${to(f(8))}${to(f(4))}`;
+}
+function hexToHue(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0;
+  if (d) { if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h = Math.round(h * 60); if (h < 0) h += 360; }
+  return h;
+}
+let editLanes = [];   // working copy while the sheet is open
+function renderLaneRows() {
+  $('set-lanes').innerHTML = editLanes.map((l, i) =>
+    `<div class="set-lane">
+      <input type="color" class="set-color" data-lane-hue="${i}" value="${hslToHex(l.hue)}" title="Lane colour">
+      <input class="input set-lane-name" data-lane-name="${i}" value="${esc(l.label)}" placeholder="Lane name">
+      <label class="set-practice" title="Practice: counts the moment it's scheduled, no tick"><input type="checkbox" data-lane-practice="${i}" ${l.practice ? 'checked' : ''}> practice</label>
+      <button type="button" class="set-del" data-lane-del="${i}" aria-label="Delete lane">&times;</button>
+    </div>`).join('') + `<button type="button" class="set-add" id="lane-add">+ Add lane</button>`;
+}
+function renderAreaRows(areas, areaMap) {
+  const opts = editLanes.map((l) => `<option value="${esc(l.key)}">${esc(l.label || 'Untitled')}</option>`).join('') + `<option value="other">Other</option>`;
+  $('set-areas').innerHTML = areas.map((a) =>
+    `<label class="set-row"><span class="set-area-name">${esc(a.title)}</span><select class="input" data-area="${a.id}">${opts}</select></label>`).join('');
+  for (const a of areas) { const sel = document.querySelector(`select[data-area="${a.id}"]`); if (sel) sel.value = areaMap[a.id] && editLanes.some((l) => l.key === areaMap[a.id]) ? areaMap[a.id] : 'other'; }
+}
 async function openSettings() {
   try {
     const cfg = await api('/api/lanes');
-    $('set-lanes').innerHTML = cfg.lanes.filter((l) => l.key !== 'other').map((l) =>
-      `<label class="set-row"><span class="set-swatch" style="background:hsl(${l.hue} 55% 55%)"></span><input class="input" data-lane="${l.key}" value="${esc(l.label)}"></label>`).join('');
-    const laneOpts = cfg.lanes.map((l) => `<option value="${l.key}">${esc(l.label)}</option>`).join('');
-    $('set-areas').innerHTML = cfg.areas.map((a) =>
-      `<label class="set-row"><span class="set-area-name">${esc(a.title)}</span><select class="input" data-area="${a.id}">${laneOpts}</select></label>`).join('');
-    for (const a of cfg.areas) { const sel = document.querySelector(`select[data-area="${a.id}"]`); if (sel) sel.value = cfg.areaMap[a.id] || 'other'; }
+    state.setAreas = cfg.areas; state.setAreaMap = { ...cfg.areaMap };
+    editLanes = cfg.lanes.filter((l) => l.key !== 'other').map((l) => ({ key: l.key, label: l.label, hue: l.hue, practice: !!l.practice }));
+    renderLaneRows();
+    renderAreaRows(cfg.areas, cfg.areaMap);
     $('settings-bg').hidden = false;
   } catch (e) { toast(e.message); }
 }
+// Keep the current area selections while re-rendering (add/delete a lane).
+function snapshotAreaMap() { document.querySelectorAll('[data-area]').forEach((s) => { state.setAreaMap[s.dataset.area] = s.value; }); }
 $('settings-btn').addEventListener('click', openSettings);
 $('settings-cancel').addEventListener('click', () => { $('settings-bg').hidden = true; });
 $('settings-bg').addEventListener('click', (e) => { if (e.target === $('settings-bg')) $('settings-bg').hidden = true; });
+$('set-lanes').addEventListener('click', (e) => {
+  if (e.target.id === 'lane-add') { snapshotAreaMap(); editLanes.push({ key: `l${Date.now()}`, label: '', hue: Math.floor(Math.random() * 360), practice: false }); renderLaneRows(); renderAreaRows(state.setAreas, state.setAreaMap); return; }
+  const del = e.target.closest('[data-lane-del]'); if (del) { snapshotAreaMap(); editLanes.splice(Number(del.dataset.laneDel), 1); renderLaneRows(); renderAreaRows(state.setAreas, state.setAreaMap); }
+});
+$('set-lanes').addEventListener('input', (e) => {
+  const n = e.target.dataset.laneName, h = e.target.dataset.laneHue, p = e.target.dataset.lanePractice;
+  if (n !== undefined) { editLanes[+n].label = e.target.value; document.querySelectorAll('[data-area]').forEach((s) => { const o = s.querySelector(`option[value="${editLanes[+n].key}"]`); if (o) o.textContent = e.target.value || 'Untitled'; }); }
+  else if (h !== undefined) editLanes[+h].hue = hexToHue(e.target.value);
+  else if (p !== undefined) editLanes[+p].practice = e.target.checked;
+});
 $('settings-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const labels = {}; document.querySelectorAll('[data-lane]').forEach((i) => { const v = i.value.trim(); if (v) labels[i.dataset.lane] = v; });
+  const lanes = editLanes.filter((l) => (l.label || '').trim()).map((l) => ({ key: l.key, label: l.label.trim(), hue: l.hue, practice: l.practice }));
   const areaMap = {}; document.querySelectorAll('[data-area]').forEach((s) => { areaMap[s.dataset.area] = s.value; });
   const btn = $('settings-save'); btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    await api('/api/lanes', { method: 'PUT', body: JSON.stringify({ labels, areaMap }) });
+    await api('/api/lanes', { method: 'PUT', body: JSON.stringify({ lanes, areaMap }) });
     $('settings-bg').hidden = true; state.lifeAreas = null; toast('Saved');
     await loadDay(); await loadTasks();
   } catch (e2) { toast(e2.message); }

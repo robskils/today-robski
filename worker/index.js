@@ -861,11 +861,28 @@ function blockToTask(r, areaMap, areaNames) {
   return { tana_id: r.id, title: r.title || '(untitled)', lane: laneForAreaId(areaMap, p.area), priority: p.priority || null, done: p.done ? 1 : 0, area: (p.area && areaNames && areaNames[p.area]) || null, area_id: p.area || null, duration: p.duration ?? null, created: r.created_at };
 }
 
+const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || `lane${Math.floor(Math.random() * 1e6)}`;
 async function handleLanes(request, env) {
   if (request.method === 'PUT') {
     const b = await request.json().catch(() => ({}));
     const stmts = [];
-    if (b.labels && typeof b.labels === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('lane_labels',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.labels)));
+    // Full lane definitions (add / edit / delete). Keys are kept where given so
+    // existing area mappings and targets still point at the right lane; a new
+    // lane without a key gets one from its label.
+    if (Array.isArray(b.lanes)) {
+      const seen = new Set();
+      const zenByKey = Object.fromEntries(LANES.filter((l) => l.zen).map((l) => [l.key, l.zen]));
+      const lanes = b.lanes.filter((l) => l && (l.label || l.key)).map((l) => {
+        let key = (l.key && String(l.key)) || slug(l.label);
+        while (seen.has(key)) key = `${key}-2`;
+        seen.add(key);
+        return { key, label: String(l.label || key).slice(0, 40), hue: Math.max(0, Math.min(360, Number(l.hue) || 0)), practice: !!l.practice, ...(zenByKey[key] ? { zen: zenByKey[key] } : {}) };
+      });
+      if (!lanes.some((l) => l.key === 'other')) lanes.push({ key: 'other', label: 'Other', hue: 0, untracked: true });
+      stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('lanes_config',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(lanes)));
+    } else if (b.labels && typeof b.labels === 'object') {
+      stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('lane_labels',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.labels)));
+    }
     if (b.areaMap && typeof b.areaMap === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('area_lanes',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.areaMap)));
     if (stmts.length) await env.DB.batch(stmts);
   }
@@ -974,7 +991,7 @@ async function createSlot(request, env) {
   const day = b.day || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
 
-  if (!LANES.some((l) => l.key === b.lane)) return err('bad lane', request);
+  if (!(await isValidLane(env, b.lane))) return err('bad lane', request);
 
   // null start_min is legitimate: a floating block, to be placed when the day
   // actually decides where it goes.
@@ -1081,7 +1098,7 @@ async function updateSlot(request, env, id) {
     if (!Number.isFinite(v) || v < 5 || v > 720) return err('bad duration', request);
     b.duration = Math.round(v);
   }
-  if (b.lane !== undefined && !LANES.some((l) => l.key === b.lane)) return err('bad lane', request);
+  if (b.lane !== undefined && !(await isValidLane(env, b.lane))) return err('bad lane', request);
   if (b.title !== undefined && !String(b.title).trim()) return err('title required', request);
 
   if (b.url !== undefined) b.url = safeUrl(b.url);
@@ -1172,7 +1189,7 @@ async function createActivity(request, env) {
   const b = await request.json().catch(() => ({}));
   const title = String(b.title || '').trim();
   if (!title) return err('title required', request);
-  if (!LANES.some((l) => l.key === b.lane)) return err('bad lane', request);
+  if (!(await isValidLane(env, b.lane))) return err('bad lane', request);
 
   const duration = Number(b.duration);
   if (!Number.isFinite(duration) || duration < 5 || duration > 720) return err('bad duration', request);
@@ -1191,7 +1208,7 @@ async function createActivity(request, env) {
 
 async function updateActivity(request, env, id) {
   const b = await request.json().catch(() => ({}));
-  if (b.lane !== undefined && !LANES.some((l) => l.key === b.lane)) return err('bad lane', request);
+  if (b.lane !== undefined && !(await isValidLane(env, b.lane))) return err('bad lane', request);
   if (b.title !== undefined && !String(b.title).trim()) return err('title required', request);
   if (b.duration !== undefined) {
     const d = Number(b.duration);

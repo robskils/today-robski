@@ -930,3 +930,13 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 .set-area-name { flex:1; min-width:0; font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .set-row input.input { flex:1; padding:8px 12px; font-size:15.5px; }
 .set-row select.input { flex:none; width:150px; padding:8px 10px; font-size:15px; }
+
+/* Lane editor rows (add / edit / delete). */
+.set-lane { display:flex; align-items:center; gap:8px; }
+.set-color { width:36px; height:36px; flex:none; padding:2px; border:1px solid var(--line-2); border-radius:8px; background:none; cursor:pointer; }
+.set-lane-name { flex:1; padding:8px 12px; font-size:15.5px; }
+.set-practice { flex:none; display:inline-flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink-2); white-space:nowrap; cursor:pointer; }
+.set-del { flex:none; width:28px; height:28px; border-radius:7px; color:var(--ink-3); font-size:19px; line-height:1; }
+.set-del:hover { color:var(--accent); background:var(--paper); }
+.set-add { margin-top:4px; align-self:flex-start; font-size:14px; color:var(--ink-2); padding:6px 10px; border-radius:8px; }
+.set-add:hover { color:var(--accent); }
