@@ -513,6 +513,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .completed-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
 .completed-head h2 { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:500; }
 .completed-q { display:block; width:100%; max-width:360px; margin-bottom:14px; }
+/* Per-page search box at the top of Tasks / Notes / Calendar. */
+.list-search { display:block; width:100%; max-width:none; margin:0 0 18px; padding:12px 16px; font-size:16px; }
+.cal-search-h { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+.cal-search-h h2 { margin:0; }
+.cal-search-note { color:var(--ink-3); font-size:13px; }
 .completed-sec .tr-task .tc-title .t { color:var(--ink-3); text-decoration:line-through; }
 .area-chip { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); font-size:15px; transition:border-color .12s,color .12s; }
 .area-chip:hover { color:var(--ink); }

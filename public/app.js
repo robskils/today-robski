@@ -20,7 +20,7 @@ const readLS = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k));
 const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
-  areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, completedQuery: '',
+  areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: (typeof window !== 'undefined' && window.innerWidth <= 820) ? { col: 'priority', dir: 'asc' } : { col: 'created', dir: 'desc' },
   note: null, tables_open: null,
@@ -448,12 +448,18 @@ function openTablesList() {
 function openNotesList() {
   state.view = { type: 'notes' };
   renderNav();
+  renderNotesList();
+}
+function renderNotesList() {
+  const q = (state.notesQuery || '').trim().toLowerCase();
   const favNotes = state.noteTops.filter((n) => n.props && n.props.fav);
+  const all = q ? state.noteTops.filter((n) => (n.title || '').toLowerCase().includes(q)) : state.noteTops;
   const cards = (list) => list.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▸</span>${esc(n.title || 'Untitled')}${areaTag(n)}</button>`).join('');
   $('#pane').innerHTML = `
     <div class="pane-head home-head"><h1>Notes</h1><button class="add-btn wide" data-new-note>+ New note</button></div>
-    ${favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">All notes · ${state.noteTops.length}</div><div class="tbl-cards">${cards(state.noteTops) || '<div class="empty">No notes yet.</div>'}</div></section>`;
+    <input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">
+    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
+    <section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All notes · ${state.noteTops.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'No notes match.' : 'No notes yet.'}</div>`}</div></section>`;
 }
 
 // ── view: life areas ─────────────────────────────────
@@ -640,6 +646,13 @@ function renderCalendar() {
       <span class="cal-ag-time">${agTime(e)}</span>
       <span class="cal-ag-t">${esc(e.title)}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
     : '<div class="home-empty">Nothing on this day.</div>';
+  const cq = (state.calQuery || '').trim().toLowerCase();
+  const matches = cq ? state.cal.events
+    .filter((e) => (e.title || '').toLowerCase().includes(cq) || (e.location || '').toLowerCase().includes(cq))
+    .sort((a, b) => `${a.date}${a.allDay ? '' : p2(Math.floor((a.start_min || 0) / 60))}`.localeCompare(`${b.date}${b.allDay ? '' : p2(Math.floor((b.start_min || 0) / 60))}`)) : [];
+  const searchBlock = `<section class="cal-search">
+      <div class="cal-search-h"><h2>Results · ${matches.length}</h2><span class="cal-search-note">in the loaded range</span></div>
+      ${matches.length ? matches.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}"><span class="cal-ag-time">${esc(prettyDate(e.date))}${e.allDay ? '' : ` · ${minToLabel(e.start_min)}`}</span><span class="cal-ag-t">${esc(e.title)}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('') : '<div class="home-empty">No events match. Move to another month to search it.</div>'}</section>`;
   $('#pane').innerHTML = `
     <div class="cal-head">
       <h1>${title}</h1>
@@ -650,13 +663,14 @@ function renderCalendar() {
         <button class="cal-btn ic" data-cal-next title="Next">›</button>
       </div>
     </div>
+    <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
-    <section class="cal-agenda cal-agenda-top">
+    ${cq ? searchBlock : `<section class="cal-agenda cal-agenda-top">
       <div class="cal-ag-head"><h2>${prettyDate(c.selected)}</h2><button class="add-btn wide" data-cal-add>+ Event</button></div>
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
-    ${body}`;
+    ${body}`}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
 }
@@ -1078,7 +1092,9 @@ function renderTasks() {
   // Same filter as the chips, but a compact dropdown - shown on mobile instead.
   const filterSel = `<select class="area-filter sel" data-task-filter><option value="" ${state.taskFilter === null ? 'selected' : ''}>All tasks · ${openCount(null)}</option>${state.areas.filter((a) => openCount(a.id)).map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)} · ${openCount(a.id)}</option>`).join('')}</select>`;
   const inFilter = (t) => !state.taskFilter || t.props.area === state.taskFilter;
-  const open = state.tasks.filter((t) => !t.props.done && inFilter(t));       // ticked tasks vanish from view
+  const tq = (state.taskQuery || '').trim().toLowerCase();
+  const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
+  const open = state.tasks.filter((t) => !t.props.done && inFilter(t) && matchesQ(t));       // ticked tasks vanish from view
   const completed = state.tasks.filter((t) => t.props.done && inFilter(t));
   const cq = (state.completedQuery || '').trim().toLowerCase();
   const completedShown = completed.filter((t) => !cq || (t.title || '').toLowerCase().includes(cq));
@@ -1090,6 +1106,7 @@ function renderTasks() {
     : (completed.length ? `<button class="ghost show-completed" data-show-completed>Show completed · ${completed.length}</button>` : '');
   $('#pane').innerHTML = `
     <div class="pane-head"><h1>Tasks</h1></div>
+    <input class="list-search sel" data-task-q placeholder="Search tasks…" value="${esc(state.taskQuery || '')}" autocomplete="off">
     ${state.taskAdding
       ? `<form id="task-form" class="add-task">
       <input id="task-title" type="text" placeholder="Add a task…" autocomplete="off" required>
@@ -1368,6 +1385,11 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
   if (e.target.id === 'move-input') { state.move.q = e.target.value; renderMoveList(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  // Page search boxes (Tasks / Notes / Calendar): keep focus + caret across the re-render.
+  const liveSearch = (sel, set, render) => { if (!e.target.matches(sel)) return; const pos = e.target.selectionStart; set(e.target.value); render(); const i = $(sel); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } };
+  liveSearch('[data-task-q]', (v) => (state.taskQuery = v), renderTasks);
+  liveSearch('[data-notes-q]', (v) => (state.notesQuery = v), renderNotesList);
+  liveSearch('[data-cal-q]', (v) => (state.calQuery = v), renderCalendar);
   if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
 });
 let proseT;
