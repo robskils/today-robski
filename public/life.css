@@ -320,6 +320,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-body textarea { width:100%; min-height:160px; font:inherit; font-size:18.5px; line-height:1.75; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:12px; padding:16px 18px; resize:none; }
 .note-body textarea:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
 
+/* Note page: main content left, "Notes inside" in a sticky right column. */
+.note-layout { display:grid; grid-template-columns:minmax(0,1fr) 272px; gap:36px; align-items:start; }
+.note-main { min-width:0; }
+.note-side { position:sticky; top:16px; min-width:0; }
+.note-side .subpages { margin-top:0; border-top:0; padding:16px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; }
+@media (max-width:900px){
+  .note-layout { grid-template-columns:1fr; gap:0; }
+  .note-side { position:static; }
+  .note-side .subpages { background:transparent; border:0; border-radius:0; padding:0; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
+}
 .subpages { margin-top:36px; border-top:1px solid var(--line); padding-top:20px; }
 .sub-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:10px; font-weight:600; }
 .subpage { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; border-radius:10px; color:var(--ink); font-size:16.5px; transition:background .12s; }

@@ -1143,12 +1143,18 @@ function renderNote() {
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
-    <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
-    <div class="note-body">${proseEditor(n.body, 'note')}</div>
-    ${embedsHtml(n.body)}
-    ${attachSection(n)}
-    <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
-      ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>`;
+    <div class="note-layout">
+      <div class="note-main">
+        <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
+        <div class="note-body">${proseEditor(n.body, 'note')}</div>
+        ${embedsHtml(n.body)}
+        ${attachSection(n)}
+      </div>
+      <aside class="note-side">
+        <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
+          ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>
+      </aside>
+    </div>`;
   autoGrowSoon($('#note-title')); loadThumbs();
 }
 
