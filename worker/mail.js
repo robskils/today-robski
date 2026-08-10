@@ -28,7 +28,13 @@ async function decryptPass(env, b64) {
 }
 
 // ── accounts (D1) ─────────────────────────────────────────────────────
-const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '' });
+const normAddr = (s) => String(s || '').toLowerCase().trim();
+const blockedList = (a) => { try { return a && a.blocked ? JSON.parse(a.blocked) : []; } catch { return []; } };
+async function saveBlocked(env, id, list) {
+  await env.DB.prepare('UPDATE mail_accounts SET blocked = ? WHERE id = ?')
+    .bind(JSON.stringify([...new Set(list.map(normAddr))].filter(Boolean)), id).run();
+}
+const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '', blocked: blockedList(a) });
 async function listAccounts(env) {
   const { results } = await env.DB.prepare('SELECT * FROM mail_accounts ORDER BY position, email').all();
   return results;
@@ -285,12 +291,36 @@ export async function handleMail(request, env, url, json, err) {
       const mailbox = url.searchParams.get('mailbox') || 'INBOX';
       const flagged = url.searchParams.get('flagged') === '1';   // Starred view
       const limit = Number(url.searchParams.get('limit')) || 40;
+      const blocked = new Set(blockedList(acct).map(normAddr));
       const im = await imapOpen(env, acct);
       try {
         await im.login(); const total = await im.select(mailbox);
-        const messages = !total ? [] : (flagged ? await im.listFlagged(limit) : await im.listRecent(limit));
+        let messages = !total ? [] : (flagged ? await im.listFlagged(limit) : await im.listRecent(limit));
+        // Blocked senders: sweep them out of the inbox into Junk and hide them.
+        if (blocked.size && !flagged && mailbox === 'INBOX') {
+          const isBlocked = (m) => m.from && blocked.has(normAddr(m.from.address));
+          for (const m of messages.filter(isBlocked)) { try { await im.move(m.uid, 'Junk'); } catch {} }
+          messages = messages.filter((m) => !isBlocked(m));
+        }
         return json({ total, messages }, request);
       } finally { await im.logout(); }
+    }
+
+    if (sub === 'block' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const addr = normAddr(b.address); if (!addr) return err('address required', request);
+      const list = blockedList(acct); if (!list.map(normAddr).includes(addr)) list.push(addr);
+      await saveBlocked(env, acct.id, list);
+      // Move the message that prompted the block straight to Junk.
+      if (b.uid) { const im = await imapOpen(env, acct); try { await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(Number(b.uid), 'Junk'); } catch {} finally { try { await im.logout(); } catch {} } }
+      return json({ ok: true, blocked: list.map(normAddr) }, request);
+    }
+    if (sub === 'unblock' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const addr = normAddr(b.address);
+      const list = blockedList(acct).filter((x) => normAddr(x) !== addr);
+      await saveBlocked(env, acct.id, list);
+      return json({ ok: true, blocked: list.map(normAddr) }, request);
     }
 
     if (sub === 'message') {

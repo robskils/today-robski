@@ -755,6 +755,25 @@ async function mailMoveTo(uid, target, label) {
   try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: state.mail.account, mailbox: state.mail.mailbox, uid, target }) }); toast(label); state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null; renderMail(); }
   catch (e) { toast(e.message); }
 }
+async function mailBlock(uid, address) {
+  if (!address) { toast('No sender address to block'); return; }
+  if (!confirm(`Block ${address}?\nTheir mail will be moved to Junk from now on.`)) return;
+  try {
+    await mailApi('/block', { method: 'POST', body: JSON.stringify({ account: state.mail.account, address, uid, mailbox: state.mail.mailbox }) });
+    const acc = (state.mail.accounts || []).find((a) => a.id === state.mail.account);
+    if (acc) acc.blocked = [...new Set([...(acc.blocked || []), address.toLowerCase()])];
+    state.mail.messages = state.mail.messages.filter((m) => m.uid !== uid); state.mail.open = null;
+    toast(`Blocked ${address}`); renderMail();
+  } catch (e) { toast(e.message); }
+}
+async function mailUnblock(address, accountId) {
+  try {
+    await mailApi('/unblock', { method: 'POST', body: JSON.stringify({ account: accountId || state.mail.account, address }) });
+    const acc = (state.mail.accounts || []).find((a) => a.id === (accountId || state.mail.account));
+    if (acc) acc.blocked = (acc.blocked || []).filter((x) => x !== address);
+    toast(`Unblocked ${address}`); await openMailAccounts();
+  } catch (e) { toast(e.message); }
+}
 async function openMail() {
   state.view = { type: 'mail' };
   if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false };
@@ -843,7 +862,9 @@ function renderMailAccounts(note) {
     <div class="mail-sig" data-sig-panel="${a.id}" hidden>
       <div class="mail-sig-ed prose" contenteditable="true" data-sig-acct="${a.id}" data-ph="Your signature…">${a.signature || defaultSignature(a)}</div>
       <div class="mail-sig-act"><button class="add-btn" data-sig-save="${a.id}">Save signature</button><span class="sig-hint">Added to the bottom of messages you send from this address.</span></div>
-    </div></div>`).join('');
+    </div>
+    ${(a.blocked && a.blocked.length) ? `<div class="mail-blocked"><span class="mail-blocked-h">Blocked senders · ${a.blocked.length}</span><div class="mail-blocked-chips">${a.blocked.map((addr) => `<span class="mail-blocked-chip">${esc(addr)}<button data-mail-unblock="${esc(addr)}" data-mail-unblock-acct="${a.id}" title="Unblock">×</button></span>`).join('')}</div></div>` : ''}
+    </div>`).join('');
   $('#pane').innerHTML = `<div class="pane-head home-head"><h1>Mail</h1><button class="add-btn wide" data-mail-add-acct>+ Add mailbox</button></div>
     <p class="scope">${note ? esc(note) + ' ' : ''}Connect as many mailboxes as you like - adding one never removes another.</p>
     <div class="mail-acct-list">${rows}</div>
@@ -930,7 +951,7 @@ function renderMail(loading) {
     const o = m.open;
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
-        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${o.uid}" title="Star">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${o.uid}" title="Archive — remove from inbox, keep it">Archive</button><button class="ghost" data-mail-spam="${o.uid}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
+        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${o.uid}" title="Star">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${o.uid}" title="Archive — remove from inbox, keep it">Archive</button><button class="ghost" data-mail-spam="${o.uid}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${o.uid}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${o.uid}">Delete</button></span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
@@ -1449,6 +1470,8 @@ document.addEventListener('click', (e) => {
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(Number(mstar.dataset.mailStar)); return; }   // star sits inside the row button
   const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(Number(march.dataset.mailArchive), 'Archive', 'Archived'); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(Number(mspam.dataset.mailSpam), 'Junk', 'Marked as spam'); return; }
+  const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(Number(mblk.dataset.mailBlock), mblk.dataset.mailFrom || ''); return; }
+  const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
   const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(Number(mo.dataset.mailOpen)); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { state.mail.composing = {}; renderMail(); return; }

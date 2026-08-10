@@ -694,6 +694,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .ma-e { flex:1; color:var(--ink); font-size:16px; }
 .mail-acct .x { color:var(--ink-3); font-size:18px; } .mail-acct .x:hover { color:var(--accent); }
 .mail-acct-card { max-width:560px; }
+.mail-blocked { padding:12px 4px 4px; }
+.mail-blocked-h { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); font-weight:600; margin-bottom:8px; }
+.mail-blocked-chips { display:flex; flex-wrap:wrap; gap:7px; }
+.mail-blocked-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 6px 4px 12px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); font-size:13.5px; color:var(--ink-2); }
+.mail-blocked-chip button { width:18px; height:18px; border-radius:50%; color:var(--ink-3); font-size:14px; line-height:1; flex:none; }
+.mail-blocked-chip button:hover { background:var(--accent); color:#fff; }
 .mail-acct .sig-btn { margin-left:auto; font-size:13.5px; padding:5px 12px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); }
 .mail-acct .sig-btn:hover { border-color:var(--accent); color:var(--accent); }
 .mail-acct-card .mail-acct .x { margin-left:8px; }

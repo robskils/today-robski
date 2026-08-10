@@ -237,5 +237,6 @@ CREATE TABLE IF NOT EXISTS mail_accounts (
   username  TEXT NOT NULL,
   pass_enc  TEXT NOT NULL,
   position  INTEGER NOT NULL DEFAULT 0,
-  signature TEXT
+  signature TEXT,
+  blocked   TEXT              -- JSON array of blocked sender addresses
 );
