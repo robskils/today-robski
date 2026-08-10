@@ -83,7 +83,7 @@
     <div class="bar-actions">
       <button class="ghost-btn" id="today-btn" hidden>Today</button>
       <a class="ghost-btn nav-link" href="https://life.robski.uk" title="Tasks, notes, tables and areas">Life &rarr;</a>
-      <span class="sync" id="sync-status" title="Tana only syncs while your Mac is awake"></span>
+      <button class="ghost-btn" id="settings-btn" title="Lanes &amp; areas" aria-label="Settings">&#9881;</button>
       <button class="ghost-btn" id="theme-btn" aria-label="Toggle theme">&#9789;</button>
     </div>
   </header>
@@ -209,7 +209,7 @@
 <div class="sheet-bg" id="new-bg" hidden>
   <form class="sheet" id="new-form">
     <h3>New task</h3>
-    <p class="sheet-sub">Lands in your Tana Inbox, tagged #Task.</p>
+    <p class="sheet-sub">Added to your Robski Life tasks.</p>
 
     <label class="field">
       <span>Task</span>
@@ -234,7 +234,21 @@
 
     <div class="sheet-actions">
       <button type="button" class="btn btn-ghost" id="new-cancel">Cancel</button>
-      <button type="submit" class="btn btn-primary" id="new-save">Add to Tana</button>
+      <button type="submit" class="btn btn-primary" id="new-save">Add task</button>
+    </div>
+  </form>
+</div>
+
+<!-- Lanes & areas: rename the Today lanes and choose which Life Area feeds each. -->
+<div class="sheet-bg" id="settings-bg" hidden>
+  <form class="sheet sheet-wide" id="settings-form">
+    <h3>Lanes &amp; areas</h3>
+    <p class="sheet-sub">Rename your Today lanes, and choose which life area feeds each one.</p>
+    <div class="set-sec"><span class="set-h">Lane names</span><div id="set-lanes" class="set-lanes"></div></div>
+    <div class="set-sec"><span class="set-h">Life area → lane</span><div id="set-areas" class="set-areas"></div></div>
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-ghost" id="settings-cancel">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="settings-save">Save</button>
     </div>
   </form>
 </div>

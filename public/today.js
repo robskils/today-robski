@@ -1543,11 +1543,40 @@ $('new-form').addEventListener('submit', async (e) => {
     toast(e2.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Add to Tana';
+    btn.textContent = 'Add task';
   }
 });
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('new-bg').hidden) closeNew(); });
+
+// ── Lanes & areas settings ────────────────────────────────────────────
+async function openSettings() {
+  try {
+    const cfg = await api('/api/lanes');
+    $('set-lanes').innerHTML = cfg.lanes.filter((l) => l.key !== 'other').map((l) =>
+      `<label class="set-row"><span class="set-swatch" style="background:hsl(${l.hue} 55% 55%)"></span><input class="input" data-lane="${l.key}" value="${esc(l.label)}"></label>`).join('');
+    const laneOpts = cfg.lanes.map((l) => `<option value="${l.key}">${esc(l.label)}</option>`).join('');
+    $('set-areas').innerHTML = cfg.areas.map((a) =>
+      `<label class="set-row"><span class="set-area-name">${esc(a.title)}</span><select class="input" data-area="${a.id}">${laneOpts}</select></label>`).join('');
+    for (const a of cfg.areas) { const sel = document.querySelector(`select[data-area="${a.id}"]`); if (sel) sel.value = cfg.areaMap[a.id] || 'other'; }
+    $('settings-bg').hidden = false;
+  } catch (e) { toast(e.message); }
+}
+$('settings-btn').addEventListener('click', openSettings);
+$('settings-cancel').addEventListener('click', () => { $('settings-bg').hidden = true; });
+$('settings-bg').addEventListener('click', (e) => { if (e.target === $('settings-bg')) $('settings-bg').hidden = true; });
+$('settings-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const labels = {}; document.querySelectorAll('[data-lane]').forEach((i) => { const v = i.value.trim(); if (v) labels[i.dataset.lane] = v; });
+  const areaMap = {}; document.querySelectorAll('[data-area]').forEach((s) => { areaMap[s.dataset.area] = s.value; });
+  const btn = $('settings-save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await api('/api/lanes', { method: 'PUT', body: JSON.stringify({ labels, areaMap }) });
+    $('settings-bg').hidden = true; state.lifeAreas = null; toast('Saved');
+    await loadDay(); await loadTasks();
+  } catch (e2) { toast(e2.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save'; }
+});
 
 $('add-block').addEventListener('click', () => openSheet({}));
 

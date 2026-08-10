@@ -919,3 +919,14 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Lanes & areas settings sheet. */
+.sheet.sheet-wide { max-width: 580px; }
+.set-sec { margin: 16px 0; }
+.set-h { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin-bottom:9px; }
+.set-lanes, .set-areas { display:flex; flex-direction:column; gap:8px; max-height:34vh; overflow-y:auto; padding-right:4px; }
+.set-row { display:flex; align-items:center; gap:10px; }
+.set-swatch { width:15px; height:15px; border-radius:50%; flex:none; }
+.set-area-name { flex:1; min-width:0; font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.set-row input.input { flex:1; padding:8px 12px; font-size:15.5px; }
+.set-row select.input { flex:none; width:150px; padding:8px 10px; font-size:15px; }
