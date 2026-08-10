@@ -261,8 +261,10 @@ function applyTheme(rerender) {
   if (m === 'auto') themeTimer = setTimeout(() => applyTheme(false), 5 * 60 * 1000);
 }
 function cycleTheme() {
-  const order = ['auto', 'light', 'dark'];
-  const next = order[(order.indexOf(themeMode()) + 1) % 3];
+  const m = themeMode();
+  // From Auto, flip straight to the OPPOSITE of what's showing (one visible click,
+  // no dead Auto→same-colour step). Then dark→auto returns to automatic.
+  const next = m === 'auto' ? (autoIsDark() ? 'light' : 'dark') : (m === 'light' ? 'dark' : 'auto');
   try { localStorage.setItem('life.theme.mode', next); } catch {}
   applyTheme(true);
   if (next === 'auto') ensureLoc();
