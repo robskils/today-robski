@@ -514,7 +514,7 @@ function renderArea() {
         <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}</p>
-      <div class="area-actions"><button class="add-btn" data-area-add-task>+ Add task</button><button class="add-btn light" data-area-add-note>+ Add note</button></div>
+      <div class="area-actions"><button class="add-btn wide" data-area-add-task>+ Add task</button><button class="add-btn wide" data-area-add-note>+ Add note</button></div>
     </div>
     ${sec('Notes', notes.length, `<div class="tbl-cards">${noteCards}</div>`)}
     ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
