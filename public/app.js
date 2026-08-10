@@ -312,7 +312,7 @@ function renderNav() {
   const v = state.view;
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
-    <div class="nav-brand" data-view-home title="Home"><em>Life</em><span class="dot">·</span>Robski</div>
+    <div class="nav-brand" data-view-home title="Home">Robski<span class="dot">·</span><em>Life</em></div>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
