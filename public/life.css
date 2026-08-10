@@ -600,7 +600,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-row { display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left; padding:13px 16px; border-bottom:1px solid var(--line); transition:background .12s; }
 .mail-row:last-child { border-bottom:0; }
 .mail-row:hover { background:var(--paper-2); }
-.mail-row.sel { background:color-mix(in srgb,var(--accent) 8%,transparent); }
+.mail-row.csel { background:color-mix(in srgb,var(--accent) 8%,transparent); }
 .mail-avatar { flex:none; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:color-mix(in srgb,var(--accent) 16%,var(--paper-2)); color:var(--accent); font-size:16px; font-weight:600; }
 .mail-avatar.big { width:44px; height:44px; font-size:18px; }
 .mail-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
@@ -797,11 +797,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .note-body { min-height:120px; }
 
 /* selection formatting bubble */
-.bubble { position:absolute; z-index:70; display:flex; align-items:center; gap:2px; padding:5px; background:var(--ink); border-radius:11px; box-shadow:0 8px 24px -6px rgba(0,0,0,.4); }
+/* Always a dark floating toolbar with white icons — reads on both themes.
+   (Previously used var(--ink), which is near-white in dark mode: light-on-light.) */
+.bubble { position:absolute; z-index:70; display:flex; align-items:center; gap:2px; padding:5px; background:#28222f; border:1px solid rgba(255,255,255,.12); border-radius:11px; box-shadow:0 8px 24px -6px rgba(0,0,0,.5); }
 .bubble button { width:32px; height:32px; display:grid; place-items:center; color:#fff; font-size:15px; border-radius:7px; }
-.bubble button:hover { background:rgba(255,255,255,.16); }
+.bubble button:hover { background:rgba(255,255,255,.18); }
 .bubble .bub-sep { width:1px; height:20px; background:rgba(255,255,255,.22); margin:0 3px; }
-:root[data-theme='light'] .bubble { background:#241f2b; }
 
 /* ── task focus (open) view ──────────────────────────── */
 .task-focus { display:flex; align-items:flex-start; gap:14px; margin-bottom:6px; }
@@ -847,7 +848,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-cell:hover { background:var(--paper-2); }
 .cal-cell.dim { background:color-mix(in srgb,var(--card) 55%,var(--paper)); }
 .cal-cell.dim .cal-daynum { color:var(--ink-3); }
-.cal-cell.sel { outline:2px solid var(--accent); outline-offset:-2px; }
+.cal-cell.csel { outline:2px solid var(--accent); outline-offset:-2px; }
 .cal-daynum { font-size:14px; font-variant-numeric:tabular-nums; color:var(--ink-2); text-align:right; padding:0 2px; }
 .cal-cell.today .cal-daynum { color:var(--accent-ink); background:var(--accent); width:26px; height:26px; margin-left:auto; border-radius:50%; display:grid; place-items:center; font-weight:600; }
 .cal-evs { display:flex; flex-direction:column; gap:3px; min-width:0; }
@@ -876,7 +877,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
 .cw-day { background:var(--card); min-height:230px; padding:8px 8px 12px; cursor:pointer; display:flex; flex-direction:column; gap:7px; transition:background .12s; }
 .cw-day:hover { background:var(--paper-2); }
-.cw-day.sel { outline:2px solid var(--accent); outline-offset:-2px; }
+.cw-day.csel { outline:2px solid var(--accent); outline-offset:-2px; }
 .cw-head { display:flex; align-items:center; gap:6px; }
 .cw-dow { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
 .cw-num { font-size:16px; color:var(--ink-2); font-variant-numeric:tabular-nums; margin-left:auto; }

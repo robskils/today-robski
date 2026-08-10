@@ -552,7 +552,7 @@ function renderCalendar() {
     title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
     body = `<div class="cal-week">${wk.map((d) => {
       const evs = byDay[d.iso] || [];
-      return `<div class="cw-day ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'sel' : ''}" data-cal-day="${d.iso}">
+      return `<div class="cw-day ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
         <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span></div>
         <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
     }).join('')}</div>`;
@@ -563,7 +563,7 @@ function renderCalendar() {
       const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
       const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : '';
       const dots = evs.slice(0, 5).map((e) => `<span class="cal-dot ${e.allDay ? 'allday' : ''}"></span>`).join('');
-      return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'sel' : ''}" data-cal-day="${d.iso}">
+      return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
         <div class="cal-daynum">${d.day}</div><div class="cal-evs">${shown}${more}</div><div class="cal-dots">${dots}</div></div>`;
     };
     body = `<div class="cal-grid">${WEEKDAYS.map((w) => `<div class="cal-dow">${w}</div>`).join('')}${monthWeeks(c.y, c.m).map((w) => w.map(cell).join('')).join('')}</div>`;
@@ -801,7 +801,7 @@ function renderMail(loading) {
   const m = state.mail;
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
   const accTabs = (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}</button>`).join('');
-  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open.uid === x.uid ? 'sel' : ''}" data-mail-open="${x.uid}">
+  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open.uid === x.uid ? 'csel' : ''}" data-mail-open="${x.uid}">
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${esc(x.subject)}</span></span></button>`).join('');
