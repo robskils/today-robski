@@ -508,8 +508,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* favourite star, shared across views */
 .star { flex:none; color:var(--ink-3); font-size:17px; padding:0 4px; opacity:0; transition:opacity .12s,color .12s; }
 .task:hover .star, .star.on, .note-crumbs .star, .tbl-head .star { opacity:1; }
-.star.on { color:var(--gold); }
-.star:hover { color:var(--gold); }
+/* A favourited star must read clearly - a vivid gold, not the muted brand gold. */
+.star.on { color:#eea90b; }
+.star:hover { color:#eea90b; }
 @media (hover:none){ .star { opacity:1; } }
 
 .pane-head { margin-bottom:20px; }
