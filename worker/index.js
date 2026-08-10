@@ -824,10 +824,47 @@ async function getSettings(env) {
   return Object.fromEntries(results.map((r) => [r.key, r.value]));
 }
 
+// ── Today lanes, now configurable ─────────────────────────────────────
+// Lane KEYS/hues/targets stay structural (shared/lanes.js); Robin can rename the
+// labels and choose which Life Area feeds each lane. Both overrides live in
+// settings: `lane_labels` {key:label} and `area_lanes` {lifeAreaId:laneKey}.
+// If area_lanes is unset, we derive it from each area's NAME via AREA_TO_LANE.
+async function getLaneConfig(env) {
+  const s = await getSettings(env);
+  let labels = {}; try { labels = s.lane_labels ? JSON.parse(s.lane_labels) : {}; } catch {}
+  const lanes = LANES.map((l) => ({ ...l, label: labels[l.key] || l.label }));
+  const laneKeys = new Set(LANES.map((l) => l.key));
+  let areaMap = null; try { areaMap = s.area_lanes ? JSON.parse(s.area_lanes) : null; } catch {}
+  const { results: areas } = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='area' AND archived=0 ORDER BY title").all();
+  if (!areaMap) { areaMap = {}; for (const a of areas) areaMap[a.id] = laneForArea(a.title); }
+  // Drop any stored mapping to a lane key that no longer exists.
+  for (const k of Object.keys(areaMap)) if (!laneKeys.has(areaMap[k])) delete areaMap[k];
+  return { lanes, areaMap, labels, areas };
+}
+const laneForAreaId = (areaMap, areaId) => (areaId && areaMap[areaId]) || 'other';
+// A Life task block → the shape the Today client expects (tana_id now = block id).
+function blockToTask(r, areaMap) {
+  let p = {}; try { p = r.props ? JSON.parse(r.props) : {}; } catch {}
+  return { tana_id: r.id, title: r.title || '(untitled)', lane: laneForAreaId(areaMap, p.area), priority: p.priority || null, done: p.done ? 1 : 0, area: p.area || null, duration: p.duration ?? null, created: r.created_at };
+}
+
+async function handleLanes(request, env) {
+  if (request.method === 'PUT') {
+    const b = await request.json().catch(() => ({}));
+    const stmts = [];
+    if (b.labels && typeof b.labels === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('lane_labels',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.labels)));
+    if (b.areaMap && typeof b.areaMap === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('area_lanes',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.areaMap)));
+    if (stmts.length) await env.DB.batch(stmts);
+  }
+  const cfg = await getLaneConfig(env);
+  return json({ lanes: cfg.lanes, areaMap: cfg.areaMap, areas: cfg.areas.map((a) => { let p = {}; try { p = a.props ? JSON.parse(a.props) : {}; } catch {} return { id: a.id, title: a.title, hue: p.hue ?? null }; }) }, request);
+}
+
 async function handleDay(request, env, url) {
   const day = url.searchParams.get('date') || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
 
+  const cfg = await getLaneConfig(env);
   const [slotsRes, settings, cal, quote, actsRes, linksRes] = await Promise.all([
     // Floating blocks (start_min NULL) sort last; the client splits them out.
     env.DB.prepare(
@@ -837,14 +874,14 @@ async function handleDay(request, env, url) {
     calendarEvents(env, day),
     quoteForDay(env, day),
     env.DB.prepare('SELECT * FROM activities ORDER BY lane, position, id').all(),
-    // The tasks inside each of today's blocks, in one query rather than one
-    // per block.
+    // The tasks inside each of today's blocks, now Life task blocks (slot_tasks.
+    // tana_id holds the block id).
     env.DB.prepare(
       `SELECT st.slot_id, st.position, st.duration AS slot_duration,
-              t.tana_id, t.title, t.lane, t.priority, t.done, t.duration AS task_duration
+              b.id AS tid, b.title, b.props AS bprops
          FROM slot_tasks st
          JOIN slots s ON s.id = st.slot_id
-         LEFT JOIN tasks t ON t.tana_id = st.tana_id
+         LEFT JOIN blocks b ON b.id = st.tana_id
         WHERE s.day = ?
         ORDER BY st.slot_id, st.position`,
     ).bind(day).all(),
@@ -854,37 +891,27 @@ async function handleDay(request, env, url) {
 
   const byslot = new Map();
   for (const r of linksRes.results) {
-    // LEFT JOIN: a task trashed in Tana leaves the link but no row.
-    if (!r.tana_id) continue;
+    // LEFT JOIN: a task deleted in Life leaves the link but no row.
+    if (!r.tid) continue;
+    let p = {}; try { p = r.bprops ? JSON.parse(r.bprops) : {}; } catch {}
     if (!byslot.has(r.slot_id)) byslot.set(r.slot_id, []);
     byslot.get(r.slot_id).push({
-      tana_id: r.tana_id, title: r.title, lane: r.lane,
-      priority: r.priority, done: r.done,
-      // This task's own length in this block: the per-link value if set, else
-      // its Tana Duration, else null (the client shows a default).
-      duration: r.slot_duration ?? r.task_duration ?? null,
+      tana_id: r.tid, title: r.title, lane: laneForAreaId(cfg.areaMap, p.area),
+      priority: p.priority || null, done: p.done ? 1 : 0,
+      // per-link length if set, else the task's own duration, else null.
+      duration: r.slot_duration ?? p.duration ?? null,
     });
   }
   for (const s of slots) s.tasks = byslot.get(s.id) || [];
 
-  // Progress per lane.
-  //
-  // A block carrying tasks is done when it's ticked. A category block - a bare
-  // practice, no task behind it - is done the moment it's on the schedule: you
-  // don't complete an hour of Music, you just do it, so it counts on placement
-  // and shows no tick. `practice` tells the client to leave the checkbox off.
   const progress = {};
-  for (const l of LANES) progress[l.key] = { planned: 0, done: 0 };
+  for (const l of cfg.lanes) progress[l.key] = { planned: 0, done: 0 };
   for (const s of slots) {
     s.practice = !((s.tasks && s.tasks.length) || s.tana_id);
     const p = progress[s.lane] || (progress[s.lane] = { planned: 0, done: 0 });
     p.planned += s.duration;
     if (s.practice || s.done) p.done += s.duration;
   }
-
-  const syncedAt = await env.DB.prepare(
-    'SELECT MAX(synced_at) AS t FROM tasks',
-  ).first();
 
   return json({
     day,
@@ -894,34 +921,37 @@ async function handleDay(request, env, url) {
     calendar_error: cal.error,
     progress,
     settings,
-    lanes: LANES,
+    lanes: cfg.lanes,
     quote,
     activities: actsRes.results,
-    last_sync: syncedAt?.t || null,
+    last_sync: null,
   }, request);
 }
 
 async function handleTasks(request, env, url) {
   const lane = url.searchParams.get('lane');
-  const q = url.searchParams.get('q');
+  const q = (url.searchParams.get('q') || '').toLowerCase();
+  const cfg = await getLaneConfig(env);
 
-  let sql = 'SELECT * FROM tasks WHERE done = 0';
-  const binds = [];
-  if (lane && lane !== 'all') { sql += ' AND lane = ?'; binds.push(lane); }
-  if (q) { sql += ' AND title LIKE ?'; binds.push(`%${q}%`); }
-  // P1 first, then most recently created.
-  sql += " ORDER BY CASE priority WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 WHEN 'P3' THEN 3 ELSE 4 END, created DESC LIMIT 300";
-
-  const { results } = await env.DB.prepare(sql).bind(...binds).all();
-
-  const { results: counts } = await env.DB.prepare(
-    'SELECT lane, COUNT(*) AS n FROM tasks WHERE done = 0 GROUP BY lane',
+  // Pull from Robski Life: open, priority-tagged task blocks. Tana is gone.
+  const { results } = await env.DB.prepare(
+    `SELECT id, title, props, created_at FROM blocks
+      WHERE kind = 'task' AND archived = 0
+        AND (json_extract(props,'$.done') IS NULL OR json_extract(props,'$.done') = 0)
+        AND COALESCE(json_extract(props,'$.priority'), '') != ''`,
   ).all();
 
-  return json({
-    tasks: results,
-    counts: Object.fromEntries(counts.map((c) => [c.lane, c.n])),
-  }, request);
+  const all = results.map((r) => blockToTask(r, cfg.areaMap));
+  const counts = {};
+  for (const t of all) counts[t.lane] = (counts[t.lane] || 0) + 1;
+
+  let tasks = all;
+  if (lane && lane !== 'all') tasks = tasks.filter((t) => t.lane === lane);
+  if (q) tasks = tasks.filter((t) => (t.title || '').toLowerCase().includes(q));
+  const rank = { P1: 1, P2: 2, P3: 3, P4: 4 };
+  tasks.sort((a, b) => (rank[a.priority] || 5) - (rank[b.priority] || 5) || String(b.created).localeCompare(String(a.created)));
+
+  return json({ tasks: tasks.slice(0, 300), counts }, request);
 }
 
 async function createSlot(request, env) {
@@ -984,7 +1014,7 @@ async function addSlotTask(request, env, slotId) {
 
   const slot = await env.DB.prepare('SELECT id FROM slots WHERE id = ?').bind(slotId).first();
   if (!slot) return err('not found', request, 404);
-  const task = await env.DB.prepare('SELECT tana_id FROM tasks WHERE tana_id = ?').bind(tanaId).first();
+  const task = await env.DB.prepare("SELECT id FROM blocks WHERE id = ? AND kind = 'task'").bind(tanaId).first();
   if (!task) return err('no such task', request, 404);
 
   const next = await env.DB.prepare(
@@ -1077,56 +1107,49 @@ async function updateSlot(request, env, id) {
 //
 // The Tana API is write-only from out here, so the queue is the only way home:
 // the Mac agent replays pending_writes on its next pass.
-async function setTaskDone(env, tanaId, done) {
+async function setTaskDone(env, id, done) {
+  const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND kind = 'task'").bind(id).first();
+  let p = {}; try { p = row && row.props ? JSON.parse(row.props) : {}; } catch {}
+  p.done = !!done;
   await env.DB.batch([
-    env.DB.prepare('INSERT INTO pending_writes (tana_id, op, created_at) VALUES (?, ?, ?)')
-      .bind(tanaId, done ? 'complete' : 'uncomplete', new Date().toISOString()),
-    env.DB.prepare('UPDATE tasks SET done = ? WHERE tana_id = ?')
-      .bind(done ? 1 : 0, tanaId),
-
+    env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(p), new Date().toISOString(), id),
     // A block holding exactly this one task *is* this task, so it follows: tick
-    // the task and the ring counts the time, which is what you meant.
-    //
-    // A block holding several is a session. Finishing one of five tasks doesn't
-    // finish the hour, so it stays open and you tick the block when it's over.
+    // the task and the ring counts the time. A multi-task block is a session and
+    // stays open - you tick the block when it's over.
     env.DB.prepare(
       `UPDATE slots SET done = ?
         WHERE id IN (SELECT slot_id FROM slot_tasks WHERE tana_id = ?)
           AND (SELECT COUNT(*) FROM slot_tasks x WHERE x.slot_id = slots.id) = 1`,
-    ).bind(done ? 1 : 0, tanaId),
+    ).bind(done ? 1 : 0, id),
   ]);
 }
 
-async function updateTask(request, env, tanaId) {
+async function updateTask(request, env, id) {
   const b = await request.json().catch(() => ({}));
-  const existing = await env.DB.prepare('SELECT done, title FROM tasks WHERE tana_id = ?')
-    .bind(tanaId).first();
+  const existing = await env.DB.prepare("SELECT title, props FROM blocks WHERE id = ? AND kind = 'task'")
+    .bind(id).first();
   if (!existing) return err('not found', request, 404);
+  let p = {}; try { p = existing.props ? JSON.parse(existing.props) : {}; } catch {}
 
-  // Rename: flows to Tana as a search-and-replace, so it carries the old title
-  // (the mirror's current one) and the new. Successive renames chain, each old
-  // being the previous new, so edit_node always finds its target.
   if (b.title !== undefined) {
     const title = String(b.title).trim();
     if (!title) return err('title required', request);
     if (title !== existing.title) {
       await env.DB.batch([
-        env.DB.prepare('UPDATE tasks SET title = ? WHERE tana_id = ?').bind(title, tanaId),
+        env.DB.prepare('UPDATE blocks SET title = ?, updated_at = ? WHERE id = ?').bind(title, new Date().toISOString(), id),
         // A block titled after the task keeps in step; a category block that
         // merely holds it keeps its own name.
-        env.DB.prepare('UPDATE slots SET title = ? WHERE tana_id = ? AND title = ?')
-          .bind(title, tanaId, existing.title),
-        env.DB.prepare('INSERT INTO pending_writes (tana_id, op, payload, created_at) VALUES (?, ?, ?, ?)')
-          .bind(tanaId, 'rename', JSON.stringify({ old: existing.title, new: title }), new Date().toISOString()),
+        env.DB.prepare('UPDATE slots SET title = ? WHERE tana_id = ? AND title = ?').bind(title, id, existing.title),
       ]);
     }
   }
 
-  if (b.done !== undefined && !!b.done !== !!existing.done) {
-    await setTaskDone(env, tanaId, !!b.done);
+  if (b.done !== undefined && !!b.done !== !!p.done) {
+    await setTaskDone(env, id, !!b.done);
   }
 
-  return json({ ok: true, tana_id: tanaId }, request);
+  return json({ ok: true, tana_id: id }, request);
 }
 
 // ── activities ────────────────────────────────────────────────────────
@@ -1198,29 +1221,19 @@ async function createTask(request, env) {
     return err('bad duration', request);
   }
 
-  const localId = `local:${crypto.randomUUID()}`;
+  // A native Robski Life task block. `area` is a Life Area block id (the client
+  // picks from /api/lanes). It shows up in the Life Tasks list too.
+  const id = crypto.randomUUID();
   const now = new Date().toISOString();
+  const props = { area: b.area || null, priority: b.priority || null, done: false };
+  if (duration !== null) props.duration = duration;
+  const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
+  await env.DB.prepare(
+    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
+     VALUES (?, 'task', NULL, ?, ?, '', ?, ?, ?, 0)`,
+  ).bind(id, posRow.p, title, JSON.stringify(props), now, now).run();
 
-  // Area and Priority are references to real nodes, so the client sends ids it
-  // got from /api/tana-options rather than free text.
-  const payload = JSON.stringify({
-    title,
-    area_id: b.area_id || null,
-    priority_id: b.priority_id || null,
-    duration,
-  });
-
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO tasks (tana_id, title, area, lane, priority, status, duration, done, breadcrumb, created, synced_at)
-       VALUES (?, ?, ?, ?, ?, 'Backlog', ?, 0, 'Inbox', ?, ?)`,
-    ).bind(localId, title, b.area || null, laneForArea(b.area), b.priority || null, duration, now, now),
-    env.DB.prepare(
-      'INSERT INTO pending_writes (tana_id, op, payload, created_at) VALUES (?, ?, ?, ?)',
-    ).bind(localId, 'create', payload, now),
-  ]);
-
-  return json({ ok: true, tana_id: localId, pending: true }, request, 201);
+  return json({ ok: true, tana_id: id }, request, 201);
 }
 
 // The agent calls this once Tana has minted the real node id, so every
@@ -1498,6 +1511,7 @@ export default {
       }
       if (path === '/api/tasks' && request.method === 'GET') return handleTasks(request, env, url);
       if (path === '/api/tasks' && request.method === 'POST') return createTask(request, env);
+      if (path === '/api/lanes' && (request.method === 'GET' || request.method === 'PUT')) return handleLanes(request, env);
       if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);

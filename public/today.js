@@ -1488,12 +1488,13 @@ $('task-search').addEventListener('input', (e) => {
 
 // ── new task ──────────────────────────────────────────────────────────
 
-// Areas and priorities are real Tana nodes, so the form has to reference them
-// by id. The agent mirrors them; fetched once and kept.
-async function loadTanaOptions() {
-  if (state.tanaOptions) return state.tanaOptions;
-  state.tanaOptions = await api('/api/tana-options');
-  return state.tanaOptions;
+// Tasks are native Robski Life blocks now: the area picker lists real Life Areas
+// (each area feeds a Today lane via the lane settings), and priority is P1-P4.
+async function loadLifeAreas() {
+  if (state.lifeAreas) return state.lifeAreas;
+  const r = await api('/api/lanes');
+  state.lifeAreas = r.areas || [];
+  return state.lifeAreas;
 }
 
 $('new-task').addEventListener('click', async () => {
@@ -1503,11 +1504,11 @@ $('new-task').addEventListener('click', async () => {
   $('new-title').focus();
 
   try {
-    const { areas, priorities } = await loadTanaOptions();
+    const areas = await loadLifeAreas();
     $('new-area').innerHTML = '<option value="">(no area)</option>' +
-      areas.map((a) => `<option value="${esc(a.node_id)}">${esc(a.name)}</option>`).join('');
+      areas.map((a) => `<option value="${esc(a.id)}">${esc(a.title)}</option>`).join('');
     $('new-priority').innerHTML =
-      priorities.map((p) => `<option value="${esc(p.node_id)}"${p.name === 'P3' ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+      ['P1', 'P2', 'P3', 'P4'].map((p) => `<option${p === 'P3' ? ' selected' : ''}>${p}</option>`).join('');
   } catch (e) {
     toast(`Couldn't load areas: ${e.message}`);
   }
@@ -1530,16 +1531,13 @@ $('new-form').addEventListener('submit', async (e) => {
       method: 'POST',
       body: JSON.stringify({
         title: $('new-title').value.trim(),
-        area_id: $('new-area').value || null,
-        area: areaSel && $('new-area').value ? areaSel.textContent : null,
-        priority_id: $('new-priority').value || null,
-        priority: prioSel ? prioSel.textContent : null,
+        area: $('new-area').value || null,               // a Life Area block id
+        priority: prioSel ? prioSel.textContent : null,  // P1-P4
         duration: Number($('new-duration').value) || null,
       }),
     });
     closeNew();
-    // It's usable here straight away; only Tana waits for the Mac agent.
-    toast('Added. Reaches Tana within 15 min.');
+    toast('Task added');
     await loadTasks();
   } catch (e2) {
     toast(e2.message);
