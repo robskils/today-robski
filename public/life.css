@@ -338,10 +338,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 }
 .nav-k:hover { border-color:var(--accent); color:var(--ink-2); }
 .nav-k kbd { font:inherit; font-size:12px; background:var(--paper-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--ink-3); }
+/* Primary nav: two half-width tiles per row. */
+.nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:4px; }
 .nav-item {
-  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
-  padding:9px 12px; border-radius:9px; color:var(--ink-2); font-size:16px; transition:background .12s;
+  display:flex; align-items:center; gap:8px; width:100%; text-align:left;
+  padding:9px 11px; border-radius:9px; color:var(--ink-2); font-size:15px; transition:background .12s; overflow:hidden; white-space:nowrap;
 }
+.nav-item > span:first-child { flex:none; }
 .nav-item:hover { background:var(--paper); color:var(--ink); }
 .nav-item.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:var(--shadow); }
 .nav-secs { display:flex; flex-direction:column; }
@@ -701,7 +704,7 @@ table.ttable tr:last-child td { border-bottom:0; }
   }
   .nav-brand { padding:0; font-size:25px; }
   .nav-foot { margin:0; }
-  .nav-item, .nav-secs, .nav-spacer, .foot-search { display:none; }
+  .nav-item, .nav-grid, .nav-secs, .nav-spacer, .foot-search { display:none; }
   [data-open-today] { display:none; }   /* the day planner is desktop-only */
   /* No bottom on a horizontal bar: the theme switch sits inline with the brand. */
   .nav-bottom { margin-top:0; padding-top:0; order:3; }
