@@ -1669,20 +1669,6 @@ function renderHead() {
   $('day-title').textContent = isToday ? 'Today' : fmt({ weekday: 'long' });
   $('day-sub').textContent = fmt({ weekday: isToday ? 'long' : undefined, day: 'numeric', month: 'long' });
   $('today-btn').hidden = isToday;
-
-  const last = state.data.last_sync;
-  const el = $('sync-status');
-  if (!last) {
-    el.textContent = 'never synced';
-    el.classList.add('stale');
-  } else {
-    const mins = Math.round((Date.now() - new Date(last)) / 60000);
-    const stale = mins > 120;
-    el.textContent = mins < 2 ? 'synced just now'
-      : mins < 60 ? `synced ${mins}m ago`
-      : `synced ${Math.round(mins / 60)}h ago`;
-    el.classList.toggle('stale', stale);
-  }
 }
 
 async function loadDay() {
@@ -1697,11 +1683,6 @@ async function loadDay() {
   renderQuote();
   renderActivities();
   measureBar();
-
-  if (state.data.calendar_error === 'not_configured') {
-    $('sync-status').textContent = 'calendar not connected';
-    $('sync-status').classList.add('stale');
-  }
 }
 
 async function loadTasks() {
