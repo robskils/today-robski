@@ -1906,14 +1906,18 @@ async function setColType(id, type) {
   let seed = {};
   if (type === 'select') {
     const existing = tcols().find((c) => c.id === id);
-    if (!existing.options || !existing.options.length) {
+    if (existing && (!existing.options || !existing.options.length)) {
       // Seed options from the column's existing distinct values so converting a
       // free-form column to Select doesn't blank out the data already there.
-      seed = { options: [...new Set(state.tables_rows.map((r) => (r.props.values || {})[id]).filter((x) => x != null && x !== '').map(String))] };
+      // Wrapped: a legacy/blank row (null props) must never block the change.
+      try {
+        seed = { options: [...new Set((state.tables_rows || []).map((r) => ((r && r.props && r.props.values) || {})[id]).filter((x) => x != null && x !== '').map(String))] };
+      } catch { seed = { options: [] }; }
     }
   }
   const cols = tcols().map((c) => c.id === id ? { ...c, type, ...seed } : c);
-  await saveTableColumns(cols); renderTable();
+  try { await saveTableColumns(cols); } catch (e) { toast(`Couldn't change column type: ${e.message}`); }
+  renderTable();
 }
 async function addColOption(id, opt) {
   opt = (opt || '').trim(); if (!opt) return;
