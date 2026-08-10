@@ -1228,7 +1228,7 @@ async function moveNote(targetId) {
 const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Check'], ['select', 'Select']];
 const tcols = () => (state.tables_open.props.columns || []);
 function cellInput(r, col) {
-  const v = (r.props.values || {})[col.id]; const k = `${r.id}:${col.id}`;
+  const v = ((r.props && r.props.values) || {})[col.id]; const k = `${r.id}:${col.id}`;
   if (col.type === 'checkbox') return `<input type="checkbox" data-cell="${k}" ${v ? 'checked' : ''}>`;
   if (col.type === 'number') return `<input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
@@ -1243,7 +1243,7 @@ function sortRows(rows) {
   const s = state.tables_view.sort; if (!s) return rows;
   const col = tcols().find((x) => x.id === s.colId); if (!col) return rows;
   const dir = s.dir === 'asc' ? 1 : -1;
-  const raw = (r) => (r.props.values || {})[s.colId];
+  const raw = (r) => ((r.props && r.props.values) || {})[s.colId];
   const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
   return rows.slice().sort((a, b) => {
     const va = raw(a), vb = raw(b);
@@ -1260,7 +1260,7 @@ function renderTable() {
   if (vw.openRow) {
     const r = state.tables_rows.find((x) => x.id === vw.openRow) || (vw.openRow = null);
     if (r) {
-      const title = (r.props.values || {})[c[0] && c[0].id] || 'Untitled';
+      const title = ((r.props && r.props.values) || {})[c[0] && c[0].id] || 'Untitled';
       $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
         <div class="card">
         <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
@@ -1314,6 +1314,7 @@ async function newTable() {
 async function saveTableColumns(columns) { state.tables_open.props.columns = columns; await api(`/api/blocks/${state.tables_open.id}`, { method: 'PATCH', body: JSON.stringify({ props: { columns } }) }); }
 async function setCell(rowId, colId, value) {
   const r = state.tables_rows.find((x) => x.id === rowId); if (!r) return;
+  r.props = r.props || {};
   r.props.values = { ...(r.props.values || {}), [colId]: value };
   try { await api(`/api/blocks/${rowId}`, { method: 'PATCH', body: JSON.stringify({ props: { values: r.props.values } }) }); } catch (e) { toast(e.message); }
 }
