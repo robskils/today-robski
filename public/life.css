@@ -90,6 +90,10 @@ button { cursor:pointer; background:none; border:0; }
   box-shadow:0 1px 2px rgba(0,0,0,.05); transition:border-color .15s,color .15s,box-shadow .12s,transform .08s; }
 .add-btn:hover { border-color:var(--accent); color:var(--accent); box-shadow:0 3px 8px -3px color-mix(in srgb,var(--accent) 40%,transparent); }
 .add-btn:active { transform:translateY(1px); }
+/* Add task / Add note on a life-area page: auto-width text buttons. */
+.area-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.area-actions .add-btn { width:auto; min-height:42px; padding:10px 18px; font-size:15.5px; font-weight:500; }
+.area-actions .add-btn:hover { border-color:var(--accent); color:var(--accent); }
 
 /* The primary accent button, shared by every + Add / Send action. */
 .add-btn.wide, .gate2-btn {
@@ -710,6 +714,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .att-add { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; width:132px; height:132px; border:1.5px dashed var(--line-2); border-radius:12px; color:var(--ink-3); font-size:13.5px; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
 .att-add:hover { border-color:var(--accent); color:var(--accent); background:var(--paper-2); }
 .att-add-ic { font-size:26px; line-height:1; }
+/* Embedded YouTube players (rendered under a note/card body). */
+.embeds { display:flex; flex-direction:column; gap:14px; margin:18px 0; }
+.embed-yt { position:relative; width:100%; max-width:680px; aspect-ratio:16/9; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); background:#000; }
+.embed-yt iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 
 .foot-search { display:none; }
 

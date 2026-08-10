@@ -90,6 +90,18 @@ function bodyToHtml(body) {
   const html = /<(p|h[1-3]|blockquote|div|ul|ol)[\s>]/i.test(s) ? s : mdToHtml(body);
   return linkifyHtml(html);
 }
+// YouTube links in a body → embedded players (rendered below the editor, not
+// inside the editable prose, so paste/typing stays clean).
+function youtubeIds(body) {
+  const ids = []; const re = /(?:youtube\.com\/(?:watch\?(?:[^&\s]*&)*v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/gi;
+  let m; while ((m = re.exec(body || ''))) if (!ids.includes(m[1])) ids.push(m[1]);
+  return ids;
+}
+function embedsHtml(body) {
+  const ids = youtubeIds(body);
+  if (!ids.length) return '';
+  return `<div class="embeds">${ids.map((id) => `<div class="embed-yt"><iframe src="https://www.youtube-nocookie.com/embed/${id}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`).join('')}</div>`;
+}
 // An always-on inline editor. No modes, no markup - you just write, and the
 // selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
 function proseEditor(body, key) {
@@ -492,6 +504,7 @@ function renderArea() {
         <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}</p>
+      <div class="area-actions"><button class="add-btn" data-area-add-task>+ Add task</button><button class="add-btn light" data-area-add-note>+ Add note</button></div>
     </div>
     ${sec('Notes', notes.length, `<div class="tbl-cards">${noteCards}</div>`)}
     ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
@@ -505,6 +518,23 @@ async function setBlockArea(kind, id, areaId) {
     if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
     if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
     toast(areaId ? 'Life area set' : 'Life area cleared');
+  } catch (e) { toast(e.message); }
+}
+// From a life-area page: create a task/note already tagged to this area, then
+// open it for naming. It shows up in the Tasks/Notes lists too.
+async function areaAddTask() {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  try {
+    const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: '', props: { area: area.id, area_name: area.title, priority: 'P3', done: false } }) });
+    await openTaskCard(t.id); setTimeout(() => $('#taskcard-title') && $('#taskcard-title').focus(), 30);
+  } catch (e) { toast(e.message); }
+}
+async function areaAddNote() {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  try {
+    const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: '', parent_id: null, props: { area: area.id } }) });
+    state.noteTops.unshift(n);
+    await openNote(n.id); setTimeout(() => $('#note-title') && $('#note-title').focus(), 30);
   } catch (e) { toast(e.message); }
 }
 
@@ -1096,6 +1126,7 @@ function renderNote() {
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
     <div class="note-body">${proseEditor(n.body, 'note')}</div>
+    ${embedsHtml(n.body)}
     ${attachSection(n)}
     <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
       ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>`;
@@ -1418,6 +1449,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
+  if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
 
@@ -1692,7 +1725,7 @@ function renderTaskCard() {
 // A prose Notes section, reused by the task card and the row card. Backed by
 // the block's `body`, edited inline via the shared rich-text editor.
 function notesSection(body, key) {
-  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key)}</section>`;
+  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key)}${embedsHtml(body)}</section>`;
 }
 
 // ── attachments (R2-backed files on a block) ─────────
@@ -1786,6 +1819,8 @@ async function saveProse(key, rawHtml) {
   // the caret and eat what's being typed.
   const el = document.querySelector(`.prose[data-prose="${key}"]`);
   if (el && document.activeElement !== el && el.innerHTML !== html) el.innerHTML = html;
+  // If a YouTube link was just added/removed, refresh the players below.
+  if (youtubeIds(html).length !== document.querySelectorAll('.embed-yt').length) rerenderHost();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {
