@@ -831,21 +831,34 @@ async function getSettings(env) {
 // If area_lanes is unset, we derive it from each area's NAME via AREA_TO_LANE.
 async function getLaneConfig(env) {
   const s = await getSettings(env);
-  let labels = {}; try { labels = s.lane_labels ? JSON.parse(s.lane_labels) : {}; } catch {}
-  const lanes = LANES.map((l) => ({ ...l, label: labels[l.key] || l.label }));
-  const laneKeys = new Set(LANES.map((l) => l.key));
+  // Full lane definitions live in `lanes_config` once Robin has edited them;
+  // before that we fall back to the shared defaults (+ any legacy label edits).
+  let stored = null; try { stored = s.lanes_config ? JSON.parse(s.lanes_config) : null; } catch {}
+  let lanes;
+  if (Array.isArray(stored) && stored.length) {
+    lanes = stored.filter((l) => l && l.key).map((l) => ({ key: l.key, label: l.label || l.key, hue: Number(l.hue) || 0, practice: !!l.practice, optional: !!l.optional, untracked: !!l.untracked, ...(l.zen ? { zen: l.zen } : {}) }));
+  } else {
+    let labels = {}; try { labels = s.lane_labels ? JSON.parse(s.lane_labels) : {}; } catch {}
+    lanes = LANES.map((l) => ({ ...l, label: labels[l.key] || l.label }));
+  }
+  // 'other' is the untracked catch-all - always present, always last.
+  if (!lanes.some((l) => l.key === 'other')) lanes.push({ key: 'other', label: 'Other', hue: 0, untracked: true });
+  const laneKeys = new Set(lanes.map((l) => l.key));
   let areaMap = null; try { areaMap = s.area_lanes ? JSON.parse(s.area_lanes) : null; } catch {}
   const { results: areas } = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='area' AND archived=0 ORDER BY title").all();
   if (!areaMap) { areaMap = {}; for (const a of areas) areaMap[a.id] = laneForArea(a.title); }
-  // Drop any stored mapping to a lane key that no longer exists.
+  // Drop any mapping to a lane key that no longer exists.
   for (const k of Object.keys(areaMap)) if (!laneKeys.has(areaMap[k])) delete areaMap[k];
-  return { lanes, areaMap, labels, areas };
+  return { lanes, areaMap, laneKeys, areas };
 }
+// Validate a lane against the live config (dynamic lanes), not the hardcoded set.
+async function isValidLane(env, key) { return (await getLaneConfig(env)).laneKeys.has(key); }
 const laneForAreaId = (areaMap, areaId) => (areaId && areaMap[areaId]) || 'other';
 // A Life task block → the shape the Today client expects (tana_id now = block id).
-function blockToTask(r, areaMap) {
+// `area` is the readable area NAME for display; `area_id` carries the block id.
+function blockToTask(r, areaMap, areaNames) {
   let p = {}; try { p = r.props ? JSON.parse(r.props) : {}; } catch {}
-  return { tana_id: r.id, title: r.title || '(untitled)', lane: laneForAreaId(areaMap, p.area), priority: p.priority || null, done: p.done ? 1 : 0, area: p.area || null, duration: p.duration ?? null, created: r.created_at };
+  return { tana_id: r.id, title: r.title || '(untitled)', lane: laneForAreaId(areaMap, p.area), priority: p.priority || null, done: p.done ? 1 : 0, area: (p.area && areaNames && areaNames[p.area]) || null, area_id: p.area || null, duration: p.duration ?? null, created: r.created_at };
 }
 
 async function handleLanes(request, env) {
@@ -941,7 +954,8 @@ async function handleTasks(request, env, url) {
         AND COALESCE(json_extract(props,'$.priority'), '') != ''`,
   ).all();
 
-  const all = results.map((r) => blockToTask(r, cfg.areaMap));
+  const areaNames = Object.fromEntries(cfg.areas.map((a) => [a.id, a.title]));
+  const all = results.map((r) => blockToTask(r, cfg.areaMap, areaNames));
   const counts = {};
   for (const t of all) counts[t.lane] = (counts[t.lane] || 0) + 1;
 
