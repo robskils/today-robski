@@ -1085,7 +1085,8 @@ const threadFrom = (th) => [...new Set(th.messages.map((x) => mailFrom(x) || '(u
 const mailRowHtml = (x, child) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
-    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span></span>
+    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span>
+    ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
     <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
 // Recognised video-meeting links, so we can float a "Join" button.
 const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
@@ -1182,13 +1183,14 @@ function renderMail(loading) {
   $('#pane').innerHTML = `
     <div class="pane-head home-head"><h1>Mail</h1>
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
+    ${(m.open || m.composing) ? '' : `
     ${accTabs ? `<div class="mail-atabs">${accTabs}</div>` : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
     <div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${m.threaded ? 'on' : ''}" data-mail-thread-toggle title="Group into conversations">☰ Threads</button>
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
-    </div>
+    </div>`}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     <div class="mail-layout ${m.open || m.composing ? 'reading' : ''}">
       <div class="mail-list-col">${list}</div>

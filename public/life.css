@@ -674,11 +674,15 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-star.on, .mail-star:hover, .mail-star-btn.on { color:var(--gold); }
 @media (hover:none){ .mail-star { opacity:.6; } }
 /* Two-pane client: message list on the left, reading pane on the right. */
-.mail-layout { display:flex; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--card); box-shadow:var(--shadow); min-height:64vh; }
-.mail-list-col { flex:none; width:360px; border-right:1px solid var(--line); overflow-y:auto; max-height:calc(100vh - 190px); }
-.mail-reader { flex:1; min-width:0; overflow-y:auto; max-height:calc(100vh - 190px); display:flex; flex-direction:column; }
+/* Single pane (Spark-style): the list is full-width; opening a message swaps it
+   for a full-width reader. Same behaviour at every width now. */
+.mail-layout { display:block; }
+.mail-list-col { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+.mail-reader { min-width:0; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+.mail-layout:not(.reading) .mail-reader { display:none; }
+.mail-layout.reading .mail-list-col { display:none; }
 .mail-list { display:block; }
-.mail-row { display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left; padding:13px 16px; border-bottom:1px solid var(--line); transition:background .12s; }
+.mail-row { display:flex; gap:13px; align-items:flex-start; width:100%; text-align:left; padding:15px 20px; border-bottom:1px solid var(--line); transition:background .12s; }
 .mail-row:last-child { border-bottom:0; }
 .mail-row:hover { background:var(--paper-2); }
 .mail-row.csel { background:color-mix(in srgb,var(--accent) 8%,transparent); }
@@ -704,6 +708,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-row-top { display:flex; gap:10px; align-items:baseline; justify-content:space-between; }
 .mail-from { color:var(--ink); font-size:15px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mail-subject { color:var(--ink-2); font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mail-preview { display:block; color:var(--ink-3); font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mail-date { color:var(--ink-3); font-size:13px; white-space:nowrap; flex:none; }
 .mail-row.unread { box-shadow:inset 3px 0 0 var(--accent); }
 .mail-row.unread .mail-from { font-weight:700; } .mail-row.unread .mail-subject { color:var(--ink); font-weight:500; }
