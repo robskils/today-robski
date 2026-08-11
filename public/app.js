@@ -383,7 +383,7 @@ async function openNote(id) {
 async function openTable(id) {
   const table = await api(`/api/blocks/${id}`);
   const rows = await api(`/api/blocks?kind=row&parent_id=${id}`);
-  state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false, sort: null };
+  state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false, sorts: (table.props && table.props.sorts) || [], sorting: false };
   state.view = { type: 'table', id };
   renderNav(); renderTable();
 }
@@ -1292,26 +1292,42 @@ function cellInput(r, col) {
 }
 // View-only sort by a column (like the Tasks table). Type-aware; empty cells
 // always sink to the bottom whichever way you sort.
+// Multi-level sort: compare by the first level, break ties with the next, and
+// so on. An empty spec falls back to the first column ascending (a saner default
+// than raw creation order). The spec lives in the table's props, so it persists.
+function tableSorts() { return (state.tables_view.sorts && state.tables_view.sorts.length) ? state.tables_view.sorts : null; }
 function sortRows(rows) {
   const cols = tcols();
-  // No explicit sort -> order by the first column (the Name/title) ascending,
-  // not raw creation order, which is the least useful default.
-  const s = state.tables_view.sort || (cols[0] ? { colId: cols[0].id, dir: 'asc' } : null);
-  if (!s) return rows;
-  const col = cols.find((x) => x.id === s.colId); if (!col) return rows;
-  const dir = s.dir === 'asc' ? 1 : -1;
-  const raw = (r) => ((r.props && r.props.values) || {})[s.colId];
-  const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
-  return rows.slice().sort((a, b) => {
+  const spec = tableSorts() || (cols[0] ? [{ colId: cols[0].id, dir: 'asc' }] : []);
+  if (!spec.length) return rows;
+  const cmpLevel = (a, b, s) => {
+    const col = cols.find((x) => x.id === s.colId); if (!col) return 0;
+    const dir = s.dir === 'asc' ? 1 : -1;
+    const raw = (r) => ((r.props && r.props.values) || {})[s.colId];
     const va = raw(a), vb = raw(b);
     if (col.type !== 'checkbox') {
       const ea = va == null || va === '', eb = vb == null || vb === '';
-      if (ea && eb) return 0; if (ea) return 1; if (eb) return -1;
+      if (ea && eb) return 0; if (ea) return 1; if (eb) return -1; // empties last, either direction
     }
+    const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
     const na = norm(va), nb = norm(vb);
     return na < nb ? -dir : na > nb ? dir : 0;
+  };
+  return rows.slice().sort((a, b) => {
+    for (const s of spec) { const r = cmpLevel(a, b, s); if (r) return r; }
+    return 0;
   });
 }
+// Persist the current sort spec onto the table block so it's there next visit.
+function saveTableSort() {
+  const t = state.tables_open; if (!t) return;
+  const sorts = state.tables_view.sorts || [];
+  t.props = t.props || {}; t.props.sorts = sorts;
+  const s = state.tables.find((x) => x.id === t.id); if (s) { s.props = s.props || {}; s.props.sorts = sorts; }
+  api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { sorts } }) }).catch((e) => toast(e.message));
+}
+function setSorts(sorts) { state.tables_view.sorts = sorts; renderTable(); saveTableSort(); }
+const DIR_LABELS = (type) => type === 'number' ? ['1 → 9', '9 → 1'] : type === 'date' ? ['Old → New', 'New → Old'] : type === 'checkbox' ? ['Unticked first', 'Ticked first'] : ['A → Z', 'Z → A'];
 // ── table search + filters ───────────────────────────
 const cellVal = (r, colId) => ((r.props && r.props.values) || {})[colId];
 // Operators offered per column type.
@@ -1383,6 +1399,20 @@ function filterPanelHtml() {
     <div class="filt-act"><button class="ghost" data-filt-add>+ Add filter</button>${filters.length ? '<button class="ghost" data-filt-clear>Clear all</button>' : ''}</div></div>`;
 }
 const FUNNEL = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M1.5 2.5h13l-5 6.2V13l-3 1.5V8.7z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+const SORTIC = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M4.5 3v10M4.5 13l-2-2.2M4.5 13l2-2.2M11.5 13V3M11.5 3l-2 2.2M11.5 3l2 2.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// Multi-level sort panel: "Sort by <col> <dir>", "then by <col> <dir>", …
+function sortPanelHtml() {
+  const c = tcols(), sorts = state.tables_view.sorts || [];
+  const rows = sorts.map((s, i) => {
+    const col = c.find((x) => x.id === s.colId) || c[0] || {};
+    const colOpts = c.map((x) => `<option value="${x.id}" ${x.id === s.colId ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+    const [asc, desc] = DIR_LABELS(col.type);
+    const dirOpts = `<option value="asc" ${s.dir === 'asc' ? 'selected' : ''}>${asc}</option><option value="desc" ${s.dir === 'desc' ? 'selected' : ''}>${desc}</option>`;
+    return `<div class="filt-row"><span class="sortl-lbl">${i === 0 ? 'Sort by' : 'then by'}</span><select class="sel" data-sortl-col="${i}">${colOpts}</select><select class="sel" data-sortl-dir="${i}">${dirOpts}</select><button class="filt-x" data-sortl-del="${i}" title="Remove">×</button></div>`;
+  }).join('');
+  return `<div class="tbl-filters"><div class="filt-rows">${rows || '<div class="filt-empty">Sorted by the first column. Add a level to combine sorts.</div>'}</div>
+    <div class="filt-act"><button class="ghost" data-sortl-add>+ Add sort</button>${sorts.length ? '<button class="ghost" data-sortl-clear>Clear</button>' : ''}</div></div>`;
+}
 
 function renderTable() {
   const t = state.tables_open, c = tcols(), vw = state.tables_view;
@@ -1404,9 +1434,10 @@ function renderTable() {
   const addCol = vw.addingCol
     ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
-  const sortOf = (id) => vw.sort && vw.sort.colId === id ? vw.sort.dir : null;
-  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd === 'asc' ? '↑' : '↓'}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
-  const nFilt = (vw.filters || []).length;
+  const sortSpec = vw.sorts || [];
+  const sortOf = (id) => { const i = sortSpec.findIndex((s) => s.colId === id); return i < 0 ? null : { dir: sortSpec[i].dir, badge: sortSpec.length > 1 ? i + 1 : '' }; };
+  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
@@ -1415,9 +1446,11 @@ function renderTable() {
       <button class="ghost" data-del-cur>Delete</button></div>
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
+      <button class="tbl-filter-btn ${nSort > 1 || vw.sorting ? 'on' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort > 1 ? ` · ${nSort}` : ''}</button>
       <button class="tbl-filter-btn ${nFilt || vw.filtering ? 'on' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
       <button class="add-btn wide tbl-add-row" data-add-row title="Add a row">+ Row</button>
     </div>
+    <div id="tbl-sort-panel">${vw.sorting ? sortPanelHtml() : ''}</div>
     <div id="tbl-filter-panel">${vw.filtering ? filterPanelHtml() : ''}</div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}
       <thead><tr><th class="th-open"></th>${head}${addCol}</tr></thead>
@@ -1678,7 +1711,7 @@ document.addEventListener('click', (e) => {
     if (t.closest('[data-cm-rename]')) { state.tables_view.colMenu = null; renderTable(); editColName(cmId); return; }
     const ctp = t.closest('[data-cm-type]'); if (ctp) { setColType(cmId, ctp.dataset.cmType); return; }
     const rmo = t.closest('[data-cm-rmopt]'); if (rmo) { removeColOption(cmId, rmo.dataset.cmRmopt); return; }
-    const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.sort = { colId: cmId, dir: cms.dataset.cmSort }; state.tables_view.colMenu = null; renderTable(); return; }
+    const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.colMenu = null; setSorts([{ colId: cmId, dir: cms.dataset.cmSort }]); return; }
     if (t.closest('[data-cm-del]')) { state.tables_view.colMenu = null; if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== cmId)).then(renderTable); else renderTable(); return; }
     if (!t.closest('[data-colmenu]')) { state.tables_view.colMenu = null; renderTable(); } // click outside closes; fall through
   }
@@ -1687,12 +1720,16 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-filt-add]')) { const col = tcols()[0]; if (col) { state.tables_view.filters = [...(state.tables_view.filters || []), { colId: col.id, op: opsFor(col.type)[0][0], value: '' }]; renderTable(); } return; }
   const fdel = t.closest('[data-filt-del]'); if (fdel) { state.tables_view.filters.splice(+fdel.dataset.filtDel, 1); renderTable(); return; }
   if (t.closest('[data-filt-clear]')) { state.tables_view.filters = []; renderTable(); return; }
+  if (t.closest('[data-tbl-sort]')) { state.tables_view.sorting = !state.tables_view.sorting; renderTable(); return; }
+  if (t.closest('[data-sortl-add]')) { const used = new Set((state.tables_view.sorts || []).map((s) => s.colId)); const col = tcols().find((x) => !used.has(x.id)) || tcols()[0]; if (col) setSorts([...(state.tables_view.sorts || []), { colId: col.id, dir: 'asc' }]); return; }
+  const sldel = t.closest('[data-sortl-del]'); if (sldel) { const n = (state.tables_view.sorts || []).slice(); n.splice(+sldel.dataset.sortlDel, 1); setSorts(n); return; }
+  if (t.closest('[data-sortl-clear]')) { setSorts([]); return; }
   // table
   if (t.closest('[data-back-table]')) { state.tables_view.openRow = null; renderTable(); return; }
   const or = t.closest('[data-open-row]'); if (or) { state.tables_view.openRow = or.dataset.openRow; renderTable(); window.scrollTo(0, 0); return; }
   const ec = t.closest('[data-edit-col]'); if (ec) { editColName(ec.dataset.editCol); return; }
   const sc = t.closest('[data-sort-col]');
-  if (sc) { const id = sc.dataset.sortCol; const s = state.tables_view.sort; state.tables_view.sort = s && s.colId === id ? { colId: id, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { colId: id, dir: 'asc' }; renderTable(); return; }
+  if (sc) { const id = sc.dataset.sortCol; const s = state.tables_view.sorts || []; const only = s.length === 1 && s[0].colId === id ? s[0] : null; setSorts([{ colId: id, dir: only && only.dir === 'asc' ? 'desc' : 'asc' }]); return; }
   if (t.closest('[data-add-col]')) { state.tables_view.addingCol = true; renderTable(); return; }
   const dcol = t.closest('[data-del-col]'); if (dcol) { if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== dcol.dataset.delCol)).then(renderTable).catch((x) => toast(x.message)); return; }
   const drow = t.closest('[data-del-row]'); if (drow) { const id = drow.dataset.delRow; state.tables_rows = state.tables_rows.filter((r) => r.id !== id); renderTable(); api(`/api/blocks/${id}`, { method: 'DELETE' }).catch((x) => toast(x.message)); return; }
@@ -1720,6 +1757,8 @@ document.addEventListener('change', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const r = $('#ce-timerow'); if (r) r.hidden = e.target.checked; }
   // Table filters
+  const scol = e.target.closest('[data-sortl-col]'); if (scol) { const i = +scol.dataset.sortlCol; if (state.tables_view.sorts[i]) { state.tables_view.sorts[i].colId = scol.value; setSorts(state.tables_view.sorts); } return; }
+  const sdir = e.target.closest('[data-sortl-dir]'); if (sdir) { const i = +sdir.dataset.sortlDir; if (state.tables_view.sorts[i]) { state.tables_view.sorts[i].dir = sdir.value; setSorts(state.tables_view.sorts); } return; }
   const fcol = e.target.closest('[data-filt-col]'); if (fcol) { const i = +fcol.dataset.filtCol, f = state.tables_view.filters[i]; f.colId = fcol.value; const col = tcols().find((x) => x.id === f.colId); f.op = opsFor(col && col.type)[0][0]; f.value = ''; renderTable(); return; }
   const fop = e.target.closest('[data-filt-op]'); if (fop) { const i = +fop.dataset.filtOp; state.tables_view.filters[i].op = fop.value; renderTable(); return; }
   const fvs = e.target.closest('select[data-filt-val]'); if (fvs) { const i = +fvs.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = fvs.value; renderTableBody(); } return; }

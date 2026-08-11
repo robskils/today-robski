@@ -199,6 +199,8 @@ button { cursor:pointer; background:none; border:0; }
 .filt-x { flex:none; width:28px; height:28px; border-radius:7px; color:var(--ink-3); font-size:18px; line-height:1; }
 .filt-x:hover { color:var(--accent); background:var(--card); }
 .filt-empty { color:var(--ink-3); font-size:14px; padding:2px 0; }
+.sortl-lbl { flex:none; min-width:52px; color:var(--ink-3); font-size:13px; }
+.sarrow b { font-size:9.5px; vertical-align:super; margin-left:1px; font-weight:700; }
 .filt-act { display:flex; gap:10px; margin-top:12px; }
 .tbl-noresult td { text-align:center; color:var(--ink-3); padding:22px; font-style:italic; }
 .tbl-head h1 { font-size:30px; }
