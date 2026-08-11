@@ -1293,8 +1293,12 @@ function cellInput(r, col) {
 // View-only sort by a column (like the Tasks table). Type-aware; empty cells
 // always sink to the bottom whichever way you sort.
 function sortRows(rows) {
-  const s = state.tables_view.sort; if (!s) return rows;
-  const col = tcols().find((x) => x.id === s.colId); if (!col) return rows;
+  const cols = tcols();
+  // No explicit sort -> order by the first column (the Name/title) ascending,
+  // not raw creation order, which is the least useful default.
+  const s = state.tables_view.sort || (cols[0] ? { colId: cols[0].id, dir: 'asc' } : null);
+  if (!s) return rows;
+  const col = cols.find((x) => x.id === s.colId); if (!col) return rows;
   const dir = s.dir === 'asc' ? 1 : -1;
   const raw = (r) => ((r.props && r.props.values) || {})[s.colId];
   const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
