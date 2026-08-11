@@ -251,18 +251,45 @@ export function buildMessage(acct, msg) {
     msg.inReplyTo ? `References: ${msg.inReplyTo}` : null,
     'MIME-Version: 1.0',
   ].filter(Boolean);
-  if (msg.html) {
-    const bnd = `b_${crypto.randomUUID().replace(/-/g, '')}`;
-    const head = [...headers, `Content-Type: multipart/alternative; boundary="${bnd}"`].join('\r\n');
-    const body = [
-      `--${bnd}`, 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b64utf8(msg.text || ''),
-      `--${bnd}`, 'Content-Type: text/html; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b64utf8(msg.html),
-      `--${bnd}--`, '',
-    ].join('\r\n');
-    return `${head}\r\n\r\n${body}`;
+  // The body part: multipart/alternative when there's HTML, else plain text.
+  // Returns the Content-Type header line(s) and the encoded body.
+  const bodyPart = () => {
+    if (msg.html) {
+      const bnd = `b_${crypto.randomUUID().replace(/-/g, '')}`;
+      const body = [
+        `--${bnd}`, 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b64utf8(msg.text || ''),
+        `--${bnd}`, 'Content-Type: text/html; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b64utf8(msg.html),
+        `--${bnd}--`, '',
+      ].join('\r\n');
+      return { ct: `Content-Type: multipart/alternative; boundary="${bnd}"`, body };
+    }
+    return { ct: 'Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64', body: b64utf8(msg.text || '') };
+  };
+  const atts = Array.isArray(msg.attachments) ? msg.attachments : [];
+  if (!atts.length) {
+    const bp = bodyPart();
+    return `${[...headers, bp.ct].join('\r\n')}\r\n\r\n${bp.body}`;
   }
-  const head = [...headers, 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64'].join('\r\n');
-  return `${head}\r\n\r\n${b64utf8(msg.text || '')}`;
+  // With attachments: wrap the body part and each file in multipart/mixed.
+  const mix = `mix_${crypto.randomUUID().replace(/-/g, '')}`;
+  const bp = bodyPart();
+  const safe = (n) => (n || 'file').replace(/["\\\r\n]/g, '');
+  const parts = [`--${mix}`, bp.ct, '', bp.body];
+  for (const a of atts) {
+    parts.push(`--${mix}`,
+      `Content-Type: ${(a.type || 'application/octet-stream').replace(/[\r\n]/g, '')}; name="${safe(a.name)}"`,
+      'Content-Transfer-Encoding: base64',
+      `Content-Disposition: attachment; filename="${safe(a.name)}"`,
+      '', String(a.b64 || '').replace(/(.{76})/g, '$1\r\n'), '');
+  }
+  parts.push(`--${mix}--`, '');
+  return `${[...headers, `Content-Type: multipart/mixed; boundary="${mix}"`].join('\r\n')}\r\n\r\n${parts.join('\r\n')}`;
+}
+// Base64-encode an R2 object's bytes in stack-safe chunks.
+function bufToB64(u8) {
+  let bin = ''; const CH = 0x8000;
+  for (let i = 0; i < u8.length; i += CH) bin += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
+  return btoa(bin);
 }
 const mimeWord = (s) => /[^\x00-\x7F]/.test(s) ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(s)))}?=` : s;
 
@@ -388,11 +415,38 @@ export async function handleMail(request, env, url, json, err) {
 
     if (sub === 'move' && method === 'POST') { const b = await request.json(); const im = await imapOpen(env, acct); try { await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(b.uid, b.target || 'Trash'); return json({ ok: true }, request); } finally { await im.logout(); } }
 
+    // Compose attachment: store raw bytes in R2 under a throwaway key; the send
+    // route pulls them back and deletes them. name & type ride in the query.
+    if (sub === 'attach' && method === 'POST') {
+      if (!env.ATTACHMENTS) return err('attachments storage is not enabled', request, 501);
+      const name = (url.searchParams.get('name') || 'file').slice(0, 200);
+      const type = url.searchParams.get('type') || 'application/octet-stream';
+      const buf = await request.arrayBuffer();
+      if (!buf.byteLength) return err('empty file', request);
+      if (buf.byteLength > 25 * 1024 * 1024) return err('file too large (max 25 MB)', request, 413);
+      const id = crypto.randomUUID();
+      await env.ATTACHMENTS.put(`mailout/${id}`, buf, { httpMetadata: { contentType: type }, customMetadata: { name } });
+      return json({ id, name, type, size: buf.byteLength }, request, 201);
+    }
+    if (sub === 'attach' && method === 'DELETE' && seg[1]) {
+      if (env.ATTACHMENTS) { try { await env.ATTACHMENTS.delete(`mailout/${seg[1]}`); } catch {} }
+      return json({ ok: true }, request);
+    }
+
     if (sub === 'send' && method === 'POST') {
       const b = await request.json();
       const rcpts = [b.to, b.cc].filter(Boolean).join(',').split(',').map((s) => s.trim()).filter(Boolean);
       if (!rcpts.length) return err('a recipient is required', request, 400);
-      await smtpSend(env, acct, { rcpts, raw: buildMessage(acct, b) });
+      // Pull each attachment's bytes from R2 and base64 them into the message.
+      const outAtts = [];
+      for (const a of (Array.isArray(b.attachments) ? b.attachments : [])) {
+        if (!env.ATTACHMENTS || !a || !a.id) continue;
+        const obj = await env.ATTACHMENTS.get(`mailout/${a.id}`); if (!obj) continue;
+        outAtts.push({ name: a.name, type: a.type, b64: bufToB64(new Uint8Array(await obj.arrayBuffer())) });
+      }
+      await smtpSend(env, acct, { rcpts, raw: buildMessage(acct, { ...b, attachments: outAtts }) });
+      // Best-effort cleanup of the throwaway blobs.
+      for (const a of (Array.isArray(b.attachments) ? b.attachments : [])) { if (env.ATTACHMENTS && a && a.id) { try { await env.ATTACHMENTS.delete(`mailout/${a.id}`); } catch {} } }
       return json({ ok: true }, request);
     }
 

@@ -884,11 +884,53 @@ async function mailSend(to, cc, subject, body, inReplyTo) {
   const from = composeAcctId();
   const acct = (state.mail.accounts || []).find((a) => a.id === from);
   const sig = acct && acct.signature;
-  const payload = { account: from, to, cc, subject, text: body + (sig ? `\n\n${sigToText(sig)}` : ''), inReplyTo };
+  const attachments = (state.mail.composing && state.mail.composing.attachments) || [];
+  const payload = { account: from, to, cc, subject, text: body + (sig ? `\n\n${sigToText(sig)}` : ''), inReplyTo, attachments };
   // With a signature, send HTML too so it renders; plain text stays the fallback.
   if (sig) payload.html = `${composeHtml(body)}<br>${sig}`;
-  try { await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) }); toast('Sent'); state.mail.composing = false; renderMail(); }
+  try { await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) }); toast('Sent'); clearDraft(from); state.mail.composing = false; renderMail(); }
   catch (e) { toast(e.message); }
+}
+// Upload a File to the mail attachment store; returns {id,name,type,size}.
+async function mailUploadAttachment(file) {
+  const from = composeAcctId();
+  const res = await fetch(`/api/mail/attach?account=${encodeURIComponent(from)}&name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type || 'application/octet-stream')}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('today.token')}` }, body: file,
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Upload failed (${res.status})`);
+  return res.json();
+}
+async function mailAttachFiles(files) {
+  if (!state.mail.composing) return;
+  state.mail.composing.attachments = state.mail.composing.attachments || [];
+  for (const f of files) {
+    try { const a = await mailUploadAttachment(f); state.mail.composing.attachments.push(a); renderMail(); }
+    catch (e) { toast(e.message); }
+  }
+  saveDraft();
+}
+async function mailRemoveAttachment(id) {
+  const c = state.mail.composing; if (!c) return;
+  c.attachments = (c.attachments || []).filter((a) => a.id !== id);
+  renderMail(); saveDraft();
+  mailApi(`/attach/${id}?account=${encodeURIComponent(composeAcctId())}`, { method: 'DELETE' }).catch(() => {});
+}
+// Drafts: a new (non-reply) compose auto-saves to localStorage per account so it
+// survives closing the composer, and resumes when you next hit Compose.
+const draftKey = (acct) => `life.mail.draft.${acct || 'default'}`;
+function saveDraft() {
+  const c = state.mail && state.mail.composing; if (!c || c.inReplyTo) return;   // new composes only
+  const acct = composeAcctId();
+  const empty = !(c.to || c.cc || c.subject || (c.body && c.body.trim()) || (c.attachments && c.attachments.length));
+  try { if (empty) localStorage.removeItem(draftKey(acct)); else localStorage.setItem(draftKey(acct), JSON.stringify({ to: c.to, cc: c.cc, subject: c.subject, body: c.body, attachments: c.attachments || [] })); } catch {}
+}
+function clearDraft(acct) { try { localStorage.removeItem(draftKey(acct || composeAcctId())); } catch {} }
+function loadDraft(acct) { try { const s = localStorage.getItem(draftKey(acct)); return s ? JSON.parse(s) : null; } catch { return null; } }
+function startCompose() {
+  const acct = state.mail.account && state.mail.account !== 'all' ? state.mail.account : ((state.mail.accounts || [])[0] || {}).id;
+  const d = loadDraft(acct);
+  state.mail.composing = d ? { ...d, _resumed: true } : {};
+  renderMail(); setTimeout(() => { const el = $('#mc-to'); if (el) el.focus(); }, 30);
 }
 async function openMailAccounts() {
   state.view = { type: 'mail' }; renderNav();
@@ -1030,14 +1072,17 @@ function renderMail(loading) {
   const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}</div>`;
   let reader;
   if (m.composing) {
+    const catts = m.composing.attachments || [];
     reader = `<form id="mail-compose-form" class="mail-compose">
-      <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span></div>
+      <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}</div>
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" required>
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}">
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <textarea id="mc-body" placeholder="Write your message…">${esc(m.composing.body || '')}</textarea>
+      ${catts.length ? `<div class="mail-att">${catts.map((a) => `<span class="mail-att-chip">📎 ${esc(a.name)}<button type="button" class="mail-att-x" data-mail-att-del="${esc(a.id)}" title="Remove">×</button></span>`).join('')}</div>` : ''}
       ${(() => { const a = (m.accounts || []).find((x) => x.id === composeAcctId()); return a && a.signature ? `<div class="mail-sig-note">✓ Signature for <b>${esc(a.email)}</b> will be added</div>` : ''; })()}
-      <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-cancel>Cancel</button></div></form>`;
+      <input type="file" id="mc-file" multiple hidden>
+      <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-attach title="Attach files">📎 Attach</button><button type="button" class="ghost" data-mail-cancel>Cancel</button><button type="button" class="ghost mail-discard" data-mail-discard title="Discard draft">Discard</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
     reader = `<div class="mail-msg">
@@ -1655,7 +1700,7 @@ document.addEventListener('keydown', (e) => {
       if (e.key === '?') { e.preventDefault(); m.shortcuts = !m.shortcuts; renderMail(); return; }
       if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else m.open = null; renderMail(); return; }
       if (e.key === '/') { e.preventDefault(); const el = $('[data-mail-q]'); if (el) el.focus(); return; }
-      if (e.key === 'c' || e.key === 'C') { e.preventDefault(); m.composing = {}; renderMail(); setTimeout(() => $('#mc-to') && $('#mc-to').focus(), 30); return; }
+      if (e.key === 'c' || e.key === 'C') { e.preventDefault(); startCompose(); return; }
       if (e.key === 'j' || e.key === 'J') { e.preventDefault(); mailSelMove(1); return; }
       if (e.key === 'k' || e.key === 'K') { e.preventDefault(); mailSelMove(-1); return; }
       if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && m.sel && !m.open) { e.preventDefault(); openMessage(m.sel); return; }
@@ -1690,6 +1735,13 @@ document.addEventListener('input', (e) => {
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; const v = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages().then(() => { const el = $('[data-mail-q]'); if (el) { el.focus(); try { el.setSelectionRange(v.length, v.length); } catch {} } }); }, 450); }
+  // Compose fields: keep the draft object in sync as you type, then auto-save.
+  if (state.mail && state.mail.composing && ['mc-to', 'mc-cc', 'mc-subject', 'mc-body'].includes(e.target.id)) {
+    const c = state.mail.composing;
+    if (e.target.id === 'mc-to') c.to = e.target.value; else if (e.target.id === 'mc-cc') c.cc = e.target.value;
+    else if (e.target.id === 'mc-subject') c.subject = e.target.value; else c.body = e.target.value;
+    clearTimeout(window.__mailDraftT); window.__mailDraftT = setTimeout(saveDraft, 600);
+  }
   const fvi = e.target.closest('input[data-filt-val]'); if (fvi) { const i = +fvi.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = e.target.value; renderTableBody(); } }
   if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
 });
@@ -1748,8 +1800,11 @@ document.addEventListener('click', (e) => {
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
   const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
-  if (t.closest('[data-mail-compose]')) { state.mail.composing = {}; renderMail(); return; }
-  if (t.closest('[data-mail-cancel]')) { state.mail.composing = false; renderMail(); return; }
+  if (t.closest('[data-mail-compose]')) { startCompose(); return; }
+  if (t.closest('[data-mail-cancel]')) { saveDraft(); state.mail.composing = false; renderMail(); return; }
+  if (t.closest('[data-mail-attach]')) { const f = $('#mc-file'); if (f) f.click(); return; }
+  const madel = t.closest('[data-mail-att-del]'); if (madel) { mailRemoveAttachment(madel.dataset.mailAttDel); return; }
+  if (t.closest('[data-mail-discard]')) { clearDraft(); (state.mail.composing && state.mail.composing.attachments || []).forEach((a) => mailApi(`/attach/${a.id}?account=${encodeURIComponent(composeAcctId())}`, { method: 'DELETE' }).catch(() => {})); state.mail.composing = false; renderMail(); toast('Draft discarded'); return; }
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
   const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(mdl.dataset.mailDel); return; }
@@ -1849,6 +1904,7 @@ document.addEventListener('contextmenu', (e) => {
 });
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
   if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);

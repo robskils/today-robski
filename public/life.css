@@ -716,6 +716,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-meta .mail-when { margin-left:auto; white-space:nowrap; }
 .mail-att { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
 .mail-att-chip { color:var(--ink-2); font-size:14px; padding:5px 11px; border:1px solid var(--line); border-radius:999px; background:var(--paper-2); }
+.mail-att-chip .mail-att-x { margin-left:7px; color:var(--ink-3); font-size:15px; line-height:1; }
+.mail-att-chip .mail-att-x:hover { color:var(--accent); }
+.mail-draft-note { margin-left:auto; color:var(--ink-3); font-size:13px; font-style:italic; }
+.mail-discard { margin-left:auto; color:var(--ink-3); }
 /* Which account a message belongs to, shown in the All-accounts view. */
 .mail-acct-chip { display:inline-block; vertical-align:middle; margin-right:7px; padding:1px 8px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); color:var(--ink-2); font-size:12px; font-weight:500; white-space:nowrap; }
 .mail-meta .mail-acct-chip { margin-right:0; margin-left:auto; }
