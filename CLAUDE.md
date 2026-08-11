@@ -88,6 +88,12 @@ already. A routine would deliver half a brief, which is what the old one did.
 - `longDate` composes weekday and date from two formatters rather than asking
   en-GB for both: Node renders that without the comma and workerd need not
   agree, so the header would differ between the test and the inbox.
+- **Sender:** if the `BRIEF_SMTP_PASS` secret is set, the brief sends as
+  `today@robski.uk` through Purelymail SMTP (`smtp.purelymail.com:465`, via
+  `smtpSend`/`buildMessage` in mail.js). A real Purelymail mailbox passes
+  SPF/DKIM natively, so this needs no Resend domain and no SPF edit - the very
+  cost the Auth note warns about. With no secret it falls back to Resend from
+  `today@incremento.co`. `BRIEF_FROM` / `BRIEF_SMTP_USER` override the address.
 
 ## Layout
 

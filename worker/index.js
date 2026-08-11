@@ -1,7 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, requestCode, verifyCode } from './auth.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
-import { handleMail } from './mail.js';
+import { handleMail, smtpSend, buildMessage } from './mail.js';
 import { handleAttachments } from './attachments.js';
 
 const TZ = 'Europe/Lisbon';
@@ -773,20 +773,29 @@ async function runDailyBrief(env, { force = false } = {}) {
     }));
 
     const payload = { day: now.date, events: cal.events, tasks, quote };
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: env.FROM_EMAIL,
-        to: [env.BRIEF_EMAIL],
-        subject: briefSubject(payload),
-        html: briefEmail(payload),
-      }),
-    });
-    if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
+    const subject = briefSubject(payload);
+    const html = briefEmail(payload);
+    if (env.BRIEF_SMTP_PASS) {
+      // Send as today@robski.uk through Purelymail SMTP. robski.uk's mail lives
+      // on Purelymail, so a real mailbox there passes SPF/DKIM natively - no
+      // Resend domain to verify, no SPF record to edit (see CLAUDE.md).
+      const acct = {
+        email: env.BRIEF_FROM || 'today@robski.uk', name: 'Robski Today',
+        username: env.BRIEF_SMTP_USER || 'today@robski.uk',
+        smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
+      };
+      const text = `Your morning brief for ${now.date}.\n\nOpen https://today.robski.uk for the full day.`;
+      const raw = buildMessage(acct, { to: env.BRIEF_EMAIL, subject, html, text });
+      await smtpSend(env, acct, { rcpts: [env.BRIEF_EMAIL], raw });
+    } else {
+      // No SMTP secret yet: fall back to the Resend sender (today@incremento.co).
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: env.FROM_EMAIL, to: [env.BRIEF_EMAIL], subject, html }),
+      });
+      if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
+    }
     return { sent: true, events: cal.events.length, tasks: tasks.length };
   } catch (e) {
     // Hand the day back so a later tick inside the window can try again. A

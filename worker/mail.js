@@ -179,8 +179,10 @@ function parseFetch(lines) {
 }
 
 // ── SMTP ──────────────────────────────────────────────────────────────
-async function smtpSend(env, acct, msg) {
-  const pass = await decryptPass(env, acct.pass_enc);
+export async function smtpSend(env, acct, msg) {
+  // A stored mailbox carries an encrypted pass_enc; a caller (the morning brief)
+  // may instead pass a plaintext `pass` straight from a Worker secret.
+  const pass = acct.pass != null ? acct.pass : await decryptPass(env, acct.pass_enc);
   const implicitTls = Number(acct.smtp_port) === 465;
   let socket = connect({ hostname: acct.smtp_host, port: Number(acct.smtp_port) }, implicitTls ? { secureTransport: 'on' } : { secureTransport: 'starttls' });
   let reader = new Reader(socket.readable);
@@ -210,7 +212,7 @@ async function smtpSend(env, acct, msg) {
 // With an html part it's multipart/alternative (plain + html) so a signature
 // renders, while text-only clients still get a clean plain version.
 const b64utf8 = (s) => btoa(unescape(encodeURIComponent(s || ''))).replace(/(.{76})/g, '$1\r\n');
-function buildMessage(acct, msg) {
+export function buildMessage(acct, msg) {
   const subj = /[^\x00-\x7F]/.test(msg.subject || '') ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(msg.subject)))}?=` : (msg.subject || '(no subject)');
   const headers = [
     `From: ${acct.name ? `${mimeWord(acct.name)} ` : ''}<${acct.email}>`,
