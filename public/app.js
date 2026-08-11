@@ -794,7 +794,8 @@ async function openMail() {
   try {
     state.mail.accounts = await mailApi('/accounts');
     if (!state.mail.accounts.length) { renderMailAccounts('Add a mailbox to get started.'); return; }
-    if (!state.mail.account) state.mail.account = state.mail.accounts[0].id;
+    // Default to the unified All-accounts inbox when there's more than one box.
+    if (!state.mail.account) state.mail.account = state.mail.accounts.length > 1 ? 'all' : state.mail.accounts[0].id;
     await loadMessages();
   } catch (e) { state.mail.error = e.message; renderMail(); }
 }
@@ -1328,6 +1329,18 @@ function saveTableSort() {
 }
 function setSorts(sorts) { state.tables_view.sorts = sorts; renderTable(); saveTableSort(); }
 const DIR_LABELS = (type) => type === 'number' ? ['1 → 9', '9 → 1'] : type === 'date' ? ['Old → New', 'New → Old'] : type === 'checkbox' ? ['Unticked first', 'Ticked first'] : ['A → Z', 'Z → A'];
+// Hidden columns: a list of column ids on the table's props. Hiding only affects
+// the grid; the data stays (still editable via the expanded row card) and the
+// column can be re-shown from any column's ▾ menu. Persisted like the sort spec.
+function hiddenCols() { const t = state.tables_open; return (t && t.props && t.props.hiddenCols) || []; }
+function visibleCols() { const h = hiddenCols(); return tcols().filter((c) => !h.includes(c.id)); }
+function saveTableHidden(hidden) {
+  const t = state.tables_open; if (!t) return;
+  t.props = t.props || {}; t.props.hiddenCols = hidden;
+  const s = state.tables.find((x) => x.id === t.id); if (s) { s.props = s.props || {}; s.props.hiddenCols = hidden; }
+  renderTable();
+  api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { hiddenCols: hidden } }) }).catch((e) => toast(e.message));
+}
 // ── table search + filters ───────────────────────────
 const cellVal = (r, colId) => ((r.props && r.props.values) || {})[colId];
 // Operators offered per column type.
@@ -1374,7 +1387,7 @@ function visibleRows() {
   return sortRows(state.tables_rows).filter((r) => matchesQuery(r) && filters.every((f) => matchesFilter(r, f)));
 }
 function tableBodyHtml() {
-  const c = tcols();
+  const c = visibleCols();
   const rows = visibleRows().map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   const empty = (state.tables_view.query || (state.tables_view.filters || []).length) && !visibleRows().length
     ? `<tr class="tbl-noresult"><td colspan="${c.length + 2}">No rows match.</td></tr>` : '';
@@ -1429,14 +1442,15 @@ function renderTable() {
       return;
     }
   }
+  const vc = visibleCols();
   const colWidth = (col, first) => col.width || (first ? 230 : 170);
-  const colgroup = `<colgroup><col style="width:46px">${c.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:46px"></colgroup>`;
+  const colgroup = `<colgroup><col style="width:46px">${vc.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:46px"></colgroup>`;
   const addCol = vw.addingCol
     ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortSpec = vw.sorts || [];
   const sortOf = (id) => { const i = sortSpec.findIndex((s) => s.colId === id); return i < 0 ? null : { dir: sortSpec[i].dir, badge: sortSpec.length > 1 ? i + 1 : '' }; };
-  const head = c.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
@@ -1712,6 +1726,8 @@ document.addEventListener('click', (e) => {
     const ctp = t.closest('[data-cm-type]'); if (ctp) { setColType(cmId, ctp.dataset.cmType); return; }
     const rmo = t.closest('[data-cm-rmopt]'); if (rmo) { removeColOption(cmId, rmo.dataset.cmRmopt); return; }
     const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.colMenu = null; setSorts([{ colId: cmId, dir: cms.dataset.cmSort }]); return; }
+    if (t.closest('[data-cm-hide]')) { state.tables_view.colMenu = null; if (visibleCols().length <= 1) { toast('Keep at least one column visible'); renderTable(); return; } saveTableHidden([...hiddenCols(), cmId]); return; }
+    const cShow = t.closest('[data-cm-show]'); if (cShow) { state.tables_view.colMenu = null; saveTableHidden(hiddenCols().filter((x) => x !== cShow.dataset.cmShow)); return; }
     if (t.closest('[data-cm-del]')) { state.tables_view.colMenu = null; if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== cmId)).then(renderTable); else renderTable(); return; }
     if (!t.closest('[data-colmenu]')) { state.tables_view.colMenu = null; renderTable(); } // click outside closes; fall through
   }
@@ -2138,6 +2154,9 @@ function colMenuHtml(cm) {
     <div class="cm-sep"></div>
     <button class="cm-item" data-cm-sort="asc">Sort A → Z</button>
     <button class="cm-item" data-cm-sort="desc">Sort Z → A</button>
+    <div class="cm-sep"></div>
+    <button class="cm-item" data-cm-hide>Hide column</button>
+    ${(() => { const h = hiddenCols(); if (!h.length) return ''; const names = h.map((id) => tcols().find((c) => c.id === id)).filter(Boolean); if (!names.length) return ''; return `<div class="cm-sep"></div><div class="cm-label">Hidden</div>${names.map((c) => `<button class="cm-item cm-show" data-cm-show="${c.id}">Show “${esc(c.name)}”</button>`).join('')}`; })()}
     <div class="cm-sep"></div>
     <button class="cm-item cm-del" data-cm-del>Delete column</button>
   </div>`;
