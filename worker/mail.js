@@ -113,6 +113,32 @@ async function imapOpen(env, acct) {
       const r = await cmd(`FETCH ${Math.max(1, 1)}:* (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
     },
+    // A page of the mailbox, newest first, by sequence number so we only fetch
+    // the headers we need (FETCH 1:* would pull every header in a big mailbox).
+    // total = EXISTS from SELECT; offset pages backwards from the newest.
+    async listRange(total, offset, limit) {
+      const hi = total - offset; if (hi < 1) return [];
+      const lo = Math.max(1, hi - limit + 1);
+      const r = await cmd(`FETCH ${lo}:${hi} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
+      return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
+    },
+    // Full-text search (headers + body). CHARSET UTF-8 first for accented terms,
+    // falling back to a plain search if the server rejects the charset.
+    async search(q, limit) {
+      let s = await cmd(`UID SEARCH CHARSET UTF-8 TEXT ${imapStr(q)}`);
+      if (!s.ok) s = await cmd(`UID SEARCH TEXT ${imapStr(q)}`);
+      const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
+      const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
+      if (!ids.length) return [];
+      const set = ids.slice(-limit).join(',');
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
+      return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
+    },
+    async unseenCount() {
+      const s = await cmd('UID SEARCH UNSEEN');
+      const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
+      return raw ? raw.split(/\s+/).filter(Boolean).length : 0;
+    },
     // Starred = the \Flagged flag. Find them, then fetch their headers.
     async listFlagged(limit) {
       const s = await cmd('UID SEARCH FLAGGED');
@@ -292,19 +318,26 @@ export async function handleMail(request, env, url, json, err) {
     if (sub === 'messages') {
       const mailbox = url.searchParams.get('mailbox') || 'INBOX';
       const flagged = url.searchParams.get('flagged') === '1';   // Starred view
+      const q = (url.searchParams.get('q') || '').trim();
       const limit = Number(url.searchParams.get('limit')) || 40;
+      const offset = Number(url.searchParams.get('offset')) || 0;
       const blocked = new Set(blockedList(acct).map(normAddr));
       const im = await imapOpen(env, acct);
       try {
         await im.login(); const total = await im.select(mailbox);
-        let messages = !total ? [] : (flagged ? await im.listFlagged(limit) : await im.listRecent(limit));
+        let messages = !total ? []
+          : q ? await im.search(q, limit)
+          : flagged ? await im.listFlagged(limit)
+          : await im.listRange(total, offset, limit);
         // Blocked senders: sweep them out of the inbox into Junk and hide them.
-        if (blocked.size && !flagged && mailbox === 'INBOX') {
+        // Only on the first, unsearched inbox page.
+        if (blocked.size && !q && !flagged && offset === 0 && mailbox === 'INBOX') {
           const isBlocked = (m) => m.from && blocked.has(normAddr(m.from.address));
           for (const m of messages.filter(isBlocked)) { try { await im.move(m.uid, 'Junk'); } catch {} }
           messages = messages.filter((m) => !isBlocked(m));
         }
-        return json({ total, messages }, request);
+        const unseen = mailbox === 'INBOX' ? await im.unseenCount() : 0;
+        return json({ total, unseen, offset, messages }, request);
       } finally { await im.logout(); }
     }
 

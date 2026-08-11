@@ -743,7 +743,7 @@ const MAIL_FOLDERS = [
   { key: 'trash', label: 'Trash', mailbox: 'Trash' },
 ];
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
-function setMailFolder(key) { state.mail.folder = key; state.mail.mailbox = mailFolder().mailbox; state.mail.open = null; loadMessages(); }
+function setMailFolder(key) { state.mail.folder = key; state.mail.mailbox = mailFolder().mailbox; state.mail.open = null; state.mail.limit = 40; loadMessages(); }
 // Every message row is tagged with the account it came from (_acct / _mailbox /
 // _acctName) and a composite _key = `${account}:${uid}`. IMAP UIDs are only
 // unique within one mailbox, so in the All-accounts view uid alone would clash;
@@ -789,7 +789,7 @@ async function mailUnblock(address, accountId) {
 }
 async function openMail() {
   state.view = { type: 'mail' };
-  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false };
+  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false };
   renderNav(); renderMail(true);
   try {
     state.mail.accounts = await mailApi('/accounts');
@@ -804,16 +804,25 @@ async function loadMessages() {
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
   const all = state.mail.account === 'all';
   const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
+  const q = (state.mail.query || '').trim();
+  const limit = state.mail.limit || 40;
+  state.mail.unseen = {};
   try {
+    let more = false;
     const lists = await Promise.all(accts.map(async (a) => {
       try {
-        const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=40${f.flagged ? '&flagged=1' : ''}`);
-        return (r.messages || []).map((x) => ({ ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: f.mailbox, _key: `${a.id}:${x.uid}` }));
+        const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
+        state.mail.unseen[a.id] = r.unseen || 0;
+        const msgs = (r.messages || []).map((x) => ({ ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: f.mailbox, _key: `${a.id}:${x.uid}` }));
+        if ((r.total || 0) > msgs.length) more = true;
+        return msgs;
       } catch { return []; }
     }));
     let msgs = lists.flat();
-    if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0)).slice(0, 60);
-    state.mail.messages = msgs; state.mail.error = null;
+    if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
+    state.mail.messages = msgs;
+    state.mail.hasMore = more && !q && !f.flagged;   // "Load older" only when browsing
+    state.mail.error = null;
   } catch (e) { state.mail.error = e.message; }
   renderMail();
 }
@@ -964,15 +973,18 @@ if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
 function renderMail(loading) {
   const m = state.mail;
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
-  const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All</button>` : '';
-  const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}</button>`).join('');
+  const unseenOf = (id) => (m.unseen && m.unseen[id]) || 0;
+  const badge = (n) => n ? `<span class="mail-unread-b">${n}</span>` : '';
+  const totalUnseen = Object.values(m.unseen || {}).reduce((a, b) => a + b, 0);
+  const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All${badge(totalUnseen)}</button>` : '';
+  const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}${badge(unseenOf(a.id))}</button>`).join('');
   const showAcct = m.account === 'all';
   const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open._key === x._key ? 'csel' : ''}" data-mail-open="${esc(x._key)}">
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${showAcct ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span></span>
     <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`).join('');
-  const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || '<div class="home-empty">No messages.</div>')}</div>`;
+  const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}</div>`;
   let reader;
   if (m.composing) {
     reader = `<form id="mail-compose-form" class="mail-compose">
@@ -1002,6 +1014,10 @@ function renderMail(loading) {
       <div class="mail-head-act"><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${accTabs ? `<div class="mail-atabs">${accTabs}</div>` : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
+    <div class="mail-tools">
+      <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
+      <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
+    </div>
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     <div class="mail-layout ${m.open || m.composing ? 'reading' : ''}">
       <div class="mail-list-col">${list}</div>
@@ -1588,6 +1604,8 @@ document.addEventListener('keydown', (e) => {
     if (!editing && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); mailReplyStart(true); return; }
     if (!editing && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); mailMoveTo(state.mail.open._key, 'Archive', 'Archived'); return; }
     if (!editing && (e.key === 's' || e.key === 'S')) { e.preventDefault(); mailStar(state.mail.open._key); return; }
+    if (!editing && (e.key === 'Backspace' || e.key === 'Delete' || e.key === '#')) { e.preventDefault(); mailMoveTo(state.mail.open._key, 'Trash', 'Moved to Trash'); return; }
+    if (!editing && e.key === 'Escape') { e.preventDefault(); state.mail.open = null; renderMail(); return; }
   }
   if (state.move && e.key === 'Escape') { closeMove(); return; }
   if (!state.pal.open) return;
@@ -1608,6 +1626,9 @@ document.addEventListener('input', (e) => {
   liveSearch('[data-cal-q]', (v) => (state.calQuery = v), renderCalendar);
   // Table search + filter value inputs: only the tbody re-renders, so the input keeps focus.
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
+  // Mail search hits IMAP, so debounce and re-focus the box after results land
+  // (a full re-render recreates the input) rather than re-rendering per keystroke.
+  if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; const v = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages().then(() => { const el = $('[data-mail-q]'); if (el) { el.focus(); try { el.setSelectionRange(v.length, v.length); } catch {} } }); }, 450); }
   const fvi = e.target.closest('input[data-filt-val]'); if (fvi) { const i = +fvi.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = e.target.value; renderTableBody(); } }
   if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
 });
@@ -1653,8 +1674,10 @@ document.addEventListener('click', (e) => {
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   // mail interactions
-  const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; loadMessages(); return; }
+  const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
+  if (t.closest('[data-mail-refresh]')) { loadMessages(); return; }
+  if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
   const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
