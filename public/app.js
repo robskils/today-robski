@@ -1181,7 +1181,10 @@ function renderTasks() {
     : (completed.length ? `<button class="ghost show-completed" data-show-completed>Show completed · ${completed.length}</button>` : '');
   $('#pane').innerHTML = `
     <div class="pane-head"><h1>Tasks</h1></div>
-    <input class="list-search sel" data-task-q placeholder="Search tasks…" value="${esc(state.taskQuery || '')}" autocomplete="off">
+    <div class="list-head">
+      <input class="list-search sel" data-task-q placeholder="Search tasks…" value="${esc(state.taskQuery || '')}" autocomplete="off">
+      ${state.taskAdding ? '' : `<button class="add-btn wide" data-task-add>+ Add task</button>`}
+    </div>
     ${state.taskAdding
       ? `<form id="task-form" class="add-task">
       <input id="task-title" type="text" placeholder="Add a task…" autocomplete="off" required>
@@ -1190,7 +1193,7 @@ function renderTasks() {
       <button class="add-btn wide" type="submit">Add</button>
       <button type="button" class="ghost" data-task-add-close>Done</button>
     </form>`
-      : `<button class="add-btn wide" data-task-add>+ Add task</button>`}
+      : ''}
     <div class="area-chips">${chips}</div>
     ${filterSel}
     ${taskTableHtml(open, 'No open tasks here.')}
@@ -1355,7 +1358,8 @@ function tableBodyHtml() {
   const rows = visibleRows().map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   const empty = (state.tables_view.query || (state.tables_view.filters || []).length) && !visibleRows().length
     ? `<tr class="tbl-noresult"><td colspan="${c.length + 2}">No rows match.</td></tr>` : '';
-  return rows + empty + `<tr class="row-add"><td colspan="${c.length + 2}"><button data-add-row>+ Row</button></td></tr>`;
+  // The add control lives in the toolbar (always visible); no duplicate at the foot.
+  return rows + empty;
 }
 function renderTableBody() { const el = $('#tbl-body'); if (el) el.innerHTML = tableBodyHtml(); }
 function filterPanelHtml() {
@@ -1408,7 +1412,7 @@ function renderTable() {
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${nFilt || vw.filtering ? 'on' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
-      <button class="add-btn tbl-add-row" data-add-row title="Add a row">+ Row</button>
+      <button class="add-btn wide tbl-add-row" data-add-row title="Add a row">+ Row</button>
     </div>
     <div id="tbl-filter-panel">${vw.filtering ? filterPanelHtml() : ''}</div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}

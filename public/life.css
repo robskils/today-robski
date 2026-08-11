@@ -184,7 +184,8 @@ button { cursor:pointer; background:none; border:0; }
 .tbl-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
 /* Table toolbar: search + filter. */
 .tbl-toolbar { display:flex; align-items:center; gap:10px; margin:0 0 16px; }
-.tbl-add-row { flex:none; width:auto; white-space:nowrap; padding:11px 18px; font-size:15px; }
+.tbl-search { flex:1; width:auto; margin:0; }
+.tbl-add-row { flex:none; white-space:nowrap; }
 .tbl-search { flex:1; margin:0; }
 .tbl-filter-btn { flex:none; display:inline-flex; align-items:center; gap:7px; padding:11px 16px; border-radius:12px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:15px; transition:border-color .12s,color .12s,background .12s; }
 .tbl-filter-btn:hover { border-color:var(--accent); color:var(--accent); }
@@ -546,6 +547,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .completed-q { display:block; width:100%; max-width:360px; margin-bottom:14px; }
 /* Per-page search box at the top of Tasks / Notes / Calendar. */
 .list-search { display:block; width:100%; max-width:none; margin:0 0 18px; padding:12px 16px; font-size:16px; }
+/* Search box + accent add-button sharing one row (Tasks, and mirrored in the
+   table toolbar). The search flexes to fill; the button keeps its size. */
+.list-head { display:flex; gap:12px; align-items:stretch; margin:0 0 18px; }
+.list-head .list-search { flex:1; width:auto; margin:0; }
+.list-head .add-btn.wide { flex:none; }
 .cal-search-h { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
 .cal-search-h h2 { margin:0; }
 .cal-search-note { color:var(--ink-3); font-size:13px; }
