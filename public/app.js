@@ -222,7 +222,7 @@ function navSection(key, v) {
   let title, add = '', rows;
   if (key === 'favs') {
     title = 'Favourites';
-    rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}"`, KIND_IC[f.kind] || '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
+    rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"`, KIND_IC[f.kind] || '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     title = 'Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
     rows = state.noteTops.map((n) => sub(v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id, `data-open-note="${n.id}"`, '▸', n.title)).join('') || '<div class="nav-sub muted">No notes yet</div>';
@@ -239,7 +239,7 @@ function navSection(key, v) {
       <span class="nav-sec-title">${title}</span>
       ${add}<span class="nav-grip" title="Drag to reorder">⠿</span>
     </div>
-    ${collapsed ? '' : `<div class="nav-sec-body">${rows}</div>`}
+    ${collapsed ? '' : `<div class="nav-sec-body"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
   </div>`;
 }
 // ── theme: automatic by local sunrise/sunset, overridable by the button ──
@@ -1112,7 +1112,7 @@ async function reorderFavs(draggedId, beforeId) {
   let to = beforeId ? favs.findIndex((f) => f.id === beforeId) : favs.length;
   if (to < 0) to = favs.length;
   favs.splice(to, 0, moved);
-  renderHome();
+  renderNav(); if (state.view.type === 'home') renderHome();
   favs.forEach((f, i) => { f.props = f.props || {}; f.props.fav_rank = i; api(`/api/blocks/${f.id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav_rank: i } }) }).catch(() => {}); });
 }
 function openFav(ref) {
@@ -1766,7 +1766,7 @@ document.addEventListener('dragstart', (e) => {
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
 });
 document.addEventListener('dragover', (e) => {
-  if (dragFav && e.target.closest('#favs')) { e.preventDefault(); markDrop(e.target.closest('[data-fav-id]'), e, 'h'); return; }
+  if (dragFav && e.target.closest('#favs')) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   const z = e.target.closest('[data-att-zone]');
   if (z && !dragFav && !dragSec && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); z.classList.add('att-drag'); }
@@ -1781,7 +1781,7 @@ document.addEventListener('drop', (e) => {
   }
   if (dragFav) {
     e.preventDefault(); const over = e.target.closest('[data-fav-id]');
-    const before = over && over.dataset.favId !== dragFav ? dropBefore(over, state.favs.map((x) => `${x.kind}:${x.id}`), (el) => el.dataset.favId) : null;
+    const before = over && over.dataset.favId !== dragFav ? dropBefore(over, state.favs.map((x) => x.id), (el) => el.dataset.favId) : null;
     clearDropMarks(); reorderFavs(dragFav, before); dragFav = null; return;
   }
   if (dragSec) {
