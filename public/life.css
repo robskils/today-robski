@@ -183,10 +183,16 @@ button { cursor:pointer; background:none; border:0; }
 .tbl-main { min-width:0; }
 .tbl-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
 /* Table toolbar: search + filter. */
+/* One explicit height for every control so search, Sort, Filter and + Row sit
+   on a single straight line regardless of their natural heights. */
 .tbl-toolbar { display:flex; align-items:center; gap:10px; margin:0 0 16px; }
 .tbl-search { flex:1; width:auto; margin:0; }
 .tbl-add-row { flex:none; white-space:nowrap; }
-.tbl-search { flex:1; margin:0; }
+.tbl-toolbar .tbl-search,
+.tbl-toolbar .tbl-filter-btn,
+.tbl-toolbar .tbl-add-row { height:50px; min-height:50px; margin:0; box-sizing:border-box; }
+.tbl-toolbar .tbl-filter-btn,
+.tbl-toolbar .tbl-add-row { display:inline-flex; align-items:center; justify-content:center; }
 .tbl-filter-btn { flex:none; display:inline-flex; align-items:center; gap:7px; padding:11px 16px; border-radius:12px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:15px; transition:border-color .12s,color .12s,background .12s; }
 .tbl-filter-btn:hover { border-color:var(--accent); color:var(--accent); }
 .tbl-filter-btn.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 9%,var(--card)); }
