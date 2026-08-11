@@ -184,6 +184,7 @@ button { cursor:pointer; background:none; border:0; }
 .tbl-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
 /* Table toolbar: search + filter. */
 .tbl-toolbar { display:flex; align-items:center; gap:10px; margin:0 0 16px; }
+.tbl-add-row { flex:none; width:auto; white-space:nowrap; padding:11px 18px; font-size:15px; }
 .tbl-search { flex:1; margin:0; }
 .tbl-filter-btn { flex:none; display:inline-flex; align-items:center; gap:7px; padding:11px 16px; border-radius:12px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:15px; transition:border-color .12s,color .12s,background .12s; }
 .tbl-filter-btn:hover { border-color:var(--accent); color:var(--accent); }
@@ -796,7 +797,7 @@ table.ttable tr:last-child td { border-bottom:0; }
   .tasks-scroll { overflow:visible; border:0; background:transparent; box-shadow:none; }
   .tasks-scroll .ttable, .tasks-scroll tbody, .tasks-scroll tr, .tasks-scroll td { display:block; }
   .tasks-scroll thead { display:none; }
-  .tasks-scroll .tr-task { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:13px 14px; margin-bottom:9px; border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 42% 52%); border-radius:13px; background:var(--card); box-shadow:var(--shadow); }
+  .tasks-scroll .tr-task { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:13px 14px; margin-bottom:9px; border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:var(--shadow); }
   .tasks-scroll .tr-task td { border:0; padding:0; }
   .tasks-scroll .tc-done { order:1; }
   .tasks-scroll .tc-title { order:2; flex:1 1 55%; min-width:0; font-size:17px; white-space:normal; }

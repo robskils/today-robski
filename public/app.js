@@ -1408,6 +1408,7 @@ function renderTable() {
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${nFilt || vw.filtering ? 'on' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
+      <button class="add-btn tbl-add-row" data-add-row title="Add a row">+ Row</button>
     </div>
     <div id="tbl-filter-panel">${vw.filtering ? filterPanelHtml() : ''}</div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}
@@ -2034,7 +2035,14 @@ async function delNote() {
   const parent = state.note.path.length > 1 ? state.note.path[state.note.path.length - 2].id : null;
   try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); state.noteTops = state.noteTops.filter((t) => t.id !== n.id); if (parent) await openNote(parent); else await openTasks(); } catch (e) { toast(e.message); }
 }
-async function addRow() { const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: state.tables_open.id, props: { values: {} } }) }); state.tables_rows.push(r); renderTable(); }
+async function addRow() {
+  const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: state.tables_open.id, props: { values: {} } }) });
+  state.tables_rows.push(r);
+  // A brand-new blank row matches no search or filter, so it would vanish the
+  // instant it's added. Clear them so the row you just asked for is visible.
+  state.tables_view.query = ''; state.tables_view.filters = []; state.tables_view.filtering = false;
+  renderTable();
+}
 async function addColumn(name, type) { const col = { id: uid(), name: name || 'Column', type }; state.tables_view.addingCol = false; await saveTableColumns([...tcols(), col]); renderTable(); }
 async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
 async function renameArea(v) {
