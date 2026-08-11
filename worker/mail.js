@@ -110,7 +110,7 @@ async function imapOpen(env, acct) {
       return out;
     },
     async listRecent(limit) {
-      const r = await cmd(`FETCH ${Math.max(1, 1)}:* (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
+      const r = await cmd(`FETCH ${Math.max(1, 1)}:* (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
     },
     // A page of the mailbox, newest first, by sequence number so we only fetch
@@ -119,7 +119,7 @@ async function imapOpen(env, acct) {
     async listRange(total, offset, limit) {
       const hi = total - offset; if (hi < 1) return [];
       const lo = Math.max(1, hi - limit + 1);
-      const r = await cmd(`FETCH ${lo}:${hi} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
+      const r = await cmd(`FETCH ${lo}:${hi} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
     },
     // Full-text search (headers + body). CHARSET UTF-8 first for accented terms,
@@ -131,7 +131,7 @@ async function imapOpen(env, acct) {
       const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
       if (!ids.length) return [];
       const set = ids.slice(-limit).join(',');
-      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
     },
     async unseenCount() {
@@ -146,7 +146,7 @@ async function imapOpen(env, acct) {
       const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
       if (!ids.length) return [];
       const set = ids.slice(-limit).join(',');
-      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`);
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
     },
     async fetchRaw(uid) {
@@ -199,7 +199,12 @@ function parseFetch(lines) {
     const flags = (l.match(/FLAGS \(([^)]*)\)/) || [])[1] || '';
     const hdr = '\n' + l.replace(/^\* \d+ FETCH .*?\]\s*/s, '');
     const grab = (name) => decodeWords((hdr.match(new RegExp(`\\n${name}:\\s*([^\\r\\n]*)`, 'i')) || [])[1] || '').trim();
-    if (uid) msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), flagged: /\\Flagged/.test(flags), from: parseAddr(grab('From')), subject: grab('Subject') || '(no subject)', date: parseDate(grab('Date')) });
+    if (uid) {
+      const messageId = (grab('Message-ID').match(/<[^>]+>/) || [])[0] || '';
+      const inReplyTo = (grab('In-Reply-To').match(/<[^>]+>/) || [])[0] || '';
+      const references = ((grab('References') + ' ' + grab('In-Reply-To')).match(/<[^>]+>/g)) || [];
+      msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), flagged: /\\Flagged/.test(flags), from: parseAddr(grab('From')), subject: grab('Subject') || '(no subject)', date: parseDate(grab('Date')), messageId, inReplyTo, references });
+    }
   }
   return msgs;
 }

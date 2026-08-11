@@ -819,7 +819,7 @@ async function mailUnblock(address, accountId) {
 }
 async function openMail() {
   state.view = { type: 'mail' };
-  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false };
+  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {} };
   renderNav(); renderMail(true);
   try {
     state.mail.accounts = await mailApi('/accounts');
@@ -1055,6 +1055,38 @@ function shortcutsOverlayHtml() {
     <div class="mail-sc-note">Active while browsing or reading — not while typing in a field.</div>
   </div></div>`;
 }
+// ── conversation threading (client-side, over the loaded window) ──
+const normSubject = (s) => (s || '').replace(/^\s*((re|fwd|fw|aw|sv|res|enc|encaminhada?)\s*:\s*)+/i, '').trim();
+// Group loaded messages into conversations: first by the Message-ID/References
+// graph, then by matching subject (only where a reply prefix seeds the group, so
+// two unrelated originals sharing a subject don't merge). Union-find, pure.
+function buildThreads(msgs) {
+  const list = msgs || [];
+  const byId = new Map(); list.forEach((m) => { if (m.messageId) byId.set(m.messageId, m); });
+  const parent = new Map(); const K = (m) => m._key;
+  list.forEach((m) => parent.set(K(m), K(m)));
+  const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+  const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent.set(ra, rb); };
+  list.forEach((m) => { for (const r of [...(m.references || []), m.inReplyTo].filter(Boolean)) { const t = byId.get(r); if (t && t !== m) union(K(m), K(t)); } });
+  const seed = new Map(); const gk = (m) => m._acct + '|' + normSubject(m.subject).toLowerCase();
+  list.forEach((m) => { if (/^\s*(re|fwd|fw|aw|sv|res|enc)\s*:/i.test(m.subject || '') && normSubject(m.subject)) { const k = gk(m); if (!seed.has(k)) seed.set(k, K(m)); } });
+  list.forEach((m) => { if (!normSubject(m.subject)) return; const k = gk(m); if (seed.has(k)) union(K(m), seed.get(k)); });
+  const groups = new Map();
+  list.forEach((m) => { const r = find(K(m)); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(m); });
+  const threads = [...groups.values()].map((ms) => {
+    ms.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    return { key: ms[0]._key, messages: ms, latest: ms[0], count: ms.length, unread: ms.some((x) => !x.seen), flagged: ms.some((x) => x.flagged) };
+  });
+  threads.sort((a, b) => new Date(b.latest.date || 0) - new Date(a.latest.date || 0));
+  return threads;
+}
+const threadFrom = (th) => [...new Set(th.messages.map((x) => mailFrom(x) || '(unknown)'))].slice(0, 3).join(', ');
+// One message row (shared by flat view, single-message threads, and expanded children).
+const mailRowHtml = (x, child) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
+    <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
+    <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
+    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span></span>
+    <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
 function renderMail(loading) {
   const m = state.mail;
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
@@ -1064,11 +1096,21 @@ function renderMail(loading) {
   const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All${badge(totalUnseen)}</button>` : '';
   const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}${badge(unseenOf(a.id))}</button>`).join('');
   const showAcct = m.account === 'all';
-  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open._key === x._key ? 'csel' : (m.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
-    <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
-    <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
-    <span class="mail-subject">${showAcct ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span></span>
-    <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`).join('');
+  let rows;
+  if (m.threaded) {
+    rows = buildThreads(m.messages || []).map((th) => {
+      if (th.count === 1) return mailRowHtml(th.latest);
+      const exp = !!(m.expanded && m.expanded[th.key]);
+      const header = `<button class="mail-row mail-thread ${th.unread ? 'unread' : ''} ${exp ? 'exp' : ''}" data-mail-thread="${esc(th.key)}">
+        <span class="mail-chevron">${exp ? '▾' : '▸'}</span>
+        <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(threadFrom(th))}</span><span class="mail-date">${mailDate(th.latest.date)}</span></span>
+        <span class="mail-subject">${showAcct ? `<span class="mail-acct-chip">${esc(th.latest._acctName || '')}</span>` : ''}${esc(normSubject(th.latest.subject) || th.latest.subject)}<span class="mail-thread-n">${th.count}</span></span></span>
+        <span class="mail-star ${th.flagged ? 'on' : ''}">${th.flagged ? '★' : ''}</span></button>`;
+      return header + (exp ? th.messages.map((x) => mailRowHtml(x, true)).join('') : '');
+    }).join('');
+  } else {
+    rows = (m.messages || []).map((x) => mailRowHtml(x)).join('');
+  }
   const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}</div>`;
   let reader;
   if (m.composing) {
@@ -1104,6 +1146,7 @@ function renderMail(loading) {
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
     <div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
+      <button class="tbl-filter-btn ${m.threaded ? 'on' : ''}" data-mail-thread-toggle title="Group into conversations">☰ Threads</button>
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
@@ -1791,6 +1834,8 @@ document.addEventListener('click', (e) => {
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
+  if (t.closest('[data-mail-thread-toggle]')) { state.mail.threaded = !state.mail.threaded; try { localStorage.setItem('life.mail.threaded', state.mail.threaded ? '1' : '0'); } catch {} renderMail(); return; }
+  const mth = t.closest('[data-mail-thread]'); if (mth) { const k = mth.dataset.mailThread; state.mail.expanded = state.mail.expanded || {}; state.mail.expanded[k] = !state.mail.expanded[k]; renderMail(); return; }
   if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
