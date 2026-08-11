@@ -997,8 +997,18 @@ async function saveSignature(id) {
 }
 const sigToText = (html) => { const d = document.createElement('div'); d.innerHTML = html || ''; return (d.textContent || '').replace(/\n{3,}/g, '\n\n').trim(); };
 const composeHtml = (text) => `<div style="font-family:-apple-system,Segoe UI,Inter,sans-serif;font-size:15px;line-height:1.55;color:#1b1820;white-space:pre-wrap">${esc(text || '')}</div>`;
+// Provider presets fill the IMAP/SMTP host+port so you don't have to look them up.
+const MAIL_PRESETS = {
+  purelymail: { label: 'Purelymail', imap: 'imap.purelymail.com', imapPort: 993, smtp: 'smtp.purelymail.com', smtpPort: 465 },
+  google: { label: 'Google / Workspace', imap: 'imap.gmail.com', imapPort: 993, smtp: 'smtp.gmail.com', smtpPort: 465, note: 'Google needs an <b>App Password</b> (not your normal password): turn on 2-Step Verification, then Google Account → Security → App passwords. Your Workspace admin must also allow IMAP.' },
+  icloud: { label: 'iCloud', imap: 'imap.mail.me.com', imapPort: 993, smtp: 'smtp.mail.me.com', smtpPort: 587, note: 'iCloud needs an app-specific password from appleid.apple.com.' },
+  outlook: { label: 'Outlook / 365', imap: 'outlook.office365.com', imapPort: 993, smtp: 'smtp.office365.com', smtpPort: 587 },
+};
 function showMailAccountForm() {
+  const chips = Object.entries(MAIL_PRESETS).map(([k, p]) => `<button type="button" class="mail-preset" data-mail-preset="${k}">${esc(p.label)}</button>`).join('');
   $('#mail-acct-form').innerHTML = `<form id="mail-acct-form-el" class="add-task" style="flex-direction:column;align-items:stretch;gap:10px;max-width:520px;margin-top:16px">
+    <div class="mail-presets"><span class="mail-presets-l">Provider:</span>${chips}</div>
+    <div id="ma-note" class="mail-sig-note" hidden></div>
     <input id="ma-email" type="email" placeholder="Email address" required>
     <div style="display:flex;gap:8px"><input id="ma-imaphost" placeholder="IMAP host" value="imap.purelymail.com" required style="flex:1"><input id="ma-imapport" value="993" style="width:80px"></div>
     <div style="display:flex;gap:8px"><input id="ma-smtphost" placeholder="SMTP host" value="smtp.purelymail.com" required style="flex:1"><input id="ma-smtpport" value="465" style="width:80px"></div>
@@ -1006,6 +1016,12 @@ function showMailAccountForm() {
     <input id="ma-pass" type="password" placeholder="Password / app password" required>
     <button class="add-btn wide" type="submit">Add account</button></form>`;
   $('#ma-email').focus();
+}
+function applyMailPreset(key) {
+  const p = MAIL_PRESETS[key]; if (!p) return;
+  const set = (id, v) => { const el = $(id); if (el) el.value = v; };
+  set('#ma-imaphost', p.imap); set('#ma-imapport', p.imapPort); set('#ma-smtphost', p.smtp); set('#ma-smtpport', p.smtpPort);
+  const note = $('#ma-note'); if (note) { if (p.note) { note.innerHTML = p.note; note.hidden = false; } else { note.hidden = true; } }
 }
 const initial = (s) => (String(s || '?').trim().charAt(0) || '?').toUpperCase();
 // Strip anything executable from an email's own markup before it goes in the
@@ -1899,6 +1915,7 @@ document.addEventListener('click', (e) => {
   const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(mdl.dataset.mailDel); return; }
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
+  const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
   const sigt = t.closest('[data-sig-toggle]'); if (sigt) { const p = document.querySelector(`[data-sig-panel="${sigt.dataset.sigToggle}"]`); if (p) p.hidden = !p.hidden; return; }
   const sigs = t.closest('[data-sig-save]'); if (sigs) { saveSignature(sigs.dataset.sigSave); return; }
