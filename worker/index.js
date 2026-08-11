@@ -264,7 +264,13 @@ async function createEvent(request, env) {
   // All-day events use calendar dates (end is exclusive, so a single day spans
   // day..day+1); timed events use wall-clock minutes -> a real instant.
   let start, end;
-  if (b.allDay) {
+  if (b.start) {
+    // ISO / wall-clock path used by mail calendar invites. A "…Z" datetime is an
+    // absolute instant; a naive one is wall-clock in tz (Google resolves it).
+    const tz = b.tz && b.tz !== 'UTC' ? b.tz : TZ;
+    start = { dateTime: b.start, timeZone: tz };
+    end = { dateTime: b.end || b.start, timeZone: tz };
+  } else if (b.allDay) {
     const endDay = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(day, 1);
     start = { date: day };
     end = { date: endDay };

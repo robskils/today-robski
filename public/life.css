@@ -732,6 +732,15 @@ table.ttable tr:last-child td { border-bottom:0; }
    scrolls as one rather than the body scrolling inside a fixed box. */
 .mail-body-frame { width:100%; height:340px; min-height:120px; border:0; border-radius:10px; background:#fff; display:block; }
 .mail-text { font-size:16px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-wrap:break-word; font-family:inherit; margin:4px 0; }
+.mail-text a { color:var(--accent); text-decoration:underline; }
+.mail-join-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:8px 0 16px; }
+.mail-join-url { color:var(--ink-3); font-size:13px; word-break:break-all; }
+.mail-invite { margin:12px 0 16px; padding:16px 18px; border:1px solid var(--line-2); border-radius:14px; background:var(--paper-2); }
+.mail-invite-h { color:var(--ink-3); font-size:13px; margin-bottom:6px; }
+.mail-invite-title { font-size:18px; font-weight:600; color:var(--ink); }
+.mail-invite-when { color:var(--ink); font-size:15px; margin-top:5px; }
+.mail-invite-loc, .mail-invite-org { color:var(--ink-2); font-size:14px; margin-top:3px; }
+.mail-invite-act { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
 .mail-msg-act, .mail-compose-act { display:flex; gap:10px; align-items:center; margin-top:22px; }
 .mail-compose { display:flex; flex-direction:column; gap:12px; padding:20px 24px; }
 .mail-compose input, .mail-compose textarea { width:100%; padding:13px 16px; font-size:16.5px; background:var(--paper); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); }

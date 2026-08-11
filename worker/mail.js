@@ -296,6 +296,41 @@ function bufToB64(u8) {
   for (let i = 0; i < u8.length; i += CH) bin += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
   return btoa(bin);
 }
+const MEETING_RE_W = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
+// Parse the first VEVENT of an .ics into a compact invite object. Handles UTC
+// (…Z), floating/TZID datetimes (kept as wall-clock + tz for Google to resolve)
+// and all-day VALUE=DATE. Meeting URL comes from URL:, else the description.
+function parseIcs(text) {
+  const lines = String(text).replace(/\r?\n[ \t]/g, '').split(/\r?\n/); // unfold
+  let inEv = false; const ev = {};
+  for (const line of lines) {
+    if (/^BEGIN:VEVENT/i.test(line)) { inEv = true; continue; }
+    if (/^END:VEVENT/i.test(line)) break;
+    if (!inEv) continue;
+    const idx = line.indexOf(':'); if (idx < 0) continue;
+    const [name, ...params] = line.slice(0, idx).split(';');
+    const p = {}; params.forEach((pr) => { const [k, v] = pr.split('='); if (k) p[k.toUpperCase()] = v; });
+    ev[name.toUpperCase()] = { val: line.slice(idx + 1).trim(), params: p };
+  }
+  const unesc = (s) => (s || '').replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+  const dt = (f) => {
+    if (!f) return null; const v = f.val;
+    if (f.params.VALUE === 'DATE' || /^\d{8}$/.test(v)) return { allDay: true, date: `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}` };
+    const m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/); if (!m) return null;
+    return { allDay: false, iso: `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}${m[7] ? 'Z' : ''}`, tz: m[7] ? 'UTC' : (f.params.TZID || null) };
+  };
+  const s = dt(ev.DTSTART); if (!s) return null; const e = dt(ev.DTEND);
+  const url = (ev.URL && ev.URL.val) || (((ev.DESCRIPTION && ev.DESCRIPTION.val) || '') + ' ' + ((ev.LOCATION && ev.LOCATION.val) || '')).match(MEETING_RE_W)?.[0] || '';
+  return {
+    summary: unesc(ev.SUMMARY && ev.SUMMARY.val) || '(no title)',
+    location: unesc(ev.LOCATION && ev.LOCATION.val) || '',
+    organizer: (ev.ORGANIZER && (ev.ORGANIZER.params.CN || ev.ORGANIZER.val.replace(/^mailto:/i, ''))) || '',
+    allDay: s.allDay,
+    start: s.allDay ? null : s.iso, startDate: s.allDay ? s.date : null,
+    end: e && !e.allDay ? e.iso : null, endDate: e && e.allDay ? e.date : null,
+    tz: s.allDay ? null : s.tz, url,
+  };
+}
 const mimeWord = (s) => /[^\x00-\x7F]/.test(s) ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(s)))}?=` : s;
 
 // ── routes ────────────────────────────────────────────────────────────
@@ -397,12 +432,16 @@ export async function handleMail(request, env, url, json, err) {
         await im.login(); await im.select(mailbox);
         const raw = await im.fetchRaw(uid); if (!raw) return err('message not found', request, 404);
         const p = await PostalMime.parse(raw);
+        // A calendar invite arrives as a text/calendar part or an .ics attachment.
+        let invite = null;
+        const calPart = (p.attachments || []).find((a) => /calendar/i.test(a.mimeType || '') || /\.ics$/i.test(a.filename || ''));
+        if (calPart && calPart.content) { try { invite = parseIcs(typeof calPart.content === 'string' ? calPart.content : new TextDecoder().decode(calPart.content)); } catch {} }
         return json({
           uid, subject: p.subject || '(no subject)', from: p.from || null,
           to: (p.to || []).map((a) => ({ name: a.name, address: a.address })),
           cc: (p.cc || []).map((a) => ({ name: a.name, address: a.address })),
           date: (p.date ? new Date(p.date).toISOString() : ''),
-          messageId: p.messageId || null, html: p.html || null, text: p.text || '',
+          messageId: p.messageId || null, html: p.html || null, text: p.text || '', invite,
           attachments: (p.attachments || []).map((a) => ({ filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType })),
         }, request);
       } finally { await im.logout(); }

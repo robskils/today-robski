@@ -1087,6 +1087,44 @@ const mailRowHtml = (x, child) => `<button class="mail-row ${x.seen ? '' : 'unre
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span></span>
     <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
+// Recognised video-meeting links, so we can float a "Join" button.
+const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
+function mailMeetingLink(o) {
+  const m = `${o.text || ''}\n${o.html || ''}`.match(MEETING_RE);
+  return (m ? m[0].replace(/["'&<>]+$/, '') : '') || (o.invite && o.invite.url) || '';
+}
+// Escape a plain-text body, then turn bare URLs into links (opens in a new tab).
+function linkifyText(text) {
+  const s = String(text || ''); let out = '', last = 0, m; BARE_URL.lastIndex = 0;
+  while ((m = BARE_URL.exec(s))) { out += esc(s.slice(last, m.index)); const u = m[0]; out += `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`; last = m.index + u.length; }
+  return out + esc(s.slice(last));
+}
+// A calendar-invite card in the reader, with a one-tap "Add to Calendar".
+function inviteCardHtml(inv) {
+  let when = '';
+  try {
+    if (inv.allDay) when = new Date(inv.startDate + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + ' · all day';
+    else { const s = new Date(inv.start), e = inv.end ? new Date(inv.end) : null; const opt = { hour: '2-digit', minute: '2-digit' };
+      when = s.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + s.toLocaleTimeString(undefined, opt) + (e ? '–' + e.toLocaleTimeString(undefined, opt) : ''); }
+  } catch {}
+  return `<div class="mail-invite">
+    <div class="mail-invite-h">📅 Calendar invitation</div>
+    <div class="mail-invite-title">${esc(inv.summary || '(no title)')}</div>
+    <div class="mail-invite-when">${esc(when)}</div>
+    ${inv.location ? `<div class="mail-invite-loc">📍 ${esc(inv.location)}</div>` : ''}
+    ${inv.organizer ? `<div class="mail-invite-org">from ${esc(inv.organizer)}</div>` : ''}
+    <div class="mail-invite-act"><button class="add-btn wide" data-mail-invite-add>Add to Calendar</button>${inv.url ? `<button class="ghost" data-mail-join="${esc(inv.url)}">🎥 Join</button>` : ''}</div>
+  </div>`;
+}
+async function mailInviteAdd() {
+  const inv = state.mail.open && state.mail.open.invite; if (!inv) return;
+  let body;
+  if (inv.allDay) body = { title: inv.summary, allDay: true, day: inv.startDate, location: inv.location || undefined };
+  else { let end = inv.end; if (!end && inv.start) { try { end = new Date(new Date(inv.start).getTime() + 3600000).toISOString(); } catch {} }
+    body = { title: inv.summary, start: inv.start, end, tz: inv.tz || undefined, location: inv.location || undefined }; }
+  try { await api('/api/events', { method: 'POST', body: JSON.stringify(body) }); toast('Added to your calendar'); }
+  catch (e) { toast(e.message); }
+}
 function renderMail(loading) {
   const m = state.mail;
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
@@ -1135,7 +1173,9 @@ function renderMail(loading) {
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
         ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<span class="mail-att-chip">📎 ${esc(a.filename || 'attachment')}</span>`).join('')}</div>` : ''}
-      ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<pre class="mail-text">${esc(o.text || '')}</pre>`}</div>`;
+      ${o.invite ? inviteCardHtml(o.invite) : ''}
+      ${(() => { const ml = mailMeetingLink(o); return ml ? `<div class="mail-join-bar"><button class="add-btn wide" data-mail-join="${esc(ml)}">🎥 Join meeting</button><span class="mail-join-url">${esc(ml)}</span></div>` : ''; })()}
+      ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text">${linkifyText(o.text || '')}</div>`}</div>`;
   } else {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
   }
@@ -1838,6 +1878,8 @@ document.addEventListener('click', (e) => {
   const mth = t.closest('[data-mail-thread]'); if (mth) { const k = mth.dataset.mailThread; state.mail.expanded = state.mail.expanded || {}; state.mail.expanded[k] = !state.mail.expanded[k]; renderMail(); return; }
   if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
+  const mjoin = t.closest('[data-mail-join]'); if (mjoin) { window.open(mjoin.dataset.mailJoin, '_blank', 'noopener'); return; }
+  if (t.closest('[data-mail-invite-add]')) { mailInviteAdd(); return; }
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
   const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
