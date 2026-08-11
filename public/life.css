@@ -682,6 +682,17 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-row:last-child { border-bottom:0; }
 .mail-row:hover { background:var(--paper-2); }
 .mail-row.csel { background:color-mix(in srgb,var(--accent) 8%,transparent); }
+/* Keyboard-highlighted row (J/K), subtler than the open row and ringed. */
+.mail-row.ksel { background:color-mix(in srgb,var(--accent) 5%,transparent); box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent); border-radius:8px; }
+/* Keyboard shortcuts popover */
+.mail-sc-bg { position:fixed; inset:0; z-index:60; background:color-mix(in srgb,#000 32%,transparent); display:flex; align-items:center; justify-content:center; padding:20px; }
+.mail-sc { width:min(440px,100%); max-height:82vh; overflow:auto; background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:var(--shadow-lg,0 20px 50px -20px rgba(0,0,0,.4)); padding:18px 20px; }
+.mail-sc-h { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; font-size:18px; }
+.mail-sc-grid { display:flex; flex-direction:column; gap:9px; }
+.mail-sc-row { display:flex; align-items:center; gap:14px; }
+.mail-sc-row kbd { flex:none; min-width:96px; text-align:center; font:inherit; font-size:13px; background:var(--paper-2); border:1px solid var(--line); border-radius:7px; padding:4px 8px; color:var(--ink-2); }
+.mail-sc-row span { color:var(--ink); font-size:15px; }
+.mail-sc-note { margin-top:16px; color:var(--ink-3); font-size:13px; }
 .mail-avatar { flex:none; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:color-mix(in srgb,var(--accent) 16%,var(--paper-2)); color:var(--accent); font-size:16px; font-weight:600; }
 .mail-avatar.big { width:44px; height:44px; font-size:18px; }
 .mail-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }

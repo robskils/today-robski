@@ -764,7 +764,37 @@ async function mailStar(key) {
 }
 async function mailMoveTo(key, target, label) {
   const row = mailRow(key); if (!row) return;
-  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) }); toast(label); state.mail.messages = state.mail.messages.filter((m) => m._key !== key); state.mail.open = null; renderMail(); }
+  const msgs = state.mail.messages || []; const idx = msgs.findIndex((m) => m._key === key);
+  try {
+    await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) });
+    toast(label);
+    state.mail.messages = msgs.filter((m) => m._key !== key);
+    // Keep keyboard triage flowing: move the highlight to the next row (or the
+    // previous one if we removed the last), and drop out of the reader.
+    if (state.mail.sel === key) { const n = state.mail.messages[idx] || state.mail.messages[idx - 1]; state.mail.sel = n ? n._key : null; }
+    state.mail.open = null; renderMail();
+  } catch (e) { toast(e.message); }
+}
+// Move the keyboard highlight through the list; while reading, open as we go.
+function mailSelMove(delta) {
+  const rows = state.mail.messages || []; if (!rows.length) return;
+  let i = rows.findIndex((x) => x._key === state.mail.sel);
+  if (i < 0) i = delta > 0 ? -1 : 0;
+  i = Math.max(0, Math.min(rows.length - 1, i + delta));
+  state.mail.sel = rows[i]._key;
+  if (state.mail.open) { openMessage(state.mail.sel); return; }
+  renderMail();
+  const el = document.querySelector('.mail-row.ksel'); if (el) el.scrollIntoView({ block: 'nearest' });
+}
+// Mark a message read / unread (U). Updates the row, the unread badge and IMAP.
+async function mailSeen(key, seen) {
+  const row = mailRow(key); if (!row) return;
+  const listRow = (state.mail.messages || []).find((x) => x._key === key);
+  if (listRow) listRow.seen = seen;
+  if (state.mail.open && state.mail.open._key === key) state.mail.open.seen = seen;
+  state.mail.unseen[row._acct] = Math.max(0, (state.mail.unseen[row._acct] || 0) + (seen ? -1 : 1));
+  renderMail();
+  try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen }) }); }
   catch (e) { toast(e.message); }
 }
 async function mailBlock(key, address) {
@@ -789,7 +819,7 @@ async function mailUnblock(address, accountId) {
 }
 async function openMail() {
   state.view = { type: 'mail' };
-  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false };
+  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false };
   renderNav(); renderMail(true);
   try {
     state.mail.accounts = await mailApi('/accounts');
@@ -970,6 +1000,19 @@ if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
     if (f) f.style.height = `${Math.max(200, Math.min(ev.data.__mailHeight + 6, 40000))}px`;
   });
 }
+const MAIL_SHORTCUTS = [
+  ['J / K', 'Next / previous message'], ['Enter / O', 'Open highlighted'], ['Esc', 'Back to the list'],
+  ['R', 'Reply'], ['A', 'Reply all'], ['E', 'Archive'], ['S', 'Star / unstar'],
+  ['U', 'Mark unread'], ['!', 'Mark as spam'], ['⌫ · Del · #', 'Delete (to Trash)'],
+  ['C', 'Compose'], ['/', 'Jump to search'], ['⌘ ↵', 'Send (while composing)'], ['?', 'Toggle this panel'],
+];
+function shortcutsOverlayHtml() {
+  return `<div class="mail-sc-bg" data-mail-sc-close><div class="mail-sc" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="mail-sc-h"><b>Keyboard shortcuts</b><button class="ghost" data-mail-sc-close title="Close">×</button></div>
+    <div class="mail-sc-grid">${MAIL_SHORTCUTS.map(([k, d]) => `<div class="mail-sc-row"><kbd>${esc(k)}</kbd><span>${esc(d)}</span></div>`).join('')}</div>
+    <div class="mail-sc-note">Active while browsing or reading — not while typing in a field.</div>
+  </div></div>`;
+}
 function renderMail(loading) {
   const m = state.mail;
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
@@ -979,7 +1022,7 @@ function renderMail(loading) {
   const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All${badge(totalUnseen)}</button>` : '';
   const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}${badge(unseenOf(a.id))}</button>`).join('');
   const showAcct = m.account === 'all';
-  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open._key === x._key ? 'csel' : ''}" data-mail-open="${esc(x._key)}">
+  const rows = (m.messages || []).map((x) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${m.open && m.open._key === x._key ? 'csel' : (m.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${showAcct ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span></span>
@@ -1011,7 +1054,7 @@ function renderMail(loading) {
   }
   $('#pane').innerHTML = `
     <div class="pane-head home-head"><h1>Mail</h1>
-      <div class="mail-head-act"><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
+      <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${accTabs ? `<div class="mail-atabs">${accTabs}</div>` : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
     <div class="mail-tools">
@@ -1022,7 +1065,8 @@ function renderMail(loading) {
     <div class="mail-layout ${m.open || m.composing ? 'reading' : ''}">
       <div class="mail-list-col">${list}</div>
       <div class="mail-reader">${reader}</div>
-    </div>`;
+    </div>
+    ${m.shortcuts ? shortcutsOverlayHtml() : ''}`;
   if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html); }
 }
 
@@ -1597,15 +1641,32 @@ document.addEventListener('keydown', (e) => {
   // ⌥⌘T / ⌥⌘W - the browser owns ⌘T/⌘W, so tabs use the Option variant.
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyT') { e.preventDefault(); newTab(); return; }
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyW') { e.preventDefault(); closeTab(state.activeTab); return; }
-  // Mail: R replies to sender, A replies to all - while reading, not while typing.
-  if (!e.metaKey && !e.ctrlKey && !e.altKey && state.view.type === 'mail' && state.mail && state.mail.open && !state.mail.composing) {
+  // Mail compose: ⌘/Ctrl + Enter sends.
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && state.view.type === 'mail' && state.mail && state.mail.composing) {
+    const form = document.getElementById('mail-compose-form');
+    if (form) { e.preventDefault(); form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); return; }
+  }
+  // Mail single-key shortcuts - while browsing or reading, never while typing.
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && state.view.type === 'mail' && state.mail && !state.mail.composing) {
     const editing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
-    if (!editing && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); mailReplyStart(false); return; }
-    if (!editing && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); mailReplyStart(true); return; }
-    if (!editing && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); mailMoveTo(state.mail.open._key, 'Archive', 'Archived'); return; }
-    if (!editing && (e.key === 's' || e.key === 'S')) { e.preventDefault(); mailStar(state.mail.open._key); return; }
-    if (!editing && (e.key === 'Backspace' || e.key === 'Delete' || e.key === '#')) { e.preventDefault(); mailMoveTo(state.mail.open._key, 'Trash', 'Moved to Trash'); return; }
-    if (!editing && e.key === 'Escape') { e.preventDefault(); state.mail.open = null; renderMail(); return; }
+    const m = state.mail;
+    if (!editing) {
+      const active = (m.open && m.open._key) || m.sel;
+      if (e.key === '?') { e.preventDefault(); m.shortcuts = !m.shortcuts; renderMail(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else m.open = null; renderMail(); return; }
+      if (e.key === '/') { e.preventDefault(); const el = $('[data-mail-q]'); if (el) el.focus(); return; }
+      if (e.key === 'c' || e.key === 'C') { e.preventDefault(); m.composing = {}; renderMail(); setTimeout(() => $('#mc-to') && $('#mc-to').focus(), 30); return; }
+      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); mailSelMove(1); return; }
+      if (e.key === 'k' || e.key === 'K') { e.preventDefault(); mailSelMove(-1); return; }
+      if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && m.sel && !m.open) { e.preventDefault(); openMessage(m.sel); return; }
+      if (active && (e.key === 'r' || e.key === 'R')) { if (m.open) { e.preventDefault(); mailReplyStart(false); } return; }
+      if (active && (e.key === 'a' || e.key === 'A')) { if (m.open) { e.preventDefault(); mailReplyStart(true); } return; }
+      if (active && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); mailMoveTo(active, 'Archive', 'Archived'); return; }
+      if (active && (e.key === 's' || e.key === 'S')) { e.preventDefault(); mailStar(active); return; }
+      if (active && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); mailSeen(active, false); return; }
+      if (active && e.key === '!') { e.preventDefault(); mailMoveTo(active, 'Junk', 'Marked as spam'); return; }
+      if (active && (e.key === 'Backspace' || e.key === 'Delete' || e.key === '#')) { e.preventDefault(); mailMoveTo(active, 'Trash', 'Moved to Trash'); return; }
+    }
   }
   if (state.move && e.key === 'Escape') { closeMove(); return; }
   if (!state.pal.open) return;
@@ -1678,6 +1739,8 @@ document.addEventListener('click', (e) => {
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
+  if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
+  if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
   const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
