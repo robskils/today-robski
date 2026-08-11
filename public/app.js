@@ -22,7 +22,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   // Phones default to priority order (P1 first); desktop to most-recently added.
-  taskSort: (typeof window !== 'undefined' && window.innerWidth <= 820) ? { col: 'priority', dir: 'asc' } : { col: 'created', dir: 'desc' },
+  taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
   note: null, tables_open: null,
   favs: [], home: { events: [] }, cal: null, mail: null,
   tabs: [], activeTab: null,
@@ -1722,7 +1722,7 @@ document.addEventListener('click', (e) => {
 
   // tasks
   const sh = t.closest('[data-sort]');
-  if (sh) { const c = sh.dataset.sort; if (state.taskSort.col === c) state.taskSort.dir = state.taskSort.dir === 'asc' ? 'desc' : 'asc'; else state.taskSort = { col: c, dir: c === 'created' ? 'desc' : 'asc' }; rerenderCurrent(); return; }
+  if (sh) { const c = sh.dataset.sort; if (state.taskSort.col === c) state.taskSort.dir = state.taskSort.dir === 'asc' ? 'desc' : 'asc'; else state.taskSort = { col: c, dir: c === 'created' ? 'desc' : 'asc' }; try { localStorage.setItem('life.taskSort', JSON.stringify(state.taskSort)); } catch {} rerenderCurrent(); return; }
   if (t.closest('[data-show-completed]')) { state.showCompleted = true; renderTasks(); return; }
   if (t.closest('[data-hide-completed]')) { state.showCompleted = false; state.completedQuery = ''; renderTasks(); return; }
   const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
