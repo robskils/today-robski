@@ -110,7 +110,7 @@ async function imapOpen(env, acct) {
       return out;
     },
     async listRecent(limit) {
-      const r = await cmd(`FETCH ${Math.max(1, 1)}:* (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
+      const r = await cmd(`FETCH ${Math.max(1, 1)}:* (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
     },
     // A page of the mailbox, newest first, by sequence number so we only fetch
@@ -119,7 +119,7 @@ async function imapOpen(env, acct) {
     async listRange(total, offset, limit) {
       const hi = total - offset; if (hi < 1) return [];
       const lo = Math.max(1, hi - limit + 1);
-      const r = await cmd(`FETCH ${lo}:${hi} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
+      const r = await cmd(`FETCH ${lo}:${hi} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
     },
     // Full-text search (headers + body). CHARSET UTF-8 first for accented terms,
@@ -131,7 +131,7 @@ async function imapOpen(env, acct) {
       const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
       if (!ids.length) return [];
       const set = ids.slice(-limit).join(',');
-      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
     },
     async unseenCount() {
@@ -146,7 +146,7 @@ async function imapOpen(env, acct) {
       const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
       if (!ids.length) return [];
       const set = ids.slice(-limit).join(',');
-      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)])`);
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
     },
     async fetchRaw(uid) {
@@ -187,6 +187,22 @@ function parseAddr(s) {
   return m[2] ? { name: m[1].trim(), address: m[2].trim() } : { name: '', address: m[1].trim() };
 }
 function parseDate(s) { const d = new Date(s); return isNaN(d) ? s : d.toISOString(); }
+// Best-effort one-line preview from the BODY[1] peek glued after the header
+// literal. Any doubt -> '' , so a garbled/encoded part never touches the list.
+function previewSnippet(hdr) {
+  const after = (hdr.split(/BODY\[1\](?:<\d+>)?\s*/i)[1] || '').replace(/\)\s*$/, '');
+  if (!after) return '';
+  let s = after
+    .replace(/=\r?\n/g, '')                                              // QP soft breaks
+    .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/<[^>]+>/g, ' ')                                            // strip HTML tags
+    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;/gi, "'").replace(/&quot;/gi, '"')
+    .replace(/https?:\/\/\S+/g, '')                                      // links add no signal
+    .replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, ' ').trim();
+  if (/content-type:|content-transfer-encoding:|boundary=|--=?[-_]/i.test(s)) return ''; // MIME boilerplate
+  if (s.length > 40 && !/\s/.test(s)) return '';                        // base64-ish blob
+  return s.slice(0, 140);
+}
 // Parse the header-fields FETCH lines into message summaries. The header literal
 // is glued straight onto the FETCH prefix, so the first header (From) isn't at a
 // line start: strip the prefix up to the closing ] of BODY[HEADER.FIELDS (...)]
@@ -203,7 +219,7 @@ function parseFetch(lines) {
       const messageId = (grab('Message-ID').match(/<[^>]+>/) || [])[0] || '';
       const inReplyTo = (grab('In-Reply-To').match(/<[^>]+>/) || [])[0] || '';
       const references = ((grab('References') + ' ' + grab('In-Reply-To')).match(/<[^>]+>/g)) || [];
-      msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), flagged: /\\Flagged/.test(flags), from: parseAddr(grab('From')), subject: grab('Subject') || '(no subject)', date: parseDate(grab('Date')), messageId, inReplyTo, references });
+      msgs.push({ uid: Number(uid), seen: /\\Seen/.test(flags), flagged: /\\Flagged/.test(flags), from: parseAddr(grab('From')), subject: grab('Subject') || '(no subject)', date: parseDate(grab('Date')), messageId, inReplyTo, references, preview: previewSnippet(hdr) });
     }
   }
   return msgs;
