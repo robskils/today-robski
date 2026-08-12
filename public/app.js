@@ -729,14 +729,14 @@ function renderArea() {
   const openTs = tasks.filter((t) => !t.props.done).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
   const doneN = tasks.length - openTs.length;
   const tables = blocks.filter((b) => b.kind === 'table');
-  // The area's TOP-LEVEL notes land here, plus any STARRED nested note carrying
-  // this area - so a starred note-inside-a-note surfaces in its own right rather
-  // than only being reachable by drilling into its parent. Un-starred nested
-  // notes stay tucked away, keeping the landing a clean outline.
-  const notes = blocks.filter((b) => b.kind === 'note' && (!b.parent_id || (b.props && b.props.fav)));
+  // The area's TOP-LEVEL notes land here, plus any nested note whose area Robin
+  // set himself (props.areaPinned). So a note-inside-a-note he deliberately tags
+  // with this area surfaces in its own right, while nested notes that merely
+  // inherited the area from the Tana import stay tucked away under their parent.
+  const notes = blocks.filter((b) => b.kind === 'note' && (!b.parent_id || (b.props && b.props.areaPinned)));
   const h = hueOf(area);
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
-  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}${n.props && n.props.fav ? '<span class="tc-star">★</span>' : ''}</button>`).join('');
+  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}</button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
@@ -753,8 +753,12 @@ function renderArea() {
 }
 async function setBlockArea(kind, id, areaId) {
   try {
-    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { area: areaId || null } }) });
-    const bump = (b) => { if (b) { b.props = b.props || {}; b.props.area = areaId || null; } };
+    // areaPinned marks a deliberate association (vs one inherited from import),
+    // so a nested note tagged here surfaces on the area page. Notes only.
+    const patch = { area: areaId || null };
+    if (kind === 'note') patch.areaPinned = !!areaId;
+    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: patch }) });
+    const bump = (b) => { if (b) { b.props = b.props || {}; b.props.area = areaId || null; if (kind === 'note') b.props.areaPinned = !!areaId; } };
     if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
     if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
     toast(areaId ? 'Life area set' : 'Life area cleared');
@@ -2074,7 +2078,7 @@ function saveTableSort() {
   const s = state.tables.find((x) => x.id === t.id); if (s) { s.props = s.props || {}; s.props.sorts = sorts; }
   api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { sorts } }) }).catch((e) => toast(e.message));
 }
-function setSorts(sorts) { state.tables_view.sorts = sorts; renderTable(); saveTableSort(); }
+function setSorts(sorts) { state.tables_view.sorts = sorts; state.tables_view.newRow = null; renderTable(); saveTableSort(); }
 const DIR_LABELS = (type) => type === 'number' ? ['1 → 9', '9 → 1'] : type === 'date' ? ['Old → New', 'New → Old'] : type === 'checkbox' ? ['Unticked first', 'Ticked first'] : ['A → Z', 'Z → A'];
 // Hidden columns: a list of column ids on the table's props. Hiding only affects
 // the grid; the data stays (still editable via the expanded row card) and the
@@ -2131,7 +2135,12 @@ function matchesQuery(r) {
 }
 function visibleRows() {
   const filters = state.tables_view.filters || [];
-  return sortRows(state.tables_rows).filter((r) => matchesQuery(r) && filters.every((f) => matchesFilter(r, f)));
+  const rows = sortRows(state.tables_rows).filter((r) => matchesQuery(r) && filters.every((f) => matchesFilter(r, f)));
+  // A just-added row is pinned to the top so it's visible to fill in (a blank
+  // row otherwise sorts to the bottom). The pin drops on re-sort or reopen.
+  const nid = state.tables_view.newRow;
+  if (nid) { const i = rows.findIndex((r) => r.id === nid); if (i > 0) { const [row] = rows.splice(i, 1); rows.unshift(row); } }
+  return rows;
 }
 function tableBodyHtml() {
   const c = visibleCols();
@@ -2209,7 +2218,7 @@ function renderTable() {
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${nSort > 1 || vw.sorting ? 'on' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort > 1 ? ` · ${nSort}` : ''}</button>
       <button class="tbl-filter-btn ${nFilt || vw.filtering ? 'on' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
-      <button class="add-btn wide tbl-add-row" data-add-row title="Add a row">+ Row</button>
+      <button class="add-btn wide tbl-add-row" data-add-row title="Add a new row">+ New</button>
     </div>
     <div id="tbl-sort-panel">${vw.sorting ? sortPanelHtml() : ''}</div>
     <div id="tbl-filter-panel">${vw.filtering ? filterPanelHtml() : ''}</div>
@@ -3021,7 +3030,8 @@ async function noteToTable() {
 }
 async function addRow() {
   const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: state.tables_open.id, props: { values: {} } }) });
-  state.tables_rows.push(r);
+  state.tables_rows.unshift(r);
+  state.tables_view.newRow = r.id;   // pin to the top until re-sorted or reopened
   // A brand-new blank row matches no search or filter, so it would vanish the
   // instant it's added. Clear them so the row you just asked for is visible.
   state.tables_view.query = ''; state.tables_view.filters = []; state.tables_view.filtering = false;

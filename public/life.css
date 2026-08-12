@@ -214,8 +214,10 @@ button { cursor:pointer; background:none; border:0; }
 
 .tbl-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
 table.recs { border-collapse:collapse; width:100%; font-size:16px; }
-/* Fixed layout so the colgroup widths are honoured (resizable columns). */
-table.recs.fixed { table-layout:fixed; }
+/* Fixed layout so the colgroup widths are honoured (resizable columns). Size the
+   table to the sum of its columns (max-content) rather than 100%, so resizing one
+   column changes only that column and the total width - never the others. */
+table.recs.fixed { table-layout:fixed; width:max-content; }
 table.recs th { position:relative; }
 table.recs th, table.recs td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:0; text-align:left; vertical-align:middle; overflow:hidden; }
 /* Drag handle straddling each header's right border. */
@@ -1145,7 +1147,8 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
 .ac-open { display:flex; align-items:center; gap:11px; flex:1; min-width:0; text-align:left; color:inherit; font-size:17px; }
 .area-card .star, .area-hero .star { position:static; opacity:0; }
 .area-card:hover .star, .area-card .star.on, .area-hero .star, .area-hero .star.on { opacity:1; }
-.area-hero-top { display:flex; align-items:center; justify-content:space-between; }
+.area-hero-top { display:flex; align-items:center; gap:4px; }
+.area-hero-top .star { margin-left:auto; }
 
 /* ── calendar ────────────────────────────────────────── */
 .cal-head { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
