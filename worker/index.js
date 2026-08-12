@@ -756,15 +756,18 @@ async function runDailyBrief(env, { force = false } = {}) {
   }
 
   try {
+    const cfg = await getLaneConfig(env);
     const [cal, quote, tasksRes] = await Promise.all([
       calendarEvents(env, now.date),
       quoteForDay(env, now.date),
-      // Every open P1. Ordered oldest first: a P1 that has sat for a month is
-      // the one that most deserves to be read first.
+      // Every open P1, from native Robski Life task blocks (Tana is out of the
+      // loop now). Oldest first: a P1 that has sat for a month deserves reading.
       env.DB.prepare(
-        `SELECT title, lane FROM tasks
-          WHERE done = 0 AND priority = 'P1'
-          ORDER BY created IS NULL, created LIMIT 25`,
+        `SELECT title, props, created_at FROM blocks
+          WHERE kind = 'task' AND archived = 0
+            AND json_extract(props, '$.priority') = 'P1'
+            AND IFNULL(json_extract(props, '$.done'), 0) != 1
+          ORDER BY created_at IS NULL, created_at LIMIT 25`,
       ).all(),
     ]);
 
@@ -773,10 +776,11 @@ async function runDailyBrief(env, { force = false } = {}) {
     if (cal.error) console.error('brief calendar:', cal.error);
 
     const labels = Object.fromEntries(LANES.map((l) => [l.key, l.label]));
-    const tasks = (tasksRes.results || []).map((t) => ({
-      title: t.title,
-      lane_label: t.lane && t.lane !== 'other' ? labels[t.lane] : null,
-    }));
+    const tasks = (tasksRes.results || []).map((t) => {
+      let p = {}; try { p = JSON.parse(t.props || '{}'); } catch {}
+      const lane = laneForAreaId(cfg.areaMap, p.area);
+      return { title: t.title, lane_label: lane && lane !== 'other' ? (labels[lane] || null) : null };
+    });
 
     const payload = { day: now.date, events: cal.events, tasks, quote };
     const subject = briefSubject(payload);
