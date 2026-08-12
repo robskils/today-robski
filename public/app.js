@@ -848,7 +848,7 @@ async function mailUnblock(address, accountId) {
 }
 async function openMail() {
   state.view = { type: 'mail' };
-  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {} };
+  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), mailboxes: [], moveMenu: null };
   renderNav(); renderMail(true);
   try {
     state.mail.accounts = await mailApi('/accounts');
