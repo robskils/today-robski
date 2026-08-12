@@ -826,6 +826,41 @@ async function mailSeen(key, seen) {
   try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen }) }); }
   catch (e) { toast(e.message); }
 }
+// ── multi-select triage + move-to-folder ──
+function mailToggleSelect(key) { const s = state.mail.selected; if (s.has(key)) s.delete(key); else s.add(key); renderMail(); }
+function mailMoveMenuHtml() {
+  const mm = state.mail.moveMenu; if (!mm) return '';
+  const std = ['Archive', 'Junk', 'Trash', 'INBOX'];
+  const found = (state.mail.mailboxes || []).map((b) => b.path).filter(Boolean);
+  const seen = new Set(); const cur = (state.mail.mailbox || '').toLowerCase();
+  const folders = [...std, ...found].filter((p) => p && p.toLowerCase() !== cur && !seen.has(p.toLowerCase()) && seen.add(p.toLowerCase()));
+  return `<div class="mail-movebg" data-mail-move-close><div class="mail-move" style="top:${mm.y}px;left:${mm.x}px" role="menu">
+    <div class="mail-move-h">Move ${mm.keys.length} to…</div>
+    ${folders.map((p) => `<button class="mail-move-item" data-mail-move-to="${esc(p)}">${esc(p === 'INBOX' ? 'Inbox' : p)}</button>`).join('')}
+  </div></div>`;
+}
+function openMoveMenu(keys, anchor) {
+  const r = anchor ? anchor.getBoundingClientRect() : { left: 240, bottom: 200 };
+  state.mail.moveMenu = { keys: [...keys], x: Math.min(r.left, window.innerWidth - 250), y: r.bottom + 6 };
+  renderMail();
+}
+async function mailMoveTargets(keys, target) {
+  const list = [...keys]; state.mail.moveMenu = null;
+  for (const k of list) { const row = mailRow(k); if (!row) continue; try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) }); } catch (e) { toast(e.message); } }
+  state.mail.messages = (state.mail.messages || []).filter((m) => !list.includes(m._key));
+  list.forEach((k) => state.mail.selected.delete(k));
+  if (state.mail.open && list.includes(state.mail.open._key)) state.mail.open = null;
+  toast(`Moved ${list.length} to ${target === 'INBOX' ? 'Inbox' : target}`); renderMail();
+}
+async function mailBulk(action) {
+  if (action === 'clear') { state.mail.selected = new Set(); renderMail(); return; }
+  const keys = [...(state.mail.selected || [])]; if (!keys.length) return;
+  if (action === 'move') { openMoveMenu(keys, document.querySelector('[data-mail-bulk="move"]')); return; }
+  if (action === 'archive') return mailMoveTargets(keys, 'Archive');
+  if (action === 'delete') { if (!confirm(`Move ${keys.length} message${keys.length === 1 ? '' : 's'} to Trash?`)) return; return mailMoveTargets(keys, 'Trash'); }
+  if (action === 'star') { for (const k of keys) { const row = mailRow(k); if (row && !row.flagged) await mailStar(k); } state.mail.selected = new Set(); renderMail(); return; }
+  if (action === 'read' || action === 'unread') { for (const k of keys) await mailSeen(k, action === 'read'); state.mail.selected = new Set(); renderMail(); return; }
+}
 async function mailBlock(key, address) {
   const row = mailRow(key); if (!row) return;
   if (!address) { toast('No sender address to block'); return; }
@@ -855,11 +890,14 @@ async function openMail() {
     if (!state.mail.accounts.length) { renderMailAccounts('Add a mailbox to get started.'); return; }
     // Default to the unified All-accounts inbox when there's more than one box.
     if (!state.mail.account) state.mail.account = state.mail.accounts.length > 1 ? 'all' : state.mail.accounts[0].id;
+    // Cache the folder list (for "Move to folder") from the active/first account.
+    const primary = state.mail.account !== 'all' ? state.mail.account : state.mail.accounts[0].id;
+    mailApi(`/mailboxes?account=${primary}`).then((mb) => { state.mail.mailboxes = Array.isArray(mb) ? mb : []; }).catch(() => {});
     await loadMessages();
   } catch (e) { state.mail.error = e.message; renderMail(); }
 }
 async function loadMessages() {
-  state.mail.open = null; state.mail.composing = false; renderMail(true);
+  state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; renderMail(true);
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
   const all = state.mail.account === 'all';
   const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
@@ -1127,7 +1165,8 @@ function buildThreads(msgs) {
 }
 const threadFrom = (th) => [...new Set(th.messages.map((x) => mailFrom(x) || '(unknown)'))].slice(0, 3).join(', ');
 // One message row (shared by flat view, single-message threads, and expanded children).
-const mailRowHtml = (x, child) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
+const mailRowHtml = (x, child) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
+    <span class="mail-check ${state.mail.selected && state.mail.selected.has(x._key) ? 'on' : ''}" data-mail-check="${esc(x._key)}" title="Select">${state.mail.selected && state.mail.selected.has(x._key) ? '✓' : ''}</span>
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span>
@@ -1213,7 +1252,7 @@ function renderMail(loading) {
     const o = m.open;
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
-        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">Archive</button><button class="ghost" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${esc(o._key)}">Delete</button></span></div>
+        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">Archive</button><button class="ghost" data-mail-move-one="${esc(o._key)}" title="Move to a folder">Move</button><button class="ghost" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${esc(o._key)}">Delete</button></span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
@@ -1239,11 +1278,22 @@ function renderMail(loading) {
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
-    <div class="mail-layout ${m.open || m.composing ? 'reading' : ''}">
+    ${(m.selected && m.selected.size && !m.open && !m.composing) ? `<div class="mail-bulkbar">
+      <span class="mail-bulk-n">${m.selected.size} selected</span>
+      <button class="ghost" data-mail-bulk="archive">Archive</button>
+      <button class="ghost" data-mail-bulk="read">Mark read</button>
+      <button class="ghost" data-mail-bulk="unread">Mark unread</button>
+      <button class="ghost" data-mail-bulk="star">Star</button>
+      <button class="ghost" data-mail-bulk="move">Move…</button>
+      <button class="ghost" data-mail-bulk="delete">Delete</button>
+      <button class="ghost mail-bulk-x" data-mail-bulk="clear">Cancel</button>
+    </div>` : ''}
+    <div class="mail-layout ${m.open || m.composing ? 'reading' : ''} ${(m.selected && m.selected.size) ? 'selecting' : ''}">
       <div class="mail-list-col">${list}</div>
       <div class="mail-reader">${reader}</div>
     </div>
-    ${m.shortcuts ? shortcutsOverlayHtml() : ''}`;
+    ${m.shortcuts ? shortcutsOverlayHtml() : ''}
+    ${m.moveMenu ? mailMoveMenuHtml() : ''}`;
   if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html); }
 }
 
@@ -1933,12 +1983,17 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
   const mjoin = t.closest('[data-mail-join]'); if (mjoin) { window.open(mjoin.dataset.mailJoin, '_blank', 'noopener'); return; }
   if (t.closest('[data-mail-invite-add]')) { mailInviteAdd(); return; }
+  const mchk = t.closest('[data-mail-check]'); if (mchk) { e.preventDefault(); e.stopPropagation(); mailToggleSelect(mchk.dataset.mailCheck); return; }   // select box sits inside the row button
+  const mbulk = t.closest('[data-mail-bulk]'); if (mbulk) { mailBulk(mbulk.dataset.mailBulk); return; }
+  const mmto = t.closest('[data-mail-move-to]'); if (mmto) { const mm = state.mail.moveMenu; if (mm) mailMoveTargets(mm.keys, mmto.dataset.mailMoveTo); return; }
+  const mmone = t.closest('[data-mail-move-one]'); if (mmone) { openMoveMenu([mmone.dataset.mailMoveOne], mmone); return; }
+  if (t.closest('[data-mail-move-close]') && !t.closest('.mail-move')) { state.mail.moveMenu = null; renderMail(); return; }
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
   const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
   const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(mblk.dataset.mailBlock, mblk.dataset.mailFrom || ''); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
-  const mo = t.closest('[data-mail-open]'); if (mo) { openMessage(mo.dataset.mailOpen); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
   if (t.closest('[data-mail-cancel]')) { saveDraft(); state.mail.composing = false; renderMail(); return; }
