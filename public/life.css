@@ -510,6 +510,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ev-time { color:var(--ink-3); font-variant-numeric:tabular-nums; font-size:15px; }
 .ev-t { min-width:0; font-size:16.5px; overflow-wrap:anywhere; }
 .ev-loc { grid-column:2; min-width:0; color:var(--ink-3); font-size:14px; overflow-wrap:anywhere; }
+.ev-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:9px; vertical-align:middle; background:hsl(var(--h,220) var(--lane-s) var(--lane-l)); flex:none; }
+.ev-slot.done .ev-t { color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--line-2); }
 
 /* Quick-launch row above Favourites: go to each index, or + to create. */
 .home-nav { display:flex; gap:10px; margin:4px 0 30px; flex-wrap:wrap; align-items:stretch; }

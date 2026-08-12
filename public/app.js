@@ -405,18 +405,40 @@ async function openHome() {
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
   ]);
-  state.favs = favs; state.home = { events: day.events || [], notepad: (pad && pad.value) || '' };
+  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '' };
   renderNav(); renderHome();
+}
+// Home "Today" = calendar events + the blocks placed on the Today tool (timed
+// practices and task-bearing slots), merged and sorted by time. A slot that
+// carries Life tasks lists them; a bare practice shows the block on its own.
+// This is the "bits added to Today but not the calendar" Robin wanted surfaced.
+function homeTodayItems() {
+  const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
+  const items = (state.home.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location }));
+  for (const s of state.home.slots || []) {
+    const hue = hues[s.lane] ?? 0;
+    const tasks = (s.tasks || []).filter((t) => t && t.title);
+    if (!s.practice && tasks.length) {
+      // One row per task the slot carries, so a busy block reads as its tasks.
+      tasks.forEach((t) => items.push({ kind: 'slot', start_min: s.start_min ?? null, sort: s.start_min ?? 100000, hue, title: t.title, done: !!t.done }));
+    } else {
+      items.push({ kind: 'slot', start_min: s.start_min ?? null, sort: s.start_min ?? 100000, hue, title: s.title || 'Block', done: !!s.done, badge: s.practice ? 'practice' : null });
+    }
+  }
+  return items.sort((a, b) => a.sort - b.sort);
 }
 function renderHome() {
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
+  const todayItems = homeTodayItems();
   // Compact cards, grouped by kind (Tasks, Notes, Tables, Life areas).
   const favGroups = ['task', 'note', 'table', 'area'].map((k) => {
     const list = favs.filter((f) => f.kind === k); if (!list.length) return '';
     return `<div class="fav-group"><div class="fav-group-h">${KIND_LABEL[k]}</div><div class="fav-cards">${list.map((f) => `<div class="fav-card"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${KIND_IC[f.kind] || '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`).join('')}</div></div>`;
   }).join('');
-  const evRows = ev.map((e) => `<div class="ev-row"><span class="ev-time">${e.allDay ? 'all day' : hhmm(e.start_min)}</span><span class="ev-t">${esc(e.title)}</span>${e.location ? `<span class="ev-loc">${esc(e.location)}</span>` : ''}</div>`).join('');
+  const evRows = todayItems.map((it) => it.kind === 'event'
+    ? `<div class="ev-row"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}</span><span class="ev-t">${esc(it.title)}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`
+    : `<div class="ev-row ev-slot${it.done ? ' done' : ''}"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
   $('#pane').innerHTML = `
     <div class="home">
       <div class="home-head">
@@ -437,7 +459,7 @@ function renderHome() {
         <div class="home-main">
           <section class="home-sec">
             <div class="home-sec-h">Today</div>
-            <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
+            <div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>
           </section>
           <section class="home-sec">
             <div class="home-sec-h">Favourites</div>
