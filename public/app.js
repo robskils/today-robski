@@ -2195,6 +2195,35 @@ document.addEventListener('drop', (e) => {
 });
 document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); dragFav = null; dragSec = null; });
 
+// ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
+let mailSwipe = null;
+const SWIPE_GO = 72;
+document.addEventListener('touchstart', (e) => {
+  if (state.view.type !== 'mail' || !state.mail || state.mail.open || state.mail.composing || (state.mail.selected && state.mail.selected.size)) return;
+  const row = e.target.closest && e.target.closest('.mail-row[data-mail-open]');
+  if (!row || row.classList.contains('mail-thread')) return;
+  const t = e.touches[0];
+  mailSwipe = { row, x: t.clientX, y: t.clientY, key: row.dataset.mailOpen, dx: 0, active: false };
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+  if (!mailSwipe) return;
+  const t = e.touches[0]; const dx = t.clientX - mailSwipe.x, dy = t.clientY - mailSwipe.y;
+  if (!mailSwipe.active) { if (Math.abs(dx) < 10) return; if (Math.abs(dy) > Math.abs(dx)) { mailSwipe = null; return; } mailSwipe.active = true; mailSwipe.row.style.transition = 'none'; }
+  mailSwipe.dx = dx; mailSwipe.row.style.transform = `translateX(${dx}px)`;
+  mailSwipe.row.dataset.swipe = dx <= -SWIPE_GO ? 'archive' : dx >= SWIPE_GO ? 'delete' : '';
+  e.preventDefault();
+}, { passive: false });
+function endMailSwipe() {
+  if (!mailSwipe) return; const s = mailSwipe; mailSwipe = null;
+  if (!s.active) return;
+  s.row.style.transition = 'transform .2s ease';
+  if (s.dx <= -SWIPE_GO) { s.row.style.transform = 'translateX(-100%)'; setTimeout(() => mailMoveTo(s.key, 'Archive', 'Archived'), 170); }
+  else if (s.dx >= SWIPE_GO) { s.row.style.transform = 'translateX(100%)'; setTimeout(() => mailMoveTo(s.key, 'Trash', 'Moved to Trash'), 170); }
+  else { s.row.style.transform = ''; s.row.removeAttribute('data-swipe'); }
+}
+document.addEventListener('touchend', endMailSwipe);
+document.addEventListener('touchcancel', endMailSwipe);
+
 // column resize (pointer)
 let resizing = null;
 document.addEventListener('pointerdown', (e) => {
