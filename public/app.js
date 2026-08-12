@@ -495,7 +495,7 @@ function renderHome() {
         <span class="hn-group"><button class="hn-btn" data-open-mail><span class="hn-ic">✉</span>Mail</button><button class="hn-plus" data-quick-add="mail" title="New email">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-notes><span class="hn-ic">▤</span>Notes</button><button class="hn-plus" data-new-note title="New note">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-tables><span class="hn-ic">▦</span>Tables</button><button class="hn-plus" data-new-table title="New table">+</button></span>
-        <span class="hn-group"><button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button><button class="hn-plus" data-new-area title="New life area">+</button></span>
+        <button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button>
       </nav>
       <div class="home-body">
         <div class="home-main">
