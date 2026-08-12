@@ -1051,6 +1051,35 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
 /* Internal links (to another Robski Life page) read as a subtle dotted underline. */
 .prose a.rl-link { text-decoration:none; border-bottom:1px dashed color-mix(in srgb,var(--accent) 55%,transparent); cursor:pointer; }
 .prose a.rl-link:hover { border-bottom-style:solid; }
+
+/* ── Journal ─────────────────────────────────────────── */
+.j-list { display:flex; flex-direction:column; gap:10px; }
+.j-card { display:flex; flex-direction:column; align-items:flex-start; gap:5px; width:100%; text-align:left; padding:15px 18px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s, transform .06s; }
+.j-card:hover { border-color:var(--accent); }
+.j-card:active { transform:scale(.997); }
+.j-card-date { font-weight:600; font-size:16px; color:var(--ink); }
+.j-card-snip { color:var(--ink-2); font-size:14.5px; line-height:1.5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.j-card-mode { font-size:12.5px; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:3px 10px; }
+/* New-entry prompt picker */
+.j-picker { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:20px 22px; margin-bottom:18px; }
+.j-picker-h { font-size:17px; font-weight:600; color:var(--ink); margin-bottom:16px; }
+.j-mode { margin-bottom:18px; }
+.j-mode-h { display:flex; align-items:center; gap:8px; font-size:13px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); font-weight:600; margin-bottom:9px; }
+.j-mode-ic { font-size:15px; }
+.j-prompts { display:flex; flex-direction:column; gap:7px; }
+.j-prompt-chip { text-align:left; width:100%; padding:11px 14px; border:1px solid var(--line-2); border-radius:11px; background:var(--paper); color:var(--ink); font-size:15.5px; line-height:1.45; cursor:pointer; transition:border-color .12s, background .12s; }
+.j-prompt-chip:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--paper)); }
+.j-picker-cancel { margin-top:4px; }
+/* Entry view */
+.j-entry { max-width:760px; }
+.j-entry-head { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:8px; }
+.j-entry-date { font-size:clamp(22px,2.6vw,30px); margin:0; }
+.j-entry .prose blockquote { border-left:3px solid var(--accent); background:color-mix(in srgb,var(--accent) 6%,transparent); margin:14px 0; padding:10px 16px; border-radius:0 10px 10px 0; color:var(--ink); font-weight:500; font-style:normal; }
+.j-deeper-bar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+.j-deeper { width:auto; white-space:nowrap; padding:11px 20px; background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); }
+.j-deeper:hover { background:color-mix(in srgb,var(--accent) 22%,transparent); }
+.j-deeper:disabled { opacity:.6; cursor:default; }
+.j-deeper-hint { color:var(--ink-3); font-size:13.5px; max-width:420px; line-height:1.4; }
 .prose code { font-family:ui-monospace,Menlo,monospace; font-size:.9em; background:var(--paper-2); padding:2px 6px; border-radius:5px; }
 .prose blockquote { border-left:3px solid var(--line-2); padding-left:16px; margin:0 0 14px; color:var(--ink-2); font-style:italic; }
 .prose ul, .prose ol { margin:0 0 14px; padding-left:26px; }

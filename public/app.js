@@ -146,6 +146,7 @@ function labelForView(v) {
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
+    case 'journal': return 'Journal'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Journal';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     default: return 'Home';
@@ -156,6 +157,7 @@ function openView(v) {
     case 'tasks': return openTasks(); case 'taskcard': return openTaskCard(v.id);
     case 'calendar': return openCalendar(); case 'mail': return openMail(); case 'today': return openToday();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
+    case 'journal': return openJournal(); case 'journalentry': return openJournalEntry(v.id);
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     default: return openHome();
@@ -332,6 +334,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span> Calendar<span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
     <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span> Mail<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span> Notes<span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
+    <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span> Journal<span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
       <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
       <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
     </div>
@@ -349,6 +352,7 @@ async function quickAdd(kind) {
     else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
+    else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
   } catch (e) { toast(e.message); }
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
@@ -514,6 +518,143 @@ function renderNotesList() {
     <input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All notes · ${state.noteTops.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'No notes match.' : 'No notes yet.'}</div>`}</div></section>`;
+}
+
+// ── Journal ──────────────────────────────────────────
+// Entries are top-level blocks (kind 'journal') with props {date, mode, prompt}.
+// The prompt and any "Dig deeper" question live in the body as <blockquote>s;
+// answers are ordinary paragraphs. Nothing leaves the device unless Dig deeper
+// is pressed (see /api/journal/deepen).
+const JOURNAL_MODES = [
+  { key: 'reflect', label: 'Reflect on the day', icon: '🌙', prompts: [
+    'What happened today that I want to remember?',
+    'What went well today, and what part did I play in it?',
+    'What drained me today, and what is it telling me?',
+    'What did I learn today - about the world, or about myself?',
+  ] },
+  { key: 'gratitude', label: 'Gratitude', icon: '🙏', prompts: [
+    'Three things I am grateful for right now, and why each one matters.',
+    'Who made my day a little better today, and how?',
+    'What ordinary thing would I miss most if it were suddenly gone?',
+  ] },
+  { key: 'work-through', label: 'Work through something', icon: '🌀', prompts: [
+    'What is weighing on me right now? Let me name it plainly.',
+    'What am I telling myself about this - and what is the evidence for and against it?',
+    'What here is in my control, and what is not?',
+    'If a good friend brought me this exact problem, what would I tell them?',
+  ] },
+  { key: 'intention', label: 'Set an intention', icon: '🎯', prompts: [
+    'In one sentence, what do I want tomorrow to be about?',
+    'What is the one thing that, done, would make tomorrow a win?',
+    'What obstacle is most likely to trip me up - and what is my plan for it?',
+  ] },
+  { key: 'free', label: 'Free write', icon: '✍️', prompts: [
+    'Just start writing, and do not stop to edit. See where it goes.',
+  ] },
+];
+const journalModeOf = (key) => JOURNAL_MODES.find((m) => m.key === key) || null;
+function journalDateLabel(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+function journalSnippet(n) {
+  const d = document.createElement('div'); d.innerHTML = String(n.body || '');
+  const p = [...d.querySelectorAll('p')].map((x) => x.textContent.trim()).find(Boolean);
+  return (p || d.textContent.trim() || 'Empty entry').slice(0, 120);
+}
+async function openJournal() {
+  state.view = { type: 'journal' };
+  renderNav();
+  try {
+    const entries = await api('/api/blocks?kind=journal&parent_id=');
+    entries.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
+    state.journal = { entries, picking: false };
+  } catch (e) { state.journal = { entries: [], picking: false }; toast(e.message); }
+  renderJournalList();
+}
+function renderJournalList() {
+  const j = state.journal || { entries: [] };
+  const entries = j.entries || [];
+  const picker = j.picking ? `<div class="j-picker">
+    <div class="j-picker-h">How do you want to start?</div>
+    ${JOURNAL_MODES.map((m) => `<div class="j-mode">
+      <div class="j-mode-h"><span class="j-mode-ic">${m.icon}</span>${esc(m.label)}</div>
+      <div class="j-prompts">${m.prompts.map((p) => `<button class="j-prompt-chip" data-journal-new="${esc(m.key)}" data-journal-prompt="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+    </div>`).join('')}
+    <button class="ghost j-picker-cancel" data-journal-pick-cancel>Cancel</button>
+  </div>` : '';
+  const cards = entries.map((n) => {
+    const mode = journalModeOf(n.props && n.props.mode);
+    return `<button class="j-card" data-open-jentry="${n.id}">
+      <span class="j-card-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span>
+      <span class="j-card-snip">${esc(journalSnippet(n))}</span>
+      ${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</button>`;
+  }).join('');
+  $('#pane').innerHTML = `
+    ${pageCrumb('Journal')}
+    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : '<button class="add-btn wide" data-journal-start>+ New entry</button>'}</div>
+    ${picker}
+    <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
+}
+async function startJournalEntry() {
+  if (!state.journal) await openJournal();
+  state.journal.picking = true; renderJournalList();
+}
+async function newJournalEntry(modeKey, prompt) {
+  const date = new Date().toISOString();
+  const body = `<blockquote>${esc(prompt)}</blockquote><p><br></p>`;
+  try {
+    const entry = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title: journalDateLabel(date), body, props: { date, mode: modeKey, prompt } }) });
+    state.journal = state.journal || { entries: [] };
+    state.journal.entries = state.journal.entries || []; state.journal.entries.unshift(entry);
+    await openJournalEntry(entry.id);
+  } catch (e) { toast(e.message); }
+}
+async function openJournalEntry(id) {
+  const entry = await api(`/api/blocks/${id}`);
+  state.journal = state.journal || { entries: [] };
+  state.journal.current = entry;
+  state.view = { type: 'journalentry', id };
+  renderNav(); renderJournalEntry();
+}
+function renderJournalEntry() {
+  const n = state.journal.current;
+  const mode = journalModeOf(n.props && n.props.mode);
+  const sep = '<span class="crumb-sep">›</span>';
+  const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Journal</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+      <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
+    <div class="j-entry">
+      <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
+      <div class="note-body">${proseEditor(n.body, 'journal')}</div>
+      <div class="j-deeper-bar">
+        <button class="add-btn j-deeper" data-journal-deeper>✦ Dig deeper</button>
+        <span class="j-deeper-hint">Claude reads your entry and asks one question to take it further. Use it as often as you like.</span>
+      </div>
+    </div>`;
+}
+async function journalDeepen() {
+  const n = state.journal && state.journal.current; if (!n) return;
+  const ed = document.querySelector('.prose[data-prose="journal"]');
+  const text = ed ? (ed.innerText || '').trim() : '';
+  const btn = document.querySelector('[data-journal-deeper]');
+  if (btn) { btn.disabled = true; btn.textContent = '✦ Thinking…'; }
+  try {
+    const { question } = await api('/api/journal/deepen', { method: 'POST', body: JSON.stringify({ mode: n.props && n.props.mode, prompt: n.props && n.props.prompt, text }) });
+    if (ed && question) {
+      ed.insertAdjacentHTML('beforeend', `<blockquote>${esc(question)}</blockquote><p><br></p>`);
+      saveProse('journal', ed.innerHTML);
+      const p = ed.lastElementChild;
+      if (p) { const r = document.createRange(); r.selectNodeContents(p); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); ed.focus(); p.scrollIntoView({ block: 'center' }); }
+    }
+  } catch (e) { toast(e.message); }
+  finally { const b = document.querySelector('[data-journal-deeper]'); if (b) { b.disabled = false; b.textContent = '✦ Dig deeper'; } }
+}
+async function delJournalEntry() {
+  const n = state.journal && state.journal.current; if (!n) return;
+  if (!(await uiConfirm('Delete this journal entry?', { title: 'Delete entry', okLabel: 'Delete', danger: true }))) return;
+  try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); if (state.journal.entries) state.journal.entries = state.journal.entries.filter((e) => e.id !== n.id); state.journal.current = null; await openJournal(); } catch (e) { toast(e.message); }
 }
 
 // ── view: life areas ─────────────────────────────────
@@ -2077,6 +2218,8 @@ function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0 }; r
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
 const ACTIONS = [
   { kind: 'action', title: 'New note', run: () => newNote(null) },
+  { kind: 'action', title: 'New journal entry', run: () => quickAdd('journal') },
+  { kind: 'action', title: 'Go to Journal', run: () => openJournal() },
   { kind: 'action', title: 'New table', run: () => newTable() },
   { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
   { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
@@ -2259,6 +2402,13 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openTablesList(); return; }
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
+  if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
+  const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }
+  const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
+  if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
+  if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
+  if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
@@ -2770,6 +2920,7 @@ async function saveProse(key, rawHtml) {
   if (key === 'note') { const n = state.note && state.note.current; if (!n) return; n.body = html; id = n.id; }
   else if (key === 'task') { const t = state.task_open && state.task_open.task; if (!t) return; t.body = html; id = t.id; }
   else if (key === 'row') { const r = state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)); if (!r) return; r.body = html; id = r.id; }
+  else if (key === 'journal') { const j = state.journal && state.journal.current; if (!j) return; j.body = html; id = j.id; }
   if (!id) return;
   // Reflect the linkified/sanitised HTML back into the editor once it's blurred,
   // so a freshly typed URL becomes a link. Never while focused - that would move
@@ -3149,6 +3300,7 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     const route = location.pathname.replace(/\/$/, '');
     if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
+    else if (route === '/journal') await openJournal();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
   } catch (e) { toast(e.message); renderNav(); }
 })();
