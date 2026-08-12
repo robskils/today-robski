@@ -475,6 +475,20 @@ export async function handleMail(request, env, url, json, err) {
 
     if (sub === 'move' && method === 'POST') { const b = await request.json(); const im = await imapOpen(env, acct); try { await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(b.uid, b.target || 'Trash'); return json({ ok: true }, request); } finally { await im.logout(); } }
 
+    // Empty a folder - only Spam/Junk or Trash, never the inbox. Marks every
+    // message \Deleted and expunges. The UI gates this behind a confirmation.
+    if (sub === 'empty' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const mailbox = String(b.mailbox || '');
+      if (!/^(junk|spam|trash|deleted)/i.test(mailbox) && !/(junk|spam|trash|deleted)$/i.test(mailbox)) return err('Only Spam or Trash can be emptied', request, 400);
+      const im = await imapOpen(env, acct);
+      try {
+        await im.login(); const total = await im.select(mailbox);
+        if (total) { await im.cmd('STORE 1:* +FLAGS (\\Deleted)'); await im.cmd('EXPUNGE'); }
+        return json({ ok: true, emptied: total }, request);
+      } finally { await im.logout(); }
+    }
+
     // Compose attachment: store raw bytes in R2 under a throwaway key; the send
     // route pulls them back and deletes them. name & type ride in the query.
     if (sub === 'attach' && method === 'POST') {

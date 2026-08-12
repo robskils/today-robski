@@ -191,6 +191,8 @@ function crumbNav(trail, areaId) {
     : `<button class="crumb" ${c.attr || ''}>${esc(c.label)}</button>`)).join(sep);
   return `<div class="crumbbar">${back}<div class="crumbs">${t}</div>${areaLinkHtml(areaId)}</div>`;
 }
+// Breadcrumb for a top-level page: Home › <page>.
+const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
 function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); } catch {} }
 function syncActiveTab() {
   const tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
@@ -457,6 +459,7 @@ function openTablesList() {
   const favTables = state.tables.filter((t) => t.props && t.props.fav);
   const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
   $('#pane').innerHTML = `
+    ${pageCrumb('Tables')}
     <div class="pane-head home-head"><h1>Tables</h1><button class="add-btn wide" data-new-table>+ New table</button></div>
     ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All tables · ${state.tables.length}</div><div class="tbl-cards">${cards(state.tables) || '<div class="empty">No tables yet.</div>'}</div></section>`;
@@ -473,6 +476,7 @@ function renderNotesList() {
   const all = q ? state.noteTops.filter((n) => (n.title || '').toLowerCase().includes(q)) : state.noteTops;
   const cards = (list) => list.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▸</span>${esc(n.title || 'Untitled')}${areaTag(n)}</button>`).join('');
   $('#pane').innerHTML = `
+    ${pageCrumb('Notes')}
     <div class="pane-head home-head"><h1>Notes</h1><button class="add-btn wide" data-new-note>+ New note</button></div>
     <input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
@@ -499,6 +503,7 @@ function openAreasList() {
     <button class="ac-open" data-open-area="${a.id}"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span></button>
     <button class="star ${a.props && a.props.fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${a.props && a.props.fav ? '★' : '☆'}</button></div>`;
   $('#pane').innerHTML = `
+    ${pageCrumb('Life areas')}
     <div class="pane-head home-head"><h1>Life areas</h1><button class="add-btn wide" data-new-area>+ New area</button></div>
     ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="area-cards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All areas · ${state.areas.length}</div>
@@ -674,6 +679,7 @@ function renderCalendar() {
       <div class="cal-search-h"><h2>Results · ${matches.length}</h2><span class="cal-search-note">in the loaded range</span></div>
       ${matches.length ? matches.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}"><span class="cal-ag-time">${esc(prettyDate(e.date))}${e.allDay ? '' : ` · ${minToLabel(e.start_min)}`}</span><span class="cal-ag-t">${esc(e.title)}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('') : '<div class="home-empty">No events match. Move to another month to search it.</div>'}</section>`;
   $('#pane').innerHTML = `
+    ${pageCrumb('Calendar')}
     <div class="cal-head">
       <h1>${title}</h1>
       <div class="cal-nav">
@@ -786,6 +792,16 @@ async function mailMoveTo(key, target, label) {
     // previous one if we removed the last), and drop out of the reader.
     if (state.mail.sel === key) { const n = state.mail.messages[idx] || state.mail.messages[idx - 1]; state.mail.sel = n ? n._key : null; }
     state.mail.open = null; renderMail();
+  } catch (e) { toast(e.message); }
+}
+// Empty the current Spam/Trash folder (for all shown accounts). Confirmed first.
+async function mailEmptyFolder() {
+  const f = mailFolder(); if (!/junk|trash/i.test(f.mailbox)) return;
+  if (!confirm(`Permanently delete everything in ${f.label}? This cannot be undone.`)) return;
+  const accts = state.mail.account === 'all' ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
+  try {
+    for (const a of accts) await mailApi('/empty', { method: 'POST', body: JSON.stringify({ account: a.id, mailbox: f.mailbox }) });
+    toast(`${f.label} emptied`); state.mail.limit = 40; await loadMessages();
   } catch (e) { toast(e.message); }
 }
 // Move the keyboard highlight through the list; while reading, open as we go.
@@ -1210,6 +1226,7 @@ function renderMail(loading) {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
   }
   $('#pane').innerHTML = `
+    ${pageCrumb('Mail')}
     <div class="pane-head home-head"><h1>Mail</h1>
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${(m.open || m.composing) ? '' : `
@@ -1218,6 +1235,7 @@ function renderMail(loading) {
     <div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${m.threaded ? 'on' : ''}" data-mail-thread-toggle title="Group into conversations">☰ Threads</button>
+      ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
@@ -1400,6 +1418,7 @@ function renderTasks() {
         ${taskTableHtml(completedShown, cq ? 'No completed tasks match.' : 'Nothing completed yet.')}</section>`
     : (completed.length ? `<button class="ghost show-completed" data-show-completed>Show completed · ${completed.length}</button>` : '');
   $('#pane').innerHTML = `
+    ${pageCrumb('Tasks')}
     <div class="pane-head"><h1>Tasks</h1></div>
     <div class="list-head">
       <input class="list-search sel" data-task-q placeholder="Search tasks…" value="${esc(state.taskQuery || '')}" autocomplete="off">
@@ -1904,6 +1923,7 @@ document.addEventListener('click', (e) => {
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
+  if (t.closest('[data-mail-empty]')) { mailEmptyFolder(); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
   if (t.closest('[data-mail-thread-toggle]')) { state.mail.threaded = !state.mail.threaded; try { localStorage.setItem('life.mail.threaded', state.mail.threaded ? '1' : '0'); } catch {} renderMail(); return; }
