@@ -263,6 +263,16 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; }
 
 table.recs td .cell { width:100%; border:0; background:transparent; font:inherit; color:var(--ink); padding:11px 12px; }
+/* Attachments column cells */
+.tcell-atts { display:flex; flex-wrap:wrap; gap:5px; align-items:center; padding:7px 8px; }
+.tcell-att { display:inline-flex; align-items:center; gap:5px; max-width:190px; padding:3px 5px 3px 8px; border:1px solid var(--line-2); border-radius:8px; background:var(--paper-2); font-size:13px; color:var(--ink-2); cursor:pointer; transition:border-color .12s, color .12s; }
+.tcell-att:hover { border-color:var(--accent); color:var(--accent); }
+.tcell-att-ic { flex:none; }
+.tcell-att-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tcell-att-x { flex:none; color:var(--ink-3); font-size:14px; line-height:1; }
+.tcell-att-x:hover { color:var(--accent); }
+.tcell-att-add { flex:none; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px dashed var(--line-2); border-radius:8px; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; transition:border-color .12s, color .12s; }
+.tcell-att-add:hover { border-color:var(--accent); color:var(--accent); }
 table.recs td .cell:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; border-radius:4px; }
 table.recs td.num .cell { font-variant-numeric:tabular-nums; }
 table.recs td.check { text-align:center; }

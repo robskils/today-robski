@@ -2026,10 +2026,15 @@ async function moveNote(targetId) {
 }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select']];
+const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['attach', 'Attachments']];
 const tcols = () => (state.tables_open.props.columns || []);
 function cellInput(r, col) {
   const v = ((r.props && r.props.values) || {})[col.id]; const k = `${r.id}:${col.id}`;
+  if (col.type === 'attach') {
+    const list = Array.isArray(v) ? v : [];
+    const chips = list.map((a) => `<span class="tcell-att" data-tatt-open="${r.id}:${a.id}" data-tatt-name="${esc(a.name)}" data-tatt-type="${esc(a.type)}" title="${esc(a.name)}"><span class="tcell-att-ic">${attIcon(a.type)}</span><span class="tcell-att-name">${esc(a.name)}</span><button class="tcell-att-x" data-tatt-del="${r.id}:${col.id}:${a.id}" title="Remove">×</button></span>`).join('');
+    return `<div class="tcell-atts">${chips}<label class="tcell-att-add" title="Add file"><input type="file" multiple hidden data-tatt-input="${r.id}:${col.id}">+</label></div>`;
+  }
   if (col.type === 'checkbox') return `<input type="checkbox" data-cell="${k}" ${v ? 'checked' : ''}>`;
   if (col.type === 'number') return `<input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
@@ -2054,10 +2059,11 @@ function sortRows(rows) {
     const raw = (r) => ((r.props && r.props.values) || {})[s.colId];
     const va = raw(a), vb = raw(b);
     if (col.type !== 'checkbox') {
-      const ea = va == null || va === '', eb = vb == null || vb === '';
+      const empty = (x) => x == null || x === '' || (Array.isArray(x) && !x.length);
+      const ea = empty(va), eb = empty(vb);
       if (ea && eb) return 0; if (ea) return 1; if (eb) return -1; // empties last, either direction
     }
-    const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
+    const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'attach' ? (Array.isArray(v) ? v.length : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
     const na = norm(va), nb = norm(vb);
     return na < nb ? -dir : na > nb ? dir : 0;
   };
@@ -2126,8 +2132,11 @@ function matchesQuery(r) {
   const q = (state.tables_view.query || '').trim().toLowerCase();
   if (!q) return true;
   const vals = (r.props && r.props.values) || {};
-  return tcols().some((col) => col.type !== 'checkbox' && String(vals[col.id] ?? '').toLowerCase().includes(q))
-    || String(r.body || '').toLowerCase().includes(q);
+  return tcols().some((col) => {
+    if (col.type === 'checkbox') return false;
+    if (col.type === 'attach') return (Array.isArray(vals[col.id]) ? vals[col.id] : []).some((a) => String(a.name || '').toLowerCase().includes(q));
+    return String(vals[col.id] ?? '').toLowerCase().includes(q);
+  }) || String(r.body || '').toLowerCase().includes(q);
 }
 function visibleRows() {
   const filters = state.tables_view.filters || [];
@@ -2458,6 +2467,8 @@ document.addEventListener('click', (e) => {
   // attachments (delete wins over open since the × sits inside the tile)
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
+  const tad = t.closest('[data-tatt-del]'); if (tad) { e.preventDefault(); e.stopPropagation(); const [rid, cid, aid] = tad.dataset.tattDel.split(':'); delCellAttachment(rid, cid, aid); return; }
+  const tao = t.closest('[data-tatt-open]'); if (tao) { const [rid, aid] = tao.dataset.tattOpen.split(':'); openTableAttachment(rid, aid, tao.dataset.tattName, tao.dataset.tattType); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
@@ -2620,6 +2631,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
+  const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const r = $('#ce-timerow'); if (r) r.hidden = e.target.checked; }
   // Table filters
@@ -2945,6 +2957,39 @@ async function uploadFiles(blockId, files) {
     } catch (e) { toast('Upload failed: ' + e.message); }
   }
   if (ok) { rerenderHost(); loadThumbs(); }
+}
+// Table-cell attachments: bytes stored in R2 under the row block, metadata in the
+// cell's value list (props.values[colId]) via the ?col= param.
+async function uploadCellFiles(key, files) {
+  const [rowId, colId] = key.split(':');
+  const row = state.tables_rows.find((r) => r.id === rowId); if (!row) return;
+  row.props = row.props || {}; row.props.values = row.props.values || {};
+  let ok = 0;
+  for (const f of Array.from(files)) {
+    try {
+      const res = await fetch(`/api/blocks/${rowId}/attachments?col=${encodeURIComponent(colId)}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: f });
+      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
+      const att = await res.json();
+      row.props.values[colId] = [...(Array.isArray(row.props.values[colId]) ? row.props.values[colId] : []), att];
+      ok++;
+    } catch (e) { toast('Upload failed: ' + e.message); }
+  }
+  if (ok) renderTable();
+}
+async function openTableAttachment(rowId, attId, name, type) {
+  try {
+    const url = await attUrl(rowId, { id: attId });
+    const a = document.createElement('a'); a.href = url;
+    if (isImgType(type) || type === 'application/pdf') { a.target = '_blank'; a.rel = 'noopener'; } else a.download = name || 'file';
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { toast(e.message); }
+}
+async function delCellAttachment(rowId, colId, attId) {
+  const row = state.tables_rows.find((r) => r.id === rowId); if (!row) return;
+  try { await api(`/api/attachments/${rowId}/${attId}?col=${encodeURIComponent(colId)}`, { method: 'DELETE' }); } catch (e) { toast(e.message); return; }
+  if (row.props && row.props.values && Array.isArray(row.props.values[colId])) row.props.values[colId] = row.props.values[colId].filter((a) => a.id !== attId);
+  renderTable();
 }
 async function deleteAttachment(blockId, attId) {
   const host = attHost(); if (!host) return;

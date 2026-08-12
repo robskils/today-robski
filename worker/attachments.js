@@ -41,7 +41,16 @@ export async function handleAttachments(request, env, url, json, err) {
       customMetadata: { name },
     });
     const att = { id: attId, name, type, size: buf.byteLength, uploaded_at: new Date().toISOString() };
-    props.attachments = [...(Array.isArray(props.attachments) ? props.attachments : []), att];
+    // With ?col=, the attachment belongs to a table cell (props.values[col] list);
+    // otherwise it's a block-level attachment (props.attachments).
+    const col = url.searchParams.get('col');
+    if (col) {
+      props.values = props.values && typeof props.values === 'object' ? props.values : {};
+      const arr = Array.isArray(props.values[col]) ? props.values[col] : [];
+      props.values[col] = [...arr, att];
+    } else {
+      props.attachments = [...(Array.isArray(props.attachments) ? props.attachments : []), att];
+    }
     await saveProps(env, blockId, props);
     return json(att, request, 201);
   }
@@ -65,7 +74,12 @@ export async function handleAttachments(request, env, url, json, err) {
     await env.ATTACHMENTS.delete(keyFor(blockId, attId));
     const props = await loadProps(env, blockId);
     if (props) {
-      props.attachments = (props.attachments || []).filter((a) => a.id !== attId);
+      const col = url.searchParams.get('col');
+      if (col && props.values && Array.isArray(props.values[col])) {
+        props.values[col] = props.values[col].filter((a) => a.id !== attId);
+      } else {
+        props.attachments = (props.attachments || []).filter((a) => a.id !== attId);
+      }
       await saveProps(env, blockId, props);
     }
     return json({ ok: true }, request);
