@@ -1457,6 +1457,7 @@ function renderNote() {
       <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
+      <button class="ghost" data-note-to-table title="Create a table from this note's lines">To table</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <div class="note-layout">
       <div class="note-main">
@@ -1977,6 +1978,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
+  if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
   // tasks
   const sh = t.closest('[data-sort]');
@@ -2379,6 +2381,44 @@ async function delNote() {
   const n = state.note.current; if (!confirm(`Delete “${n.title || 'Untitled'}”?`)) return;
   const parent = state.note.path.length > 1 ? state.note.path[state.note.path.length - 2].id : null;
   try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); state.noteTops = state.noteTops.filter((t) => t.id !== n.id); if (parent) await openNote(parent); else await openNotesList(); } catch (e) { toast(e.message); }
+}
+// Turn a note into a table: each block (bullet/paragraph/heading) becomes a row.
+// If every line splits cleanly on a delimiter (| , tab, " - ", ": ", ","), those
+// become columns with the first line as headers; otherwise a single "Name" column.
+// Non-destructive: the note is kept so nothing is lost.
+async function noteToTable() {
+  const n = state.note.current; if (!n) return;
+  // One line per bullet/paragraph/heading: turn <br> and block ends into
+  // newlines, strip tags + leading markdown, decode entities. Works for both
+  // markdown-stored and HTML-stored bodies.
+  const dec = (s) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ');
+  const lines = String(n.body || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|li|h[1-6]|blockquote|div|summary)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .split('\n').map((s) => dec(s).replace(/^[#>*\-\s]+/, '').trim()).filter(Boolean);
+  if (!lines.length) { toast('This note has no content to tabulate.'); return; }
+  let best = null;
+  for (const d of [' | ', '\t', ' — ', ' - ', ': ', ',']) {
+    const counts = lines.map((l) => l.split(d).length);
+    if (counts[0] >= 2 && counts.every((c) => c === counts[0])) { best = d; break; }
+  }
+  let columns, rows;
+  if (best) {
+    columns = lines[0].split(best).map((name, i) => ({ id: uid(), name: name.trim() || `Column ${i + 1}`, type: 'text' }));
+    rows = lines.slice(1).map((l) => { const parts = l.split(best); const v = {}; columns.forEach((c, i) => (v[c.id] = (parts[i] || '').trim())); return v; });
+    if (!rows.length) rows = [(() => { const v = {}; columns.forEach((c) => (v[c.id] = c.name)); return v; })()];
+  } else {
+    columns = [{ id: uid(), name: 'Name', type: 'text' }];
+    rows = lines.map((l) => ({ [columns[0].id]: l }));
+  }
+  if (!confirm(`Create a ${columns.length}-column table with ${rows.length} row${rows.length === 1 ? '' : 's'} from this note? (The note is kept.)`)) return;
+  try {
+    const table = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: n.title || 'Untitled', props: { columns, area: (n.props && n.props.area) || null } }) });
+    for (const values of rows) await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: table.id, props: { values } }) });
+    state.tables = state.tables || []; state.tables.push(table);
+    toast(`Table created (${rows.length} rows)`); await openTable(table.id);
+  } catch (e) { toast(e.message); }
 }
 async function addRow() {
   const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: state.tables_open.id, props: { values: {} } }) });
