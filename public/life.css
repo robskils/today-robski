@@ -838,7 +838,16 @@ table.ttable tr:last-child td { border-bottom:0; }
   .mail-layout:not(.reading) .mail-reader { display:none; }
   .mail-layout.reading .mail-list-col { display:none; }
   .mail-msg, .mail-compose { padding:4px 2px; }
-  .mail-back { display:inline-flex; }
+  .mail-back { display:inline-flex; flex:none; }
+  /* Reader actions overflow 375px, so pin the bar to the top (stays above the
+     message as you scroll) and let the action buttons scroll sideways within
+     it — Back stays put on the left, every action stays reachable. */
+  .mail-reader-head { position:sticky; top:0; z-index:6; gap:6px; flex-wrap:nowrap;
+    margin:0 -2px; padding:7px 2px; background:var(--card); border-bottom:1px solid var(--line); }
+  .mail-reader-head .mail-msg-act { margin-left:4px; flex:1; min-width:0; flex-wrap:nowrap;
+    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:1px; }
+  .mail-reader-head .mail-msg-act::-webkit-scrollbar { display:none; }
+  .mail-reader-head .mail-msg-act > button { flex:none; white-space:nowrap; }
 }
 .mail-acct-list { display:flex; flex-direction:column; gap:8px; max-width:520px; }
 .mail-acct { display:flex; align-items:center; gap:11px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
