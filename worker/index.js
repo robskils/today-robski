@@ -1538,6 +1538,20 @@ export default {
       // Robski Life block core + search.
       if (path === '/api/blocks' && request.method === 'GET') return listBlocks(request, env, url);
       if (path === '/api/favorites' && request.method === 'GET') return handleFavorites(request, env);
+      // Small key-value store (settings table) for freeform bits like the home
+      // notepad. Namespaced with kv_ ; keys are restricted to a safe charset.
+      {
+        const kv = path.match(/^\/api\/kv\/([a-z0-9_]{1,40})$/);
+        if (kv && request.method === 'GET') {
+          const r = await env.DB.prepare('SELECT value FROM settings WHERE key = ?').bind('kv_' + kv[1]).first();
+          return json({ value: r ? r.value : null }, request);
+        }
+        if (kv && request.method === 'PUT') {
+          const b = await request.json().catch(() => ({}));
+          await env.DB.prepare("INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind('kv_' + kv[1], String(b.value ?? '')).run();
+          return json({ ok: true }, request);
+        }
+      }
       if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
       if (path === '/api/blocks/bulk' && request.method === 'POST') return createBlocksBulk(request, env);
       // Attachments: upload nests under a block, fetch/delete under /api/attachments.

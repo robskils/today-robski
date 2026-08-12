@@ -396,11 +396,12 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day] = await Promise.all([
+  const [favs, day, pad] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
+    api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
   ]);
-  state.favs = favs; state.home = { events: day.events || [] };
+  state.favs = favs; state.home = { events: day.events || [], notepad: (pad && pad.value) || '' };
   renderNav(); renderHome();
 }
 function renderHome() {
@@ -428,14 +429,24 @@ function renderHome() {
         <span class="hn-group"><button class="hn-btn" data-open-tables><span class="hn-ic">▦</span>Tables</button><button class="hn-plus" data-new-table title="New table">+</button></span>
         <span class="hn-group"><button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button><button class="hn-plus" data-new-area title="New life area">+</button></span>
       </nav>
-      <section class="home-sec">
-        <div class="home-sec-h">Today</div>
-        <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
-      </section>
-      <section class="home-sec">
-        <div class="home-sec-h">Favourites</div>
-        ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
-      </section>
+      <div class="home-body">
+        <div class="home-main">
+          <section class="home-sec">
+            <div class="home-sec-h">Today</div>
+            <div class="today-cal">${evRows || '<div class="home-empty">Nothing in your calendar today.</div>'}</div>
+          </section>
+          <section class="home-sec">
+            <div class="home-sec-h">Favourites</div>
+            ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
+          </section>
+        </div>
+        <aside class="home-side">
+          <section class="home-sec">
+            <div class="home-sec-h">Notepad</div>
+            <textarea class="home-notepad" data-home-notepad placeholder="Jot anything here — it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>
+          </section>
+        </aside>
+      </div>
     </div>`;
 }
 function openTablesList() {
@@ -1835,6 +1846,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
+  if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
   if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; const v = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages().then(() => { const el = $('[data-mail-q]'); if (el) { el.focus(); try { el.setSelectionRange(v.length, v.length); } catch {} } }); }, 450); }
   // Compose fields: keep the draft object in sync as you type, then auto-save.
   if (state.mail && state.mail.composing && ['mc-to', 'mc-cc', 'mc-subject', 'mc-body'].includes(e.target.id)) {
