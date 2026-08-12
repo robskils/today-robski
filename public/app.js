@@ -729,11 +729,12 @@ function renderArea() {
   const openTs = tasks.filter((t) => !t.props.done).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
   const doneN = tasks.length - openTs.length;
   const tables = blocks.filter((b) => b.kind === 'table');
-  // The area's TOP-LEVEL notes land here, plus any nested note whose area Robin
-  // set himself (props.areaPinned). So a note-inside-a-note he deliberately tags
-  // with this area surfaces in its own right, while nested notes that merely
-  // inherited the area from the Tana import stay tucked away under their parent.
-  const notes = blocks.filter((b) => b.kind === 'note' && (!b.parent_id || (b.props && b.props.areaPinned)));
+  // Show the area's top-level notes AND the first level of notes inside them
+  // (a note whose parent is itself a top-level note) - but not notes nested any
+  // deeper, so the landing stays a readable outline rather than a flat wall.
+  const byId = {}; blocks.forEach((b) => { byId[b.id] = b; });
+  const firstLevel = (b) => { const p = byId[b.parent_id]; return !!(p && !p.parent_id); };
+  const notes = blocks.filter((b) => b.kind === 'note' && (!b.parent_id || firstLevel(b)));
   const h = hueOf(area);
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
   const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}</button>`).join('');
@@ -753,12 +754,8 @@ function renderArea() {
 }
 async function setBlockArea(kind, id, areaId) {
   try {
-    // areaPinned marks a deliberate association (vs one inherited from import),
-    // so a nested note tagged here surfaces on the area page. Notes only.
-    const patch = { area: areaId || null };
-    if (kind === 'note') patch.areaPinned = !!areaId;
-    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: patch }) });
-    const bump = (b) => { if (b) { b.props = b.props || {}; b.props.area = areaId || null; if (kind === 'note') b.props.areaPinned = !!areaId; } };
+    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { area: areaId || null } }) });
+    const bump = (b) => { if (b) { b.props = b.props || {}; b.props.area = areaId || null; } };
     if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
     if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
     toast(areaId ? 'Life area set' : 'Life area cleared');
