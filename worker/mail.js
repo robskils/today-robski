@@ -458,8 +458,30 @@ export async function handleMail(request, env, url, json, err) {
           cc: (p.cc || []).map((a) => ({ name: a.name, address: a.address })),
           date: (p.date ? new Date(p.date).toISOString() : ''),
           messageId: p.messageId || null, html: p.html || null, text: p.text || '', invite,
-          attachments: (p.attachments || []).map((a) => ({ filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType })),
+          attachments: (p.attachments || []).map((a, i) => ({ idx: i, filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType })),
         }, request);
+      } finally { await im.logout(); }
+    }
+
+    // Download one incoming attachment: re-fetch the raw message, parse, and
+    // stream the chosen part back with a download disposition. Same auth gate as
+    // everything else here, so the Bearer token still guards it.
+    if (sub === 'attachment') {
+      const mailbox = url.searchParams.get('mailbox') || 'INBOX', uid = Number(url.searchParams.get('uid'));
+      const idx = Number(url.searchParams.get('idx')) || 0;
+      const im = await imapOpen(env, acct);
+      try {
+        await im.login(); await im.select(mailbox);
+        const raw = await im.fetchRaw(uid); if (!raw) return err('message not found', request, 404);
+        const p = await PostalMime.parse(raw);
+        const a = (p.attachments || [])[idx]; if (!a) return err('attachment not found', request, 404);
+        const name = String(a.filename || 'attachment').replace(/["\r\n\\]/g, '');
+        const body = typeof a.content === 'string' ? a.content : (a.content || new Uint8Array());
+        return new Response(body, { headers: {
+          'Content-Type': a.mimeType || 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${name}"`,
+          'Cache-Control': 'no-store',
+        } });
       } finally { await im.logout(); }
     }
 
@@ -509,7 +531,7 @@ export async function handleMail(request, env, url, json, err) {
 
     if (sub === 'send' && method === 'POST') {
       const b = await request.json();
-      const rcpts = [b.to, b.cc].filter(Boolean).join(',').split(',').map((s) => s.trim()).filter(Boolean);
+      const rcpts = [b.to, b.cc, b.bcc].filter(Boolean).join(',').split(',').map((s) => s.trim()).filter(Boolean);
       if (!rcpts.length) return err('a recipient is required', request, 400);
       // Pull each attachment's bytes from R2 and base64 them into the message.
       const outAtts = [];
