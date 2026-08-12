@@ -392,7 +392,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 @media (max-width:760px){ .notes-grid { grid-template-columns:1fr; } .notes-side { position:static; } }
 
 /* ── unified app shell ───────────────────────────── */
-.app-shell { display:grid; grid-template-columns:246px minmax(0,1fr); min-height:100vh; }
+.app-shell { display:grid; grid-template-columns:282px minmax(0,1fr); min-height:100vh; }
 .nav {
   border-right:1px solid var(--line); background:var(--paper-2);
   position:sticky; top:0; height:100vh; overflow-y:auto;
@@ -411,9 +411,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* Primary nav: two half-width tiles per row. */
 .nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:4px; }
 .nav-item {
-  display:flex; align-items:center; gap:8px; width:100%; text-align:left;
-  padding:9px 11px; border-radius:9px; color:var(--ink-2); font-size:15px; transition:background .12s; overflow:hidden; white-space:nowrap;
+  display:flex; align-items:center; gap:6px; width:100%; text-align:left;
+  padding:9px 8px; border-radius:9px; color:var(--ink-2); font-size:14.5px; transition:background .12s; overflow:hidden; white-space:nowrap;
 }
+/* The label sits between the icon and the "+"; let it ellipsize so the + is
+   never pushed out of view on a narrow sidebar. */
+.nav-item > span:first-child { flex:none; }
+.nav-lbl { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .nav-item > span:first-child { flex:none; }
 .nav-item:hover { background:var(--paper); color:var(--ink); }
 .nav-item.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:var(--shadow); }
@@ -428,7 +432,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; padding:2px 0; }
 .nav-add { color:var(--ink-3); font-size:18px; line-height:1; padding:0 6px; flex:none; } .nav-add:hover { color:var(--accent); }
 /* Quick-add "+" on Tasks/Calendar/Mail/Notes: right-aligned, appears on hover. */
-.nav-quick { margin-left:auto; flex:none; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:var(--ink-3); font-size:17px; line-height:1; opacity:0; transition:opacity .12s, background .12s, color .12s; }
+.nav-quick { margin-left:auto; flex:none; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:var(--ink-3); font-size:16px; line-height:1; opacity:0; transition:opacity .12s, background .12s, color .12s; }
 .nav-item:hover .nav-quick, .nav-item.on .nav-quick { opacity:1; }
 .nav-quick:hover { background:var(--paper-2); color:var(--accent); }
 @media (pointer:coarse){ .nav-quick { opacity:1; } }
