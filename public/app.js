@@ -731,6 +731,7 @@ function showCalForm(ev) {
   const loc = ev ? (ev.location || '') : '';
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event" data-ev="${ev ? ev.id : ''}">
     <input id="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
+    <input id="ce-date" type="date" class="sel" required value="${ev ? ev.date : (c.selected || todayISO())}" title="Date">
     <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     <span id="ce-timerow" class="ce-timerow" ${allDay ? 'hidden' : ''}>
       <input id="ce-time" type="time" class="sel" value="${time}">
@@ -747,16 +748,19 @@ function showCalForm(ev) {
     ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}</form>`;
   $('#ce-title').focus();
 }
-async function calSaveEvent(id, title, time, duration, location, allDay, repeat) {
+async function calSaveEvent(id, title, day, time, duration, location, allDay, repeat) {
+  day = day || state.cal.selected;
   const rep = !id && repeat && repeat !== 'none' ? { repeat } : {};
   const body = JSON.stringify(allDay
-    ? { title, day: state.cal.selected, allDay: true, location: location || undefined, ...rep }
-    : { title, day: state.cal.selected, start_min: isoToMin(time), duration: Number(duration), location: location || undefined, ...rep });
+    ? { title, day, allDay: true, location: location || undefined, ...rep }
+    : { title, day, start_min: isoToMin(time), duration: Number(duration), location: location || undefined, ...rep });
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
     else await api('/api/events', { method: 'POST', body });
     toast(id ? 'Event updated' : 'Added to your calendar');
     state.cal.adding = false; state.cal.editing = null;
+    // Jump the view to the event's day so it's visible even if it moved months.
+    state.cal.selected = day; const [yy, mm] = day.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; }
     await loadCalendar();
   } catch (e) { toast(e.message); }
 }
@@ -2431,7 +2435,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
