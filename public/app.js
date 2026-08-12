@@ -729,12 +729,11 @@ function renderArea() {
   const openTs = tasks.filter((t) => !t.props.done).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
   const doneN = tasks.length - openTs.length;
   const tables = blocks.filter((b) => b.kind === 'table');
-  // Show the area's top-level notes AND the first level of notes inside them
-  // (a note whose parent is itself a top-level note) - but not notes nested any
-  // deeper, so the landing stays a readable outline rather than a flat wall.
-  const byId = {}; blocks.forEach((b) => { byId[b.id] = b; });
-  const firstLevel = (b) => { const p = byId[b.parent_id]; return !!(p && !p.parent_id); };
-  const notes = blocks.filter((b) => b.kind === 'note' && (!b.parent_id || firstLevel(b)));
+  // Every note that carries this area shows here. The 2026-08-12 cleanup pruned
+  // the area off notes nested deeper than first level (they had inherited it from
+  // the Tana import), so this stays a readable outline - and any note you now
+  // associate with the area appears here, whatever its depth.
+  const notes = blocks.filter((b) => b.kind === 'note');
   const h = hueOf(area);
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
   const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}</button>`).join('');
