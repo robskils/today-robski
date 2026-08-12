@@ -767,7 +767,7 @@ async function calDeleteEvent(id) {
     const choice = await recurDeleteChoice();
     if (!choice) return;
     scope = choice;
-  } else if (!confirm('Delete this event from your Google calendar?')) return;
+  } else if (!(await uiConfirm('Delete this event from your Google calendar?', { title: 'Delete event', okLabel: 'Delete', danger: true }))) return;
   try {
     await api(`/api/events/${id}${scope === 'future' ? '?scope=future' : ''}`, { method: 'DELETE' });
     toast(scope === 'future' ? 'This and following events deleted' : 'Event deleted');
@@ -790,6 +790,53 @@ function recurDeleteChoice() {
     const close = (v) => { el.innerHTML = ''; resolve(v || null); };
     el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(null); });
     el.querySelectorAll('[data-rc]').forEach((b) => b.addEventListener('click', () => close(b.dataset.rc)));
+  });
+}
+// In-app confirm/prompt. Native window.confirm/prompt crash Flotato (the app
+// wrapper Robin runs the site in), so every yes/no or text prompt goes through
+// these instead. uiConfirm → Promise<bool>; uiPrompt → Promise<string|null>.
+function uiDialogHost() {
+  let el = document.getElementById('ui-dialog');
+  if (!el) { el = document.createElement('div'); el.id = 'ui-dialog'; document.body.appendChild(el); }
+  return el;
+}
+function uiConfirm(message, opts = {}) {
+  return new Promise((resolve) => {
+    const el = uiDialogHost();
+    el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box">
+      <div class="recur-h">${esc(opts.title || 'Please confirm')}</div>
+      <p class="recur-p">${esc(message)}</p>
+      <div class="ui-dialog-btns">
+        <button class="ui-btn cancel" data-ud="0">${esc(opts.cancelLabel || 'Cancel')}</button>
+        <button class="ui-btn ${opts.danger ? 'danger' : 'primary'}" data-ud="1">${esc(opts.okLabel || 'OK')}</button>
+      </div></div></div>`;
+    const close = (v) => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(false); } else if (e.key === 'Enter') { e.preventDefault(); close(true); } };
+    document.addEventListener('keydown', onKey, true);
+    el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(false); });
+    el.querySelectorAll('[data-ud]').forEach((b) => b.addEventListener('click', () => close(b.dataset.ud === '1')));
+  });
+}
+function uiPrompt(message, opts = {}) {
+  return new Promise((resolve) => {
+    const el = uiDialogHost();
+    el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box">
+      <div class="recur-h">${esc(opts.title || message)}</div>
+      ${opts.title ? `<p class="recur-p">${esc(message)}</p>` : ''}
+      <input class="ui-dialog-input" id="ui-dialog-input" value="${esc(opts.value || '')}" placeholder="${esc(opts.placeholder || '')}" autocomplete="off">
+      <div class="ui-dialog-btns">
+        <button class="ui-btn cancel" data-ud="0">${esc(opts.cancelLabel || 'Cancel')}</button>
+        <button class="ui-btn primary" data-ud="1">${esc(opts.okLabel || 'OK')}</button>
+      </div></div></div>`;
+    const inp = el.querySelector('#ui-dialog-input');
+    const close = (v) => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const submit = () => close(inp.value);
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(null); } };
+    document.addEventListener('keydown', onKey, true);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+    el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(null); });
+    el.querySelectorAll('[data-ud]').forEach((b) => b.addEventListener('click', () => (b.dataset.ud === '1' ? submit() : close(null))));
+    setTimeout(() => { inp.focus(); inp.select(); }, 20);
   });
 }
 
@@ -854,7 +901,7 @@ async function mailMoveTo(key, target, label) {
 // Empty the current Spam/Trash folder (for all shown accounts). Confirmed first.
 async function mailEmptyFolder() {
   const f = mailFolder(); if (!/junk|trash/i.test(f.mailbox)) return;
-  if (!confirm(`Permanently delete everything in ${f.label}? This cannot be undone.`)) return;
+  if (!(await uiConfirm(`Permanently delete everything in ${f.label}? This cannot be undone.`, { title: `Empty ${f.label}`, okLabel: 'Empty', danger: true }))) return;
   const accts = state.mail.account === 'all' ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
   try {
     for (const a of accts) await mailApi('/empty', { method: 'POST', body: JSON.stringify({ account: a.id, mailbox: f.mailbox }) });
@@ -914,14 +961,14 @@ async function mailBulk(action) {
   const keys = [...(state.mail.selected || [])]; if (!keys.length) return;
   if (action === 'move') { openMoveMenu(keys, document.querySelector('[data-mail-bulk="move"]')); return; }
   if (action === 'archive') return mailMoveTargets(keys, 'Archive');
-  if (action === 'delete') { if (!confirm(`Move ${keys.length} message${keys.length === 1 ? '' : 's'} to Trash?`)) return; return mailMoveTargets(keys, 'Trash'); }
+  if (action === 'delete') { if (!(await uiConfirm(`Move ${keys.length} message${keys.length === 1 ? '' : 's'} to Trash?`, { title: 'Move to Trash', okLabel: 'Move' }))) return; return mailMoveTargets(keys, 'Trash'); }
   if (action === 'star') { for (const k of keys) { const row = mailRow(k); if (row && !row.flagged) await mailStar(k); } state.mail.selected = new Set(); renderMail(); return; }
   if (action === 'read' || action === 'unread') { for (const k of keys) await mailSeen(k, action === 'read'); state.mail.selected = new Set(); renderMail(); return; }
 }
 async function mailBlock(key, address) {
   const row = mailRow(key); if (!row) return;
   if (!address) { toast('No sender address to block'); return; }
-  if (!confirm(`Block ${address}?\nTheir mail will be moved to Junk from now on.`)) return;
+  if (!(await uiConfirm(`Block ${address}? Their mail will be moved to Junk from now on.`, { title: 'Block sender', okLabel: 'Block', danger: true }))) return;
   try {
     await mailApi('/block', { method: 'POST', body: JSON.stringify({ account: row._acct, address, uid: row.uid, mailbox: row._mailbox }) });
     const acc = (state.mail.accounts || []).find((a) => a.id === row._acct);
@@ -941,6 +988,10 @@ async function mailUnblock(address, accountId) {
 async function openMail() {
   state.view = { type: 'mail' };
   if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), mailboxes: [], moveMenu: null };
+  if (!state.mailTrust) {
+    state.mailTrust = new Set();
+    api('/api/kv/mail_trusted').then((r) => { try { (JSON.parse(r.value || '[]') || []).forEach((a) => state.mailTrust.add(String(a).toLowerCase())); } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
+  }
   renderNav(); renderMail(true);
   try {
     state.mail.accounts = await mailApi('/accounts');
@@ -992,7 +1043,7 @@ async function openMessage(key) {
 }
 async function mailDelete(key) {
   const row = mailRow(key); if (!row) return;
-  if (!confirm('Move this message to Trash?')) return;
+  if (!(await uiConfirm('Move this message to Trash?', { title: 'Move to Trash', okLabel: 'Move' }))) return;
   try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m._key !== key); state.mail.open = null; renderMail(); }
   catch (e) { toast(e.message); }
 }
@@ -1066,7 +1117,7 @@ async function addMailAccount(fields) {
   catch (e) { toast(e.message); }
 }
 async function delMailAccount(id) {
-  if (!confirm('Remove this account?')) return;
+  if (!(await uiConfirm('Remove this account?', { title: 'Remove account', okLabel: 'Remove', danger: true }))) return;
   try { await mailApi(`/accounts/${id}`, { method: 'DELETE' }); state.mail.accounts = (state.mail.accounts || []).filter((a) => a.id !== id); if (state.mail.account === id) state.mail.account = null; renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
   catch (e) { toast(e.message); }
 }
@@ -1152,7 +1203,7 @@ const initial = (s) => (String(s || '?').trim().charAt(0) || '?').toUpperCase();
 // frame: no <script>, no inline on* handlers, no javascript: URLs, no <base>.
 // Its <style> is kept (that's what makes the mail look right) and the frame's
 // own sandbox isolates those styles from the app.
-function sanitizeEmailHtml(html) {
+function sanitizeEmailHtml(html, blockRemote) {
   const doc = new DOMParser().parseFromString(html || '', 'text/html');
   doc.querySelectorAll('script, base, link[rel="import"], meta[http-equiv]').forEach((n) => n.remove());
   doc.querySelectorAll('*').forEach((el) => {
@@ -1162,16 +1213,49 @@ function sanitizeEmailHtml(html) {
       else if ((n === 'href' || n === 'src' || n === 'xlink:href') && /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name);
     });
   });
+  // Privacy: until the sender is trusted, pull remote images (and CSS background
+  // images) so tracking pixels can't phone home just by opening the message.
+  if (blockRemote) {
+    doc.querySelectorAll('img').forEach((img) => {
+      if (/^\s*https?:/i.test(img.getAttribute('src') || '')) img.removeAttribute('src');
+      if (img.getAttribute('srcset')) img.removeAttribute('srcset');
+    });
+    doc.querySelectorAll('[style]').forEach((el) => {
+      const st = el.getAttribute('style') || '';
+      if (/url\(\s*["']?\s*https?:/i.test(st)) el.setAttribute('style', st.replace(/background(-image)?\s*:[^;]*?url\([^)]*\)[^;]*;?/gi, ''));
+    });
+  }
   return doc.head.innerHTML + doc.body.innerHTML;
+}
+// Does the message body pull in any remote image? (Worth a "show images" prompt.)
+function hasRemoteImages(html) {
+  return /<img\b[^>]*\bsrc\s*=\s*["']?\s*https?:/i.test(html || '') || /url\(\s*["']?\s*https?:/i.test(html || '');
+}
+function mailTrusted(addr) { return !!(state.mailTrust && addr && state.mailTrust.has(addr.toLowerCase())); }
+// True when a message has remote images we're holding back (not trusted, not yet
+// shown for this open message).
+function mailImagesBlocked(o) {
+  if (!o || !o.html || !hasRemoteImages(o.html)) return false;
+  const sender = o.from && o.from.address ? o.from.address.toLowerCase() : '';
+  if (mailTrusted(sender)) return false;
+  return !(state.mail && state.mail.showImgKey === o._key);
+}
+async function trustSender(addr) {
+  addr = (addr || '').toLowerCase(); if (!addr) return;
+  state.mailTrust = state.mailTrust || new Set(); state.mailTrust.add(addr);
+  if (state.mail && state.mail.open) state.mail.showImgKey = state.mail.open._key;
+  renderMail();
+  try { await api('/api/kv/mail_trusted', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify([...state.mailTrust]) }) }); toast(`Images from ${addr} will always show`); }
+  catch (e) { toast(e.message); }
 }
 // Render the (now script-free) email in a sandboxed frame and have it report its
 // content height, so the frame grows to fit and the whole reading pane - header
 // and body together - scrolls as one. allow-scripts runs only our reporter; the
 // email's own scripts were stripped above, and there is no allow-same-origin.
-function wrapEmailHtml(html) {
+function wrapEmailHtml(html, blockImages) {
   return `<!doctype html><html><head><base target="_blank"><meta name="color-scheme" content="light">
     <style>html,body{margin:0}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
-    </head><body>${sanitizeEmailHtml(html)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);})();<\/script></body></html>`;
+    </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);})();<\/script></body></html>`;
 }
 // Grow #mail-body-frame to whatever height it reports (installed once).
 if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
@@ -1317,6 +1401,7 @@ function renderMail(loading) {
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<span class="mail-att-chip">📎 ${esc(a.filename || 'attachment')}</span>`).join('')}</div>` : ''}
       ${o.invite ? inviteCardHtml(o.invite) : ''}
       ${(() => { const ml = mailMeetingLink(o); return ml ? `<div class="mail-join-bar"><button class="add-btn wide" data-mail-join="${esc(ml)}">🎥 Join meeting</button><span class="mail-join-url">${esc(ml)}</span></div>` : ''; })()}
+      ${mailImagesBlocked(o) ? `<div class="mail-imgbar"><span class="mail-imgbar-t">🖼 Remote images are hidden to protect your privacy.</span><span class="mail-imgbar-act"><button class="ghost" data-mail-show-imgs>Show images</button>${o.from && o.from.address ? `<button class="ghost" data-mail-trust="${esc(o.from.address)}">Always trust sender</button>` : ''}</span></div>` : ''}
       ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text">${linkifyText(o.text || '')}</div>`}</div>`;
   } else {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
@@ -1351,7 +1436,7 @@ function renderMail(loading) {
     </div>
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
     ${m.moveMenu ? mailMoveMenuHtml() : ''}`;
-  if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html); }
+  if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
 }
 
 function showQuickTask() {
@@ -1838,7 +1923,7 @@ async function newNote(parentId) {
   const ti = $('#note-title'); if (ti) { ti.focus(); ti.select(); }
 }
 async function newArea() {
-  const name = (prompt('New life area name:') || '').trim(); if (!name) return;
+  const name = ((await uiPrompt('New life area name:', { title: 'New life area', okLabel: 'Create', placeholder: 'e.g. Writing / Poetry' })) || '').trim(); if (!name) return;
   // Spread hues by the golden angle so a new area reads distinct from its neighbours.
   const hue = Math.round((state.areas.length * 137.5) % 360);
   const a = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'area', title: name, props: { hue } }) });
@@ -2070,6 +2155,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-discard]')) { clearDraft(); (state.mail.composing && state.mail.composing.attachments || []).forEach((a) => mailApi(`/attach/${a.id}?account=${encodeURIComponent(composeAcctId())}`, { method: 'DELETE' }).catch(() => {})); state.mail.composing = false; renderMail(); toast('Draft discarded'); return; }
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
+  if (t.closest('[data-mail-show-imgs]')) { if (state.mail.open) { state.mail.showImgKey = state.mail.open._key; renderMail(); } return; }
+  const mtr = t.closest('[data-mail-trust]'); if (mtr) { trustSender(mtr.dataset.mailTrust); return; }
   const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(mdl.dataset.mailDel); return; }
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
@@ -2134,7 +2221,7 @@ document.addEventListener('click', (e) => {
     const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.colMenu = null; setSorts([{ colId: cmId, dir: cms.dataset.cmSort }]); return; }
     if (t.closest('[data-cm-hide]')) { state.tables_view.colMenu = null; if (visibleCols().length <= 1) { toast('Keep at least one column visible'); renderTable(); return; } saveTableHidden([...hiddenCols(), cmId]); return; }
     const cShow = t.closest('[data-cm-show]'); if (cShow) { state.tables_view.colMenu = null; saveTableHidden(hiddenCols().filter((x) => x !== cShow.dataset.cmShow)); return; }
-    if (t.closest('[data-cm-del]')) { state.tables_view.colMenu = null; if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== cmId)).then(renderTable); else renderTable(); return; }
+    if (t.closest('[data-cm-del]')) { state.tables_view.colMenu = null; uiConfirm('Delete this column?', { title: 'Delete column', okLabel: 'Delete', danger: true }).then((ok) => { if (ok) saveTableColumns(tcols().filter((c) => c.id !== cmId)).then(renderTable); else renderTable(); }); return; }
     if (!t.closest('[data-colmenu]')) { state.tables_view.colMenu = null; renderTable(); } // click outside closes; fall through
   }
   // table search + filters
@@ -2153,7 +2240,7 @@ document.addEventListener('click', (e) => {
   const sc = t.closest('[data-sort-col]');
   if (sc) { const id = sc.dataset.sortCol; const s = state.tables_view.sorts || []; const only = s.length === 1 && s[0].colId === id ? s[0] : null; setSorts([{ colId: id, dir: only && only.dir === 'asc' ? 'desc' : 'asc' }]); return; }
   if (t.closest('[data-add-col]')) { state.tables_view.addingCol = true; renderTable(); return; }
-  const dcol = t.closest('[data-del-col]'); if (dcol) { if (confirm('Delete this column?')) saveTableColumns(tcols().filter((c) => c.id !== dcol.dataset.delCol)).then(renderTable).catch((x) => toast(x.message)); return; }
+  const dcol = t.closest('[data-del-col]'); if (dcol) { const dcId = dcol.dataset.delCol; uiConfirm('Delete this column?', { title: 'Delete column', okLabel: 'Delete', danger: true }).then((ok) => { if (ok) saveTableColumns(tcols().filter((c) => c.id !== dcId)).then(renderTable).catch((x) => toast(x.message)); }); return; }
   const drow = t.closest('[data-del-row]'); if (drow) { const id = drow.dataset.delRow; state.tables_rows = state.tables_rows.filter((r) => r.id !== id); renderTable(); api(`/api/blocks/${id}`, { method: 'DELETE' }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-add-row]')) { addRow(); return; }
   if (t.closest('[data-del-cur]')) { delTable(); return; }
@@ -2528,7 +2615,7 @@ async function saveProse(key, rawHtml) {
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {
-  const t = state.task_open.task; if (!confirm(`Delete “${t.title || 'Untitled'}”?`)) return;
+  const t = state.task_open.task; if (!(await uiConfirm(`Delete “${t.title || 'Untitled'}”?`, { title: 'Delete task', okLabel: 'Delete', danger: true }))) return;
   await delTask(t.id); await openTasks();
 }
 async function saveNoteTitle(v) {
@@ -2538,7 +2625,7 @@ async function saveNoteTitle(v) {
   try { await api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); }
 }
 async function delNote() {
-  const n = state.note.current; if (!confirm(`Delete “${n.title || 'Untitled'}”?`)) return;
+  const n = state.note.current; if (!(await uiConfirm(`Delete “${n.title || 'Untitled'}”?`, { title: 'Delete note', okLabel: 'Delete', danger: true }))) return;
   const parent = state.note.path.length > 1 ? state.note.path[state.note.path.length - 2].id : null;
   try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); state.noteTops = state.noteTops.filter((t) => t.id !== n.id); if (parent) await openNote(parent); else await openNotesList(); } catch (e) { toast(e.message); }
 }
@@ -2572,7 +2659,7 @@ async function noteToTable() {
     columns = [{ id: uid(), name: 'Name', type: 'text' }];
     rows = lines.map((l) => ({ [columns[0].id]: l }));
   }
-  if (!confirm(`Create a ${columns.length}-column table with ${rows.length} row${rows.length === 1 ? '' : 's'} from this note? (The note is kept.)`)) return;
+  if (!(await uiConfirm(`Create a ${columns.length}-column table with ${rows.length} row${rows.length === 1 ? '' : 's'} from this note? (The note is kept.)`, { title: 'Note → table', okLabel: 'Create table' }))) return;
   try {
     const table = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: n.title || 'Untitled', props: { columns, area: (n.props && n.props.area) || null } }) });
     for (const values of rows) await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: table.id, props: { values } }) });
@@ -2652,7 +2739,7 @@ function editColName(id) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { d = true; renderTable(); } });
   input.addEventListener('blur', save);
 }
-async function delTable() { const t = state.tables_open; if (!confirm(`Delete the table “${t.title}” and its rows?`)) return; for (const r of state.tables_rows) await api(`/api/blocks/${r.id}`, { method: 'DELETE' }); await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); state.tables = state.tables.filter((x) => x.id !== t.id); state.tables_open = null; await openTablesList(); }
+async function delTable() { const t = state.tables_open; if (!(await uiConfirm(`Delete the table “${t.title}” and its rows?`, { title: 'Delete table', okLabel: 'Delete', danger: true }))) return; for (const r of state.tables_rows) await api(`/api/blocks/${r.id}`, { method: 'DELETE' }); await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); state.tables = state.tables.filter((x) => x.id !== t.id); state.tables_open = null; await openTablesList(); }
 
 // ── inline formatting bubble ─────────────────────────
 // A small toolbar that floats above a text selection inside any .prose editor.
@@ -2700,7 +2787,17 @@ function applyFmt(cmd) {
   else if (cmd === 'quote') document.execCommand('formatBlock', false, currentBlockTag() === 'BLOCKQUOTE' ? '<p>' : '<blockquote>');
   else if (cmd === 'ul') document.execCommand('insertUnorderedList');
   else if (cmd === 'ol') document.execCommand('insertOrderedList');
-  else if (cmd === 'link') { const url = prompt('Link to (URL):'); if (url) document.execCommand('createLink', false, url.trim()); }
+  else if (cmd === 'link') {
+    // The custom dialog steals focus, so snapshot the selection and restore it
+    // before createLink runs, or the link would apply to nothing.
+    const sel = window.getSelection(); const range = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+    uiPrompt('Link to (URL):', { title: 'Add link', okLabel: 'Add link', placeholder: 'https://…' }).then((url) => {
+      if (!url || !url.trim()) return;
+      prose.focus(); if (range) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(range); }
+      document.execCommand('createLink', false, url.trim()); saveProse(prose.dataset.prose, prose.innerHTML);
+    });
+    return;
+  }
   else if (cmd === 'collapse') collapseSection(prose);
   positionBubble();
   saveProse(prose.dataset.prose, prose.innerHTML);
