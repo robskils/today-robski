@@ -340,6 +340,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-body h4 { font-size:19px; margin:16px 0 4px; color:var(--ink-2); }
 .note-body p { margin:0 0 14px; }
 .note-body a { color:var(--accent); }
+/* Nothing in a note body should force horizontal scroll on a narrow screen. */
+.note-body, .prose { overflow-wrap:break-word; }
+.note-body img, .prose img { max-width:100%; height:auto; }
+.note-body pre, .prose pre { max-width:100%; overflow-x:auto; }
+.note-body table, .prose table { display:block; max-width:100%; overflow-x:auto; }
 .note-body code { font-family:ui-monospace,Menlo,monospace; font-size:.9em; background:var(--paper-2); padding:2px 6px; border-radius:5px; }
 .note-body blockquote { border-left:3px solid var(--line-2); padding-left:16px; margin:0 0 14px; color:var(--ink-2); font-style:italic; }
 .note-body hr { border:0; border-top:1px solid var(--line); margin:22px 0; }
@@ -848,6 +853,11 @@ table.ttable tr:last-child td { border-bottom:0; }
   }
   .nav-brand { padding:0; font-size:25px; }
   .nav-foot { margin:0; }
+  /* Note/table header tools mustn't push the page wider than the screen: let the
+     area chip + select wrap instead of overflowing (they sized to long area names). */
+  .crumb-tools, .tbl-head { flex-wrap:wrap; }
+  .crumb-tools { margin-left:0; max-width:100%; min-width:0; }
+  .crumb-tools .area-sel, .tbl-head .area-sel { max-width:100%; }
   .nav-item, .nav-grid, .nav-secs, .nav-spacer, .foot-search { display:none; }
   [data-open-today] { display:none; }   /* the day planner is desktop-only */
   /* No bottom on a horizontal bar: the theme switch sits inline with the brand. */
