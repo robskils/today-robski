@@ -865,9 +865,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .att:hover .att-x { opacity:1; }
 .att-x:hover { background:var(--accent); color:#fff; }
 @media (hover:none){ .att-x { opacity:.85; } }
-.att-add { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; width:132px; height:132px; border:1.5px dashed var(--line-2); border-radius:12px; color:var(--ink-3); font-size:13.5px; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
+/* Same rectangular shape as the file attachment cards, for consistency. */
+.att-add { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:11px; width:264px; max-width:100%; min-height:69px; padding:12px 15px; box-sizing:border-box; border:1.5px dashed var(--line-2); border-radius:12px; color:var(--ink-3); font-size:15px; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
 .att-add:hover { border-color:var(--accent); color:var(--accent); background:var(--paper-2); }
-.att-add-ic { font-size:26px; line-height:1; }
+.att-add-ic { font-size:24px; line-height:1; flex:none; }
 /* Embedded YouTube players (rendered under a note/card body). */
 .embeds { display:flex; flex-direction:column; gap:14px; margin:18px 0; }
 .embed-yt { position:relative; width:100%; max-width:680px; aspect-ratio:16/9; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); background:#000; }
