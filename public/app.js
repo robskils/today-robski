@@ -87,7 +87,7 @@ function bodyToHtml(body) {
   // Only the rich editor's own output (block-wrapped) is treated as HTML.
   // Imported bodies are Markdown that may contain an inline <a>, so keying on
   // block tags avoids mis-rendering a whole note as raw HTML.
-  const html = /<(p|h[1-3]|blockquote|div|ul|ol)[\s>]/i.test(s) ? s : mdToHtml(body);
+  const html = /<(p|h[1-3]|blockquote|div|ul|ol|details)[\s>]/i.test(s) ? s : mdToHtml(body);
   return linkifyHtml(html);
 }
 // YouTube links in a body → embedded players (rendered below the editor, not
@@ -110,7 +110,7 @@ function proseEditor(body, key) {
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
 // tidiness (stray pasted styles) more than security.
-const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1 };
+const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1, DETAILS: 1, SUMMARY: 1 };
 function sanitizeProse(html) {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   const walk = (node) => {
@@ -124,8 +124,10 @@ function sanitizeProse(html) {
       if (!PROSE_OK[tag]) { const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }
       const el = c.tagName === tag ? c : (() => { const n = doc.createElement(tag); while (c.firstChild) n.appendChild(c.firstChild); c.replaceWith(n); return n; })();
       const href = el.tagName === 'A' ? el.getAttribute('href') : null;
+      const keepOpen = el.tagName === 'DETAILS' && el.hasAttribute('open');   // remember collapse state
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
       if (href && /^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+      if (keepOpen) el.setAttribute('open', '');
     });
   };
   walk(doc.body);
@@ -2356,7 +2358,7 @@ async function saveNoteTitle(v) {
 async function delNote() {
   const n = state.note.current; if (!confirm(`Delete “${n.title || 'Untitled'}”?`)) return;
   const parent = state.note.path.length > 1 ? state.note.path[state.note.path.length - 2].id : null;
-  try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); state.noteTops = state.noteTops.filter((t) => t.id !== n.id); if (parent) await openNote(parent); else await openTasks(); } catch (e) { toast(e.message); }
+  try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); state.noteTops = state.noteTops.filter((t) => t.id !== n.id); if (parent) await openNote(parent); else await openNotesList(); } catch (e) { toast(e.message); }
 }
 async function addRow() {
   const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: state.tables_open.id, props: { values: {} } }) });
@@ -2430,7 +2432,7 @@ function editColName(id) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { d = true; renderTable(); } });
   input.addEventListener('blur', save);
 }
-async function delTable() { const t = state.tables_open; if (!confirm(`Delete the table “${t.title}” and its rows?`)) return; for (const r of state.tables_rows) await api(`/api/blocks/${r.id}`, { method: 'DELETE' }); await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); state.tables = state.tables.filter((x) => x.id !== t.id); state.tables_open = null; await openTasks(); }
+async function delTable() { const t = state.tables_open; if (!confirm(`Delete the table “${t.title}” and its rows?`)) return; for (const r of state.tables_rows) await api(`/api/blocks/${r.id}`, { method: 'DELETE' }); await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); state.tables = state.tables.filter((x) => x.id !== t.id); state.tables_open = null; await openTablesList(); }
 
 // ── inline formatting bubble ─────────────────────────
 // A small toolbar that floats above a text selection inside any .prose editor.
@@ -2446,6 +2448,7 @@ function ensureBubble() {
     <button data-fmt="quote" title="Quote">&#10077;</button>
     <button data-fmt="ul" title="Bulleted list">&#8226;</button>
     <button data-fmt="ol" title="Numbered list" style="font-size:12px">1.</button>
+    <button data-fmt="collapse" title="Collapsible section">&#9662;</button>
     <button data-fmt="link" title="Add link">&#8599;</button>`;
   document.body.appendChild(b); return b;
 }
@@ -2478,9 +2481,40 @@ function applyFmt(cmd) {
   else if (cmd === 'ul') document.execCommand('insertUnorderedList');
   else if (cmd === 'ol') document.execCommand('insertOrderedList');
   else if (cmd === 'link') { const url = prompt('Link to (URL):'); if (url) document.execCommand('createLink', false, url.trim()); }
+  else if (cmd === 'collapse') collapseSection(prose);
   positionBubble();
   saveProse(prose.dataset.prose, prose.innerHTML);
 }
+// Turn the current block into a collapsible <details> section: its text becomes
+// the summary; following blocks up to the next heading move inside. Toggling it
+// again unwraps back to a heading + loose blocks.
+function collapseSection(prose) {
+  const sel = window.getSelection(); if (!sel.rangeCount) return;
+  let block = sel.getRangeAt(0).startContainer; block = block.nodeType === 1 ? block : block.parentElement;
+  block = block && block.closest && block.closest('h1,h2,h3,blockquote,p,li,summary'); if (!block || !prose.contains(block)) return;
+  const details = block.closest('details');
+  if (details && prose.contains(details)) {
+    const summary = details.querySelector('summary');
+    const frag = document.createDocumentFragment();
+    const h = document.createElement('h3'); h.innerHTML = summary ? summary.innerHTML : 'Section'; frag.appendChild(h);
+    [...details.childNodes].forEach((c) => { if (c !== summary) frag.appendChild(c); });
+    details.replaceWith(frag);
+  } else {
+    const d = document.createElement('details'); d.setAttribute('open', '');
+    const summary = document.createElement('summary'); summary.innerHTML = block.innerHTML || 'Section'; d.appendChild(summary);
+    let next = block.nextElementSibling; block.replaceWith(d);
+    const isHead = (el) => el && /^H[1-6]$/.test(el.tagName);
+    while (next && !isHead(next)) { const after = next.nextElementSibling; d.appendChild(next); next = after; }
+  }
+}
+// A <summary> toggles its section natively on click; we just persist the new
+// open/closed state. `toggle` doesn't bubble, so listen in the capture phase.
+document.addEventListener('toggle', (e) => {
+  const d = e.target; if (!d || d.tagName !== 'DETAILS') return;
+  const prose = d.closest && d.closest('.prose'); if (!prose) return;
+  if (d.open) d.setAttribute('open', ''); else d.removeAttribute('open');
+  clearTimeout(window.__detToggleT); window.__detToggleT = setTimeout(() => saveProse(prose.dataset.prose, prose.innerHTML), 300);
+}, true);
 document.addEventListener('selectionchange', positionBubble);
 document.addEventListener('mousedown', (e) => {
   const fb = e.target.closest && e.target.closest('#bubble [data-fmt]');

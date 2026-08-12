@@ -345,6 +345,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-body img, .prose img { max-width:100%; height:auto; }
 .note-body pre, .prose pre { max-width:100%; overflow-x:auto; }
 .note-body table, .prose table { display:block; max-width:100%; overflow-x:auto; }
+/* Collapsible sections (details/summary) in notes + prose. */
+.note-body details, .prose details { margin:0 0 14px; }
+.note-body summary, .prose summary { cursor:pointer; font-weight:600; list-style:none; display:flex; align-items:baseline; gap:9px; padding:2px 0; }
+.note-body summary::-webkit-details-marker, .prose summary::-webkit-details-marker { display:none; }
+.note-body summary::before, .prose summary::before { content:'▸'; color:var(--ink-3); font-size:.8em; transition:transform .15s; flex:none; align-self:center; }
+.note-body details[open] > summary::before, .prose details[open] > summary::before { transform:rotate(90deg); }
+.note-body details > :not(summary), .prose details > :not(summary) { margin-left:22px; }
 .note-body code { font-family:ui-monospace,Menlo,monospace; font-size:.9em; background:var(--paper-2); padding:2px 6px; border-radius:5px; }
 .note-body blockquote { border-left:3px solid var(--line-2); padding-left:16px; margin:0 0 14px; color:var(--ink-2); font-style:italic; }
 .note-body hr { border:0; border-top:1px solid var(--line); margin:22px 0; }
