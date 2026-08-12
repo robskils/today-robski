@@ -729,13 +729,14 @@ function renderArea() {
   const openTs = tasks.filter((t) => !t.props.done).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
   const doneN = tasks.length - openTs.length;
   const tables = blocks.filter((b) => b.kind === 'table');
-  // Only the area's TOP-LEVEL notes land here; nested notes carry the area too
-  // (for search / attribution) but are reached by drilling into their parent,
-  // so the landing stays a clean outline instead of a flat wall.
-  const notes = blocks.filter((b) => b.kind === 'note' && !b.parent_id);
+  // The area's TOP-LEVEL notes land here, plus any STARRED nested note carrying
+  // this area - so a starred note-inside-a-note surfaces in its own right rather
+  // than only being reachable by drilling into its parent. Un-starred nested
+  // notes stay tucked away, keeping the landing a clean outline.
+  const notes = blocks.filter((b) => b.kind === 'note' && (!b.parent_id || (b.props && b.props.fav)));
   const h = hueOf(area);
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
-  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}</button>`).join('');
+  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}${n.props && n.props.fav ? '<span class="tc-star">★</span>' : ''}</button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
