@@ -1403,6 +1403,17 @@ async function reorderFavs(draggedId, beforeId) {
   renderNav(); if (state.view.type === 'home') renderHome();
   favs.forEach((f, i) => { f.props = f.props || {}; f.props.fav_rank = i; api(`/api/blocks/${f.id}`, { method: 'PATCH', body: JSON.stringify({ props: { fav_rank: i } }) }).catch(() => {}); });
 }
+// Reorder the "Notes inside" list by dragging, persisting each child's position.
+async function reorderSubs(draggedId, beforeId) {
+  const kids = state.note && state.note.children; if (!kids) return;
+  const from = kids.findIndex((k) => k.id === draggedId); if (from < 0) return;
+  const [moved] = kids.splice(from, 1);
+  let to = beforeId ? kids.findIndex((k) => k.id === beforeId) : kids.length;
+  if (to < 0) to = kids.length;
+  kids.splice(to, 0, moved);
+  renderNote();
+  kids.forEach((k, i) => { k.position = i; api(`/api/blocks/${k.id}`, { method: 'PATCH', body: JSON.stringify({ position: i }) }).catch(() => {}); });
+}
 function openFav(ref) {
   const i = ref.indexOf(':'); const kind = ref.slice(0, i); const id = ref.slice(i + 1);
   if (kind === 'note') return openNote(id);
@@ -1501,7 +1512,7 @@ function renderNote() {
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
-  const kids = state.note.children.map((c) => `<button class="subpage" data-open-note="${c.id}"><span class="sp-ico">▸</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`).join('');
+  const kids = state.note.children.map((c) => `<button class="subpage" data-open-note="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">▸</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
@@ -1514,12 +1525,12 @@ function renderNote() {
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
         <div class="note-body">${proseEditor(n.body, 'note')}</div>
         ${embedsHtml(n.body)}
-        ${attachSection(n)}
       </div>
       <aside class="note-side">
-        <div class="subpages"><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
+        <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
           ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>
       </aside>
+      <div class="note-attach">${attachSection(n)}</div>
     </div>`;
   autoGrowSoon($('#note-title')); loadThumbs();
 }
@@ -2144,7 +2155,7 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null;
+let dragFav = null, dragSec = null, dragSub = null;
 function clearDropMarks() {
   document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
 }
@@ -2166,11 +2177,13 @@ function dropBefore(over, list, idOf) {
 }
 document.addEventListener('dragstart', (e) => {
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
 });
 document.addEventListener('dragover', (e) => {
   if (dragFav && e.target.closest('#favs')) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
+  if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
   const z = e.target.closest('[data-att-zone]');
   if (z && !dragFav && !dragSec && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); z.classList.add('att-drag'); }
 });
@@ -2190,10 +2203,16 @@ document.addEventListener('drop', (e) => {
   if (dragSec) {
     e.preventDefault(); const over = e.target.closest('[data-nav-sec]');
     const before = over && over.dataset.navSec !== dragSec ? dropBefore(over, state.nav.order, (el) => el.dataset.navSec) : null;
-    clearDropMarks(); reorderSecs(dragSec, before); dragSec = null;
+    clearDropMarks(); reorderSecs(dragSec, before); dragSec = null; return;
+  }
+  if (dragSub) {
+    e.preventDefault(); const over = e.target.closest('[data-sub-id]');
+    const ids = (state.note && state.note.children || []).map((k) => k.id);
+    const before = over && over.dataset.subId !== dragSub ? dropBefore(over, ids, (el) => el.dataset.subId) : null;
+    clearDropMarks(); reorderSubs(dragSub, before); dragSub = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); dragFav = null; dragSec = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); dragFav = null; dragSec = null; dragSub = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
