@@ -628,6 +628,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* ── command palette (⌘K) ────────────────────────── */
 .pal-bg { position:fixed; inset:0; z-index:60; background:rgba(20,16,24,.34); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding-top:12vh; }
 .pal { width:min(620px,92vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); overflow:hidden; }
+.recur-dialog { width:min(420px,92vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); padding:22px; }
+.recur-h { font-size:19px; font-weight:600; color:var(--ink); margin-bottom:6px; }
+.recur-p { font-size:15px; color:var(--ink-2); margin:0 0 16px; line-height:1.45; }
+.recur-opt { display:block; width:100%; text-align:left; padding:13px 16px; margin-bottom:9px; font-size:16px; border:1px solid var(--line-2); border-radius:11px; background:var(--paper-2); color:var(--ink); cursor:pointer; transition:border-color .12s, background .12s; }
+.recur-opt:hover { border-color:var(--accent); }
+.recur-opt.cancel { margin-bottom:0; background:transparent; color:var(--ink-3); border-color:transparent; text-align:center; }
+.ce-recur-note { display:inline-flex; align-items:center; font-size:14px; color:var(--ink-3); padding:6px 2px; }
 .pal input { width:100%; padding:20px 22px; font-size:19px; background:transparent; border:0; border-bottom:1px solid var(--line); color:var(--ink); }
 .pal input:focus-visible { outline:none; }
 .pal-list { max-height:52vh; overflow-y:auto; padding:8px; }

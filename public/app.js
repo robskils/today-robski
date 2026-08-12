@@ -736,14 +736,22 @@ function showCalForm(ev) {
       <input id="ce-time" type="time" class="sel" value="${time}">
       <select id="ce-dur" class="sel">${durationOptions(dur)}</select></span>
     <input id="ce-loc" class="sel" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
+    ${ev ? (ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : '') : `<select id="ce-repeat" class="sel" title="Repeat">
+      <option value="none">Does not repeat</option>
+      <option value="daily">Daily</option>
+      <option value="weekdays">Every weekday (Mon-Fri)</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option></select>`}
     <button class="add-btn wide" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
     ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}</form>`;
   $('#ce-title').focus();
 }
-async function calSaveEvent(id, title, time, duration, location, allDay) {
+async function calSaveEvent(id, title, time, duration, location, allDay, repeat) {
+  const rep = !id && repeat && repeat !== 'none' ? { repeat } : {};
   const body = JSON.stringify(allDay
-    ? { title, day: state.cal.selected, allDay: true, location: location || undefined }
-    : { title, day: state.cal.selected, start_min: isoToMin(time), duration: Number(duration), location: location || undefined });
+    ? { title, day: state.cal.selected, allDay: true, location: location || undefined, ...rep }
+    : { title, day: state.cal.selected, start_min: isoToMin(time), duration: Number(duration), location: location || undefined, ...rep });
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
     else await api('/api/events', { method: 'POST', body });
@@ -753,9 +761,36 @@ async function calSaveEvent(id, title, time, duration, location, allDay) {
   } catch (e) { toast(e.message); }
 }
 async function calDeleteEvent(id) {
-  if (!confirm('Delete this event from your Google calendar?')) return;
-  try { await api(`/api/events/${id}`, { method: 'DELETE' }); toast('Event deleted'); state.cal.editing = null; await loadCalendar(); }
-  catch (e) { toast(e.message); }
+  const ev = (state.cal.events || []).find((x) => x.id === id) || state.cal.editing;
+  let scope = 'single';
+  if (ev && ev.recurringId) {
+    const choice = await recurDeleteChoice();
+    if (!choice) return;
+    scope = choice;
+  } else if (!confirm('Delete this event from your Google calendar?')) return;
+  try {
+    await api(`/api/events/${id}${scope === 'future' ? '?scope=future' : ''}`, { method: 'DELETE' });
+    toast(scope === 'future' ? 'This and following events deleted' : 'Event deleted');
+    state.cal.editing = null; state.cal.adding = false; await loadCalendar();
+  } catch (e) { toast(e.message); }
+}
+// A recurring instance can be dropped on its own or trimmed "from here on".
+// Resolves to 'single', 'future', or null (cancelled).
+function recurDeleteChoice() {
+  return new Promise((resolve) => {
+    let el = document.getElementById('recur-overlay');
+    if (!el) { el = document.createElement('div'); el.id = 'recur-overlay'; document.body.appendChild(el); }
+    el.innerHTML = `<div class="pal-bg"><div class="recur-dialog">
+      <div class="recur-h">Delete repeating event</div>
+      <p class="recur-p">This event is part of a repeating series. What should be removed?</p>
+      <button class="recur-opt" data-rc="single">Just this event</button>
+      <button class="recur-opt" data-rc="future">This and all following</button>
+      <button class="recur-opt cancel" data-rc="">Cancel</button>
+    </div></div>`;
+    const close = (v) => { el.innerHTML = ''; resolve(v || null); };
+    el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(null); });
+    el.querySelectorAll('[data-rc]').forEach((b) => b.addEventListener('click', () => close(b.dataset.rc)));
+  });
 }
 
 // ── view: today (the real day planner, embedded) ─────
@@ -2168,7 +2203,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); if (v) calSaveEvent(e.target.dataset.ev || null, v, $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) mailSend(to, $('#mc-cc').value.trim(), $('#mc-subject').value.trim(), $('#mc-body').value, state.mail.composing && state.mail.composing.inReplyTo); }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }

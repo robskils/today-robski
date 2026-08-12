@@ -230,11 +230,11 @@ async function calendarRange(env, from, to) {
     const data = await res.json();
     const events = (data.items || []).filter((e) => e.status !== 'cancelled').map((e) => {
       if (e.start?.date) {
-        return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: true, date: e.start.date, end_date: e.end?.date || null };
+        return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: true, date: e.start.date, end_date: e.end?.date || null, recurringId: e.recurringEventId || null };
       }
       const s = new Date(e.start.dateTime), en = new Date(e.end.dateTime);
       const sp = localParts(s, TZ), ep = localParts(en, TZ);
-      return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min };
+      return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min, recurringId: e.recurringEventId || null };
     });
     return { events, error: null };
   } catch (e) {
@@ -251,6 +251,18 @@ async function handleCalendar(request, env, url) {
 // the original consent asked only for calendar.readonly, and a refresh token
 // carries the scopes it was granted with, so this 403s until google-auth is
 // re-run. The error says so rather than leaving you guessing.
+// Map a simple repeat keyword to a Google recurrence array (RRULE). No UNTIL,
+// so the series runs indefinitely; "this and following" delete trims it later.
+function rruleFor(repeat) {
+  switch (String(repeat || '').toLowerCase()) {
+    case 'daily': return ['RRULE:FREQ=DAILY'];
+    case 'weekdays': return ['RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR'];
+    case 'weekly': return ['RRULE:FREQ=WEEKLY'];
+    case 'monthly': return ['RRULE:FREQ=MONTHLY'];
+    case 'yearly': return ['RRULE:FREQ=YEARLY'];
+    default: return null;
+  }
+}
 async function createEvent(request, env) {
   if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
 
@@ -296,6 +308,7 @@ async function createEvent(request, env) {
           summary: title,
           location: String(b.location || '').trim() || undefined,
           start, end,
+          recurrence: rruleFor(b.repeat) || undefined,
         }),
       },
     );
@@ -365,14 +378,47 @@ async function updateEvent(request, env, id) {
 // its own D1, hence the confirm step in the UI.
 async function deleteEvent(request, env, id) {
   if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+  const scope = new URL(request.url).searchParams.get('scope') || 'single';
 
   try {
     const token = await googleAccessToken(env);
     const calId = env.GOOGLE_CALENDAR_ID || 'primary';
-    const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(id)}`,
-      { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
-    );
+    const evUrl = (eid) => `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(eid)}`;
+    const authH = { Authorization: `Bearer ${token}` };
+
+    // "This and all following": trim the recurring series by setting the master
+    // RRULE's UNTIL to just before this instance, rather than deleting anything.
+    // Falls through to a plain delete if the event turns out not to be recurring.
+    if (scope === 'future') {
+      const iRes = await fetch(evUrl(id), { headers: authH });
+      if (iRes.status === 401 || iRes.status === 403) return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
+      if (iRes.ok) {
+        const inst = await iRes.json();
+        const masterId = inst.recurringEventId;
+        if (masterId) {
+          // UNTIL must be strictly before this instance's start. All-day series
+          // take a DATE; timed series take a UTC datetime.
+          let until;
+          if (inst.start?.date) until = addDaysStr(inst.start.date, -1).replace(/-/g, '');
+          else until = new Date(new Date(inst.start.dateTime).getTime() - 1000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+          const mRes = await fetch(evUrl(masterId), { headers: authH });
+          if (mRes.ok) {
+            const master = await mRes.json();
+            const rec = (master.recurrence || []).map((line) => /^RRULE/i.test(line)
+              ? `${line.replace(/;(UNTIL|COUNT)=[^;]*/gi, '')};UNTIL=${until}` : line);
+            if (rec.some((l) => /^RRULE/i.test(l))) {
+              const pRes = await fetch(evUrl(masterId), { method: 'PATCH', headers: { ...authH, 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrence: rec }) });
+              if (pRes.ok) return json({ ok: true }, request);
+              console.error('google trim series:', pRes.status, await pRes.text());
+              return err('Google would not update that series.', request, 502);
+            }
+          }
+        }
+        // Not recurring (or no RRULE): fall through to a normal single delete.
+      }
+    }
+
+    const res = await fetch(evUrl(id), { method: 'DELETE', headers: authH });
 
     // 410 means it was already gone. That is the outcome the caller wanted, so
     // treat it as success rather than making them look at an error for it.
