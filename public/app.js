@@ -127,6 +127,8 @@ function sanitizeProse(html) {
       const keepOpen = el.tagName === 'DETAILS' && el.hasAttribute('open');   // remember collapse state
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
       if (href && /^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+      // Internal links to other Robski Life pages keep their href + a marker class.
+      else if (href && /^#rl-(note|table|area)-[\w-]+$/i.test(href)) { el.setAttribute('href', href); el.setAttribute('class', 'rl-link'); }
       if (keepOpen) el.setAttribute('open', '');
     });
   };
@@ -326,10 +328,10 @@ function renderNav() {
     <div class="nav-grid">
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span> Home</button>
     <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span> Today</button>
-    <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks</button>
-    <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span> Calendar</button>
-    <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span> Mail</button>
-    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span> Notes</button>
+    <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span> Tasks<span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
+    <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span> Calendar<span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
+    <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span> Mail<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
+    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span> Notes<span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
       <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span> Tables</button>
       <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span> Life areas</button>
     </div>
@@ -339,6 +341,15 @@ function renderNav() {
     </div>`;
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
+}
+// Sidebar quick-add: jump to the tool and open its "new" affordance directly.
+async function quickAdd(kind) {
+  try {
+    if (kind === 'task') { await openTasks(); state.taskAdding = true; renderTasks(); setTimeout(() => { const i = $('#task-title'); if (i) i.focus(); }, 0); }
+    else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); }
+    else if (kind === 'mail') { await openMail(); startCompose(); }
+    else if (kind === 'note') { await newNote(null); }
+  } catch (e) { toast(e.message); }
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
 // backdrop-filter, which would make it the containing block for a fixed child
@@ -2137,6 +2148,7 @@ async function openRowResult(tableId, rowId) {
 
 // ── events ───────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
+  if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
   // ⌥⌘T / ⌥⌘W - the browser owns ⌘T/⌘W, so tabs use the Option variant.
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyT') { e.preventDefault(); newTab(); return; }
@@ -2180,6 +2192,7 @@ document.addEventListener('input', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
   if (e.target.id === 'move-input') { state.move.q = e.target.value; renderMoveList(); }
+  if (e.target.id === 'linkpick-input' && state.linkpick) { state.linkpick.q = e.target.value; renderLinkPickerList(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   // Page search boxes (Tasks / Notes / Calendar): keep focus + caret across the re-render.
   const liveSearch = (sel, set, render) => { if (!e.target.matches(sel)) return; const pos = e.target.selectionStart; set(e.target.value); render(); const i = $(sel); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } };
@@ -2212,6 +2225,11 @@ document.addEventListener('click', (e) => {
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
+  // Internal links jump within Robski Life instead of opening a browser tab.
+  if (alink) {
+    const rl = (alink.getAttribute('href') || '').match(/^#rl-(note|table|area)-(.+)$/i);
+    if (rl) { e.preventDefault(); const id = rl[2]; const nav = rl[1].toLowerCase() === 'note' ? openNote(id) : rl[1].toLowerCase() === 'table' ? openTable(id) : openArea(id); nav.catch((x) => toast(x.message)); return; }
+  }
   if (alink && /^https?:/i.test(alink.getAttribute('href') || '')) {
     e.preventDefault();
     // Synthesise a real anchor click rather than window.open: an installed PWA
@@ -2220,7 +2238,10 @@ document.addEventListener('click', (e) => {
     document.body.appendChild(a); a.click(); a.remove();
     return;
   }
+  const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
+  if (t.closest('[data-linkpick-bg]') && !t.closest('.pal')) { closeLinkPicker(); return; }
+  const lpt = t.closest('[data-linkpick-to]'); if (lpt) { linkPickPick(lpt.dataset.linkpickTo); return; }
   const mbg = t.closest('[data-move-bg]'); if (mbg && !t.closest('.pal')) { closeMove(); return; }
   const mvt = t.closest('[data-move-to]'); if (mvt) { moveNote(mvt.dataset.moveTo || null); return; }
   if (t.closest('[data-move-note]')) { openMoveNote(); return; }
@@ -2936,6 +2957,63 @@ function normalizeProseLists(prose) {
   });
   prose.querySelectorAll('ul + ul, ol + ol').forEach((l) => { const prev = l.previousElementSibling; while (l.firstChild) prev.appendChild(l.firstChild); l.remove(); });
 }
+// Link picker: one dialog that both accepts a URL (type + Enter) and searches
+// your notes, tables & areas for an internal link.
+async function openLinkPicker(prose, range) {
+  state.linkpick = { prose, range, q: '', opts: [], loaded: false };
+  renderLinkPicker();
+  try {
+    const [notes, tables, areas] = await Promise.all([
+      api('/api/blocks?kind=note').catch(() => []),
+      api('/api/blocks?kind=table').catch(() => []),
+      api('/api/blocks?kind=area').catch(() => []),
+    ]);
+    const map = (arr, kind, icon) => (arr || []).map((b) => ({ id: b.id, kind, icon, title: b.title || 'Untitled' }));
+    if (!state.linkpick) return;
+    state.linkpick.opts = [...map(notes, 'note', '▤'), ...map(tables, 'table', '▦'), ...map(areas, 'area', '◈')];
+    state.linkpick.loaded = true;
+    renderLinkPickerList();
+  } catch {}
+}
+function renderLinkPicker() {
+  let el = document.getElementById('linkpick-overlay');
+  if (!el) { el = document.createElement('div'); el.id = 'linkpick-overlay'; document.body.appendChild(el); }
+  el.innerHTML = `<div class="pal-bg" data-linkpick-bg><div class="pal">
+    <input id="linkpick-input" placeholder="Paste a URL, or search notes, tables & areas…" value="${esc(state.linkpick.q)}" autocomplete="off" spellcheck="false">
+    <div class="pal-hint">Press Enter to link a web URL, or pick a page below to link internally.</div>
+    <div class="pal-list" id="linkpick-list"></div></div></div>`;
+  renderLinkPickerList();
+  const i = $('#linkpick-input'); if (i) i.focus();
+}
+function renderLinkPickerList() {
+  const el = $('#linkpick-list'); if (!el || !state.linkpick) return;
+  if (!state.linkpick.loaded) { el.innerHTML = '<div class="pal-empty">Loading your pages…</div>'; return; }
+  const q = state.linkpick.q.trim().toLowerCase();
+  const opts = state.linkpick.opts.filter((o) => o.title.toLowerCase().includes(q)).slice(0, 40);
+  el.innerHTML = opts.map((o) => `<button class="pal-item" data-linkpick-to="${o.kind}:${o.id}"><span class="pal-kind muted">${o.icon}</span><span class="pal-t">${esc(o.title)}</span></button>`).join('') || '<div class="pal-empty">No matching pages.</div>';
+}
+function insertProseLink(prose, range, href, fallbackText) {
+  prose.focus();
+  const s = window.getSelection(); s.removeAllRanges(); if (range) s.addRange(range);
+  if (!range || range.collapsed) document.execCommand('insertHTML', false, `<a href="${esc(href)}">${esc(fallbackText || href)}</a> `);
+  else document.execCommand('createLink', false, href);
+  saveProse(prose.dataset.prose, prose.innerHTML);
+}
+function linkPickUrl() {
+  if (!state.linkpick) return;
+  let url = state.linkpick.q.trim(); if (!url) return;
+  if (!/^https?:\/\//i.test(url) && (/^www\./i.test(url) || /^[\w-]+(\.[\w-]+)+/.test(url))) url = 'https://' + url;
+  insertProseLink(state.linkpick.prose, state.linkpick.range, url, url);
+  closeLinkPicker();
+}
+function linkPickPick(val) {
+  if (!state.linkpick) return;
+  const i = val.indexOf(':'); const kind = val.slice(0, i), id = val.slice(i + 1);
+  const opt = state.linkpick.opts.find((o) => o.kind === kind && o.id === id);
+  insertProseLink(state.linkpick.prose, state.linkpick.range, `#rl-${kind}-${id}`, opt ? opt.title : 'link');
+  closeLinkPicker();
+}
+function closeLinkPicker() { const el = document.getElementById('linkpick-overlay'); if (el) el.innerHTML = ''; state.linkpick = null; }
 function applyFmt(cmd) {
   const prose = activeProse(); if (!prose) return; prose.focus();
   // Emit <b>/<i> tags (sanitised to <strong>/<em>) rather than inline styles.
@@ -2947,14 +3025,10 @@ function applyFmt(cmd) {
   else if (cmd === 'ul') { document.execCommand('insertUnorderedList'); normalizeProseLists(prose); }
   else if (cmd === 'ol') { document.execCommand('insertOrderedList'); normalizeProseLists(prose); }
   else if (cmd === 'link') {
-    // The custom dialog steals focus, so snapshot the selection and restore it
-    // before createLink runs, or the link would apply to nothing.
+    // The dialog steals focus, so snapshot the selection and restore it before
+    // linking, or the link would apply to nothing.
     const sel = window.getSelection(); const range = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
-    uiPrompt('Link to (URL):', { title: 'Add link', okLabel: 'Add link', placeholder: 'https://…' }).then((url) => {
-      if (!url || !url.trim()) return;
-      prose.focus(); if (range) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(range); }
-      document.execCommand('createLink', false, url.trim()); saveProse(prose.dataset.prose, prose.innerHTML);
-    });
+    openLinkPicker(prose, range);
     return;
   }
   else if (cmd === 'collapse') collapseSection(prose);

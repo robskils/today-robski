@@ -427,6 +427,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-chev { color:var(--ink-2); font-size:13px; width:14px; flex:none; text-align:center; }
 .nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; padding:2px 0; }
 .nav-add { color:var(--ink-3); font-size:18px; line-height:1; padding:0 6px; flex:none; } .nav-add:hover { color:var(--accent); }
+/* Quick-add "+" on Tasks/Calendar/Mail/Notes: right-aligned, appears on hover. */
+.nav-quick { margin-left:auto; flex:none; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:var(--ink-3); font-size:17px; line-height:1; opacity:0; transition:opacity .12s, background .12s, color .12s; }
+.nav-item:hover .nav-quick, .nav-item.on .nav-quick { opacity:1; }
+.nav-quick:hover { background:var(--paper-2); color:var(--accent); }
+@media (pointer:coarse){ .nav-quick { opacity:1; } }
 .nav-grip { color:var(--ink-3); font-size:12px; cursor:grab; opacity:0; transition:opacity .12s; flex:none; padding:0 4px; letter-spacing:-2px; }
 .nav-sec-h[draggable]:active { cursor:grabbing; }
 .nav-sec-body { display:flex; flex-direction:column; gap:1px; margin-top:2px; }
@@ -803,7 +808,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-reader-head { display:flex; align-items:center; gap:10px; }
 .mail-reader-head .mail-msg-act { margin-left:auto; margin-top:0; }
 .mail-reader-title { font-weight:500; color:var(--ink-2); }
-.mail-back { display:none; }
+.mail-back { display:inline-flex; flex:none; }
 .mail-subj { font-size:clamp(21px,2.6vw,28px); margin:14px 0 14px; text-wrap:balance; }
 .mail-meta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; color:var(--ink-3); font-size:14.5px; margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--line); }
 .mail-meta-lines { display:flex; flex-direction:column; gap:1px; min-width:0; }
@@ -1043,6 +1048,9 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
 .prose h3 { font-size:22px; margin:20px 0 6px; }
 .prose h4, .prose h5, .prose h6 { font-size:18.5px; font-weight:600; margin:16px 0 4px; color:var(--ink-2); }
 .prose a { color:var(--accent); }
+/* Internal links (to another Robski Life page) read as a subtle dotted underline. */
+.prose a.rl-link { text-decoration:none; border-bottom:1px dashed color-mix(in srgb,var(--accent) 55%,transparent); cursor:pointer; }
+.prose a.rl-link:hover { border-bottom-style:solid; }
 .prose code { font-family:ui-monospace,Menlo,monospace; font-size:.9em; background:var(--paper-2); padding:2px 6px; border-radius:5px; }
 .prose blockquote { border-left:3px solid var(--line-2); padding-left:16px; margin:0 0 14px; color:var(--ink-2); font-style:italic; }
 .prose ul, .prose ol { margin:0 0 14px; padding-left:26px; }
