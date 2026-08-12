@@ -2779,14 +2779,28 @@ function positionBubble() {
   b.style.top = `${window.scrollY + rect.top - b.offsetHeight - 9}px`;
   b.style.left = `${Math.max(8, window.scrollX + rect.left + rect.width / 2 - b.offsetWidth / 2)}px`;
 }
+// execCommand('insertUnorderedList') on a paragraph can leave the <ul> nested
+// inside the <p> (invalid), which then makes Enter and rendering behave oddly -
+// the source of the "bulleting bolds things" weirdness. Lift lists to the top
+// level and drop the emptied paragraphs.
+function normalizeProseLists(prose) {
+  prose.querySelectorAll('p > ul, p > ol').forEach((list) => {
+    const p = list.parentElement;
+    p.parentNode.insertBefore(list, p);
+    if (!p.textContent.trim() && !p.querySelector('img')) p.remove();
+  });
+  prose.querySelectorAll('ul + ul, ol + ol').forEach((l) => { const prev = l.previousElementSibling; while (l.firstChild) prev.appendChild(l.firstChild); l.remove(); });
+}
 function applyFmt(cmd) {
   const prose = activeProse(); if (!prose) return; prose.focus();
+  // Emit <b>/<i> tags (sanitised to <strong>/<em>) rather than inline styles.
+  try { document.execCommand('styleWithCSS', false, false); } catch {}
   if (cmd === 'bold') document.execCommand('bold');
   else if (cmd === 'italic') document.execCommand('italic');
   else if (cmd === 'h2') document.execCommand('formatBlock', false, currentBlockTag() === 'H2' ? '<p>' : '<h2>');
   else if (cmd === 'quote') document.execCommand('formatBlock', false, currentBlockTag() === 'BLOCKQUOTE' ? '<p>' : '<blockquote>');
-  else if (cmd === 'ul') document.execCommand('insertUnorderedList');
-  else if (cmd === 'ol') document.execCommand('insertOrderedList');
+  else if (cmd === 'ul') { document.execCommand('insertUnorderedList'); normalizeProseLists(prose); }
+  else if (cmd === 'ol') { document.execCommand('insertOrderedList'); normalizeProseLists(prose); }
   else if (cmd === 'link') {
     // The custom dialog steals focus, so snapshot the selection and restore it
     // before createLink runs, or the link would apply to nothing.
@@ -2836,6 +2850,26 @@ document.addEventListener('selectionchange', positionBubble);
 document.addEventListener('mousedown', (e) => {
   const fb = e.target.closest && e.target.closest('#bubble [data-fmt]');
   if (fb) { e.preventDefault(); applyFmt(fb.dataset.fmt); }
+});
+// A new line should start clean: after Enter, drop any inherited bold/italic and
+// turn a continued heading or quote back into a normal paragraph, so formatting
+// applied to one line doesn't bleed onto the next. Lists keep their own Enter
+// behaviour (new item; empty item exits the list), so leave those alone.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey) return;
+  const prose = e.target.closest && e.target.closest('.prose'); if (!prose) return;
+  const sel = window.getSelection();
+  let inList = false;
+  for (let n = sel && sel.anchorNode; n && n !== prose; n = n.parentNode) {
+    if (n.nodeType === 1 && (n.tagName === 'LI' || n.tagName === 'UL' || n.tagName === 'OL')) { inList = true; break; }
+  }
+  // Let the browser insert the break first, then normalise the fresh line.
+  setTimeout(() => {
+    try { if (document.queryCommandState('bold')) document.execCommand('bold'); } catch {}
+    try { if (document.queryCommandState('italic')) document.execCommand('italic'); } catch {}
+    if (!inList) { const tag = currentBlockTag(); if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'BLOCKQUOTE') document.execCommand('formatBlock', false, '<p>'); }
+    saveProse(prose.dataset.prose, prose.innerHTML);
+  }, 0);
 });
 
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
