@@ -842,6 +842,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-invite-loc, .mail-invite-org { color:var(--ink-2); font-size:14px; margin-top:3px; }
 .mail-invite-act { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
 .mail-msg-act, .mail-compose-act { display:flex; gap:10px; align-items:center; margin-top:22px; }
+.mail-claudius { display:inline-flex; align-items:center; gap:6px; padding:8px 15px; border-radius:10px; border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent); font-size:14.5px; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .12s, border-color .12s, opacity .12s; }
+.mail-claudius:hover { background:color-mix(in srgb,var(--accent) 20%,transparent); border-color:var(--accent); }
+.mail-claudius:disabled { opacity:.6; cursor:default; }
 .mail-compose { display:flex; flex-direction:column; gap:12px; padding:20px 24px; }
 .mail-compose input, .mail-compose textarea { width:100%; padding:13px 16px; font-size:16.5px; background:var(--paper); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); }
 .mail-compose textarea { min-height:280px; resize:vertical; font-family:inherit; line-height:1.6; }
@@ -880,6 +883,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-acct .sig-btn:hover { border-color:var(--accent); color:var(--accent); }
 .mail-acct-card .mail-acct .x { margin-left:8px; }
 .mail-sig { margin:2px 0 14px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-2); }
+.sig-color-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.sig-color-lbl { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
+.sig-color-sw { width:34px; height:28px; padding:0; border:1px solid var(--line); border-radius:8px; background:var(--card); cursor:pointer; }
+.sig-color-sw::-webkit-color-swatch-wrapper { padding:3px; }
+.sig-color-sw::-webkit-color-swatch { border:none; border-radius:5px; }
+.sig-hex { width:96px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:14px; padding:6px 9px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink); text-transform:lowercase; }
+.sig-hex:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); }
 .mail-sig-ed { min-height:70px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:12px 14px; font-size:15px; }
 .mail-sig-ed:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); }
 .mail-sig-act { display:flex; align-items:center; gap:12px; margin-top:11px; }

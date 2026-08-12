@@ -1136,6 +1136,29 @@ function mailReplyStart(all) {
   renderMail();
   setTimeout(() => $('#mc-body') && $('#mc-body').focus(), 0);
 }
+// Claudius drafts a reply, then drops it into a normal reply compose above the
+// quoted original. It never sends - Robin reviews and edits like any draft.
+async function mailClaudius() {
+  const o = state.mail.open; if (!o) return;
+  const btn = document.querySelector('[data-mail-claudius]');
+  if (btn) { btn.disabled = true; btn.textContent = '✦ Drafting…'; }
+  try {
+    const { draft } = await mailApi('/draft', { method: 'POST', body: JSON.stringify({
+      account: o._acct, from: o.from ? o.from.address : '', subject: o.subject, text: o.text || '',
+    }) });
+    mailReplyStart(false);
+    const c = state.mail.composing;
+    if (c) {
+      c.body = `${draft}\n${c.body || ''}`;
+      renderMail();
+      setTimeout(() => { const el = $('#mc-body'); if (el) { el.focus(); try { el.setSelectionRange(0, 0); } catch {} el.scrollTop = 0; } }, 0);
+    }
+    toast('Claudius drafted a reply - review it before sending');
+  } catch (e) {
+    toast(e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '✦ Claudius'; }
+  }
+}
 
 // A tasteful default signature so a new account starts with something real to
 // edit rather than a blank box.
@@ -1144,18 +1167,57 @@ function defaultSignature(a) {
   const accent = a.color || '#c4412e';
   return `<table cellpadding="0" cellspacing="0" style="font-family:-apple-system,Segoe UI,Inter,sans-serif"><tr><td style="border-left:3px solid ${accent};padding:2px 0 2px 12px"><div style="font-size:15px;font-weight:600;color:#1b1820">${esc(name)}</div><div style="font-size:13px;color:#8a8580;margin-top:2px"><a href="mailto:${esc(a.email)}" style="color:#8a8580;text-decoration:none">${esc(a.email)}</a></div></td></tr></table>`;
 }
+// Normalise any user hex to 6-digit lowercase (#abc → #aabbcc); null if invalid.
+function normHex(h) {
+  h = String(h || '').trim(); if (h && h[0] !== '#') h = '#' + h;
+  if (/^#[0-9a-fA-F]{3}$/.test(h)) return '#' + h.slice(1).split('').map((c) => c + c).join('').toLowerCase();
+  if (/^#[0-9a-fA-F]{6}$/.test(h)) return h.toLowerCase();
+  return null;
+}
+// The signature "bar" is the coloured left border in the template. Recover its
+// colour from saved HTML so the picker opens on the current value.
+function sigBarColor(a) {
+  const m = (a.signature || '').match(/border-left\s*:\s*[^;"']*?(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})/i);
+  return normHex(m ? m[1] : (a.color || '#c4412e')) || '#c4412e';
+}
+// Live-recolour the bar as you pick, and keep the swatch and hex box in step.
+function applySigColor(id, raw, src) {
+  const hex = normHex(raw);
+  if (src !== 'sw') { const sw = document.querySelector(`[data-sig-color-sw="${id}"]`); if (sw && hex) sw.value = hex; }
+  if (src !== 'hex') { const tx = document.querySelector(`[data-sig-hex="${id}"]`); if (tx && hex) tx.value = hex; }
+  if (!hex) return;
+  const ed = document.querySelector(`[data-sig-acct="${id}"]`); if (!ed) return;
+  ed.querySelectorAll('[style*="border-left"]').forEach((el) => { el.style.borderLeftColor = hex; });
+}
+// Accounts breadcrumb: gains a "Signatures" step whenever a signature editor is open.
+function acctCrumbHtml(sigOpen) {
+  const trail = [{ label: 'Home', attr: 'data-view-home' }, { label: 'Mail', attr: 'data-open-mail' }];
+  if (sigOpen) { trail.push({ label: 'Accounts', attr: 'data-sig-close-all' }, { label: 'Signatures' }); }
+  else trail.push({ label: 'Accounts' });
+  return crumbNav(trail);
+}
+function refreshAcctCrumb() {
+  const bar = document.querySelector('#pane .crumbbar'); if (!bar) return;
+  const open = !!document.querySelector('[data-sig-panel]:not([hidden])');
+  const tmp = document.createElement('div'); tmp.innerHTML = acctCrumbHtml(open);
+  bar.replaceWith(tmp.firstElementChild);
+}
 function renderMailAccounts(note) {
   const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct-card">
     <div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span>
       <button class="ghost sig-btn" data-sig-toggle="${a.id}">Signature</button>
       <button class="x" data-mail-del-acct="${a.id}" title="Remove">×</button></div>
     <div class="mail-sig" data-sig-panel="${a.id}" hidden>
+      <label class="sig-color-row"><span class="sig-color-lbl">Bar colour</span>
+        <input type="color" class="sig-color-sw" data-sig-color-sw="${a.id}" value="${sigBarColor(a)}" title="Pick a colour">
+        <input type="text" class="sig-hex" data-sig-hex="${a.id}" value="${sigBarColor(a)}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Signature bar hex colour"></label>
       <div class="mail-sig-ed prose" contenteditable="true" data-sig-acct="${a.id}" data-ph="Your signature…">${a.signature || defaultSignature(a)}</div>
       <div class="mail-sig-act"><button class="add-btn" data-sig-save="${a.id}">Save signature</button><span class="sig-hint">Added to the bottom of messages you send from this address.</span></div>
     </div>
     ${(a.blocked && a.blocked.length) ? `<div class="mail-blocked"><span class="mail-blocked-h">Blocked senders · ${a.blocked.length}</span><div class="mail-blocked-chips">${a.blocked.map((addr) => `<span class="mail-blocked-chip">${esc(addr)}<button data-mail-unblock="${esc(addr)}" data-mail-unblock-acct="${a.id}" title="Unblock">×</button></span>`).join('')}</div></div>` : ''}
     </div>`).join('');
-  $('#pane').innerHTML = `<div class="pane-head home-head"><h1>Mail</h1><button class="add-btn wide" data-mail-add-acct>+ Add mailbox</button></div>
+  $('#pane').innerHTML = `${acctCrumbHtml(false)}
+    <div class="pane-head home-head"><h1>Accounts</h1><button class="add-btn wide" data-mail-add-acct>+ Add mailbox</button></div>
     <p class="scope">${note ? esc(note) + ' ' : ''}Connect as many mailboxes as you like - adding one never removes another.</p>
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>
@@ -1393,7 +1455,7 @@ function renderMail(loading) {
     const o = m.open;
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
-        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">Archive</button><button class="ghost" data-mail-move-one="${esc(o._key)}" title="Move to a folder">Move</button><button class="ghost" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${esc(o._key)}">Delete</button></span></div>
+        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="mail-claudius" data-mail-claudius title="Draft a reply with Claudius">✦ Claudius</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">Archive</button><button class="ghost" data-mail-move-one="${esc(o._key)}" title="Move to a folder">Move</button><button class="ghost" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${esc(o._key)}">Delete</button></span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
@@ -2073,6 +2135,9 @@ document.addEventListener('input', (e) => {
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
   if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; const v = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages().then(() => { const el = $('[data-mail-q]'); if (el) { el.focus(); try { el.setSelectionRange(v.length, v.length); } catch {} } }); }, 450); }
+  // Signature bar colour: live-recolour the bar; swatch and hex box stay synced.
+  if (e.target.matches('[data-sig-hex]')) applySigColor(e.target.dataset.sigHex, e.target.value, 'hex');
+  if (e.target.matches('[data-sig-color-sw]')) applySigColor(e.target.dataset.sigColorSw, e.target.value, 'sw');
   // Compose fields: keep the draft object in sync as you type, then auto-save.
   if (state.mail && state.mail.composing && ['mc-to', 'mc-cc', 'mc-subject', 'mc-body'].includes(e.target.id)) {
     const c = state.mail.composing;
@@ -2153,6 +2218,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-attach]')) { const f = $('#mc-file'); if (f) f.click(); return; }
   const madel = t.closest('[data-mail-att-del]'); if (madel) { mailRemoveAttachment(madel.dataset.mailAttDel); return; }
   if (t.closest('[data-mail-discard]')) { clearDraft(); (state.mail.composing && state.mail.composing.attachments || []).forEach((a) => mailApi(`/attach/${a.id}?account=${encodeURIComponent(composeAcctId())}`, { method: 'DELETE' }).catch(() => {})); state.mail.composing = false; renderMail(); toast('Draft discarded'); return; }
+  if (t.closest('[data-mail-claudius]')) { mailClaudius(); return; }
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
   if (t.closest('[data-mail-show-imgs]')) { if (state.mail.open) { state.mail.showImgKey = state.mail.open._key; renderMail(); } return; }
@@ -2162,7 +2228,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
   const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
-  const sigt = t.closest('[data-sig-toggle]'); if (sigt) { const p = document.querySelector(`[data-sig-panel="${sigt.dataset.sigToggle}"]`); if (p) p.hidden = !p.hidden; return; }
+  if (t.closest('[data-sig-close-all]')) { document.querySelectorAll('[data-sig-panel]').forEach((p) => { p.hidden = true; }); refreshAcctCrumb(); return; }
+  const sigt = t.closest('[data-sig-toggle]'); if (sigt) { const p = document.querySelector(`[data-sig-panel="${sigt.dataset.sigToggle}"]`); if (p) p.hidden = !p.hidden; refreshAcctCrumb(); return; }
   const sigs = t.closest('[data-sig-save]'); if (sigs) { saveSignature(sigs.dataset.sigSave); return; }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
