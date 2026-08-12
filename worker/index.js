@@ -419,6 +419,40 @@ async function journalDeepen(request, env, json, err) {
   } catch (e) { console.error('journalDeepen:', e.message); return err('Could not reach Claude.', request, 502); }
 }
 
+// Is a YouTube video embeddable? oEmbed answers in one JSON call (and hands us
+// the title + thumbnail). A non-200 means embedding is blocked or the video is
+// gone; we scrape og:title from the watch page so the fallback card still has a
+// real name. The browser can't check this itself (cross-origin), hence the worker.
+function ytUnescape(s) {
+  return String(s || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n));
+}
+async function ytInfo(request, env, url, json, err) {
+  const id = (url.searchParams.get('id') || '');
+  if (!/^[\w-]{11}$/.test(id)) return err('bad id', request, 400);
+  const watch = `https://www.youtube.com/watch?v=${id}`;
+  const thumb = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  try {
+    const oe = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(watch)}&format=json`, { cf: { cacheTtl: 86400, cacheEverything: true } });
+    if (oe.ok) {
+      const d = await oe.json().catch(() => ({}));
+      return json({ embeddable: true, title: d.title || '', author: d.author_name || '', thumb: d.thumbnail_url || thumb }, request);
+    }
+    if (oe.status === 404) return json({ embeddable: false, unavailable: true, title: 'Video unavailable', thumb }, request);
+    // Exists but embedding is disabled (401/403): grab a title for the card.
+    let title = '';
+    try {
+      const pg = await fetch(watch, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RobskiLife/1.0)', 'Accept-Language': 'en' }, cf: { cacheTtl: 86400, cacheEverything: true } });
+      const html = await pg.text();
+      const m = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i) || html.match(/<title>([^<]*)<\/title>/i);
+      if (m) title = ytUnescape(m[1]).replace(/\s*-\s*YouTube\s*$/i, '').trim();
+    } catch {}
+    return json({ embeddable: false, title, thumb }, request);
+  } catch (e) {
+    // On any failure, let the client fall back to attempting the embed.
+    return json({ embeddable: true, thumb }, request);
+  }
+}
+
 // Google keeps a deleted event in the calendar's bin for 30 days, so this is
 // undoable at their end. Still the only destructive reach this app has outside
 // its own D1, hence the confirm step in the UI.
@@ -1674,6 +1708,7 @@ export default {
       if (path === '/api/calendar' && request.method === 'GET') return handleCalendar(request, env, url);
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
+      if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
       // Send one alert now, to prove the SMS path end to end without waiting
       // for a block to come due. Authed, like everything below the gate.
       if (path === '/api/alert/test' && request.method === 'POST') {

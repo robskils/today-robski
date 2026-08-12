@@ -100,7 +100,34 @@ function youtubeIds(body) {
 function embedsHtml(body) {
   const ids = youtubeIds(body);
   if (!ids.length) return '';
-  return `<div class="embeds">${ids.map((id) => `<div class="embed-yt"><iframe src="https://www.youtube-nocookie.com/embed/${id}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`).join('')}</div>`;
+  // Start each as a thumbnail poster (never a grey box); hydrateEmbeds() then
+  // swaps in the real player, or a link card if the video blocks embedding.
+  return `<div class="embeds">${ids.map((id) => `<div class="embed-yt" data-yt="${id}"><img class="yt-poster" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span></div>`).join('')}</div>`;
+}
+const ytCache = {};
+function ytCacheGet(id) {
+  if (ytCache[id]) return ytCache[id];
+  try { const s = localStorage.getItem('life.yt.' + id); if (s) return (ytCache[id] = JSON.parse(s)); } catch {}
+  return null;
+}
+function ytCacheSet(id, info) { ytCache[id] = info; try { localStorage.setItem('life.yt.' + id, JSON.stringify(info)); } catch {} }
+// Resolve each poster: embeddable -> the player; blocked/unavailable -> a card.
+async function hydrateEmbeds() {
+  for (const el of [...document.querySelectorAll('.embed-yt[data-yt]:not([data-yt-done])')]) {
+    const id = el.dataset.yt; el.dataset.ytDone = '1';
+    let info = ytCacheGet(id);
+    if (!info) { try { info = await api(`/api/ytinfo?id=${id}`); ytCacheSet(id, info); } catch { info = { embeddable: true }; } }
+    if (info.embeddable) {
+      el.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}" title="${esc(info.title || 'YouTube video')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
+    } else {
+      el.classList.add('is-card');
+      const thumb = info.thumb || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      const sub = info.unavailable ? 'This video is unavailable' : 'Can’t be embedded · watch on YouTube';
+      el.innerHTML = `<a class="yt-card" href="https://www.youtube.com/watch?v=${id}" title="Open on YouTube">
+        <span class="yt-card-thumb"><img src="${esc(thumb)}" alt="" loading="lazy"><span class="yt-play">▶</span></span>
+        <span class="yt-card-meta"><span class="yt-card-title">${esc(info.title || 'YouTube video')}</span><span class="yt-card-src">${esc(sub)}</span></span></a>`;
+    }
+  }
 }
 // An always-on inline editor. No modes, no markup - you just write, and the
 // selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
@@ -1951,7 +1978,7 @@ function renderNote() {
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
     </div>`;
-  autoGrowSoon($('#note-title')); loadThumbs();
+  autoGrowSoon($('#note-title')); loadThumbs(); hydrateEmbeds();
 }
 
 // ── move a note inside another (re-parent) ───────────
@@ -2833,7 +2860,7 @@ function renderTaskCard() {
     </div>
     ${notesSection(t.body, 'task')}
     ${attachSection(t)}`;
-  autoGrowSoon($('#taskcard-title')); loadThumbs();
+  autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by
