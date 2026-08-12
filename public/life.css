@@ -416,9 +416,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 }
 /* The label sits between the icon and the "+"; let it ellipsize so the + is
    never pushed out of view on a narrow sidebar. */
-.nav-item > span:first-child { flex:none; }
+.nav-item > span:first-child { flex:none; width:17px; text-align:center; }
 .nav-lbl { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-.nav-item > span:first-child { flex:none; }
+.nav-item > span:first-child { flex:none; width:17px; text-align:center; }
 .nav-item:hover { background:var(--paper); color:var(--ink); }
 .nav-item.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:var(--shadow); }
 .nav-secs { display:flex; flex-direction:column; }

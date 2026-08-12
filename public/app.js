@@ -548,6 +548,11 @@ const JOURNAL_MODES = [
     'What is the one thing that, done, would make tomorrow a win?',
     'What obstacle is most likely to trip me up - and what is my plan for it?',
   ] },
+  { key: 'dreams', label: 'Dream journal', icon: '💭', prompts: [
+    'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.',
+    'What was the strongest feeling in the dream, and did it linger after I woke?',
+    'What in the dream felt most strange, vivid, or important?',
+  ] },
   { key: 'free', label: 'Free write', icon: '✍️', prompts: [
     'Just start writing, and do not stop to edit. See where it goes.',
   ] },
@@ -617,9 +622,11 @@ async function openJournalEntry(id) {
   state.view = { type: 'journalentry', id };
   renderNav(); renderJournalEntry();
 }
+const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
 function renderJournalEntry() {
   const n = state.journal.current;
   const mode = journalModeOf(n.props && n.props.mode);
+  const isDream = (n.props && n.props.mode) === 'dreams';
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
@@ -629,8 +636,8 @@ function renderJournalEntry() {
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
       <div class="note-body">${proseEditor(n.body, 'journal')}</div>
       <div class="j-deeper-bar">
-        <button class="add-btn j-deeper" data-journal-deeper>✦ Dig deeper</button>
-        <span class="j-deeper-hint">Claude reads your entry and asks one question to take it further. Use it as often as you like.</span>
+        <button class="add-btn j-deeper" data-journal-deeper>${journalDeeperLabel(n.props && n.props.mode)}</button>
+        <span class="j-deeper-hint">${isDream ? 'Claude reads your dream, offers a gentle interpretation, then asks a question to explore it further. Use it as often as you like.' : 'Claude reads your entry and asks one question to take it further. Use it as often as you like.'}</span>
       </div>
     </div>`;
 }
@@ -643,13 +650,13 @@ async function journalDeepen() {
   try {
     const { question } = await api('/api/journal/deepen', { method: 'POST', body: JSON.stringify({ mode: n.props && n.props.mode, prompt: n.props && n.props.prompt, text }) });
     if (ed && question) {
-      ed.insertAdjacentHTML('beforeend', `<blockquote>${esc(question)}</blockquote><p><br></p>`);
+      ed.insertAdjacentHTML('beforeend', `<blockquote>${esc(question).replace(/\n+/g, '<br>')}</blockquote><p><br></p>`);
       saveProse('journal', ed.innerHTML);
       const p = ed.lastElementChild;
       if (p) { const r = document.createRange(); r.selectNodeContents(p); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); ed.focus(); p.scrollIntoView({ block: 'center' }); }
     }
   } catch (e) { toast(e.message); }
-  finally { const b = document.querySelector('[data-journal-deeper]'); if (b) { b.disabled = false; b.textContent = '✦ Dig deeper'; } }
+  finally { const b = document.querySelector('[data-journal-deeper]'); if (b) { b.disabled = false; b.textContent = journalDeeperLabel(n.props && n.props.mode); } }
 }
 async function delJournalEntry() {
   const n = state.journal && state.journal.current; if (!n) return;
