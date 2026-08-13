@@ -127,6 +127,11 @@ function embedsHtml(body) {
   const lc = links.map((u) => `<a class="link-card loading" data-linkcard="${esc(u)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="lc-main"><span class="lc-title">${esc(prettyHost(u))}</span><span class="lc-site">${esc(prettyHost(u))}</span></span></a>`).join('');
   return `<div class="embeds">${yt}${lc}</div>`;
 }
+// A stable fingerprint of the embeds a body produces, so saveProse can tell
+// whether a paste added/removed a player or link card and needs a re-render.
+function embedSig(body) {
+  return youtubeIds(body).join(',') + '|' + standaloneUrls(body).join(',');
+}
 const ytCache = {};
 function ytCacheGet(id) {
   if (ytCache[id]) return ytCache[id];
@@ -3149,19 +3154,21 @@ async function deleteAttachment(blockId, attId) {
 // Save a rich-text region back to whichever block it belongs to.
 async function saveProse(key, rawHtml) {
   const html = linkifyHtml(sanitizeProse(rawHtml));
-  let id;
-  if (key === 'note') { const n = state.note && state.note.current; if (!n) return; n.body = html; id = n.id; }
-  else if (key === 'task') { const t = state.task_open && state.task_open.task; if (!t) return; t.body = html; id = t.id; }
-  else if (key === 'row') { const r = state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)); if (!r) return; r.body = html; id = r.id; }
-  else if (key === 'journal') { const j = state.journal && state.journal.current; if (!j) return; j.body = html; id = j.id; }
+  let id; let prev = '';
+  if (key === 'note') { const n = state.note && state.note.current; if (!n) return; prev = n.body || ''; n.body = html; id = n.id; }
+  else if (key === 'task') { const t = state.task_open && state.task_open.task; if (!t) return; prev = t.body || ''; t.body = html; id = t.id; }
+  else if (key === 'row') { const r = state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)); if (!r) return; prev = r.body || ''; r.body = html; id = r.id; }
+  else if (key === 'journal') { const j = state.journal && state.journal.current; if (!j) return; prev = j.body || ''; j.body = html; id = j.id; }
   if (!id) return;
   // Reflect the linkified/sanitised HTML back into the editor once it's blurred,
   // so a freshly typed URL becomes a link. Never while focused - that would move
   // the caret and eat what's being typed.
   const el = document.querySelector(`.prose[data-prose="${key}"]`);
   if (el && document.activeElement !== el && el.innerHTML !== html) el.innerHTML = html;
-  // If a YouTube link was just added/removed, refresh the players below.
-  if (youtubeIds(html).length !== document.querySelectorAll('.embed-yt').length) rerenderHost();
+  // If the set of embeds (YouTube players or link cards) changed, refresh the
+  // cards below so a freshly pasted URL previews without leaving the note. Only
+  // once the editor is blurred - re-rendering mid-type would drop the caret.
+  if (embedSig(html) !== embedSig(prev) && (!el || document.activeElement !== el)) rerenderHost();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {
