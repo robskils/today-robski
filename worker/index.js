@@ -445,22 +445,36 @@ async function fetchLinkMeta(rawUrl) {
   const slugTitle = /[a-z]/i.test(slug) ? slug.replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 120) : '';
   const isVideo = /(youtube\.com|youtu\.be|vimeo\.com|ted\.com|tiktok\.com|twitch\.tv)/i.test(host);
   const meta = { url, title: '', image: '', site: host, media: isVideo ? 'video' : 'article' };
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RobskiLife/1.0)', 'Accept-Language': 'en' }, cf: { cacheTtl: 3600, cacheEverything: true } });
-    if (res.ok) {
-      const html = (await res.text()).slice(0, 400000);
-      const pick = (prop) => {
-        const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'))
-          || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'));
-        return m ? ytUnescape(m[1]) : '';
-      };
-      const t = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-      meta.title = pick('og:title') || (t ? ytUnescape(t[1]) : '');
-      meta.image = pick('og:image');
-      meta.desc = (pick('og:description') || pick('description') || '').slice(0, 220);
-      if (/video/i.test(pick('og:type'))) meta.media = 'video';
-    }
-  } catch {}
+  // A site's favicon, via Google's icon service. Always reachable (it's Google,
+  // not the source site) so even a scrape-blocked page gets a branded card.
+  meta.icon = host ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64` : '';
+  // Pose as a real browser, then as the Facebook link crawler: many sites block
+  // an unknown agent but serve og tags to a browser or to social scrapers. (Full
+  // Cloudflare bot-protection verifies crawlers by IP, so nothing server-side
+  // gets past it - the slug fallback below covers those.)
+  const UAS = [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+  ];
+  let html = '';
+  for (const ua of UAS) {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-US,en;q=0.9' }, cf: { cacheTtl: 3600, cacheEverything: true } });
+      if (res.ok) { html = (await res.text()).slice(0, 400000); break; }
+    } catch {}
+  }
+  if (html) {
+    const pick = (prop) => {
+      const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'))
+        || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'));
+      return m ? ytUnescape(m[1]) : '';
+    };
+    const t = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    meta.title = pick('og:title') || (t ? ytUnescape(t[1]) : '');
+    meta.image = pick('og:image');
+    meta.desc = (pick('og:description') || pick('description') || '').slice(0, 220);
+    if (/video/i.test(pick('og:type'))) meta.media = 'video';
+  }
   // Reject error/challenge titles (403, "Just a moment…", "Access denied") and
   // fall back to the slug so the card reads like a heading, not a failure.
   if (!meta.title || /^\s*(error|forbidden|403|401|404|access denied|attention required|just a moment|are you (a )?human|please wait)/i.test(meta.title)) {

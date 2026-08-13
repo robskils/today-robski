@@ -163,8 +163,9 @@ async function hydrateEmbeds() {
     if (!info) { try { info = await api(`/api/linkinfo?url=${encodeURIComponent(u)}`); lcCacheSet(u, info); } catch { info = {}; } }
     const host = prettyHost(u);
     const title = info.title || host;
+    const icon = info.icon || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
     el.classList.remove('loading');
-    el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site">${esc(host)}</span></span>`;
+    el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site"><img class="lc-fav" src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">${esc(host)}</span></span>`;
   }
 }
 const lcCache = {};
