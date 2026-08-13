@@ -924,6 +924,7 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
 .acct-edit-form .ae-lbl input:focus { border-color:var(--accent); outline:none; }
 .acct-edit-form .ae-row { display:flex; gap:8px; }
 .acct-edit-form .ae-act { display:flex; gap:8px; margin-top:2px; }
+.acct-edit-form .ae-act .add-btn { width:auto; white-space:nowrap; padding:10px 18px; }
 .mail-sig { margin:2px 0 14px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-2); }
 .sig-color-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
 .sig-color-lbl { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
