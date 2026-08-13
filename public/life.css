@@ -768,6 +768,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-layout:not(.reading) .mail-reader { display:none; }
 .mail-layout.reading .mail-list-col { display:none; }
 .mail-list { display:block; }
+.mail-list .home-empty { padding-left:16px; padding-right:16px; }
 /* Multi-select: a checkbox overlays the avatar on hover / in select mode. */
 .mail-row { position:relative; }
 .mail-check { position:absolute; left:20px; top:15px; width:38px; height:38px; box-sizing:border-box; border-radius:50%; border:2px solid var(--line-2); background:var(--card); display:inline-flex; align-items:center; justify-content:center; color:var(--accent-ink); font-size:16px; opacity:0; pointer-events:none; z-index:2; transition:opacity .1s; }
