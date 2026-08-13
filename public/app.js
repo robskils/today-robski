@@ -627,17 +627,45 @@ function openNotesList() {
   renderNav();
   renderNotesList();
 }
+const NOTE_SORTS = [['added-desc', 'Newest first'], ['added-asc', 'Oldest first'], ['az', 'Name A-Z'], ['za', 'Name Z-A'], ['area', 'Life area']];
+function notesSortMode() { return state.notesSort || (state.notesSort = localStorage.getItem('life.notesSort') || 'added-desc'); }
+// A note's life-area title for sorting; no-area sorts last (￿).
+const noteAreaTitle = (n) => { const a = n.props && n.props.area && areaById(n.props.area); return a ? (a.title || '') : '￿'; };
+function sortNotes(list) {
+  const mode = notesSortMode();
+  const t = (n) => (n.title || '').toLowerCase();
+  const d = (n) => n.created_at || '';
+  const arr = [...list];
+  if (mode === 'added-asc') arr.sort((a, b) => (d(a) < d(b) ? -1 : d(a) > d(b) ? 1 : 0));
+  else if (mode === 'az') arr.sort((a, b) => t(a).localeCompare(t(b)));
+  else if (mode === 'za') arr.sort((a, b) => t(b).localeCompare(t(a)));
+  else if (mode === 'area') arr.sort((a, b) => noteAreaTitle(a).localeCompare(noteAreaTitle(b)) || t(a).localeCompare(t(b)));
+  else arr.sort((a, b) => (d(a) < d(b) ? 1 : d(a) > d(b) ? -1 : 0));   // added-desc (default)
+  return arr;
+}
 function renderNotesList() {
   const q = (state.notesQuery || '').trim().toLowerCase();
-  const favNotes = state.noteTops.filter((n) => n.props && n.props.fav);
-  const all = q ? state.noteTops.filter((n) => (n.title || '').toLowerCase().includes(q)) : state.noteTops;
+  const mode = notesSortMode();
+  const favNotes = sortNotes(state.noteTops.filter((n) => n.props && n.props.fav));
+  const all = sortNotes(q ? state.noteTops.filter((n) => (n.title || '').toLowerCase().includes(q)) : state.noteTops);
   const cards = (list) => list.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▸</span>${esc(n.title || 'Untitled')}${areaTag(n)}</button>`).join('');
+  const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort notes">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  // In "Life area" order (unfiltered), split into a section per area.
+  let listHtml;
+  if (mode === 'area' && !q) {
+    const groups = new Map();
+    for (const n of all) { const k = (n.props && n.props.area) || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }
+    const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
+    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life area') : 'No life area'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || '<div class="empty">No notes yet.</div>';
+  } else {
+    listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All notes · ${state.noteTops.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'No notes match.' : 'No notes yet.'}</div>`}</div></section>`;
+  }
   $('#pane').innerHTML = `
     ${pageCrumb('Notes')}
     <div class="pane-head home-head"><h1>Notes</h1><button class="add-btn wide" data-new-note>+ New note</button></div>
-    <input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">
+    <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${sortSel}</div>
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All notes · ${state.noteTops.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'No notes match.' : 'No notes yet.'}</div>`}</div></section>`;
+    ${listHtml}`;
 }
 
 // ── Journal ──────────────────────────────────────────
@@ -2895,6 +2923,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
   if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
+  if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
