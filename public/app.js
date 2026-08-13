@@ -1409,7 +1409,9 @@ async function openMessage(key) {
   renderMail(true);
   try {
     const m = await mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid}`);
-    state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid };
+    // /message doesn't report flags, so carry the row's starred state across -
+    // otherwise the reader star always shows empty and needs two clicks to set.
+    state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged };
     if (!row.seen) { row.seen = true; mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
   } catch (e) { toast(e.message); }
   renderMail();
