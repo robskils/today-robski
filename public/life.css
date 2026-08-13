@@ -1232,10 +1232,8 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
 @media (max-width:620px){
   table.ttable td, table.ttable th { padding:11px 7px; }
   /* Drop Added + Area so titles get room; area stays reachable via the filter
-     chips above, and a colour bar keeps the area legible at a glance. */
+     chips above (the tick box border already carries the area colour). */
   .tc-date, th.tc-date, .tc-area, th.tc-area { display:none; }
-  .tr-task td.tc-done { box-shadow:inset 3px 0 0 var(--c); }
-  .tr-task[style*="--h:220"] td.tc-done { box-shadow:none; }
   .ttable .tag { font-size:12px; padding:2px 8px; }
   .tc-act { width:52px; }
   .cal-head h1 { font-size:30px; }
