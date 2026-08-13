@@ -1374,7 +1374,7 @@ async function openMail() {
   } catch (e) { state.mail.error = e.message; renderMail(); }
 }
 async function loadMessages() {
-  state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; renderMail(true);
+  state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; state.mail.hover = null; renderMail(true);
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
   const all = state.mail.account === 'all';
   const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
@@ -1388,8 +1388,10 @@ async function loadMessages() {
       try {
         const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
         state.mail.unseen[a.id] = r.unseen || 0;
-        const msgs = (r.messages || []).map((x) => ({ ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: f.mailbox, _key: `${a.id}:${x.uid}` }));
-        if ((r.total || 0) > msgs.length) more = true;
+        // A search sweeps every folder, so each hit carries its own mailbox;
+        // key by it too, since UIDs are only unique within a mailbox.
+        const msgs = (r.messages || []).map((x) => { const mb = x.mailbox || f.mailbox; return { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}` }; });
+        if (!r.searchedAll && (r.total || 0) > msgs.length) more = true;
         return msgs;
       } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); return []; }
     }));
@@ -1805,12 +1807,20 @@ function buildThreads(msgs) {
   return threads;
 }
 const threadFrom = (th) => [...new Set(th.messages.map((x) => mailFrom(x) || '(unknown)'))].slice(0, 3).join(', ');
+// Short, friendly folder name for the chip shown on cross-folder search hits.
+function prettyMailbox(p) {
+  const s = String(p || '').replace(/^\[Gmail\]\//i, '');
+  if (/^INBOX$/i.test(s)) return 'Inbox';
+  return s.split(/[/.]/).filter(Boolean).pop() || s;
+}
+const mailSearching = () => !!(state.mail && state.mail.query && state.mail.query.trim());
+const folderChip = (x) => (mailSearching() && x._mailbox && !/^INBOX$/i.test(x._mailbox)) ? `<span class="mail-folder-chip">${esc(prettyMailbox(x._mailbox))}</span>` : '';
 // One message row (shared by flat view, single-message threads, and expanded children).
 const mailRowHtml = (x, child) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
     <span class="mail-check ${state.mail.selected && state.mail.selected.has(x._key) ? 'on' : ''}" data-mail-check="${esc(x._key)}" title="Select">${state.mail.selected && state.mail.selected.has(x._key) ? '✓' : ''}</span>
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
-    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${esc(x.subject)}</span>
+    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
     <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
 // Recognised video-meeting links, so we can float a "Join" button.
@@ -2578,7 +2588,8 @@ document.addEventListener('keydown', (e) => {
       if (e.key === 'c' || e.key === 'C') { e.preventDefault(); startCompose(); return; }
       if (e.key === 'j' || e.key === 'J') { e.preventDefault(); mailSelMove(1); return; }
       if (e.key === 'k' || e.key === 'K') { e.preventDefault(); mailSelMove(-1); return; }
-      if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && m.sel && !m.open) { e.preventDefault(); openMessage(m.sel); return; }
+      // Enter / o opens the row under the mouse if there is one, else the j/k selection.
+      if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && !m.open) { const target = m.hover || m.sel; if (target) { e.preventDefault(); openMessage(target); return; } }
       if (active && (e.key === 'r' || e.key === 'R')) { if (m.open) { e.preventDefault(); mailReplyStart(false); } return; }
       if (active && (e.key === 'a' || e.key === 'A')) { if (m.open) { e.preventDefault(); mailReplyStart(true); } return; }
       if (active && (e.key === 'f' || e.key === 'F')) { if (m.open) { e.preventDefault(); mailForwardStart(); } return; }
@@ -2879,6 +2890,13 @@ document.addEventListener('blur', (e) => {
   if (e.target.id === 'area-title') renameArea(e.target.value.trim());
   const cn = e.target.dataset && e.target.dataset.colname; if (cn !== undefined && cn) renameColumn(cn, e.target.value.trim());
 }, true);
+// Track the mail row under the mouse so Return opens it (no re-render: CSS :hover
+// already shows the highlight).
+document.addEventListener('mouseover', (e) => {
+  if (!state.mail || state.view.type !== 'mail') return;
+  const row = e.target.closest && e.target.closest('[data-mail-open]');
+  state.mail.hover = row ? row.dataset.mailOpen : null;
+});
 document.addEventListener('keydown', (e) => {
   if ((e.target.id === 'note-title' || e.target.id === 'taskcard-title' || e.target.id === 'area-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
 });

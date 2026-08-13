@@ -456,14 +456,38 @@ export async function handleMail(request, env, url, json, err) {
       const blocked = new Set(blockedList(acct).map(normAddr));
       const im = await imapOpen(env, acct);
       try {
-        await im.login(); const total = await im.select(mailbox);
+        await im.login();
+        // Search sweeps every folder (Inbox, Archive/All Mail, Sent, Trash, custom
+        // labels) EXCEPT Spam/Junk, newest first, de-duped by Message-ID so Gmail's
+        // "All Mail" overlap with Inbox/Sent collapses to one hit.
+        if (q) {
+          const boxes = await im.listMailboxes();
+          const skip = (b) => /\\Junk/i.test(b.flags || '') || /(^|[/.\\])(spam|junk|bulk\s*mail)$/i.test(b.path || '');
+          const cap = Math.max(limit, 60);
+          const seen = new Set(); const out = [];
+          for (const b of boxes) {
+            if (/\\Noselect/i.test(b.flags || '') || skip(b)) continue;   // Noselect = container node
+            try {
+              const t = await im.select(b.path);
+              if (!t) continue;
+              const found = await im.search(q, cap);
+              for (const m of found) {
+                const key = m.messageId || `${b.path}:${m.uid}`;
+                if (seen.has(key)) continue; seen.add(key);
+                out.push({ ...m, mailbox: b.path });
+              }
+            } catch {}
+          }
+          out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
+          return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll: true }, request);
+        }
+        const total = await im.select(mailbox);
         let messages = !total ? []
-          : q ? await im.search(q, limit)
           : flagged ? await im.listFlagged(limit)
           : await im.listRange(total, offset, limit);
         // Blocked senders: sweep them out of the inbox into Junk and hide them.
-        // Only on the first, unsearched inbox page.
-        if (blocked.size && !q && !flagged && offset === 0 && mailbox === 'INBOX') {
+        // Only on the first inbox page.
+        if (blocked.size && !flagged && offset === 0 && mailbox === 'INBOX') {
           const isBlocked = (m) => m.from && blocked.has(normAddr(m.from.address));
           for (const m of messages.filter(isBlocked)) { try { await im.move(m.uid, 'Junk'); } catch {} }
           messages = messages.filter((m) => !isBlocked(m));
