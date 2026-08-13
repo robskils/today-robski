@@ -160,6 +160,9 @@ async function hydrateEmbeds() {
   for (const el of [...document.querySelectorAll('.link-card[data-linkcard]:not([data-lc-done])')]) {
     const u = el.dataset.linkcard; el.dataset.lcDone = '1';
     let info = lcCacheGet(u);
+    // Ignore a cached error-page title (from before the scraper had a fallback)
+    // and re-fetch, so old bad cards heal themselves.
+    if (info && badLinkTitle(info.title)) info = null;
     if (!info) { try { info = await api(`/api/linkinfo?url=${encodeURIComponent(u)}`); lcCacheSet(u, info); } catch { info = {}; } }
     const host = prettyHost(u);
     const title = info.title || host;
@@ -168,6 +171,8 @@ async function hydrateEmbeds() {
     el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site"><img class="lc-fav" src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">${esc(host)}</span></span>`;
   }
 }
+// A scraped title that is really an error/challenge page, not the article.
+const badLinkTitle = (t) => !t || /^\s*(error|forbidden|40[134]|access denied|attention required|just a moment|are you (a )?human|please wait)/i.test(t);
 const lcCache = {};
 function lcCacheGet(u) {
   if (lcCache[u]) return lcCache[u];
