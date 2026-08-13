@@ -75,7 +75,12 @@ const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => se
 const imapStr = (s) => `"${String(s).replace(/([\\"])/g, '\\$1')}"`;
 
 async function imapOpen(env, acct) {
-  const pass = await decryptPass(env, acct.pass_enc);
+  let pass = await decryptPass(env, acct.pass_enc);
+  // Google shows App Passwords as four space-separated groups ("abcd efgh ijkl
+  // mnop"); the real password is the 16 characters with no spaces. People paste
+  // the spaced form, so strip whitespace for Google hosts (their passwords never
+  // contain any) - a "wrong password" that is really just stray spaces.
+  if (/g(oogle)?mail\.com/i.test(acct.imap_host)) pass = pass.replace(/\s+/g, '');
   const socket = connect({ hostname: acct.imap_host, port: acct.imap_port }, { secureTransport: 'on', allowHalfOpen: false });
   const reader = new Reader(socket.readable);
   const writer = socket.writable.getWriter();
@@ -103,7 +108,16 @@ async function imapOpen(env, acct) {
   const cmd = (command) => { const t = 'A' + (++tag); return withTimeout((async () => { await writer.write(enc.encode(`${t} ${command}\r\n`)); return readResponse(t); })(), 20000, 'IMAP command'); };
 
   return {
-    async login() { const r = await cmd(`LOGIN ${imapStr(acct.username)} ${imapStr(pass)}`); if (!r.ok) throw new Error('Mail login failed - check the username and password.'); },
+    async login() {
+      const r = await cmd(`LOGIN ${imapStr(acct.username)} ${imapStr(pass)}`);
+      if (!r.ok) {
+        // Surface the server's own words (Gmail's reply often links to the exact
+        // fix - enable IMAP, use an app password) instead of a generic message.
+        const last = r.lines[r.lines.length - 1] || '';
+        const msg = last.replace(/^\S+\s+(NO|BAD)\b\s*/i, '').replace(/\s*\(Failure\)\s*$/i, '').trim();
+        throw new Error(msg ? `Mail server refused sign-in: ${msg}` : 'Mail login failed - check the username and password.');
+      }
+    },
     async logout() { try { await cmd('LOGOUT'); } catch {} try { await writer.close(); } catch {} },
     async select(mbox) { const r = await cmd(`SELECT ${imapStr(mbox)}`); if (!r.ok) throw new Error(`Cannot open ${mbox}`); const ex = r.lines.map((l) => l.match(/\* (\d+) EXISTS/)).find(Boolean); return ex ? Number(ex[1]) : 0; },
     async listMailboxes() {
