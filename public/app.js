@@ -529,6 +529,8 @@ async function addTableEntry(id) {
 
 // ── view: home ───────────────────────────────────────
 const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+// Minutes → a compact human duration: 45m, 1h, 1h 30m.
+const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 const KIND_IC = { note: '▤', table: '▦', task: '✓', row: '▦', area: '◈' };
 const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
@@ -549,7 +551,7 @@ async function openHome() {
 // This is the "bits added to Today but not the calendar" Robin wanted surfaced.
 function homeTodayItems() {
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
-  const items = (state.home.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location }));
+  const items = (state.home.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location }));
   for (const s of state.home.slots || []) {
     const hue = hues[s.lane] ?? 0;
     const tasks = (s.tasks || []).filter((t) => t && t.title);
@@ -572,7 +574,9 @@ function renderHome() {
     return `<div class="fav-group"><div class="fav-group-h">${KIND_LABEL[k]}</div><div class="fav-cards">${list.map((f) => `<div class="fav-card"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${KIND_IC[f.kind] || '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`).join('')}</div></div>`;
   }).join('');
   const evRows = todayItems.map((it) => it.kind === 'event'
-    ? `<div class="ev-row"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}</span><span class="ev-t">${esc(it.title)}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`
+    ? (() => { const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
+        return `<div class="ev-row"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`; })()
+    // (end time stacked under start; duration tag after the title)
     : `<div class="ev-row ev-slot${it.done ? ' done' : ''}"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
   $('#pane').innerHTML = `
     <div class="home">
@@ -2926,6 +2930,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
+  if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
@@ -3170,6 +3175,9 @@ async function openTaskCard(id) {
   state.view = { type: 'taskcard', id };
   renderNav(); renderTaskCard();
 }
+// Duration presets (minutes) for the task card. Free-form isn't needed - these
+// cover the useful range; '—' clears it.
+const DURATION_OPTS = [['', '—'], [15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 hour'], [90, '1 hr 30 min'], [120, '2 hours'], [180, '3 hours'], [240, '4 hours'], [480, '8 hours']];
 function renderTaskCard() {
   const t = state.task_open.task; migrateCards(t); const a = areaById(t.props.area); const p = t.props.priority;
   $('#pane').innerHTML = `
@@ -3185,6 +3193,8 @@ function renderTaskCard() {
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Life area</span>
         <select class="sel" data-area-task="${t.id}"><option value="">No area</option>${state.areas.map((x) => `<option value="${x.id}" ${t.props.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Duration</span>
+        <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
     ${notesSection(t.body, 'task')}
     ${attachSection(t)}`;
