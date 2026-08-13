@@ -203,20 +203,34 @@ function parseAddr(s) {
   return m[2] ? { name: m[1].trim(), address: m[2].trim() } : { name: '', address: m[1].trim() };
 }
 function parseDate(s) { const d = new Date(s); return isNaN(d) ? s : d.toISOString(); }
+// A base64 part comes back raw from BODY[1] (IMAP never decodes transfer
+// encodings). Decode it if the peek is essentially one base64 blob and the
+// bytes turn into mostly-printable text; otherwise leave it alone.
+function decodeB64Text(compact) {
+  try {
+    const trimmed = compact.slice(0, compact.length - (compact.length % 4)); // whole quanta (the <0.512> peek can cut mid-group)
+    if (trimmed.length < 8) return null;
+    const txt = new TextDecoder('utf-8', { fatal: false }).decode(Uint8Array.from(atob(trimmed), (c) => c.charCodeAt(0)));
+    const printable = (txt.match(/[\t\n\r\x20-\x7E -￿]/g) || []).length;
+    return txt.length && printable / txt.length > 0.85 ? txt : null;
+  } catch { return null; }
+}
 // Best-effort one-line preview from the BODY[1] peek glued after the header
 // literal. Any doubt -> '' , so a garbled/encoded part never touches the list.
 function previewSnippet(hdr) {
   const after = (hdr.split(/BODY\[1\](?:<\d+>)?\s*/i)[1] || '').replace(/\)\s*$/, '');
   if (!after) return '';
-  let s = after
-    .replace(/=\r?\n/g, '')                                              // QP soft breaks
-    .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+  const compact = after.replace(/\s+/g, '');
+  const b64 = (compact.length >= 40 && /^[A-Za-z0-9+/]+={0,2}$/.test(compact)) ? decodeB64Text(compact) : null;
+  const text = b64 != null ? b64
+    : after.replace(/=\r?\n/g, '').replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))); // QP soft breaks + escapes
+  let s = text
     .replace(/<[^>]+>/g, ' ')                                            // strip HTML tags
     .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;/gi, "'").replace(/&quot;/gi, '"')
     .replace(/https?:\/\/\S+/g, '')                                      // links add no signal
     .replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, ' ').trim();
   if (/content-type:|content-transfer-encoding:|boundary=|--=?[-_]/i.test(s)) return ''; // MIME boilerplate
-  if (s.length > 40 && !/\s/.test(s)) return '';                        // base64-ish blob
+  if (s.length > 40 && !/\s/.test(s)) return '';                        // still an encoded blob
   return s.slice(0, 140);
 }
 // Parse the header-fields FETCH lines into message summaries. The header literal
