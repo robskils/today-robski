@@ -1249,7 +1249,11 @@ async function mailStar(key) {
   const on = !target.flagged;
   if (row) row.flagged = on;
   if (o && o._key === key) o.flagged = on;
-  if (!on && state.mail.folder === 'starred') { state.mail.messages = state.mail.messages.filter((m) => m._key !== key); if (o && o._key === key) state.mail.open = null; }
+  // In the Starred view, unstarring drops it from the list - but never while
+  // you're reading it: pressing S just toggles the star, leaving the mail open.
+  if (!on && state.mail.folder === 'starred' && !(o && o._key === key)) {
+    state.mail.messages = state.mail.messages.filter((m) => m._key !== key);
+  }
   renderMail();
   try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: target._acct, mailbox: target._mailbox, uid: target.uid, flagged: on }) }); }
   catch (e) { toast(e.message); }
