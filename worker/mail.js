@@ -76,6 +76,9 @@ const imapStr = (s) => `"${String(s).replace(/([\\"])/g, '\\$1')}"`;
 
 async function imapOpen(env, acct) {
   let pass = await decryptPass(env, acct.pass_enc);
+  // A stray leading/trailing space or newline from a paste is a classic cause of
+  // "invalid credentials" on a password that is otherwise correct - trim it.
+  pass = pass.replace(/^\s+|\s+$/g, '');
   // Google shows App Passwords as four space-separated groups ("abcd efgh ijkl
   // mnop"); the real password is the 16 characters with no spaces. People paste
   // the spaced form, so strip whitespace for Google hosts (their passwords never
