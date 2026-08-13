@@ -616,7 +616,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* Search box + accent add-button sharing one row (Tasks, and mirrored in the
    table toolbar). The search flexes to fill; the button keeps its size. */
 .list-head { display:flex; gap:12px; align-items:stretch; margin:0 0 18px; }
-.list-head .list-search { flex:1; width:auto; margin:0; }
+.list-head .list-search { flex:1; width:auto; min-width:0; margin:0; }
 .notes-toolbar { display:flex; gap:10px; align-items:stretch; margin:0 0 18px; flex-wrap:wrap; }
 .notes-toolbar .list-search { flex:1; min-width:180px; margin:0; }
 .notes-toolbar .notes-sort { flex:none; width:auto; max-width:none; font-size:15px; padding:12px 14px; }
@@ -1056,7 +1056,8 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
   .tasks-scroll .tr-task { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:13px 14px; margin-bottom:9px; border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:var(--shadow); }
   .tasks-scroll .tr-task td { border:0; padding:0; }
   .tasks-scroll .tc-done { order:1; }
-  .tasks-scroll .tc-title { order:2; flex:1 1 55%; min-width:0; font-size:17px; white-space:normal; }
+  .tasks-scroll .tc-title { order:2; flex:1 1 55%; min-width:0; font-size:17px; white-space:normal; overflow-wrap:anywhere; word-break:break-word; }
+  .tasks-scroll .tc-title .t { overflow-wrap:anywhere; word-break:break-word; }
   .tasks-scroll .tc-act { order:3; margin-left:auto; display:flex; gap:6px; }
   .tasks-scroll .tc-prio { order:4; } .tasks-scroll .tc-area { order:5; }
   .tasks-scroll .tc-date { display:none; }
