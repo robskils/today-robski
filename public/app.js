@@ -1254,17 +1254,30 @@ async function mailStar(key) {
   try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: target._acct, mailbox: target._mailbox, uid: target.uid, flagged: on }) }); }
   catch (e) { toast(e.message); }
 }
+// Every message key in the same conversation as `key` (just [key] when threading
+// is off), so Archive/Spam/Trash act on the whole thread at once.
+function threadKeysFor(key) {
+  if (!state.mail || !state.mail.threaded) return [key];
+  const th = buildThreads(state.mail.messages || []).find((t) => t.messages.some((m) => m._key === key));
+  return th ? th.messages.map((m) => m._key) : [key];
+}
 async function mailMoveTo(key, target, label) {
-  const row = mailRow(key); if (!row) return;
+  const keys = threadKeysFor(key);
+  const rows = keys.map((k) => mailRow(k)).filter(Boolean);
+  if (!rows.length) return;
   const msgs = state.mail.messages || []; const idx = msgs.findIndex((m) => m._key === key);
   try {
-    await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) });
-    toast(label);
-    state.mail.messages = msgs.filter((m) => m._key !== key);
+    for (const row of rows) {
+      await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) });
+    }
+    const gone = new Set(keys);
+    toast(rows.length > 1 ? `${label} · ${rows.length} messages` : label);
+    state.mail.messages = msgs.filter((m) => !gone.has(m._key));
     // Keep keyboard triage flowing: move the highlight to the next row (or the
     // previous one if we removed the last), and drop out of the reader.
-    if (state.mail.sel === key) { const n = state.mail.messages[idx] || state.mail.messages[idx - 1]; state.mail.sel = n ? n._key : null; }
-    state.mail.open = null; renderMail();
+    if (gone.has(state.mail.sel)) { const n = state.mail.messages[idx] || state.mail.messages[idx - 1]; state.mail.sel = n ? n._key : null; }
+    if (state.mail.open && gone.has(state.mail.open._key)) state.mail.open = null;
+    renderMail();
   } catch (e) { toast(e.message); }
 }
 // Empty the current Spam/Trash folder (for all shown accounts). Confirmed first.
@@ -1881,6 +1894,7 @@ function renderMail(loading) {
         <span class="mail-chevron">${exp ? '▾' : '▸'}</span>
         <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(threadFrom(th))}</span><span class="mail-date">${mailDate(th.latest.date)}</span></span>
         <span class="mail-subject">${showAcct ? `<span class="mail-acct-chip">${esc(th.latest._acctName || '')}</span>` : ''}${esc(normSubject(th.latest.subject) || th.latest.subject)}<span class="mail-thread-n">${th.count}</span></span></span>
+        <span class="mail-thread-arch" data-mail-arch-thread="${esc(th.key)}" title="Archive whole conversation  ·  E">🗄</span>
         <span class="mail-star ${th.flagged ? 'on' : ''}">${th.flagged ? '★' : ''}</span></button>`;
       return header + (exp ? th.messages.map((x) => mailRowHtml(x, true)).join('') : '');
     }).join('');
@@ -2583,23 +2597,29 @@ document.addEventListener('keydown', (e) => {
     const editing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     const m = state.mail;
     if (!editing) {
-      const active = (m.open && m.open._key) || m.sel;
+      const active = m.hover || (m.open && m.open._key) || m.sel;   // a specific message
+      const triage = active || m.hoverThread;                       // may be a whole collapsed thread
       if (e.key === '?') { e.preventDefault(); m.shortcuts = !m.shortcuts; renderMail(); return; }
       if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else m.open = null; renderMail(); return; }
       if (e.key === '/') { e.preventDefault(); const el = $('[data-mail-q]'); if (el) el.focus(); return; }
       if (e.key === 'c' || e.key === 'C') { e.preventDefault(); startCompose(); return; }
       if (e.key === 'j' || e.key === 'J') { e.preventDefault(); mailSelMove(1); return; }
       if (e.key === 'k' || e.key === 'K') { e.preventDefault(); mailSelMove(-1); return; }
-      // Enter / o opens the row under the mouse if there is one, else the j/k selection.
-      if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && !m.open) { const target = m.hover || m.sel; if (target) { e.preventDefault(); openMessage(target); return; } }
+      // Enter / o: open the message under the mouse, or expand the thread under it, else open the j/k selection.
+      if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && !m.open) {
+        if (m.hover) { e.preventDefault(); openMessage(m.hover); return; }
+        if (m.hoverThread) { e.preventDefault(); m.expanded = m.expanded || {}; m.expanded[m.hoverThread] = !m.expanded[m.hoverThread]; renderMail(); return; }
+        if (m.sel) { e.preventDefault(); openMessage(m.sel); return; }
+      }
       if (active && (e.key === 'r' || e.key === 'R')) { if (m.open) { e.preventDefault(); mailReplyStart(false); } return; }
       if (active && (e.key === 'a' || e.key === 'A')) { if (m.open) { e.preventDefault(); mailReplyStart(true); } return; }
       if (active && (e.key === 'f' || e.key === 'F')) { if (m.open) { e.preventDefault(); mailForwardStart(); } return; }
-      if (active && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); mailMoveTo(active, 'Archive', 'Archived'); return; }
+      // Archive/Spam/Trash act on the whole conversation when the target is a thread.
+      if (triage && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); mailMoveTo(triage, 'Archive', 'Archived'); return; }
       if (active && (e.key === 's' || e.key === 'S')) { e.preventDefault(); mailStar(active); return; }
       if (active && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); mailSeen(active, false); return; }
-      if (active && e.key === '!') { e.preventDefault(); mailMoveTo(active, 'Junk', 'Marked as spam'); return; }
-      if (active && (e.key === 'Backspace' || e.key === 'Delete' || e.key === '#')) { e.preventDefault(); mailMoveTo(active, 'Trash', 'Moved to Trash'); return; }
+      if (triage && e.key === '!') { e.preventDefault(); mailMoveTo(triage, 'Junk', 'Marked as spam'); return; }
+      if (triage && (e.key === 'Backspace' || e.key === 'Delete' || e.key === '#')) { e.preventDefault(); mailMoveTo(triage, 'Trash', 'Moved to Trash'); return; }
     }
   }
   if (state.move && e.key === 'Escape') { closeMove(); return; }
@@ -2716,6 +2736,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-refresh]')) { loadMessages(); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
   if (t.closest('[data-mail-thread-toggle]')) { state.mail.threaded = !state.mail.threaded; try { localStorage.setItem('life.mail.threaded', state.mail.threaded ? '1' : '0'); } catch {} renderMail(); return; }
+  const mat = t.closest('[data-mail-arch-thread]'); if (mat) { e.preventDefault(); e.stopPropagation(); mailMoveTo(mat.dataset.mailArchThread, 'Archive', 'Archived'); return; }
   const mth = t.closest('[data-mail-thread]'); if (mth) { const k = mth.dataset.mailThread; state.mail.expanded = state.mail.expanded || {}; state.mail.expanded[k] = !state.mail.expanded[k]; renderMail(); return; }
   if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
@@ -2896,8 +2917,10 @@ document.addEventListener('blur', (e) => {
 // already shows the highlight).
 document.addEventListener('mouseover', (e) => {
   if (!state.mail || state.view.type !== 'mail') return;
-  const row = e.target.closest && e.target.closest('[data-mail-open]');
-  state.mail.hover = row ? row.dataset.mailOpen : null;
+  const row = e.target.closest && e.target.closest('[data-mail-open],[data-mail-thread]');
+  if (!row) { state.mail.hover = null; state.mail.hoverThread = null; return; }
+  if (row.dataset.mailOpen !== undefined) { state.mail.hover = row.dataset.mailOpen; state.mail.hoverThread = null; }
+  else { state.mail.hover = null; state.mail.hoverThread = row.dataset.mailThread; }
 });
 document.addEventListener('keydown', (e) => {
   if ((e.target.id === 'note-title' || e.target.id === 'taskcard-title' || e.target.id === 'area-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }

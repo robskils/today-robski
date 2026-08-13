@@ -752,6 +752,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-row:hover .mail-star, .mail-star.on { opacity:1; }
 .mail-star.on, .mail-star:hover, .mail-star-btn.on { color:var(--gold); }
 @media (hover:none){ .mail-star { opacity:.6; } }
+.mail-thread-arch { flex:none; align-self:center; font-size:15px; opacity:0; padding:2px 5px; border-radius:6px; transition:opacity .12s; }
+.mail-thread:hover .mail-thread-arch { opacity:.65; }
+.mail-thread-arch:hover { opacity:1; background:var(--paper-2); }
+@media (hover:none){ .mail-thread-arch { opacity:.55; } }
 /* Two-pane client: message list on the left, reading pane on the right. */
 /* Single pane (Spark-style): the list is full-width; opening a message swaps it
    for a full-width reader. Same behaviour at every width now. */
