@@ -174,6 +174,7 @@ function labelForView(v) {
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
     case 'journal': return 'Journal'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Journal';
+    case 'readwatch': return 'Read & Watch';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     default: return 'Home';
@@ -185,6 +186,7 @@ function openView(v) {
     case 'calendar': return openCalendar(); case 'mail': return openMail(); case 'today': return openToday();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'journal': return openJournal(); case 'journalentry': return openJournalEntry(v.id);
+    case 'readwatch': return openReadwatch();
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     default: return openHome();
@@ -362,6 +364,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span><span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
+    <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
       <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span><span class="nav-lbl">Tables</span></button>
       <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
     </div>
@@ -380,6 +383,7 @@ async function quickAdd(kind) {
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
+    else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus(); }, 0); }
   } catch (e) { toast(e.message); }
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
@@ -689,6 +693,91 @@ async function delJournalEntry() {
   const n = state.journal && state.journal.current; if (!n) return;
   if (!(await uiConfirm('Delete this journal entry?', { title: 'Delete entry', okLabel: 'Delete', danger: true }))) return;
   try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); if (state.journal.entries) state.journal.entries = state.journal.entries.filter((e) => e.id !== n.id); state.journal.current = null; await openJournal(); } catch (e) { toast(e.message); }
+}
+
+// ── Read & Watch (bookmarks) ─────────────────────────
+// Saved links: blocks kind 'bookmark', props {url,title,image,site,media,status,added}.
+// Captured via the iOS Shortcut / desktop bookmarklet (/api/capture) or pasted here.
+const RW_TABS = [['todo', 'Unread'], ['read', 'To read'], ['watch', 'To watch'], ['done', 'Done']];
+function rwMatch(b, f) {
+  const p = b.props || {}; const done = p.status === 'done';
+  if (f === 'done') return done;
+  if (f === 'read') return !done && p.media !== 'video';
+  if (f === 'watch') return !done && p.media === 'video';
+  return !done; // 'todo' = everything unfinished
+}
+async function openReadwatch() {
+  state.view = { type: 'readwatch' };
+  renderNav();
+  const prev = state.rw || {};
+  try { state.rw = { items: await api('/api/blocks?kind=bookmark&parent_id='), filter: prev.filter || 'todo', setup: prev.setup, showSetup: false, saving: false }; }
+  catch (e) { state.rw = { items: [], filter: 'todo' }; toast(e.message); }
+  state.rw.items.sort((a, b) => String((b.props && b.props.added) || b.created_at || '').localeCompare(String((a.props && a.props.added) || a.created_at || '')));
+  renderReadwatch();
+}
+function renderReadwatch() {
+  const rw = state.rw || { items: [], filter: 'todo' };
+  const items = rw.items || [];
+  const count = (f) => items.filter((b) => rwMatch(b, f)).length;
+  const tabs = RW_TABS.map(([k, l]) => `<button class="rw-tab ${rw.filter === k ? 'on' : ''}" data-rw-filter="${k}">${l}<span class="rw-tab-n">${count(k)}</span></button>`).join('');
+  const shown = items.filter((b) => rwMatch(b, rw.filter));
+  const cards = shown.map((b) => {
+    const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video';
+    return `<div class="rw-card ${done ? 'done' : ''}">
+      <a class="rw-thumb ${vid ? 'vid' : ''}" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${vid ? '▶' : '▤'}</span></a>
+      <div class="rw-body">
+        <a class="rw-title" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
+        <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : '▤ Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
+      </div>
+      <div class="rw-actions">
+        <button class="rw-done ${done ? 'on' : ''}" data-rw-done="${b.id}" title="${done ? 'Mark unread' : 'Mark done'}">✓</button>
+        <button class="rw-del" data-rw-del="${b.id}" title="Remove">×</button>
+      </div>
+    </div>`;
+  }).join('');
+  $('#pane').innerHTML = `
+    ${pageCrumb('Read & Watch')}
+    <div class="pane-head home-head"><h1>Read &amp; Watch</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
+    <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link to save…" autocomplete="off" inputmode="url" ${rw.saving ? 'disabled' : ''}><button class="add-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
+    <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
+    <div class="rw-tabs">${tabs}</div>
+    <div class="rw-list">${cards || `<div class="empty">${rw.filter === 'done' ? 'Nothing finished yet.' : 'Nothing here yet. Paste a link above, or set up one-tap saving.'}</div>`}</div>`;
+}
+function rwSetupHtml() {
+  const s = state.rw && state.rw.setup;
+  if (!s) return '<div class="rw-setup-panel"><div class="empty" style="padding:20px">Loading your save link…</div></div>';
+  const bm = `javascript:(function(){window.open('${s.origin}/api/capture?key=${s.key}&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),'robski','width=400,height=320')})()`;
+  const capUrl = `${s.origin}/api/capture?key=${s.key}&url=`;
+  return `<div class="rw-setup-panel">
+    <div class="rw-setup-h">One-tap saving</div>
+    <div class="rw-setup-sec"><b>On your Mac</b> — drag this to your bookmarks bar, then click it on any page to save it:
+      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Robski</a></div></div>
+    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Robski”:
+      <ol><li>Shortcuts app → <b>+</b> → add action <b>Get Contents of URL</b>.</li><li>Set its URL to <code class="rw-code">${esc(capUrl)}</code> and then insert the <b>Shortcut Input</b> variable right after <code>url=</code>.</li><li>In the shortcut settings (ⓘ) turn on <b>Show in Share Sheet</b> and accept <b>URLs</b>.</li></ol>
+      Then anywhere: <b>Share → Save to Robski</b>.</div>
+    <div class="rw-setup-note">This save link is private to you.</div>
+  </div>`;
+}
+async function rwToggleSetup() {
+  state.rw = state.rw || { items: [], filter: 'todo' };
+  state.rw.showSetup = !state.rw.showSetup;
+  if (state.rw.showSetup && !state.rw.setup) { try { state.rw.setup = await api('/api/bookmark/setup'); } catch (e) { toast(e.message); } }
+  renderReadwatch();
+}
+async function rwSave(url) {
+  url = (url || '').trim(); if (!url || !state.rw) return;
+  state.rw.saving = true; renderReadwatch();
+  try { const bm = await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url }) }); state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch(); toast('Saved'); }
+  catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
+}
+async function rwSetDone(id, done) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  b.props = b.props || {}; b.props.status = done ? 'done' : 'todo';
+  renderReadwatch();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { status: b.props.status } }) }); } catch (e) { toast(e.message); }
+}
+async function rwDelete(id) {
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); state.rw.items = (state.rw.items || []).filter((x) => x.id !== id); renderReadwatch(); } catch (e) { toast(e.message); }
 }
 
 // ── view: life areas ─────────────────────────────────
@@ -2274,6 +2363,8 @@ const ACTIONS = [
   { kind: 'action', title: 'New note', run: () => newNote(null) },
   { kind: 'action', title: 'New journal entry', run: () => quickAdd('journal') },
   { kind: 'action', title: 'Go to Journal', run: () => openJournal() },
+  { kind: 'action', title: 'Save a link', run: () => quickAdd('save') },
+  { kind: 'action', title: 'Go to Read & Watch', run: () => openReadwatch() },
   { kind: 'action', title: 'New table', run: () => newTable() },
   { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
   { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
@@ -2463,6 +2554,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
+  if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
+  const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
+  const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
+  const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
+  if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
+  if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
@@ -2667,6 +2764,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
+  if (e.target.id === 'rw-add-form') { const i = $('#rw-url'); if (i && i.value.trim()) rwSave(i.value); }
   if (e.target.matches('[data-cm-addopt]')) { const i = $('#cm-opt-input'); if (i && state.tables_view && state.tables_view.colMenu) addColOption(state.tables_view.colMenu.colId, i.value); }
 });
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
@@ -3392,6 +3490,7 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
     else if (route === '/journal') await openJournal();
+    else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
   } catch (e) { toast(e.message); renderNav(); }
 })();

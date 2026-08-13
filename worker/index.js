@@ -419,6 +419,71 @@ async function journalDeepen(request, env, json, err) {
   } catch (e) { console.error('journalDeepen:', e.message); return err('Could not reach Claude.', request, 502); }
 }
 
+// ── Bookmarks (Read & Watch) ─────────────────────────
+// A long-lived capture key (stored in settings, not a wrangler secret) lets the
+// iOS Shortcut and desktop bookmarklet save links without a 7-day JWT.
+async function bookmarkKey(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE key='bookmark_key'").first();
+  if (row && row.value) return row.value;
+  const key = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  await env.DB.prepare("INSERT INTO settings (key,value) VALUES ('bookmark_key',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(key).run();
+  return key;
+}
+// Fetch a page's title / image / site, and guess video vs article.
+async function fetchLinkMeta(rawUrl) {
+  let url = String(rawUrl || '').trim();
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+  const isVideo = /(youtube\.com|youtu\.be|vimeo\.com|ted\.com|tiktok\.com|twitch\.tv)/i.test(host);
+  const meta = { url, title: '', image: '', site: host, media: isVideo ? 'video' : 'article' };
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RobskiLife/1.0)', 'Accept-Language': 'en' }, cf: { cacheTtl: 3600, cacheEverything: true } });
+    const html = (await res.text()).slice(0, 400000);
+    const pick = (prop) => {
+      const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'))
+        || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'));
+      return m ? ytUnescape(m[1]) : '';
+    };
+    const t = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    meta.title = pick('og:title') || (t ? ytUnescape(t[1]) : '');
+    meta.image = pick('og:image');
+    meta.site = pick('og:site_name') || host;
+    if (/video/i.test(pick('og:type'))) meta.media = 'video';
+  } catch {}
+  meta.title = (meta.title || host || 'Saved link').trim().slice(0, 300);
+  return meta;
+}
+async function createBookmark(env, rawUrl, titleHint) {
+  const meta = await fetchLinkMeta(rawUrl);
+  if (titleHint && (!meta.title || meta.title === meta.site)) meta.title = String(titleHint).slice(0, 300);
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const props = { url: meta.url, title: meta.title, image: meta.image || '', site: meta.site || '', media: meta.media, status: 'todo', added: now };
+  const row = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
+  await env.DB.prepare(`INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived) VALUES (?, 'bookmark', NULL, ?, ?, NULL, ?, ?, ?, 0)`)
+    .bind(id, row.p, meta.title, JSON.stringify(props), now, now).run();
+  return { id, kind: 'bookmark', parent_id: null, title: meta.title, props, created_at: now };
+}
+// Share-sheet / bookmarklet capture. GET returns a tiny confirmation page (the
+// bookmarklet opens it in a popup); POST returns JSON (the iOS Shortcut).
+async function handleCapture(request, env, url, json, err) {
+  const escH = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const key = url.searchParams.get('key') || request.headers.get('X-Capture-Key') || bearer(request);
+  const stored = await bookmarkKey(env);
+  const page = (body, status) => new Response(`<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="font:17px -apple-system,BlinkMacSystemFont,sans-serif;margin:0;padding:44px 28px;text-align:center;color:#1b1820;background:#f4f1ea">${body}</body>`, { status: status || 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+  if (!key || !safeEqual(key, stored)) {
+    if (request.method === 'GET') return page('<h2 style="color:#a3382e">Not authorised</h2><p style="color:#8a8580">This save link is out of date.</p>', 401);
+    return err('unauthorized', request, 401);
+  }
+  let target = url.searchParams.get('url') || '';
+  let titleHint = url.searchParams.get('title') || '';
+  if (!target && request.method === 'POST') { const b = await request.json().catch(() => ({})); target = b.url || ''; titleHint = titleHint || b.title || ''; }
+  if (!target) { if (request.method === 'GET') return page('<h2 style="color:#a3382e">No link found</h2>', 400); return err('url required', request, 400); }
+  const bm = await createBookmark(env, target, titleHint);
+  if (request.method === 'GET') return page(`<div style="font-size:44px;line-height:1">✓</div><h2 style="font-weight:600;margin:10px 0 6px">Saved to Robski</h2><p style="color:#8a8580;margin:0">${escH(bm.title)}</p><script>setTimeout(function(){window.close()},1100)</script>`);
+  return json(bm, request, 201);
+}
+
 // Is a YouTube video embeddable? oEmbed answers in one JSON call (and hands us
 // the title + thumbnail). A non-200 means embedding is blocked or the video is
 // gone; we scrape og:title from the watch page so the fallback card still has a
@@ -1649,6 +1714,10 @@ export default {
       return err('not found', request, 404);
     }
 
+    // Bookmark capture: the iOS Shortcut / desktop bookmarklet post here with the
+    // long-lived capture key (not the 7-day JWT), so it sits before the JWT gate.
+    if (path === '/api/capture' && (request.method === 'GET' || request.method === 'POST')) return handleCapture(request, env, url, json, err);
+
     // Public: getting in. Rate limited inside; see auth.js.
     if (path === '/auth/request-code' && request.method === 'POST') {
       return requestCode(request, env,
@@ -1709,6 +1778,8 @@ export default {
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
+      if (path === '/api/bookmark' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (!b.url) return err('url required', request, 400); return json(await createBookmark(env, b.url, b.title), request, 201); }
+      if (path === '/api/bookmark/setup' && request.method === 'GET') return json({ key: await bookmarkKey(env), origin: new URL(request.url).origin }, request);
       // Send one alert now, to prove the SMS path end to end without waiting
       // for a block to come due. Authed, like everything below the gate.
       if (path === '/api/alert/test' && request.method === 'POST') {
