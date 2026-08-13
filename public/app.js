@@ -1924,7 +1924,7 @@ function renderMail(loading) {
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<button type="button" class="mail-att-chip mail-att-dl" data-mail-save-att="${a.idx}" data-att-name="${esc(a.filename || 'attachment')}" title="Save to your computer">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↓</button>`).join('')}</div>` : ''}
       ${o.invite ? inviteCardHtml(o.invite) : ''}
       ${(() => { const ml = mailMeetingLink(o); return ml ? `<div class="mail-join-bar"><button class="add-btn wide" data-mail-join="${esc(ml)}">🎥 Join meeting</button><span class="mail-join-url">${esc(ml)}</span></div>` : ''; })()}
-      ${mailImagesBlocked(o) ? `<div class="mail-imgbar"><span class="mail-imgbar-t">🖼 Remote images are hidden to protect your privacy.</span><span class="mail-imgbar-act"><button class="ghost" data-mail-show-imgs>Show images</button>${o.from && o.from.address ? `<button class="ghost" data-mail-trust="${esc(o.from.address)}">Always trust sender</button>` : ''}</span></div>` : ''}
+      ${mailImagesBlocked(o) ? `<div class="mail-imgbar"><span class="mail-imgbar-t">🖼 Remote images are hidden to protect your privacy.</span><span class="mail-imgbar-act"><button class="ghost" data-mail-show-imgs="${o.from && o.from.address ? esc(o.from.address) : ''}">Show images</button>${o.from && o.from.address ? '<span class="mail-imgbar-note">and always from this sender</span>' : ''}</span></div>` : ''}
       ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text">${linkifyText(o.text || '')}</div>`}</div>`;
   } else {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
@@ -2761,7 +2761,7 @@ document.addEventListener('click', (e) => {
     if (state.mail.composing) state.mail.composing.body = ed.innerHTML; saveDraft();
     return;
   }
-  if (t.closest('[data-mail-show-imgs]')) { if (state.mail.open) { state.mail.showImgKey = state.mail.open._key; renderMail(); } return; }
+  const smi = t.closest('[data-mail-show-imgs]'); if (smi) { const addr = smi.dataset.mailShowImgs; if (addr) { trustSender(addr); } else if (state.mail.open) { state.mail.showImgKey = state.mail.open._key; renderMail(); } return; }
   const mtr = t.closest('[data-mail-trust]'); if (mtr) { trustSender(mtr.dataset.mailTrust); return; }
   const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(mdl.dataset.mailDel); return; }
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
