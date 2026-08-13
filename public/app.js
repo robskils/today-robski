@@ -56,6 +56,13 @@ function mdToHtml(md) {
 // Turn any bare http(s) URL into a clickable link, without touching URLs that
 // are already inside an <a> (or a <code> span). Works on rendered HTML.
 const BARE_URL = /\bhttps?:\/\/[^\s<>()]+[^\s<>().,;:!?'"]/gi;
+const prettyHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return String(u || ''); } };
+// A long URL is shown as host + a trimmed path so it never sprawls across the note.
+function prettyLinkText(u) {
+  if (u.length <= 48) return u;
+  try { const p = new URL(u); let s = p.hostname.replace(/^www\./, '') + (p.pathname === '/' ? '' : p.pathname) + (p.search || ''); return s.length > 48 ? s.slice(0, 47) + '…' : s; }
+  catch { return u.slice(0, 47) + '…'; }
+}
 function linkifyHtml(html) {
   if (!html || !/https?:\/\//i.test(html)) return html || '';
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
@@ -69,7 +76,7 @@ function linkifyHtml(html) {
         if (m.index > last) frag.appendChild(doc.createTextNode(text.slice(last, m.index)));
         const a = doc.createElement('a');
         a.setAttribute('href', m[0]); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer');
-        a.textContent = m[0]; frag.appendChild(a); last = m.index + m[0].length;
+        a.textContent = prettyLinkText(m[0]); frag.appendChild(a); last = m.index + m[0].length;
       }
       if (!frag.childNodes.length) return;
       if (last < text.length) frag.appendChild(doc.createTextNode(text.slice(last)));
@@ -97,12 +104,28 @@ function youtubeIds(body) {
   let m; while ((m = re.exec(body || ''))) if (!ids.includes(m[1])) ids.push(m[1]);
   return ids;
 }
+// URLs that sit alone in their paragraph deserve a full preview card (like Notion)
+// rather than a long inline link. YouTube is handled by the player above instead.
+function standaloneUrls(body) {
+  if (!body || !/https?:\/\//i.test(body)) return [];
+  const d = document.createElement('div'); d.innerHTML = bodyToHtml(body);
+  const urls = [];
+  d.querySelectorAll('a[href]').forEach((a) => {
+    const href = a.getAttribute('href') || '';
+    if (!/^https?:\/\//i.test(href) || youtubeIds(href).length) return;
+    const p = a.parentElement;
+    if (p && p.textContent.trim() === a.textContent.trim() && !urls.includes(href)) urls.push(href);
+  });
+  return urls;
+}
 function embedsHtml(body) {
   const ids = youtubeIds(body);
-  if (!ids.length) return '';
-  // Start each as a thumbnail poster (never a grey box); hydrateEmbeds() then
-  // swaps in the real player, or a link card if the video blocks embedding.
-  return `<div class="embeds">${ids.map((id) => `<div class="embed-yt" data-yt="${id}"><img class="yt-poster" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span></div>`).join('')}</div>`;
+  const links = standaloneUrls(body);
+  if (!ids.length && !links.length) return '';
+  // Start each as a placeholder; hydrateEmbeds() swaps in the real player / card.
+  const yt = ids.map((id) => `<div class="embed-yt" data-yt="${id}"><img class="yt-poster" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span></div>`).join('');
+  const lc = links.map((u) => `<a class="link-card loading" data-linkcard="${esc(u)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="lc-main"><span class="lc-title">${esc(prettyHost(u))}</span><span class="lc-site">${esc(prettyHost(u))}</span></span></a>`).join('');
+  return `<div class="embeds">${yt}${lc}</div>`;
 }
 const ytCache = {};
 function ytCacheGet(id) {
@@ -128,7 +151,24 @@ async function hydrateEmbeds() {
         <span class="yt-card-meta"><span class="yt-card-title">${esc(info.title || 'YouTube video')}</span><span class="yt-card-src">${esc(sub)}</span></span></a>`;
     }
   }
+  // Link cards for standalone non-YouTube URLs (Notion-style bookmark previews).
+  for (const el of [...document.querySelectorAll('.link-card[data-linkcard]:not([data-lc-done])')]) {
+    const u = el.dataset.linkcard; el.dataset.lcDone = '1';
+    let info = lcCacheGet(u);
+    if (!info) { try { info = await api(`/api/linkinfo?url=${encodeURIComponent(u)}`); lcCacheSet(u, info); } catch { info = {}; } }
+    const host = info.site || prettyHost(u);
+    const title = info.title || host;
+    el.classList.remove('loading');
+    el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site">${esc(host)}</span></span>`;
+  }
 }
+const lcCache = {};
+function lcCacheGet(u) {
+  if (lcCache[u]) return lcCache[u];
+  try { const s = localStorage.getItem('life.lc.' + u); if (s) return (lcCache[u] = JSON.parse(s)); } catch {}
+  return null;
+}
+function lcCacheSet(u, info) { lcCache[u] = info; try { localStorage.setItem('life.lc.' + u, JSON.stringify(info)); } catch {} }
 // An always-on inline editor. No modes, no markup - you just write, and the
 // selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
 function proseEditor(body, key) {

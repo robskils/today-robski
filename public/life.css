@@ -971,6 +971,18 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
 .yt-card-title { font-weight:600; font-size:15.5px; color:var(--ink); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .yt-card-src { font-size:13px; color:var(--ink-3); }
 .yt-card:hover .yt-card-title { color:var(--accent); }
+/* Notion-style link preview card for a pasted URL. */
+.link-card { display:flex; align-items:stretch; max-width:680px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; text-decoration:none; color:inherit; transition:border-color .12s; }
+.link-card:hover { border-color:var(--accent); }
+.link-card.loading { opacity:.7; }
+.link-card .lc-main { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; gap:4px; padding:12px 15px; }
+.link-card .lc-title { font-weight:600; font-size:15.5px; color:var(--ink); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.link-card:hover .lc-title { color:var(--accent); }
+.link-card .lc-desc { font-size:13px; color:var(--ink-2); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.link-card .lc-site { font-size:12.5px; color:var(--ink-3); }
+.link-card .lc-thumb { flex:none; width:150px; background:var(--paper-2); overflow:hidden; order:2; }
+.link-card .lc-thumb img { width:100%; height:100%; object-fit:cover; }
+@media (max-width:560px){ .link-card .lc-thumb { width:100px; } }
 @media (max-width:560px){ .yt-card-thumb { width:124px; } }
 
 .foot-search { display:none; }

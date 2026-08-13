@@ -448,6 +448,7 @@ async function fetchLinkMeta(rawUrl) {
     meta.title = pick('og:title') || (t ? ytUnescape(t[1]) : '');
     meta.image = pick('og:image');
     meta.site = pick('og:site_name') || host;
+    meta.desc = (pick('og:description') || pick('description') || '').slice(0, 220);
     if (/video/i.test(pick('og:type'))) meta.media = 'video';
   } catch {}
   meta.title = (meta.title || host || 'Saved link').trim().slice(0, 300);
@@ -1780,6 +1781,7 @@ export default {
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
       if (path === '/api/bookmark' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (!b.url) return err('url required', request, 400); return json(await createBookmark(env, b.url, b.title), request, 201); }
       if (path === '/api/bookmark/setup' && request.method === 'GET') return json({ key: await bookmarkKey(env), origin: new URL(request.url).origin }, request);
+      if (path === '/api/linkinfo' && request.method === 'GET') { const u = url.searchParams.get('url'); if (!u) return err('url required', request, 400); return json(await fetchLinkMeta(u), request); }
       // Send one alert now, to prove the SMS path end to end without waiting
       // for a block to come due. Authed, like everything below the gate.
       if (path === '/api/alert/test' && request.method === 'POST') {
