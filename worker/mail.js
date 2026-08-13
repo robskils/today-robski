@@ -34,7 +34,9 @@ async function saveBlocked(env, id, list) {
   await env.DB.prepare('UPDATE mail_accounts SET blocked = ? WHERE id = ?')
     .bind(JSON.stringify([...new Set(list.map(normAddr))].filter(Boolean)), id).run();
 }
-const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '', blocked: blockedList(a) });
+// The password (pass_enc) is never exposed. Host/port/username are connection
+// settings, not secrets, so the account editor can show and change them.
+const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '', blocked: blockedList(a), imapHost: a.imap_host, imapPort: a.imap_port, smtpHost: a.smtp_host, smtpPort: a.smtp_port, username: a.username });
 async function listAccounts(env) {
   const { results } = await env.DB.prepare('SELECT * FROM mail_accounts ORDER BY position, email').all();
   return results;
@@ -389,8 +391,24 @@ export async function handleMail(request, env, url, json, err) {
       if ('signature' in b) { fields.push('signature = ?'); vals.push(b.signature || ''); }
       if ('name' in b) { fields.push('name = ?'); vals.push(b.name || existing.name); }
       if ('color' in b) { fields.push('color = ?'); vals.push(b.color || null); }
+      if ('email' in b && b.email) { fields.push('email = ?'); vals.push(b.email); }
+      if ('imapHost' in b && b.imapHost) { fields.push('imap_host = ?'); vals.push(b.imapHost); }
+      if ('imapPort' in b && b.imapPort) { fields.push('imap_port = ?'); vals.push(Number(b.imapPort) || 993); }
+      if ('smtpHost' in b && b.smtpHost) { fields.push('smtp_host = ?'); vals.push(b.smtpHost); }
+      if ('smtpPort' in b && b.smtpPort) { fields.push('smtp_port = ?'); vals.push(Number(b.smtpPort) || 465); }
+      if ('username' in b) { fields.push('username = ?'); vals.push(b.username || existing.email); }
+      // A new password is re-encrypted; an empty one leaves the stored one alone.
+      if (b.pass) { fields.push('pass_enc = ?'); vals.push(await encryptPass(env, b.pass)); }
       if (fields.length) { vals.push(seg[1]); await env.DB.prepare(`UPDATE mail_accounts SET ${fields.join(', ')} WHERE id = ?`).bind(...vals).run(); }
-      return json(publicAccount(await getAcct(env, seg[1])), request);
+      // If credentials changed, re-run the courtesy sign-in check so the editor
+      // can flag a bad password right away (never blocks the save).
+      let warning = null;
+      if (b.pass || 'imapHost' in b || 'username' in b || 'email' in b) {
+        const acct = await getAcct(env, seg[1]);
+        try { const im = await imapOpen(env, acct); try { await im.login(); } finally { await im.logout(); } }
+        catch (e) { warning = `Saved, but the sign-in check failed (${e.message}).`; }
+      }
+      return json({ ...publicAccount(await getAcct(env, seg[1])), warning }, request);
     }
 
     const acct = await getAcct(env, url.searchParams.get('account') || (await request.clone().json().catch(() => ({}))).account);

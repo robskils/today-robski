@@ -1471,6 +1471,17 @@ async function addMailAccount(fields) {
   try { const a = await mailApi('/accounts', { method: 'POST', body: JSON.stringify(fields) }); toast(a.warning || 'Mailbox added'); state.mail.accounts = state.mail.accounts || []; state.mail.accounts.push(a); state.mail.account = a.id; await openMail(); }
   catch (e) { toast(e.message); }
 }
+// Edit a mailbox's connection settings. The password box is blank and only sent
+// when the user types a new one - the stored password is never shown or fetched.
+async function saveMailAccount(id, fields) {
+  const body = { ...fields }; if (!body.pass) delete body.pass;
+  try {
+    const a = await mailApi(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    const i = (state.mail.accounts || []).findIndex((x) => x.id === id); if (i >= 0) state.mail.accounts[i] = a;
+    toast(a.warning || 'Account updated');
+    renderMailAccounts();
+  } catch (e) { toast(e.message); }
+}
 async function delMailAccount(id) {
   if (!(await uiConfirm('Remove this account?', { title: 'Remove account', okLabel: 'Remove', danger: true }))) return;
   try { await mailApi(`/accounts/${id}`, { method: 'DELETE' }); state.mail.accounts = (state.mail.accounts || []).filter((a) => a.id !== id); if (state.mail.account === id) state.mail.account = null; renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
@@ -1597,8 +1608,20 @@ function refreshAcctCrumb() {
 function renderMailAccounts(note) {
   const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct-card">
     <div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span>
+      <button class="ghost sig-btn" data-acct-edit-toggle="${a.id}">Edit</button>
       <button class="ghost sig-btn" data-sig-toggle="${a.id}">Signature</button>
       <button class="x" data-mail-del-acct="${a.id}" title="Remove">×</button></div>
+    <div class="mail-acct-edit" data-acct-edit="${a.id}" hidden>
+      <form class="acct-edit-form" data-acct-edit-form="${a.id}">
+        <label class="ae-lbl">Email address<input class="ae-email" type="email" value="${esc(a.email || '')}" required></label>
+        <div class="ae-row"><label class="ae-lbl" style="flex:1">IMAP host<input class="ae-imaphost" value="${esc(a.imapHost || '')}" required></label><label class="ae-lbl" style="width:84px">Port<input class="ae-imapport" value="${esc(String(a.imapPort || 993))}"></label></div>
+        <div class="ae-row"><label class="ae-lbl" style="flex:1">SMTP host<input class="ae-smtphost" value="${esc(a.smtpHost || '')}" required></label><label class="ae-lbl" style="width:84px">Port<input class="ae-smtpport" value="${esc(String(a.smtpPort || 465))}"></label></div>
+        <label class="ae-lbl">Username<input class="ae-user" value="${esc(a.username || '')}" placeholder="Usually your email address"></label>
+        <label class="ae-lbl">Password<input class="ae-pass" type="password" autocomplete="off" placeholder="Leave blank to keep the current password"></label>
+        <div class="mail-sig-note">🔒 Your saved password is hidden and never shown. Leave the box blank to keep it, or type a new one (for Google, an <b>App Password</b>) to replace it.</div>
+        <div class="ae-act"><button class="add-btn" type="submit">Save changes</button><button type="button" class="ghost" data-acct-edit-cancel="${a.id}">Cancel</button></div>
+      </form>
+    </div>
     <div class="mail-sig" data-sig-panel="${a.id}" hidden>
       <label class="sig-color-row"><span class="sig-color-lbl">Bar colour</span>
         <input type="color" class="sig-color-sw" data-sig-color-sw="${a.id}" value="${sigBarColor(a)}" title="Pick a colour">
@@ -2706,6 +2729,8 @@ document.addEventListener('click', (e) => {
   const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
   if (t.closest('[data-sig-close-all]')) { document.querySelectorAll('[data-sig-panel]').forEach((p) => { p.hidden = true; }); refreshAcctCrumb(); return; }
+  const aet = t.closest('[data-acct-edit-toggle]'); if (aet) { const p = document.querySelector(`[data-acct-edit="${aet.dataset.acctEditToggle}"]`); if (p) { p.hidden = !p.hidden; if (!p.hidden) { const f = p.querySelector('.ae-email'); if (f) f.focus(); } } return; }
+  const aec = t.closest('[data-acct-edit-cancel]'); if (aec) { const p = document.querySelector(`[data-acct-edit="${aec.dataset.acctEditCancel}"]`); if (p) p.hidden = true; return; }
   const sigt = t.closest('[data-sig-toggle]'); if (sigt) { const p = document.querySelector(`[data-sig-panel="${sigt.dataset.sigToggle}"]`); if (p) p.hidden = !p.hidden; refreshAcctCrumb(); return; }
   const sigs = t.closest('[data-sig-save]'); if (sigs) { saveSignature(sigs.dataset.sigSave); return; }
   // calendar interactions
@@ -2836,7 +2861,11 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
-  if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), user: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
+  if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
+  if (e.target.dataset && e.target.dataset.acctEditForm) {
+    const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
+    saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });
+  }
   if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
   if (e.target.id === 'rw-add-form') { const i = $('#rw-url'); if (i && i.value.trim()) rwSave(i.value); }
