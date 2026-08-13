@@ -431,7 +431,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
-      <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span><span class="nav-lbl">Tables</span></button>
+      <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span><span class="nav-lbl">Tables</span><span class="nav-quick" data-add-table-entry title="Add an entry to a table">+</span></button>
       <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
@@ -501,7 +501,30 @@ async function openTable(id) {
   const rows = await api(`/api/blocks?kind=row&parent_id=${id}`);
   state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false, sorts: (table.props && table.props.sorts) || [], sorting: false };
   state.view = { type: 'table', id };
+  bumpTableRecent(id);
   renderNav(); renderTable();
+}
+// Most-recently-opened order, for the "add an entry" picker.
+function tableRecents() { try { return JSON.parse(localStorage.getItem('life.tblRecent') || '[]'); } catch { return []; } }
+function bumpTableRecent(id) { const r = tableRecents().filter((x) => x !== id); r.unshift(id); try { localStorage.setItem('life.tblRecent', JSON.stringify(r.slice(0, 60))); } catch {} }
+function tablesByRecent() {
+  const r = tableRecents(); const rank = (id) => { const i = r.indexOf(id); return i < 0 ? Infinity : i; };
+  return [...(state.tables || [])].sort((a, b) => (rank(a.id) - rank(b.id)) || (a.title || '').localeCompare(b.title || ''));
+}
+// Pick a table from a most-recent-first list, then drop a fresh row on top of it.
+function openTableEntryPicker() {
+  if (!state.tables || !state.tables.length) { toast('No tables yet - make one first.'); return; }
+  let el = document.getElementById('tblpick-overlay');
+  if (!el) { el = document.createElement('div'); el.id = 'tblpick-overlay'; document.body.appendChild(el); }
+  const items = tablesByRecent().map((t) => `<button class="pal-item" data-tblpick="${t.id}"><span class="pal-kind muted">▦</span><span class="pal-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
+  el.innerHTML = `<div class="pal-bg" data-tblpick-bg><div class="pal">
+    <div class="pal-title">Add an entry to…</div>
+    <div class="pal-list">${items}</div></div></div>`;
+}
+function closeTableEntryPicker() { const el = document.getElementById('tblpick-overlay'); if (el) el.innerHTML = ''; }
+async function addTableEntry(id) {
+  closeTableEntryPicker();
+  try { await openTable(id); await addRow(); } catch (e) { toast(e.message); }
 }
 
 // ── view: home ───────────────────────────────────────
@@ -2532,6 +2555,7 @@ async function openRowResult(tableId, rowId) {
 
 // ── events ───────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
+  if (document.getElementById('tblpick-overlay') && document.getElementById('tblpick-overlay').innerHTML && e.key === 'Escape') { e.preventDefault(); closeTableEntryPicker(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
   // ⌥⌘T / ⌥⌘W - the browser owns ⌘T/⌘W, so tabs use the Option variant.
@@ -2622,6 +2646,9 @@ document.addEventListener('click', (e) => {
     document.body.appendChild(a); a.click(); a.remove();
     return;
   }
+  const ate = t.closest('[data-add-table-entry]'); if (ate) { e.stopPropagation(); openTableEntryPicker(); return; }
+  const tpk = t.closest('[data-tblpick]'); if (tpk) { addTableEntry(tpk.dataset.tblpick); return; }
+  if (t.closest('[data-tblpick-bg]') && !t.closest('.pal')) { closeTableEntryPicker(); return; }
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
   if (t.closest('[data-linkpick-bg]') && !t.closest('.pal')) { closeLinkPicker(); return; }
