@@ -104,33 +104,33 @@ function youtubeIds(body) {
   let m; while ((m = re.exec(body || ''))) if (!ids.includes(m[1])) ids.push(m[1]);
   return ids;
 }
-// URLs that sit alone in their paragraph deserve a full preview card (like Notion)
-// rather than a long inline link. YouTube is handled by the player above instead.
-function standaloneUrls(body) {
-  if (!body || !/https?:\/\//i.test(body)) return [];
-  const d = document.createElement('div'); d.innerHTML = bodyToHtml(body);
+// A URL sitting alone in its own paragraph becomes a preview card (like Notion):
+// it's pulled OUT of the prose into the block's props.cards, so the note shows
+// the card, not the raw link. YouTube is left inline (it renders as a player).
+// Duplicates are kept - paste five links, get five cards.
+function extractCards(html) {
+  const d = document.createElement('div'); d.innerHTML = html;
   const urls = [];
   d.querySelectorAll('a[href]').forEach((a) => {
     const href = a.getAttribute('href') || '';
     if (!/^https?:\/\//i.test(href) || youtubeIds(href).length) return;
     const p = a.parentElement;
-    if (p && p.textContent.trim() === a.textContent.trim() && !urls.includes(href)) urls.push(href);
+    if (!p || !/^(P|DIV)$/.test(p.tagName)) return;            // only a URL alone in a paragraph
+    if (p.textContent.trim() !== a.textContent.trim()) return; // a link inside a sentence: keep it
+    urls.push(href);
+    p.remove();
   });
-  return urls;
+  return { body: d.innerHTML, urls };
 }
-function embedsHtml(body) {
+// The strip below the editor: YouTube players (from the body) + link cards (from
+// the stored cards list). Each starts as a placeholder; hydrateEmbeds() fills it.
+function embedsHtml(body, cards) {
   const ids = youtubeIds(body);
-  const links = standaloneUrls(body);
-  if (!ids.length && !links.length) return '';
-  // Start each as a placeholder; hydrateEmbeds() swaps in the real player / card.
+  const list = Array.isArray(cards) ? cards : [];
+  if (!ids.length && !list.length) return '';
   const yt = ids.map((id) => `<div class="embed-yt" data-yt="${id}"><img class="yt-poster" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span></div>`).join('');
-  const lc = links.map((u) => `<a class="link-card loading" data-linkcard="${esc(u)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="lc-main"><span class="lc-title">${esc(prettyHost(u))}</span><span class="lc-site">${esc(prettyHost(u))}</span></span></a>`).join('');
+  const lc = list.map((u, i) => `<div class="embed-item"><a class="link-card loading" data-linkcard="${esc(u)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="lc-main"><span class="lc-title">${esc(prettyHost(u))}</span><span class="lc-site">${esc(prettyHost(u))}</span></span></a><button class="lc-x" data-card-del="${i}" title="Remove card">×</button></div>`).join('');
   return `<div class="embeds">${yt}${lc}</div>`;
-}
-// A stable fingerprint of the embeds a body produces, so saveProse can tell
-// whether a paste added/removed a player or link card and needs a re-render.
-function embedSig(body) {
-  return youtubeIds(body).join(',') + '|' + standaloneUrls(body).join(',');
 }
 const ytCache = {};
 function ytCacheGet(id) {
@@ -161,7 +161,7 @@ async function hydrateEmbeds() {
     const u = el.dataset.linkcard; el.dataset.lcDone = '1';
     let info = lcCacheGet(u);
     if (!info) { try { info = await api(`/api/linkinfo?url=${encodeURIComponent(u)}`); lcCacheSet(u, info); } catch { info = {}; } }
-    const host = info.site || prettyHost(u);
+    const host = prettyHost(u);
     const title = info.title || host;
     el.classList.remove('loading');
     el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site">${esc(host)}</span></span>`;
@@ -2110,7 +2110,7 @@ function renderNote() {
       <div class="note-main">
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
         <div class="note-body">${proseEditor(n.body, 'note')}</div>
-        ${embedsHtml(n.body)}
+        ${embedsHtml(n.body, n.props && n.props.cards)}
       </div>
       <aside class="note-side">
         <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
@@ -2341,9 +2341,9 @@ function renderTable() {
       $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
         <div class="card">
         <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
-        ${notesSection(r.body, 'row')}
+        ${notesSection(r.body, 'row', r.props && r.props.cards)}
         ${attachSection(r)}</div>`;
-      loadThumbs();
+      loadThumbs(); hydrateEmbeds();
       return;
     }
   }
@@ -2617,6 +2617,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-today]')) { openToday(); return; }
   if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
   // attachments (delete wins over open since the × sits inside the tile)
+  const cdel = t.closest('[data-card-del]'); if (cdel) { e.preventDefault(); e.stopPropagation(); removeCard(+cdel.dataset.cardDel); return; }
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   const tad = t.closest('[data-tatt-del]'); if (tad) { e.preventDefault(); e.stopPropagation(); const [rid, cid, aid] = tad.dataset.tattDel.split(':'); delCellAttachment(rid, cid, aid); return; }
@@ -3029,15 +3030,15 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Life area</span>
         <select class="sel" data-area-task="${t.id}"><option value="">No area</option>${state.areas.map((x) => `<option value="${x.id}" ${t.props.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
     </div>
-    ${notesSection(t.body, 'task')}
+    ${notesSection(t.body, 'task', t.props && t.props.cards)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by
 // the block's `body`, edited inline via the shared rich-text editor.
-function notesSection(body, key) {
-  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key)}${embedsHtml(body)}</section>`;
+function notesSection(body, key, cards) {
+  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key)}${embedsHtml(body, cards)}</section>`;
 }
 
 // ── attachments (R2-backed files on a block) ─────────
@@ -3053,6 +3054,14 @@ function attHost() {
     return state.tables_rows && state.tables_rows.find((x) => x.id === state.tables_view.openRow);
   }
   return null;
+}
+// Remove a link card from the block whose card strip is showing.
+async function removeCard(i) {
+  const b = attHost();
+  if (!b || !b.props || !Array.isArray(b.props.cards)) return;
+  b.props.cards.splice(i, 1);
+  rerenderHost();
+  try { await api(`/api/blocks/${b.id}`, { method: 'PATCH', body: JSON.stringify({ props: { cards: b.props.cards } }) }); } catch (e) { toast(e.message); }
 }
 function rerenderHost() {
   if (state.view.type === 'note') renderNote();
@@ -3153,23 +3162,41 @@ async function deleteAttachment(blockId, attId) {
 }
 // Save a rich-text region back to whichever block it belongs to.
 async function saveProse(key, rawHtml) {
-  const html = linkifyHtml(sanitizeProse(rawHtml));
-  let id; let prev = '';
-  if (key === 'note') { const n = state.note && state.note.current; if (!n) return; prev = n.body || ''; n.body = html; id = n.id; }
-  else if (key === 'task') { const t = state.task_open && state.task_open.task; if (!t) return; prev = t.body || ''; t.body = html; id = t.id; }
-  else if (key === 'row') { const r = state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)); if (!r) return; prev = r.body || ''; r.body = html; id = r.id; }
-  else if (key === 'journal') { const j = state.journal && state.journal.current; if (!j) return; prev = j.body || ''; j.body = html; id = j.id; }
-  if (!id) return;
-  // Reflect the linkified/sanitised HTML back into the editor once it's blurred,
-  // so a freshly typed URL becomes a link. Never while focused - that would move
-  // the caret and eat what's being typed.
+  let html = linkifyHtml(sanitizeProse(rawHtml));
+  const obj = key === 'note' ? (state.note && state.note.current)
+    : key === 'task' ? (state.task_open && state.task_open.task)
+    : key === 'row' ? (state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)))
+    : key === 'journal' ? (state.journal && state.journal.current) : null;
+  if (!obj) return;
+  const prev = obj.body || '';
   const el = document.querySelector(`.prose[data-prose="${key}"]`);
-  if (el && document.activeElement !== el && el.innerHTML !== html) el.innerHTML = html;
-  // If the set of embeds (YouTube players or link cards) changed, refresh the
-  // cards below so a freshly pasted URL previews without leaving the note. Only
-  // once the editor is blurred - re-rendering mid-type would drop the caret.
-  if (embedSig(html) !== embedSig(prev) && (!el || document.activeElement !== el)) rerenderHost();
-  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
+  const focused = el && document.activeElement === el;
+  // On blur, pull any standalone URLs out of the text into cards. Only when
+  // blurred: doing it mid-type would strip what's being written and, because the
+  // editor still holds the URL, double-count it on the next save.
+  let cardsChanged = false;
+  if (key !== 'journal' && !focused) {
+    const ex = extractCards(html);
+    if (ex.urls.length) {
+      html = ex.body;
+      obj.props = { ...(obj.props || {}), cards: ((obj.props && obj.props.cards) || []).concat(ex.urls) };
+      cardsChanged = true;
+    }
+  }
+  obj.body = html;
+  const id = obj.id;
+  // Reflect the cleaned HTML back into the editor once it's blurred, so a freshly
+  // typed URL becomes a link. Never while focused - that would move the caret.
+  if (el && !focused && el.innerHTML !== html) el.innerHTML = html;
+  // A new card, or a YouTube link added/removed, means the strip below changed:
+  // re-render so the preview appears without leaving the note (blur only).
+  const ytChanged = youtubeIds(html).join() !== youtubeIds(prev).join();
+  if ((cardsChanged || ytChanged) && !focused) rerenderHost();
+  try {
+    const patch = { body: html };
+    if (cardsChanged) patch.props = { cards: obj.props.cards };
+    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+  } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {
   const t = state.task_open.task; if (!(await uiConfirm(`Delete “${t.title || 'Untitled'}”?`, { title: 'Delete task', okLabel: 'Delete', danger: true }))) return;

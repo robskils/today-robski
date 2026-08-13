@@ -433,25 +433,41 @@ async function bookmarkKey(env) {
 async function fetchLinkMeta(rawUrl) {
   let url = String(rawUrl || '').trim();
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+  let host = ''; let slug = '';
+  try {
+    const u = new URL(url);
+    host = u.hostname.replace(/^www\./, '');
+    const segs = u.pathname.split('/').filter(Boolean);
+    slug = decodeURIComponent(segs[segs.length - 1] || '').replace(/\.(html?|php|aspx?)$/i, '').replace(/[-_]+/g, ' ').trim();
+  } catch {}
+  // A readable title built from the URL slug, for when a site blocks scraping
+  // (403 / Cloudflare challenge / JS-only page). Beats showing an error page.
+  const slugTitle = /[a-z]/i.test(slug) ? slug.replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 120) : '';
   const isVideo = /(youtube\.com|youtu\.be|vimeo\.com|ted\.com|tiktok\.com|twitch\.tv)/i.test(host);
   const meta = { url, title: '', image: '', site: host, media: isVideo ? 'video' : 'article' };
   try {
     const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RobskiLife/1.0)', 'Accept-Language': 'en' }, cf: { cacheTtl: 3600, cacheEverything: true } });
-    const html = (await res.text()).slice(0, 400000);
-    const pick = (prop) => {
-      const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'))
-        || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'));
-      return m ? ytUnescape(m[1]) : '';
-    };
-    const t = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-    meta.title = pick('og:title') || (t ? ytUnescape(t[1]) : '');
-    meta.image = pick('og:image');
-    meta.site = pick('og:site_name') || host;
-    meta.desc = (pick('og:description') || pick('description') || '').slice(0, 220);
-    if (/video/i.test(pick('og:type'))) meta.media = 'video';
+    if (res.ok) {
+      const html = (await res.text()).slice(0, 400000);
+      const pick = (prop) => {
+        const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'))
+          || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'));
+        return m ? ytUnescape(m[1]) : '';
+      };
+      const t = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+      meta.title = pick('og:title') || (t ? ytUnescape(t[1]) : '');
+      meta.image = pick('og:image');
+      meta.desc = (pick('og:description') || pick('description') || '').slice(0, 220);
+      if (/video/i.test(pick('og:type'))) meta.media = 'video';
+    }
   } catch {}
-  meta.title = (meta.title || host || 'Saved link').trim().slice(0, 300);
+  // Reject error/challenge titles (403, "Just a moment…", "Access denied") and
+  // fall back to the slug so the card reads like a heading, not a failure.
+  if (!meta.title || /^\s*(error|forbidden|403|401|404|access denied|attention required|just a moment|are you (a )?human|please wait)/i.test(meta.title)) {
+    meta.title = slugTitle || host || 'Saved link';
+  }
+  meta.title = meta.title.trim().slice(0, 300);
+  meta.site = host;   // the little site line is always the clean hostname
   return meta;
 }
 async function createBookmark(env, rawUrl, titleHint) {
