@@ -2154,6 +2154,19 @@ function sortTasks(ts) {
 }
 // The sortable tasks table, for a given list. Shared by the Tasks page and a
 // life-area page. Sorting/inline-edit run off the global handlers + state.taskSort.
+// A task title for display, with any long URL shortened to host + trimmed path.
+// Display only - inline edit reads the stored full title, so nothing is lost.
+function taskTitleHtml(title) {
+  const s = String(title || '');
+  if (!/https?:\/\//i.test(s)) return esc(s);
+  const re = /https?:\/\/\S+/g; let out = ''; let last = 0; let m;
+  while ((m = re.exec(s))) {
+    out += esc(s.slice(last, m.index));
+    out += `<span class="t-url" title="${esc(m[0])}">${esc(prettyLinkText(m[0]))}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(s.slice(last));
+}
 function taskTableHtml(list, emptyMsg) {
   const arrow = (c) => state.taskSort.col === c ? `<span class="sarrow">${state.taskSort.dir === 'asc' ? '↑' : '↓'}</span>` : '';
   const th = (c, label, cls) => `<th class="${cls || ''} sortable" data-sort="${c}">${label}${arrow(c)}</th>`;
@@ -2161,7 +2174,7 @@ function taskTableHtml(list, emptyMsg) {
     const a = areaById(t.props.area); const p = t.props.priority;
     return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}">
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
-      <td class="tc-title"><span class="t" data-edit-task="${t.id}">${esc(t.title)}</span></td>
+      <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span></td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
       <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add">+</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
