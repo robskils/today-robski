@@ -1332,6 +1332,7 @@ async function loadMessages() {
   const q = (state.mail.query || '').trim();
   const limit = state.mail.limit || 40;
   state.mail.unseen = {};
+  const acctErrors = [];
   try {
     let more = false;
     const lists = await Promise.all(accts.map(async (a) => {
@@ -1341,13 +1342,14 @@ async function loadMessages() {
         const msgs = (r.messages || []).map((x) => ({ ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: f.mailbox, _key: `${a.id}:${x.uid}` }));
         if ((r.total || 0) > msgs.length) more = true;
         return msgs;
-      } catch { return []; }
+      } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); return []; }
     }));
     let msgs = lists.flat();
     if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
     state.mail.messages = msgs;
     state.mail.hasMore = more && !q && !f.flagged;   // "Load older" only when browsing
     state.mail.error = null;
+    state.mail.acctErrors = acctErrors;
   } catch (e) { state.mail.error = e.message; }
   renderMail();
 }
@@ -1801,7 +1803,10 @@ function renderMail(loading) {
   } else {
     rows = (m.messages || []).map((x) => mailRowHtml(x)).join('');
   }
-  const list = `<div class="mail-list">${loading ? '<div class="home-empty">Loading…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}</div>`;
+  const errBanner = (!loading && (m.acctErrors || []).length)
+    ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
+    : '';
+  const list = `<div class="mail-list">${errBanner}${loading ? '<div class="home-empty">Loading…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}</div>`;
   let reader;
   if (m.composing) {
     const catts = m.composing.attachments || [];

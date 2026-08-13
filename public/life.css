@@ -856,6 +856,7 @@ button.mail-att-dl:hover { border-color:var(--accent); color:var(--accent); back
 /* Which account a message belongs to, shown in the All-accounts view. */
 .mail-acct-chip { display:inline-block; vertical-align:middle; margin-right:7px; padding:1px 8px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); color:var(--ink-2); font-size:12px; font-weight:500; white-space:nowrap; }
 .mail-meta .mail-acct-chip { margin-right:0; margin-left:auto; }
+.mail-acct-err { margin:8px 10px; padding:10px 13px; border-radius:12px; background:#fdecec; border:1px solid #f3b6b6; color:#8a2020; font-size:14px; line-height:1.4; }
 /* Height is set by JS to the reported content height, so the whole reading pane
    scrolls as one rather than the body scrolling inside a fixed box. */
 .mail-body-frame { width:100%; height:340px; min-height:120px; border:0; border-radius:10px; background:#fff; display:block; }
