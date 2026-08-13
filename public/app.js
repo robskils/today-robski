@@ -2026,7 +2026,7 @@ async function moveNote(targetId) {
 }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['attach', 'Attachments']];
+const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['attach', 'Attachments']];
 const tcols = () => (state.tables_open.props.columns || []);
 function cellInput(r, col) {
   const v = ((r.props && r.props.values) || {})[col.id]; const k = `${r.id}:${col.id}`;
@@ -2039,6 +2039,11 @@ function cellInput(r, col) {
   if (col.type === 'number') return `<input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  if (col.type === 'url') {
+    const raw = String(v ?? '').trim();
+    const href = raw ? (/^[a-z][\w+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`) : null;
+    return `<span class="cellwrap${href ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}" placeholder="https://…" inputmode="url" autocomplete="off">${href ? `<a class="cell-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
+  }
   // A text cell holding a URL gets a small open-link button (still editable).
   const url = /^\s*https?:\/\/\S+\s*$/i.test(String(v ?? '')) ? String(v).trim() : null;
   return `<span class="cellwrap${url ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}">${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
