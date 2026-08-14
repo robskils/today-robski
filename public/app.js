@@ -429,7 +429,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
-    <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span><span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
+    <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
@@ -460,9 +460,9 @@ async function quickAdd(kind) {
 function renderTabbar(v) {
   let el = document.getElementById('tabbar');
   if (!el) { el = document.createElement('nav'); el.id = 'tabbar'; el.className = 'tabbar'; document.body.appendChild(el); }
-  const tab = (on, attr, ic, label) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span>${ic}</span>${label}</button>`;
+  const tab = (on, attr, ic, label, badge) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span>${ic}${badge ? `<span class="tab-badge">${badge}</span>` : ''}</span>${label}</button>`;
   el.innerHTML = tab(v.type === 'home', 'data-view-home', '⌂', 'Home')
-    + tab(v.type === 'mail', 'data-open-mail', '✉', 'Mail')
+    + tab(v.type === 'mail', 'data-open-mail', '✉', 'Mail', state.mailUnreadTotal ? (state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal) : '')
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
     + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
     + tab(v.type === 'note' || v.type === 'notes', 'data-open-notes', '▤', 'Notes');
@@ -1415,7 +1415,23 @@ async function mailUnblock(address, accountId) {
     toast(`Unblocked ${address}`); await openMailAccounts();
   } catch (e) { toast(e.message); }
 }
+// Keep the unread badges fresh on their own, from the cheap D1 cache count.
+async function refreshMailUnread() {
+  try {
+    const r = await mailApi('/unread');
+    state.mailUnreadTotal = r.total || 0;
+    if (state.mail) state.mail.unseen = { ...(state.mail.unseen || {}), ...(r.unseen || {}) };
+    renderNav();
+    if (state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) renderMail();
+  } catch {}
+}
+function startMailUnreadPoll() {
+  if (window.__mailUnreadT) return;
+  refreshMailUnread();
+  window.__mailUnreadT = setInterval(() => { if (!document.hidden) refreshMailUnread(); }, 90000);
+}
 async function openMail() {
+  startMailUnreadPoll();
   state.view = { type: 'mail' };
   if (!state.mail) {
     let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {}
@@ -3885,5 +3901,6 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
     else if (route === '/journal') await openJournal();
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
+    startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
   } catch (e) { toast(e.message); renderNav(); }
 })();

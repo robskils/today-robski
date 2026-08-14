@@ -629,6 +629,14 @@ export async function handleMail(request, env, url, json, err) {
       return json({ ...publicAccount(await getAcct(env, seg[1])), warning }, request);
     }
 
+    // Cheap unread counts straight from the cache meta (no IMAP) - polled by the
+    // client to keep the Mail badges fresh on their own.
+    if (sub === 'unread' && method === 'GET') {
+      const { results } = await env.DB.prepare("SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX'").all();
+      const unseen = {}; let total = 0; (results || []).forEach((r) => { unseen[r.account] = r.unseen; total += r.unseen || 0; });
+      return json({ unseen, total }, request);
+    }
+
     // Instant inbox from the D1 cache (no IMAP). 'all' spans every account.
     if (sub === 'cached' && method === 'GET') {
       const accParam = url.searchParams.get('account') || 'all';
