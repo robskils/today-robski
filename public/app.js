@@ -1920,6 +1920,21 @@ const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' 
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
     <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
+// Clean, consistent line icons for the reader toolbar (currentColor stroke), so
+// it reads as one set rather than a jumble of emoji.
+const mIco = (p, fill) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const MAIL_ICO = {
+  starOn: mIco('<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7L12 17.9 6.9 20.6l1-5.7-4.1-4 5.7-.8z"/>', true),
+  starOff: mIco('<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7L12 17.9 6.9 20.6l1-5.7-4.1-4 5.7-.8z"/>'),
+  reply: mIco('<path d="M9 8L4.5 12 9 16"/><path d="M4.5 12h9a5 5 0 0 1 5 5v1"/>'),
+  replyAll: mIco('<path d="M8 8l-4 4 4 4"/><path d="M12.5 8l-4 4 4 4"/><path d="M8.5 12h6a5 5 0 0 1 5 5v1"/>'),
+  forward: mIco('<path d="M15 8l4.5 4L15 16"/><path d="M19.5 12h-9a5 5 0 0 0-5 5v1"/>'),
+  archive: mIco('<rect x="3.5" y="4.5" width="17" height="4" rx="1"/><path d="M5 8.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18V8.5"/><path d="M10 12.5h4"/>'),
+  spam: mIco('<path d="M12 4l8.5 14.6H3.5z"/><path d="M12 10v3.5"/><path d="M12 16.8h.01"/>'),
+  block: mIco('<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1l11.8 11.8"/>'),
+  trash: mIco('<path d="M4.5 7h15"/><path d="M9 7V5.3A1.3 1.3 0 0 1 10.3 4h3.4A1.3 1.3 0 0 1 15 5.3V7"/><path d="M6.6 7l.85 11.3A1.6 1.6 0 0 0 9 20h6a1.6 1.6 0 0 0 1.6-1.7L17.4 7"/>'),
+  sparkle: mIco('<path d="M12 3.6l1.7 4.9 4.9 1.7-4.9 1.7L12 16.7l-1.7-4.8L5.4 10l4.9-1.7z"/>', true),
+};
 // Recognised video-meeting links, so we can float a "Join" button.
 const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
 function mailMeetingLink(o) {
@@ -2016,7 +2031,7 @@ function renderMail(loading) {
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-attach title="Attach files">📎 Attach</button><button type="button" class="ghost" data-mail-cancel>Cancel</button><button type="button" class="ghost mail-discard" data-mail-discard title="Discard draft">Discard</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
-    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">↩</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">↩↩</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">↪</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">🗄</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">⚠</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">🚫</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">✦</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">🗑</button>`;
+    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));

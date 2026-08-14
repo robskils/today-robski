@@ -767,7 +767,9 @@ table.ttable tr:last-child td { border-bottom:0; }
    for a full-width reader. Same behaviour at every width now. */
 .mail-layout { display:block; }
 .mail-list-col { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
-.mail-reader { min-width:0; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+/* No overflow:hidden here - it would trap the sticky toolbar and let it scroll
+   away. Content is inset by .mail-msg padding, so nothing needs clipping. */
+.mail-reader { min-width:0; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); }
 .mail-layout:not(.reading) .mail-reader { display:none; }
 .mail-layout.reading .mail-list-col { display:none; }
 .mail-list { display:block; }
@@ -905,9 +907,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Spark-style: the action toolbar stays pinned at the top while the email
    scrolls underneath it. */
 .mail-reader-head { position:sticky; top:0; z-index:8; background:var(--card); }
-/* Compact icon buttons for the reader toolbar - words cost too much width. */
-.mail-act-ic { font-size:17px; line-height:1; padding:8px 11px; min-width:40px; text-align:center; }
-.mail-claudius.mail-act-ic { padding:8px 11px; min-width:40px; }
+/* Compact, consistent icon buttons for the reader toolbar. */
+.mail-act-ic { display:inline-flex; align-items:center; justify-content:center; padding:8px; min-width:38px; height:38px; color:var(--ink-2); }
+.mail-act-ic svg { width:20px; height:20px; display:block; }
+.mail-act-ic:hover { color:var(--accent); }
+.mail-act-ic.mail-star-btn.on { color:var(--gold); }
+.mail-claudius.mail-act-ic { color:var(--accent); }
+.mail-claudius.mail-act-ic:hover { color:var(--accent); }
 .mail-claudius { display:inline-flex; align-items:center; gap:6px; padding:8px 15px; border-radius:10px; border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent); font-size:14.5px; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .12s, border-color .12s, opacity .12s; }
 .mail-claudius:hover { background:color-mix(in srgb,var(--accent) 20%,transparent); border-color:var(--accent); }
 .mail-claudius:disabled { opacity:.6; cursor:default; }
@@ -918,7 +924,8 @@ table.ttable tr:last-child td { border-bottom:0; }
 @media (max-width:820px){
   .mail-layout { display:block; border:0; box-shadow:none; background:transparent; border-radius:0; min-height:0; }
   .mail-list-col { width:auto; border-right:0; max-height:none; border:1px solid var(--line); border-radius:14px; background:var(--card); overflow:hidden; }
-  .mail-reader { max-height:none; }
+  /* Full-bleed reader on mobile: no card, so the toolbar can pin cleanly. */
+  .mail-reader { max-height:none; border:0; border-radius:0; box-shadow:none; background:transparent; }
   .mail-layout:not(.reading) .mail-reader { display:none; }
   .mail-layout.reading .mail-list-col { display:none; }
   .mail-msg, .mail-compose { padding:4px 2px; }
