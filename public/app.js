@@ -1995,8 +1995,12 @@ function renderMail(loading) {
   const unseenOf = (id) => (m.unseen && m.unseen[id]) || 0;
   const badge = (n) => n ? `<span class="mail-unread-b">${n}</span>` : '';
   const totalUnseen = Object.values(m.unseen || {}).reduce((a, b) => a + b, 0);
-  const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All${badge(totalUnseen)}</button>` : '';
-  const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}${badge(unseenOf(a.id))}</button>`).join('');
+  // One compact dropdown instead of a row of account tabs: defaults to All, pick
+  // a single box only when you want to.
+  const accScope = (m.accounts || []).length > 1 ? `<select class="sel mail-acct-scope-sel" data-mail-acct-sel title="Which mailbox">
+      <option value="all" ${m.account === 'all' ? 'selected' : ''}>All accounts${totalUnseen ? ` · ${totalUnseen} unread` : ''}</option>
+      ${(m.accounts || []).map((a) => `<option value="${a.id}" ${a.id === m.account ? 'selected' : ''}>${esc(a.name || a.email)}${unseenOf(a.id) ? ` · ${unseenOf(a.id)}` : ''}</option>`).join('')}
+    </select>` : '';
   const showAcct = m.account === 'all';
   const list = `<div class="mail-list">${mailListInner(loading)}</div>`;
   let reader;
@@ -2022,9 +2026,10 @@ function renderMail(loading) {
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-attach title="Attach files">📎 Attach</button><button type="button" class="ghost" data-mail-cancel>Cancel</button><button type="button" class="ghost mail-discard" data-mail-discard title="Discard draft">Discard</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
+    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">↩</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">↩↩</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">↪</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">🗄</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">⚠</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">🚫</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">✦</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">🗑</button>`;
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
-        <span class="mail-msg-act"><button class="ghost mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="mail-claudius" data-mail-claudius title="Draft a reply with Claudius">✦ Claudius</button><button class="ghost" data-mail-reply title="Reply to sender  ·  R">Reply</button><button class="ghost" data-mail-reply-all title="Reply all  ·  A">Reply all</button><button class="ghost" data-mail-forward title="Forward  ·  F">Forward</button><button class="ghost" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">Archive</button><button class="ghost" data-mail-move-one="${esc(o._key)}" title="Move to a folder">Move</button><button class="ghost" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">Spam</button><button class="ghost" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">Block</button><button class="ghost" data-mail-del="${esc(o._key)}">Delete</button></span></div>
+        <span class="mail-msg-act">${msgActs}</span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
@@ -2042,7 +2047,7 @@ function renderMail(loading) {
     <div class="pane-head home-head"><h1>Mail</h1>
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${(m.open || m.composing) ? '' : `
-    ${accTabs ? `<div class="mail-atabs">${accTabs}</div>` : ''}
+    ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
     <div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
@@ -2772,6 +2777,14 @@ document.addEventListener('input', (e) => {
 let proseT;
 document.addEventListener('click', (e) => {
   const t = e.target;
+  // Bottom-nav tab: tapping it jumps to the top of that page. If you're already
+  // on it, just scroll up; otherwise navigate (fall through) and scroll after.
+  const tabb = t.closest('.tab-b');
+  if (tabb) {
+    const toTop = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; };
+    if (tabb.classList.contains('on')) { e.preventDefault(); toTop(); return; }
+    requestAnimationFrame(toTop);   // navigating: scroll once the new page has rendered
+  }
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
@@ -3001,6 +3014,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
   if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
+  if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
