@@ -416,6 +416,7 @@ function sunTimes(date, lat, lng) {
 function renderNav() {
   const v = state.view;
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
+  if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
     <div class="nav-brand" data-view-home title="Home">Robski<span class="dot">·</span><em>Life</em></div>
@@ -2025,6 +2026,7 @@ function renderMailList(loading) {
 }
 function renderMail(loading) {
   const m = state.mail;
+  document.body.classList.toggle('mail-reading', !!(m && (m.open || m.composing)));   // mobile: full-screen reader
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
   const unseenOf = (id) => (m.unseen && m.unseen[id]) || 0;
   const badge = (n) => n ? `<span class="mail-unread-b">${n}</span>` : '';

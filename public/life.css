@@ -904,9 +904,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-invite-loc, .mail-invite-org { color:var(--ink-2); font-size:14px; margin-top:3px; }
 .mail-invite-act { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
 .mail-msg-act, .mail-compose-act { display:flex; gap:10px; align-items:center; margin-top:22px; }
-/* Spark-style: the action toolbar stays pinned at the top while the email
-   scrolls underneath it. */
-.mail-reader-head { position:sticky; top:0; z-index:8; background:var(--card); }
+/* Spark-style: the action toolbar stays pinned while the email scrolls under
+   it. It must sit BELOW the 44px tab strip (sticky, z:25) - top:0 would pin it
+   behind the tabs, which read as "not pinned at all". */
+.mail-reader-head { position:sticky; top:44px; z-index:8; background:var(--card); border-bottom:1px solid var(--line); padding-bottom:10px; }
 /* Compact, consistent icon buttons for the reader toolbar. */
 .mail-act-ic { display:inline-flex; align-items:center; justify-content:center; padding:8px; min-width:38px; height:38px; color:var(--ink-2); }
 .mail-act-ic svg { width:20px; height:20px; display:block; }
@@ -935,6 +936,9 @@ table.ttable tr:last-child td { border-bottom:0; }
      it — Back stays put on the left, every action stays reachable. */
   /* Sits ABOVE the top nav (z:30) so, once you scroll, the toolbar pins to the
      very top and the email scrolls under it (Spark-style). */
+  /* Reading a mail on mobile: hide the top brand/nav bar so the reader is
+     full-screen (Back + bottom tabs are enough) and the toolbar pins at top:0. */
+  body.mail-reading .nav { display:none; }
   .mail-reader-head { position:sticky; top:0; z-index:31; gap:6px; flex-wrap:nowrap;
     margin:0 -18px; padding:9px 14px; background:var(--card); border-bottom:1px solid var(--line); }
   .mail-reader-head .mail-msg-act { margin-left:4px; flex:1; min-width:0; flex-wrap:nowrap;
