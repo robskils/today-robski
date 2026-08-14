@@ -165,8 +165,10 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
   <div style="display:none;max-height:0;overflow:hidden;opacity:0">${preheader}</div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER};padding:34px 0 46px">
-    <tr><td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:560px;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
+    <tr><td align="center" style="padding:0 12px">
+      <!-- Fill the width up to 560px, so it shrinks to fit a phone instead of
+           forcing a 560px card that overflows the screen. -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
 
         <!-- The ensō, as a character. A drawn circle would be an image to
              load or an SVG to be stripped; this is neither. -->
