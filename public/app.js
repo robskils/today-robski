@@ -415,6 +415,7 @@ function sunTimes(date, lat, lng) {
 
 function renderNav() {
   const v = state.view;
+  document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
     <div class="nav-brand" data-view-home title="Home">Robski<span class="dot">·</span><em>Life</em></div>
@@ -1293,7 +1294,7 @@ async function mailStar(key) {
 // Every message key in the same conversation as `key` (just [key] when threading
 // is off), so Archive/Spam/Trash act on the whole thread at once.
 function threadKeysFor(key) {
-  if (!state.mail || !state.mail.threaded) return [key];
+  if (!state.mail) return [key];   // mail is always threaded now
   const th = buildThreads(state.mail.messages || []).find((t) => t.messages.some((m) => m._key === key));
   return th ? th.messages.map((m) => m._key) : [key];
 }
@@ -1910,11 +1911,12 @@ function prettyMailbox(p) {
 }
 const mailSearching = () => !!(state.mail && state.mail.query && state.mail.query.trim());
 const folderChip = (x) => (mailSearching() && x._mailbox && !/^INBOX$/i.test(x._mailbox)) ? `<span class="mail-folder-chip">${esc(prettyMailbox(x._mailbox))}</span>` : '';
-// One message row (shared by flat view, single-message threads, and expanded children).
-const mailRowHtml = (x, child) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
+// One message row. `count` (>1) shows a quiet conversation tally, Spark-style -
+// no chevrons or badges, the thread just reads as one row.
+const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
     <span class="mail-check ${state.mail.selected && state.mail.selected.has(x._key) ? 'on' : ''}" data-mail-check="${esc(x._key)}" title="Select">${state.mail.selected && state.mail.selected.has(x._key) ? '✓' : ''}</span>
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
-    <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}</span><span class="mail-date">${mailDate(x.date)}</span></span>
+    <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
     <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
@@ -1962,22 +1964,10 @@ async function mailInviteAdd() {
 function mailListInner(loading) {
   const m = state.mail;
   const showAcct = m.account === 'all';
-  let rows;
-  if (m.threaded) {
-    rows = buildThreads(m.messages || []).map((th) => {
-      if (th.count === 1) return mailRowHtml(th.latest);
-      const exp = !!(m.expanded && m.expanded[th.key]);
-      const header = `<button class="mail-row mail-thread ${th.unread ? 'unread' : ''} ${exp ? 'exp' : ''}" data-mail-thread="${esc(th.key)}">
-        <span class="mail-chevron">${exp ? '▾' : '▸'}</span>
-        <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(threadFrom(th))}</span><span class="mail-date">${mailDate(th.latest.date)}</span></span>
-        <span class="mail-subject">${showAcct ? `<span class="mail-acct-chip">${esc(th.latest._acctName || '')}</span>` : ''}${esc(normSubject(th.latest.subject) || th.latest.subject)}<span class="mail-thread-n">${th.count}</span></span></span>
-        <span class="mail-thread-arch" data-mail-arch-thread="${esc(th.key)}" title="Archive whole conversation  ·  E">🗄</span>
-        <span class="mail-star ${th.flagged ? 'on' : ''}">${th.flagged ? '★' : ''}</span></button>`;
-      return header + (exp ? th.messages.map((x) => mailRowHtml(x, true)).join('') : '');
-    }).join('');
-  } else {
-    rows = (m.messages || []).map((x) => mailRowHtml(x)).join('');
-  }
+  // Always threaded, Spark-style: one clean row per conversation (the latest
+  // message), with a quiet count when there's more than one. Opening it shows
+  // the whole conversation. No toggle, no chevrons, no big-deal badges.
+  const rows = buildThreads(m.messages || []).map((th) => mailRowHtml(th.latest, false, th.count)).join('');
   const errBanner = (!loading && (m.acctErrors || []).length)
     ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
     : '';
@@ -2027,10 +2017,17 @@ function renderMail(loading) {
   } else if (m.open) {
     const o = m.open;
     const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? '★' : '☆'}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">↩</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">↩↩</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">↪</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">🗄</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">⚠</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">🚫</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">✦</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">🗑</button>`;
+    // The other messages in this conversation, oldest first, so you can jump to
+    // any of them (opening swaps the reader, using the prefetched cache).
+    const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
+    const convStrip = (oThread && oThread.count > 1)
+      ? `<div class="mail-conv-strip">${oThread.messages.slice().reverse().map((mm) => `<button class="mail-conv-item ${mm._key === o._key ? 'on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mc-from">${esc(mailFrom(mm) || '?')}</span><span class="mc-date">${mailDate(mm.date)}</span>${mm.flagged ? '<span class="mc-star">★</span>' : ''}</button>`).join('')}</div>`
+      : '';
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
         <span class="mail-msg-act">${msgActs}</span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
+      ${convStrip}
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
         ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
@@ -2051,7 +2048,6 @@ function renderMail(loading) {
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
     <div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
-      <button class="tbl-filter-btn ${m.threaded ? 'on' : ''}" data-mail-thread-toggle title="Group into conversations">☰ Threads</button>
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}

@@ -858,6 +858,17 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-compose-body { min-height:260px; padding:14px 16px; font-size:16.5px; line-height:1.6; background:var(--paper); border:1px solid var(--line-2); border-radius:0 0 12px 12px; color:var(--ink); overflow-wrap:anywhere; }
 .mail-compose-body:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
 .mail-compose-body:empty:before { content:attr(data-ph); color:var(--ink-3); }
+/* Quiet conversation count in the list (Spark-style, no chevrons/badges). */
+.mail-conv-n { display:inline-block; margin-left:8px; min-width:17px; padding:0 6px; border-radius:9px; background:var(--paper-2); border:1px solid var(--line); color:var(--ink-3); font-size:11.5px; font-weight:600; line-height:17px; text-align:center; vertical-align:middle; }
+.unread .mail-conv-n { color:var(--ink-2); }
+/* Reader: the other messages in this conversation, tap to jump. */
+.mail-conv-strip { display:flex; flex-direction:column; margin:2px 0 16px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--paper-2); }
+.mail-conv-item { display:flex; align-items:center; gap:10px; padding:9px 14px; text-align:left; border-bottom:1px solid var(--line); color:var(--ink-2); font-size:14.5px; width:100%; }
+.mail-conv-item:last-child { border-bottom:0; }
+.mail-conv-item.on { background:var(--card); color:var(--ink); font-weight:600; }
+.mail-conv-item .mc-from { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mail-conv-item .mc-date { color:var(--ink-3); font-size:13px; flex:none; }
+.mail-conv-item .mc-star { color:var(--gold); flex:none; }
 .mail-compose-body blockquote { margin:0; padding-left:12px; border-left:2px solid var(--line-2); color:var(--ink-3); }
 .mail-draft-note { margin-left:auto; color:var(--ink-3); font-size:13px; font-style:italic; }
 .mail-presets { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
@@ -1047,9 +1058,11 @@ table.ttable tr:last-child td { border-bottom:0; }
   .crumb-tools .area-sel, .tbl-head .area-sel { max-width:100%; }
   .nav-item, .nav-grid, .nav-secs, .nav-spacer, .foot-search { display:none; }
   [data-open-today] { display:none; }   /* the day planner is desktop-only */
-  /* Per-app search boxes are hidden on mobile - the ⌘K universal search covers
-     it and the space is precious. (Desktop keeps them.) */
-  .list-search { display:none; }
+  /* Most per-app search boxes are hidden on mobile - the ⌘K universal search
+     covers them. Mail keeps its own (the universal search can't reach IMAP), and
+     on the Mail view we hide the universal box instead (see below). */
+  .list-search:not(.mail-search) { display:none; }
+  body[data-view="mail"] .nav-k { display:none; }
   /* No bottom on a horizontal bar: the theme switch sits inline with the brand. */
   .nav-bottom { margin-top:0; padding-top:0; order:3; }
   .nav-theme { width:auto; border:0; background:transparent; padding:6px 9px; font-size:14px; }
