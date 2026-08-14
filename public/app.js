@@ -1635,7 +1635,11 @@ async function forwardAttachments(o) {
   c.attachments = c.attachments || [];
   for (const a of (o.attachments || [])) {
     try {
-      const res = await fetch(`/api/mail/attachment?account=${encodeURIComponent(o._acct)}&mailbox=${encodeURIComponent(o._mailbox)}&uid=${o.uid}&idx=${a.idx}`, { headers: { Authorization: `Bearer ${localStorage.getItem('today.token')}` } });
+      // Prefer the attachment's own signed URL (works for both the light and
+      // full paths); fall back to the idx route for anything without one.
+      const res = a.url
+        ? await fetch(a.url)
+        : await fetch(`/api/mail/attachment?account=${encodeURIComponent(o._acct)}&mailbox=${encodeURIComponent(o._mailbox)}&uid=${o.uid}&idx=${a.idx}`, { headers: { Authorization: `Bearer ${localStorage.getItem('today.token')}` } });
       if (!res.ok) continue;
       const blob = await res.blob();
       const file = new File([blob], a.filename || 'attachment', { type: a.type || blob.type || 'application/octet-stream' });

@@ -1755,11 +1755,12 @@ export default {
     // token binds the exact message part, so it can't be edited to fetch another.
     if (path === '/api/mail/attachment' && request.method === 'GET' && url.searchParams.get('t')) {
       const p = await verifyJWT(url.searchParams.get('t'), env.AUTH_SECRET);
+      const partQ = url.searchParams.get('part');
       const ok = p && p.dl === 'att'
         && p.a === (url.searchParams.get('account') || '')
         && p.mb === (url.searchParams.get('mailbox') || 'INBOX')
         && String(p.uid) === (url.searchParams.get('uid') || '')
-        && String(p.idx) === (url.searchParams.get('idx') || '0');
+        && (partQ != null ? String(p.part) === partQ : String(p.idx) === (url.searchParams.get('idx') || '0'));
       if (!ok) return err('this attachment link has expired - reopen the email', request, 401);
       return handleMail(request, env, url, json, err);
     }

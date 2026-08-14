@@ -12,11 +12,16 @@ import { signJWT } from './auth.js';
 // normal link (system browser handles it) instead of a blob download - which
 // crashes WKWebView wrappers like Flotato. The token binds the exact message
 // part, so it can't be edited to fetch another.
-async function signedAttUrl(env, reqUrl, account, mailbox, uid, idx) {
+async function signedAttUrl(env, reqUrl, account, mailbox, uid, spec) {
+  // spec = { idx } (full-parse path, downloaded via PostalMime) or
+  //        { part, enc, type, name } (light path, downloaded by MIME part).
   const exp = Math.floor(Date.now() / 1000) + 12 * 3600;   // good for 12h
-  const t = await signJWT({ dl: 'att', a: account, mb: mailbox, uid, idx, exp }, env.AUTH_SECRET);
-  const p = new URLSearchParams({ account, mailbox, uid: String(uid), idx: String(idx), t });
-  return `${reqUrl.origin}/api/mail/attachment?${p.toString()}`;
+  const payload = { dl: 'att', a: account, mb: mailbox, uid, exp };
+  const qp = { account, mailbox, uid: String(uid) };
+  if (spec.part != null) { payload.part = String(spec.part); qp.part = String(spec.part); if (spec.enc) qp.enc = spec.enc; if (spec.type) qp.type = spec.type; if (spec.name) qp.name = spec.name; }
+  else { payload.idx = spec.idx; qp.idx = String(spec.idx); }
+  qp.t = await signJWT(payload, env.AUTH_SECRET);
+  return `${reqUrl.origin}/api/mail/attachment?${new URLSearchParams(qp).toString()}`;
 }
 
 // ── crypto ────────────────────────────────────────────────────────────
@@ -183,6 +188,26 @@ async function imapOpen(env, acct) {
     async fetchRaw(uid) {
       const t = 'A' + (++tag);
       await writer.write(enc.encode(`${t} UID FETCH ${uid} (BODY.PEEK[])\r\n`));
+      let line = await reader.line(); let m;
+      while (line != null && !(m = line.match(/\{(\d+)\}\r?\n$/))) { if (line.startsWith(t + ' ')) return null; line = await reader.line(); }
+      if (!m) return null;
+      const raw = await reader.bytes(Number(m[1]));
+      for (;;) { const l = await reader.line(); if (l == null || l.startsWith(t + ' ')) break; }
+      return raw;
+    },
+    // The MIME tree (BODYSTRUCTURE) - metadata only, no body bytes - so we can
+    // fetch just the parts we want to show and skip big attachments.
+    async fetchStructure(uid) {
+      const r = await cmd(`UID FETCH ${uid} BODYSTRUCTURE`);
+      const joined = (r.lines || []).join('\n');
+      const i = joined.search(/BODYSTRUCTURE\s*\(/i);
+      if (i < 0) return null;
+      return sliceBalanced(joined, joined.indexOf('(', i));
+    },
+    // One MIME part's still-encoded bytes (BODY.PEEK[1.2] etc.).
+    async fetchPart(uid, part) {
+      const t = 'A' + (++tag);
+      await writer.write(enc.encode(`${t} UID FETCH ${uid} (BODY.PEEK[${part}])\r\n`));
       let line = await reader.line(); let m;
       while (line != null && !(m = line.match(/\{(\d+)\}\r?\n$/))) { if (line.startsWith(t + ' ')) return null; line = await reader.line(); }
       if (!m) return null;
@@ -394,6 +419,109 @@ function parseIcs(text) {
 }
 const mimeWord = (s) => /[^\x00-\x7F]/.test(s) ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(s)))}?=` : s;
 
+// ── lightweight body fetch (skip big attachment bytes) ────────────────
+// Opening a message used to pull the ENTIRE raw email (attachments and all)
+// just to show the text. For heavy messages we instead read the MIME tree
+// (BODYSTRUCTURE) and fetch only the body parts + inline images, leaving the
+// attachment bytes on the server (they load on demand via their signed links).
+function sliceBalanced(s, start) {
+  let depth = 0, inQ = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (inQ) { if (c === '\\') i++; else if (c === '"') inQ = false; continue; }
+    if (c === '"') inQ = true; else if (c === '(') depth++;
+    else if (c === ')') { depth--; if (depth === 0) return s.slice(start, i + 1); }
+  }
+  return null;
+}
+function parseParen(s) {
+  let i = 0;
+  const ws = () => { while (i < s.length && (s[i] === ' ' || s[i] === '\n' || s[i] === '\r')) i++; };
+  function val() {
+    ws();
+    if (s[i] === '(') { i++; const a = []; for (;;) { ws(); if (i >= s.length || s[i] === ')') { i++; break; } a.push(val()); } return a; }
+    if (s[i] === '"') { i++; let str = ''; while (i < s.length && s[i] !== '"') { if (s[i] === '\\') i++; str += s[i++]; } i++; return str; }
+    let str = ''; while (i < s.length && s[i] !== ' ' && s[i] !== '(' && s[i] !== ')' && s[i] !== '\n' && s[i] !== '\r') str += s[i++];
+    return /^NIL$/i.test(str) ? null : str;
+  }
+  return val();
+}
+function paramVal(arr, key) {
+  if (!Array.isArray(arr)) return null;
+  for (let i = 0; i + 1 < arr.length; i += 2) if (String(arr[i] || '').toLowerCase() === key) return arr[i + 1];
+  return null;
+}
+function bsLeaves(node, prefix) {
+  if (Array.isArray(node) && Array.isArray(node[0])) {
+    const out = []; let n = 0;
+    for (const child of node) { if (!Array.isArray(child)) break; n++; out.push(...bsLeaves(child, prefix ? `${prefix}.${n}` : `${n}`)); }
+    return out;
+  }
+  if (!Array.isArray(node)) return [];
+  const type = String(node[0] || '').toLowerCase(), subtype = String(node[1] || '').toLowerCase();
+  const params = node[2];
+  let filename = paramVal(params, 'name'), disposition = null;
+  for (let k = 7; k < node.length; k++) {
+    const el = node[k];
+    if (Array.isArray(el) && typeof el[0] === 'string' && /^(inline|attachment)$/i.test(el[0])) { disposition = el[0].toLowerCase(); if (!filename) filename = paramVal(el[1], 'filename'); }
+  }
+  return [{ part: prefix || '1', type, subtype, encoding: String(node[5] || '').toLowerCase(), size: Number(node[6]) || 0, charset: paramVal(params, 'charset'), filename: filename || null, disposition, cid: String(node[3] || '').replace(/^<|>$/g, '') }];
+}
+function decodeBinary(bytes, encoding) {
+  const e = String(encoding || '').toLowerCase();
+  if (e === 'base64') { const txt = new TextDecoder().decode(bytes).replace(/\s+/g, ''); const trimmed = txt.slice(0, txt.length - (txt.length % 4)); return Uint8Array.from(atob(trimmed), (c) => c.charCodeAt(0)); }
+  if (e === 'quoted-printable') { const s = new TextDecoder().decode(bytes).replace(/=\r?\n/g, '').replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 0xff; return u; }
+  return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+}
+function decodeTextPart(bytes, encoding, charset) {
+  const raw = decodeBinary(bytes, encoding);
+  try { return new TextDecoder(charset || 'utf-8', { fatal: false }).decode(raw); }
+  catch { return new TextDecoder('utf-8', { fatal: false }).decode(raw); }
+}
+async function lightFetchMessage(im, uid) {
+  const bs = await im.fetchStructure(uid);
+  if (!bs) return null;
+  let tree; try { tree = parseParen(bs); } catch { return null; }
+  const leaves = bsLeaves(tree, '');
+  if (!leaves.length) return null;
+  const isBody = (l) => l.type === 'text' && (l.subtype === 'html' || l.subtype === 'plain') && l.disposition !== 'attachment';
+  const isInlineImg = (l) => l.type === 'image' && (l.disposition === 'inline' || l.cid);
+  const attachLeaves = leaves.filter((l) => !isBody(l) && !isInlineImg(l));
+  const skipped = attachLeaves.reduce((s, l) => s + (l.size || 0), 0);
+  if (skipped < 200000) return null;   // not enough weight to skip - use the simple full parse
+  const htmlLeaf = leaves.find((l) => isBody(l) && l.subtype === 'html');
+  const textLeaf = leaves.find((l) => isBody(l) && l.subtype === 'plain');
+  let html = '', text = '';
+  if (htmlLeaf) { const b = await im.fetchPart(uid, htmlLeaf.part); if (b) html = decodeTextPart(b, htmlLeaf.encoding, htmlLeaf.charset); }
+  if (textLeaf) { const b = await im.fetchPart(uid, textLeaf.part); if (b) text = decodeTextPart(b, textLeaf.encoding, textLeaf.charset); }
+  if (!html && !text) return null;
+  // Small inline images referenced by cid: pull them in as data URLs.
+  if (html) {
+    for (const l of leaves.filter(isInlineImg)) {
+      if (!l.cid || l.size > 300000 || !html.includes(`cid:${l.cid}`)) continue;
+      const b = await im.fetchPart(uid, l.part); if (!b) continue;
+      const bytes = decodeBinary(b, l.encoding); let bin = ''; for (const x of bytes) bin += String.fromCharCode(x);
+      html = html.split(`cid:${l.cid}`).join(`data:${l.type}/${l.subtype};base64,${btoa(bin)}`);
+    }
+  }
+  // Robust header parse: fetch just the header block, let PostalMime read it.
+  // If that fails, bail to the full parse so we never lose sender/subject.
+  let hp = null; try { const hb = await im.fetchPart(uid, 'HEADER'); if (hb) hp = await PostalMime.parse(hb); } catch {}
+  if (!hp) return null;
+  // A calendar invite: parse the text/calendar part if there is one.
+  let invite = null;
+  const cal = leaves.find((l) => l.type === 'text' && l.subtype === 'calendar');
+  if (cal) { try { const cb = await im.fetchPart(uid, cal.part); if (cb) invite = parseIcs(new TextDecoder(cal.charset || 'utf-8', { fatal: false }).decode(decodeBinary(cb, cal.encoding))); } catch {} }
+  const attachments = attachLeaves.map((l) => ({ part: l.part, filename: l.filename || 'attachment', size: l.size, type: `${l.type}/${l.subtype}`, encoding: l.encoding }));
+  return {
+    subject: hp.subject || '(no subject)', from: hp.from || null,
+    to: (hp.to || []).map((a) => ({ name: a.name, address: a.address })),
+    cc: (hp.cc || []).map((a) => ({ name: a.name, address: a.address })),
+    date: hp.date ? new Date(hp.date).toISOString() : '', messageId: hp.messageId || null,
+    html: html || null, text: text || '', invite, attachments,
+  };
+}
+
 // ── routes ────────────────────────────────────────────────────────────
 // index.js delegates any /api/mail/* path here (already behind the auth gate).
 export async function handleMail(request, env, url, json, err) {
@@ -531,6 +659,16 @@ export async function handleMail(request, env, url, json, err) {
       const im = await imapOpen(env, acct);
       try {
         await im.login(); await im.select(mailbox);
+        // Fast path: for heavy messages, fetch only the body (see lightFetchMessage).
+        // Falls back to a full parse on anything unusual, so display never breaks.
+        let light = null; try { light = await lightFetchMessage(im, uid); } catch { light = null; }
+        if (light) {
+          const attachments = await Promise.all(light.attachments.map(async (a) => ({
+            filename: a.filename, size: a.size, type: a.type,
+            url: await signedAttUrl(env, url, acct.id, mailbox, uid, { part: a.part, enc: a.encoding, type: a.type, name: a.filename }),
+          })));
+          return json({ uid, subject: light.subject, from: light.from, to: light.to, cc: light.cc, date: light.date, messageId: light.messageId, html: light.html, text: light.text, invite: light.invite, attachments }, request);
+        }
         const raw = await im.fetchRaw(uid); if (!raw) return err('message not found', request, 404);
         const p = await PostalMime.parse(raw);
         // A calendar invite arrives as a text/calendar part or an .ics attachment.
@@ -539,7 +677,7 @@ export async function handleMail(request, env, url, json, err) {
         if (calPart && calPart.content) { try { invite = parseIcs(typeof calPart.content === 'string' ? calPart.content : new TextDecoder().decode(calPart.content)); } catch {} }
         const attachments = await Promise.all((p.attachments || []).map(async (a, i) => ({
           idx: i, filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType,
-          url: await signedAttUrl(env, url, acct.id, mailbox, uid, i),
+          url: await signedAttUrl(env, url, acct.id, mailbox, uid, { idx: i }),
         })));
         return json({
           uid, subject: p.subject || '(no subject)', from: p.from || null,
@@ -556,10 +694,21 @@ export async function handleMail(request, env, url, json, err) {
     // everything else here, so the Bearer token still guards it.
     if (sub === 'attachment') {
       const mailbox = url.searchParams.get('mailbox') || 'INBOX', uid = Number(url.searchParams.get('uid'));
-      const idx = Number(url.searchParams.get('idx')) || 0;
+      const partSpec = url.searchParams.get('part');
       const im = await imapOpen(env, acct);
       try {
         await im.login(); await im.select(mailbox);
+        // Light-path attachments carry their MIME part number: fetch just that
+        // part (fast), decode it, and stream it - no full-message re-parse.
+        if (partSpec) {
+          const rawPart = await im.fetchPart(uid, partSpec); if (!rawPart) return err('attachment not found', request, 404);
+          const type = url.searchParams.get('type') || 'application/octet-stream';
+          const name = String(url.searchParams.get('name') || 'attachment').replace(/["\r\n\\]/g, '');
+          const bytes = decodeBinary(rawPart, url.searchParams.get('enc') || '');
+          const disp = (/^image\//i.test(type) || /pdf/i.test(type)) ? 'inline' : 'attachment';
+          return new Response(bytes, { headers: { 'Content-Type': type, 'Content-Disposition': `${disp}; filename="${name}"`, 'Cache-Control': 'no-store' } });
+        }
+        const idx = Number(url.searchParams.get('idx')) || 0;
         const raw = await im.fetchRaw(uid); if (!raw) return err('message not found', request, 404);
         const p = await PostalMime.parse(raw);
         const a = (p.attachments || [])[idx]; if (!a) return err('attachment not found', request, 404);
