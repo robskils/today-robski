@@ -1308,13 +1308,22 @@ async function mailMoveTo(key, target, label) {
       await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) });
     }
     const gone = new Set(keys);
+    const openKey = state.mail.open && state.mail.open._key;
+    const openIdx = openKey ? msgs.findIndex((m) => m._key === openKey) : -1;
     toast(rows.length > 1 ? `${label} · ${rows.length} messages` : label);
     state.mail.messages = msgs.filter((m) => !gone.has(m._key));
     mailForgetKeys(keys);
-    // Keep keyboard triage flowing: move the highlight to the next row (or the
-    // previous one if we removed the last), and drop out of the reader.
+    // Keep keyboard triage flowing: move the highlight to the next row.
     if (gone.has(state.mail.sel)) { const n = state.mail.messages[idx] || state.mail.messages[idx - 1]; state.mail.sel = n ? n._key : null; }
-    if (state.mail.open && gone.has(state.mail.open._key)) state.mail.open = null;
+    // Reading a message we just triaged? Advance to the next one (Spark-style)
+    // rather than dropping back to the list.
+    if (openKey && gone.has(openKey)) {
+      let next = null;
+      for (let i = openIdx + 1; i < msgs.length && !next; i++) if (!gone.has(msgs[i]._key)) next = msgs[i];
+      for (let i = openIdx - 1; i >= 0 && !next; i--) if (!gone.has(msgs[i]._key)) next = msgs[i];
+      state.mail.open = null;
+      if (next) { renderMail(); openMessage(next._key); return; }
+    }
     renderMail();
   } catch (e) { toast(e.message); }
 }
@@ -1407,21 +1416,30 @@ async function mailUnblock(address, accountId) {
 }
 async function openMail() {
   state.view = { type: 'mail' };
-  if (!state.mail) state.mail = { account: null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), mailboxes: [], moveMenu: null };
+  if (!state.mail) {
+    let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {}
+    state.mail = { account: seed.account || null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), mailboxes: [], moveMenu: null, accounts: Array.isArray(seed.accounts) && seed.accounts.length ? seed.accounts : undefined, listCache: seed.listCache || {} };
+  }
   if (!state.mailTrust) {
     state.mailTrust = new Set();
     api('/api/kv/mail_trusted').then((r) => { try { (JSON.parse(r.value || '[]') || []).forEach((a) => state.mailTrust.add(String(a).toLowerCase())); } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
   }
-  renderNav(); renderMail(true);
+  renderNav();
+  // Instant cold open: if we have a cached inbox, paint it now and refresh behind
+  // it (loadMessages is stale-while-revalidate); otherwise show a loader.
+  const haveCache = state.mail.accounts && state.mail.accounts.length && state.mail.account;
+  if (haveCache) loadMessages(); else renderMail(true);
   try {
-    state.mail.accounts = await mailApi('/accounts');
-    if (!state.mail.accounts.length) { renderMailAccounts('Add a mailbox to get started.'); return; }
-    // Default to the unified All-accounts inbox when there's more than one box.
-    if (!state.mail.account) state.mail.account = state.mail.accounts.length > 1 ? 'all' : state.mail.accounts[0].id;
+    const fresh = await mailApi('/accounts');
+    const changed = JSON.stringify(fresh.map((a) => a.id)) !== JSON.stringify((state.mail.accounts || []).map((a) => a.id));
+    state.mail.accounts = fresh;
+    if (!fresh.length) { renderMailAccounts('Add a mailbox to get started.'); return; }
+    if (!state.mail.account) state.mail.account = fresh.length > 1 ? 'all' : fresh[0].id;
     // Cache the folder list (for "Move to folder") from the active/first account.
-    const primary = state.mail.account !== 'all' ? state.mail.account : state.mail.accounts[0].id;
+    const primary = state.mail.account !== 'all' ? state.mail.account : fresh[0].id;
     mailApi(`/mailboxes?account=${primary}`).then((mb) => { state.mail.mailboxes = Array.isArray(mb) ? mb : []; }).catch(() => {});
-    await loadMessages();
+    persistMailCache();
+    if (!haveCache || changed) await loadMessages();   // already loading above unless nothing was cached / accounts changed
   } catch (e) { state.mail.error = e.message; renderMail(); }
 }
 async function loadMessages(quiet) {
@@ -1465,8 +1483,20 @@ async function loadMessages(quiet) {
     state.mail.hasMore = more && !q && !f.flagged;   // "Load older" only when browsing
     state.mail.error = null;
     state.mail.acctErrors = acctErrors;
+    if (!q) persistMailCache();   // remember the (non-search) inbox for an instant cold open
   } catch (e) { if (state.mail._gen !== gen) return; state.mail.error = e.message; }
   if (quiet) renderMailList(false); else renderMail();
+}
+// Persist accounts + the recent folder lists so opening Mail after an app
+// restart paints the last-seen inbox immediately, then refreshes. No secrets
+// here - just headers/subjects (the same data already on screen).
+function persistMailCache() {
+  try {
+    const lc = state.mail.listCache || {};
+    const keys = Object.keys(lc).filter((k) => !k.split('|')[3]).slice(-6);   // skip search keys
+    const trimmed = {}; for (const k of keys) trimmed[k] = (lc[k] || []).slice(0, 40);
+    localStorage.setItem('life.mail.cache', JSON.stringify({ accounts: state.mail.accounts || [], account: state.mail.account, listCache: trimmed }));
+  } catch {}
 }
 // Fetch a message body once and cache it by key (bodies are immutable). Reused
 // by both opening and hover-prefetch, with an in-flight guard so a hover then a
@@ -1508,9 +1538,8 @@ async function openMessage(key) {
 }
 async function mailDelete(key) {
   const row = mailRow(key); if (!row) return;
-  if (!(await uiConfirm('Move this message to Trash?', { title: 'Move to Trash', okLabel: 'Move' }))) return;
-  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m._key !== key); mailForgetKeys([key]); state.mail.open = null; renderMail(); }
-  catch (e) { toast(e.message); }
+  if (!(await uiConfirm('Move to Trash?', { title: 'Move to Trash', okLabel: 'Move' }))) return;
+  mailMoveTo(key, 'Trash', 'Moved to Trash');   // thread-aware + advances to the next message
 }
 // Which account a compose sends FROM: the reply's originating account, else the
 // active tab - but never the 'all' sentinel, which falls back to the first box.
