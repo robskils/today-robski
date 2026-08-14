@@ -1422,8 +1422,12 @@ async function openMail() {
     await loadMessages();
   } catch (e) { state.mail.error = e.message; renderMail(); }
 }
-async function loadMessages() {
-  state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; state.mail.hover = null; renderMail(true);
+async function loadMessages(quiet) {
+  // quiet = a live search: refresh only the list, leaving the search box (and
+  // its focus/caret) alone. A generation counter drops stale slow responses.
+  const gen = (state.mail._gen = (state.mail._gen || 0) + 1);
+  state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; state.mail.hover = null;
+  if (quiet) renderMailList(true); else renderMail(true);
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
   const all = state.mail.account === 'all';
   const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
@@ -1444,14 +1448,15 @@ async function loadMessages() {
         return msgs;
       } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); return []; }
     }));
+    if (state.mail._gen !== gen) return;   // a newer load has superseded this one
     let msgs = lists.flat();
     if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
     state.mail.messages = msgs;
     state.mail.hasMore = more && !q && !f.flagged;   // "Load older" only when browsing
     state.mail.error = null;
     state.mail.acctErrors = acctErrors;
-  } catch (e) { state.mail.error = e.message; }
-  renderMail();
+  } catch (e) { if (state.mail._gen !== gen) return; state.mail.error = e.message; }
+  if (quiet) renderMailList(false); else renderMail();
 }
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key); if (!row) return;
@@ -1912,14 +1917,11 @@ async function mailInviteAdd() {
   try { await api('/api/events', { method: 'POST', body: JSON.stringify(body) }); toast('Added to your calendar'); }
   catch (e) { toast(e.message); }
 }
-function renderMail(loading) {
+// The inner HTML of the .mail-list container (rows / loading / empty state).
+// Kept separate so a live search can refresh just the list without rebuilding
+// the header - which would destroy the search box and steal focus mid-type.
+function mailListInner(loading) {
   const m = state.mail;
-  if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
-  const unseenOf = (id) => (m.unseen && m.unseen[id]) || 0;
-  const badge = (n) => n ? `<span class="mail-unread-b">${n}</span>` : '';
-  const totalUnseen = Object.values(m.unseen || {}).reduce((a, b) => a + b, 0);
-  const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All${badge(totalUnseen)}</button>` : '';
-  const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}${badge(unseenOf(a.id))}</button>`).join('');
   const showAcct = m.account === 'all';
   let rows;
   if (m.threaded) {
@@ -1940,7 +1942,24 @@ function renderMail(loading) {
   const errBanner = (!loading && (m.acctErrors || []).length)
     ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
     : '';
-  const list = `<div class="mail-list">${errBanner}${loading ? '<div class="home-empty">Loading…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}</div>`;
+  return `${errBanner}${loading ? '<div class="home-empty">Searching…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
+}
+// Refresh only the message list in place, keeping the header/search box intact.
+function renderMailList(loading) {
+  const el = document.querySelector('.mail-list');
+  if (el) el.innerHTML = mailListInner(loading);
+  else renderMail(loading);
+}
+function renderMail(loading) {
+  const m = state.mail;
+  if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
+  const unseenOf = (id) => (m.unseen && m.unseen[id]) || 0;
+  const badge = (n) => n ? `<span class="mail-unread-b">${n}</span>` : '';
+  const totalUnseen = Object.values(m.unseen || {}).reduce((a, b) => a + b, 0);
+  const allTab = (m.accounts || []).length > 1 ? `<button class="mail-atab ${m.account === 'all' ? 'on' : ''}" data-mail-acct="all">All${badge(totalUnseen)}</button>` : '';
+  const accTabs = allTab + (m.accounts || []).map((a) => `<button class="mail-atab ${a.id === m.account ? 'on' : ''}" data-mail-acct="${a.id}">${esc(a.name || a.email)}${badge(unseenOf(a.id))}</button>`).join('');
+  const showAcct = m.account === 'all';
+  const list = `<div class="mail-list">${mailListInner(loading)}</div>`;
   let reader;
   if (m.composing) {
     const catts = m.composing.attachments || [];
@@ -2694,7 +2713,9 @@ document.addEventListener('input', (e) => {
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
-  if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; const v = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages().then(() => { const el = $('[data-mail-q]'); if (el) { el.focus(); try { el.setSelectionRange(v.length, v.length); } catch {} } }); }, 450); }
+  // Live search: refresh only the list (quiet), so the box you're typing in is
+  // never rebuilt and keeps focus. Debounced so it fires when you pause.
+  if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages(true); }, 500); }
   // Signature bar colour: live-recolour the bar; swatch and hex box stay synced.
   if (e.target.matches('[data-sig-hex]')) applySigColor(e.target.dataset.sigHex, e.target.value, 'hex');
   if (e.target.matches('[data-sig-color-sw]')) applySigColor(e.target.dataset.sigColorSw, e.target.value, 'sw');
