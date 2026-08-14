@@ -1,5 +1,5 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
-import { isAuthed, requestCode, verifyCode } from './auth.js';
+import { isAuthed, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -1748,6 +1748,21 @@ export default {
     // Bookmark capture: the iOS Shortcut / desktop bookmarklet post here with the
     // long-lived capture key (not the 7-day JWT), so it sits before the JWT gate.
     if (path === '/api/capture' && (request.method === 'GET' || request.method === 'POST')) return handleCapture(request, env, url, json, err);
+
+    // A mail attachment opened via a short-lived signed token (query param) rather
+    // than the Bearer header, so it can be a normal link the system browser opens
+    // - dodging the WKWebView blob-download crash in wrappers like Flotato. The
+    // token binds the exact message part, so it can't be edited to fetch another.
+    if (path === '/api/mail/attachment' && request.method === 'GET' && url.searchParams.get('t')) {
+      const p = await verifyJWT(url.searchParams.get('t'), env.AUTH_SECRET);
+      const ok = p && p.dl === 'att'
+        && p.a === (url.searchParams.get('account') || '')
+        && p.mb === (url.searchParams.get('mailbox') || 'INBOX')
+        && String(p.uid) === (url.searchParams.get('uid') || '')
+        && String(p.idx) === (url.searchParams.get('idx') || '0');
+      if (!ok) return err('this attachment link has expired - reopen the email', request, 401);
+      return handleMail(request, env, url, json, err);
+    }
 
     // Public: getting in. Rate limited inside; see auth.js.
     if (path === '/auth/request-code' && request.method === 'POST') {

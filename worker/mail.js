@@ -6,6 +6,18 @@
 // derived from AUTH_SECRET. Robin types it once in the app; it's never logged.
 import { connect } from 'cloudflare:sockets';
 import PostalMime from 'postal-mime';
+import { signJWT } from './auth.js';
+
+// A short-lived signed URL for one attachment, so the reader can open it as a
+// normal link (system browser handles it) instead of a blob download - which
+// crashes WKWebView wrappers like Flotato. The token binds the exact message
+// part, so it can't be edited to fetch another.
+async function signedAttUrl(env, reqUrl, account, mailbox, uid, idx) {
+  const exp = Math.floor(Date.now() / 1000) + 12 * 3600;   // good for 12h
+  const t = await signJWT({ dl: 'att', a: account, mb: mailbox, uid, idx, exp }, env.AUTH_SECRET);
+  const p = new URLSearchParams({ account, mailbox, uid: String(uid), idx: String(idx), t });
+  return `${reqUrl.origin}/api/mail/attachment?${p.toString()}`;
+}
 
 // ── crypto ────────────────────────────────────────────────────────────
 async function mailKey(env) {
@@ -525,13 +537,16 @@ export async function handleMail(request, env, url, json, err) {
         let invite = null;
         const calPart = (p.attachments || []).find((a) => /calendar/i.test(a.mimeType || '') || /\.ics$/i.test(a.filename || ''));
         if (calPart && calPart.content) { try { invite = parseIcs(typeof calPart.content === 'string' ? calPart.content : new TextDecoder().decode(calPart.content)); } catch {} }
+        const attachments = await Promise.all((p.attachments || []).map(async (a, i) => ({
+          idx: i, filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType,
+          url: await signedAttUrl(env, url, acct.id, mailbox, uid, i),
+        })));
         return json({
           uid, subject: p.subject || '(no subject)', from: p.from || null,
           to: (p.to || []).map((a) => ({ name: a.name, address: a.address })),
           cc: (p.cc || []).map((a) => ({ name: a.name, address: a.address })),
           date: (p.date ? new Date(p.date).toISOString() : ''),
-          messageId: p.messageId || null, html: p.html || null, text: p.text || '', invite,
-          attachments: (p.attachments || []).map((a, i) => ({ idx: i, filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType })),
+          messageId: p.messageId || null, html: p.html || null, text: p.text || '', invite, attachments,
         }, request);
       } finally { await im.logout(); }
     }
@@ -550,9 +565,11 @@ export async function handleMail(request, env, url, json, err) {
         const a = (p.attachments || [])[idx]; if (!a) return err('attachment not found', request, 404);
         const name = String(a.filename || 'attachment').replace(/["\r\n\\]/g, '');
         const body = typeof a.content === 'string' ? a.content : (a.content || new Uint8Array());
+        // Show images and PDFs in the browser tab; anything else downloads.
+        const disp = (/^image\//i.test(a.mimeType || '') || /pdf/i.test(a.mimeType || '')) ? 'inline' : 'attachment';
         return new Response(body, { headers: {
           'Content-Type': a.mimeType || 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${name}"`,
+          'Content-Disposition': `${disp}; filename="${name}"`,
           'Cache-Control': 'no-store',
         } });
       } finally { await im.logout(); }
