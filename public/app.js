@@ -2948,7 +2948,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
   // attachments (delete wins over open since the × sits inside the tile)
   const cdel = t.closest('[data-card-del]'); if (cdel) { e.preventDefault(); e.stopPropagation(); removeCardEl(cdel); return; }
-  const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { e.preventDefault(); window.open(lcard.dataset.linkcard, '_blank', 'noopener'); return; }
+  const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { e.preventDefault(); openExternal(lcard.dataset.linkcard); return; }
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   const tad = t.closest('[data-tatt-del]'); if (tad) { e.preventDefault(); e.stopPropagation(); const [rid, cid, aid] = tad.dataset.tattDel.split(':'); delCellAttachment(rid, cid, aid); return; }
@@ -2964,7 +2964,7 @@ document.addEventListener('click', (e) => {
   const mth = t.closest('[data-mail-thread]'); if (mth) { const k = mth.dataset.mailThread; state.mail.expanded = state.mail.expanded || {}; state.mail.expanded[k] = !state.mail.expanded[k]; renderMail(); return; }
   if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
-  const mjoin = t.closest('[data-mail-join]'); if (mjoin) { window.open(mjoin.dataset.mailJoin, '_blank', 'noopener'); return; }
+  const mjoin = t.closest('[data-mail-join]'); if (mjoin) { openExternal(mjoin.dataset.mailJoin); return; }
   if (t.closest('[data-mail-invite-add]')) { mailInviteAdd(); return; }
   const mchk = t.closest('[data-mail-check]'); if (mchk) { e.preventDefault(); e.stopPropagation(); mailToggleSelect(mchk.dataset.mailCheck); return; }   // select box sits inside the row button
   const mbulk = t.closest('[data-mail-bulk]'); if (mbulk) { mailBulk(mbulk.dataset.mailBulk); return; }
