@@ -1916,9 +1916,20 @@ async function trustSender(addr) {
 // and body together - scrolls as one. allow-scripts runs only our reporter; the
 // email's own scripts were stripped above, and there is no allow-same-origin.
 function wrapEmailHtml(html, blockImages) {
-  return `<!doctype html><html><head><base target="_blank"><meta name="color-scheme" content="light">
+  // No <base target="_blank"> - instead we intercept link clicks and hand the URL
+  // to the parent, which opens it in the OS default browser (a sandboxed iframe
+  // can't do that itself, and its own scripts were already stripped).
+  return `<!doctype html><html><head><meta name="color-scheme" content="light">
     <style>html,body{margin:0}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
-    </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);})();<\/script></body></html>`;
+    </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href')||'';if(/^(https?:|mailto:)/i.test(href)){e.preventDefault();parent.postMessage({__mailLink:href},'*');}},true);})();<\/script></body></html>`;
+}
+// Open a URL in the OS default browser via a marked, user-initiated anchor click
+// (works in installed PWAs / WKWebView wrappers). The data-ext-open marker stops
+// the document click handler re-catching it into an infinite loop.
+function openExternal(url) {
+  const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+  a.dataset.extOpen = '1';
+  document.body.appendChild(a); a.click(); a.remove();
 }
 // Grow #mail-body-frame to whatever height it reports (installed once).
 if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
@@ -1927,6 +1938,20 @@ if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
     if (!ev.data || typeof ev.data.__mailHeight !== 'number') return;
     const f = document.getElementById('mail-body-frame');
     if (f) f.style.height = `${Math.max(200, Math.min(ev.data.__mailHeight + 6, 40000))}px`;
+  });
+  // A link clicked inside the email frame: open it in the OS default browser
+  // (same as links elsewhere in the app); a mailto starts an in-app reply.
+  window.addEventListener('message', (ev) => {
+    const url = ev.data && ev.data.__mailLink;
+    if (typeof url !== 'string') return;
+    const f = document.getElementById('mail-body-frame');
+    if (!f || ev.source !== f.contentWindow) return;
+    if (/^mailto:/i.test(url)) {
+      const to = decodeURIComponent(url.slice(7).split('?')[0]);
+      if (state.mail) { state.mail.composing = { to }; renderMail(); setTimeout(() => { const el = document.getElementById('mc-to'); if (el) el.focus(); }, 30); }
+      return;
+    }
+    if (/^https?:/i.test(url)) openExternal(url);
   });
 }
 const MAIL_SHORTCUTS = [
@@ -2870,12 +2895,12 @@ document.addEventListener('click', (e) => {
     const rl = (alink.getAttribute('href') || '').match(/^#rl-(note|table|area)-(.+)$/i);
     if (rl) { e.preventDefault(); const id = rl[2]; const nav = rl[1].toLowerCase() === 'note' ? openNote(id) : rl[1].toLowerCase() === 'table' ? openTable(id) : openArea(id); nav.catch((x) => toast(x.message)); return; }
   }
+  // Our own synthesised open-in-browser click - let it proceed, don't re-handle
+  // it (that would loop forever, since this listener is on document).
+  if (alink && alink.dataset && alink.dataset.extOpen) return;
   if (alink && /^https?:/i.test(alink.getAttribute('href') || '')) {
     e.preventDefault();
-    // Synthesise a real anchor click rather than window.open: an installed PWA
-    // hands this to the OS default browser, and it isn't caught by popup blockers.
-    const a = document.createElement('a'); a.href = alink.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
-    document.body.appendChild(a); a.click(); a.remove();
+    openExternal(alink.href);
     return;
   }
   const ate = t.closest('[data-add-table-entry]'); if (ate) { e.stopPropagation(); openTableEntryPicker(); return; }
