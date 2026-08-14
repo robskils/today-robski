@@ -1,7 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
-import { handleMail, smtpSend, buildMessage } from './mail.js';
+import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
 
 const TZ = 'Europe/Lisbon';
@@ -1690,6 +1690,8 @@ export default {
     // Both run off the same every-minute tick. The brief returns immediately on
     // all but one tick a day, so this costs a single indexed D1 read a minute.
     ctx.waitUntil(runDailyBrief(env).catch((e) => console.error('runDailyBrief:', e.message)));
+    // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min).
+    ctx.waitUntil(syncMailCache(env).catch((e) => console.error('syncMailCache:', e.message)));
   },
 
   async fetch(request, env) {

@@ -1443,6 +1443,13 @@ async function openMail() {
     if (!haveCache || changed) await loadMessages();   // already loading above unless nothing was cached / accounts changed
   } catch (e) { state.mail.error = e.message; renderMail(); }
 }
+// Map the D1 inbox-cache response into the keyed message shape the list uses.
+function applyCachedList(r) {
+  state.mail.unseen = r.unseen || {};
+  const nameOf = (id) => { const a = (state.mail.accounts || []).find((x) => x.id === id) || {}; return a.name || a.email || ''; };
+  state.mail.messages = (r.messages || []).map((x) => { const mb = x.mailbox || 'INBOX'; return { ...x, _acct: x.account, _acctName: nameOf(x.account), _mailbox: mb, _key: `${x.account}:${mb}:${x.uid}` }; });
+  state.mail.error = null; state.mail.acctErrors = []; state.mail.hasMore = false;
+}
 async function loadMessages(quiet) {
   // quiet = a live search: refresh only the list, leaving the search box (and
   // its focus/caret) alone. A generation counter drops stale slow responses.
@@ -1459,8 +1466,20 @@ async function loadMessages(quiet) {
   state.mail._viewKey = viewKey;
   state.mail.listCache = state.mail.listCache || {};
   const cached = state.mail.listCache[viewKey];
-  if (cached && !quiet) { state.mail.messages = cached; state.mail.error = null; state.mail.acctErrors = []; renderMail(); }
-  else if (quiet) renderMailList(true); else renderMail(true);
+  const isDefaultInbox = !q && !f.flagged && f.mailbox === 'INBOX' && limit <= 40;
+  let painted = false;
+  // 1) In-memory cache is freshest within a session (reflects this session's triage).
+  if (cached && !quiet) { state.mail.messages = cached; state.mail.error = null; state.mail.acctErrors = []; renderMail(); painted = true; }
+  // 2) Otherwise the server-side inbox cache (kept warm by the cron) - instant on a cold open.
+  if (!painted && isDefaultInbox && !quiet) {
+    try {
+      const r = await mailApi(`/cached?account=${encodeURIComponent(state.mail.account)}`);
+      if (state.mail._gen !== gen) return;
+      if (r && Array.isArray(r.messages) && r.messages.length) { applyCachedList(r); renderMail(); painted = true; }
+    } catch {}
+  }
+  // 3) Nothing cached: a loader while the live fetch runs.
+  if (!painted) { if (quiet) renderMailList(true); else renderMail(true); }
   state.mail.unseen = {};
   const acctErrors = [];
   try {

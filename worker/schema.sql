@@ -240,3 +240,19 @@ CREATE TABLE IF NOT EXISTS mail_accounts (
   signature TEXT,
   blocked   TEXT              -- JSON array of blocked sender addresses
 );
+
+-- Background inbox cache: the cron syncs the latest INBOX headers here so
+-- opening Mail reads from D1 (fast) instead of a live IMAP fetch (slow).
+-- Bodies are never cached; they load on demand. Holds no passwords.
+CREATE TABLE IF NOT EXISTS mail_cache (
+  account TEXT NOT NULL, mailbox TEXT NOT NULL, uid INTEGER NOT NULL,
+  subject TEXT, from_addr TEXT, from_name TEXT, date TEXT,
+  seen INTEGER DEFAULT 0, flagged INTEGER DEFAULT 0,
+  message_id TEXT, in_reply_to TEXT, refs TEXT, preview TEXT, synced_at TEXT,
+  PRIMARY KEY (account, mailbox, uid)
+);
+CREATE INDEX IF NOT EXISTS mail_cache_list ON mail_cache(account, mailbox, date DESC);
+CREATE TABLE IF NOT EXISTS mail_cache_meta (
+  account TEXT NOT NULL, mailbox TEXT NOT NULL, unseen INTEGER DEFAULT 0, synced_at TEXT,
+  PRIMARY KEY (account, mailbox)
+);

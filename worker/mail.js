@@ -522,6 +522,53 @@ async function lightFetchMessage(im, uid) {
   };
 }
 
+// ── background inbox cache (D1) ────────────────────────────────────────
+// The cron syncs the latest inbox headers into D1, so opening Mail reads from
+// the database (tens of ms) instead of a live IMAP round-trip (seconds) - the
+// Spark trick, hosted. Bodies still load on demand.
+export async function syncMailCache(env, { force = false } = {}) {
+  const now = Date.now();
+  if (!force) {
+    const row = await env.DB.prepare("SELECT value FROM settings WHERE key='mail_sync_at'").first();
+    if (row && now - Number(row.value || 0) < 120000) return;   // at most once every 2 min
+  }
+  await env.DB.prepare("INSERT INTO settings (key,value) VALUES ('mail_sync_at',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
+  const accts = await listAccounts(env);
+  await Promise.allSettled(accts.map((a) => syncOneInbox(env, a)));
+}
+async function syncOneInbox(env, acct) {
+  const im = await imapOpen(env, acct);
+  try {
+    await im.login();
+    const total = await im.select('INBOX');
+    const msgs = total ? await im.listRange(total, 0, 40) : [];
+    const unseen = total ? await im.unseenCount() : 0;
+    const nowIso = new Date().toISOString();
+    const stmts = [env.DB.prepare('DELETE FROM mail_cache WHERE account=? AND mailbox=?').bind(acct.id, 'INBOX')];
+    for (const m of msgs) {
+      stmts.push(env.DB.prepare(
+        'INSERT INTO mail_cache (account,mailbox,uid,subject,from_addr,from_name,date,seen,flagged,message_id,in_reply_to,refs,preview,synced_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      ).bind(acct.id, 'INBOX', m.uid, m.subject || '', (m.from && m.from.address) || '', (m.from && m.from.name) || '', m.date || '', m.seen ? 1 : 0, m.flagged ? 1 : 0, m.messageId || '', m.inReplyTo || '', JSON.stringify(m.references || []), m.preview || '', nowIso));
+    }
+    stmts.push(env.DB.prepare('INSERT INTO mail_cache_meta (account,mailbox,unseen,synced_at) VALUES (?,?,?,?) ON CONFLICT(account,mailbox) DO UPDATE SET unseen=excluded.unseen, synced_at=excluded.synced_at').bind(acct.id, 'INBOX', unseen, nowIso));
+    await env.DB.batch(stmts);
+  } finally { try { await im.logout(); } catch {} }
+}
+async function readCachedInbox(env, accountIds) {
+  if (!accountIds.length) return { messages: [], unseen: {} };
+  const ph = accountIds.map(() => '?').join(',');
+  const { results } = await env.DB.prepare(`SELECT * FROM mail_cache WHERE mailbox='INBOX' AND account IN (${ph}) ORDER BY date DESC LIMIT 200`).bind(...accountIds).all();
+  const messages = (results || []).map((r) => ({
+    uid: r.uid, subject: r.subject, from: { name: r.from_name || '', address: r.from_addr || '' },
+    date: r.date, seen: !!r.seen, flagged: !!r.flagged, messageId: r.message_id || '',
+    inReplyTo: r.in_reply_to || '', references: (() => { try { return JSON.parse(r.refs || '[]'); } catch { return []; } })(),
+    preview: r.preview || '', mailbox: 'INBOX', account: r.account,
+  }));
+  const meta = await env.DB.prepare(`SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX' AND account IN (${ph})`).bind(...accountIds).all();
+  const unseen = {}; (meta.results || []).forEach((m) => { unseen[m.account] = m.unseen; });
+  return { messages, unseen };
+}
+
 // ── routes ────────────────────────────────────────────────────────────
 // index.js delegates any /api/mail/* path here (already behind the auth gate).
 export async function handleMail(request, env, url, json, err) {
@@ -580,6 +627,15 @@ export async function handleMail(request, env, url, json, err) {
         catch (e) { warning = `Saved, but the sign-in check failed (${e.message}).`; }
       }
       return json({ ...publicAccount(await getAcct(env, seg[1])), warning }, request);
+    }
+
+    // Instant inbox from the D1 cache (no IMAP). 'all' spans every account.
+    if (sub === 'cached' && method === 'GET') {
+      const accParam = url.searchParams.get('account') || 'all';
+      const accts = await listAccounts(env);
+      const ids = accParam === 'all' ? accts.map((a) => a.id) : [accParam];
+      const { messages, unseen } = await readCachedInbox(env, ids);
+      return json({ messages, unseen, cached: true }, request);
     }
 
     const acct = await getAcct(env, url.searchParams.get('account') || (await request.clone().json().catch(() => ({}))).account);
