@@ -1309,6 +1309,7 @@ async function mailMoveTo(key, target, label) {
     const gone = new Set(keys);
     toast(rows.length > 1 ? `${label} · ${rows.length} messages` : label);
     state.mail.messages = msgs.filter((m) => !gone.has(m._key));
+    mailForgetKeys(keys);
     // Keep keyboard triage flowing: move the highlight to the next row (or the
     // previous one if we removed the last), and drop out of the reader.
     if (gone.has(state.mail.sel)) { const n = state.mail.messages[idx] || state.mail.messages[idx - 1]; state.mail.sel = n ? n._key : null; }
@@ -1427,12 +1428,19 @@ async function loadMessages(quiet) {
   // its focus/caret) alone. A generation counter drops stale slow responses.
   const gen = (state.mail._gen = (state.mail._gen || 0) + 1);
   state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; state.mail.hover = null;
-  if (quiet) renderMailList(true); else renderMail(true);
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
   const all = state.mail.account === 'all';
   const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
   const q = (state.mail.query || '').trim();
   const limit = state.mail.limit || 40;
+  // Stale-while-revalidate: show the last list for this view instantly, then
+  // refresh behind it, so switching folders/accounts or going back feels snappy.
+  const viewKey = `${state.mail.account}|${f.mailbox}|${f.flagged ? 'F' : ''}|${q}|${limit}`;
+  state.mail._viewKey = viewKey;
+  state.mail.listCache = state.mail.listCache || {};
+  const cached = state.mail.listCache[viewKey];
+  if (cached && !quiet) { state.mail.messages = cached; state.mail.error = null; state.mail.acctErrors = []; renderMail(); }
+  else if (quiet) renderMailList(true); else renderMail(true);
   state.mail.unseen = {};
   const acctErrors = [];
   try {
@@ -1452,28 +1460,55 @@ async function loadMessages(quiet) {
     let msgs = lists.flat();
     if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
     state.mail.messages = msgs;
+    state.mail.listCache[viewKey] = msgs;   // freshen the cache for next time
     state.mail.hasMore = more && !q && !f.flagged;   // "Load older" only when browsing
     state.mail.error = null;
     state.mail.acctErrors = acctErrors;
   } catch (e) { if (state.mail._gen !== gen) return; state.mail.error = e.message; }
   if (quiet) renderMailList(false); else renderMail();
 }
+// Fetch a message body once and cache it by key (bodies are immutable). Reused
+// by both opening and hover-prefetch, with an in-flight guard so a hover then a
+// click share the same request.
+function mailFetchMsg(row) {
+  const key = row._key;
+  state.mail.msgCache = state.mail.msgCache || {};
+  if (state.mail.msgCache[key]) return Promise.resolve(state.mail.msgCache[key]);
+  state.mail._inflight = state.mail._inflight || {};
+  if (!state.mail._inflight[key]) {
+    state.mail._inflight[key] = mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid}`)
+      .then((m) => { const c = state.mail.msgCache; c[key] = m; const ks = Object.keys(c); if (ks.length > 40) delete c[ks[0]]; return m; })
+      .finally(() => { delete state.mail._inflight[key]; });
+  }
+  return state.mail._inflight[key];
+}
+// Warm the cache for a row the mouse is resting on, so the click is instant.
+function prefetchMsg(key) {
+  const row = (state.mail.messages || []).find((x) => x._key === key);
+  if (row && !(state.mail.msgCache && state.mail.msgCache[key])) mailFetchMsg(row).catch(() => {});
+}
+// Drop keys from every cached list, so an archived/deleted message doesn't
+// reappear when you navigate back to a view served from the list cache.
+function mailForgetKeys(keys) {
+  const set = new Set(keys); const lc = state.mail.listCache || {};
+  for (const k in lc) lc[k] = (lc[k] || []).filter((m) => !set.has(m._key));
+}
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key); if (!row) return;
-  renderMail(true);
-  try {
-    const m = await mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid}`);
-    // /message doesn't report flags, so carry the row's starred state across -
-    // otherwise the reader star always shows empty and needs two clicks to set.
-    state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged };
-    if (!row.seen) { row.seen = true; mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
-  } catch (e) { toast(e.message); }
+  const cached = state.mail.msgCache && state.mail.msgCache[key];
+  // /message doesn't report flags, so carry the row's starred state across -
+  // otherwise the reader star always shows empty and needs two clicks to set.
+  const apply = (m) => { state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged }; };
+  if (cached) apply(cached); else renderMail(true);   // cached opens instantly, no loading flash
+  if (!row.seen) { row.seen = true; mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
+  if (cached) { renderMail(); return; }
+  try { apply(await mailFetchMsg(row)); } catch (e) { toast(e.message); }
   renderMail();
 }
 async function mailDelete(key) {
   const row = mailRow(key); if (!row) return;
   if (!(await uiConfirm('Move this message to Trash?', { title: 'Move to Trash', okLabel: 'Move' }))) return;
-  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m._key !== key); state.mail.open = null; renderMail(); }
+  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target: 'Trash' }) }); toast('Moved to Trash'); state.mail.messages = state.mail.messages.filter((m) => m._key !== key); mailForgetKeys([key]); state.mail.open = null; renderMail(); }
   catch (e) { toast(e.message); }
 }
 // Which account a compose sends FROM: the reply's originating account, else the
@@ -2991,8 +3026,13 @@ document.addEventListener('mouseover', (e) => {
   if (!state.mail || state.view.type !== 'mail') return;
   const row = e.target.closest && e.target.closest('[data-mail-open],[data-mail-thread]');
   if (!row) { state.mail.hover = null; state.mail.hoverThread = null; return; }
-  if (row.dataset.mailOpen !== undefined) { state.mail.hover = row.dataset.mailOpen; state.mail.hoverThread = null; }
-  else { state.mail.hover = null; state.mail.hoverThread = row.dataset.mailThread; }
+  if (row.dataset.mailOpen !== undefined) {
+    state.mail.hover = row.dataset.mailOpen; state.mail.hoverThread = null;
+    // Prefetch after the mouse rests a moment (not on every row swept over), so
+    // clicking opens instantly.
+    const key = row.dataset.mailOpen;
+    clearTimeout(window.__mailPrefetchT); window.__mailPrefetchT = setTimeout(() => prefetchMsg(key), 180);
+  } else { state.mail.hover = null; state.mail.hoverThread = row.dataset.mailThread; }
 });
 document.addEventListener('keydown', (e) => {
   if ((e.target.id === 'note-title' || e.target.id === 'taskcard-title' || e.target.id === 'area-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
