@@ -873,8 +873,16 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 
 /* Not enough width for three columns: the practices go full width above the
    schedule, the groups side by side, each still a stack. */
-@media (max-width: 1180px) {
+/* Tablet only: Practices span the top, Schedule + Tasks share a row. On a phone
+   this two-column grid would floor the 1fr Schedule column at 0 and overlap it
+   with Tasks, so the phone breakpoint (<=900px, above) keeps its single column
+   and this must not reach down into it. */
+@media (min-width: 901px) and (max-width: 1180px) {
   .grid { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+/* Both tablet and phone: the Practices strip lays out full-width as a wrapping
+   grid rather than a tall single column that buries the schedule. */
+@media (max-width: 1180px) {
   .col-acts { grid-column: 1 / -1; position: static; max-height: none; }
   .col-acts #acts-panel {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
