@@ -1032,22 +1032,27 @@ function eventsByDay() {
   for (const d in map) map[d].sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || (a.start_min || 0) - (b.start_min || 0));
   return map;
 }
+// A rolling 7-day window starting from `iso` (today by default) - today + the
+// next 6 days, rather than snapping back to Monday. Each cell shows its own
+// weekday since the window no longer lines up with Mon-Sun.
+const DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function weekDays(iso) {
-  const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d);
-  const dow = (dt.getDay() + 6) % 7; // Monday = 0
-  return Array.from({ length: 7 }, (_, i) => { const x = new Date(y, m - 1, d - dow + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), mon: x.getMonth(), dow: WEEKDAYS[i], today: di === todayISO() }; });
+  const [y, m, d] = iso.split('-').map(Number);
+  return Array.from({ length: 7 }, (_, i) => { const x = new Date(y, m - 1, d + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), mon: x.getMonth(), dow: DOW3[x.getDay()], today: di === todayISO() }; });
 }
 async function openCalendar(dateStr) {
   const base = dateStr || (state.cal && state.cal.selected) || todayISO();
   const [y, m] = base.split('-').map(Number);
-  state.cal = { y, m: m - 1, selected: base, mode: localStorage.getItem('life.calMode') === 'week' ? 'week' : 'month', events: [], error: null, editing: null, adding: false };
+  // weekAnchor = the first day of the rolling week window (today by default),
+  // kept separate from `selected` so clicking a day doesn't shift the window.
+  state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: localStorage.getItem('life.calMode') === 'week' ? 'week' : 'month', events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
   await loadCalendar();
 }
 async function loadCalendar() {
   let from, to;
-  if (state.cal.mode === 'week') { const wk = weekDays(state.cal.selected); from = wk[0].iso; to = wk[6].iso; }
+  if (state.cal.mode === 'week') { const wk = weekDays(state.cal.weekAnchor || todayISO()); from = wk[0].iso; to = wk[6].iso; }
   else { const weeks = monthWeeks(state.cal.y, state.cal.m); from = weeks[0][0].iso; to = weeks[5][6].iso; }
   try {
     const r = await api(`/api/calendar?from=${from}&to=${to}`);
@@ -1057,7 +1062,7 @@ async function loadCalendar() {
 }
 function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); }
 function stepCal(delta) {
-  if (state.cal.mode === 'week') { state.cal.selected = addDayISO(state.cal.selected, delta * 7); const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
+  if (state.cal.mode === 'week') { state.cal.weekAnchor = addDayISO(state.cal.weekAnchor || todayISO(), delta * 7); state.cal.selected = state.cal.weekAnchor; const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
   else { let m = state.cal.m + delta, y = state.cal.y; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.cal.y = y; state.cal.m = m; }
   state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar();
 }
@@ -1065,7 +1070,7 @@ function renderCalendar() {
   const c = state.cal, byDay = eventsByDay();
   let title, body;
   if (c.mode === 'week') {
-    const wk = weekDays(c.selected), a = wk[0], b = wk[6];
+    const wk = weekDays(c.weekAnchor || todayISO()), a = wk[0], b = wk[6];
     title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
     body = `<div class="cal-week">${wk.map((d) => {
       const evs = byDay[d.iso] || [];
@@ -3025,7 +3030,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
-  if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); return; }
+  if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); return; }
   if (t.closest('[data-cal-prev]')) { stepCal(-1); return; }
   if (t.closest('[data-cal-next]')) { stepCal(1); return; }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
