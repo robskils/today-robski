@@ -1,7 +1,7 @@
 // The seven lanes Robin wants to keep making progress in, plus a catch-all.
 //
-// Tana has 20 Life Areas that grew organically and don't line up with these.
-// Rather than re-tagging the graph, we map areas -> lanes here. Tana stays untouched.
+// The Life Areas grew organically and don't line up one-to-one with these.
+// Rather than re-tagging everything, we map areas -> lanes here.
 
 // Hues sit ~40 apart so no two lanes read as the same colour at ring size.
 //
@@ -14,7 +14,7 @@ export const LANES = [
   { key: 'zazen', label: 'Zazen', hue: 268, practice: true,
     zen: { kanji: '坐禅', romaji: 'zazen', gloss: 'just sitting' } },
   // Body is a practice too: yoga, HIT, chi kung. They're done from the app's
-  // own activity list, not from a Tana backlog.
+  // own activity list, not from a task backlog.
   { key: 'body',  label: 'Body',  hue: 145, practice: true,
     zen: { kanji: '体操', romaji: 'taisō', gloss: 'the body prepared' } },
   // Music & Dance is a practice too, and one lane rather than two: forró,
@@ -44,12 +44,12 @@ export const LANES = [
 
 export const LANE_KEYS = LANES.map((l) => l.key);
 
-// Tana Life Area name -> lane key. Anything unlisted falls through to 'other',
+// Life Area name -> lane key. Anything unlisted falls through to 'other',
 // which is shown but carries no daily target.
 export const AREA_TO_LANE = {
   // Nothing maps to zazen, body or music. All three are practices: sitting;
   // yoga / HIT / chi kung; forró / percussion / singing / songwriting. They're
-  // filled from the app's own activity list, not from a Tana backlog.
+  // filled from the app's own activity list, not from a task backlog.
   //
   // Their old areas moved to My Life, because "sort out playlists" is life
   // admin, not an hour of playing. Same reasoning as "book a physio" not being

@@ -152,7 +152,7 @@
 <div class="sheet-bg" id="sheet-bg" hidden>
   <form class="sheet" id="sheet">
     <h3 id="sheet-title">Add to today</h3>
-    <!-- The name, editable. Renaming a task writes back to Tana; renaming a bare
+    <!-- The name, editable. Renaming a task renames its block; renaming a bare
          block just changes its own label. -->
     <input type="text" class="input sheet-name" id="sheet-name" hidden
            aria-label="Name" autocomplete="off">
@@ -205,7 +205,7 @@
   </form>
 </div>
 
-<!-- New task. Goes straight into the Tana Inbox via the Input API. -->
+<!-- New task. Creates a native task block in Robski Life. -->
 <div class="sheet-bg" id="new-bg" hidden>
   <form class="sheet" id="new-form">
     <h3>New task</h3>

@@ -942,8 +942,8 @@ function renderArea() {
   const doneN = tasks.length - openTs.length;
   const tables = blocks.filter((b) => b.kind === 'table');
   // Every note that carries this area shows here. The 2026-08-12 cleanup pruned
-  // the area off notes nested deeper than first level (they had inherited it from
-  // the Tana import), so this stays a readable outline - and any note you now
+  // the area off notes nested deeper than first level (they had inherited it on
+  // import), so this stays a readable outline - and any note you now
   // associate with the area appears here, whatever its depth.
   const notes = blocks.filter((b) => b.kind === 'note');
   const h = hueOf(area);

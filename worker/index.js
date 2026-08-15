@@ -621,8 +621,8 @@ async function deleteEvent(request, env, id) {
 // (transient login codes, nothing to preserve); everything else goes in.
 const EXPORT_TABLES = [
   'blocks', 'block_links',
-  'tasks', 'slots', 'slot_tasks',
-  'activities', 'settings', 'tana_options', 'quotes', 'pending_writes',
+  'slots', 'slot_tasks',
+  'activities', 'settings', 'quotes',
 ];
 
 async function handleExport(request, env) {
@@ -807,49 +807,6 @@ async function deleteBlock(env, request, id) {
   return json({ ok: true }, request);
 }
 
-// One-time (idempotent) import of the Tana task mirror into native blocks.
-// Additive: the `tasks` mirror and Tana itself are untouched. Keyed on
-// props.tana_id, so running it twice imports nothing the second time.
-async function migrateTasks(request, env) {
-  const areas = await env.DB.prepare("SELECT id, title FROM blocks WHERE kind = 'area'").all();
-  const areaByName = new Map(areas.results.map((a) => [a.title, a.id]));
-
-  const existing = await env.DB.prepare("SELECT props FROM blocks WHERE kind = 'task'").all();
-  const seen = new Set();
-  for (const r of existing.results) {
-    try { const p = JSON.parse(r.props || '{}'); if (p.tana_id) seen.add(p.tana_id); } catch {}
-  }
-
-  const tasks = await env.DB.prepare('SELECT * FROM tasks').all();
-  const now = new Date().toISOString();
-  const stmts = [];
-  let imported = 0, skipped = 0, i = 0;
-
-  for (const t of tasks.results) {
-    if (seen.has(t.tana_id)) { skipped++; continue; }
-    const props = {
-      tana_id: t.tana_id,
-      area: t.area ? (areaByName.get(t.area) || null) : null,
-      area_name: t.area || null,
-      priority: t.priority || null,
-      status: t.status || null,
-      duration: t.duration || null,
-      done: !!t.done,
-      source: 'tana',
-      breadcrumb: t.breadcrumb || null,
-    };
-    stmts.push(env.DB.prepare(
-      `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
-       VALUES (?, 'task', NULL, ?, ?, NULL, ?, ?, ?, 0)`,
-    ).bind(crypto.randomUUID(), i++, t.title, JSON.stringify(props), t.created || now, now));
-    imported++;
-  }
-
-  // D1 caps statements per batch; chunk to stay well under it.
-  for (let j = 0; j < stmts.length; j += 40) await env.DB.batch(stmts.slice(j, j + 40));
-  return json({ imported, skipped, total: tasks.results.length }, request);
-}
-
 // One box to find anything. Searches every block by title and body, so tasks,
 // notes, table rows and areas all come back from the same query. LIKE for now;
 // swap to SQLite FTS if it ever feels slow.
@@ -947,16 +904,9 @@ async function runAlerts(env) {
 
 // Sent once a day at 08:45, off the same every-minute cron as the alerts.
 //
-// It lives here rather than in a Claude routine because a routine in the cloud
-// cannot read Tana: the API is write-only and the MCP bridge is on the Mac. The
-// worker has both halves already, the calendar through its own refresh token
-// and the tasks through the D1 mirror, so the brief is complete rather than
-// half a day.
-//
-// The tasks side is a mirror the Mac agent refreshes every 15 minutes. If the
-// Mac slept all night the P1 list is however old the last sync was, which is
-// the same staleness the web app has always had and is fine for a list that
-// changes daily, not hourly.
+// The worker has both halves already: the calendar through its own refresh
+// token and the tasks straight from the native task blocks in D1, so the brief
+// is complete rather than half a day.
 // `force` is the preview button: it sends today's brief on demand and never
 // touches last_brief_day, so testing it at noon cannot swallow tomorrow's.
 async function runDailyBrief(env, { force = false } = {}) {
@@ -982,8 +932,8 @@ async function runDailyBrief(env, { force = false } = {}) {
     const [cal, quote, tasksRes] = await Promise.all([
       calendarEvents(env, now.date),
       quoteForDay(env, now.date),
-      // Every open P1, from native Robski Life task blocks (Tana is out of the
-      // loop now). Oldest first: a P1 that has sat for a month deserves reading.
+      // Every open P1, from native Robski Life task blocks. Oldest first: a P1
+      // that has sat for a month deserves reading.
       env.DB.prepare(
         `SELECT title, props, created_at FROM blocks
           WHERE kind = 'task' AND archived = 0
@@ -1204,7 +1154,7 @@ async function handleTasks(request, env, url) {
   const q = (url.searchParams.get('q') || '').toLowerCase();
   const cfg = await getLaneConfig(env);
 
-  // Pull from Robski Life: open, priority-tagged task blocks. Tana is gone.
+  // Pull from Robski Life: open, priority-tagged task blocks.
   const { results } = await env.DB.prepare(
     `SELECT id, title, props, created_at FROM blocks
       WHERE kind = 'task' AND archived = 0
@@ -1361,12 +1311,12 @@ async function updateSlot(request, env, id) {
   // happened says its contents happened. A block you only half finished is one
   // you leave open, and tick the tasks inside individually.
   if (b.done !== undefined && !!b.done !== !!existing.done) {
-    // Only the ones actually changing. A task already ticked inside the block
-    // would otherwise queue a second identical write to Tana.
+    // Only the ones actually changing, so a task already in the target state
+    // inside the block is left alone rather than re-written.
     const { results } = await env.DB.prepare(
       `SELECT st.tana_id FROM slot_tasks st
-         JOIN tasks t ON t.tana_id = st.tana_id
-        WHERE st.slot_id = ? AND t.done != ?`,
+         JOIN blocks bl ON bl.id = st.tana_id AND bl.kind = 'task'
+        WHERE st.slot_id = ? AND COALESCE(json_extract(bl.props, '$.done'), 0) != ?`,
     ).bind(id, b.done ? 1 : 0).all();
     for (const r of results) await setTaskDone(env, r.tana_id, !!b.done);
   }
@@ -1374,11 +1324,9 @@ async function updateSlot(request, env, id) {
   return json(updated, request);
 }
 
-// One place for "a Tana task changed state", so ticking a task in the list and
-// ticking its scheduled block behave identically.
-//
-// The Tana API is write-only from out here, so the queue is the only way home:
-// the Mac agent replays pending_writes on its next pass.
+// One place for "a task changed state", so ticking a task in the list and
+// ticking its scheduled block behave identically: the block's done flag is the
+// truth, and a sole-task block follows its task.
 async function setTaskDone(env, id, done) {
   const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND kind = 'task'").bind(id).first();
   let p = {}; try { p = row && row.props ? JSON.parse(row.props) : {}; } catch {}
@@ -1473,16 +1421,10 @@ async function updateActivity(request, env, id) {
   return json(row, request);
 }
 
-// ── new task -> Tana ──────────────────────────────────────────────────
+// ── new task ───────────────────────────────────────────────────────────
 
-// The Input API would put a task into Tana instantly, but it needs a workspace
-// token that isn't findable in the current Tana UI. The Mac already has write
-// access through the MCP bridge - it's how ticks get home - so a new task takes
-// the same road: queue it, the agent builds it, within 15 minutes.
-//
-// The row is written here first with a local: id so the task shows up straight
-// away. The agent swaps in the real node id once Tana has it, and the mirror
-// prune skips local: rows so an unsent one isn't swept away meanwhile.
+// A task is a native block (kind='task'), written here and owned here. It shows
+// up instantly in the Life Tasks list and can be dropped into a day's block.
 async function createTask(request, env) {
   const b = await request.json().catch(() => ({}));
   const title = String(b.title || '').trim();
@@ -1508,54 +1450,6 @@ async function createTask(request, env) {
   return json({ ok: true, tana_id: id }, request, 201);
 }
 
-// The agent calls this once Tana has minted the real node id, so every
-// reference to the placeholder moves across in one go.
-async function syncCreated(request, env) {
-  const b = await request.json().catch(() => ({}));
-  const localId = String(b.local_id || '');
-  const tanaId = String(b.tana_id || '');
-  if (!localId.startsWith('local:') || !tanaId) return err('local_id and tana_id required', request);
-
-  await env.DB.batch([
-    env.DB.prepare('UPDATE tasks SET tana_id = ? WHERE tana_id = ?').bind(tanaId, localId),
-    env.DB.prepare('UPDATE slot_tasks SET tana_id = ? WHERE tana_id = ?').bind(tanaId, localId),
-    env.DB.prepare('UPDATE slots SET tana_id = ? WHERE tana_id = ?').bind(tanaId, localId),
-    // Any tick made while it was still local: has to point at the real node too,
-    // or the completion is replayed against an id Tana has never heard of.
-    env.DB.prepare(
-      "UPDATE pending_writes SET tana_id = ? WHERE tana_id = ? AND op != 'create'",
-    ).bind(tanaId, localId),
-  ]);
-
-  return json({ ok: true }, request);
-}
-
-// The Area and Priority pickers need real node ids. They're mirrored by the
-// agent so the worker can serve them without reaching Tana.
-async function tanaOptions(request, env) {
-  const { results } = await env.DB.prepare(
-    'SELECT kind, node_id, name FROM tana_options ORDER BY kind, name, node_id',
-  ).all();
-
-  // Tana has more than one node for some Life Areas (two "Art", two "Portugal"),
-  // so the mirror does too. The picker only wants one entry per name - a task's
-  // lane is decided by the area's name, not which duplicate node it points at.
-  // node_id order makes the kept node deterministic across reloads.
-  const dedupe = (kind) => {
-    const seen = new Set();
-    return results.filter((r) => {
-      if (r.kind !== kind || seen.has(r.name)) return false;
-      seen.add(r.name);
-      return true;
-    });
-  };
-
-  return json({
-    areas: dedupe('area'),
-    priorities: dedupe('priority'),
-  }, request);
-}
-
 async function handleSettings(request, env) {
   const b = await request.json();
   const stmts = Object.entries(b).map(([k, v]) =>
@@ -1567,109 +1461,6 @@ async function handleSettings(request, env) {
 }
 
 // ── sync agent endpoints (separate key) ───────────────────────────────
-
-async function syncTasks(request, env) {
-  const b = await request.json();
-  if (!Array.isArray(b.tasks)) return err('tasks[] required', request);
-
-  const now = new Date().toISOString();
-  const stmts = b.tasks.map((t) =>
-    env.DB.prepare(
-      `INSERT INTO tasks (tana_id, title, area, lane, priority, status, duration, done, breadcrumb, created, synced_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(tana_id) DO UPDATE SET
-         title=excluded.title, area=excluded.area, lane=excluded.lane,
-         priority=excluded.priority, status=excluded.status, duration=excluded.duration,
-         done=excluded.done, breadcrumb=excluded.breadcrumb, synced_at=excluded.synced_at`,
-    ).bind(
-      t.tana_id, t.title || '(untitled)', t.area || null,
-      t.lane || laneForArea(t.area), t.priority || null, t.status || null,
-      t.duration ?? null, t.done ? 1 : 0, t.breadcrumb || null, t.created || null, now,
-    ),
-  );
-
-  // D1 batches are capped; chunk to stay well under it.
-  for (let i = 0; i < stmts.length; i += 50) {
-    await env.DB.batch(stmts.slice(i, i + 50));
-  }
-
-  // Anything the agent didn't mention is gone from Tana (deleted or trashed).
-  // The agent only sets full when every node read cleanly.
-  if (b.full === true && b.tasks.length) {
-    // Skip local: rows. They're tasks made in +New that Tana hasn't minted an
-    // id for yet, so the agent's pull can't mention them, and pruning them
-    // would delete a task you just typed.
-    await env.DB.prepare(
-      "DELETE FROM tasks WHERE synced_at < ? AND tana_id NOT LIKE 'local:%'",
-    ).bind(now).run();
-  }
-
-  // A tick landing between the agent's read and this push would be overwritten
-  // by the upsert above, so the task would pop back into the list for an
-  // interval. Its queued write is still authoritative, so re-assert it.
-  await env.DB.prepare(
-    `UPDATE tasks SET done = 1 WHERE tana_id IN (
-       SELECT tana_id FROM pending_writes WHERE applied_at IS NULL AND op = 'complete')`,
-  ).run();
-
-  return json({ ok: true, count: b.tasks.length, synced_at: now }, request);
-}
-
-const MAX_ATTEMPTS = 5;
-
-async function syncOptions(request, env) {
-  const b = await request.json().catch(() => ({}));
-  if (!Array.isArray(b.options)) return err('options[] required', request);
-
-  const stmts = b.options.map((o) =>
-    env.DB.prepare(
-      `INSERT INTO tana_options (node_id, kind, name) VALUES (?, ?, ?)
-       ON CONFLICT(node_id) DO UPDATE SET kind = excluded.kind, name = excluded.name`,
-    ).bind(o.node_id, o.kind, o.name),
-  );
-  if (stmts.length) await env.DB.batch(stmts);
-
-  // Drop anything renamed or deleted in Tana.
-  if (b.options.length) {
-    const ids = b.options.map((o) => o.node_id);
-    await env.DB.prepare(
-      `DELETE FROM tana_options WHERE node_id NOT IN (${ids.map(() => '?').join(',')})`,
-    ).bind(...ids).run();
-  }
-
-  return json({ ok: true, count: b.options.length }, request);
-}
-
-async function syncPending(request, env) {
-  const { results } = await env.DB.prepare(
-    'SELECT * FROM pending_writes WHERE applied_at IS NULL AND attempts < ? ORDER BY id LIMIT 100',
-  ).bind(MAX_ATTEMPTS).all();
-  return json({ pending: results }, request);
-}
-
-async function syncAck(request, env) {
-  const b = await request.json();
-  const ids = Array.isArray(b.ids) ? b.ids : [];
-  const failed = Array.isArray(b.failed) ? b.failed : [];
-  const now = new Date().toISOString();
-
-  const stmts = [];
-  if (ids.length) {
-    stmts.push(env.DB.prepare(
-      `UPDATE pending_writes SET applied_at = ? WHERE id IN (${ids.map(() => '?').join(',')})`,
-    ).bind(now, ...ids));
-  }
-  // A failure bumps attempts, so a permanently broken row eventually drops out
-  // of the window instead of blocking everything behind it.
-  for (const f of failed) {
-    stmts.push(env.DB.prepare(
-      'UPDATE pending_writes SET attempts = attempts + 1, last_error = ? WHERE id = ?',
-    ).bind(String(f.error || 'unknown').slice(0, 200), f.id));
-  }
-  if (stmts.length) await env.DB.batch(stmts);
-
-  return json({ ok: true, acked: ids.length, failed: failed.length }, request);
-}
 
 // ── router ────────────────────────────────────────────────────────────
 
@@ -1736,17 +1527,6 @@ export default {
 
     const token = bearer(request);
 
-    // The sync agent has its own key so a leaked browser key can't rewrite the mirror.
-    if (path.startsWith('/api/sync/')) {
-      if (!env.SYNC_KEY || !safeEqual(token, env.SYNC_KEY)) return err('unauthorized', request, 401);
-      if (path === '/api/sync/tasks' && request.method === 'POST') return syncTasks(request, env);
-      if (path === '/api/sync/options' && request.method === 'POST') return syncOptions(request, env);
-      if (path === '/api/sync/pending' && request.method === 'GET') return syncPending(request, env);
-      if (path === '/api/sync/ack' && request.method === 'POST') return syncAck(request, env);
-      if (path === '/api/sync/created' && request.method === 'POST') return syncCreated(request, env);
-      return err('not found', request, 404);
-    }
-
     // Bookmark capture: the iOS Shortcut / desktop bookmarklet post here with the
     // long-lived capture key (not the 7-day JWT), so it sits before the JWT gate.
     if (path === '/api/capture' && (request.method === 'GET' || request.method === 'POST')) return handleCapture(request, env, url, json, err);
@@ -1806,7 +1586,6 @@ export default {
       if (path.startsWith('/api/attachments/')) return handleAttachments(request, env, url, json, err);
       if (/^\/api\/blocks\/[\w-]+\/attachments$/.test(path) && request.method === 'POST') return handleAttachments(request, env, url, json, err);
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
-      if (path === '/api/migrate/tasks' && request.method === 'POST') return migrateTasks(request, env);
       const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);
       if (blockMatch) {
         const id = blockMatch[1];
@@ -1820,7 +1599,6 @@ export default {
       if (path === '/api/tasks' && request.method === 'GET') return handleTasks(request, env, url);
       if (path === '/api/tasks' && request.method === 'POST') return createTask(request, env);
       if (path === '/api/lanes' && (request.method === 'GET' || request.method === 'PUT')) return handleLanes(request, env);
-      if (path === '/api/tana-options' && request.method === 'GET') return tanaOptions(request, env);
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
       if (path === '/api/calendar' && request.method === 'GET') return handleCalendar(request, env, url);
@@ -1849,7 +1627,7 @@ export default {
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);
 
-      // Tana ids look like -2io-VjFpQOl: word chars and hyphens.
+      // Task block ids are UUIDs: word chars and hyphens.
       const taskMatch = path.match(/^\/api\/tasks\/([\w-]+)$/);
       if (taskMatch && request.method === 'PATCH') return updateTask(request, env, taskMatch[1]);
 

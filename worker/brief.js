@@ -41,7 +41,7 @@ export function longDate(day) {
   return `${part({ weekday: 'long' })}, ${part({ day: 'numeric', month: 'long' })}`;
 }
 
-// Titles come from Google and Tana, so they are somebody else's text landing
+// Titles come from Google and the user's own tasks, so they are text landing
 // inside our markup. Escape before it goes anywhere near the page.
 export function esc(s) {
   return String(s ?? '')

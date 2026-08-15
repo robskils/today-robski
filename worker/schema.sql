@@ -1,24 +1,6 @@
 -- today.robski.uk schema
 
--- Mirror of the #Task supertag in Tana. Written only by the local sync agent.
--- Tana is the source of truth for everything in here.
-CREATE TABLE IF NOT EXISTS tasks (
-  tana_id    TEXT PRIMARY KEY,
-  title      TEXT NOT NULL,
-  area       TEXT,              -- raw Tana Life Area name, eg "Body / Health"
-  lane       TEXT,              -- mapped lane key, eg "body"
-  priority   TEXT,              -- P1 | P2 | P3 | P4
-  status     TEXT,              -- Backlog | In progress | Done
-  duration   INTEGER,           -- minutes, NULL when unset in Tana (most tasks)
-  done       INTEGER DEFAULT 0,
-  breadcrumb TEXT,
-  created    TEXT,
-  synced_at  TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_tasks_lane ON tasks(lane, done);
-CREATE INDEX IF NOT EXISTS idx_tasks_prio ON tasks(priority, done);
-
--- The day itself. Owned by this app, never synced from Tana.
+-- The day itself. Owned by this app.
 -- start_min NULL = a floating block: an intention for today with no fixed time.
 -- Not every commitment wants a clock against it; a siesta happens when lunch
 -- and energy say so, and pinning it at 14:00 just manufactures guilt.
@@ -26,7 +8,7 @@ CREATE TABLE IF NOT EXISTS slots (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   day        TEXT NOT NULL,     -- YYYY-MM-DD, local (Europe/Lisbon)
   lane       TEXT NOT NULL,
-  tana_id    TEXT,              -- set when this slot is a Tana task, NULL for a bare practice block
+  tana_id    TEXT,              -- legacy one-task link (holds a task block id), NULL for a bare practice block
   title      TEXT NOT NULL,
   start_min  INTEGER,           -- minutes from local midnight, NULL = floating
   duration   INTEGER NOT NULL,  -- minutes
@@ -44,16 +26,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_slots_event
 CREATE INDEX IF NOT EXISTS idx_slots_day ON slots(day, start_min);
 
 -- Tasks dropped into a block. A block is a container of time; any number of
--- tasks can live in it. slots.tana_id is the legacy one-task link and is kept
--- only so old rows still read: everything new goes through here.
+-- tasks can live in it. tana_id is a legacy column name: it now holds the task
+-- block's id. slots.tana_id is the legacy one-task link, kept so old rows read.
 CREATE TABLE IF NOT EXISTS slot_tasks (
   slot_id  INTEGER NOT NULL,
   tana_id  TEXT NOT NULL,
   position INTEGER NOT NULL DEFAULT 0,
   -- How long this task is meant to take *in this block*, minutes. Its own
-  -- length, not the block's: a 10-min task in a 90-min block stays 10. App-
-  -- owned, so the Tana pull never overwrites it. NULL = fall back to the task's
-  -- Tana Duration, then a default. Editing it never touches slots.duration.
+  -- length, not the block's: a 10-min task in a 90-min block stays 10.
+  -- NULL = fall back to the task's own duration, then a default. Editing it
+  -- never touches slots.duration.
   duration INTEGER,
   PRIMARY KEY (slot_id, tana_id)
 );
@@ -62,23 +44,6 @@ CREATE INDEX IF NOT EXISTS idx_slot_tasks ON slot_tasks(slot_id, position);
 -- Old one-task slots become one-row containers, so there's a single code path.
 INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position)
   SELECT id, tana_id, 0 FROM slots WHERE tana_id IS NOT NULL;
-
--- Completions made in the web app, queued for the sync agent to replay into Tana.
--- Needed because the Tana API is write-only from the cloud: only the Mac can write back.
--- attempts guards against a poison row: if a node is trashed in Tana after its
--- slot was ticked, check_node fails forever. Without a cap, enough such rows
--- fill the fetch window and every later completion stops being replayed.
-CREATE TABLE IF NOT EXISTS pending_writes (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  tana_id    TEXT NOT NULL,     -- for 'create', the local: placeholder id
-  op         TEXT NOT NULL,     -- 'complete' | 'uncomplete' | 'create' | 'rename'
-  payload    TEXT,              -- create: the task to build; rename: {old,new}
-  created_at TEXT NOT NULL,
-  applied_at TEXT,
-  attempts   INTEGER NOT NULL DEFAULT 0,
-  last_error TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_pending ON pending_writes(applied_at, attempts);
 
 -- One is chosen per day, deterministically from the date, so it stays with you
 -- all day rather than reshuffling on every reload.
@@ -135,19 +100,9 @@ CREATE TABLE IF NOT EXISTS otp_codes (
   sent_at    INTEGER NOT NULL
 );
 
--- Life Areas and Priorities, mirrored from Tana by the agent.
--- The +New form needs real node ids to reference, and the worker can't read
--- Tana. Same shape as `tasks`: a mirror, never the truth.
-CREATE TABLE IF NOT EXISTS tana_options (
-  node_id TEXT PRIMARY KEY,
-  kind    TEXT NOT NULL,   -- 'area' | 'priority'
-  name    TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_tana_options ON tana_options(kind, name);
-
 -- Repeatable things with a URL and a usual length, attached to a lane.
 -- Not tasks: a task is done once and disappears, an activity is done again
--- tomorrow. Yoga, chi kung, a sit. Owned here, never synced to Tana.
+-- tomorrow. Yoga, chi kung, a sit. Owned here.
 CREATE TABLE IF NOT EXISTS activities (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   lane     TEXT NOT NULL,
@@ -195,8 +150,8 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
 -- row - all the same thing: a block. This is what lets a note hold a task and
 -- a task link to a table row without three separate silos.
 --
--- Unlike `tasks` (a Tana mirror), blocks are OWNED here. This is the source of
--- truth we're building toward; nothing syncs it from anywhere.
+-- Blocks are OWNED here: this is the source of truth, and tasks now live as
+-- blocks (kind='task'). Nothing syncs it from anywhere.
 CREATE TABLE IF NOT EXISTS blocks (
   id         TEXT PRIMARY KEY,        -- app-generated, crypto.randomUUID()
   kind       TEXT NOT NULL,           -- task | note | table | row | text ...

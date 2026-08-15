@@ -39,7 +39,7 @@ function laneMeta(key) {
 }
 
 // Serialising a text node escapes & < >, but not quotes, which is not enough
-// inside a quoted attribute. Task titles and field values come from Tana, so
+// inside a quoted attribute. Task titles and field values are user text, so
 // escape for both positions.
 function esc(s) {
   return String(s ?? '')
@@ -704,9 +704,9 @@ function openSheet({ slot, task, lane, activity, blockTask }) {
   $('sheet-float-row').hidden = !!bt;
   $('sheet-start-field').style.display = bt ? 'none' : '';
 
-  // The name field. A Tana task behind the sheet - a task in a block, one
-  // clicked in the list, or a sole-task block - renames in Tana; a bare block
-  // edits only its own label.
+  // The name field. A task behind the sheet - a task in a block, one clicked in
+  // the list, or a sole-task block - renames the task block; a bare block edits
+  // only its own label.
   const blockTasks = slot?.tasks || [];
   const renameTaskId = bt?.tana_id ?? task?.tana_id
     ?? (blockTasks.length === 1 ? blockTasks[0].tana_id : null);
@@ -726,7 +726,7 @@ function openSheet({ slot, task, lane, activity, blockTask }) {
   $('sheet-start').value = hhmm(slot && slot.start_min !== null ? slot.start_min : nextFreeSlot());
 
   // Task mode shows this task's own length; otherwise the block/task/activity
-  // duration, falling back to 30 (Tana Duration is set on only ~9% of tasks).
+  // duration, falling back to 30 (a task's own duration is often unset).
   $('sheet-duration').value = bt
     ? bt.duration || defaultDuration(bt.lane)
     : slot?.duration || task?.duration || activity?.duration
@@ -852,14 +852,14 @@ async function commitRename() {
 
   try {
     if (r.taskId) {
-      // Renaming the task rewrites Tana; the block titled after it follows.
+      // Renaming the task block; the day block titled after it follows.
       await api(`/api/tasks/${encodeURIComponent(r.taskId)}`, {
         method: 'PATCH', body: JSON.stringify({ title }),
       });
-      toast('Renamed. Reaches Tana within 15 min.');
+      toast('Renamed.');
       await Promise.all([loadTasks(), loadDay()]);
     } else if (r.slotId) {
-      // A bare block's name is its own; nothing goes to Tana.
+      // A bare block's name is its own.
       await api(`/api/slots/${r.slotId}`, {
         method: 'PATCH', body: JSON.stringify({ title }),
       });
@@ -1059,9 +1059,8 @@ async function onSlotAreaClick(e) {
   }
 
   // Take a block off the schedule. This deletes the *block*, never the task:
-  // slot_tasks links go, the rows in `tasks` stay exactly as they were, and
-  // nothing is queued for Tana. Rebuilding a block that held several tasks by
-  // hand is tedious enough to be worth an undo.
+  // slot_tasks links go, the task blocks stay exactly as they were. Rebuilding
+  // a block that held several tasks by hand is tedious enough to be worth undo.
   const slotDel = e.target.closest('[data-slot-del]');
   if (slotDel) {
     e.stopPropagation();
@@ -1116,11 +1115,9 @@ async function onSlotAreaClick(e) {
     if (!slot) return;
     try {
       await api(`/api/slots/${slot.id}`, { method: 'PATCH', body: JSON.stringify({ done: !slot.done }) });
-      // Write-back to Tana is queued, not immediate: only the Mac can talk to Tana.
       const n = (slot.tasks || []).length;
       if (n && !slot.done) {
-        toast(n === 1 ? 'Done. Ticks in Tana within 15 min.'
-                      : `Done, with ${n} tasks. They tick in Tana within 15 min.`);
+        toast(n === 1 ? 'Done.' : `Done, with ${n} tasks.`);
       }
       await Promise.all([loadDay(), n ? loadTasks() : null]);
     } catch (e2) { toast(e2.message); }
@@ -1455,8 +1452,8 @@ async function tickTask(tanaId) {
     return;
   }
 
-  // Undoable: a mis-tap here writes to Tana, and this is a phone-sized target.
-  toast(`Done. Ticks in Tana within 15 min.`, {
+  // Undoable: a mis-tap here on a phone-sized target should be easy to reverse.
+  toast(`Done.`, {
     label: 'Undo',
     fn: async () => {
       try {
