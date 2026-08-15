@@ -429,12 +429,12 @@ function renderNav() {
     <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
     <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
-    <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
     <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
       <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span><span class="nav-lbl">Tables</span><span class="nav-quick" data-add-table-entry title="Add an entry to a table">+</span></button>
+    <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
@@ -595,12 +595,12 @@ function renderHome() {
         <button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>
         <button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>
         <button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>
-        <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
         <button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>
         <button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>
         <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
         <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
         <button class="hl-btn" data-open-tables><span class="hl-ic">▦</span><span class="hl-t">Tables</span></button>
+        <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
       </nav>
       <div class="home-body">
         <div class="home-main">
@@ -3886,34 +3886,46 @@ function showGate(sub) {
       <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
-      <button class="gate2-btn" id="gate-btn" type="submit">Send code</button>
+      <button class="gate2-btn" id="gate-btn" type="submit">Email me a code</button>
+      <button class="gate2-alt" id="gate-sms" type="button">Text me the code instead</button>
       <p class="gate2-err" id="gate-err" hidden></p>
     </form></div>`);
   $('#gate-email').focus();
 }
+// Ask for a code by email (default) or SMS. SMS is the way in once the mailbox
+// you would fetch the email from lives behind this very gate.
+async function gateSend(channel) {
+  const err = $('#gate-err'), btn = $('#gate-btn'), sms = $('#gate-sms');
+  gateEmail = $('#gate-email').value.trim();
+  if (!gateEmail) { err.textContent = 'Enter your email first.'; err.hidden = false; return; }
+  err.hidden = true; btn.disabled = true; if (sms) sms.disabled = true;
+  try {
+    const r = await fetch('/auth/request-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, channel }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error('Could not send a code. Try again.');
+    gateStep = 'code';
+    $('#gate-sub').textContent = d.channel === 'sms' ? 'Code texted to your phone.' : `Code sent to ${gateEmail}.`;
+    $('#gate-email').hidden = true; if (sms) sms.hidden = true;
+    $('#gate-code').hidden = false; $('#gate-code').focus();
+    btn.textContent = 'Sign in';
+  } catch (e2) { err.textContent = e2.message; err.hidden = false; }
+  btn.disabled = false; if (sms) sms.disabled = false;
+}
 async function gateSubmit(e) {
   e.preventDefault();
+  if (gateStep === 'email') return gateSend('email');
   const err = $('#gate-err'), btn = $('#gate-btn');
   err.hidden = true; btn.disabled = true;
   try {
-    if (gateStep === 'email') {
-      gateEmail = $('#gate-email').value.trim();
-      const r = await fetch('/auth/request-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail }) });
-      if (!r.ok) throw new Error('Could not send a code. Try again.');
-      gateStep = 'code';
-      $('#gate-sub').textContent = `Code sent to ${gateEmail}.`;
-      $('#gate-email').hidden = true; $('#gate-code').hidden = false; $('#gate-code').focus();
-      btn.textContent = 'Sign in';
-    } else {
-      const r = await fetch('/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, code: $('#gate-code').value.trim() }) });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok || !d.token) throw new Error(d.error || 'That code did not work.');
-      localStorage.setItem(KEY, d.token); location.reload();
-    }
+    const r = await fetch('/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, code: $('#gate-code').value.trim() }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.token) throw new Error(d.error || 'That code did not work.');
+    localStorage.setItem(KEY, d.token); location.reload();
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
   btn.disabled = false;
 }
 document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') gateSubmit(e); });
+document.addEventListener('click', (e) => { if (e.target.id === 'gate-sms') gateSend('sms'); });
 
 // ── boot ─────────────────────────────────────────────
 (async function boot() {

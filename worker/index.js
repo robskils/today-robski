@@ -3,6 +3,7 @@ import { isAuthed, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
+import { sendSms } from './sms.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -833,39 +834,8 @@ async function searchBlocks(request, env, url) {
 }
 
 // ── SMS alerts ────────────────────────────────────────────────────────
-
-// Send one SMS through GatewayAPI. Lifted from the LST admin's routes/sms.js,
-// the setup Robin already has credit on: his own number as the sender, so an
-// alert reads as a text from himself. Needs GATEWAYAPI_KEY and ALERT_PHONE
-// (the recipient) as secrets; without either, alerting is simply off.
-async function sendSms(env, message) {
-  const to = String(env.ALERT_PHONE || '').replace(/\D/g, '');
-  if (!env.GATEWAYAPI_KEY || !to) return { ok: false, skipped: 'not configured' };
-
-  // Robin's account is on GatewayAPI's EU platform, whose tokens are rejected
-  // by the default gatewayapi.com host with a bare "Invalid token" - the one
-  // difference that had every send 401ing. Overridable, but defaults to EU.
-  const host = env.GATEWAYAPI_HOST || 'gatewayapi.eu';
-  const res = await fetch(`https://${host}/rest/mtsms`, {
-    method: 'POST',
-    headers: { Authorization: `Token ${env.GATEWAYAPI_KEY}`, ...JSON_HEADERS },
-    body: JSON.stringify({
-      // Alphanumeric sender: an alert isn't a conversation, and it's the same
-      // brand the rest of the tool carries. Falls back to the LST number if
-      // a network rejects a lettered sender.
-      sender: env.ALERT_SENDER || 'Robski',
-      message,
-      recipients: [{ msisdn: to }],
-    }),
-  });
-
-  if (!res.ok) {
-    const detail = await res.text();
-    console.error('gatewayapi:', res.status, detail);
-    return { ok: false, status: res.status, detail };
-  }
-  return { ok: true, ...(await res.json()) };
-}
+// sendSms lives in ./sms.js so the login code path can share it (auth.js) with
+// no circular import back into this file.
 
 // Fired by the cron trigger every minute. Finds today's timed blocks starting
 // in about five minutes that haven't been alerted for this start time, and

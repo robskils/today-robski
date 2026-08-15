@@ -18,6 +18,8 @@
 //     entirely you can read the code out of otp_codes with wrangler, which
 //     needs your Cloudflare login rather than a shared secret.
 
+import { sendSms } from './sms.js';
+
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
@@ -103,6 +105,10 @@ export async function requestCode(request, env, json, err) {
 
   const email = String(body.email || '').trim().toLowerCase();
   if (!validEmail(email)) return err('That does not look like an email address', 400);
+  // 'sms' texts the code to ALERT_PHONE instead of emailing it. This is the
+  // fix for the Catch-22 once Robski Life *is* the mailbox: if email breaks or
+  // is locked behind this very sign-in, the phone still gets you in.
+  const channel = body.channel === 'sms' ? 'sms' : 'email';
 
   // Deliberately the same response either way. Telling a stranger which
   // addresses are allowed is free reconnaissance.
@@ -123,6 +129,15 @@ export async function requestCode(request, env, json, err) {
      ON CONFLICT(email) DO UPDATE SET
        code = excluded.code, expires_at = excluded.expires_at, attempts = 0, sent_at = excluded.sent_at`,
   ).bind(email, code, now + CODE_TTL, now).run();
+
+  if (channel === 'sms') {
+    const sms = await sendSms(env, `${code} is your Robski Life sign-in code. It expires in 10 minutes.`);
+    // Only report SMS if it actually left: a not-configured or rejected send
+    // silently falls through to email, so the user is never stranded without a
+    // code just because SMS credit ran out.
+    if (sms && sms.ok) return json({ ok: true, channel: 'sms' });
+    console.error('sms login send failed, falling back to email:', sms && (sms.skipped || sms.status));
+  }
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -148,7 +163,7 @@ export async function requestCode(request, env, json, err) {
     return err('Could not send the code. Try again shortly.', 502);
   }
 
-  return json({ ok: true });
+  return json({ ok: true, channel: 'email' });
 }
 
 // ── POST /auth/verify ─────────────────────────────────────────────────

@@ -1145,6 +1145,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* The button's depth comes from the shared .btn-accent treatment below; the
    gate one is simply full width and a touch taller. */
 .gate2-btn { width:100%; min-height:52px; font-size:17px; margin-top:2px; }
+/* Secondary way in: a quiet text link under the main button, so the primary
+   path stays obvious but the phone option is one tap away. */
+.gate2-alt { background:none; border:0; color:var(--ink-2); font-size:15.5px; padding:4px; margin-top:-6px;
+  text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.gate2-alt:hover { color:var(--accent); }
+.gate2-alt:disabled { opacity:.5; cursor:default; }
 .gate2-err { color:var(--accent); font-size:14.5px; text-wrap:balance; }
 
 /* ── toast ───────────────────────────────────────── */
