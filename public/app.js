@@ -3169,8 +3169,26 @@ document.addEventListener('mouseover', (e) => {
   } else { state.mail.hover = null; state.mail.hoverThread = row.dataset.mailThread; }
 });
 document.addEventListener('keydown', (e) => {
-  if ((e.target.id === 'note-title' || e.target.id === 'taskcard-title' || e.target.id === 'area-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+  // Enter in the note title drops the caret into the note body (at its start),
+  // so you can carry straight on writing - like Notion. Falls back to blur if
+  // there's no body to land in.
+  if (e.target.id === 'note-title' && e.key === 'Enter') {
+    e.preventDefault();
+    const prose = document.querySelector('.note-body .prose[data-prose="note"]');
+    if (prose) caretToProseStart(prose); else e.target.blur();
+    return;
+  }
+  if ((e.target.id === 'taskcard-title' || e.target.id === 'area-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
 });
+// Put the caret at the very start of a contenteditable prose region and focus it.
+function caretToProseStart(prose) {
+  prose.focus();
+  const sel = window.getSelection(); if (!sel) return;
+  const range = document.createRange();
+  range.selectNodeContents(prose);
+  range.collapse(true);   // to the start
+  sel.removeAllRanges(); sel.addRange(range);
+}
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); }
