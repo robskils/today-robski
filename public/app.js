@@ -2494,7 +2494,7 @@ async function moveNote(targetId) {
 }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['attach', 'Attachments']];
+const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Life area'], ['attach', 'Attachments']];
 const tcols = () => (state.tables_open.props.columns || []);
 function cellInput(r, col) {
   const v = ((r.props && r.props.values) || {})[col.id]; const k = `${r.id}:${col.id}`;
@@ -2507,6 +2507,9 @@ function cellInput(r, col) {
   if (col.type === 'number') return `<input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  // Life area: a select whose options are the live Life Areas. Stores the area
+  // id, shows its name; new areas appear automatically on the next render.
+  if (col.type === 'area') return `<select class="cell cell-area" data-cell="${k}"><option value=""></option>${state.areas.map((a) => `<option value="${esc(a.id)}" ${a.id === v ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
   if (col.type === 'url') {
     const raw = String(v ?? '').trim();
     const href = raw ? (/^[a-z][\w+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`) : null;
@@ -2536,7 +2539,7 @@ function sortRows(rows) {
       const ea = empty(va), eb = empty(vb);
       if (ea && eb) return 0; if (ea) return 1; if (eb) return -1; // empties last, either direction
     }
-    const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'attach' ? (Array.isArray(v) ? v.length : 0) : col.type === 'date' ? String(v) : String(v).toLowerCase();
+    const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'attach' ? (Array.isArray(v) ? v.length : 0) : col.type === 'date' ? String(v) : col.type === 'area' ? ((areaById(v) || {}).title || '').toLowerCase() : String(v).toLowerCase();
     const na = norm(va), nb = norm(vb);
     return na < nb ? -dir : na > nb ? dir : 0;
   };
@@ -2575,6 +2578,7 @@ const FILTER_OPS = {
   number: [['is', '='], ['isnot', '≠'], ['gt', '>'], ['lt', '<'], ['gte', '≥'], ['lte', '≤'], ['empty', 'is empty']],
   date: [['is', 'is'], ['before', 'before'], ['after', 'after'], ['empty', 'is empty'], ['nempty', 'is not empty']],
   select: [['is', 'is'], ['isnot', 'is not'], ['empty', 'is empty'], ['nempty', 'is not empty']],
+  area: [['is', 'is'], ['isnot', 'is not'], ['empty', 'is empty'], ['nempty', 'is not empty']],
   checkbox: [['checked', 'is checked'], ['unchecked', 'is unchecked']],
 };
 const opsFor = (type) => FILTER_OPS[type] || FILTER_OPS.text;
@@ -2608,6 +2612,7 @@ function matchesQuery(r) {
   return tcols().some((col) => {
     if (col.type === 'checkbox') return false;
     if (col.type === 'attach') return (Array.isArray(vals[col.id]) ? vals[col.id] : []).some((a) => String(a.name || '').toLowerCase().includes(q));
+    if (col.type === 'area') { const a = areaById(vals[col.id]); return !!a && (a.title || '').toLowerCase().includes(q); }
     return String(vals[col.id] ?? '').toLowerCase().includes(q);
   }) || String(r.body || '').toLowerCase().includes(q);
 }
@@ -2638,6 +2643,7 @@ function filterPanelHtml() {
     let val = '';
     if (!noValueOp(f.op)) {
       if (col.type === 'select') val = `<select class="sel fv" data-filt-val="${i}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === f.value ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+      else if (col.type === 'area') val = `<select class="sel fv" data-filt-val="${i}"><option value=""></option>${state.areas.map((a) => `<option value="${esc(a.id)}" ${a.id === f.value ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
       else val = `<input class="sel fv" data-filt-val="${i}" type="${col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'}" value="${esc(f.value || '')}" placeholder="value">`;
     }
     return `<div class="filt-row"><select class="sel" data-filt-col="${i}">${colOpts}</select><select class="sel" data-filt-op="${i}">${opOpts}</select>${val}<button class="filt-x" data-filt-del="${i}" title="Remove">×</button></div>`;
@@ -2685,7 +2691,7 @@ function renderTable() {
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortSpec = vw.sorts || [];
   const sortOf = (id) => { const i = sortSpec.findIndex((s) => s.colId === id); return i < 0 ? null : { dir: sortSpec[i].dir, badge: sortSpec.length > 1 ? i + 1 : '' }; };
-  const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">life area</span>' : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
