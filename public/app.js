@@ -189,8 +189,12 @@ function decorateProse(html) {
 }
 // An always-on inline editor. No modes, no markup - you just write, and the
 // selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
-function proseEditor(body, key) {
-  return `<div class="prose" contenteditable="true" spellcheck="true" data-prose="${key}" data-ph="Write something here…">${decorateProse(bodyToHtml(body))}</div>`;
+function proseEditor(body, key, id) {
+  // data-block-id ties this editor to ITS block. saveProse writes to that id,
+  // never to "whatever note is open now" - without it, a save scheduled here
+  // that fires after you follow a link lands in the note you navigated to,
+  // silently overwriting it. That bug wiped notes; do not remove the id.
+  return `<div class="prose" contenteditable="true" spellcheck="true" data-prose="${key}" data-block-id="${esc(id || '')}" data-ph="Write something here…">${decorateProse(bodyToHtml(body))}</div>`;
 }
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
@@ -219,9 +223,14 @@ function sanitizeProse(html) {
       const href = el.tagName === 'A' ? el.getAttribute('href') : null;
       const keepOpen = el.tagName === 'DETAILS' && el.hasAttribute('open');   // remember collapse state
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
-      if (href && /^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
-      // Internal links to other Robski Life pages keep their href + a marker class.
-      else if (href && /^#rl-(note|table|area)-[\w-]+$/i.test(href)) { el.setAttribute('href', href); el.setAttribute('class', 'rl-link'); }
+      // Internal links to other Robski Life pages FIRST: an internal link the
+      // browser resolved to an absolute URL (https://life.robski.uk/#rl-note-…)
+      // would otherwise match the http test below, get target=_blank, and open
+      // in a browser tab instead of navigating in-app. Store just the #rl-…
+      // fragment so it always routes internally.
+      const rlm = href && href.match(/#rl-(note|table|area)-[\w-]+/i);
+      if (rlm) { el.setAttribute('href', rlm[0]); el.setAttribute('class', 'rl-link'); }
+      else if (href && /^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
       if (keepOpen) el.setAttribute('open', '');
     });
   };
@@ -794,7 +803,7 @@ function renderJournalEntry() {
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
-      <div class="note-body">${proseEditor(n.body, 'journal')}</div>
+      <div class="note-body">${proseEditor(n.body, 'journal', n.id)}</div>
       <div class="j-deeper-bar">
         <button class="add-btn j-deeper" data-journal-deeper>${journalDeeperLabel(n.props && n.props.mode)}</button>
         <span class="j-deeper-hint">${isDream ? 'Claude reads your dream, offers a gentle interpretation, then asks a question to explore it further. Use it as often as you like.' : 'Claude reads your entry and asks one question to take it further. Use it as often as you like.'}</span>
@@ -811,7 +820,7 @@ async function journalDeepen() {
     const { question } = await api('/api/journal/deepen', { method: 'POST', body: JSON.stringify({ mode: n.props && n.props.mode, prompt: n.props && n.props.prompt, text }) });
     if (ed && question) {
       ed.insertAdjacentHTML('beforeend', `<blockquote>${esc(question).replace(/\n+/g, '<br>')}</blockquote><p><br></p>`);
-      saveProse('journal', ed.innerHTML);
+      saveProse('journal', ed.innerHTML, ed.dataset.blockId);
       const p = ed.lastElementChild;
       if (p) { const r = document.createRange(); r.selectNodeContents(p); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); ed.focus(); p.scrollIntoView({ block: 'center' }); }
     }
@@ -2429,7 +2438,7 @@ function renderNote() {
     <div class="note-layout">
       <div class="note-main">
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
-        <div class="note-body">${proseEditor(n.body, 'note')}</div>
+        <div class="note-body">${proseEditor(n.body, 'note', n.id)}</div>
         ${embedsHtml(n.body)}
       </div>
       <aside class="note-side">
@@ -2662,7 +2671,7 @@ function renderTable() {
       $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
         <div class="card">
         <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
-        ${notesSection(r.body, 'row')}
+        ${notesSection(r.body, 'row', r.id)}
         ${attachSection(r)}</div>`;
       loadThumbs(); hydrateEmbeds();
       return;
@@ -2888,7 +2897,7 @@ document.addEventListener('input', (e) => {
     clearTimeout(window.__mailDraftT); window.__mailDraftT = setTimeout(saveDraft, 600);
   }
   const fvi = e.target.closest('input[data-filt-val]'); if (fvi) { const i = +fvi.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = e.target.value; renderTableBody(); } }
-  if (e.target.dataset && e.target.dataset.prose) { clearTimeout(proseT); proseT = setTimeout(() => saveProse(e.target.dataset.prose, e.target.innerHTML), 800); }
+  if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); }
 });
 let proseT;
 document.addEventListener('click', (e) => {
@@ -2906,7 +2915,9 @@ document.addEventListener('click', (e) => {
   const alink = t.closest('a[href]');
   // Internal links jump within Robski Life instead of opening a browser tab.
   if (alink) {
-    const rl = (alink.getAttribute('href') || '').match(/^#rl-(note|table|area)-(.+)$/i);
+    // Match the #rl- fragment anywhere in the href, so a link stored as an
+    // absolute URL still routes in-app rather than opening a browser tab.
+    const rl = (alink.getAttribute('href') || '').match(/#rl-(note|table|area)-([\w-]+)/i);
     if (rl) { e.preventDefault(); const id = rl[2]; const nav = rl[1].toLowerCase() === 'note' ? openNote(id) : rl[1].toLowerCase() === 'table' ? openTable(id) : openArea(id); nav.catch((x) => toast(x.message)); return; }
   }
   // Our own synthesised open-in-browser click - let it proceed, don't re-handle
@@ -3149,7 +3160,9 @@ document.addEventListener('change', (e) => {
 document.addEventListener('blur', (e) => {
   if (e.target.id === 'note-title') saveNoteTitle(e.target.value.trim());
   if (e.target.id === 'taskcard-title') patchTaskTitle(state.task_open.task.id, e.target.value.trim());
-  if (e.target.dataset && e.target.dataset.prose) saveProse(e.target.dataset.prose, e.target.innerHTML);
+  // Not while the link picker is open: it stole focus on purpose, and a save
+  // here would re-render the prose and detach the selection we're about to link.
+  if (e.target.dataset && e.target.dataset.prose && !state.linkpick) saveProse(e.target.dataset.prose, e.target.innerHTML, e.target.dataset.blockId);
   if (e.target.dataset && e.target.dataset.rename !== undefined) renameTable(e.target.value.trim());
   if (e.target.id === 'area-title') renameArea(e.target.value.trim());
   const cn = e.target.dataset && e.target.dataset.colname; if (cn !== undefined && cn) renameColumn(cn, e.target.value.trim());
@@ -3331,7 +3344,7 @@ document.addEventListener('pointerup', () => {
   const prose = liDrag.li.closest('.prose');
   liDrag.li.classList.remove('li-dragging');
   liDrag = null;
-  if (prose && prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML);
+  if (prose && prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
 });
 
 // ── task/note/table helpers ──────────────────────────
@@ -3422,15 +3435,15 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
-    ${notesSection(t.body, 'task')}
+    ${notesSection(t.body, 'task', t.id)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by
 // the block's `body`, edited inline via the shared rich-text editor.
-function notesSection(body, key) {
-  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key)}${embedsHtml(body)}</section>`;
+function notesSection(body, key, id) {
+  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key, id)}${embedsHtml(body)}</section>`;
 }
 
 // ── attachments (R2-backed files on a block) ─────────
@@ -3452,7 +3465,7 @@ function removeCardEl(btn) {
   const card = btn.closest('.link-card'); if (!card) return;
   const prose = card.closest('.prose'); if (!prose) { card.remove(); return; }
   card.remove();
-  if (prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML);
+  if (prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
 }
 // Notes edited under the brief "cards live in props.cards" model kept their URLs
 // out of the body; fold those back in as text so they re-inflate inline.
@@ -3561,17 +3574,24 @@ async function deleteAttachment(blockId, attId) {
   rerenderHost();
 }
 // Save a rich-text region back to whichever block it belongs to.
-async function saveProse(key, rawHtml) {
-  let html = linkifyHtml(sanitizeProse(rawHtml));
-  const obj = key === 'note' ? (state.note && state.note.current)
+async function saveProse(key, rawHtml, blockId) {
+  const html = linkifyHtml(sanitizeProse(rawHtml));
+  // The object currently open for this key (may be a different block than the
+  // one this save is for, if we've since navigated away).
+  const cur = key === 'note' ? (state.note && state.note.current)
     : key === 'task' ? (state.task_open && state.task_open.task)
     : key === 'row' ? (state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)))
     : key === 'journal' ? (state.journal && state.journal.current) : null;
-  if (!obj) return;
-  const prev = obj.body || '';
-  obj.body = html;
-  const id = obj.id;
-  const el = document.querySelector(`.prose[data-prose="${key}"]`);
+  // The block this prose belongs to. The explicit id is authoritative: it is
+  // what stops a stale/queued save from clobbering whatever is open now.
+  const id = blockId || (cur && cur.id);
+  if (!id) return;
+  const isCurrent = !!(cur && cur.id === id);
+  const prev = isCurrent ? (cur.body || '') : '';
+  if (isCurrent) cur.body = html;
+  // Only touch the DOM when this save is for the block on screen: a stale save
+  // must persist quietly, never re-render the note you're now looking at.
+  const el = isCurrent ? document.querySelector(`.prose[data-prose="${key}"][data-block-id="${id}"]`) : null;
   const focused = el && document.activeElement === el;
   // Once blurred, reflect the cleaned HTML back in - with standalone URLs turned
   // into inline cards, where they sit. Never while focused: it would move the
@@ -3582,7 +3602,7 @@ async function saveProse(key, rawHtml) {
   }
   // YouTube players live in the strip below; refresh it if that set changed.
   const ytChanged = youtubeIds(html).join() !== youtubeIds(prev).join();
-  if (ytChanged && !focused) rerenderHost();
+  if (isCurrent && ytChanged && !focused) rerenderHost();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {
@@ -3803,7 +3823,7 @@ function insertProseLink(prose, range, href, fallbackText) {
   const s = window.getSelection(); s.removeAllRanges(); if (range) s.addRange(range);
   if (!range || range.collapsed) document.execCommand('insertHTML', false, `<a href="${esc(href)}">${esc(fallbackText || href)}</a> `);
   else document.execCommand('createLink', false, href);
-  saveProse(prose.dataset.prose, prose.innerHTML);
+  saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
 }
 function linkPickUrl() {
   if (!state.linkpick) return;
@@ -3839,7 +3859,7 @@ function applyFmt(cmd) {
   }
   else if (cmd === 'collapse') collapseSection(prose);
   positionBubble();
-  saveProse(prose.dataset.prose, prose.innerHTML);
+  saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
 }
 // Turn the current block into a collapsible <details> section: its text becomes
 // the summary; following blocks up to the next heading move inside. Toggling it
@@ -3869,7 +3889,7 @@ document.addEventListener('toggle', (e) => {
   const d = e.target; if (!d || d.tagName !== 'DETAILS') return;
   const prose = d.closest && d.closest('.prose'); if (!prose) return;
   if (d.open) d.setAttribute('open', ''); else d.removeAttribute('open');
-  clearTimeout(window.__detToggleT); window.__detToggleT = setTimeout(() => saveProse(prose.dataset.prose, prose.innerHTML), 300);
+  clearTimeout(window.__detToggleT); window.__detToggleT = setTimeout(() => saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId), 300);
 }, true);
 document.addEventListener('selectionchange', positionBubble);
 document.addEventListener('mousedown', (e) => {
@@ -3893,7 +3913,7 @@ document.addEventListener('keydown', (e) => {
     try { if (document.queryCommandState('bold')) document.execCommand('bold'); } catch {}
     try { if (document.queryCommandState('italic')) document.execCommand('italic'); } catch {}
     if (!inList) { const tag = currentBlockTag(); if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'BLOCKQUOTE') document.execCommand('formatBlock', false, '<p>'); }
-    saveProse(prose.dataset.prose, prose.innerHTML);
+    saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
   }, 0);
 });
 
