@@ -1059,7 +1059,10 @@ table.ttable tr:last-child td { border-bottom:0; }
     border-right:0; border-bottom:1px solid var(--line);
     background:color-mix(in srgb,var(--paper-2) 90%,transparent); backdrop-filter:blur(12px);
   }
-  .nav-brand { padding:0; font-size:25px; }
+  /* A forgiving tap target: padding:0 made the wordmark the exact glyph bounds,
+     so a mobile tap landing a hair off did nothing. Pad it out for the finger;
+     the negative margin cancels the layout shift so it stays put visually. */
+  .nav-brand { padding:10px 12px; margin:-6px -10px; font-size:25px; }
   .nav-foot { margin:0; }
   /* Note/table header tools mustn't push the page wider than the screen: let the
      area chip + select wrap instead of overflowing (they sized to long area names). */
