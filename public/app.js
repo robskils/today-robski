@@ -1967,7 +1967,7 @@ if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
   });
 }
 const MAIL_SHORTCUTS = [
-  ['J / K', 'Next / previous message'], ['Enter / O', 'Open highlighted'], ['Esc', 'Back to the list'],
+  ['J / K', 'Previous / next message'], ['Enter / O', 'Open highlighted'], ['Esc', 'Back to the list'],
   ['R', 'Reply'], ['A', 'Reply all'], ['F', 'Forward'], ['E', 'Archive'], ['S', 'Star / unstar'],
   ['U', 'Mark unread'], ['!', 'Mark as spam'], ['⌫ · Del · #', 'Delete (to Trash)'],
   ['C', 'Compose'], ['/', 'Jump to search'], ['⌘ ↵', 'Send (while composing)'], ['?', 'Toggle this panel'],
@@ -2829,8 +2829,10 @@ document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else m.open = null; renderMail(); return; }
       if (e.key === '/') { e.preventDefault(); const el = $('[data-mail-q]'); if (el) el.focus(); return; }
       if (e.key === 'c' || e.key === 'C') { e.preventDefault(); startCompose(); return; }
-      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); mailSelMove(1); return; }
-      if (e.key === 'k' || e.key === 'K') { e.preventDefault(); mailSelMove(-1); return; }
+      // Robin's mapping: j steps back to the previous message, k forward to the
+      // next. (The reverse of Gmail's j-down/k-up; his call, he's the only user.)
+      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); mailSelMove(-1); return; }
+      if (e.key === 'k' || e.key === 'K') { e.preventDefault(); mailSelMove(1); return; }
       // Enter / o: open the message under the mouse, or expand the thread under it, else open the j/k selection.
       if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && !m.open) {
         if (m.hover) { e.preventDefault(); openMessage(m.hover); return; }
