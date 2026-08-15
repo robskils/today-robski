@@ -1,6 +1,6 @@
 # today.robski.uk
 
-A one-day retreat schedule. Google Calendar events and Tana tasks on a single
+A one-day retreat schedule. Google Calendar events and native tasks on a single
 day timeline, with lanes that show at a glance which part of life is being
 starved.
 
@@ -28,8 +28,8 @@ Pointer events, so this one does work on touch.
 a container of time; the tasks are what you'll do in it.
 
 - **Rename a task** by clicking it: the name is editable at the top of the
-  sheet. Enter (or Save) commits it, and the new name reaches Tana on the next
-  sync. Renaming a bare block just changes its own label - nothing goes to Tana.
+  sheet. Enter (or Save) commits it at once. Renaming a bare block just changes
+  its own label.
 - A block **lists the tasks in it**. What fits shows in the block; the rest fold
   into a **Show N tasks** / **+N more** line that opens the editor, where the
   full list lives with ticks and a × to take a task back out.
@@ -79,7 +79,7 @@ Percussion, Singing, Songwriting). Zazen and Rest are there to add to.
 Unlike a task, an activity is never used up - drag it onto the schedule as many
 times a day as you like and it stays in the column. Dropping one places a block
 with its name, length and link; clicking one opens the editor to pick a time.
-`+ Add` and the `×` manage them. They live in D1 and never go near Tana.
+`+ Add` and the `×` manage them. They live in D1.
 
 Three columns on a wide screen. Below 1180px the practices become a full-width
 strip above the schedule, single-line, so they don't push the day off-screen.
@@ -109,48 +109,44 @@ strip above the schedule, single-line, so they don't push the day off-screen.
 ## How it fits together
 
 ```
-  Tana desktop app                    Cloudflare
-  ┌──────────────┐                ┌──────────────────┐
-  │ #Task nodes  │                │  today-robski    │
-  └──────┬───────┘                │  worker + D1     │
-         │ localhost MCP          │                  │      ┌─────────┐
-  ┌──────┴───────┐   HTTPS        │  tasks (mirror)  │◄─────┤ browser │
-  │  sync agent  ├───────────────►│  slots (the day) │      └─────────┘
-  │  (your Mac)  │◄───────────────┤  pending_writes  │
-  └──────────────┘   write-backs  └────────┬─────────┘
-                                           │ OAuth
-                                  ┌────────┴─────────┐
-                                  │ Google Calendar  │
-                                  └──────────────────┘
+                                    Cloudflare
+                                ┌──────────────────┐
+                                │  today-robski    │
+                                │  worker + D1     │
+                                │                  │      ┌─────────┐
+                                │  blocks (tasks)  │◄─────┤ browser │
+                                │  slots (the day) │      └─────────┘
+                                └────────┬─────────┘
+                                         │ OAuth
+                                ┌────────┴─────────┐
+                                │ Google Calendar  │
+                                └──────────────────┘
 ```
 
-### Why there's a sync agent
+### Where tasks live
 
-**Tana's API is write-only.** ([Input API docs](https://tana.inc/docs/input-api):
-read access is not available; it's a [long-standing request](https://ideas.tana.inc/posts/22-tana-other-services-make-all-tana-content-available-via-api).)
-Nothing running in Cloudflare can read your `#Task` graph. The only read path is
-the `tana-local` MCP bridge on `127.0.0.1:8262`, which talks to the Tana desktop
-app. So the Mac is the only place the sync can run.
+Tasks are **native blocks** in D1: `kind='task'`, with a `props` JSON holding
+area, priority, done and duration. There is no external system to reconcile
+with, so nothing needs a background sync and nothing runs on a Mac.
 
-Consequences worth knowing:
+What that buys you:
 
-- **Tasks are only as fresh as the last sync.** No Mac awake, no new tasks.
-- **Writing to Tana is never immediate.** Ticks and new tasks queue in
-  `pending_writes`; the agent replays them on the next pass (within 15 minutes).
-  **+ New** works the same way: the task is usable here at once under a `local:`
-  id, and the agent swaps in the real node id once Tana has minted it. The Input
-  API would have been instant, but its workspace token isn't findable in the
-  current Tana UI, and the Mac already has write access through the MCP bridge.
-  Tick either the checkbox on a task in the list, or its scheduled block - both
-  go through the same queue. Tana sets `Task status: Done` itself on the way in.
-- The schedule itself (`slots`) lives only in D1 and never goes to Tana.
+- **Everything is immediate.** Creating a task, renaming it or ticking it takes
+  effect the moment you do it - no queue, no 15-minute pass to wait for.
+- **+ New** writes the task straight to D1 and it is usable at once. Tick either
+  the checkbox on a task in the list, or its scheduled block - both go through
+  the same `setTaskDone` door.
+- The schedule itself (`slots`) lives in D1 too, linked to tasks through
+  `slot_tasks`.
 
-Tana stays the source of truth for tasks. This app owns the day.
+(This app used to sync tasks with Tana over a local MCP bridge; that is gone,
+and tasks are now owned here directly.)
 
 ## Lane mapping
 
-Tana has 20 Life Areas that grew organically and don't line up with the seven
-lanes, so `shared/lanes.js` maps them. Tana is never re-tagged.
+There are 20 Life Areas that grew organically and don't line up with the seven
+lanes, so `shared/lanes.js` maps them. The areas themselves are left as they
+are; the mapping does the work.
 
 | Lane | Life Areas | Open tasks | Target |
 |---|---|---|---|
@@ -171,10 +167,10 @@ Two things to know about the data:
   lanes.js - nothing may map onto them, and `npm test` enforces it). They're
   practices, not todos. Fill them with **+ Block**, or click the lane's ring to
   pick an activity.
-- **Only ~24 of 278 tasks have a `Duration` set.** The slot editor falls back to
-  30 minutes. Setting `Duration` in Tana makes the editor pre-fill correctly.
-- **~35 tasks have no `Area`**, so they land in *Other*. Tag them in Tana to pull
-  them into a lane.
+- **Only ~24 of 278 tasks have a `duration` set.** The slot editor falls back to
+  30 minutes. Setting a task's duration makes the editor pre-fill correctly.
+- **~35 tasks have no `area`**, so they land in *Other*. Give a task an area to
+  pull it into a lane.
 
 ## Setup
 
@@ -189,11 +185,9 @@ npx wrangler d1 execute today-robski --file worker/schema.sql --remote
 
 ```bash
 npx wrangler secret put AUTH_SECRET  # signs session tokens; any long random string
-npx wrangler secret put SYNC_KEY     # the Mac agent uses this
 ```
 
-Separate on purpose: a leaked sync key can't mint a browser session, and
-rotating `AUTH_SECRET` signs every device out at once.
+Rotating `AUTH_SECRET` signs every device out at once.
 
 ### 3. Sign-in email
 
@@ -276,35 +270,15 @@ npm run deploy    # worker + static assets, one shot
 
 Then point `today.robski.uk` at the worker in the Cloudflare dashboard.
 
-### 6. The sync agent
-
-```bash
-./sync/install.sh          # writes ~/.today-robski.env, then run it again
-```
-
-Fill in `SYNC_KEY` and `TANA_MCP_TOKEN` (from `~/.claude.json` →
-`mcpServers.tana-local`), then re-run. It installs a launchd job that syncs
-every 15 minutes and skips quietly when Tana isn't running.
-
-```bash
-tail -f ~/Library/Logs/today-sync.log     # watch it
-launchctl kickstart -k gui/$UID/uk.robski.today-sync   # run now
-launchctl bootout gui/$UID/uk.robski.today-sync        # stop
-```
-
 ## Local development
 
 ```bash
 cat > .dev.vars <<EOF
 AUTH_SECRET=dev-auth-secret
-SYNC_KEY=dev-sync-key
 EOF
 
 npx wrangler d1 execute today-robski --local --file worker/schema.sql
 npm run dev                                    # http://127.0.0.1:8788
-
-SYNC_KEY=dev-sync-key TODAY_API=http://127.0.0.1:8788 npm run sync
-npm run sync:dry                               # read Tana, push nothing
 npm test                                       # timezone / DST maths
 ```
 
@@ -315,19 +289,11 @@ Browser endpoints need `Authorization: Bearer <session token>` from `/auth/verif
 | | |
 |---|---|
 | `GET /api/day?date=` | slots, calendar events, lane progress, settings |
-| `GET /api/tasks?lane=&q=` | task mirror, P1 first |
+| `GET /api/tasks?lane=&q=` | task blocks, P1 first |
 | `POST /api/slots` | add a block |
 | `PATCH /api/slots/:id` | move, resize, tick |
 | `DELETE /api/slots/:id` | remove |
 | `GET/PATCH /api/settings` | lane targets, day bounds |
-
-Agent endpoints need `Authorization: Bearer $SYNC_KEY`.
-
-| | |
-|---|---|
-| `POST /api/sync/tasks` | bulk upsert the mirror (`full: true` prunes) |
-| `GET /api/sync/pending` | completions awaiting replay |
-| `POST /api/sync/ack` | mark them applied |
 
 ## Tuning
 

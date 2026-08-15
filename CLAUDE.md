@@ -3,41 +3,36 @@
 Robin's personal daily schedule tool. Plain HTML/CSS/JS on a Cloudflare Worker
 with D1. No build step, no framework.
 
-Read README.md first: it explains the architecture and why the sync agent exists.
+Read README.md first: it explains the architecture and how the pieces fit.
 
 ## Stack
 
 - **Worker + static assets:** one `wrangler deploy` serves `public/` and `/api/*`
   from `today.robski.uk`. There is no Pages project.
 - **D1** `today-robski`. Schema in `worker/schema.sql`.
-- **Auth:** email OTP -> 7-day HS256 JWT signed with `AUTH_SECRET` (browser),
-  plus `SYNC_KEY` (Mac agent). Codes go via Resend from
-  `Today <today@incremento.co>` - the one domain verified on the free tier.
-  Sender domain is incidental; the Robski branding is in the body. Don't
-  "fix" it to robski.uk: that's $20/mo, and the Cloudflare alternative means
-  editing the SPF record Purelymail depends on.
-- **Sync agent:** `sync/sync.js`, plain Node, launchd every 15 min.
+- **Auth:** email OTP -> 7-day HS256 JWT signed with `AUTH_SECRET`. Codes go
+  via Resend from `Today <today@incremento.co>` - the one domain verified on
+  the free tier. Sender domain is incidental; the Robski branding is in the
+  body. Don't "fix" it to robski.uk: that's $20/mo, and the Cloudflare
+  alternative means editing the SPF record Purelymail depends on.
 - `ADMIN_EMAILS` takes whole addresses or `*@domain`. `isAllowed` in auth.js
   matches the domain exactly - never loosen it to endsWith, that would let
   `robski.uk.evil.com` in. `npm test` covers it.
 
-## The constraint that shapes everything
+## How tasks work
 
-Tana's API is **write-only**. A worker cannot read the graph. Reads only happen
-on Robin's Mac through the `tana-local` MCP bridge (`127.0.0.1:8262`, JSON-RPC,
-no handshake needed). So:
+Tasks are **native blocks** in D1: `kind='task'`, with a `props` JSON holding
+area, priority, done and duration. There is no external system to reconcile
+with, no queue and no delay - a tick takes effect at once. So:
 
-- `tasks` in D1 is a **mirror**, written only by the agent. Tana is the truth.
-- Web-app completions queue in `pending_writes` and are replayed by the agent.
-  Never assume a tick reaches Tana synchronously.
-- `setTaskDone` in worker/index.js is the single door for "a Tana task changed
-  state": it queues the write, updates the mirror, and closes a *sole-task*
-  block. Both checkboxes go through it. Don't add a third path.
-- `slot_tasks` is the link table: a block holds any number of tasks.
-  `slots.tana_id` is legacy, kept so old rows read; new links go in slot_tasks.
-  Ticking a block only queues the tasks whose state actually changes, or a
-  half-finished block re-queues writes Tana already has.
-- `slots` (the day itself) are owned here and never sync to Tana.
+- `setTaskDone` in worker/index.js is the single door for "a task changed
+  state": it updates the block's `props.done` and closes a *sole-task* block.
+  Both checkboxes go through it. Don't add a third path.
+- `slot_tasks` is the link table: a block holds any number of tasks. Its column
+  is named `tana_id` for legacy reasons, but it holds a task block id.
+  `slots.tana_id` is likewise a legacy name kept so old rows read; new links go
+  in slot_tasks.
+- `slots` (the day itself) are owned here.
 - **Adopted events.** A calendar event whose title names a lane or one of its
   activities can be counted as practice: clicking it creates a slot carrying
   `slots.event_id`. The timeline then draws the event and *skips* that slot, or
@@ -49,17 +44,9 @@ no handshake needed). So:
   It matches whole words only: `\b` is ASCII-only and would break on "Forró",
   hence the explicit `\p{L}\p{N}` boundaries. `npm test` pins the false
   positives that matter (Workshop, Artichoke, Bodyboarding, Restaurant).
-- **+ New** queues `op='create'` with a JSON payload and a `local:` placeholder
-  id, so the task is usable instantly. The agent builds it via
-  `import_tana_paste`, then `POST /api/sync/created` swaps the placeholder for
-  the real id everywhere. Don't reach for the Input API: its workspace token
-  isn't findable in Tana's current UI, and this needs no credential at all.
-- The prune skips `local:%` rows, and the agent re-reads anything it just
-  created. Tana's search index lags a create by a moment, so the pull misses it
-  and `full: true` would delete the task you just typed.
-
-The agent applies write-backs **before** pulling, otherwise the pull would see
-the task still open in Tana and clobber the completion.
+- **+ New** creates the task directly as a native block via `createTask` in
+  worker/index.js, so it is usable instantly. No placeholder id, no swap-in
+  step: the row exists the moment you type it.
 
 ## The morning brief
 
@@ -67,9 +54,10 @@ the task still open in Tana and clobber the completion.
 same every-minute cron as the SMS alerts: the day's calendar, every open P1,
 and the day's quote.
 
-It lives in the worker rather than in a Claude routine because a routine in the
-cloud cannot read Tana, for the reason above. The worker has both halves
-already. A routine would deliver half a brief, which is what the old one did.
+It lives in the worker rather than in a Claude routine because the worker
+already has both halves: the calendar (through its Google refresh token) and
+the tasks (native blocks in D1). A routine would have to reach back in for one
+or the other and would deliver half a brief, which is what the old one did.
 
 - `briefDue` opens a window from 08:45 to 10:15 rather than matching 08:45
   exactly, so a dropped cron tick delays the brief instead of losing the day.
@@ -98,14 +86,12 @@ already. A routine would deliver half a brief, which is what the old one did.
 ## Layout
 
 ```
-shared/lanes.js     LANES + AREA_TO_LANE. Imported by both worker and agent.
+shared/lanes.js     LANES + AREA_TO_LANE. Imported across the worker.
 worker/index.js     API. Router at the bottom.
 worker/brief.js     The 08:45 email. Pure: renders, sends nothing.
-worker/schema.sql   tasks, slots, pending_writes, settings
+worker/schema.sql   blocks, slots, slot_tasks, settings, activities, etc.
 public/             index.html, today.css, today.js, favicon.svg
-sync/sync.js        Tana <-> API. Parses read_node markdown.
 sync/google-auth.js one-off refresh-token helper (Robin runs it)
-sync/install.sh     launchd install
 ```
 
 ## Design intent
@@ -132,17 +118,13 @@ flexibility to keep working on something if I am in the zone."* So:
 
 ## Data facts worth remembering
 
-Measured July 2026 against the live graph, 278 open tasks:
+Measured July 2026 across roughly 278 open tasks:
 
-- `Duration` is set on only ~24. Anything that schedules by length must have a
+- `duration` is set on only ~24. Anything that schedules by length must have a
   fallback (the slot editor uses 30 min).
-- ~35 tasks have no `Area` and land in the untracked `other` lane.
-- Zazen and Rest are `practice: true` in lanes.js: no Area may map onto them,
+- ~35 tasks have no `area` and land in the untracked `other` lane.
+- Zazen and Rest are `practice: true` in lanes.js: no area may map onto them,
   ever. Sitting is done daily, it is not a backlog. `npm test` enforces it.
-  Forró has 5 tasks. All three are filled with bare `+ Block` slots.
-- Field ids: Priority `26tfBPLpiSWh`, Task status `6yXD6FBXzbR3`,
-  Area `LTJ3jUP44jDx`, Duration `iOVl90NPxuDU`. `#Task` tag is `-ESIZpZjQpNx`.
-- Ticking a node via `check_node` makes Tana set `Task status` to Done by itself.
 
 ## Gotchas
 
@@ -158,8 +140,8 @@ Measured July 2026 against the live graph, 278 open tasks:
   `ALTER TABLE ... ADD COLUMN` runs - and local dev rebuilds the schema each
   time, so it always looks fine there. The gap only surfaces as a 500 on the
   first insert naming the column. After any column addition, run `npm run audit`
-  (or `node worker/audit-schema.mjs --fix`) against remote. `slots.url`,
-  `pending_writes.payload` were both caught this way.
+  (or `node worker/audit-schema.mjs --fix`) against remote. `slots.url` was
+  caught this way.
 - Google Calendar is **read + write of events** (`calendar.events`). It began as
   `calendar.readonly`; a refresh token carries the scopes it was granted with,
   so widening the scope means re-running `npm run google-auth`. `createEvent`
@@ -184,13 +166,6 @@ Measured July 2026 against the live graph, 278 open tasks:
 - Calendar events are instants; slots are wall-clock minutes. Convert with
   `localParts`, never with an elapsed delta from the day start, or events shift
   an hour around a DST change. `npm test` covers both Lisbon transitions.
-- The sync agent only sends `full: true` when every `read_node` succeeded. A
-  partial read must not prune, or a Tana hiccup empties the mirror.
-
-## Testing the write-back
-
-Don't test it against a real task. Create a throwaway `#Task` in the Inbox, run
-it through the loop, then `trash_node` it. A `full: true` sync prunes the mirror.
 
 ## Deploy
 
