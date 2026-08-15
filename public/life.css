@@ -540,16 +540,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ev-slot.done .ev-t { color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--line-2); }
 
 /* Quick-launch row above Favourites: go to each index, or + to create. */
-.home-nav { display:flex; gap:7px; margin:4px 0 30px; flex-wrap:wrap; align-items:stretch; }
-.home-nav .hn-group { display:inline-flex; align-items:stretch; }
-.hn-btn { display:inline-flex; align-items:center; gap:7px; padding:10px 13px; font-size:15px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:13px; box-shadow:var(--shadow); transition:border-color .15s,color .15s,transform .08s; white-space:nowrap; }
-.hn-btn:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
-.hn-btn:active { transform:translateY(0); }
-.hn-ic { font-size:14px; color:var(--ink-3); }
-.hn-btn:hover .hn-ic { color:var(--accent); }
-.hn-group .hn-btn { border-radius:13px 0 0 13px; border-right:0; }
-.hn-plus { padding:0 11px; font-size:17px; font-weight:600; line-height:1; color:var(--ink-2); background:var(--card); border:1px solid var(--line-2); border-radius:0 13px 13px 0; box-shadow:var(--shadow); transition:background .15s,color .15s; }
-.hn-plus:hover { background:var(--accent); color:var(--accent-ink); border-color:transparent; }
+/* Home launcher: hidden on desktop (the sidebar lists every section), shown as
+   a tap-grid on mobile where the sidebar is gone. See the mobile rules below. */
+.home-launch { display:none; }
 .home-link { padding:9px 16px; border-radius:999px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; }
 .home-link:hover { border-color:var(--accent); color:var(--accent); }
 /* a link and its + share one pill outline, split by a hairline */
@@ -1071,6 +1064,27 @@ table.ttable tr:last-child td { border-bottom:0; }
   .crumb-tools .area-sel, .tbl-head .area-sel { max-width:100%; }
   .nav-item, .nav-grid, .nav-secs, .nav-spacer, .foot-search { display:none; }
   [data-open-today] { display:none; }   /* the day planner is desktop-only */
+  /* The home launcher stands in for the hidden sidebar: a tap-grid to every
+     section. Big targets and big labels, comfortable for thumbs and eyes. */
+  .home-launch {
+    display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:8px 0 30px;
+  }
+  /* Today stays desktop-only: hide its tile (explicit override below wins the
+     specificity tie with .hl-btn), and the grid closes the gap. */
+  .home-launch .hl-btn[data-open-today] { display:none; }
+  .hl-btn {
+    position:relative; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:9px; min-height:96px; padding:20px 12px;
+    font-size:16px; font-weight:500; color:var(--ink); background:var(--card);
+    border:1px solid var(--line-2); border-radius:18px; box-shadow:var(--shadow);
+  }
+  .hl-btn:active { transform:scale(.97); }
+  .hl-ic { font-size:27px; line-height:1; color:var(--accent); }
+  .hl-badge {
+    position:absolute; top:13px; right:15px; min-width:20px; height:20px; padding:0 6px;
+    display:inline-flex; align-items:center; justify-content:center; font-size:12px;
+    font-weight:600; color:var(--accent-ink); background:var(--accent); border-radius:10px;
+  }
   /* Most per-app search boxes are hidden on mobile - the ⌘K universal search
      covers them. Mail keeps its own (the universal search can't reach IMAP), and
      on the Mail view we hide the universal box instead (see below). */

@@ -587,14 +587,20 @@ function renderHome() {
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
       <div id="qt-wrap"></div>
-      <nav class="home-nav">
-        <button class="hn-btn" data-open-today><span class="hn-ic">☀</span>Today</button>
-        <span class="hn-group"><button class="hn-btn" data-view-tasks><span class="hn-ic">✓</span>Tasks</button><button class="hn-plus" data-quick-add="task" title="New task">+</button></span>
-        <span class="hn-group"><button class="hn-btn" data-open-calendar><span class="hn-ic">◑</span>Calendar</button><button class="hn-plus" data-quick-add="event" title="New event">+</button></span>
-        <span class="hn-group"><button class="hn-btn" data-open-mail><span class="hn-ic">✉</span>Mail</button><button class="hn-plus" data-quick-add="mail" title="New email">+</button></span>
-        <span class="hn-group"><button class="hn-btn" data-open-notes><span class="hn-ic">▤</span>Notes</button><button class="hn-plus" data-new-note title="New note">+</button></span>
-        <span class="hn-group"><button class="hn-btn" data-open-tables><span class="hn-ic">▦</span>Tables</button><button class="hn-plus" data-new-table title="New table">+</button></span>
-        <button class="hn-btn" data-open-areas><span class="hn-ic">◈</span>Life areas</button>
+      <!-- Mobile-only launcher. On desktop the sidebar already lists every
+           section, so this is hidden (see .home-launch in life.css). On mobile
+           the sidebar is gone, so home is where you reach the sections the
+           bottom tab bar doesn't hold. -->
+      <nav class="home-launch">
+        <button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>
+        <button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>
+        <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
+        <button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>
+        <button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>
+        <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
+        <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
+        <button class="hl-btn" data-open-tables><span class="hl-ic">▦</span><span class="hl-t">Tables</span></button>
+        <button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>
       </nav>
       <div class="home-body">
         <div class="home-main">
@@ -610,7 +616,7 @@ function renderHome() {
         <aside class="home-side">
           <section class="home-sec">
             <div class="home-sec-h">Notepad</div>
-            <textarea class="home-notepad" data-home-notepad placeholder="Jot anything here — it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>
+            <textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>
           </section>
         </aside>
       </div>
@@ -1579,7 +1585,8 @@ async function openMessage(key) {
 }
 async function mailDelete(key) {
   const row = mailRow(key); if (!row) return;
-  if (!(await uiConfirm('Move to Trash?', { title: 'Move to Trash', okLabel: 'Move' }))) return;
+  // No confirm: Trash is recoverable, so a mis-tap costs a trip to the Trash
+  // folder, not the message. Matches the keyboard Del shortcut, which never asked.
   mailMoveTo(key, 'Trash', 'Moved to Trash');   // thread-aware + advances to the next message
 }
 // Which account a compose sends FROM: the reply's originating account, else the
