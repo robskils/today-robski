@@ -132,6 +132,26 @@ button { cursor:pointer; background:none; border:0; }
 .ce-timerow[hidden] { display:none; }
 .add-task input:focus-visible,.sel:focus-visible,.add-area input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent); }
 .sel { padding:12px 12px; font-size:16px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); max-width:180px; }
+/* Custom Monday-first date picker (the native one follows the browser locale). */
+.date-field { max-width:none; text-align:left; cursor:pointer; white-space:nowrap; }
+.date-field:hover { border-color:var(--accent); }
+.dp-bg { position:fixed; inset:0; z-index:70; background:rgba(20,16,24,.34); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; padding:20px; }
+.dp-cal { width:min(346px,94vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); padding:16px; }
+.dp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.dp-title { font-size:17px; font-weight:600; color:var(--ink); }
+.dp-nav { width:40px; height:40px; border-radius:10px; font-size:24px; color:var(--ink-2); display:flex; align-items:center; justify-content:center; }
+.dp-nav:hover { background:var(--paper-2); color:var(--accent); }
+.dp-dows { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px; }
+.dp-dows span { text-align:center; font-size:12px; font-weight:600; color:var(--ink-3); padding:4px 0; }
+.dp-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.dp-day { height:42px; border-radius:9px; font-size:15.5px; color:var(--ink); display:flex; align-items:center; justify-content:center; }
+.dp-day:hover { background:var(--paper-2); }
+.dp-other { color:var(--ink-3); opacity:.5; }
+.dp-today { font-weight:700; color:var(--accent); }
+.dp-sel, .dp-sel:hover { background:var(--accent); color:var(--accent-ink); }
+.dp-foot { display:flex; justify-content:flex-end; margin-top:12px; }
+.dp-link { color:var(--accent); font-size:15px; padding:6px 10px; border-radius:8px; }
+.dp-link:hover { background:var(--paper-2); }
 
 .scope { font-size:15px; color:var(--ink-3); margin-bottom:12px; min-height:20px; }
 .scope b { color:var(--ink-2); font-weight:500; }

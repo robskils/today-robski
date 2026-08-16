@@ -1057,6 +1057,72 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const p2 = (n) => String(n).padStart(2, '0');
 const ymd = (y, m, d) => `${y}-${p2(m + 1)}-${p2(d)}`; // m is 0-based
 const todayISO = () => { const d = new Date(); return ymd(d.getFullYear(), d.getMonth(), d.getDate()); };
+
+// ── date picker (custom, always Monday-first) ─────────────────────────────
+// The native <input type=date> popup takes its week-start from the browser's
+// locale, which a web page can't override - so it kept showing Sunday-first.
+// This controlled popover always starts on Monday and writes the ISO value
+// into a hidden input, so existing readers ($('#id').value) keep working.
+const DOW_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function dpLabel(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return 'Pick a date';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${DOW_ABBR[new Date(y, m - 1, d).getDay()]} ${d} ${MONTHS_LONG[m - 1]} ${y}`;
+}
+function dateFieldHtml(id, iso) {
+  return `<input type="hidden" id="${id}" value="${esc(iso || '')}"><button type="button" class="date-field sel" data-dp-open="${id}">${esc(dpLabel(iso))}</button>`;
+}
+function openDatePicker(id) {
+  const inp = document.getElementById(id); if (!inp) return;
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(inp.value || '') ? inp.value : todayISO();
+  const [y, m] = iso.split('-').map(Number);
+  state.dp = { id, y, m: m - 1 };
+  renderDatePicker();
+}
+function renderDatePicker() {
+  const dp = state.dp; if (!dp) return;
+  let el = document.getElementById('dp-pop');
+  if (!el) { el = document.createElement('div'); el.id = 'dp-pop'; document.body.appendChild(el); }
+  const inp = document.getElementById(dp.id);
+  const cur = inp ? inp.value : ''; const today = todayISO();
+  const startDow = (new Date(dp.y, dp.m, 1).getDay() + 6) % 7;   // Monday = 0
+  const start = new Date(dp.y, dp.m, 1 - startDow);
+  let cells = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const iso = ymd(d.getFullYear(), d.getMonth(), d.getDate());
+    const cls = ['dp-day'];
+    if (d.getMonth() !== dp.m) cls.push('dp-other');
+    if (iso === cur) cls.push('dp-sel');
+    if (iso === today) cls.push('dp-today');
+    cells += `<button type="button" class="${cls.join(' ')}" data-dp-pick="${iso}">${d.getDate()}</button>`;
+  }
+  el.innerHTML = `<div class="dp-bg" data-dp-close><div class="dp-cal" role="dialog" aria-label="Pick a date">
+    <div class="dp-head"><button type="button" class="dp-nav" data-dp-step="-1" aria-label="Previous month">‹</button>
+      <span class="dp-title">${MONTHS_LONG[dp.m]} ${dp.y}</span>
+      <button type="button" class="dp-nav" data-dp-step="1" aria-label="Next month">›</button></div>
+    <div class="dp-dows">${WEEKDAYS.map((w) => `<span>${w[0]}</span>`).join('')}</div>
+    <div class="dp-grid">${cells}</div>
+    <div class="dp-foot"><button type="button" class="dp-link" data-dp-jump-today>Today</button></div>
+  </div></div>`;
+}
+function closeDatePicker() { const el = document.getElementById('dp-pop'); if (el) el.innerHTML = ''; state.dp = null; }
+function datePick(iso) {
+  const dp = state.dp; if (!dp) return;
+  const inp = document.getElementById(dp.id);
+  if (inp) {
+    inp.value = iso || '';
+    const btn = document.querySelector(`[data-dp-open="${dp.id}"]`); if (btn) btn.textContent = dpLabel(iso);
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  closeDatePicker();
+}
+function dpStep(delta) {
+  const dp = state.dp; if (!dp) return;
+  let m = dp.m + delta, y = dp.y;
+  if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+  dp.m = m; dp.y = y; renderDatePicker();
+}
 const addDayISO = (iso, n = 1) => { const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d + n); return ymd(dt.getFullYear(), dt.getMonth(), dt.getDate()); };
 const isoToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const minToLabel = (m) => `${p2(Math.floor(m / 60))}:${p2(m % 60)}`;
@@ -1196,7 +1262,7 @@ function showCalForm(ev) {
   const loc = ev ? (ev.location || '') : '';
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event" data-ev="${ev ? ev.id : ''}">
     <input id="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-    <input id="ce-date" type="date" class="sel" required value="${ev ? ev.date : (c.selected || todayISO())}" title="Date">
+    ${dateFieldHtml('ce-date', ev ? ev.date : (c.selected || todayISO()))}
     <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     <span id="ce-timerow" class="ce-timerow" ${allDay ? 'hidden' : ''}>
       <input id="ce-time" type="time" class="sel" value="${time}">
@@ -2343,7 +2409,7 @@ function showQuickEvent() {
   const start = `${pad2(Math.floor(mins / 60) % 24)}:${pad2(mins % 60)}`;
   $('#qt-wrap').innerHTML = `<form id="qe-form" class="add-task add-event" style="margin-bottom:22px">
     <input id="qe-title" placeholder="Event title…" autocomplete="off" required>
-    <input id="qe-date" type="date" class="sel" value="${today}" required>
+    ${dateFieldHtml('qe-date', today)}
     <input id="qe-time" type="time" class="sel" value="${start}" required>
     <select id="qe-dur" class="sel">${durationOptions(60)}</select>
     <input id="qe-loc" class="sel" placeholder="Location (optional)" autocomplete="off">
@@ -2943,6 +3009,7 @@ async function openRowResult(tableId, rowId) {
 // ── events ───────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
   if (document.getElementById('tblpick-overlay') && document.getElementById('tblpick-overlay').innerHTML && e.key === 'Escape') { e.preventDefault(); closeTableEntryPicker(); return; }
+  if (state.dp && e.key === 'Escape') { e.preventDefault(); closeDatePicker(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
   // ⌥⌘T / ⌥⌘W - the browser owns ⌘T/⌘W, so tabs use the Option variant.
@@ -3163,6 +3230,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-push-enable]')) { enablePush(); return; }
   if (t.closest('[data-push-test]')) { pushTest(); return; }
+  const dpo = t.closest('[data-dp-open]'); if (dpo) { openDatePicker(dpo.dataset.dpOpen); return; }
+  const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick); return; }
+  const dpst = t.closest('[data-dp-step]'); if (dpst) { dpStep(+dpst.dataset.dpStep); return; }
+  if (t.closest('[data-dp-jump-today]')) { datePick(todayISO()); return; }
+  if (t.closest('[data-dp-close]') && !t.closest('.dp-cal')) { closeDatePicker(); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
   const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
