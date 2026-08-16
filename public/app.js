@@ -717,7 +717,8 @@ function notesTypeMode() { return state.notesType || (state.notesType = localSto
 const NOTE_TYPES = [['all', 'All'], ['note', 'Notes'], ['table', 'Tables']];
 function noteCard(n) {
   const t = isTableNote(n);
-  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}"><span class="tc-ic">${t ? '▦' : '▸'}</span>${esc(n.title || 'Untitled')}${areaTag(n)}</button>`;
+  // No bullet on a regular note; a table keeps its grid icon so it stands out.
+  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}">${t ? '<span class="tc-ic">▦</span>' : ''}${esc(n.title || 'Untitled')}${areaTag(n)}</button>`;
 }
 // The Note · Table type switch shown in a note/table header.
 function noteTypeToggle(id, current) {
@@ -770,9 +771,9 @@ function renderNotesList() {
   }
   $('#pane').innerHTML = `
     ${pageCrumb('Notes')}
-    <div class="pane-head home-head"><h1>Notes</h1><button class="add-btn wide" data-new-note>+ New note</button></div>
-    <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${typeChips}${sortSel}</div>
+    <div class="pane-head home-head"><h1>Notes</h1></div>
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
+    <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${typeChips}${sortSel}<button class="add-btn wide notes-new" data-new-note>+ New note</button></div>
     ${listHtml}`;
 }
 
