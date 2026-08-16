@@ -1439,6 +1439,8 @@ async function mailMoveTo(key, target, label) {
   try {
     for (const row of rows) {
       await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) });
+      // Archiving/trashing an unread message clears its badge count right away.
+      if (!row.seen && /^inbox$/i.test(row._mailbox || '')) bumpUnread(row._acct, -1);
     }
     const gone = new Set(keys);
     const openKey = state.mail.open && state.mail.open._key;

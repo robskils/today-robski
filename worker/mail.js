@@ -807,7 +807,20 @@ export async function handleMail(request, env, url, json, err) {
       } finally { await im.logout(); }
     }
 
-    if (sub === 'move' && method === 'POST') { const b = await request.json(); const im = await imapOpen(env, acct); try { await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(b.uid, b.target || 'Trash'); return json({ ok: true }, request); } finally { await im.logout(); } }
+    if (sub === 'move' && method === 'POST') {
+      const b = await request.json(); const im = await imapOpen(env, acct);
+      try {
+        await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(b.uid, b.target || 'Trash');
+        // An unread message leaving the inbox drops the badge count now, not at
+        // the next sync; drop it from the cache so it doesn't linger in the list.
+        if (/^INBOX$/i.test(b.mailbox || 'INBOX')) {
+          const cur = await env.DB.prepare("SELECT seen FROM mail_cache WHERE account=? AND mailbox='INBOX' AND uid=?").bind(acct.id, b.uid).first();
+          if (cur && !cur.seen) await env.DB.prepare("UPDATE mail_cache_meta SET unseen = MAX(0, unseen - 1) WHERE account=? AND mailbox='INBOX'").bind(acct.id).run();
+          if (cur) await env.DB.prepare("DELETE FROM mail_cache WHERE account=? AND mailbox='INBOX' AND uid=?").bind(acct.id, b.uid).run();
+        }
+        return json({ ok: true }, request);
+      } finally { await im.logout(); }
+    }
 
     // Empty a folder - only Spam/Junk or Trash, never the inbox. Marks every
     // message \Deleted and expunges. The UI gates this behind a confirmation.
