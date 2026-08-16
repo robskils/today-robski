@@ -505,6 +505,7 @@ async function openNote(id) {
   const children = await api(`/api/blocks?kind=note&parent_id=${id}`);
   state.note = { current: note, path, children };
   state.view = { type: 'note', id };
+  recordRecent('note', id, note.title);
   renderNav(); renderNote();
 }
 async function openTable(id) {
@@ -513,7 +514,17 @@ async function openTable(id) {
   state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false, sorts: (table.props && table.props.sorts) || [], sorting: false };
   state.view = { type: 'table', id };
   bumpTableRecent(id);
+  recordRecent('table', id, table.title);
   renderNav(); renderTable();
+}
+// Recently viewed items, newest first, for the home list. Client-side only:
+// {kind,id,title} in localStorage, deduped by kind+id, capped.
+function recentItems() { try { const a = JSON.parse(localStorage.getItem('life.recent') || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } }
+function recordRecent(kind, id, title) {
+  if (!kind || !id) return;
+  const list = recentItems().filter((x) => x && !(x.kind === kind && x.id === id));
+  list.unshift({ kind, id, title: (title || '').trim() || 'Untitled' });
+  try { localStorage.setItem('life.recent', JSON.stringify(list.slice(0, 15))); } catch {}
 }
 // Most-recently-opened order, for the "add an entry" picker.
 function tableRecents() { try { return JSON.parse(localStorage.getItem('life.tblRecent') || '[]'); } catch { return []; } }
@@ -543,7 +554,7 @@ const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).p
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const KIND_IC = { note: '▤', table: '▦', task: '✓', row: '▦', area: '◈' };
+const KIND_IC = { note: '▤', table: '▦', task: '✓', row: '▦', area: '◈', journal: '✎' };
 const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
 
 async function openHome() {
@@ -589,6 +600,10 @@ function renderHome() {
         return `<div class="ev-row"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`; })()
     // (end time stacked under start; duration tag after the title)
     : `<div class="ev-row ev-slot${it.done ? ' done' : ''}"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
+  const recents = recentItems().slice(0, 8);
+  const recentHtml = recents.length
+    ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${KIND_IC[r.kind] || '•'}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
+    : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
       <div class="home-head">
@@ -623,6 +638,10 @@ function renderHome() {
           </section>
         </div>
         <aside class="home-side">
+          <section class="home-sec">
+            <div class="home-sec-h">Recently viewed</div>
+            ${recentHtml}
+          </section>
           <section class="home-sec">
             <div class="home-sec-h">Notepad</div>
             <textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>
@@ -789,6 +808,7 @@ async function openJournalEntry(id) {
   state.journal = state.journal || { entries: [] };
   state.journal.current = entry;
   state.view = { type: 'journalentry', id };
+  recordRecent('journal', id, entry.title || 'Journal entry');
   renderNav(); renderJournalEntry();
 }
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
@@ -948,6 +968,7 @@ async function openArea(id) {
   state.view = { type: 'area', id };
   const [area, blocks] = await Promise.all([api(`/api/blocks/${id}`), api(`/api/blocks?area=${id}`)]);
   state.area_open = { area, blocks };
+  recordRecent('area', id, area.title);
   renderNav(); renderArea();
 }
 function renderArea() {
@@ -2321,6 +2342,7 @@ function openFav(ref) {
   if (kind === 'table') return openTable(id);
   if (kind === 'area') return openArea(id);
   if (kind === 'task') return openTaskCard(id);
+  if (kind === 'journal') return openJournalEntry(id);
   return openTasks();
 }
 
@@ -3418,6 +3440,7 @@ async function openTaskCard(id) {
   const task = await api(`/api/blocks/${id}`);
   state.task_open = { task };
   state.view = { type: 'taskcard', id };
+  recordRecent('task', id, task.title);
   renderNav(); renderTaskCard();
 }
 // Duration presets (minutes) for the task card. Free-form isn't needed - these
