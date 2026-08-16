@@ -435,10 +435,10 @@ function renderNav() {
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <div class="nav-grid">
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span><span class="nav-lbl">Home</span></button>
-    <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
-    <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
-    <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
     <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
+    <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
+    <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
+    <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
     <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
@@ -641,10 +641,10 @@ function renderHome() {
            the sidebar is gone, so home is where you reach the sections the
            bottom tab bar doesn't hold. -->
       <nav class="home-launch">
-        <button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>
-        <button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>
-        <button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>
         <button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>
+        <button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>
+        <button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>
+        <button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>
         <button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>
         <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
         <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
