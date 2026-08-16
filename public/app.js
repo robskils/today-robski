@@ -2229,6 +2229,7 @@ const MAIL_ICO = {
   block: mIco('<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1l11.8 11.8"/>'),
   trash: mIco('<path d="M4.5 7h15"/><path d="M9 7V5.3A1.3 1.3 0 0 1 10.3 4h3.4A1.3 1.3 0 0 1 15 5.3V7"/><path d="M6.6 7l.85 11.3A1.6 1.6 0 0 0 9 20h6a1.6 1.6 0 0 0 1.6-1.7L17.4 7"/>'),
   sparkle: mIco('<path d="M12 3.6l1.7 4.9 4.9 1.7-4.9 1.7L12 16.7l-1.7-4.8L5.4 10l4.9-1.7z"/>', true),
+  task: mIco('<rect x="4.5" y="4.5" width="15" height="15" rx="3.5"/><path d="M8.4 12.3l2.4 2.4 4.8-5.4"/>'),
 };
 // Recognised video-meeting links, so we can float a "Join" button.
 const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
@@ -2328,7 +2329,7 @@ function renderMail(loading) {
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-attach title="Attach files">📎 Attach</button><button type="button" class="ghost" data-mail-cancel>Cancel</button><button type="button" class="ghost mail-discard" data-mail-discard title="Discard draft">Discard</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
-    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button>`;
+    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -2391,6 +2392,19 @@ function showQuickTask() {
     <select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select>
     <button class="add-btn wide" type="submit">Add</button></form>`;
   $('#qt-title').focus();
+}
+// Turn the open email into a Robski Life task: subject becomes the title, the
+// sender is noted in the body. It lands in Tasks with no priority/area set.
+async function mailToTask() {
+  const o = state.mail && state.mail.open; if (!o) return;
+  const title = ((o.subject || '').trim()) || '(no subject)';
+  const name = o.from ? (o.from.name || o.from.address || '') : '';
+  const addr = o.from ? (o.from.address || '') : '';
+  const body = (name || addr) ? `<p>From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}</p>` : '';
+  try {
+    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, body, props: { priority: null, area: null, done: false } }) });
+    toast(`Added to Tasks: “${title.length > 40 ? title.slice(0, 40) + '…' : title}”`);
+  } catch (e) { toast(e.message); }
 }
 async function homeAddTask(title, area, priority) {
   try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) }); toast('Task added'); }
@@ -3204,6 +3218,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-claudius]')) { mailClaudius(); return; }
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
+  if (t.closest('[data-mail-task]')) { mailToTask(); return; }
   if (t.closest('[data-mail-forward]')) { mailForwardStart(); return; }
   const msa = t.closest('[data-mail-save-att]'); if (msa) { mailSaveAttachment(+msa.dataset.mailSaveAtt, msa.dataset.attName); return; }
   // Rich-text compose toolbar: execCommand on the contenteditable body.
