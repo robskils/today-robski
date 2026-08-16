@@ -1416,12 +1416,24 @@ function mailSelMove(delta) {
   const el = document.querySelector('.mail-row.ksel'); if (el) el.scrollIntoView({ block: 'nearest' });
 }
 // Mark a message read / unread (U). Updates the row, the unread badge and IMAP.
+// Adjust the per-account and total unread counts, then reflect them everywhere
+// straight away (nav badges + app-icon badge) - the server's cached count lags
+// a couple of minutes, so we can't wait for it to clear the numbers.
+function bumpUnread(acct, delta) {
+  if (!state.mail) return;
+  state.mail.unseen = state.mail.unseen || {};
+  state.mail.unseen[acct] = Math.max(0, (state.mail.unseen[acct] || 0) + delta);
+  state.mailUnreadTotal = Math.max(0, (state.mailUnreadTotal || 0) + delta);
+  setAppBadgeCount(state.mailUnreadTotal);
+  renderNav();
+}
 async function mailSeen(key, seen) {
   const row = mailRow(key); if (!row) return;
   const listRow = (state.mail.messages || []).find((x) => x._key === key);
+  const was = listRow ? !!listRow.seen : !!row.seen;
   if (listRow) listRow.seen = seen;
   if (state.mail.open && state.mail.open._key === key) state.mail.open.seen = seen;
-  state.mail.unseen[row._acct] = Math.max(0, (state.mail.unseen[row._acct] || 0) + (seen ? -1 : 1));
+  if (was !== !!seen) bumpUnread(row._acct, seen ? -1 : 1);
   renderMail();
   try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen }) }); }
   catch (e) { toast(e.message); }
@@ -1548,7 +1560,7 @@ function pushSectionHtml() {
     <p class="scope">Show a number on the Robski Life app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
     <div class="push-acts">${perm === 'denied'
       ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
-      : `<button class="add-btn" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
+      : `<button class="add-btn wide" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
 }
 function startMailUnreadPoll() {
   if (window.__mailUnreadT) return;
@@ -1692,7 +1704,7 @@ async function openMessage(key) {
   // otherwise the reader star always shows empty and needs two clicks to set.
   const apply = (m) => { state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged }; };
   if (cached) apply(cached); else renderMail(true);   // cached opens instantly, no loading flash
-  if (!row.seen) { row.seen = true; mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
+  if (!row.seen) { row.seen = true; bumpUnread(row._acct, -1); mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
   if (cached) { renderMail(); return; }
   try { apply(await mailFetchMsg(row)); } catch (e) { toast(e.message); }
   renderMail();

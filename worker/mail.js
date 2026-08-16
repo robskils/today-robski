@@ -794,6 +794,15 @@ export async function handleMail(request, env, url, json, err) {
         await im.login(); await im.select(b.mailbox || 'INBOX');
         if ('seen' in b) await im.storeSeen(b.uid, !!b.seen);
         if ('flagged' in b) await im.storeFlagged(b.uid, !!b.flagged);
+        // Keep the inbox cache's unread count in step so /unread (which the
+        // badge polls) reflects the read at once, not two minutes later.
+        if ('seen' in b && /^INBOX$/i.test(b.mailbox || 'INBOX')) {
+          const cur = await env.DB.prepare("SELECT seen FROM mail_cache WHERE account=? AND mailbox='INBOX' AND uid=?").bind(acct.id, b.uid).first();
+          if (cur && !!cur.seen !== !!b.seen) {
+            await env.DB.prepare("UPDATE mail_cache_meta SET unseen = MAX(0, unseen + ?) WHERE account=? AND mailbox='INBOX'").bind(b.seen ? -1 : 1, acct.id).run();
+            await env.DB.prepare("UPDATE mail_cache SET seen=? WHERE account=? AND mailbox='INBOX' AND uid=?").bind(b.seen ? 1 : 0, acct.id, b.uid).run();
+          }
+        }
         return json({ ok: true }, request);
       } finally { await im.logout(); }
     }
