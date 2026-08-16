@@ -646,6 +646,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .notes-toolbar { display:flex; gap:10px; align-items:stretch; margin:0 0 18px; flex-wrap:wrap; }
 .notes-toolbar .list-search { flex:1; min-width:180px; margin:0; }
 .notes-toolbar .notes-sort { flex:none; width:auto; max-width:none; font-size:15px; padding:12px 14px; }
+.note-type-chips { display:inline-flex; flex:none; gap:2px; padding:3px; background:var(--paper-2); border:1px solid var(--line-2); border-radius:12px; }
+.note-type-chips .ntype { padding:8px 14px; border-radius:9px; font-size:14.5px; color:var(--ink-2); white-space:nowrap; }
+.note-type-chips .ntype:hover { color:var(--ink); }
+.note-type-chips .ntype.on { background:var(--card); color:var(--accent); box-shadow:var(--shadow); font-weight:500; }
+/* The Note · Table type switch in a note/table header. */
+.ntype-toggle { display:inline-flex; gap:2px; padding:2px; background:var(--paper-2); border:1px solid var(--line-2); border-radius:9px; vertical-align:middle; }
+.ntype-toggle .ntt { padding:5px 12px; border-radius:7px; font-size:13.5px; color:var(--ink-2); }
+.ntype-toggle .ntt:hover { color:var(--ink); }
+.ntype-toggle .ntt.on { background:var(--card); color:var(--accent); box-shadow:var(--shadow); font-weight:500; }
 .list-head .add-btn.wide { flex:none; }
 .cal-search-h { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
 .cal-search-h h2 { margin:0; }

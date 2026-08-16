@@ -27,7 +27,7 @@ const state = {
   favs: [], home: { events: [] }, cal: null, mail: null,
   tabs: [], activeTab: null,
   nav: {
-    order: (() => { const def = ['favs', 'notes', 'tables', 'areas']; const o = readLS('life.nav.order', null); return Array.isArray(o) && o.length === def.length && def.every((k) => o.includes(k)) ? o : def; })(),
+    order: (() => { const def = ['favs', 'notes', 'areas']; const o = readLS('life.nav.order', null); const c = Array.isArray(o) ? o.filter((k) => def.includes(k)) : []; for (const k of def) if (!c.includes(k)) c.push(k); return c; })(),
     collapsed: readLS('life.nav.collapsed', {}),
   },
   pal: { open: false, q: '', items: [], sel: 0 },
@@ -336,11 +336,14 @@ function navSection(key, v) {
     title = 'Favourites';
     rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"`, KIND_IC[f.kind] || '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
+    // Notes and tables are one list now; a table note carries the grid icon.
     title = 'Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
-    rows = state.noteTops.map((n) => sub(v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id, `data-open-note="${n.id}"`, '▸', n.title)).join('') || '<div class="nav-sub muted">No notes yet</div>';
-  } else if (key === 'tables') {
-    title = 'Tables'; add = '<button class="nav-add" data-new-table title="New table">+</button>';
-    rows = state.tables.map((t) => sub(v.type === 'table' && state.tables_open && state.tables_open.id === t.id, `data-open-table="${t.id}"`, '▦', t.title)).join('') || '<div class="nav-sub muted">No tables yet</div>';
+    rows = noteEntries().map((n) => {
+      const isT = isTableNote(n);
+      const active = isT ? (v.type === 'table' && state.tables_open && state.tables_open.id === n.id)
+        : (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id);
+      return sub(active, isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`, isT ? '▦' : '▸', n.title);
+    }).join('') || '<div class="nav-sub muted">No notes yet</div>';
   } else {
     title = 'Life areas'; add = '<button class="nav-add" data-new-area title="New life area">+</button>';
     rows = state.areas.map((a) => sub(v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id, `data-open-area="${a.id}"`, '◈', a.title)).join('') || '<div class="nav-sub muted">No life areas yet</div>';
@@ -439,10 +442,9 @@ function renderNav() {
     <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
     <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
-    <button class="nav-item ${v.type === 'notes' ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
+    <button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
-      <button class="nav-item ${v.type === 'tables' ? 'on' : ''}" data-open-tables><span>▦</span><span class="nav-lbl">Tables</span><span class="nav-quick" data-add-table-entry title="Add an entry to a table">+</span></button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
@@ -474,7 +476,7 @@ function renderTabbar(v) {
     + tab(v.type === 'mail', 'data-open-mail', '✉', 'Mail', state.mailUnreadTotal ? (state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal) : '')
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
     + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
-    + tab(v.type === 'note' || v.type === 'notes', 'data-open-notes', '▤', 'Notes');
+    + tab(['note', 'notes', 'table', 'tables'].includes(v.type), 'data-open-notes', '▤', 'Notes');
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
 function reorderSecs(draggedKey, beforeKey) {
@@ -502,7 +504,8 @@ async function openNote(id) {
   const note = await api(`/api/blocks/${id}`);
   const path = [note]; let p = note;
   while (p.parent_id) { p = await api(`/api/blocks/${p.parent_id}`); path.unshift(p); }
-  const children = await api(`/api/blocks?kind=note&parent_id=${id}`);
+  // Both sub-notes and table notes nested inside this note.
+  const children = (await api(`/api/blocks?parent_id=${id}`)).filter((b) => b.kind === 'note' || b.kind === 'table');
   state.note = { current: note, path, children };
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title);
@@ -648,7 +651,6 @@ function renderHome() {
         <button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>
         <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
         <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
-        <button class="hl-btn" data-open-tables><span class="hl-ic">▦</span><span class="hl-t">Tables</span></button>
         <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
       </nav>
       <div class="home-body">
@@ -708,27 +710,68 @@ function sortNotes(list) {
   else arr.sort((a, b) => (d(a) < d(b) ? 1 : d(a) > d(b) ? -1 : 0));   // added-desc (default)
   return arr;
 }
+// Every top-level note, regular or table - one unified list.
+function noteEntries() { return [...(state.noteTops || []), ...(state.tables || [])]; }
+const isTableNote = (n) => (n && n.kind) === 'table';
+function notesTypeMode() { return state.notesType || (state.notesType = localStorage.getItem('life.notesType') || 'all'); }
+const NOTE_TYPES = [['all', 'All'], ['note', 'Notes'], ['table', 'Tables']];
+function noteCard(n) {
+  const t = isTableNote(n);
+  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}"><span class="tc-ic">${t ? '▦' : '▸'}</span>${esc(n.title || 'Untitled')}${areaTag(n)}</button>`;
+}
+// The Note · Table type switch shown in a note/table header.
+function noteTypeToggle(id, current) {
+  return `<span class="ntype-toggle" role="group" aria-label="Note type">
+    <button class="ntt ${current === 'note' ? 'on' : ''}" data-set-note-type="${id}:note" title="Plain note">Note</button>
+    <button class="ntt ${current === 'table' ? 'on' : ''}" data-set-note-type="${id}:table" title="Table">Table</button></span>`;
+}
+// Flip a note ↔ table. Non-destructive: the flip only changes the block's kind
+// (a table gets a starter column if it has none). A note's prose and a table's
+// rows both stay in place and reappear if you toggle back.
+async function setNoteType(id, type) {
+  try {
+    const blk = await api(`/api/blocks/${id}`);
+    if ((blk.kind || 'note') === type) return;   // already that type
+    const patch = { kind: type };
+    if (type === 'table' && !((blk.props && blk.props.columns) || []).length) {
+      patch.props = { columns: [{ id: 'c' + Math.random().toString(36).slice(2, 7), name: 'Column', type: 'text' }] };
+    }
+    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    // Refresh the top-level lists so the sidebar and Notes page reclassify it.
+    [state.noteTops, state.tables] = await Promise.all([
+      api('/api/blocks?kind=note&parent_id=').catch(() => state.noteTops),
+      api('/api/blocks?kind=table').catch(() => state.tables),
+    ]);
+    if (type === 'table') await openTable(id); else await openNote(id);
+    toast(type === 'table' ? 'Now a table' : 'Now a plain note');
+  } catch (e) { toast(e.message); }
+}
 function renderNotesList() {
   const q = (state.notesQuery || '').trim().toLowerCase();
   const mode = notesSortMode();
-  const favNotes = sortNotes(state.noteTops.filter((n) => n.props && n.props.fav));
-  const all = sortNotes(q ? state.noteTops.filter((n) => (n.title || '').toLowerCase().includes(q)) : state.noteTops);
-  const cards = (list) => list.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▸</span>${esc(n.title || 'Untitled')}${areaTag(n)}</button>`).join('');
-  const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort notes">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const type = notesTypeMode();
+  const typed = (list) => type === 'all' ? list : list.filter((n) => (isTableNote(n) ? 'table' : 'note') === type);
+  const base = typed(noteEntries());
+  const favNotes = sortNotes(base.filter((n) => n.props && n.props.fav));
+  const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
+  const cards = (list) => list.map(noteCard).join('');
+  const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
+  const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const typeChips = `<div class="note-type-chips">${NOTE_TYPES.map(([v, l]) => `<button class="ntype ${type === v ? 'on' : ''}" data-notes-type="${v}">${l}</button>`).join('')}</div>`;
   // In "Life area" order (unfiltered), split into a section per area.
   let listHtml;
   if (mode === 'area' && !q) {
     const groups = new Map();
     for (const n of all) { const k = (n.props && n.props.area) || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }
     const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
-    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life area') : 'No life area'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || '<div class="empty">No notes yet.</div>';
+    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life area') : 'No life area'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
   } else {
-    listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All notes · ${state.noteTops.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'No notes match.' : 'No notes yet.'}</div>`}</div></section>`;
+    listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
   }
   $('#pane').innerHTML = `
     ${pageCrumb('Notes')}
     <div class="pane-head home-head"><h1>Notes</h1><button class="add-btn wide" data-new-note>+ New note</button></div>
-    <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${sortSel}</div>
+    <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${typeChips}${sortSel}</div>
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     ${listHtml}`;
 }
@@ -2629,13 +2672,13 @@ function renderNote() {
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
-  const kids = state.note.children.map((c) => `<button class="subpage" data-open-note="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">▸</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`).join('');
+  const kids = state.note.children.map((c) => { const isT = isTableNote(c); return `<button class="subpage" data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? '▦' : '▸'}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
+      ${noteTypeToggle(n.id, 'note')}
       <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
-      <button class="ghost" data-note-to-table title="Create a table from this note's lines">To table</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
     <div class="note-layout">
       <div class="note-main">
@@ -2876,7 +2919,7 @@ function renderTable() {
     if (r) {
       migrateCards(r);
       const title = ((r.props && r.props.values) || {})[c[0] && c[0].id] || 'Untitled';
-      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
+      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
         <div class="card">
         <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
@@ -2896,8 +2939,9 @@ function renderTable() {
   const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">life area</span>' : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
+      ${noteTypeToggle(t.id, 'table')}
       ${areaSelect(t.props && t.props.area, 'data-table-area')}
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
       <button class="ghost" data-del-cur>Delete</button></div>
@@ -3159,8 +3203,10 @@ document.addEventListener('click', (e) => {
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-open-tables]')) { openTablesList(); return; }
+  if (t.closest('[data-open-tables]')) { openNotesList(); return; }   // Tables folded into Notes
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
+  const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} renderNotesList(); return; }
+  const snt = t.closest('[data-set-note-type]'); if (snt) { const [id, type] = snt.dataset.setNoteType.split(':'); setNoteType(id, type); return; }
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
   const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }

@@ -772,6 +772,9 @@ async function updateBlock(request, env, id) {
   const sets = [];
   const args = [];
   if ('title' in b) { sets.push('title = ?'); args.push(b.title); }
+  // A note can flip to a table and back (the type toggle). Restricted to these
+  // two so nothing can turn a task/row/area into something else.
+  if ('kind' in b && (b.kind === 'note' || b.kind === 'table') && (existing.kind === 'note' || existing.kind === 'table')) { sets.push('kind = ?'); args.push(b.kind); }
   if ('body' in b) { sets.push('body = ?'); args.push(b.body); }
   if ('position' in b) { sets.push('position = ?'); args.push(Number(b.position)); }
   if ('parent_id' in b) { sets.push('parent_id = ?'); args.push(b.parent_id || null); }
