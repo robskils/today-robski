@@ -597,9 +597,9 @@ function renderHome() {
   }).join('');
   const evRows = todayItems.map((it) => it.kind === 'event'
     ? (() => { const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
-        return `<div class="ev-row"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`; })()
+        return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`; })()
     // (end time stacked under start; duration tag after the title)
-    : `<div class="ev-row ev-slot${it.done ? ' done' : ''}"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
+    : `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
   const recents = recentItems().slice(0, 8);
   const recentHtml = recents.length
     ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${KIND_IC[r.kind] || '•'}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
@@ -3089,6 +3089,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
+  if (t.closest('[data-home-cal]')) { openCalendar(todayISO()).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }

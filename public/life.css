@@ -537,6 +537,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    long title or address never collides with the other. */
 .ev-row { display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:12px; row-gap:2px; align-items:baseline; padding:11px 2px; border-bottom:1px solid var(--line); }
 .ev-row:last-child { border-bottom:0; }
+/* A Today row is a shortcut into the calendar. */
+.ev-click { cursor:pointer; border-radius:9px; padding-left:10px; padding-right:10px; transition:background .12s; }
+.ev-click:hover { background:var(--paper-2); }
+.ev-click:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
 .ev-time { color:var(--ink-3); font-variant-numeric:tabular-nums; font-size:15px; }
 .ev-end { display:block; font-size:12.5px; color:var(--ink-3); opacity:.7; }
 .ev-end::before { content:'-'; margin-right:1px; }
