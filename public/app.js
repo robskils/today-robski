@@ -523,8 +523,27 @@ function recentItems() { try { const a = JSON.parse(localStorage.getItem('life.r
 function recordRecent(kind, id, title) {
   if (!kind || !id) return;
   const list = recentItems().filter((x) => x && !(x.kind === kind && x.id === id));
-  list.unshift({ kind, id, title: (title || '').trim() || 'Untitled' });
-  try { localStorage.setItem('life.recent', JSON.stringify(list.slice(0, 15))); } catch {}
+  list.unshift({ kind, id, title: (title || '').trim() || 'Untitled', ts: Date.now() });
+  const capped = list.slice(0, 15);
+  try { localStorage.setItem('life.recent', JSON.stringify(capped)); } catch {}
+  // Mirror to the server so the list follows you to your phone and back. Fire-
+  // and-forget, debounced; openHome merges it back in by recency (the ts).
+  clearTimeout(window.__recentSyncT);
+  window.__recentSyncT = setTimeout(() => { api('/api/kv/home_recent', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(capped) }) }).catch(() => {}); }, 500);
+}
+// Union the server's recent list with this device's, dedupe by kind+id keeping
+// the newer touch, and cache the result locally for instant render.
+function mergeRecent(serverJson) {
+  let server = [];
+  try { const a = JSON.parse(serverJson || '[]'); if (Array.isArray(a)) server = a; } catch {}
+  const byKey = new Map();
+  for (const x of [...server, ...recentItems()]) {
+    if (!x || !x.kind || !x.id) continue;
+    const k = `${x.kind}:${x.id}`, prev = byKey.get(k);
+    if (!prev || (x.ts || 0) > (prev.ts || 0)) byKey.set(k, x);
+  }
+  const merged = [...byKey.values()].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 15);
+  try { localStorage.setItem('life.recent', JSON.stringify(merged)); } catch {}
 }
 // Most-recently-opened order, for the "add an entry" picker.
 function tableRecents() { try { return JSON.parse(localStorage.getItem('life.tblRecent') || '[]'); } catch { return []; } }
@@ -559,11 +578,13 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day, pad] = await Promise.all([
+  const [favs, day, pad, rec] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
+    api('/api/kv/home_recent').catch(() => null),
   ]);
+  if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
   state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '' };
   renderNav(); renderHome();
 }
