@@ -2146,7 +2146,7 @@ function renderMail(loading) {
     const catts = m.composing.attachments || [];
     reader = `<form id="mail-compose-form" class="mail-compose">
       <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}</div>
-      ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(a.name ? `${a.name} · ${a.email}` : a.email)}</option>`).join('')}</select></label>` : ''}
+      ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" required>
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}">
       <input id="mc-bcc" placeholder="Bcc" value="${esc(m.composing.bcc || '')}">
