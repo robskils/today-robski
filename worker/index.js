@@ -4,6 +4,7 @@ import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
+import { sendPush } from './webpush.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -1443,6 +1444,73 @@ function withHsts(res) {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
+// ── Web Push: an icon badge when new mail arrives ────────────────────────
+// The public key is safe to ship; the private key is the VAPID_PRIVATE_JWK
+// secret. Regenerating the pair invalidates every existing subscription.
+const VAPID_PUBLIC = 'BADBCS2EyxvWXx85la0chNU2CKNDhp_dW_3A8doQFEcViPaCe4TzIi0f1O0JW9mzZ-fiZP7tKKnPu7k6wKFF4Zk';
+const VAPID_SUBJECT = 'mailto:robin@lumley-savile.com';
+
+async function authedEmail(request, env) {
+  const a = request.headers.get('Authorization') || '';
+  if (!a.startsWith('Bearer ')) return null;
+  const p = await verifyJWT(a.slice(7), env.AUTH_SECRET);
+  return p ? p.sub : null;
+}
+
+async function handlePush(request, env, path, json, err) {
+  if (path === '/api/push/key' && request.method === 'GET') return json({ key: VAPID_PUBLIC }, request);
+  if (path === '/api/push/subscribe' && request.method === 'POST') {
+    const b = await request.json().catch(() => ({}));
+    const s = b.subscription || b;
+    if (!s || !s.endpoint || !s.keys || !s.keys.p256dh || !s.keys.auth) return err('bad subscription', request, 400);
+    await env.DB.prepare(
+      'INSERT INTO push_subs (endpoint,p256dh,auth,email,created_at) VALUES (?,?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth, email=excluded.email',
+    ).bind(s.endpoint, s.keys.p256dh, s.keys.auth, await authedEmail(request, env), new Date().toISOString()).run();
+    return json({ ok: true }, request);
+  }
+  if (path === '/api/push/unsubscribe' && request.method === 'POST') {
+    const b = await request.json().catch(() => ({}));
+    if (b.endpoint) await env.DB.prepare('DELETE FROM push_subs WHERE endpoint = ?').bind(b.endpoint).run();
+    return json({ ok: true }, request);
+  }
+  if (path === '/api/push/test' && request.method === 'POST') {
+    const r = await pushAll(env, { type: 'test', title: 'Robski Life', body: 'Notifications are working ✓', unread: 0 });
+    return json(r, request);
+  }
+  return err('not found', request, 404);
+}
+
+// Push to every stored subscription (single user - all subs are Robin's).
+// A 404/410 means the browser dropped the subscription, so prune it.
+async function pushAll(env, payload) {
+  if (!env.VAPID_PRIVATE_JWK) return { sent: 0, skipped: 'no VAPID key' };
+  let jwk; try { jwk = JSON.parse(env.VAPID_PRIVATE_JWK); } catch { return { sent: 0, error: 'bad VAPID jwk' }; }
+  const { results } = await env.DB.prepare('SELECT endpoint,p256dh,auth FROM push_subs').all();
+  let sent = 0;
+  for (const r of results || []) {
+    const sub = { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } };
+    try {
+      const res = await sendPush(sub, payload, { vapidJwk: jwk, publicKey: VAPID_PUBLIC, subject: VAPID_SUBJECT });
+      if (res.ok) sent++;
+      else if (res.status === 404 || res.status === 410) await env.DB.prepare('DELETE FROM push_subs WHERE endpoint = ?').bind(r.endpoint).run();
+      else console.error('push:', res.status);
+    } catch (e) { console.error('push send:', e.message); }
+  }
+  return { sent, total: (results || []).length };
+}
+
+// Called after each inbox sync. Pushes only when the unread total *rises*, so a
+// notification means genuinely new mail; the badge number is the fresh total.
+async function maybePushMail(env) {
+  const row = await env.DB.prepare("SELECT COALESCE(SUM(unseen),0) AS n FROM mail_cache_meta WHERE mailbox='INBOX'").first();
+  const total = row ? Number(row.n) || 0 : 0;
+  const lastRow = await env.DB.prepare("SELECT value FROM settings WHERE key='push_unread'").first();
+  const last = lastRow ? Number(lastRow.value) : null;
+  await env.DB.prepare("INSERT INTO settings (key,value) VALUES ('push_unread',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(String(total)).run();
+  if (last === null || total <= last) return;   // first run seeds a baseline; a drop just badges down in-app
+  await pushAll(env, { type: 'mail', unread: total, title: 'New mail', body: total === 1 ? '1 unread email' : `${total} unread emails` });
+}
+
 export default {
   // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
   // keeps the isolate alive until the sends finish.
@@ -1451,8 +1519,9 @@ export default {
     // Both run off the same every-minute tick. The brief returns immediately on
     // all but one tick a day, so this costs a single indexed D1 read a minute.
     ctx.waitUntil(runDailyBrief(env).catch((e) => console.error('runDailyBrief:', e.message)));
-    // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min).
-    ctx.waitUntil(syncMailCache(env).catch((e) => console.error('syncMailCache:', e.message)));
+    // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min),
+    // then push an icon badge if the unread total just rose.
+    ctx.waitUntil(syncMailCache(env).then(() => maybePushMail(env)).catch((e) => console.error('syncMailCache/push:', e.message)));
   },
 
   async fetch(request, env) {
@@ -1573,6 +1642,7 @@ export default {
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
       if (path === '/api/calendar' && request.method === 'GET') return handleCalendar(request, env, url);
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
+      if (path.startsWith('/api/push/')) return handlePush(request, env, path, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
       if (path === '/api/bookmark' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (!b.url) return err('url required', request, 400); return json(await createBookmark(env, b.url, b.title), request, 201); }

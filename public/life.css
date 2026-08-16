@@ -1001,6 +1001,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-sig-note b { color:var(--ink-2); font-weight:600; }
 .mail-add-more { display:inline-flex; align-items:center; gap:6px; margin-top:14px; padding:10px 16px; border:1.5px dashed var(--line-2); border-radius:12px; color:var(--ink-2); font-size:15px; }
 .mail-add-more:hover { border-color:var(--accent); color:var(--accent); background:var(--paper-2); }
+.push-sec { margin-top:32px; padding-top:24px; border-top:1px solid var(--line); max-width:620px; }
+.push-acts { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+.push-status { color:var(--accent); font-size:14.5px; text-wrap:balance; }
 
 /* Attachments: image thumbnails + file chips on notes, task and row cards. */
 .attachments { margin-top:24px; }

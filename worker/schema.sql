@@ -211,3 +211,14 @@ CREATE TABLE IF NOT EXISTS mail_cache_meta (
   account TEXT NOT NULL, mailbox TEXT NOT NULL, unseen INTEGER DEFAULT 0, synced_at TEXT,
   PRIMARY KEY (account, mailbox)
 );
+
+-- Web Push subscriptions (one per installed browser/device). The worker sends
+-- an encrypted push when new mail arrives, and the service worker badges the
+-- app icon. Dead endpoints (404/410) are pruned on send.
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint   TEXT PRIMARY KEY,
+  p256dh     TEXT NOT NULL,
+  auth       TEXT NOT NULL,
+  email      TEXT,
+  created_at TEXT NOT NULL
+);

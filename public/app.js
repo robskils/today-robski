@@ -543,7 +543,11 @@ function mergeRecent(serverJson) {
     if (!prev || (x.ts || 0) > (prev.ts || 0)) byKey.set(k, x);
   }
   const merged = [...byKey.values()].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 15);
-  try { localStorage.setItem('life.recent', JSON.stringify(merged)); } catch {}
+  const mergedJson = JSON.stringify(merged);
+  try { localStorage.setItem('life.recent', mergedJson); } catch {}
+  // If this device held items the server didn't (e.g. recents from before sync
+  // existed), push the union back so the other devices pick them up.
+  if (mergedJson !== JSON.stringify(server)) api('/api/kv/home_recent', { method: 'PUT', body: JSON.stringify({ value: mergedJson }) }).catch(() => {});
 }
 // Most-recently-opened order, for the "add an entry" picker.
 function tableRecents() { try { return JSON.parse(localStorage.getItem('life.tblRecent') || '[]'); } catch { return []; } }
@@ -1483,9 +1487,68 @@ async function refreshMailUnread() {
     const r = await mailApi('/unread');
     state.mailUnreadTotal = r.total || 0;
     if (state.mail) state.mail.unseen = { ...(state.mail.unseen || {}), ...(r.unseen || {}) };
+    setAppBadgeCount(state.mailUnreadTotal);   // keep the icon badge honest while the app is open
     renderNav();
     if (state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) renderMail();
   } catch {}
+}
+// ── Web Push: a number on the installed app icon when mail arrives ─────────
+const VAPID_PUBLIC = 'BADBCS2EyxvWXx85la0chNU2CKNDhp_dW_3A8doQFEcViPaCe4TzIi0f1O0JW9mzZ-fiZP7tKKnPu7k6wKFF4Zk';
+function setAppBadgeCount(n) {
+  try { if (navigator.setAppBadge) { n > 0 ? navigator.setAppBadge(n) : (navigator.clearAppBadge && navigator.clearAppBadge()); } } catch {}
+}
+function urlB64ToUint8(b64) {
+  const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+  const s = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(s); const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+// Register the SW (idempotent) and, if permission is already granted, make sure
+// the server has our current subscription. Called on boot; never prompts.
+async function initPush() {
+  if (!pushSupported()) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    if (Notification.permission === 'granted') await subscribePush(reg);
+  } catch (e) { /* SW unsupported/blocked - fine, app still works */ }
+}
+async function subscribePush(reg) {
+  reg = reg || await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
+  await api('/api/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub.toJSON() }) });
+}
+// User tapped "Enable notifications": prompt, subscribe, register with server.
+async function enablePush() {
+  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Robski Life to your Home Screen from Safari first.'); return; }
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { toast(perm === 'denied' ? 'Notifications are blocked - allow them in browser settings.' : 'Notifications not enabled.'); return; }
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    await subscribePush(reg);
+    toast('Notifications on ✓');
+    if (state.view && state.view.type === 'mail') openMailAccounts().catch(() => {});
+  } catch (e) { toast('Could not enable notifications: ' + e.message); }
+}
+async function pushTest() {
+  try { const r = await api('/api/push/test', { method: 'POST' }); toast(r && r.sent ? `Test sent to ${r.sent} device${r.sent === 1 ? '' : 's'}` : 'No devices subscribed yet'); }
+  catch (e) { toast(e.message); }
+}
+function pushSectionHtml() {
+  if (!pushSupported()) {
+    return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
+      <p class="scope">To get a badge on the app icon when mail arrives, add Robski Life to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
+  }
+  const perm = Notification.permission;
+  const on = perm === 'granted';
+  return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
+    <p class="scope">Show a number on the Robski Life app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
+    <div class="push-acts">${perm === 'denied'
+      ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
+      : `<button class="add-btn" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
 }
 function startMailUnreadPoll() {
   if (window.__mailUnreadT) return;
@@ -1885,7 +1948,8 @@ function renderMailAccounts(note) {
     <p class="scope">${note ? esc(note) + ' ' : ''}Connect as many mailboxes as you like - adding one never removes another.</p>
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>
-    ${(state.mail.accounts || []).length ? `<button class="mail-add-more" data-mail-add-acct>+ Add another mailbox</button>` : ''}`;
+    ${(state.mail.accounts || []).length ? `<button class="mail-add-more" data-mail-add-acct>+ Add another mailbox</button>` : ''}
+    ${pushSectionHtml()}`;
 }
 async function saveSignature(id) {
   const ed = document.querySelector(`[data-sig-acct="${id}"]`); if (!ed) return;
@@ -3085,6 +3149,8 @@ document.addEventListener('click', (e) => {
   const mtr = t.closest('[data-mail-trust]'); if (mtr) { trustSender(mtr.dataset.mailTrust); return; }
   const mdl = t.closest('[data-mail-del]'); if (mdl) { mailDelete(mdl.dataset.mailDel); return; }
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-push-enable]')) { enablePush(); return; }
+  if (t.closest('[data-push-test]')) { pushTest(); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
   const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
@@ -4052,5 +4118,6 @@ document.addEventListener('click', (e) => { if (e.target.id === 'gate-sms') gate
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
+    initPush();              // register the SW; refresh the push subscription if already granted
   } catch (e) { toast(e.message); renderNav(); }
 })();
