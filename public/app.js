@@ -2146,6 +2146,7 @@ function renderMail(loading) {
     const catts = m.composing.attachments || [];
     reader = `<form id="mail-compose-form" class="mail-compose">
       <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}</div>
+      ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(a.name ? `${a.name} · ${a.email}` : a.email)}</option>`).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" required>
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}">
       <input id="mc-bcc" placeholder="Bcc" value="${esc(m.composing.bcc || '')}">
@@ -3164,6 +3165,15 @@ document.addEventListener('contextmenu', (e) => {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
+  // Pick which account this message sends from. Snapshot the in-progress fields
+  // first so the re-render (which refreshes the signature note) keeps them.
+  if (e.target.id === 'mc-from' && state.mail && state.mail.composing) {
+    const c = state.mail.composing, g = (id) => document.getElementById(id);
+    if (g('mc-to')) c.to = g('mc-to').value; if (g('mc-cc')) c.cc = g('mc-cc').value;
+    if (g('mc-bcc')) c.bcc = g('mc-bcc').value; if (g('mc-subject')) c.subject = g('mc-subject').value;
+    if (g('mc-body')) c.body = g('mc-body').innerHTML;
+    c._acct = e.target.value; renderMail(); return;
+  }
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
   if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
