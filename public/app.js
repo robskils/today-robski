@@ -1491,12 +1491,18 @@ const mailDate = (iso) => { if (!iso) return ''; const d = new Date(iso), now = 
 const MAIL_FOLDERS = [
   { key: 'inbox', label: 'Inbox', mailbox: 'INBOX' },
   { key: 'starred', label: '★ Starred', mailbox: 'INBOX', flagged: true },
+  { key: 'drafts', label: 'Drafts', local: true },
   { key: 'archive', label: 'Archive', mailbox: 'Archive' },
   { key: 'spam', label: 'Spam', mailbox: 'Junk' },
   { key: 'trash', label: 'Trash', mailbox: 'Trash' },
 ];
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
-function setMailFolder(key) { state.mail.folder = key; state.mail.mailbox = mailFolder().mailbox; state.mail.open = null; state.mail.limit = 40; loadMessages(); }
+function setMailFolder(key) {
+  state.mail.folder = key; state.mail.open = null; state.mail.limit = 40;
+  const f = mailFolder();
+  if (f.local) { renderMail(); return; }   // Drafts is client-side, no fetch
+  state.mail.mailbox = f.mailbox; loadMessages();
+}
 // Every message row is tagged with the account it came from (_acct / _mailbox /
 // _acctName) and a composite _key = `${account}:${uid}`. IMAP UIDs are only
 // unique within one mailbox, so in the All-accounts view uid alone would clash;
@@ -1902,7 +1908,7 @@ async function mailSend(to, cc, bcc, subject, bodyHtml, inReplyTo) {
   const text = htmlToPlain(bodyHtml) + (sig ? `\n\n${sigToText(sig)}` : '');
   const html = `<div style="font-family:-apple-system,Segoe UI,Inter,sans-serif;font-size:15px;line-height:1.55;color:#1b1820">${sanitizeEmailHtml(bodyHtml || '')}</div>${sig ? `<br>${sig}` : ''}`;
   const payload = { account: from, to, cc, bcc, subject, text, html, inReplyTo, attachments };
-  try { await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) }); toast('Sent'); clearDraft(from); state.mail.composing = false; renderMail(); }
+  try { await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) }); toast('Sent'); clearDraft(); state.mail.composing = false; renderMail(); }
   catch (e) { toast(e.message); }
 }
 // Upload a File to the mail attachment store; returns {id,name,type,size}.
@@ -1931,20 +1937,62 @@ async function mailRemoveAttachment(id) {
 }
 // Drafts: a new (non-reply) compose auto-saves to localStorage per account so it
 // survives closing the composer, and resumes when you next hit Compose.
-const draftKey = (acct) => `life.mail.draft.${acct || 'default'}`;
-function saveDraft() {
-  const c = state.mail && state.mail.composing; if (!c || c.inReplyTo) return;   // new composes only
-  const acct = composeAcctId();
-  const empty = !(c.to || c.cc || c.bcc || c.subject || (c.body && c.body.trim()) || (c.attachments && c.attachments.length));
-  try { if (empty) localStorage.removeItem(draftKey(acct)); else localStorage.setItem(draftKey(acct), JSON.stringify({ to: c.to, cc: c.cc, bcc: c.bcc, subject: c.subject, body: c.body, attachments: c.attachments || [] })); } catch {}
+// Drafts are local (localStorage), MULTIPLE, and cover every compose - new
+// messages, replies and forwards alike. They survive an app-switch because we
+// flush on visibilitychange/pagehide (below), not just on a debounce timer.
+const DRAFTS_KEY = 'life.mail.drafts';
+const allDrafts = () => { try { const a = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+const writeDrafts = (a) => { try { localStorage.setItem(DRAFTS_KEY, JSON.stringify(a)); } catch {} };
+const draftCount = () => allDrafts().length;
+const newDraftId = () => 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const draftEmpty = (c) => !((c.to || '').trim() || (c.cc || '').trim() || (c.bcc || '').trim() || (c.subject || '').trim() || (c.body || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() || (c.attachments && c.attachments.length));
+// Pull the latest field values out of the live compose DOM into the state, so a
+// flush captures keystrokes the debounce hasn't committed yet.
+function syncCompose() {
+  const c = state.mail && state.mail.composing; if (!c) return;
+  const g = (id) => document.getElementById(id);
+  if (g('mc-to')) c.to = g('mc-to').value;
+  if (g('mc-cc')) c.cc = g('mc-cc').value;
+  if (g('mc-bcc')) c.bcc = g('mc-bcc').value;
+  if (g('mc-subject')) c.subject = g('mc-subject').value;
+  if (g('mc-body')) c.body = g('mc-body').innerHTML;
 }
-function clearDraft(acct) { try { localStorage.removeItem(draftKey(acct || composeAcctId())); } catch {} }
-function loadDraft(acct) { try { const s = localStorage.getItem(draftKey(acct)); return s ? JSON.parse(s) : null; } catch { return null; } }
+function saveDraft() {
+  const c = state.mail && state.mail.composing; if (!c) return;
+  syncCompose();
+  if (!c._draftId) c._draftId = newDraftId();
+  const list = allDrafts().filter((d) => d.id !== c._draftId);
+  if (draftEmpty(c)) { writeDrafts(list); return; }
+  list.unshift({ id: c._draftId, acct: c._acct || composeAcctId(), to: c.to || '', cc: c.cc || '', bcc: c.bcc || '', subject: c.subject || '', body: c.body || '', attachments: c.attachments || [], inReplyTo: c.inReplyTo || null, updated: Date.now() });
+  writeDrafts(list);
+}
+function removeDraft(id) { if (id) writeDrafts(allDrafts().filter((d) => d.id !== id)); }
+function clearDraft() { const c = state.mail && state.mail.composing; if (c) removeDraft(c._draftId); }
 function startCompose() {
-  const acct = state.mail.account && state.mail.account !== 'all' ? state.mail.account : ((state.mail.accounts || [])[0] || {}).id;
-  const d = loadDraft(acct);
-  state.mail.composing = d ? { ...d, _resumed: true } : {};
+  state.mail.composing = { _draftId: newDraftId() };
   renderMail(); setTimeout(() => { const el = $('#mc-to'); if (el) el.focus(); }, 30);
+}
+function resumeDraft(id) {
+  const d = allDrafts().find((x) => x.id === id); if (!d) return;
+  state.mail.composing = { _draftId: d.id, _acct: d.acct, to: d.to, cc: d.cc, bcc: d.bcc, subject: d.subject, body: d.body, attachments: d.attachments || [], inReplyTo: d.inReplyTo || undefined, _resumed: true };
+  renderMail(); setTimeout(() => { const el = $('#mc-body'); if (el) el.focus(); }, 30);
+}
+function delDraft(id) { removeDraft(id); renderMail(); }
+function draftsListHtml() {
+  const d = allDrafts();
+  if (!d.length) return '<div class="home-empty">No drafts. A half-written email is saved here the moment you start typing, so you can always pick it back up.</div>';
+  return d.map((x) => {
+    const snip = (x.body || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90);
+    const to = (x.to || '').trim();
+    const when = x.updated ? new Date(x.updated).toLocaleString() : '';
+    return `<button class="draft-row" data-resume-draft="${x.id}">
+      <span class="draft-main">
+        <span class="draft-top"><span class="draft-subj">${esc(x.subject || '(no subject)')}</span><span class="draft-when">${esc(when)}</span></span>
+        <span class="draft-sub">${to ? `To: ${esc(to)}` : '<i>No recipient yet</i>'}${snip ? ` — ${esc(snip)}` : ''}</span>
+      </span>
+      <span class="draft-x" data-del-draft="${x.id}" title="Delete draft">×</span>
+    </button>`;
+  }).join('');
 }
 async function openMailAccounts() {
   state.view = { type: 'mail' }; renderNav();
@@ -2372,6 +2420,7 @@ async function mailInviteAdd() {
 // the header - which would destroy the search box and steal focus mid-type.
 function mailListInner(loading) {
   const m = state.mail;
+  if (m.folder === 'drafts') return draftsListHtml();
   const showAcct = m.account === 'all';
   // Always threaded, Spark-style: one clean row per conversation (the latest
   // message), with a quiet count when there's more than one. Opening it shows
@@ -2458,7 +2507,7 @@ function renderMail(loading) {
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
-    <div class="mail-folders">${MAIL_FOLDERS.map((f) => `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}</button>`).join('')}</div>
+    <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
     <div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
@@ -2691,7 +2740,7 @@ function taskTableHtml(list, emptyMsg) {
   const th = (c, label, cls) => `<th class="${cls || ''} sortable" data-sort="${c}">${label}${arrow(c)}</th>`;
   const rows = sortTasks(list.slice()).map((t) => {
     const a = areaById(t.props.area); const p = t.props.priority;
-    return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}">
+    return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}" data-task-row="${t.id}">
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
@@ -3405,6 +3454,12 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); execItem(state.pal.items[state.pal.sel]); }
 });
 document.addEventListener('pointerdown', (e) => { const h = e.target.closest && e.target.closest('[data-scan-corner]'); if (h) scanCornerDown(+h.dataset.scanCorner, e); });
+// Never lose a half-written email: flush the draft the instant the app is
+// backgrounded / hidden / closed (iOS suspends a web app without firing the
+// debounce), as well as on the normal debounce while typing.
+document.addEventListener('visibilitychange', () => { if (document.hidden && state.mail && state.mail.composing) saveDraft(); });
+window.addEventListener('pagehide', () => { if (state.mail && state.mail.composing) saveDraft(); });
+window.addEventListener('blur', () => { if (state.mail && state.mail.composing) saveDraft(); });
 document.addEventListener('input', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
@@ -3548,6 +3603,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-scan-add]')) { scanAddPage(); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
+  const ddel = t.closest('[data-del-draft]'); if (ddel) { e.preventDefault(); e.stopPropagation(); delDraft(ddel.dataset.delDraft); return; }
+  const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
   if (t.closest('[data-mail-empty]')) { mailEmptyFolder(); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(); return; }
@@ -3662,6 +3719,9 @@ document.addEventListener('click', (e) => {
   const ea = t.closest('[data-edit-area]'); if (ea) { editArea(ea); return; }
   const ota = t.closest('[data-open-task]'); if (ota) { openTaskCard(ota.dataset.openTask).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-task-cur]')) { delTaskCard().catch((x) => toast(x.message)); return; }
+  // Click anywhere on a task row that isn't an editable field / control -> open it.
+  const trow = t.closest('.tr-task[data-task-row]');
+  if (trow && !t.closest('input,select,textarea,button,a,[contenteditable],.ie,[data-edit-task],[data-edit-prio],[data-edit-area],[data-fav]')) { openTaskCard(trow.dataset.taskRow).catch((x) => toast(x.message)); return; }
 
   // The ▾ on a column header opens the same menu as right-click (toggles it).
   const cmb = t.closest('[data-col-menu]');

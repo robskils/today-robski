@@ -160,6 +160,18 @@ button { cursor:pointer; background:none; border:0; }
 .mail-savecontact { padding:5px 12px; font-size:13.5px; border-radius:999px; }
 .mail-contact-have { font-size:13px; color:var(--done); font-weight:600; white-space:nowrap; }
 
+/* Mail drafts */
+.mail-folder-c { font-size:12px; font-weight:600; background:color-mix(in srgb,var(--accent) 18%,transparent); color:var(--accent); border-radius:999px; padding:1px 7px; margin-left:3px; }
+.draft-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:14px 16px; border-bottom:1px solid var(--line); background:none; cursor:pointer; color:var(--ink); }
+.draft-row:hover { background:var(--paper-2); }
+.draft-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.draft-top { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.draft-subj { font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.draft-when { font-size:12.5px; color:var(--ink-3); white-space:nowrap; flex:none; }
+.draft-sub { font-size:14px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.draft-x { flex:none; color:var(--ink-3); font-size:20px; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; }
+.draft-x:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
+
 /* Document scanner */
 #scanner { position:fixed; inset:0; z-index:80; background:#000; color:#fff; }
 .scan-shell { position:absolute; inset:0; display:flex; flex-direction:column; }
