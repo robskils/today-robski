@@ -913,8 +913,9 @@ async function runDailyBrief(env, { force = false } = {}) {
           WHERE kind = 'task' AND archived = 0
             AND json_extract(props, '$.priority') = 'P1'
             AND IFNULL(json_extract(props, '$.done'), 0) != 1
+            AND (json_extract(props, '$.snooze') IS NULL OR json_extract(props, '$.snooze') <= ?)
           ORDER BY created_at IS NULL, created_at LIMIT 25`,
-      ).all(),
+      ).bind(now.date).all(),
     ]);
 
     // A calendar failure must not cost Robin the rest of the brief. The empty
@@ -1133,8 +1134,9 @@ async function handleTasks(request, env, url) {
     `SELECT id, title, props, created_at FROM blocks
       WHERE kind = 'task' AND archived = 0
         AND (json_extract(props,'$.done') IS NULL OR json_extract(props,'$.done') = 0)
-        AND COALESCE(json_extract(props,'$.priority'), '') != ''`,
-  ).all();
+        AND COALESCE(json_extract(props,'$.priority'), '') != ''
+        AND (json_extract(props,'$.snooze') IS NULL OR json_extract(props,'$.snooze') <= ?)`,
+  ).bind(todayLisbon()).all();
 
   const areaNames = Object.fromEntries(cfg.areas.map((a) => [a.id, a.title]));
   const all = results.map((r) => blockToTask(r, cfg.areaMap, areaNames));
@@ -1301,10 +1303,42 @@ async function updateSlot(request, env, id) {
 // One place for "a task changed state", so ticking a task in the list and
 // ticking its scheduled block behave identically: the block's done flag is the
 // truth, and a sole-task block follows its task.
+// Local (Lisbon) date as YYYY-MM-DD. Snooze/repeat granularity is a whole day.
+function todayLisbon() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Lisbon' }); }
+// Advance a 'YYYY-MM-DD' anchor by one repeat period (UTC math on the string,
+// so no clock/DST drift). Monthly preserves the day-of-month, clamped short.
+function addPeriod(iso, repeat) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
+  else if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
+  else if (repeat === 'monthly') { dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() + 1); const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate(); dt.setUTCDate(Math.min(d, dim)); }
+  else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);
+  else return iso;
+  return dt.toISOString().slice(0, 10);
+}
+// The next occurrence strictly after `today`, jumping over any missed cycles so
+// a long-neglected monthly task lands on its next date, not a pile of old ones.
+function nextRepeatDate(repeat, anchorISO, today) {
+  let next = addPeriod(anchorISO, repeat);
+  for (let i = 0; i < 500 && next <= today; i++) next = addPeriod(next, repeat);
+  return next;
+}
+
 async function setTaskDone(env, id, done) {
   const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND kind = 'task'").bind(id).first();
   let p = {}; try { p = row && row.props ? JSON.parse(row.props) : {}; } catch {}
-  p.done = !!done;
+  let slotDone = !!done;
+  if (done && p.repeat) {
+    // A repeating task is never "finished": completing it rolls the snooze date
+    // forward to the next occurrence and leaves it open, so it reappears then.
+    const today = todayLisbon();
+    p.snooze = nextRepeatDate(p.repeat, p.snooze || today, today);
+    p.done = false;
+    slotDone = true;   // today's tick still counts toward the day's ring
+  } else {
+    p.done = !!done;
+  }
   await env.DB.batch([
     env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?')
       .bind(JSON.stringify(p), new Date().toISOString(), id),
@@ -1315,8 +1349,9 @@ async function setTaskDone(env, id, done) {
       `UPDATE slots SET done = ?
         WHERE id IN (SELECT slot_id FROM slot_tasks WHERE tana_id = ?)
           AND (SELECT COUNT(*) FROM slot_tasks x WHERE x.slot_id = slots.id) = 1`,
-    ).bind(done ? 1 : 0, id),
+    ).bind(slotDone ? 1 : 0, id),
   ]);
+  return p;
 }
 
 async function updateTask(request, env, id) {

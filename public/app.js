@@ -20,7 +20,7 @@ const readLS = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k));
 const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
-  areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
+  areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
   note: null, tables_open: null,
@@ -2644,6 +2644,33 @@ function taskTitleHtml(title) {
   }
   return out + esc(s.slice(last));
 }
+// Snooze + repeat. A snoozed task hides from the open list until its date; a
+// repeating task rolls that date forward each time it's ticked (see toggleTask).
+const REPEATS = [['', 'Does not repeat'], ['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly']];
+const repeatShort = (r) => ({ daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }[r] || '');
+const isSnoozed = (t) => !!(t.props && t.props.snooze && t.props.snooze > todayISO());
+function taskAddPeriod(iso, repeat) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
+  else if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
+  else if (repeat === 'monthly') { dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() + 1); const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate(); dt.setUTCDate(Math.min(d, dim)); }
+  else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);
+  else return iso;
+  return dt.toISOString().slice(0, 10);
+}
+function nextRepeat(repeat, anchorISO) {
+  const today = todayISO();
+  let next = taskAddPeriod(anchorISO, repeat);
+  for (let i = 0; i < 500 && next <= today; i++) next = taskAddPeriod(next, repeat);
+  return next;
+}
+function taskBadges(t) {
+  const out = [];
+  if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz">💤 ${esc(dpLabel(t.props.snooze))}</span>`);
+  if (t.props.repeat) out.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(t.props.repeat))}</span>`);
+  return out.length ? `<span class="tbadges">${out.join('')}</span>` : '';
+}
 function taskTableHtml(list, emptyMsg) {
   const arrow = (c) => state.taskSort.col === c ? `<span class="sarrow">${state.taskSort.dir === 'asc' ? '↑' : '↓'}</span>` : '';
   const th = (c, label, cls) => `<th class="${cls || ''} sortable" data-sort="${c}">${label}${arrow(c)}</th>`;
@@ -2651,7 +2678,7 @@ function taskTableHtml(list, emptyMsg) {
     const a = areaById(t.props.area); const p = t.props.priority;
     return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}">
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
-      <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span></td>
+      <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
       <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add">+</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
@@ -2664,7 +2691,7 @@ function taskTableHtml(list, emptyMsg) {
     </table></div>`;
 }
 function renderTasks() {
-  const openCount = (aid) => state.tasks.filter((t) => !t.props.done && (aid ? t.props.area === aid : true)).length;
+  const openCount = (aid) => state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && (aid ? t.props.area === aid : true)).length;
   const chips = `<button class="area-chip ${state.taskFilter === null ? 'on' : ''}" data-filter="">All <b>${openCount(null)}</b></button>` +
     state.areas.filter((a) => openCount(a.id)).map((a) => `<button class="area-chip ${state.taskFilter === a.id ? 'on' : ''}" style="--h:${hueOf(a)}" data-filter="${a.id}"><span class="cd"></span>${esc(a.title)} <b>${openCount(a.id)}</b></button>`).join('');
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
@@ -2673,7 +2700,13 @@ function renderTasks() {
   const inFilter = (t) => !state.taskFilter || t.props.area === state.taskFilter;
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
-  const open = state.tasks.filter((t) => !t.props.done && inFilter(t) && matchesQ(t));       // ticked tasks vanish from view
+  const open = state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && inFilter(t) && matchesQ(t));   // ticked or snoozed tasks vanish from view
+  const snoozed = state.tasks.filter((t) => !t.props.done && isSnoozed(t) && inFilter(t)).sort((a, b) => (a.props.snooze || '').localeCompare(b.props.snooze || ''));
+  const snoozedSection = state.showSnoozed
+    ? `<section class="completed-sec">
+        <div class="completed-head"><h2>Snoozed · ${snoozed.length}</h2><button class="ghost" data-hide-snoozed>Hide</button></div>
+        ${taskTableHtml(snoozed, 'Nothing snoozed.')}</section>`
+    : (snoozed.length ? `<button class="ghost show-completed" data-show-snoozed>💤 Snoozed · ${snoozed.length}</button>` : '');
   const completed = state.tasks.filter((t) => t.props.done && inFilter(t));
   const cq = (state.completedQuery || '').trim().toLowerCase();
   const completedShown = completed.filter((t) => !cq || (t.title || '').toLowerCase().includes(cq));
@@ -2691,17 +2724,25 @@ function renderTasks() {
       ${state.taskAdding ? '' : `<button class="add-btn wide" data-task-add>+ Add task</button>`}
     </div>
     ${state.taskAdding
-      ? `<form id="task-form" class="add-task">
-      <input id="task-title" type="text" placeholder="Add a task…" autocomplete="off" required>
-      <select id="task-area" class="sel">${opts}</select>
-      <select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select>
-      <button class="add-btn wide" type="submit">Add</button>
-      <button type="button" class="ghost" data-task-add-close>Done</button>
+      ? `<form id="task-form" class="add-task expanded">
+      <input id="task-title" type="text" placeholder="What needs doing?" autocomplete="off" required>
+      <div class="atf-grid">
+        <label class="atf"><span>Life area</span><select id="task-area" class="sel">${opts}</select></label>
+        <label class="atf"><span>Priority</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
+        <label class="atf"><span>Duration</span><select id="task-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+        <label class="atf"><span>Snooze until</span>${dateFieldHtml('task-snooze', '')}</label>
+        <label class="atf"><span>Repeat</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+      </div>
+      <div class="atf-actions">
+        <button class="add-btn wide" type="submit">Add task</button>
+        <button type="button" class="ghost" data-task-add-close>Done</button>
+      </div>
     </form>`
       : ''}
     <div class="area-chips">${chips}</div>
     ${filterSel}
     ${taskTableHtml(open, 'No open tasks here.')}
+    ${snoozedSection}
     ${completedSection}`;
 }
 
@@ -3401,6 +3442,9 @@ document.addEventListener('click', (e) => {
   if (sh) { const c = sh.dataset.sort; if (state.taskSort.col === c) state.taskSort.dir = state.taskSort.dir === 'asc' ? 'desc' : 'asc'; else state.taskSort = { col: c, dir: c === 'created' ? 'desc' : 'asc' }; try { localStorage.setItem('life.taskSort', JSON.stringify(state.taskSort)); } catch {} rerenderCurrent(); return; }
   if (t.closest('[data-show-completed]')) { state.showCompleted = true; renderTasks(); return; }
   if (t.closest('[data-hide-completed]')) { state.showCompleted = false; state.completedQuery = ''; renderTasks(); return; }
+  if (t.closest('[data-show-snoozed]')) { state.showSnoozed = true; renderTasks(); return; }
+  if (t.closest('[data-hide-snoozed]')) { state.showSnoozed = false; renderTasks(); return; }
+  const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
   const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
   const dt = t.closest('[data-del-task]'); if (dt) { delTask(dt.dataset.delTask); return; }
@@ -3481,6 +3525,8 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
+  if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
+  if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
@@ -3540,7 +3586,7 @@ function caretToProseStart(prose) {
 }
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask(v, $('#task-area').value, $('#task-prio').value); }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value }); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
@@ -3684,8 +3730,12 @@ document.addEventListener('pointerup', () => {
 });
 
 // ── task/note/table helpers ──────────────────────────
-async function addTask(title, area, priority) {
-  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) });
+async function addTask(o) {
+  const props = { area: o.area || null, priority: o.priority || null, done: false };
+  if (o.duration) props.duration = Number(o.duration);
+  if (o.snooze) props.snooze = o.snooze;
+  if (o.repeat) props.repeat = o.repeat;
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props }) });
   state.tasks.push(b); renderTasks();
   // Keep the form open for adding several in a row.
   if (state.taskAdding) { const i = $('#task-title'); if (i) i.focus(); }
@@ -3711,7 +3761,18 @@ async function patchTaskTitle(id, title) {
   copies.forEach((b) => (b.title = title)); rerenderCurrent();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }); } catch (e) { toast(e.message); }
 }
-function toggleTask(id) { const t = taskCopies(id)[0]; if (t) patchTaskProps(id, { done: !t.props.done }); }
+function toggleTask(id) {
+  const t = taskCopies(id)[0]; if (!t) return;
+  // Completing a repeating task doesn't finish it - it rolls forward to the next
+  // occurrence and hides until then (mirrors setTaskDone on the server).
+  if (!t.props.done && t.props.repeat) {
+    const next = nextRepeat(t.props.repeat, t.props.snooze || todayISO());
+    patchTaskProps(id, { snooze: next, done: false });
+    toast(`Repeats ${repeatShort(t.props.repeat).toLowerCase()} — back ${dpLabel(next)}`);
+    return;
+  }
+  patchTaskProps(id, { done: !t.props.done });
+}
 async function delTask(id) {
   state.tasks = state.tasks.filter((t) => t.id !== id);
   if (state.area_open) state.area_open.blocks = state.area_open.blocks.filter((t) => t.id !== id);
@@ -3771,6 +3832,10 @@ function renderTaskCard() {
         <select class="sel" data-area-task="${t.id}"><option value="">No area</option>${state.areas.map((x) => `<option value="${x.id}" ${t.props.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Snooze until${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}</span>
+        ${dateFieldHtml('taskcard-snooze', t.props.snooze || '')}</label>
+      <label class="tf-field"><span class="tf-label">Repeat</span>
+        <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
     ${notesSection(t.body, 'task', t.id)}
     ${attachSection(t)}`;
