@@ -530,11 +530,17 @@ export async function syncMailCache(env, { force = false } = {}) {
   const now = Date.now();
   if (!force) {
     const row = await env.DB.prepare("SELECT value FROM settings WHERE key='mail_sync_at'").first();
-    if (row && now - Number(row.value || 0) < 120000) return;   // at most once every 2 min
+    if (row && now - Number(row.value || 0) < 120000) return { newUnread: 0 };   // at most once every 2 min
   }
   await env.DB.prepare("INSERT INTO settings (key,value) VALUES ('mail_sync_at',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
   const accts = await listAccounts(env);
-  await Promise.allSettled(accts.map((a) => syncOneInbox(env, a)));
+  const results = await Promise.allSettled(accts.map((a) => syncOneInbox(env, a)));
+  // Count genuinely new unread arrivals across every account (message-id based,
+  // so it fires even if the total count didn't net-rise or another client read
+  // something in the same window).
+  let newUnread = 0;
+  for (const r of results) if (r.status === 'fulfilled' && r.value) newUnread += r.value.newUnread || 0;
+  return { newUnread };
 }
 async function syncOneInbox(env, acct) {
   const im = await imapOpen(env, acct);
@@ -543,6 +549,11 @@ async function syncOneInbox(env, acct) {
     const total = await im.select('INBOX');
     const msgs = total ? await im.listRange(total, 0, 40) : [];
     const unseen = total ? await im.unseenCount() : 0;
+    // Message-ids we already had. An unseen one that's new to us is a genuine
+    // arrival. Skip the very first population of an account (would flood).
+    const prev = await env.DB.prepare("SELECT message_id FROM mail_cache WHERE account=? AND mailbox='INBOX'").bind(acct.id).all();
+    const known = new Set((prev.results || []).map((r) => r.message_id).filter(Boolean));
+    const newUnread = known.size === 0 ? 0 : msgs.filter((m) => !m.seen && m.messageId && !known.has(m.messageId)).length;
     const nowIso = new Date().toISOString();
     const stmts = [env.DB.prepare('DELETE FROM mail_cache WHERE account=? AND mailbox=?').bind(acct.id, 'INBOX')];
     for (const m of msgs) {
@@ -552,6 +563,7 @@ async function syncOneInbox(env, acct) {
     }
     stmts.push(env.DB.prepare('INSERT INTO mail_cache_meta (account,mailbox,unseen,synced_at) VALUES (?,?,?,?) ON CONFLICT(account,mailbox) DO UPDATE SET unseen=excluded.unseen, synced_at=excluded.synced_at').bind(acct.id, 'INBOX', unseen, nowIso));
     await env.DB.batch(stmts);
+    return { account: acct.id, newUnread, unseen };
   } finally { try { await im.logout(); } catch {} }
 }
 async function readCachedInbox(env, accountIds) {

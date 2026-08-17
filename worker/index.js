@@ -1502,16 +1502,17 @@ async function pushAll(env, payload) {
   return { sent, total: (results || []).length };
 }
 
-// Called after each inbox sync. Pushes only when the unread total *rises*, so a
-// notification means genuinely new mail; the badge number is the fresh total.
-async function maybePushMail(env) {
+// Called after each inbox sync with its result. Pushes when a genuinely new
+// message arrived unread (message-id based, so it fires even if another client
+// read something in the same window). The badge shows the current unread total.
+async function maybePushMail(env, res) {
+  if (!res || !res.newUnread) return;
   const row = await env.DB.prepare("SELECT COALESCE(SUM(unseen),0) AS n FROM mail_cache_meta WHERE mailbox='INBOX'").first();
   const total = row ? Number(row.n) || 0 : 0;
-  const lastRow = await env.DB.prepare("SELECT value FROM settings WHERE key='push_unread'").first();
-  const last = lastRow ? Number(lastRow.value) : null;
-  await env.DB.prepare("INSERT INTO settings (key,value) VALUES ('push_unread',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(String(total)).run();
-  if (last === null || total <= last) return;   // first run seeds a baseline; a drop just badges down in-app
-  await pushAll(env, { type: 'mail', unread: total, title: 'New mail', body: total === 1 ? '1 unread email' : `${total} unread emails` });
+  await pushAll(env, {
+    type: 'mail', unread: total, title: 'New mail',
+    body: res.newUnread === 1 ? 'You have a new email' : `${res.newUnread} new emails`,
+  });
 }
 
 export default {
@@ -1524,7 +1525,7 @@ export default {
     ctx.waitUntil(runDailyBrief(env).catch((e) => console.error('runDailyBrief:', e.message)));
     // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min),
     // then push an icon badge if the unread total just rose.
-    ctx.waitUntil(syncMailCache(env).then(() => maybePushMail(env)).catch((e) => console.error('syncMailCache/push:', e.message)));
+    ctx.waitUntil(syncMailCache(env).then((res) => maybePushMail(env, res)).catch((e) => console.error('syncMailCache/push:', e.message)));
   },
 
   async fetch(request, env) {
