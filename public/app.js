@@ -2130,8 +2130,14 @@ function normHex(h) {
 // The signature "bar" is the coloured left border in the template. Recover its
 // colour from saved HTML so the picker opens on the current value.
 function sigBarColor(a) {
-  const m = (a.signature || '').match(/border-left\s*:\s*[^;"']*?(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})/i);
-  return normHex(m ? m[1] : (a.color || '#c4412e')) || '#c4412e';
+  const s = a.signature || '';
+  const hexM = s.match(/border-left\s*:\s*[^;"']*?(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})/i);
+  if (hexM) return normHex(hexM[1]) || '#c4412e';
+  // Browsers serialise an assigned colour to rgb(...), so read that form too -
+  // otherwise the picker can't recover a saved colour and shows the red default.
+  const rgbM = s.match(/border-left\s*:\s*[^;"']*?rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgbM) { const hx = '#' + rgbM.slice(1, 4).map((n) => (+n).toString(16).padStart(2, '0')).join(''); return normHex(hx) || '#c4412e'; }
+  return normHex(a.color || '#c4412e') || '#c4412e';
 }
 // Live-recolour the bar as you pick, and keep the swatch and hex box in step.
 function applySigColor(id, raw, src) {
