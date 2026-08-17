@@ -454,6 +454,48 @@ function renderNav() {
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
 }
+// Keyboard shortcuts reference. Open with ⌘/, the palette, or the home link.
+const SHORTCUTS = [
+  ['General', [
+    ['⌘K', 'Command palette'],
+    ['⌘/', 'This shortcuts list'],
+    ['⌘N', 'New note'],
+    ['⌥⌘N', 'New task'],
+    ['⌘T', 'New tab'],
+    ['⌥⌘W', 'Close tab'],
+    ['Esc', 'Close a panel / back out'],
+  ]],
+  ['Mail (while browsing or reading, not typing)', [
+    ['C', 'Compose a new email'],
+    ['/', 'Search mail'],
+    ['J / K', 'Previous / next message'],
+    ['Enter / O', 'Open message or expand thread'],
+    ['R', 'Reply'],
+    ['A', 'Reply all'],
+    ['F', 'Forward'],
+    ['E', 'Archive'],
+    ['S', 'Star'],
+    ['U', 'Mark unread'],
+    ['!', 'Mark as spam'],
+    ['⌫ / #', 'Delete'],
+    ['⌘Enter', 'Send (while composing)'],
+    ['?', 'Mail cheatsheet'],
+  ]],
+  ['Command palette (⌘K)', [
+    ['↑ / ↓', 'Move selection'],
+    ['Enter', 'Run the highlighted action'],
+    ['Esc', 'Close'],
+  ]],
+];
+function openShortcuts() {
+  let el = document.getElementById('sc-overlay');
+  if (!el) { el = document.createElement('div'); el.id = 'sc-overlay'; document.body.appendChild(el); }
+  const groups = SHORTCUTS.map(([title, rows]) => `<div class="sc-group"><div class="sc-group-h">${esc(title)}</div>${rows.map(([k, label]) =>
+    `<div class="sc-row"><span class="sc-desc">${esc(label)}</span><span class="sc-keys">${k.split(' / ').map((kk) => `<kbd class="kbd">${esc(kk)}</kbd>`).join('<span class="sc-or">or</span>')}</span></div>`).join('')}</div>`).join('');
+  el.innerHTML = `<div class="sc-bg" data-shortcuts-bg><div class="sc-panel" role="dialog" aria-label="Keyboard shortcuts"><div class="sc-head"><h2>Keyboard shortcuts</h2><button class="sc-x" data-close-shortcuts aria-label="Close">×</button></div><div class="sc-body">${groups}</div></div></div>`;
+  state.shortcutsOpen = true;
+}
+function closeShortcuts() { const el = document.getElementById('sc-overlay'); if (el) el.innerHTML = ''; state.shortcutsOpen = false; }
 // Sidebar quick-add: jump to the tool and open its "new" affordance directly.
 async function quickAdd(kind) {
   try {
@@ -677,6 +719,7 @@ function renderHome() {
           </section>
         </aside>
       </div>
+      <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
     </div>`;
 }
 function openTablesList() {
@@ -2995,6 +3038,7 @@ async function setCell(rowId, colId, value) {
 function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
 const ACTIONS = [
+  { kind: 'action', title: 'Keyboard shortcuts', run: () => openShortcuts() },
   { kind: 'action', title: 'New note', run: () => newNote(null) },
   { kind: 'action', title: 'New journal entry', run: () => quickAdd('journal') },
   { kind: 'action', title: 'Go to Journal', run: () => openJournal() },
@@ -3074,14 +3118,17 @@ document.addEventListener('keydown', (e) => {
   if (document.getElementById('tblpick-overlay') && document.getElementById('tblpick-overlay').innerHTML && e.key === 'Escape') { e.preventDefault(); closeTableEntryPicker(); return; }
   if (state.dp && e.key === 'Escape') { e.preventDefault(); closeDatePicker(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
+  if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); state.shortcutsOpen ? closeShortcuts() : openShortcuts(); return; }
   // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
   // and ⌘N reach the page: ⌘T = new in-app tab, ⌘N = new note. ⌥ variants stay
   // as a fallback for any window that still reserves the plain keys. ⌘W closes
   // a tab only with ⌥ held, so the plain ⌘W keeps closing the app window.
   if ((e.metaKey || e.ctrlKey) && e.code === 'KeyT') { e.preventDefault(); newTab(); return; }
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyW') { e.preventDefault(); closeTab(state.activeTab); return; }
-  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.code === 'KeyN') { e.preventDefault(); newNote(null).catch((x) => toast(x.message)); return; }
+  if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyN') { e.preventDefault(); quickAdd('task'); return; }   // ⌥⌘N = new task
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyN') { e.preventDefault(); newNote(null).catch((x) => toast(x.message)); return; }
   // Mail compose: ⌘/Ctrl + Enter sends.
   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && state.view.type === 'mail' && state.mail && state.mail.composing) {
     const form = document.getElementById('mail-compose-form');
@@ -3191,6 +3238,9 @@ document.addEventListener('click', (e) => {
   const ate = t.closest('[data-add-table-entry]'); if (ate) { e.stopPropagation(); openTableEntryPicker(); return; }
   const tpk = t.closest('[data-tblpick]'); if (tpk) { addTableEntry(tpk.dataset.tblpick); return; }
   if (t.closest('[data-tblpick-bg]') && !t.closest('.pal')) { closeTableEntryPicker(); return; }
+  if (t.closest('[data-open-shortcuts]')) { openShortcuts(); return; }
+  if (t.closest('[data-close-shortcuts]')) { closeShortcuts(); return; }
+  if (t.closest('[data-shortcuts-bg]') && !t.closest('.sc-panel')) { closeShortcuts(); return; }
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
   if (t.closest('[data-linkpick-bg]') && !t.closest('.pal')) { closeLinkPicker(); return; }
