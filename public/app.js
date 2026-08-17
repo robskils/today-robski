@@ -334,7 +334,7 @@ function navSection(key, v) {
   let title, add = '', rows;
   if (key === 'favs') {
     title = 'Favourites';
-    rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"`, KIND_IC[f.kind] || '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
+    rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"`, f.kind in KIND_IC ? KIND_IC[f.kind] : '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // Notes and tables are one list now; a table note carries the grid icon.
     title = 'Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
@@ -342,7 +342,7 @@ function navSection(key, v) {
       const isT = isTableNote(n);
       const active = isT ? (v.type === 'table' && state.tables_open && state.tables_open.id === n.id)
         : (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id);
-      return sub(active, isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`, isT ? '▦' : '▸', n.title);
+      return sub(active, isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`, isT ? TBL_ICO : '', n.title);
     }).join('') || '<div class="nav-sub muted">No notes yet</div>';
   } else {
     title = 'Life areas'; add = '<button class="nav-add" data-new-area title="New life area">+</button>';
@@ -580,7 +580,8 @@ const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).p
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const KIND_IC = { note: '▤', table: '▦', task: '✓', row: '▦', area: '◈', journal: '✎' };
+const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note; regular notes carry no icon
+const KIND_IC = { note: '', table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
 const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
 
 async function openHome() {
@@ -621,7 +622,7 @@ function renderHome() {
   // Compact cards, grouped by kind (Tasks, Notes, Tables, Life areas).
   const favGroups = ['task', 'note', 'table', 'area'].map((k) => {
     const list = favs.filter((f) => f.kind === k); if (!list.length) return '';
-    return `<div class="fav-group"><div class="fav-group-h">${KIND_LABEL[k]}</div><div class="fav-cards">${list.map((f) => `<div class="fav-card"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${KIND_IC[f.kind] || '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`).join('')}</div></div>`;
+    return `<div class="fav-group"><div class="fav-group-h">${KIND_LABEL[k]}</div><div class="fav-cards">${list.map((f) => `<div class="fav-card"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`).join('')}</div></div>`;
   }).join('');
   const evRows = todayItems.map((it) => it.kind === 'event'
     ? (() => { const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
@@ -630,7 +631,7 @@ function renderHome() {
     : `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
   const recents = recentItems().slice(0, 8);
   const recentHtml = recents.length
-    ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${KIND_IC[r.kind] || '•'}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
+    ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${r.kind in KIND_IC ? KIND_IC[r.kind] : '•'}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
@@ -681,7 +682,7 @@ function openTablesList() {
   state.view = { type: 'tables' };
   renderNav();
   const favTables = state.tables.filter((t) => t.props && t.props.fav);
-  const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
+  const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
   $('#pane').innerHTML = `
     ${pageCrumb('Tables')}
     <div class="pane-head home-head"><h1>Tables</h1><button class="add-btn wide" data-new-table>+ New table</button></div>
@@ -718,7 +719,7 @@ const NOTE_TYPES = [['all', 'All'], ['note', 'Notes'], ['table', 'Tables']];
 function noteCard(n) {
   const t = isTableNote(n);
   // No bullet on a regular note; a table keeps its grid icon so it stands out.
-  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}">${t ? '<span class="tc-ic">▦</span>' : ''}${esc(n.title || 'Untitled')}${areaTag(n)}</button>`;
+  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}">${t ? '<span class="tc-ic ico-tbl">▦</span>' : ''}${esc(n.title || 'Untitled')}${areaTag(n)}</button>`;
 }
 // The Note · Table type switch shown in a note/table header.
 function noteTypeToggle(id, current) {
@@ -1052,8 +1053,8 @@ function renderArea() {
   // associate with the area appears here, whatever its depth.
   const notes = blocks.filter((b) => b.kind === 'note');
   const h = hueOf(area);
-  const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
-  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic">▤</span>${esc(n.title || 'Untitled')}</button>`).join('');
+  const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
+  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
@@ -2673,7 +2674,7 @@ function renderNote() {
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
-  const kids = state.note.children.map((c) => { const isT = isTableNote(c); return `<button class="subpage" data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? '▦' : '▸'}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
+  const kids = state.note.children.map((c) => { const isT = isTableNote(c); return `<button class="subpage" data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? '<span class="ico-tbl">▦</span>' : ''}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
@@ -4071,7 +4072,7 @@ async function openLinkPicker(prose, range) {
     ]);
     const map = (arr, kind, icon) => (arr || []).map((b) => ({ id: b.id, kind, icon, title: b.title || 'Untitled' }));
     if (!state.linkpick) return;
-    state.linkpick.opts = [...map(notes, 'note', '▤'), ...map(tables, 'table', '▦'), ...map(areas, 'area', '◈')];
+    state.linkpick.opts = [...map(notes, 'note', ''), ...map(tables, 'table', TBL_ICO), ...map(areas, 'area', '◈')];
     state.linkpick.loaded = true;
     renderLinkPickerList();
   } catch {}
