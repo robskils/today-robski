@@ -2493,14 +2493,20 @@ function showQuickTask() {
     <button class="add-btn wide" type="submit">Add</button></form>`;
   $('#qt-title').focus();
 }
-// Turn the open email into a Robski Life task: subject becomes the title, the
-// sender is noted in the body. It lands in Tasks with no priority/area set.
+// Turn the open email into a Robski Life task: subject becomes the title, and
+// the sender line + the email's text are carried into the task's note (body).
+// It lands in Tasks with no priority/area set.
 async function mailToTask() {
   const o = state.mail && state.mail.open; if (!o) return;
   const title = ((o.subject || '').trim()) || '(no subject)';
   const name = o.from ? (o.from.name || o.from.address || '') : '';
   const addr = o.from ? (o.from.address || '') : '';
-  const body = (name || addr) ? `<p>From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}</p>` : '';
+  const when = o.date ? new Date(o.date).toLocaleString() : '';
+  const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
+  const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
+  const src = (o.text || '').replace(/\r\n/g, '\n').trim();
+  const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+  const body = hdr + content;
   try {
     await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, body, props: { priority: null, area: null, done: false } }) });
     toast(`Added to Tasks: “${title.length > 40 ? title.slice(0, 40) + '…' : title}”`);
