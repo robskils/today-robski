@@ -242,12 +242,13 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
+    case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
     case 'journal': return 'Journal'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Journal';
     case 'readwatch': return 'Read & Watch';
@@ -261,6 +262,7 @@ function openView(v) {
   switch (v.type) {
     case 'tasks': return openTasks(); case 'taskcard': return openTaskCard(v.id);
     case 'calendar': return openCalendar(); case 'mail': return openMail(); case 'today': return openToday();
+    case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'journal': return openJournal(); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
@@ -441,7 +443,7 @@ function renderNav() {
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <div class="nav-grid">
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span><span class="nav-lbl">Home</span></button>
-    <button class="nav-item ${v.type === 'mail' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
+    <button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
     <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
     <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
@@ -520,7 +522,7 @@ function renderTabbar(v) {
   if (!el) { el = document.createElement('nav'); el.id = 'tabbar'; el.className = 'tabbar'; document.body.appendChild(el); }
   const tab = (on, attr, ic, label, badge) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span>${ic}${badge ? `<span class="tab-badge">${badge}</span>` : ''}</span>${label}</button>`;
   el.innerHTML = tab(v.type === 'home', 'data-view-home', '⌂', 'Home')
-    + tab(v.type === 'mail', 'data-open-mail', '✉', 'Mail', state.mailUnreadTotal ? (state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal) : '')
+    + tab(v.type === 'mail' || v.type === 'mailaccounts', 'data-open-mail', '✉', 'Mail', state.mailUnreadTotal ? (state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal) : '')
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
     + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
     + tab(['note', 'notes', 'table', 'tables'].includes(v.type), 'data-open-notes', '▤', 'Notes');
@@ -1711,7 +1713,7 @@ async function enablePush() {
     await navigator.serviceWorker.ready;
     await subscribePush(reg);
     toast('Notifications on ✓');
-    if (state.view && state.view.type === 'mail') openMailAccounts().catch(() => {});
+    if (state.view && state.view.type === 'mailaccounts') openMailAccounts().catch(() => {});
   } catch (e) { toast('Could not enable notifications: ' + e.message); }
 }
 async function pushTest() {
@@ -1995,7 +1997,7 @@ function draftsListHtml() {
   }).join('');
 }
 async function openMailAccounts() {
-  state.view = { type: 'mail' }; renderNav();
+  state.view = { type: 'mailaccounts' }; renderNav();
   try { state.mail = state.mail || { account: null, mailbox: 'INBOX' }; state.mail.accounts = await mailApi('/accounts'); renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
   catch (e) { toast(e.message); }
 }
