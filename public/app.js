@@ -4260,32 +4260,27 @@ async function deleteAttachment(blockId, attId) {
   rerenderHost();
 }
 // ── document scanner ─────────────────────────────────
-// Camera capture → auto-detect the page edges (OpenCV) → drag-to-adjust the
-// four corners → perspective-correct + enhance → multi-page PDF into the note.
-// OpenCV.js (~9MB WASM) loads lazily the first time you scan.
-// Self-hosted (served from our own Cloudflare edge, so it downloads fast and
-// reliably on mobile - the docs.opencv.org copy was slow/flaky over a phone).
-const OPENCV_URL = '/vendor/opencv.js';
-let cvReady = null;
-function loadOpenCv() {
-  if (cvReady) return cvReady;
-  cvReady = new Promise((res, rej) => {
-    if (window.cv && window.cv.Mat) return res(window.cv);
-    const s = document.createElement('script');
-    s.src = OPENCV_URL; s.async = true;
-    // The whole race - download + WASM compile - gets a generous window, since a
-    // first-run compile of a 10MB module on an older phone is not instant.
-    const t0 = Date.now();
-    const ready = () => window.cv && window.cv.Mat;
-    const iv = setInterval(() => {
-      if (ready()) { clearInterval(iv); res(window.cv); }
-      else if (Date.now() - t0 > 120000) { clearInterval(iv); cvReady = null; rej(new Error('the scanner took too long to start - check your connection and try again')); }
-    }, 80);
-    s.onload = () => { if (window.cv && !ready()) window.cv.onRuntimeInitialized = () => { clearInterval(iv); res(window.cv); }; };
-    s.onerror = () => { clearInterval(iv); cvReady = null; rej(new Error('could not load the scanner')); };
-    document.head.appendChild(s);
-  });
-  return cvReady;
+// Camera capture → drag the four corners onto the page → perspective-correct
+// + enhance (adaptive B&W or colour) → multi-page PDF into the note. Pure JS
+// (a small homography warp + integral-image threshold, no heavy WASM engine),
+// so it opens instantly and never crashes the mobile web view.
+// Solve the 3x3 homography mapping the dst rectangle corners onto the src quad
+// (so we can inverse-sample). 4 point pairs -> an 8x8 system, Gauss-Jordan.
+function solveHomography(src, dst) {
+  const A = [], B = [];
+  for (let i = 0; i < 4; i++) {
+    const x = dst[i].x, y = dst[i].y, u = src[i].x, v = src[i].y;
+    A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); B.push(u);
+    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); B.push(v);
+  }
+  const n = 8;
+  for (let i = 0; i < n; i++) {
+    let p = i; for (let r = i + 1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+    const ta = A[i]; A[i] = A[p]; A[p] = ta; const tb = B[i]; B[i] = B[p]; B[p] = tb;
+    const piv = A[i][i] || 1e-9;
+    for (let r = 0; r < n; r++) { if (r === i) continue; const f = A[r][i] / piv; for (let c = i; c < n; c++) A[r][c] -= f * A[i][c]; B[r] -= f * B[i]; }
+  }
+  return A.map((row, i) => B[i] / (row[i] || 1e-9));
 }
 // Assemble JPEG pages into a single PDF (DCTDecode, one image per page).
 function jpegsToPdf(pages) {
@@ -4318,8 +4313,7 @@ function openScanner(blockId) {
   scan.block = blockId; scan.pages = []; scan.bw = true; scan.corners = null;
   let el = document.getElementById('scanner');
   if (!el) { el = document.createElement('div'); el.id = 'scanner'; document.body.appendChild(el); }
-  scanStage('loading');
-  loadOpenCv().then(() => scanStartCamera()).catch((e) => { toast(e.message); closeScanner(); });
+  scanStartCamera();
 }
 function scanStage(stage) {
   scan.stage = stage;
@@ -4372,7 +4366,7 @@ function scanFromFile(file) {
 }
 function scanToAdjust(srcCanvas) {
   scan.src = srcCanvas;
-  try { scan.corners = autoCorners(srcCanvas); } catch { scan.corners = defaultCorners(srcCanvas); }
+  scan.corners = defaultCorners(srcCanvas);   // start as a rectangle; you drag the handles onto the page
   scanStage('adjust');
 }
 function defaultCorners(c) { const w = c.width, h = c.height, m = 0.06; return [{ x: w * m, y: h * m }, { x: w * (1 - m), y: h * m }, { x: w * (1 - m), y: h * (1 - m) }, { x: w * m, y: h * (1 - m) }]; }
@@ -4380,30 +4374,52 @@ function orderCorners(p) {
   const s = p.map((q) => q.x + q.y), d = p.map((q) => q.y - q.x);
   return [p[s.indexOf(Math.min(...s))], p[d.indexOf(Math.min(...d))], p[s.indexOf(Math.max(...s))], p[d.indexOf(Math.max(...d))]];
 }
-function autoCorners(srcCanvas) {
-  const cv = window.cv;
-  const src = cv.imread(srcCanvas);
-  const scaleF = Math.min(1, 900 / Math.max(src.rows, src.cols));
-  const small = new cv.Mat(); cv.resize(src, small, new cv.Size(Math.round(src.cols * scaleF), Math.round(src.rows * scaleF)));
-  const gray = new cv.Mat(); cv.cvtColor(small, gray, cv.COLOR_RGBA2GRAY);
-  cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
-  const edges = new cv.Mat(); cv.Canny(gray, edges, 60, 180);
-  const k = cv.Mat.ones(5, 5, cv.CV_8U); cv.dilate(edges, edges, k);
-  const contours = new cv.MatVector(); const hier = new cv.Mat();
-  cv.findContours(edges, contours, hier, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-  let best = null, bestArea = 0.2 * small.rows * small.cols;
-  for (let i = 0; i < contours.size(); i++) {
-    const c = contours.get(i); const peri = cv.arcLength(c, true); const ap = new cv.Mat();
-    cv.approxPolyDP(c, ap, 0.02 * peri, true);
-    const area = cv.contourArea(ap);
-    if (ap.rows === 4 && cv.isContourConvex(ap) && area > bestArea) { bestArea = area; if (best) best.delete(); best = ap; } else ap.delete();
-    c.delete();
+// Perspective-correct the quad the user framed into a flat rectangle, then
+// enhance. Pure JS: inverse-map each output pixel through the homography and
+// bilinear-sample the source.
+function warpPage(srcCanvas, corners, bw) {
+  const [tl, tr, br, bl] = corners; const D = (a, z) => Math.hypot(a.x - z.x, a.y - z.y);
+  let W = Math.max(8, Math.round(Math.max(D(br, bl), D(tr, tl))));
+  let H = Math.max(8, Math.round(Math.max(D(tr, br), D(tl, bl))));
+  const cap = 1600, sc = Math.min(1, cap / Math.max(W, H)); W = Math.round(W * sc); H = Math.round(H * sc);
+  const h = solveHomography([tl, tr, br, bl], [{ x: 0, y: 0 }, { x: W, y: 0 }, { x: W, y: H }, { x: 0, y: H }]);
+  const sctx = srcCanvas.getContext('2d'); const sw = srcCanvas.width, sh = srcCanvas.height;
+  const sd = sctx.getImageData(0, 0, sw, sh).data;
+  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  const octx = out.getContext('2d'); const oImg = octx.createImageData(W, H); const od = oImg.data;
+  const [a, b, c, d, e, f, g, hh] = h;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const dn = g * x + hh * y + 1, u = (a * x + b * y + c) / dn, v = (d * x + e * y + f) / dn, oi = (y * W + x) * 4;
+      if (u < 0 || v < 0 || u > sw - 1 || v > sh - 1) { od[oi] = od[oi + 1] = od[oi + 2] = od[oi + 3] = 255; continue; }
+      const x0 = u | 0, y0 = v | 0, fx = u - x0, fy = v - y0;
+      const i00 = (y0 * sw + x0) * 4, i10 = i00 + 4, i01 = i00 + sw * 4, i11 = i01 + 4;
+      for (let k = 0; k < 3; k++) { const top = sd[i00 + k] * (1 - fx) + sd[i10 + k] * fx, bot = sd[i01 + k] * (1 - fx) + sd[i11 + k] * fx; od[oi + k] = top * (1 - fy) + bot * fy; }
+      od[oi + 3] = 255;
+    }
   }
-  let pts;
-  if (best) { pts = []; for (let i = 0; i < 4; i++) pts.push({ x: best.data32S[i * 2] / scaleF, y: best.data32S[i * 2 + 1] / scaleF }); best.delete(); }
-  else pts = defaultCorners(srcCanvas);
-  [src, small, gray, edges, k, contours, hier].forEach((m) => m.delete());
-  return orderCorners(pts);
+  if (bw) adaptiveBW(od, W, H); else { for (let i = 0; i < od.length; i += 4) for (let k = 0; k < 3; k++) { const val = (od[i + k] - 128) * 1.18 + 128 + 6; od[i + k] = val < 0 ? 0 : val > 255 ? 255 : val; } }
+  octx.putImageData(oImg, 0, 0);
+  return { out, W, H };
+}
+// Local-mean adaptive threshold (integral image) - the crisp "scanned" B&W look
+// that survives uneven lighting far better than a single global cutoff.
+function adaptiveBW(od, W, H) {
+  const N = W * H, gray = new Float32Array(N);
+  for (let i = 0, p = 0; i < N; i++, p += 4) gray[i] = 0.299 * od[p] + 0.587 * od[p + 1] + 0.114 * od[p + 2];
+  const iw = W + 1, integ = new Float64Array(iw * (H + 1));
+  for (let y = 0; y < H; y++) { let rs = 0; for (let x = 0; x < W; x++) { rs += gray[y * W + x]; integ[(y + 1) * iw + (x + 1)] = integ[y * iw + (x + 1)] + rs; } }
+  const rad = Math.max(8, Math.floor(Math.min(W, H) / 40)), C = 10;
+  for (let y = 0; y < H; y++) {
+    const y0 = y - rad < 0 ? 0 : y - rad, y1 = y + rad >= H ? H - 1 : y + rad;
+    for (let x = 0; x < W; x++) {
+      const x0 = x - rad < 0 ? 0 : x - rad, x1 = x + rad >= W ? W - 1 : x + rad;
+      const area = (x1 - x0 + 1) * (y1 - y0 + 1);
+      const sum = integ[(y1 + 1) * iw + (x1 + 1)] - integ[y0 * iw + (x1 + 1)] - integ[(y1 + 1) * iw + x0] + integ[y0 * iw + x0];
+      const val = gray[y * W + x] < sum / area - C ? 0 : 255;
+      const p = (y * W + x) * 4; od[p] = od[p + 1] = od[p + 2] = val;
+    }
+  }
 }
 // Render the frozen frame + draggable corner handles into the adjust view.
 function scanDrawAdjust() {
@@ -4432,20 +4448,11 @@ function scanCornerDown(i, e) {
   document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
 }
 function scanAddPage() {
-  const cv = window.cv; const src = cv.imread(scan.src);
-  const [tl, tr, br, bl] = scan.corners; const D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  const W = Math.max(8, Math.round(Math.max(D(br, bl), D(tr, tl)))), H = Math.max(8, Math.round(Math.max(D(tr, br), D(tl, bl))));
-  const sT = cv.matFromArray(4, 1, cv.CV_32FC2, [tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y]);
-  const dT = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, W, 0, W, H, 0, H]);
-  const M = cv.getPerspectiveTransform(sT, dT); const dst = new cv.Mat();
-  cv.warpPerspective(src, dst, M, new cv.Size(W, H), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255, 255, 255, 255));
-  if (scan.bw) { const g = new cv.Mat(); cv.cvtColor(dst, g, cv.COLOR_RGBA2GRAY); cv.adaptiveThreshold(g, g, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 12); cv.cvtColor(g, dst, cv.COLOR_GRAY2RGBA); g.delete(); }
-  else dst.convertTo(dst, -1, 1.15, 8);
-  const out = document.createElement('canvas'); out.width = W; out.height = H; cv.imshow(out, dst);
-  [src, sT, dT, M, dst].forEach((m) => m.delete());
-  out.toBlob(async (blob) => {
+  let res; try { res = warpPage(scan.src, scan.corners, scan.bw); } catch (e) { toast('Could not process page'); return; }
+  res.out.toBlob(async (blob) => {
+    if (!blob) { toast('Could not process page'); return; }
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    scan.pages.push({ bytes, w: W, h: H });
+    scan.pages.push({ bytes, w: res.W, h: res.H });
     scanStartCamera();
   }, 'image/jpeg', 0.85);
 }
