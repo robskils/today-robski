@@ -1480,7 +1480,12 @@ async function importContacts(request, env) {
     const email = String(c.email || '').trim();
     if (email && seen.has(email.toLowerCase())) { skipped++; continue; }
     if (email) seen.add(email.toLowerCase());
-    const props = { email: email || null, phone: String(c.phone || '').trim() || null, birthday: String(c.birthday || '').trim() || null, address: String(c.address || '').trim() || null };
+    let address = null;
+    if (c.address && typeof c.address === 'object') {
+      const a = {}; for (const k of ['street', 'city', 'postcode', 'country']) { const v = String(c.address[k] || '').trim(); if (v) a[k] = v; }
+      address = Object.keys(a).length ? a : null;
+    } else if (c.address) { address = String(c.address).trim() || null; }
+    const props = { email: email || null, phone: String(c.phone || '').trim() || null, birthday: String(c.birthday || '').trim() || null, address };
     stmts.push(env.DB.prepare(
       `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
        VALUES (?, 'contact', NULL, ?, ?, '', ?, ?, ?, 0)`,

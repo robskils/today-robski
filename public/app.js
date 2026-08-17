@@ -2769,6 +2769,13 @@ async function loadContacts(force) {
 const contactEmail = (c) => ((c.props && c.props.email) || '').toLowerCase();
 const haveContact = (email) => !!email && (state.contacts || []).some((c) => contactEmail(c) === email.toLowerCase());
 function sortContacts(list) { return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')); }
+// Address is structured. Old contacts (and simple imports) may hold a plain
+// string; those read into the Street field and format as-is.
+const ADDR_FIELDS = [['street', 'Street'], ['city', 'City'], ['postcode', 'Postcode'], ['country', 'Country']];
+function formatAddress(a) { if (!a) return ''; if (typeof a === 'string') return a; return ADDR_FIELDS.map(([k]) => a[k]).filter(Boolean).join(', '); }
+const addrField = (a, k) => (!a ? '' : typeof a === 'string' ? (k === 'street' ? a : '') : (a[k] || ''));
+function cleanAddress(a) { const out = {}; let any = false; for (const [k] of ADDR_FIELDS) { const v = (a[k] || '').trim(); if (v) { out[k] = v; any = true; } } return any ? out : null; }
+function readCardAddress() { const a = {}; for (const [k] of ADDR_FIELDS) { const el = $('#contactcard-' + k); if (el) a[k] = el.value; } return cleanAddress(a); }
 async function openContacts() {
   state.view = { type: 'contacts' };
   await loadContacts(true);
@@ -2780,6 +2787,7 @@ function contactCardHtml(c) {
   if (p.email) bits.push(`<span class="cc-row">✉ ${esc(p.email)}</span>`);
   if (p.phone) bits.push(`<span class="cc-row">☎ ${esc(p.phone)}</span>`);
   if (p.birthday) bits.push(`<span class="cc-row">🎂 ${esc(dpLabel(p.birthday))}</span>`);
+  if (formatAddress(p.address)) bits.push(`<span class="cc-row">📍 ${esc(formatAddress(p.address))}</span>`);
   return `<button class="contact-card" data-open-contact="${c.id}">
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}</span></button>`;
@@ -2808,12 +2816,18 @@ function contactAddForm() {
       <label class="atf"><span>Phone</span><input id="ct-phone" type="tel" class="sel" placeholder="+351…" autocomplete="off"></label>
       <label class="atf"><span>Birthday</span>${dateFieldHtml('ct-bday', '')}</label>
     </div>
-    <label class="atf"><span>Address (optional)</span><textarea id="ct-address" class="sel contact-addr-in" rows="2" placeholder="Street, city…"></textarea></label>
+    <div class="atf-grid">
+      <label class="atf"><span>Street</span><input id="ct-street" class="sel" autocomplete="off"></label>
+      <label class="atf"><span>City</span><input id="ct-city" class="sel" autocomplete="off"></label>
+      <label class="atf"><span>Postcode</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
+      <label class="atf"><span>Country</span><input id="ct-country" class="sel" autocomplete="off"></label>
+    </div>
     <div class="atf-actions"><button class="add-btn wide" type="submit">Add contact</button><button type="button" class="ghost" data-contact-add-close>Done</button></div>
   </form>`;
 }
 async function addContact(o) {
   const props = { email: o.email || null, phone: o.phone || null, birthday: o.birthday || null, address: o.address || null };
+  if (props.address && typeof props.address === 'object' && !Object.keys(props.address).length) props.address = null;
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: o.name, props }) });
   state.contacts.push(b); renderContacts();
   if (state.contactAdding) { const i = $('#ct-name'); if (i) i.focus(); }
@@ -2837,8 +2851,9 @@ function renderContactCard() {
       <label class="tf-field"><span class="tf-label">Email</span><input class="sel" id="contactcard-email" type="email" value="${esc(p.email || '')}" placeholder="name@example.com"></label>
       <label class="tf-field"><span class="tf-label">Phone</span><input class="sel" id="contactcard-phone" type="tel" value="${esc(p.phone || '')}" placeholder="+351…"></label>
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
+      ${ADDR_FIELDS.map(([k, l]) => `<label class="tf-field"><span class="tf-label">${l}</span><input class="sel contactcard-addr" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" autocomplete="off"></label>`).join('')}
     </div>
-    <label class="tf-field contact-addr-field"><span class="tf-label">Address</span><textarea class="sel contact-addr-in" id="contactcard-address" rows="3" placeholder="Street, city…">${esc(p.address || '')}</textarea></label>
+    ${notesSection(c.body, 'contact', c.id)}
     ${p.email ? `<div class="contact-actions"><button class="add-btn wide" data-contact-mail="${esc(p.email)}">✉ Email ${esc(c.title || 'them')}</button></div>` : ''}`;
   autoGrowSoon($('#contactcard-name'));
 }
@@ -2891,7 +2906,7 @@ function parseVcards(text) {
     else if (prop === 'EMAIL' && !cur.email) cur.email = decodeVValue(value);
     else if (prop === 'TEL' && !cur.phone) cur.phone = decodeVValue(value);
     else if (prop === 'BDAY' && !cur.birthday) cur.birthday = normBday(value);
-    else if (prop === 'ADR' && !cur.address) cur.address = decodeVValue(value.split(';').filter((x) => x.trim()).join(', '));
+    else if (prop === 'ADR' && !cur.address) { const parts = value.split(';').map((s) => decodeVValue(s)); cur.address = cleanAddress({ street: [parts[0], parts[1], parts[2]].filter(Boolean).join(' '), city: parts[3], postcode: parts[5], country: parts[6] }); }
   }
   return cards.filter((c) => c.name || c.email);
 }
@@ -3708,7 +3723,7 @@ document.addEventListener('change', (e) => {
     if (e.target.id === 'contactcard-name') { const v = e.target.value.trim(); if (v) patchContact(cid, { title: v }, false); }
     if (e.target.id === 'contactcard-email') patchContact(cid, { email: e.target.value.trim() || null }, true);
     if (e.target.id === 'contactcard-phone') patchContact(cid, { phone: e.target.value.trim() || null }, true);
-    if (e.target.id === 'contactcard-address') patchContact(cid, { address: e.target.value.trim() || null }, true);
+    if (e.target.classList.contains('contactcard-addr')) patchContact(cid, { address: readCardAddress() }, true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
   }
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
@@ -3771,7 +3786,7 @@ function caretToProseStart(prose) {
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value }); }
-  if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: $('#ct-address').value.trim() }); }
+  if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }

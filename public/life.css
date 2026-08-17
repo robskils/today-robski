@@ -129,7 +129,9 @@ button { cursor:pointer; background:none; border:0; }
 .add-task input:not(.sel):not([type=checkbox]) { flex:1; min-width:180px; padding:12px 16px; font-size:17px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; color:var(--ink); }
 .add-task input::placeholder { color:var(--ink-3); }
 /* Expanded new-task form: title on its own row, fields in a responsive grid. */
-.add-task.expanded { flex-direction:column; align-items:stretch; gap:14px; padding:18px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+/* display:grid, not flex-column: an auto-fit grid child of a flex column gets
+   its height mis-computed as if stacked in one column (huge phantom gap). */
+.add-task.expanded { display:grid; gap:14px; padding:18px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
 .add-task.expanded input#task-title { flex:none; width:100%; }
 .atf-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
 .atf { display:flex; flex-direction:column; gap:5px; min-width:0; }
