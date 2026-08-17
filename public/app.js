@@ -181,6 +181,13 @@ function decorateProse(html) {
     card.innerHTML = `<span class="lc-main"><span class="lc-title">${esc(prettyHost(href))}</span><span class="lc-site">${esc(prettyHost(href))}</span></span><button class="lc-x" data-card-del title="Remove">×</button>`;
     p.replaceWith(card);
   });
+  // Wrap pasted tables so a wide one scrolls sideways instead of stretching the
+  // page. sanitizeProse strips the wrapper back off when saving.
+  d.querySelectorAll('table').forEach((t) => {
+    if (t.parentElement && t.parentElement.classList.contains('ptable-wrap')) return;
+    const w = document.createElement('div'); w.className = 'ptable-wrap';
+    t.replaceWith(w); w.appendChild(t);
+  });
   // A trailing card leaves nowhere to type; add an empty line after it.
   const last = d.lastElementChild;
   if (last && last.classList && last.classList.contains('lc-inline')) {
@@ -200,7 +207,7 @@ function proseEditor(body, key, id) {
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
 // tidiness (stray pasted styles) more than security.
-const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1, DETAILS: 1, SUMMARY: 1 };
+const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1, DETAILS: 1, SUMMARY: 1, TABLE: 1, THEAD: 1, TBODY: 1, TFOOT: 1, TR: 1, TH: 1, TD: 1, CAPTION: 1 };
 function sanitizeProse(html) {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   // Inline link cards are display-only: store them back as a plain URL paragraph
@@ -215,6 +222,9 @@ function sanitizeProse(html) {
     [...node.childNodes].forEach((c) => {
       if (c.nodeType === 3) return;
       if (c.nodeType !== 1) { c.remove(); return; }
+      // The render-time table scroll wrapper: unwrap it so the stored body holds
+      // just the <table> (decorateProse re-wraps on render).
+      if (c.tagName === 'DIV' && c.classList.contains('ptable-wrap')) { walk(c); const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }
       walk(c);
       let tag = c.tagName;
       if (tag === 'B') tag = 'STRONG'; else if (tag === 'I') tag = 'EM';
@@ -223,7 +233,9 @@ function sanitizeProse(html) {
       const el = c.tagName === tag ? c : (() => { const n = doc.createElement(tag); while (c.firstChild) n.appendChild(c.firstChild); c.replaceWith(n); return n; })();
       const href = el.tagName === 'A' ? el.getAttribute('href') : null;
       const keepOpen = el.tagName === 'DETAILS' && el.hasAttribute('open');   // remember collapse state
+      const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
+      if (span) { if (span.colspan && +span.colspan > 1) el.setAttribute('colspan', span.colspan); if (span.rowspan && +span.rowspan > 1) el.setAttribute('rowspan', span.rowspan); }
       // Internal links to other Robski Life pages FIRST: an internal link the
       // browser resolved to an absolute URL (https://life.robski.uk/#rl-note-…)
       // would otherwise match the http test below, get target=_blank, and open
@@ -2274,7 +2286,7 @@ function wrapEmailHtml(html, blockImages) {
   // can't do that itself, and its own scripts were already stripped).
   return `<!doctype html><html><head><meta name="color-scheme" content="light">
     <style>html,body{margin:0}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
-    </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href')||'';if(/^(https?:|mailto:)/i.test(href)){e.preventDefault();parent.postMessage({__mailLink:href},'*');}},true);})();<\/script></body></html>`;
+    </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href')||'';if(/^(https?:|mailto:)/i.test(href)){e.preventDefault();parent.postMessage({__mailLink:href},'*');}},true);document.addEventListener('keydown',function(e){if(e.metaKey||e.ctrlKey||e.altKey)return;var k=e.key;if(/^[a-zA-Z!#]$/.test(k)||k==='Escape')parent.postMessage({__mailKey:k},'*');},true);})();<\/script></body></html>`;
 }
 // Open a URL in the OS default browser via a marked, user-initiated anchor click
 // (works in installed PWAs / WKWebView wrappers). The data-ext-open marker stops
@@ -2291,6 +2303,16 @@ if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
     if (!ev.data || typeof ev.data.__mailHeight !== 'number') return;
     const f = document.getElementById('mail-body-frame');
     if (f) f.style.height = `${Math.max(200, Math.min(ev.data.__mailHeight + 6, 40000))}px`;
+  });
+  // A single-key shortcut pressed while the email body iframe has focus: the
+  // parent's keydown handler never sees it, so the iframe forwards the key and
+  // we replay it on the document (E archive, S star, R reply, Esc close, …).
+  window.addEventListener('message', (ev) => {
+    const k = ev.data && ev.data.__mailKey;
+    if (typeof k !== 'string') return;
+    const f = document.getElementById('mail-body-frame');
+    if (!f || ev.source !== f.contentWindow) return;
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
   });
   // A link clicked inside the email frame: open it in the OS default browser
   // (same as links elsewhere in the app); a mailto starts an in-app reply.
