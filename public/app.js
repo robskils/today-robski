@@ -3398,6 +3398,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowUp') { e.preventDefault(); state.pal.sel = Math.max(0, state.pal.sel - 1); renderPalItems(); }
   if (e.key === 'Enter') { e.preventDefault(); execItem(state.pal.items[state.pal.sel]); }
 });
+document.addEventListener('pointerdown', (e) => { const h = e.target.closest && e.target.closest('[data-scan-corner]'); if (h) scanCornerDown(+h.dataset.scanCorner, e); });
 document.addEventListener('input', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
@@ -3531,6 +3532,14 @@ document.addEventListener('click', (e) => {
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   const tad = t.closest('[data-tatt-del]'); if (tad) { e.preventDefault(); e.stopPropagation(); const [rid, cid, aid] = tad.dataset.tattDel.split(':'); delCellAttachment(rid, cid, aid); return; }
   const tao = t.closest('[data-tatt-open]'); if (tao) { const [rid, aid] = tao.dataset.tattOpen.split(':'); openTableAttachment(rid, aid, tao.dataset.tattName, tao.dataset.tattType); return; }
+  // document scanner
+  const scn = t.closest('[data-scan]'); if (scn) { openScanner(scn.dataset.scan); return; }
+  if (t.closest('[data-scan-close]')) { closeScanner(); return; }
+  if (t.closest('[data-scan-capture]')) { scanCapture(); return; }
+  if (t.closest('[data-scan-save]')) { scanSave(); return; }
+  if (t.closest('[data-scan-retake]')) { scan.src = null; scanStartCamera(); return; }
+  if (t.closest('[data-scan-bw]')) { scan.bw = !scan.bw; scanStage('adjust'); return; }
+  if (t.closest('[data-scan-add]')) { scanAddPage(); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
@@ -4094,7 +4103,11 @@ function attachSection(block) {
     : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
   return `<section class="attachments" data-att-zone="${block.id}">
     <div class="att-h">Attachments${list.length ? ` · ${list.length}` : ''}</div>
-    <div class="att-grid">${tiles}<label class="att-add"><input type="file" multiple hidden data-att-input="${block.id}"><span class="att-add-ic">+</span><span>Add file</span></label></div></section>`;
+    <div class="att-grid">${tiles}
+      <label class="att-add"><input type="file" multiple hidden data-att-input="${block.id}"><span class="att-add-ic">+</span><span>Add file</span></label>
+      <label class="att-add"><input type="file" accept="image/*" hidden data-att-input="${block.id}"><span class="att-add-ic">📷</span><span>Photo</span></label>
+      <button type="button" class="att-add" data-scan="${block.id}"><span class="att-add-ic">🖨</span><span>Scan</span></button>
+    </div></section>`;
 }
 // blob: URLs, so a thumbnail or preview is fetched once and the Bearer token
 // never lands in a URL.
@@ -4179,6 +4192,204 @@ async function deleteAttachment(blockId, attId) {
   const u = attUrls.get(attId); if (u) { URL.revokeObjectURL(u); attUrls.delete(attId); }
   rerenderHost();
 }
+// ── document scanner ─────────────────────────────────
+// Camera capture → auto-detect the page edges (OpenCV) → drag-to-adjust the
+// four corners → perspective-correct + enhance → multi-page PDF into the note.
+// OpenCV.js (~9MB WASM) loads lazily the first time you scan.
+const OPENCV_URL = 'https://docs.opencv.org/4.9.0/opencv.js';
+let cvReady = null;
+function loadOpenCv() {
+  if (cvReady) return cvReady;
+  cvReady = new Promise((res, rej) => {
+    if (window.cv && window.cv.Mat) return res(window.cv);
+    const s = document.createElement('script');
+    s.src = OPENCV_URL; s.async = true;
+    s.onload = () => {
+      const done = () => res(window.cv);
+      if (window.cv && window.cv.Mat) return done();
+      if (window.cv) window.cv.onRuntimeInitialized = done;
+      const t0 = Date.now();
+      const iv = setInterval(() => { if (window.cv && window.cv.Mat) { clearInterval(iv); done(); } else if (Date.now() - t0 > 40000) { clearInterval(iv); rej(new Error('scanner timed out loading')); } }, 60);
+    };
+    s.onerror = () => { cvReady = null; rej(new Error('could not load the scanner')); };
+    document.head.appendChild(s);
+  });
+  return cvReady;
+}
+// Assemble JPEG pages into a single PDF (DCTDecode, one image per page).
+function jpegsToPdf(pages) {
+  const enc = new TextEncoder(); const chunks = []; let len = 0;
+  const push = (u8) => { chunks.push(u8); len += u8.length; };
+  const S = (s) => push(enc.encode(s));
+  const n = 2 + pages.length * 3; const xref = new Array(n + 1).fill(0);
+  const obj = (i, body) => { xref[i] = len; S(i + ' 0 obj\n' + body + '\nendobj\n'); };
+  S('%PDF-1.4\n');
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [' + pages.map((_, i) => (3 + i * 3) + ' 0 R').join(' ') + '] /Count ' + pages.length + ' >>');
+  pages.forEach((p, i) => {
+    const pageN = 3 + i * 3, contentN = pageN + 1, imgN = pageN + 2;
+    obj(pageN, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + p.w + ' ' + p.h + '] /Resources << /XObject << /Im0 ' + imgN + ' 0 R >> >> /Contents ' + contentN + ' 0 R >>');
+    const content = 'q ' + p.w + ' 0 0 ' + p.h + ' 0 0 cm /Im0 Do Q';
+    obj(contentN, '<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream');
+    xref[imgN] = len;
+    S(imgN + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + p.w + ' /Height ' + p.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + p.bytes.length + ' >>\nstream\n');
+    push(p.bytes); S('\nendstream\nendobj\n');
+  });
+  const xrefOff = len;
+  let x = 'xref\n0 ' + (n + 1) + '\n0000000000 65535 f \n';
+  for (let i = 1; i <= n; i++) x += String(xref[i]).padStart(10, '0') + ' 00000 n \n';
+  S(x); S('trailer\n<< /Size ' + (n + 1) + ' /Root 1 0 R >>\nstartxref\n' + xrefOff + '\n%%EOF');
+  const out = new Uint8Array(len); let o = 0; for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out;
+}
+const scan = { block: null, stage: null, pages: [], bw: true, corners: null, drag: null };
+function openScanner(blockId) {
+  scan.block = blockId; scan.pages = []; scan.bw = true; scan.corners = null;
+  let el = document.getElementById('scanner');
+  if (!el) { el = document.createElement('div'); el.id = 'scanner'; document.body.appendChild(el); }
+  scanStage('loading');
+  loadOpenCv().then(() => scanStartCamera()).catch((e) => { toast(e.message); closeScanner(); });
+}
+function scanStage(stage) {
+  scan.stage = stage;
+  const el = document.getElementById('scanner'); if (!el) return;
+  const count = scan.pages.length;
+  const badge = count ? `<span class="scan-count">${count} page${count > 1 ? 's' : ''}</span>` : '';
+  if (stage === 'loading') {
+    el.innerHTML = `<div class="scan-shell"><div class="scan-load"><div class="scan-spin"></div><p>Warming up the scanner…</p><p class="scan-sub">First scan only — loading the image engine.</p></div><button class="scan-x" data-scan-close>✕</button></div>`;
+  } else if (stage === 'camera') {
+    el.innerHTML = `<div class="scan-shell">
+      <div class="scan-view"><video id="scan-video" playsinline autoplay muted></video><div class="scan-frame"></div></div>
+      <div class="scan-bar"><button class="scan-btn ghost" data-scan-close>Cancel</button>${badge}<button class="scan-shutter" data-scan-capture aria-label="Capture"></button>${count ? `<button class="scan-btn primary" data-scan-save>Save PDF</button>` : '<span class="scan-hint">Fill the frame with the page</span>'}</div>
+      <input type="file" id="scan-file" accept="image/*" capture="environment" hidden></div>`;
+  } else if (stage === 'adjust') {
+    el.innerHTML = `<div class="scan-shell">
+      <div class="scan-view scan-adjust"><canvas id="scan-canvas"></canvas><div id="scan-handles"></div></div>
+      <div class="scan-bar">
+        <button class="scan-btn ghost" data-scan-retake>Retake</button>
+        <button class="scan-btn tog ${scan.bw ? 'on' : ''}" data-scan-bw>${scan.bw ? 'B&W' : 'Colour'}</button>
+        <button class="scan-btn primary" data-scan-add>Add page</button>
+      </div></div>`;
+    scanDrawAdjust();
+  }
+}
+async function scanStartCamera() {
+  scanStage('camera');
+  const video = document.getElementById('scan-video');
+  try {
+    scan.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    video.srcObject = scan.stream; await video.play();
+  } catch (e) {
+    // No camera permission / not available: fall back to the OS camera picker.
+    const f = document.getElementById('scan-file');
+    if (f) { f.onchange = () => { if (f.files && f.files[0]) scanFromFile(f.files[0]); }; f.click(); }
+    else { toast('Camera unavailable'); closeScanner(); }
+  }
+}
+function stopCam() { if (scan.stream) { scan.stream.getTracks().forEach((t) => t.stop()); scan.stream = null; } }
+function scanCapture() {
+  const video = document.getElementById('scan-video'); if (!video || !video.videoWidth) return;
+  const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video, 0, 0);
+  stopCam(); scanToAdjust(c);
+}
+function scanFromFile(file) {
+  const img = new Image();
+  img.onload = () => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0); URL.revokeObjectURL(img.src); scanToAdjust(c); };
+  img.onerror = () => { toast('Could not read that image'); scanStartCamera(); };
+  img.src = URL.createObjectURL(file);
+}
+function scanToAdjust(srcCanvas) {
+  scan.src = srcCanvas;
+  try { scan.corners = autoCorners(srcCanvas); } catch { scan.corners = defaultCorners(srcCanvas); }
+  scanStage('adjust');
+}
+function defaultCorners(c) { const w = c.width, h = c.height, m = 0.06; return [{ x: w * m, y: h * m }, { x: w * (1 - m), y: h * m }, { x: w * (1 - m), y: h * (1 - m) }, { x: w * m, y: h * (1 - m) }]; }
+function orderCorners(p) {
+  const s = p.map((q) => q.x + q.y), d = p.map((q) => q.y - q.x);
+  return [p[s.indexOf(Math.min(...s))], p[d.indexOf(Math.min(...d))], p[s.indexOf(Math.max(...s))], p[d.indexOf(Math.max(...d))]];
+}
+function autoCorners(srcCanvas) {
+  const cv = window.cv;
+  const src = cv.imread(srcCanvas);
+  const scaleF = Math.min(1, 900 / Math.max(src.rows, src.cols));
+  const small = new cv.Mat(); cv.resize(src, small, new cv.Size(Math.round(src.cols * scaleF), Math.round(src.rows * scaleF)));
+  const gray = new cv.Mat(); cv.cvtColor(small, gray, cv.COLOR_RGBA2GRAY);
+  cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
+  const edges = new cv.Mat(); cv.Canny(gray, edges, 60, 180);
+  const k = cv.Mat.ones(5, 5, cv.CV_8U); cv.dilate(edges, edges, k);
+  const contours = new cv.MatVector(); const hier = new cv.Mat();
+  cv.findContours(edges, contours, hier, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+  let best = null, bestArea = 0.2 * small.rows * small.cols;
+  for (let i = 0; i < contours.size(); i++) {
+    const c = contours.get(i); const peri = cv.arcLength(c, true); const ap = new cv.Mat();
+    cv.approxPolyDP(c, ap, 0.02 * peri, true);
+    const area = cv.contourArea(ap);
+    if (ap.rows === 4 && cv.isContourConvex(ap) && area > bestArea) { bestArea = area; if (best) best.delete(); best = ap; } else ap.delete();
+    c.delete();
+  }
+  let pts;
+  if (best) { pts = []; for (let i = 0; i < 4; i++) pts.push({ x: best.data32S[i * 2] / scaleF, y: best.data32S[i * 2 + 1] / scaleF }); best.delete(); }
+  else pts = defaultCorners(srcCanvas);
+  [src, small, gray, edges, k, contours, hier].forEach((m) => m.delete());
+  return orderCorners(pts);
+}
+// Render the frozen frame + draggable corner handles into the adjust view.
+function scanDrawAdjust() {
+  const view = document.querySelector('.scan-adjust'); const canvas = document.getElementById('scan-canvas'); const layer = document.getElementById('scan-handles');
+  if (!view || !canvas || !scan.src) return;
+  const box = view.getBoundingClientRect();
+  const sc = Math.min(box.width / scan.src.width, box.height / scan.src.height);
+  const dw = scan.src.width * sc, dh = scan.src.height * sc;
+  canvas.width = dw; canvas.height = dh; canvas.getContext('2d').drawImage(scan.src, 0, 0, dw, dh);
+  scan.disp = sc;
+  const svg = `<svg class="scan-quad" width="${dw}" height="${dh}"><polygon points="${scan.corners.map((c) => `${c.x * sc},${c.y * sc}`).join(' ')}"/></svg>`;
+  const handles = scan.corners.map((c, i) => `<span class="scan-h" data-scan-corner="${i}" style="left:${c.x * sc}px;top:${c.y * sc}px"></span>`).join('');
+  layer.style.width = dw + 'px'; layer.style.height = dh + 'px';
+  layer.innerHTML = svg + handles;
+}
+function scanCornerDown(i, e) {
+  e.preventDefault(); scan.drag = i;
+  const move = (ev) => {
+    const p = ev.touches ? ev.touches[0] : ev; const layer = document.getElementById('scan-handles'); if (!layer) return;
+    const r = layer.getBoundingClientRect();
+    const x = Math.max(0, Math.min(r.width, p.clientX - r.left)), y = Math.max(0, Math.min(r.height, p.clientY - r.top));
+    scan.corners[i] = { x: x / scan.disp, y: y / scan.disp };
+    scanDrawAdjust();
+  };
+  const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); scan.drag = null; };
+  document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
+}
+function scanAddPage() {
+  const cv = window.cv; const src = cv.imread(scan.src);
+  const [tl, tr, br, bl] = scan.corners; const D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const W = Math.max(8, Math.round(Math.max(D(br, bl), D(tr, tl)))), H = Math.max(8, Math.round(Math.max(D(tr, br), D(tl, bl))));
+  const sT = cv.matFromArray(4, 1, cv.CV_32FC2, [tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y]);
+  const dT = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, W, 0, W, H, 0, H]);
+  const M = cv.getPerspectiveTransform(sT, dT); const dst = new cv.Mat();
+  cv.warpPerspective(src, dst, M, new cv.Size(W, H), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(255, 255, 255, 255));
+  if (scan.bw) { const g = new cv.Mat(); cv.cvtColor(dst, g, cv.COLOR_RGBA2GRAY); cv.adaptiveThreshold(g, g, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 12); cv.cvtColor(g, dst, cv.COLOR_GRAY2RGBA); g.delete(); }
+  else dst.convertTo(dst, -1, 1.15, 8);
+  const out = document.createElement('canvas'); out.width = W; out.height = H; cv.imshow(out, dst);
+  [src, sT, dT, M, dst].forEach((m) => m.delete());
+  out.toBlob(async (blob) => {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    scan.pages.push({ bytes, w: W, h: H });
+    scanStartCamera();
+  }, 'image/jpeg', 0.85);
+}
+async function scanSave() {
+  if (!scan.pages.length) return;
+  const blockId = scan.block;
+  const pdf = jpegsToPdf(scan.pages);
+  const name = `Scan ${new Date().toISOString().slice(0, 10)}.pdf`;
+  const file = new File([pdf], name, { type: 'application/pdf' });
+  closeScanner();
+  toast('Saving scan…');
+  await uploadFiles(blockId, [file]);
+}
+function closeScanner() { stopCam(); const el = document.getElementById('scanner'); if (el) el.remove(); scan.src = null; scan.pages = []; }
+
 // Save a rich-text region back to whichever block it belongs to.
 async function saveProse(key, rawHtml, blockId) {
   const html = linkifyHtml(sanitizeProse(rawHtml));
