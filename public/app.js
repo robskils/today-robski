@@ -4173,7 +4173,6 @@ function attachSection(block) {
     <div class="att-h">Attachments${list.length ? ` · ${list.length}` : ''}</div>
     <div class="att-grid">${tiles}
       <label class="att-add"><input type="file" multiple hidden data-att-input="${block.id}"><span class="att-add-ic">+</span><span>Add file</span></label>
-      <label class="att-add"><input type="file" accept="image/*" hidden data-att-input="${block.id}"><span class="att-add-ic">📷</span><span>Photo</span></label>
       <button type="button" class="att-add" data-scan="${block.id}"><span class="att-add-ic">🖨</span><span>Scan</span></button>
     </div></section>`;
 }
@@ -4264,7 +4263,9 @@ async function deleteAttachment(blockId, attId) {
 // Camera capture → auto-detect the page edges (OpenCV) → drag-to-adjust the
 // four corners → perspective-correct + enhance → multi-page PDF into the note.
 // OpenCV.js (~9MB WASM) loads lazily the first time you scan.
-const OPENCV_URL = 'https://docs.opencv.org/4.9.0/opencv.js';
+// Self-hosted (served from our own Cloudflare edge, so it downloads fast and
+// reliably on mobile - the docs.opencv.org copy was slow/flaky over a phone).
+const OPENCV_URL = '/vendor/opencv.js';
 let cvReady = null;
 function loadOpenCv() {
   if (cvReady) return cvReady;
@@ -4272,14 +4273,16 @@ function loadOpenCv() {
     if (window.cv && window.cv.Mat) return res(window.cv);
     const s = document.createElement('script');
     s.src = OPENCV_URL; s.async = true;
-    s.onload = () => {
-      const done = () => res(window.cv);
-      if (window.cv && window.cv.Mat) return done();
-      if (window.cv) window.cv.onRuntimeInitialized = done;
-      const t0 = Date.now();
-      const iv = setInterval(() => { if (window.cv && window.cv.Mat) { clearInterval(iv); done(); } else if (Date.now() - t0 > 40000) { clearInterval(iv); rej(new Error('scanner timed out loading')); } }, 60);
-    };
-    s.onerror = () => { cvReady = null; rej(new Error('could not load the scanner')); };
+    // The whole race - download + WASM compile - gets a generous window, since a
+    // first-run compile of a 10MB module on an older phone is not instant.
+    const t0 = Date.now();
+    const ready = () => window.cv && window.cv.Mat;
+    const iv = setInterval(() => {
+      if (ready()) { clearInterval(iv); res(window.cv); }
+      else if (Date.now() - t0 > 120000) { clearInterval(iv); cvReady = null; rej(new Error('the scanner took too long to start - check your connection and try again')); }
+    }, 80);
+    s.onload = () => { if (window.cv && !ready()) window.cv.onRuntimeInitialized = () => { clearInterval(iv); res(window.cv); }; };
+    s.onerror = () => { clearInterval(iv); cvReady = null; rej(new Error('could not load the scanner')); };
     document.head.appendChild(s);
   });
   return cvReady;
