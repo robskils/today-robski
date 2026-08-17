@@ -1459,6 +1459,37 @@ async function createTask(request, env) {
   return json({ ok: true, tana_id: id }, request, 201);
 }
 
+// Bulk-create contact blocks from a parsed vCard import (the client does the
+// vCard parsing). Dedupe by lowercased email so re-importing is safe.
+async function importContacts(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const list = Array.isArray(b.contacts) ? b.contacts : [];
+  if (!list.length) return json({ added: 0, skipped: 0 }, request);
+
+  const existing = await env.DB.prepare("SELECT json_extract(props,'$.email') AS email FROM blocks WHERE kind = 'contact'").all();
+  const seen = new Set((existing.results || []).map((r) => (r.email || '').toLowerCase()).filter(Boolean));
+
+  const now = new Date().toISOString();
+  const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
+  let pos = posRow.p;
+  const stmts = [];
+  let skipped = 0;
+  for (const c of list) {
+    const name = String(c.name || '').trim() || String(c.email || '').trim();
+    if (!name) { skipped++; continue; }
+    const email = String(c.email || '').trim();
+    if (email && seen.has(email.toLowerCase())) { skipped++; continue; }
+    if (email) seen.add(email.toLowerCase());
+    const props = { email: email || null, phone: String(c.phone || '').trim() || null, birthday: String(c.birthday || '').trim() || null, address: String(c.address || '').trim() || null };
+    stmts.push(env.DB.prepare(
+      `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
+       VALUES (?, 'contact', NULL, ?, ?, '', ?, ?, ?, 0)`,
+    ).bind(crypto.randomUUID(), pos++, name, JSON.stringify(props), now, now));
+  }
+  if (stmts.length) for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
+  return json({ added: stmts.length, skipped }, request);
+}
+
 async function handleSettings(request, env) {
   const b = await request.json();
   const stmts = Object.entries(b).map(([k, v]) =>
@@ -1702,6 +1733,7 @@ export default {
           return err(String(e.message || e), request, 502);
         }
       }
+      if (path === '/api/contacts/import' && request.method === 'POST') return importContacts(request, env);
       if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);

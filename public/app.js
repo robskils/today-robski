@@ -21,6 +21,7 @@ const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
+  contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
   note: null, tables_open: null,
@@ -241,7 +242,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -252,6 +253,7 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
+    case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     default: return 'Home';
   }
 }
@@ -264,6 +266,7 @@ function openView(v) {
     case 'readwatch': return openReadwatch();
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
+    case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     default: return openHome();
   }
 }
@@ -446,6 +449,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
+    <button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
@@ -505,6 +509,7 @@ async function quickAdd(kind) {
     else if (kind === 'note') { await newNote(null); }
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
     else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus(); }, 0); }
+    else if (kind === 'contact') { await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus(); }, 0); }
   } catch (e) { toast(e.message); }
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
@@ -696,6 +701,7 @@ function renderHome() {
         <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
         <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
         <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
+        <button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>
       </nav>
       <div class="home-body">
         <div class="home-main">
@@ -1726,6 +1732,7 @@ function startMailUnreadPoll() {
 }
 async function openMail() {
   startMailUnreadPoll();
+  loadContacts().then(() => { if (state.view.type === 'mail' && state.mail && (state.mail.open || state.mail.composing)) renderMail(); }).catch(() => {});
   state.view = { type: 'mail' };
   if (!state.mail) {
     let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {}
@@ -2402,9 +2409,10 @@ function renderMail(loading) {
     reader = `<form id="mail-compose-form" class="mail-compose">
       <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}</div>
       ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
-      <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" required>
-      <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}">
-      <input id="mc-bcc" placeholder="Bcc" value="${esc(m.composing.bcc || '')}">
+      <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" list="contacts-dl" required>
+      <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}" list="contacts-dl">
+      <input id="mc-bcc" placeholder="Bcc" value="${esc(m.composing.bcc || '')}" list="contacts-dl">
+      ${contactsDatalist()}
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <div class="mail-rt-toolbar">
         <button type="button" data-rt="bold" title="Bold  ·  ⌘B"><b>B</b></button>
@@ -2434,6 +2442,7 @@ function renderMail(loading) {
       ${convStrip}
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
+        ${o.from && o.from.address ? (haveContact(o.from.address) ? '<span class="mail-contact-have" title="In your contacts">👤 Contact</span>' : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`) : ''}
         ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<a class="mail-att-chip mail-att-dl" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open attachment in your browser">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↗</a>`).join('')}</div>` : ''}
       ${o.invite ? inviteCardHtml(o.invite) : ''}
@@ -2745,6 +2754,160 @@ function renderTasks() {
     ${snoozedSection}
     ${completedSection}`;
 }
+
+// ── contacts ─────────────────────────────────────────
+// Contacts are native blocks (kind='contact'): title = name; props hold email,
+// phone, birthday, address. Deliberately simple. Feeds the Mail app (save a
+// sender, autocomplete recipients) and imports Apple Contacts via vCard.
+let contactsLoaded = false;
+async function loadContacts(force) {
+  if (contactsLoaded && !force) return state.contacts;
+  state.contacts = await api('/api/blocks?kind=contact');
+  contactsLoaded = true;
+  return state.contacts;
+}
+const contactEmail = (c) => ((c.props && c.props.email) || '').toLowerCase();
+const haveContact = (email) => !!email && (state.contacts || []).some((c) => contactEmail(c) === email.toLowerCase());
+function sortContacts(list) { return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')); }
+async function openContacts() {
+  state.view = { type: 'contacts' };
+  await loadContacts(true);
+  renderNav(); renderContacts();
+}
+function contactCardHtml(c) {
+  const p = c.props || {};
+  const bits = [];
+  if (p.email) bits.push(`<span class="cc-row">✉ ${esc(p.email)}</span>`);
+  if (p.phone) bits.push(`<span class="cc-row">☎ ${esc(p.phone)}</span>`);
+  if (p.birthday) bits.push(`<span class="cc-row">🎂 ${esc(dpLabel(p.birthday))}</span>`);
+  return `<button class="contact-card" data-open-contact="${c.id}">
+    <span class="contact-av">${esc(initial(c.title || '?'))}</span>
+    <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}</span></button>`;
+}
+function renderContacts() {
+  const q = (state.contactsQuery || '').trim().toLowerCase();
+  const match = (c) => { if (!q) return true; const p = c.props || {}; return [c.title, p.email, p.phone].some((v) => (v || '').toLowerCase().includes(q)); };
+  const list = sortContacts((state.contacts || []).filter(match));
+  $('#pane').innerHTML = `
+    ${pageCrumb('Contacts')}
+    <div class="pane-head"><h1>Contacts</h1></div>
+    <div class="list-head">
+      <input class="list-search sel" data-contacts-q placeholder="Search contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
+      ${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add contact</button>`}
+      <button class="ghost" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button>
+      <input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden>
+    </div>
+    ${state.contactAdding ? contactAddForm() : ''}
+    <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${q ? 'No contacts match.' : 'No contacts yet. Add one, or import your Apple Contacts .vcf.'}</div>`}</div>`;
+}
+function contactAddForm() {
+  return `<form id="contact-form" class="add-task expanded">
+    <input id="ct-name" type="text" placeholder="Name" autocomplete="off" required>
+    <div class="atf-grid">
+      <label class="atf"><span>Email</span><input id="ct-email" type="email" class="sel" placeholder="name@example.com" autocomplete="off"></label>
+      <label class="atf"><span>Phone</span><input id="ct-phone" type="tel" class="sel" placeholder="+351…" autocomplete="off"></label>
+      <label class="atf"><span>Birthday</span>${dateFieldHtml('ct-bday', '')}</label>
+    </div>
+    <label class="atf"><span>Address (optional)</span><textarea id="ct-address" class="sel contact-addr-in" rows="2" placeholder="Street, city…"></textarea></label>
+    <div class="atf-actions"><button class="add-btn wide" type="submit">Add contact</button><button type="button" class="ghost" data-contact-add-close>Done</button></div>
+  </form>`;
+}
+async function addContact(o) {
+  const props = { email: o.email || null, phone: o.phone || null, birthday: o.birthday || null, address: o.address || null };
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: o.name, props }) });
+  state.contacts.push(b); renderContacts();
+  if (state.contactAdding) { const i = $('#ct-name'); if (i) i.focus(); }
+}
+async function openContactCard(id) {
+  const c = await api(`/api/blocks/${id}`);
+  state.contact_open = { contact: c };
+  state.view = { type: 'contactcard', id };
+  renderNav(); renderContactCard();
+}
+function renderContactCard() {
+  const c = state.contact_open.contact; const p = c.props || {};
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-contacts>Contacts</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(c.title || 'Unnamed')}</span>
+      <span class="crumb-tools"><button class="note-del ghost" data-del-contact="${c.id}" title="Delete this contact">Delete</button></span></div>
+    <div class="task-focus">
+      <span class="contact-av big">${esc(initial(c.title || '?'))}</span>
+      <textarea class="note-title" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
+    </div>
+    <div class="tf-meta">
+      <label class="tf-field"><span class="tf-label">Email</span><input class="sel" id="contactcard-email" type="email" value="${esc(p.email || '')}" placeholder="name@example.com"></label>
+      <label class="tf-field"><span class="tf-label">Phone</span><input class="sel" id="contactcard-phone" type="tel" value="${esc(p.phone || '')}" placeholder="+351…"></label>
+      <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
+    </div>
+    <label class="tf-field contact-addr-field"><span class="tf-label">Address</span><textarea class="sel contact-addr-in" id="contactcard-address" rows="3" placeholder="Street, city…">${esc(p.address || '')}</textarea></label>
+    ${p.email ? `<div class="contact-actions"><button class="add-btn wide" data-contact-mail="${esc(p.email)}">✉ Email ${esc(c.title || 'them')}</button></div>` : ''}`;
+  autoGrowSoon($('#contactcard-name'));
+}
+async function patchContact(id, patch, isProps) {
+  const c = state.contact_open && state.contact_open.contact;
+  if (c && c.id === id) { if (isProps) { c.props = c.props || {}; Object.assign(c.props, patch); } else Object.assign(c, patch); }
+  const inList = (state.contacts || []).find((x) => x.id === id);
+  if (inList) { if (isProps) { inList.props = inList.props || {}; Object.assign(inList.props, patch); } else Object.assign(inList, patch); }
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(isProps ? { props: patch } : patch) }); }
+  catch (e) { toast(e.message); }
+}
+async function delContact(id) {
+  if (!(await uiConfirm('Delete this contact?', { danger: true, okLabel: 'Delete' }))) return;
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+  state.contacts = (state.contacts || []).filter((x) => x.id !== id);
+  toast('Contact deleted'); openContacts();
+}
+// Save an email sender straight into contacts (deduped by address).
+async function saveSender(name, email) {
+  if (!email) return;
+  await loadContacts();
+  if (haveContact(email)) { toast('Already in your contacts'); return; }
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: (name || '').trim() || email, props: { email, phone: null, birthday: null, address: null } }) });
+  state.contacts.push(b); toast(`Saved ${(name || '').trim() || email} to contacts`);
+  if (state.view.type === 'mail') renderMail();
+}
+// Start a new email to a contact's address.
+async function emailContact(email) {
+  await openMail();
+  state.mail.composing = { to: email };
+  renderMail(); setTimeout(() => { const el = $('#mc-body'); if (el) el.focus(); }, 30);
+}
+// vCard (.vcf) parsing - Apple exports one file for all contacts.
+function decodeVValue(v) { return String(v || '').replace(/\\n/gi, ', ').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\').trim(); }
+function normBday(v) { const m = String(v || '').match(/(\d{4})-?(\d{2})-?(\d{2})/); return m ? `${m[1]}-${m[2]}-${m[3]}` : ''; }
+function parseVcards(text) {
+  const cards = [];
+  const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '').split('\n');   // unfold continuation lines
+  let cur = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (/^BEGIN:VCARD/i.test(line)) { cur = {}; continue; }
+    if (/^END:VCARD/i.test(line)) { if (cur) cards.push(cur); cur = null; continue; }
+    if (!cur) continue;
+    const idx = line.indexOf(':'); if (idx < 0) continue;
+    const prop = line.slice(0, idx).split(';')[0].toUpperCase();
+    const value = line.slice(idx + 1);
+    if (prop === 'FN') cur.name = decodeVValue(value);
+    else if (prop === 'N' && !cur.name) { const parts = value.split(';'); cur.name = decodeVValue([parts[1], parts[0]].filter(Boolean).join(' ')); }
+    else if (prop === 'EMAIL' && !cur.email) cur.email = decodeVValue(value);
+    else if (prop === 'TEL' && !cur.phone) cur.phone = decodeVValue(value);
+    else if (prop === 'BDAY' && !cur.birthday) cur.birthday = normBday(value);
+    else if (prop === 'ADR' && !cur.address) cur.address = decodeVValue(value.split(';').filter((x) => x.trim()).join(', '));
+  }
+  return cards.filter((c) => c.name || c.email);
+}
+async function importVcf(file) {
+  if (!file) return;
+  let text = '';
+  try { text = await file.text(); } catch { return toast('Could not read that file'); }
+  const cards = parseVcards(text);
+  if (!cards.length) return toast('No contacts found in that file');
+  try {
+    const r = await api('/api/contacts/import', { method: 'POST', body: JSON.stringify({ contacts: cards }) });
+    toast(`Imported ${r.added} contact${r.added === 1 ? '' : 's'}${r.skipped ? ` · ${r.skipped} already there` : ''}`);
+    await loadContacts(true); renderContacts();
+  } catch (e) { toast(e.message); }
+}
+const contactsDatalist = () => `<datalist id="contacts-dl">${(state.contacts || []).filter((c) => c.props && c.props.email).map((c) => `<option value="${esc(c.props.email)}">${esc(c.title || '')}</option>`).join('')}</datalist>`;
 
 // ── view: note ───────────────────────────────────────
 // Title fields are textareas so a long title wraps instead of cropping; grow
@@ -3090,6 +3253,8 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
   { kind: 'action', title: 'Go to Mail', run: () => openMail() },
   { kind: 'action', title: 'Go to Today', run: () => openToday() },
+  { kind: 'action', title: 'Go to Contacts', run: () => openContacts() },
+  { kind: 'action', title: 'New contact', run: () => quickAdd('contact') },
 ];
 let palT;
 function buildPalette() {
@@ -3223,6 +3388,7 @@ document.addEventListener('input', (e) => {
   // Page search boxes (Tasks / Notes / Calendar): keep focus + caret across the re-render.
   const liveSearch = (sel, set, render) => { if (!e.target.matches(sel)) return; const pos = e.target.selectionStart; set(e.target.value); render(); const i = $(sel); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } };
   liveSearch('[data-task-q]', (v) => (state.taskQuery = v), renderTasks);
+  liveSearch('[data-contacts-q]', (v) => (state.contactsQuery = v), renderContacts);
   liveSearch('[data-notes-q]', (v) => (state.notesQuery = v), renderNotesList);
   liveSearch('[data-cal-q]', (v) => (state.calQuery = v), renderCalendar);
   // Table search + filter value inputs: only the tbody re-renders, so the input keeps focus.
@@ -3320,6 +3486,15 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
+  const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
+  if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
+  if (t.closest('[data-contact-import]')) { $('#contact-file')?.click(); return; }
+  const delc = t.closest('[data-del-contact]'); if (delc) { delContact(delc.dataset.delContact); return; }
+  const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
+  const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
+  const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
@@ -3527,6 +3702,15 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
+  if (e.target.id === 'contact-file' && e.target.files && e.target.files[0]) { importVcf(e.target.files[0]); e.target.value = ''; }
+  if (state.contact_open) {
+    const cid = state.contact_open.contact.id;
+    if (e.target.id === 'contactcard-name') { const v = e.target.value.trim(); if (v) patchContact(cid, { title: v }, false); }
+    if (e.target.id === 'contactcard-email') patchContact(cid, { email: e.target.value.trim() || null }, true);
+    if (e.target.id === 'contactcard-phone') patchContact(cid, { phone: e.target.value.trim() || null }, true);
+    if (e.target.id === 'contactcard-address') patchContact(cid, { address: e.target.value.trim() || null }, true);
+    if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
+  }
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
@@ -3587,6 +3771,7 @@ function caretToProseStart(prose) {
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value }); }
+  if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: $('#ct-address').value.trim() }); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
