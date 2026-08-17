@@ -3074,9 +3074,13 @@ document.addEventListener('keydown', (e) => {
   if (state.dp && e.key === 'Escape') { e.preventDefault(); closeDatePicker(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
-  // ⌥⌘T / ⌥⌘W - the browser owns ⌘T/⌘W, so tabs use the Option variant.
-  if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyT') { e.preventDefault(); newTab(); return; }
+  // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
+  // and ⌘N reach the page: ⌘T = new in-app tab, ⌘N = new note. ⌥ variants stay
+  // as a fallback for any window that still reserves the plain keys. ⌘W closes
+  // a tab only with ⌥ held, so the plain ⌘W keeps closing the app window.
+  if ((e.metaKey || e.ctrlKey) && e.code === 'KeyT') { e.preventDefault(); newTab(); return; }
   if ((e.metaKey || e.ctrlKey) && e.altKey && e.code === 'KeyW') { e.preventDefault(); closeTab(state.activeTab); return; }
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.code === 'KeyN') { e.preventDefault(); newNote(null).catch((x) => toast(x.message)); return; }
   // Mail compose: ⌘/Ctrl + Enter sends.
   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && state.view.type === 'mail' && state.mail && state.mail.composing) {
     const form = document.getElementById('mail-compose-form');
