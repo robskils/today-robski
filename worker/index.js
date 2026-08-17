@@ -1475,29 +1475,35 @@ async function importContacts(request, env) {
   const list = Array.isArray(b.contacts) ? b.contacts : [];
   if (!list.length) return json({ added: 0, updated: 0, skipped: 0 }, request);
 
-  const rows = await env.DB.prepare("SELECT id, props FROM blocks WHERE kind = 'contact'").all();
-  const byEmail = new Map();
+  // Identity key: email when present, else name+phone+birthday. Matching on
+  // email alone made every email-less card re-insert on each import.
+  const idKey = (email, name, phone, birthday) => (email
+    ? 'e:' + email.toLowerCase()
+    : 'n:' + [String(name || '').trim().toLowerCase(), String(phone || '').replace(/\s/g, ''), String(birthday || '')].join('#'));
+
+  const rows = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind = 'contact'").all();
+  const byKey = new Map();
   for (const r of (rows.results || [])) {
     let p = {}; try { p = r.props ? JSON.parse(r.props) : {}; } catch {}
-    const em = (p.email || '').toLowerCase();
-    if (em && !byEmail.has(em)) byEmail.set(em, { id: r.id, props: p });
+    const k = idKey(p.email, r.title, p.phone, p.birthday);
+    if (!byKey.has(k)) byKey.set(k, { id: r.id, props: p });
   }
 
   const now = new Date().toISOString();
   const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
   let pos = posRow.p;
-  const insertedEmails = new Set();
+  const insertedKeys = new Set();
   const inserts = [], updates = [];
   let skipped = 0;
   for (const c of list) {
     const name = String(c.name || '').trim() || String(c.email || '').trim();
     if (!name) { skipped++; continue; }
     const email = String(c.email || '').trim();
-    const key = email.toLowerCase();
     const phone = String(c.phone || '').trim() || null;
     const birthday = String(c.birthday || '').trim() || null;
     const address = structAddress(c.address);
-    const existing = key ? byEmail.get(key) : null;
+    const key = idKey(email, name, phone, birthday);
+    const existing = byKey.get(key);
     if (existing) {
       const p = { ...existing.props };
       let changed = false;
@@ -1506,10 +1512,10 @@ async function importContacts(request, env) {
       if (birthday && !p.birthday) { p.birthday = birthday; changed = true; }
       if (changed) updates.push(env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(p), now, existing.id));
       else skipped++;
-    } else if (key && insertedEmails.has(key)) {
+    } else if (insertedKeys.has(key)) {
       skipped++;   // duplicate within the same file
     } else {
-      if (key) insertedEmails.add(key);
+      insertedKeys.add(key);
       const props = { email: email || null, phone, birthday, address };
       inserts.push(env.DB.prepare(
         `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
