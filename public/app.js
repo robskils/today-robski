@@ -2918,7 +2918,11 @@ async function importVcf(file) {
   if (!cards.length) return toast('No contacts found in that file');
   try {
     const r = await api('/api/contacts/import', { method: 'POST', body: JSON.stringify({ contacts: cards }) });
-    toast(`Imported ${r.added} contact${r.added === 1 ? '' : 's'}${r.skipped ? ` · ${r.skipped} already there` : ''}`);
+    const parts = [];
+    if (r.added) parts.push(`${r.added} added`);
+    if (r.updated) parts.push(`${r.updated} updated`);
+    if (r.skipped) parts.push(`${r.skipped} unchanged`);
+    toast(parts.length ? `Contacts: ${parts.join(' · ')}` : 'No changes to import');
     await loadContacts(true); renderContacts();
   } catch (e) { toast(e.message); }
 }

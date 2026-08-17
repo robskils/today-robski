@@ -1459,40 +1459,67 @@ async function createTask(request, env) {
   return json({ ok: true, tana_id: id }, request, 201);
 }
 
-// Bulk-create contact blocks from a parsed vCard import (the client does the
-// vCard parsing). Dedupe by lowercased email so re-importing is safe.
+// Coerce an incoming address (object or legacy string) to a clean structured
+// object, or null. A bare string lands in `street` as a last resort.
+function structAddress(a) {
+  if (!a) return null;
+  if (typeof a === 'object') { const o = {}; for (const k of ['street', 'city', 'postcode', 'country']) { const v = String(a[k] || '').trim(); if (v) o[k] = v; } return Object.keys(o).length ? o : null; }
+  const s = String(a).trim(); return s ? { street: s } : null;
+}
+// Bulk import contact blocks from parsed vCards (the client parses the .vcf).
+// Matched by email: a new address re-imports as structured, existing contacts
+// are *updated* (address fixed, phone/birthday backfilled) rather than skipped -
+// so re-importing the same file repairs earlier flat-string addresses.
 async function importContacts(request, env) {
   const b = await request.json().catch(() => ({}));
   const list = Array.isArray(b.contacts) ? b.contacts : [];
-  if (!list.length) return json({ added: 0, skipped: 0 }, request);
+  if (!list.length) return json({ added: 0, updated: 0, skipped: 0 }, request);
 
-  const existing = await env.DB.prepare("SELECT json_extract(props,'$.email') AS email FROM blocks WHERE kind = 'contact'").all();
-  const seen = new Set((existing.results || []).map((r) => (r.email || '').toLowerCase()).filter(Boolean));
+  const rows = await env.DB.prepare("SELECT id, props FROM blocks WHERE kind = 'contact'").all();
+  const byEmail = new Map();
+  for (const r of (rows.results || [])) {
+    let p = {}; try { p = r.props ? JSON.parse(r.props) : {}; } catch {}
+    const em = (p.email || '').toLowerCase();
+    if (em && !byEmail.has(em)) byEmail.set(em, { id: r.id, props: p });
+  }
 
   const now = new Date().toISOString();
   const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
   let pos = posRow.p;
-  const stmts = [];
+  const insertedEmails = new Set();
+  const inserts = [], updates = [];
   let skipped = 0;
   for (const c of list) {
     const name = String(c.name || '').trim() || String(c.email || '').trim();
     if (!name) { skipped++; continue; }
     const email = String(c.email || '').trim();
-    if (email && seen.has(email.toLowerCase())) { skipped++; continue; }
-    if (email) seen.add(email.toLowerCase());
-    let address = null;
-    if (c.address && typeof c.address === 'object') {
-      const a = {}; for (const k of ['street', 'city', 'postcode', 'country']) { const v = String(c.address[k] || '').trim(); if (v) a[k] = v; }
-      address = Object.keys(a).length ? a : null;
-    } else if (c.address) { address = String(c.address).trim() || null; }
-    const props = { email: email || null, phone: String(c.phone || '').trim() || null, birthday: String(c.birthday || '').trim() || null, address };
-    stmts.push(env.DB.prepare(
-      `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
-       VALUES (?, 'contact', NULL, ?, ?, '', ?, ?, ?, 0)`,
-    ).bind(crypto.randomUUID(), pos++, name, JSON.stringify(props), now, now));
+    const key = email.toLowerCase();
+    const phone = String(c.phone || '').trim() || null;
+    const birthday = String(c.birthday || '').trim() || null;
+    const address = structAddress(c.address);
+    const existing = key ? byEmail.get(key) : null;
+    if (existing) {
+      const p = { ...existing.props };
+      let changed = false;
+      if (address && JSON.stringify(address) !== JSON.stringify(p.address || null)) { p.address = address; changed = true; }
+      if (phone && !p.phone) { p.phone = phone; changed = true; }
+      if (birthday && !p.birthday) { p.birthday = birthday; changed = true; }
+      if (changed) updates.push(env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(p), now, existing.id));
+      else skipped++;
+    } else if (key && insertedEmails.has(key)) {
+      skipped++;   // duplicate within the same file
+    } else {
+      if (key) insertedEmails.add(key);
+      const props = { email: email || null, phone, birthday, address };
+      inserts.push(env.DB.prepare(
+        `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
+         VALUES (?, 'contact', NULL, ?, ?, '', ?, ?, ?, 0)`,
+      ).bind(crypto.randomUUID(), pos++, name, JSON.stringify(props), now, now));
+    }
   }
-  if (stmts.length) for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
-  return json({ added: stmts.length, skipped }, request);
+  const all = [...inserts, ...updates];
+  for (let i = 0; i < all.length; i += 50) await env.DB.batch(all.slice(i, i + 50));
+  return json({ added: inserts.length, updated: updates.length, skipped }, request);
 }
 
 async function handleSettings(request, env) {
