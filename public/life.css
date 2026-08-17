@@ -957,8 +957,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-act-ic svg { width:20px; height:20px; display:block; }
 .mail-act-ic:hover { color:var(--accent); }
 .mail-act-ic.mail-star-btn.on { color:var(--gold); }
-.mail-claudius.mail-act-ic { color:var(--accent); }
-.mail-claudius.mail-act-ic:hover { color:var(--accent); }
+/* Claudius sits in the same round icon row - a tinted accent circle, not a pill. */
+.mail-claudius.mail-act-ic { width:38px; min-width:38px; padding:8px; gap:0; font-size:0; border-radius:999px;
+  color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,transparent); }
+.mail-claudius.mail-act-ic:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 20%,transparent); border-color:var(--accent); }
+.mail-claudius.mail-act-ic.busy { opacity:.55; animation:claudius-pulse 1s ease-in-out infinite; }
+@keyframes claudius-pulse { 50% { opacity:.9; } }
 .mail-claudius { display:inline-flex; align-items:center; gap:6px; padding:8px 15px; border-radius:10px; border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent); font-size:14.5px; font-weight:600; cursor:pointer; white-space:nowrap; transition:background .12s, border-color .12s, opacity .12s; }
 .mail-claudius:hover { background:color-mix(in srgb,var(--accent) 20%,transparent); border-color:var(--accent); }
 .mail-claudius:disabled { opacity:.6; cursor:default; }

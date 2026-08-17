@@ -1981,7 +1981,7 @@ async function mailSaveAttachment(idx, name) {
 async function mailClaudius() {
   const o = state.mail.open; if (!o) return;
   const btn = document.querySelector('[data-mail-claudius]');
-  if (btn) { btn.disabled = true; btn.textContent = '✦ Drafting…'; }
+  if (btn) { btn.disabled = true; btn.classList.add('busy'); }
   try {
     const { draft } = await mailApi('/draft', { method: 'POST', body: JSON.stringify({
       account: o._acct, from: o.from ? o.from.address : '', subject: o.subject, text: o.text || '',
@@ -1996,7 +1996,7 @@ async function mailClaudius() {
     toast('Claudius drafted a reply - review it before sending');
   } catch (e) {
     toast(e.message);
-    if (btn) { btn.disabled = false; btn.textContent = '✦ Claudius'; }
+    if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
   }
 }
 
@@ -2376,7 +2376,7 @@ function renderMail(loading) {
       <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-attach title="Attach files">📎 Attach</button><button type="button" class="ghost" data-mail-cancel>Cancel</button><button type="button" class="ghost mail-discard" data-mail-discard title="Discard draft">Discard</button></div></form>`;
   } else if (m.open) {
     const o = m.open;
-    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive — remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender — their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button>`;
+    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -3231,7 +3231,13 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
-  if (t.closest('[data-open-mail]')) { openMail().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-mail]')) {
+    const onList = state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing;
+    const top = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; };
+    if (onList) top();                                   // already on the inbox -> jump to the top
+    else openMail().then(top).catch((x) => toast(x.message));  // from a message/elsewhere -> back to the list, at the top
+    return;
+  }
   // attachments (delete wins over open since the × sits inside the tile)
   const cdel = t.closest('[data-card-del]'); if (cdel) { e.preventDefault(); e.stopPropagation(); removeCardEl(cdel); return; }
   const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { e.preventDefault(); openExternal(lcard.dataset.linkcard); return; }
