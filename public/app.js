@@ -3029,7 +3029,7 @@ const contactsDatalist = () => `<datalist id="contacts-dl">${(state.contacts || 
 // Area (props.area). A goal is Milestones / Habit / Number. Everything rides the
 // same block core as notes and tasks.
 const HORIZONS = [['quarter', 'This quarter'], ['year', 'This year'], ['longterm', 'Long-term']];
-const GTYPES = [['achievement', 'Milestones'], ['habit', 'Habit'], ['number', 'Number']];
+const GTYPES = [['achievement', 'Milestones'], ['number', 'Number']];
 const GSTATUS = [['active', 'Active'], ['done', 'Done'], ['onhold', 'On hold'], ['dropped', 'Dropped']];
 const BSTATUS = [['someday', 'Someday'], ['planning', 'Planning'], ['done', 'Done']];
 const gp = (g) => (g && g.props) || {};
@@ -3045,9 +3045,7 @@ function goalProgress(g) {
 function goalMeasure(g) {
   const p = gp(g);
   if (p.gtype === 'number') return `${p.current || 0} / ${p.target || 0}${p.unit ? ' ' + p.unit : ''}`;
-  if (p.gtype === 'achievement') { const ms = Array.isArray(p.milestones) ? p.milestones : []; return `${ms.filter((m) => m.done).length}/${ms.length} milestones`; }
-  if (p.gtype === 'habit') return p.cadence || 'Habit';
-  return '';
+  const ms = Array.isArray(p.milestones) ? p.milestones : []; return `${ms.filter((m) => m.done).length}/${ms.length} milestones`;
 }
 async function openGoals(tab) {
   state.view = { type: 'goals' };
@@ -3089,8 +3087,7 @@ async function newGoal(area) {
 }
 async function openGoalCard(id) {
   const g = await api(`/api/blocks/${id}`);
-  const tasks = (await api('/api/blocks?kind=task')).filter((t) => t.props && t.props.goal === id);
-  state.goal_open = { goal: g, tasks };
+  state.goal_open = { goal: g };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
 }
@@ -3100,10 +3097,7 @@ function renderGoalCard() {
   const ms = Array.isArray(p.milestones) ? p.milestones : [];
   const typeBody = p.gtype === 'number'
     ? `<label class="tf-field"><span class="tf-label">Progress</span><div class="gnum"><input class="sel" id="gc-current" type="number" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div></label>`
-    : p.gtype === 'habit'
-    ? `<label class="tf-field"><span class="tf-label">Cadence</span><input class="sel" id="gc-cadence" value="${esc(p.cadence || '')}" placeholder="e.g. daily · 3× a week"></label>`
     : `<div class="ms-block"><div class="tf-label">Milestones</div><div class="ms-list">${ms.map((m) => `<div class="ms-row ${m.done ? 'done' : ''}"><button class="ms-check" data-ms-toggle="${m.id}">✓</button><input class="ms-text" data-ms-text="${m.id}" value="${esc(m.text || '')}" placeholder="Milestone…"><button class="ms-x" data-ms-del="${m.id}">×</button></div>`).join('')}</div><button class="ghost ms-add" data-ms-add>+ Add milestone</button></div>`;
-  const tasks = state.goal_open.tasks || [];
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
@@ -3120,11 +3114,6 @@ function renderGoalCard() {
       <label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>
     </div>
     <div class="goal-measure-block">${typeBody}</div>
-    <section class="goal-actions-sec">
-      <div class="home-sec-h">Actions</div>
-      <div class="ga-list">${tasks.map((t) => `<div class="ga-row ${t.props.done ? 'done' : ''}"><button class="check" data-check="${t.id}">✓</button><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span></div>`).join('') || '<div class="muted" style="padding:4px 0 0">No actions yet — break the goal into next steps.</div>'}</div>
-      <button class="ghost ga-add" data-goal-action="${g.id}">+ Add action</button>
-    </section>
     ${notesSection(g.body, 'goal', g.id)}`;
   autoGrowSoon($('#goalcard-title'));
 }
@@ -3147,12 +3136,6 @@ function msAdd() { goalMs().push({ id: 'm' + Date.now().toString(36) + Math.rand
 function msToggle(mid) { const m = goalMs().find((x) => x.id === mid); if (m) { m.done = !m.done; saveMs(); renderGoalCard(); } }
 function msDel(mid) { const g = state.goal_open.goal; g.props.milestones = goalMs().filter((x) => x.id !== mid); saveMs(); renderGoalCard(); }
 function msText(mid, v) { const m = goalMs().find((x) => x.id === mid); if (m) { m.text = v; saveMs(); } }
-async function addGoalAction(id) {
-  const title = await uiPrompt('Next action for this goal:', { placeholder: 'e.g. Draft the first section' }); if (!title) return;
-  const g = state.goal_open.goal;
-  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: gp(g).area || null, priority: null, done: false, goal: id } }) });
-  state.goal_open.tasks.push(t); renderGoalCard();
-}
 // bucket list
 function bucketBody() {
   const byArea = {};
@@ -3805,7 +3788,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-ms-add]')) { msAdd(); return; }
   const mst = t.closest('[data-ms-toggle]'); if (mst) { msToggle(mst.dataset.msToggle); return; }
   const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
-  const gac = t.closest('[data-goal-action]'); if (gac) { addGoalAction(gac.dataset.goalAction).catch((x) => toast(x.message)); return; }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
   if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
@@ -4055,7 +4037,6 @@ document.addEventListener('change', (e) => {
     else if (id === 'gc-current') patchGoal(gid, { current: e.target.value === '' ? null : +e.target.value }, true);
     else if (id === 'gc-target') patchGoal(gid, { target: e.target.value === '' ? null : +e.target.value }, true);
     else if (id === 'gc-unit') patchGoal(gid, { unit: e.target.value.trim() || null }, true);
-    else if (id === 'gc-cadence') patchGoal(gid, { cadence: e.target.value.trim() || null }, true);
     else if (e.target.matches('[data-ms-text]')) msText(e.target.dataset.msText, e.target.value);
   }
   if (state.bucket_open && state.view.type === 'bucketcard') {
@@ -4283,7 +4264,7 @@ async function addTask(o) {
 // area page, the task focus view, the favourites - each a separate object.
 // Gather every copy so a change updates the one on screen, not just one of them.
 function taskCopies(id) {
-  const out = [state.tasks, state.area_open && state.area_open.blocks, state.favs, state.goal_open && state.goal_open.tasks]
+  const out = [state.tasks, state.area_open && state.area_open.blocks, state.favs]
     .filter(Boolean).flatMap((arr) => arr.filter((b) => b.id === id));
   if (state.task_open && state.task_open.task.id === id) out.push(state.task_open.task);
   return out;
