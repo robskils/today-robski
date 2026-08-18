@@ -185,7 +185,7 @@ button { cursor:pointer; background:none; border:0; }
 .gc-focus-btn { border:none; background:none; font-size:26px; line-height:1; color:var(--gold); cursor:pointer; flex:none; padding:2px; opacity:.5; }
 .gc-focus-btn.on { opacity:1; }
 .goal-why { display:flex; flex-direction:column; gap:6px; margin:14px 0 4px; }
-.goal-why textarea { resize:vertical; font-family:inherit; line-height:1.5; min-height:52px; }
+.goal-why textarea { resize:vertical; font-family:inherit; line-height:1.5; min-height:52px; width:100%; max-width:none; }
 .goal-measure-block { margin:16px 0 4px; }
 .gnum { display:flex; align-items:center; gap:10px; }
 .gnum input { max-width:110px; } .gnum .gc-unit { max-width:120px; } .gnum span { color:var(--ink-3); }
