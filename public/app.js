@@ -22,6 +22,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
+  goals: [], bucket: [], goal_open: null, bucket_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
   note: null, tables_open: null,
@@ -254,7 +255,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -267,6 +268,7 @@ function labelForView(v) {
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
+    case 'goals': return 'Goals'; case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     default: return 'Home';
   }
 }
@@ -281,6 +283,7 @@ function openView(v) {
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
+    case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
     default: return openHome();
   }
 }
@@ -463,6 +466,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
+    <button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span>🎯</span><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>
     <button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
@@ -524,6 +528,7 @@ async function quickAdd(kind) {
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
     else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus(); }, 0); }
     else if (kind === 'contact') { await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus(); }, 0); }
+    else if (kind === 'goal') { await openGoals('goals'); await newGoal(null); }
   } catch (e) { toast(e.message); }
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
@@ -648,12 +653,14 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day, pad, rec] = await Promise.all([
+  const [favs, day, pad, rec, goals] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
     api('/api/kv/home_recent').catch(() => null),
+    api('/api/blocks?kind=goal').catch(() => state.goals || []),
   ]);
+  state.goals = goals || [];
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
   state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '' };
   renderNav(); renderHome();
@@ -715,6 +722,7 @@ function renderHome() {
         <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
         <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
         <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
+        <button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>
         <button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>
       </nav>
       <div class="home-body">
@@ -723,6 +731,7 @@ function renderHome() {
             <div class="home-sec-h">Today</div>
             <div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>
           </section>
+          ${(() => { const f = (state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active'); return f.length ? `<section class="home-sec"><div class="home-sec-h">🎯 This quarter's focus</div><div class="goal-grid">${f.map(goalCardMini).join('')}</div></section>` : ''; })()}
           <section class="home-sec">
             <div class="home-sec-h">Favourites</div>
             ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
@@ -2675,6 +2684,8 @@ function rerenderCurrent() {
   else if (v === 'table') renderTable(); else if (v === 'tables') openTablesList();
   else if (v === 'notes') openNotesList(); else if (v === 'areas') openAreasList();
   else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard();
+  else if (v === 'goalcard') renderGoalCard(); else if (v === 'bucketcard') renderBucketCard();
+  else if (v === 'goals') renderGoals();
   else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail();
   else if (v === 'today') renderToday(); else openHome();
 }
@@ -3012,6 +3023,185 @@ async function importVcf(file) {
   } catch (e) { toast(e.message); }
 }
 const contactsDatalist = () => `<datalist id="contacts-dl">${(state.contacts || []).filter((c) => c.props && c.props.email).map((c) => `<option value="${esc(c.props.email)}">${esc(c.title || '')}</option>`).join('')}</datalist>`;
+
+// ── goals & bucket list ──────────────────────────────
+// Goals and bucket-list items are blocks (kind='goal'/'bucket') filed to a Life
+// Area (props.area). A goal is Milestones / Habit / Number. Everything rides the
+// same block core as notes and tasks.
+const HORIZONS = [['quarter', 'This quarter'], ['year', 'This year'], ['longterm', 'Long-term']];
+const GTYPES = [['achievement', 'Milestones'], ['habit', 'Habit'], ['number', 'Number']];
+const GSTATUS = [['active', 'Active'], ['done', 'Done'], ['onhold', 'On hold'], ['dropped', 'Dropped']];
+const BSTATUS = [['someday', 'Someday'], ['planning', 'Planning'], ['done', 'Done']];
+const gp = (g) => (g && g.props) || {};
+const goalArea = (g) => areaById(gp(g).area);
+const gStatusLabel = (s) => (GSTATUS.find((x) => x[0] === (s || 'active')) || GSTATUS[0])[1];
+const horizonLabel = (h) => (HORIZONS.find((x) => x[0] === h) || ['', ''])[1];
+function goalProgress(g) {
+  const p = gp(g); if (p.status === 'done') return 1;
+  if (p.gtype === 'number') { const t = +p.target || 0, c = +p.current || 0; return t > 0 ? Math.max(0, Math.min(1, c / t)) : 0; }
+  if (p.gtype === 'achievement') { const ms = Array.isArray(p.milestones) ? p.milestones : []; return ms.length ? ms.filter((m) => m.done).length / ms.length : 0; }
+  return 0;
+}
+function goalMeasure(g) {
+  const p = gp(g);
+  if (p.gtype === 'number') return `${p.current || 0} / ${p.target || 0}${p.unit ? ' ' + p.unit : ''}`;
+  if (p.gtype === 'achievement') { const ms = Array.isArray(p.milestones) ? p.milestones : []; return `${ms.filter((m) => m.done).length}/${ms.length} milestones`; }
+  if (p.gtype === 'habit') return p.cadence || 'Habit';
+  return '';
+}
+async function openGoals(tab) {
+  state.view = { type: 'goals' };
+  if (tab) state.goalsTab = tab;
+  if (!state.areas.length) state.areas = (await api('/api/blocks?kind=area')).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const [goals, bucket] = await Promise.all([api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket')]);
+  state.goals = goals; state.bucket = bucket;
+  renderNav(); renderGoals();
+}
+function goalCardMini(g) {
+  const a = goalArea(g); const p = gp(g); const pct = Math.round(goalProgress(g) * 100);
+  return `<button class="goal-card" data-open-goal="${g.id}" style="--h:${hueOf(a)}">
+    <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span><span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
+    <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
+    <div class="gc-bar"><i style="width:${pct}%"></i></div></button>`;
+}
+function renderGoals() {
+  const tab = state.goalsTab || 'goals';
+  const seg = `<div class="seg"><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button></div>`;
+  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Reviews</h1></div>${seg}${tab === 'bucket' ? bucketBody() : goalsBody()}`;
+}
+function goalsBody() {
+  const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
+  const focus = active.filter((g) => gp(g).focus);
+  const others = active.filter((g) => !gp(g).focus);
+  const done = state.goals.filter((g) => gp(g).status === 'done');
+  const byArea = {};
+  others.forEach((g) => { const k = gp(g).area || '_'; (byArea[k] = byArea[k] || []).push(g); });
+  const areaSection = Object.keys(byArea).map((k) => { const a = areaById(k); return `<div class="goal-group"><div class="goal-group-h">${a ? esc(a.title) : 'No area'}</div><div class="goal-grid">${byArea[k].map(goalCardMini).join('')}</div></div>`; }).join('');
+  return `<div class="goals-actions"><button class="add-btn wide" data-new-goal>+ New goal</button></div>
+    ${focus.length ? `<section class="home-sec"><div class="home-sec-h">★ This quarter's focus</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>` : '<div class="empty" style="padding:28px">Add a goal, then ★ it to bring it into focus for this quarter.</div>'}
+    ${areaSection ? `<section class="home-sec"><div class="home-sec-h">Active goals</div>${areaSection}</section>` : ''}
+    ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
+}
+async function newGoal(area) {
+  const props = { area: area || null, why: '', horizon: 'quarter', gtype: 'achievement', status: 'active', focus: false, milestones: [] };
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'goal', title: 'New goal', props }) });
+  state.goals.push(b); openGoalCard(b.id);
+}
+async function openGoalCard(id) {
+  const g = await api(`/api/blocks/${id}`);
+  const tasks = (await api('/api/blocks?kind=task')).filter((t) => t.props && t.props.goal === id);
+  state.goal_open = { goal: g, tasks };
+  state.view = { type: 'goalcard', id };
+  renderNav(); renderGoalCard();
+}
+function renderGoalCard() {
+  const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
+  const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const ms = Array.isArray(p.milestones) ? p.milestones : [];
+  const typeBody = p.gtype === 'number'
+    ? `<label class="tf-field"><span class="tf-label">Progress</span><div class="gnum"><input class="sel" id="gc-current" type="number" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div></label>`
+    : p.gtype === 'habit'
+    ? `<label class="tf-field"><span class="tf-label">Cadence</span><input class="sel" id="gc-cadence" value="${esc(p.cadence || '')}" placeholder="e.g. daily · 3× a week"></label>`
+    : `<div class="ms-block"><div class="tf-label">Milestones</div><div class="ms-list">${ms.map((m) => `<div class="ms-row ${m.done ? 'done' : ''}"><button class="ms-check" data-ms-toggle="${m.id}">✓</button><input class="ms-text" data-ms-text="${m.id}" value="${esc(m.text || '')}" placeholder="Milestone…"><button class="ms-x" data-ms-del="${m.id}">×</button></div>`).join('')}</div><button class="ghost ms-add" data-ms-add>+ Add milestone</button></div>`;
+  const tasks = state.goal_open.tasks || [];
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
+      <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
+    <div class="task-focus" style="--h:${hueOf(a)}">
+      <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="Focus this quarter">${p.focus ? '★' : '☆'}</button>
+      <textarea class="note-title" id="goalcard-title" rows="1" placeholder="What do you want to achieve?">${esc(g.title || '')}</textarea>
+    </div>
+    <label class="tf-field goal-why"><span class="tf-label">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
+    <div class="tf-meta">
+      <label class="tf-field"><span class="tf-label">Life area</span><select class="sel" id="goalcard-area">${areaOpts}</select></label>
+      <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${p.gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>
+    </div>
+    <div class="goal-measure-block">${typeBody}</div>
+    <section class="goal-actions-sec">
+      <div class="home-sec-h">Actions</div>
+      <div class="ga-list">${tasks.map((t) => `<div class="ga-row ${t.props.done ? 'done' : ''}"><button class="check" data-check="${t.id}">✓</button><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span></div>`).join('') || '<div class="muted" style="padding:4px 0 0">No actions yet — break the goal into next steps.</div>'}</div>
+      <button class="ghost ga-add" data-goal-action="${g.id}">+ Add action</button>
+    </section>
+    ${notesSection(g.body, 'goal', g.id)}`;
+  autoGrowSoon($('#goalcard-title'));
+}
+async function patchGoal(id, patch, isProps) {
+  const g = state.goal_open && state.goal_open.goal;
+  if (g && g.id === id) { if (isProps) { g.props = g.props || {}; Object.assign(g.props, patch); } else Object.assign(g, patch); }
+  const inList = state.goals.find((x) => x.id === id);
+  if (inList) { if (isProps) { inList.props = inList.props || {}; Object.assign(inList.props, patch); } else Object.assign(inList, patch); }
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(isProps ? { props: patch } : patch) }); } catch (e) { toast(e.message); }
+}
+async function delGoal(id) {
+  if (!(await uiConfirm('Delete this goal?', { danger: true, okLabel: 'Delete' }))) return;
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+  state.goals = state.goals.filter((x) => x.id !== id); toast('Goal deleted'); openGoals('goals');
+}
+function toggleGoalFocus(id) { const g = state.goal_open && state.goal_open.goal; patchGoal(id, { focus: !gp(g).focus }, true).then(renderGoalCard); }
+function goalMs() { const g = state.goal_open.goal; g.props = g.props || {}; if (!Array.isArray(g.props.milestones)) g.props.milestones = []; return g.props.milestones; }
+function saveMs() { const g = state.goal_open.goal; patchGoal(g.id, { milestones: goalMs() }, true); }
+function msAdd() { goalMs().push({ id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), text: '', done: false }); saveMs(); renderGoalCard(); setTimeout(() => { const els = document.querySelectorAll('[data-ms-text]'); if (els.length) els[els.length - 1].focus(); }, 0); }
+function msToggle(mid) { const m = goalMs().find((x) => x.id === mid); if (m) { m.done = !m.done; saveMs(); renderGoalCard(); } }
+function msDel(mid) { const g = state.goal_open.goal; g.props.milestones = goalMs().filter((x) => x.id !== mid); saveMs(); renderGoalCard(); }
+function msText(mid, v) { const m = goalMs().find((x) => x.id === mid); if (m) { m.text = v; saveMs(); } }
+async function addGoalAction(id) {
+  const title = await uiPrompt('Next action for this goal:', { placeholder: 'e.g. Draft the first section' }); if (!title) return;
+  const g = state.goal_open.goal;
+  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: gp(g).area || null, priority: null, done: false, goal: id } }) });
+  state.goal_open.tasks.push(t); renderGoalCard();
+}
+// bucket list
+function bucketBody() {
+  const byArea = {};
+  state.bucket.forEach((b) => { const k = (b.props && b.props.area) || '_'; (byArea[k] = byArea[k] || []).push(b); });
+  const order = Object.keys(byArea).sort((x, y) => (x === '_' ? 1 : y === '_' ? -1 : (areaById(x) || {}).title?.localeCompare((areaById(y) || {}).title || '') || 0));
+  const groups = order.map((k) => { const a = areaById(k); return `<div class="goal-group"><div class="goal-group-h">${a ? esc(a.title) : 'Unfiled'}</div><div class="bucket-grid">${byArea[k].map(bucketCard).join('')}</div></div>`; }).join('');
+  return `<div class="goals-actions"><button class="add-btn wide" data-new-bucket>+ Add to bucket list</button></div>${groups || '<div class="empty" style="padding:40px">Your bucket list is empty. What do you want to do before you die?</div>'}`;
+}
+function bucketCard(b) {
+  const p = b.props || {}; const a = areaById(p.area);
+  return `<button class="bucket-card ${p.status === 'done' ? 'done' : ''}" data-open-bucket="${b.id}" style="--h:${hueOf(a)}"><span class="bk-check">${p.status === 'done' ? '✓' : ''}</span><span class="bk-body"><span class="bk-title">${esc(b.title || 'Untitled')}</span>${(a || p.targetYear) ? `<span class="bk-meta">${a ? esc(a.title) : ''}${p.targetYear ? `${a ? ' · ' : ''}by ${esc(p.targetYear)}` : ''}</span>` : ''}</span></button>`;
+}
+async function newBucket() {
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: null, status: 'someday' } }) });
+  state.bucket.push(b); openBucketCard(b.id);
+}
+async function openBucketCard(id) { const b = await api(`/api/blocks/${id}`); state.bucket_open = { item: b }; state.view = { type: 'bucketcard', id }; renderNav(); renderBucketCard(); }
+function renderBucketCard() {
+  const b = state.bucket_open.item; const p = b.props || {};
+  const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  migrateCards(b);
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
+      <span class="crumb-tools"><button class="note-del ghost" data-del-bucket="${b.id}">Delete</button></span></div>
+    <div class="task-focus">
+      <button class="bk-done-btn ${p.status === 'done' ? 'on' : ''}" data-bucket-done="${b.id}" title="Mark as done">${p.status === 'done' ? '✓' : '○'}</button>
+      <textarea class="note-title" id="bucketcard-title" rows="1" placeholder="Something to do before you die…">${esc(b.title || '')}</textarea>
+    </div>
+    <div class="tf-meta">
+      <label class="tf-field"><span class="tf-label">Life area</span><select class="sel" id="bucketcard-area">${areaOpts}</select></label>
+      <label class="tf-field"><span class="tf-label">Stage</span><select class="sel" id="bucketcard-status">${BSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'someday') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Target year</span><input class="sel" id="bucketcard-year" value="${esc(p.targetYear || '')}" placeholder="e.g. 2030"></label>
+    </div>
+    ${notesSection(b.body, 'bucket', b.id)}
+    ${attachSection(b)}`;
+  autoGrowSoon($('#bucketcard-title')); loadThumbs();
+}
+async function patchBucket(id, patch, isProps) {
+  const b = state.bucket_open && state.bucket_open.item;
+  if (b && b.id === id) { if (isProps) { b.props = b.props || {}; Object.assign(b.props, patch); } else Object.assign(b, patch); }
+  const inList = state.bucket.find((x) => x.id === id); if (inList) { if (isProps) { inList.props = inList.props || {}; Object.assign(inList.props, patch); } else Object.assign(inList, patch); }
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(isProps ? { props: patch } : patch) }); } catch (e) { toast(e.message); }
+}
+async function delBucket(id) {
+  if (!(await uiConfirm('Remove from your bucket list?', { danger: true, okLabel: 'Remove' }))) return;
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+  state.bucket = state.bucket.filter((x) => x.id !== id); toast('Removed'); openGoals('bucket');
+}
+function bucketToggleDone(id) { const b = state.bucket_open.item; const done = (b.props || {}).status === 'done'; patchBucket(id, { status: done ? 'someday' : 'done', doneDate: done ? null : new Date().toISOString().slice(0, 10) }, true).then(renderBucketCard); }
 
 // ── view: note ───────────────────────────────────────
 // Title fields are textareas so a long title wraps instead of cropping; grow
@@ -3359,6 +3549,9 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Today', run: () => openToday() },
   { kind: 'action', title: 'Go to Contacts', run: () => openContacts() },
   { kind: 'action', title: 'New contact', run: () => quickAdd('contact') },
+  { kind: 'action', title: 'Go to Goals', run: () => openGoals('goals') },
+  { kind: 'action', title: 'New goal', run: () => quickAdd('goal') },
+  { kind: 'action', title: 'Bucket list', run: () => openGoals('bucket') },
 ];
 let palT;
 function buildPalette() {
@@ -3598,6 +3791,21 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
+  const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
+  const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
+  const obk = t.closest('[data-open-bucket]'); if (obk) { openBucketCard(obk.dataset.openBucket).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-new-goal]')) { newGoal(null).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-new-bucket]')) { newBucket().catch((x) => toast(x.message)); return; }
+  const dgl = t.closest('[data-del-goal]'); if (dgl) { delGoal(dgl.dataset.delGoal); return; }
+  const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
+  const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
+  const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
+  if (t.closest('[data-ms-add]')) { msAdd(); return; }
+  const mst = t.closest('[data-ms-toggle]'); if (mst) { msToggle(mst.dataset.msToggle); return; }
+  const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
+  const gac = t.closest('[data-goal-action]'); if (gac) { addGoalAction(gac.dataset.goalAction).catch((x) => toast(x.message)); return; }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
   if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
@@ -3835,6 +4043,28 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('contactcard-addr')) patchContact(cid, { address: readCardAddress() }, true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
   }
+  if (state.goal_open && state.view.type === 'goalcard') {
+    const gid = state.goal_open.goal.id; const id = e.target.id;
+    if (id === 'goalcard-title') { const v = e.target.value.trim(); if (v) patchGoal(gid, { title: v }, false); }
+    else if (id === 'goalcard-why') patchGoal(gid, { why: e.target.value }, true);
+    else if (id === 'goalcard-area') patchGoal(gid, { area: e.target.value || null }, true);
+    else if (id === 'goalcard-horizon') patchGoal(gid, { horizon: e.target.value }, true);
+    else if (id === 'goalcard-gtype') patchGoal(gid, { gtype: e.target.value }, true).then(renderGoalCard);
+    else if (id === 'goalcard-status') patchGoal(gid, { status: e.target.value }, true);
+    else if (id === 'goalcard-target') patchGoal(gid, { targetDate: e.target.value || null }, true);
+    else if (id === 'gc-current') patchGoal(gid, { current: e.target.value === '' ? null : +e.target.value }, true);
+    else if (id === 'gc-target') patchGoal(gid, { target: e.target.value === '' ? null : +e.target.value }, true);
+    else if (id === 'gc-unit') patchGoal(gid, { unit: e.target.value.trim() || null }, true);
+    else if (id === 'gc-cadence') patchGoal(gid, { cadence: e.target.value.trim() || null }, true);
+    else if (e.target.matches('[data-ms-text]')) msText(e.target.dataset.msText, e.target.value);
+  }
+  if (state.bucket_open && state.view.type === 'bucketcard') {
+    const bid = state.bucket_open.item.id; const id = e.target.id;
+    if (id === 'bucketcard-title') { const v = e.target.value.trim(); if (v) patchBucket(bid, { title: v }, false); }
+    else if (id === 'bucketcard-area') patchBucket(bid, { area: e.target.value || null }, true);
+    else if (id === 'bucketcard-status') patchBucket(bid, { status: e.target.value }, true).then(renderBucketCard);
+    else if (id === 'bucketcard-year') patchBucket(bid, { targetYear: e.target.value.trim() || null }, true);
+  }
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
@@ -4053,7 +4283,7 @@ async function addTask(o) {
 // area page, the task focus view, the favourites - each a separate object.
 // Gather every copy so a change updates the one on screen, not just one of them.
 function taskCopies(id) {
-  const out = [state.tasks, state.area_open && state.area_open.blocks, state.favs]
+  const out = [state.tasks, state.area_open && state.area_open.blocks, state.favs, state.goal_open && state.goal_open.tasks]
     .filter(Boolean).flatMap((arr) => arr.filter((b) => b.id === id));
   if (state.task_open && state.task_open.task.id === id) out.push(state.task_open.task);
   return out;
@@ -4166,6 +4396,7 @@ const attIcon = (t) => (t === 'application/pdf' ? '📄' : isImgType(t) ? '🖼'
 function attHost() {
   if (state.view.type === 'note') return state.note && state.note.current;
   if (state.view.type === 'taskcard') return state.task_open && state.task_open.task;
+  if (state.view.type === 'bucketcard') return state.bucket_open && state.bucket_open.item;
   if (state.view.type === 'table' && state.tables_view && state.tables_view.openRow) {
     return state.tables_rows && state.tables_rows.find((x) => x.id === state.tables_view.openRow);
   }
@@ -4190,6 +4421,7 @@ function migrateCards(b) {
 function rerenderHost() {
   if (state.view.type === 'note') renderNote();
   else if (state.view.type === 'taskcard') renderTaskCard();
+  else if (state.view.type === 'bucketcard') renderBucketCard();
   else if (state.view.type === 'table') renderTable();
 }
 function attachSection(block) {
@@ -4503,6 +4735,9 @@ async function saveProse(key, rawHtml, blockId) {
   // one this save is for, if we've since navigated away).
   const cur = key === 'note' ? (state.note && state.note.current)
     : key === 'task' ? (state.task_open && state.task_open.task)
+    : key === 'goal' ? (state.goal_open && state.goal_open.goal)
+    : key === 'bucket' ? (state.bucket_open && state.bucket_open.item)
+    : key === 'contact' ? (state.contact_open && state.contact_open.contact)
     : key === 'row' ? (state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)))
     : key === 'journal' ? (state.journal && state.journal.current) : null;
   // The block this prose belongs to. The explicit id is authoritative: it is
