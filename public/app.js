@@ -3075,7 +3075,7 @@ function goalCardMini(g) {
 }
 function renderGoals() {
   const tab = state.goalsTab || 'goals';
-  const seg = `<div class="seg"><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button><button class="seg-b ${tab === 'reviews' ? 'on' : ''}" data-goals-tab="reviews">Reviews</button><button class="seg-b ${tab === 'vision' ? 'on' : ''}" data-goals-tab="vision">Vision</button></div>`;
+  const seg = `<div class="seg"><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button><button class="seg-b ${tab === 'vision' ? 'on' : ''}" data-goals-tab="vision">Vision</button><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'reviews' ? 'on' : ''}" data-goals-tab="reviews">Reviews</button></div>`;
   const body = tab === 'bucket' ? bucketBody() : tab === 'reviews' ? reviewsBody() : tab === 'vision' ? visionBody() : goalsBody();
   $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Reviews</h1></div>${seg}${body}`;
   if (tab === 'vision') loadVisionThumbs();
