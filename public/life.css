@@ -210,6 +210,47 @@ button { cursor:pointer; background:none; border:0; }
 .bucket-card.done .bk-title { color:var(--ink-3); text-decoration:line-through; }
 .bk-meta { font-size:13px; color:var(--ink-3); }
 .bk-done-btn { border:none; background:none; font-size:24px; line-height:1; color:var(--done); cursor:pointer; flex:none; padding:2px; }
+
+/* Reviews & Wheel of Life */
+.rv-starts { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:8px; }
+.rv-start { display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:16px 18px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; text-align:left; }
+.rv-start:hover { border-color:var(--accent); }
+.rv-depth { display:flex; gap:4px; align-items:flex-end; height:14px; margin-bottom:4px; }
+.rv-depth i { width:7px; background:var(--line-2); border-radius:2px; }
+.rv-depth i:nth-child(1){height:5px}.rv-depth i:nth-child(2){height:8px}.rv-depth i:nth-child(3){height:11px}.rv-depth i:nth-child(4){height:14px}
+.rv-depth[data-d="1"] i:nth-child(-n+1),.rv-depth[data-d="2"] i:nth-child(-n+2),.rv-depth[data-d="3"] i:nth-child(-n+3),.rv-depth[data-d="4"] i:nth-child(-n+4){ background:var(--gold); }
+.rv-start-l { font-size:17px; font-weight:600; color:var(--ink); }
+.rv-start-s { font-size:13.5px; color:var(--ink-3); }
+.rv-list { display:flex; flex-direction:column; }
+.rv-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line); text-align:left; cursor:pointer; color:var(--ink); background:none; border-left:0; border-right:0; border-top:0; }
+.rv-row:hover { background:var(--paper-2); }
+.rv-row-l { font-size:16px; } .rv-row-l b { font-weight:600; }
+.rv-row-m { font-size:13.5px; color:var(--ink-3); white-space:nowrap; }
+.rv-period { color:var(--ink-3); font-size:15px; margin:-10px 0 22px; }
+.rv-mirror, .wheel, .rv-snapshot, .rv-prompts { margin-top:30px; }
+.rv-stats { display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 4px; }
+.rv-stat { font-size:14.5px; color:var(--ink-2); background:var(--paper-2); border:1px solid var(--line); border-radius:999px; padding:7px 14px; }
+.rv-stat b { color:var(--ink); font-variant-numeric:tabular-nums; }
+.rv-stat.good b { color:var(--done); } .rv-stat.warn b { color:var(--accent); }
+.rv-line { font-size:15.5px; color:var(--ink-2); margin-top:12px; }
+.rv-line-k { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; margin-right:8px; }
+.rv-det { margin-top:12px; }
+.rv-det > summary { cursor:pointer; color:var(--ink-3); font-size:14.5px; list-style:none; padding:6px 0; }
+.rv-det > summary::-webkit-details-marker { display:none; }
+.rv-det ul { margin:6px 0 6px 20px; color:var(--ink-2); font-size:15px; }
+.rv-det li { padding:2px 0; }
+.wheel-avg { font-size:13.5px; color:var(--ink-3); font-weight:500; text-transform:none; letter-spacing:0; margin-left:8px; }
+.wheel-rows { display:flex; flex-direction:column; gap:4px; }
+.wheel-row { display:grid; grid-template-columns:minmax(84px,140px) 1fr 26px; align-items:center; gap:12px; padding:7px 0; }
+.wheel-a { font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wheel-pips { display:flex; gap:4px; }
+.wp { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); flex:1 1 0; min-width:0; height:22px; border:1px solid var(--line-2); border-radius:5px; background:var(--card); cursor:pointer; padding:0; }
+.wp.on { background:var(--c); border-color:var(--c); }
+.wheel-v { font-size:15px; color:var(--ink-2); text-align:right; font-variant-numeric:tabular-nums; }
+.rv-snap { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--line); }
+.rv-snap-t { font-size:15.5px; color:var(--ink); } .rv-snap-m { font-size:13.5px; color:var(--ink-3); white-space:nowrap; }
+.rv-prompt-list { margin:6px 0 16px 20px; color:var(--ink-2); font-size:16px; font-style:italic; }
+.rv-prompt-list li { padding:4px 0; }
 .mail-savecontact { padding:5px 12px; font-size:13.5px; border-radius:999px; }
 .mail-contact-have { font-size:13px; color:var(--done); font-weight:600; white-space:nowrap; }
 

@@ -22,7 +22,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
-  goals: [], bucket: [], goal_open: null, bucket_open: null, goalsTab: 'goals', goalsFilter: null,
+  goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
   note: null, tables_open: null,
@@ -255,7 +255,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -269,6 +269,7 @@ function labelForView(v) {
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'goals': return 'Goals'; case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
+    case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
     default: return 'Home';
   }
 }
@@ -283,7 +284,7 @@ function openView(v) {
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
-    case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
+    case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
     default: return openHome();
   }
 }
@@ -2685,7 +2686,7 @@ function rerenderCurrent() {
   else if (v === 'notes') openNotesList(); else if (v === 'areas') openAreasList();
   else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard();
   else if (v === 'goalcard') renderGoalCard(); else if (v === 'bucketcard') renderBucketCard();
-  else if (v === 'goals') renderGoals();
+  else if (v === 'reviewcard') renderReviewCard(); else if (v === 'goals') renderGoals();
   else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail();
   else if (v === 'today') renderToday(); else openHome();
 }
@@ -3051,8 +3052,8 @@ async function openGoals(tab) {
   state.view = { type: 'goals' };
   if (tab) state.goalsTab = tab;
   if (!state.areas.length) state.areas = (await api('/api/blocks?kind=area')).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  const [goals, bucket] = await Promise.all([api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket')]);
-  state.goals = goals; state.bucket = bucket;
+  const [goals, bucket, reviews] = await Promise.all([api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket'), api('/api/blocks?kind=review')]);
+  state.goals = goals; state.bucket = bucket; state.reviews = reviews;
   renderNav(); renderGoals();
 }
 function goalCardMini(g) {
@@ -3064,8 +3065,9 @@ function goalCardMini(g) {
 }
 function renderGoals() {
   const tab = state.goalsTab || 'goals';
-  const seg = `<div class="seg"><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button></div>`;
-  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Reviews</h1></div>${seg}${tab === 'bucket' ? bucketBody() : goalsBody()}`;
+  const seg = `<div class="seg"><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button><button class="seg-b ${tab === 'reviews' ? 'on' : ''}" data-goals-tab="reviews">Reviews</button></div>`;
+  const body = tab === 'bucket' ? bucketBody() : tab === 'reviews' ? reviewsBody() : goalsBody();
+  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Reviews</h1></div>${seg}${body}`;
 }
 function goalsBody() {
   const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
@@ -3185,6 +3187,114 @@ async function delBucket(id) {
   state.bucket = state.bucket.filter((x) => x.id !== id); toast('Removed'); openGoals('bucket');
 }
 function bucketToggleDone(id) { const b = state.bucket_open.item; const done = (b.props || {}).status === 'done'; patchBucket(id, { status: done ? 'someday' : 'done', doneDate: done ? null : new Date().toISOString().slice(0, 10) }, true).then(renderBucketCard); }
+
+// ── reviews & Wheel of Life ──────────────────────────
+// A review (kind='review') opens with a mirror of the period drawn from your
+// own data (ticked tasks, kept practices, undone P1s, quiet areas), a Wheel of
+// Life pulse per area, and guided writing. Deeper reviews widen the window.
+const REVIEWS = {
+  weekly: { label: 'Weekly', sub: 'The glance', days: 7, prompts: ['A win or two from this week', 'What did I neglect?', 'The one thing to carry into next week'] },
+  monthly: { label: 'Monthly', sub: 'The check-in', days: 30, prompts: ['What actually moved this month?', 'Is each goal still the right one?', 'What needs re-prioritising or letting go?'] },
+  quarterly: { label: 'Quarterly', sub: 'The cycle', days: 91, prompts: ['Score each goal — what worked, what got in the way?', 'What did I learn about myself?', "Next quarter's one-to-three goals"] },
+  yearly: { label: 'Yearly', sub: 'The wide view', days: 365, prompts: ['The year across every area — the highs and the lows', 'What am I most proud of?', 'What do I want next year to be about?', 'Anything to add to the bucket list?'] },
+};
+const RTYPE_ORDER = ['weekly', 'monthly', 'quarterly', 'yearly'];
+function localISO(d) { const x = d || new Date(); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; }
+function reviewPeriod(rtype) { const days = (REVIEWS[rtype] || REVIEWS.weekly).days; return { from: localISO(new Date(Date.now() - (days - 1) * 86400000)), to: localISO() }; }
+function reviewTaskStats(from) {
+  const fromT = new Date(from + 'T00:00:00').getTime();
+  const done = state.tasks.filter((t) => t.props && t.props.done && t.updated_at && new Date(t.updated_at).getTime() >= fromT);
+  const openP1 = state.tasks.filter((t) => t.props && !t.props.done && t.props.priority === 'P1');
+  const activeAreas = new Set(done.map((t) => t.props.area).filter(Boolean));
+  const quiet = state.areas.filter((a) => !activeAreas.has(a.id));
+  return { done, openP1, quiet };
+}
+function reviewsBody() {
+  const starts = RTYPE_ORDER.map((k, i) => `<button class="rv-start" data-start-review="${k}"><span class="rv-depth" data-d="${i + 1}"><i></i><i></i><i></i><i></i></span><span class="rv-start-l">${REVIEWS[k].label}</span><span class="rv-start-s">${REVIEWS[k].sub}</span></button>`).join('');
+  const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const list = past.map((r) => { const p = r.props || {}; const wv = wheelAvg(p.wheel); return `<button class="rv-row" data-open-review="${r.id}"><span class="rv-row-l"><b>${esc((REVIEWS[p.rtype] || {}).label || 'Review')}</b> · ${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span><span class="rv-row-m">${p.tasksDone != null ? `${p.tasksDone} done` : ''}${wv ? ` · wheel ${wv}` : ''}</span></button>`; }).join('');
+  return `<div class="rv-starts">${starts}</div>${past.length ? `<section class="home-sec"><div class="home-sec-h">Past reviews</div><div class="rv-list">${list}</div></section>` : '<div class="empty" style="padding:30px">No reviews yet. Start with a weekly — it takes ten minutes.</div>'}`;
+}
+const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
+async function startReview(rtype) {
+  const { from, to } = reviewPeriod(rtype);
+  const [tasks, mir] = await Promise.all([api('/api/blocks?kind=task'), api(`/api/review-mirror?from=${from}&to=${to}`).catch(() => ({ practices: [], total: 0 }))]);
+  state.tasks = tasks;
+  const s = reviewTaskStats(from);
+  const snapshot = state.goals.filter((g) => (gp(g).status || 'active') === 'active').map((g) => ({ id: g.id, title: g.title, area: gp(g).area, measure: goalMeasure(g), progress: Math.round(goalProgress(g) * 100) }));
+  const lastWheel = state.reviews.map((r) => r.props && r.props.wheel).reverse().find((w) => w && Object.keys(w).length) || {};
+  const mirror = {
+    practices: mir.practices || [],
+    tasksDone: s.done.slice(0, 60).map((t) => ({ title: t.title, area: t.props.area })),
+    openP1: s.openP1.slice(0, 60).map((t) => ({ title: t.title, area: t.props.area })),
+    quietAreas: s.quiet.map((a) => a.id),
+  };
+  const props = { rtype, from, to, wheel: { ...lastWheel }, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length };
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'review', title: `${REVIEWS[rtype].label} review · ${dpLabel(to)}`, props }) });
+  state.reviews.push(b); openReviewCard(b.id);
+}
+async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); }
+function renderReviewCard() {
+  const r = state.review_open.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
+  const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No area'; };
+  const pill = (label, n, cls) => `<span class="rv-stat ${cls || ''}"><b>${n}</b> ${label}</span>`;
+  const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
+  const quiet = (m.quietAreas || []).map(areaName);
+  const wheel = state.areas.map((a) => {
+    const sc = (p.wheel || {})[a.id] || 0;
+    const pips = Array.from({ length: 10 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-wheel="${a.id}:${i + 1}" style="--h:${hueOf(a)}"></button>`).join('');
+    return `<div class="wheel-row"><span class="wheel-a">${esc(a.title)}</span><span class="wheel-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span></div>`;
+  }).join('');
+  const snap = (p.snapshot || []).map((g) => `<div class="rv-snap"><span class="rv-snap-t">${esc(g.title)}</span><span class="rv-snap-m">${esc(g.measure || '')}${g.progress != null ? ` · ${g.progress}%` : ''}</span></div>`).join('');
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+      <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
+    <div class="pane-head"><h1>${esc(cfg.label)} review</h1></div>
+    <div class="rv-period">${esc(cfg.sub)} · ${esc(dpLabel(p.from))} – ${esc(dpLabel(p.to))}</div>
+
+    <section class="rv-mirror">
+      <div class="home-sec-h">Your ${p.rtype === 'weekly' ? 'week' : 'period'}, from the record</div>
+      <div class="rv-stats">
+        ${pill('ticked off', (m.tasksDone || []).length, 'good')}
+        ${pill('P1 still open', (m.openP1 || []).length, (m.openP1 || []).length ? 'warn' : '')}
+        ${pill('practices kept', (m.practices || []).reduce((a, x) => a + x.count, 0), 'good')}
+        ${pill('quiet areas', quiet.length, quiet.length ? 'warn' : '')}
+      </div>
+      ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
+      ${quiet.length ? `<div class="rv-line"><span class="rv-line-k">Went quiet</span> ${quiet.map(esc).join(', ')}</div>` : ''}
+      ${(m.openP1 || []).length ? `<details class="rv-det"><summary>P1s still open · ${(m.openP1 || []).length}</summary><ul>${(m.openP1 || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
+      ${(m.tasksDone || []).length ? `<details class="rv-det"><summary>Ticked off · ${(m.tasksDone || []).length}</summary><ul>${(m.tasksDone || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
+    </section>
+
+    <section class="wheel">
+      <div class="home-sec-h">Wheel of Life <span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${wheelAvg(p.wheel)}/10` : ''}</span></div>
+      <div class="wheel-rows">${wheel || '<div class="muted">Add some Life Areas to rate them here.</div>'}</div>
+    </section>
+
+    ${snap ? `<section class="rv-snapshot"><div class="home-sec-h">Goals, snapshotted</div>${snap}</section>` : ''}
+
+    <section class="rv-prompts">
+      <div class="home-sec-h">Reflect</div>
+      <ul class="rv-prompt-list">${cfg.prompts.map((q) => `<li>${esc(q)}</li>`).join('')}</ul>
+      ${notesSection(r.body, 'review', r.id)}
+    </section>`;
+}
+async function patchReview(id, patch, isProps) {
+  const r = state.review_open && state.review_open.review;
+  if (r && r.id === id) { if (isProps) { r.props = r.props || {}; Object.assign(r.props, patch); } else Object.assign(r, patch); }
+  const inList = state.reviews.find((x) => x.id === id); if (inList) { if (isProps) { inList.props = inList.props || {}; Object.assign(inList.props, patch); } else Object.assign(inList, patch); }
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(isProps ? { props: patch } : patch) }); } catch (e) { toast(e.message); }
+}
+async function delReview(id) {
+  if (!(await uiConfirm('Delete this review?', { danger: true, okLabel: 'Delete' }))) return;
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+  state.reviews = state.reviews.filter((x) => x.id !== id); toast('Review deleted'); openGoals('reviews');
+}
+function setWheel(areaId, score) {
+  const r = state.review_open.review; const w = { ...(r.props.wheel || {}) };
+  w[areaId] = w[areaId] === score ? 0 : score;   // tap the same pip to clear
+  patchReview(r.id, { wheel: w }, true).then(renderReviewCard);
+}
 
 // ── view: note ───────────────────────────────────────
 // Title fields are textareas so a long title wraps instead of cropping; grow
@@ -3776,7 +3886,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
+  const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
+  const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
+  const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
+  const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
   const obk = t.closest('[data-open-bucket]'); if (obk) { openBucketCard(obk.dataset.openBucket).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-goal]')) { newGoal(null).catch((x) => toast(x.message)); return; }
@@ -4718,6 +4833,7 @@ async function saveProse(key, rawHtml, blockId) {
     : key === 'task' ? (state.task_open && state.task_open.task)
     : key === 'goal' ? (state.goal_open && state.goal_open.goal)
     : key === 'bucket' ? (state.bucket_open && state.bucket_open.item)
+    : key === 'review' ? (state.review_open && state.review_open.review)
     : key === 'contact' ? (state.contact_open && state.contact_open.contact)
     : key === 'row' ? (state.tables_rows && state.tables_rows.find((x) => x.id === (state.tables_view && state.tables_view.openRow)))
     : key === 'journal' ? (state.journal && state.journal.current) : null;

@@ -1772,6 +1772,17 @@ export default {
         }
       }
       if (path === '/api/contacts/import' && request.method === 'POST') return importContacts(request, env);
+      if (path === '/api/review-mirror' && request.method === 'GET') {
+        const from = url.searchParams.get('from'), to = url.searchParams.get('to');
+        if (!from || !to) return err('from/to required', request);
+        // Practices kept in the window: completed bare-practice slots (no task
+        // attached), grouped by their name (Zazen, Art, Forró…).
+        const { results } = await env.DB.prepare(
+          "SELECT title, COUNT(*) AS n FROM slots WHERE done = 1 AND tana_id IS NULL AND day >= ? AND day <= ? GROUP BY title ORDER BY n DESC"
+        ).bind(from, to).all();
+        const practices = (results || []).filter((r) => r.title && r.n > 0).map((r) => ({ title: r.title, count: r.n }));
+        return json({ practices, total: practices.reduce((a, p) => a + p.count, 0) }, request);
+      }
       if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);
