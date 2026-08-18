@@ -1128,7 +1128,12 @@ function renderArea() {
   // import), so this stays a readable outline - and any note you now
   // associate with the area appears here, whatever its depth.
   const notes = blocks.filter((b) => b.kind === 'note');
+  const goals = blocks.filter((b) => b.kind === 'goal');
+  const bucket = blocks.filter((b) => b.kind === 'bucket');
+  const activeGoals = goals.filter((g) => (gp(g).status || 'active') === 'active');
   const h = hueOf(area);
+  const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
+  const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
   const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
@@ -1138,12 +1143,15 @@ function renderArea() {
         <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}</p>
-      <div class="area-actions"><button class="add-btn wide" data-area-add-task>+ Add task</button><button class="add-btn wide" data-area-add-note>+ Add note</button></div>
+      <div class="area-actions"><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-bucket>+ Bucket</button></div>
     </div>
+    <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
+    ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
+    ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
     ${sec('Notes', notes.length, `<div class="tbl-cards">${noteCards}</div>`)}
     ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
-    ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}
-    ${!openTs.length && !tables.length && !notes.length ? '<div class="empty" style="padding:50px">Nothing tagged with this life area yet. Add it to a task, note or table.</div>' : ''}`;
+    ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}`;
+  visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
 }
 async function setBlockArea(kind, id, areaId) {
   try {
@@ -4119,6 +4127,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
+  if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
