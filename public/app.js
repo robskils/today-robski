@@ -3089,7 +3089,8 @@ async function newGoal(area) {
 }
 async function openGoalCard(id) {
   const g = await api(`/api/blocks/${id}`);
-  state.goal_open = { goal: g };
+  const tasks = (await api('/api/blocks?kind=task')).filter((t) => t.props && t.props.goal === id);
+  state.goal_open = { goal: g, tasks };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
 }
@@ -3097,9 +3098,19 @@ function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
   const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   const ms = Array.isArray(p.milestones) ? p.milestones : [];
+  const gtasks = state.goal_open.tasks || [];
+  const msIds = new Set(ms.map((m) => m.id));
+  const loose = gtasks.filter((t) => !t.props.milestone || !msIds.has(t.props.milestone));
   const typeBody = p.gtype === 'number'
     ? `<label class="tf-field"><span class="tf-label">Progress</span><div class="gnum"><input class="sel" id="gc-current" type="number" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div></label>`
-    : `<div class="ms-block"><div class="tf-label">Milestones</div><div class="ms-list">${ms.map((m) => `<div class="ms-row ${m.done ? 'done' : ''}"><button class="ms-check" data-ms-toggle="${m.id}">✓</button><input class="ms-text" data-ms-text="${m.id}" value="${esc(m.text || '')}" placeholder="Milestone…"><button class="ms-x" data-ms-del="${m.id}">×</button></div>`).join('')}</div><button class="ghost ms-add" data-ms-add>+ Add milestone</button></div>`;
+    : `<div class="ms-block"><div class="tf-label">Milestones &amp; tasks</div>
+        ${ms.map((m) => { const mt = gtasks.filter((t) => t.props.milestone === m.id); return `<div class="ms-group">
+          <div class="ms-row ${m.done ? 'done' : ''}"><button class="ms-check" data-ms-toggle="${m.id}">✓</button><input class="ms-text" data-ms-text="${m.id}" value="${esc(m.text || '')}" placeholder="Milestone…">${mt.length ? `<span class="ms-count">${mt.filter((t) => t.props.done).length}/${mt.length}</span>` : ''}<button class="ms-x" data-ms-del="${m.id}">×</button></div>
+          <div class="ms-tasks">${mt.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:${m.id}">+ task</button></div>
+        </div>`; }).join('')}
+        <button class="ghost ms-add" data-ms-add>+ Add milestone</button>
+        <div class="gt-loose"><div class="tf-label gt-loose-h">Tasks not under a milestone</div><div class="ms-tasks">${loose.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ task</button></div></div>
+      </div>`;
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
@@ -3138,6 +3149,15 @@ function msAdd() { goalMs().push({ id: 'm' + Date.now().toString(36) + Math.rand
 function msToggle(mid) { const m = goalMs().find((x) => x.id === mid); if (m) { m.done = !m.done; saveMs(); renderGoalCard(); } }
 function msDel(mid) { const g = state.goal_open.goal; g.props.milestones = goalMs().filter((x) => x.id !== mid); saveMs(); renderGoalCard(); }
 function msText(mid, v) { const m = goalMs().find((x) => x.id === mid); if (m) { m.text = v; saveMs(); } }
+// A goal's task = a real task (kind='task') tagged to the goal (and a milestone).
+// It shows here AND in Tasks/Today - the same task, in context, never a copy.
+const goalTaskRow = (t) => `<div class="ga-row ${t.props.done ? 'done' : ''}"><button class="check" data-check="${t.id}">✓</button><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span></div>`;
+async function addGoalTask(goalId, milestoneId) {
+  const title = await uiPrompt('Task for this ' + (milestoneId ? 'milestone' : 'goal') + ':', { placeholder: 'e.g. Draft the opening section' }); if (!title) return;
+  const g = state.goal_open.goal;
+  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: gp(g).area || null, priority: null, done: false, goal: goalId, milestone: milestoneId || null } }) });
+  state.goal_open.tasks.push(t); renderGoalCard();
+}
 // bucket list
 function bucketBody() {
   const byArea = {};
@@ -3903,6 +3923,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-ms-add]')) { msAdd(); return; }
   const mst = t.closest('[data-ms-toggle]'); if (mst) { msToggle(mst.dataset.msToggle); return; }
   const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
+  const gat = t.closest('[data-goal-addtask]'); if (gat) { const [gid, mid] = gat.dataset.goalAddtask.split(':'); addGoalTask(gid, mid || null).catch((x) => toast(x.message)); return; }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
   if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
@@ -4379,7 +4400,7 @@ async function addTask(o) {
 // area page, the task focus view, the favourites - each a separate object.
 // Gather every copy so a change updates the one on screen, not just one of them.
 function taskCopies(id) {
-  const out = [state.tasks, state.area_open && state.area_open.blocks, state.favs]
+  const out = [state.tasks, state.area_open && state.area_open.blocks, state.favs, state.goal_open && state.goal_open.tasks]
     .filter(Boolean).flatMap((arr) => arr.filter((b) => b.id === id));
   if (state.task_open && state.task_open.task.id === id) out.push(state.task_open.task);
   return out;
