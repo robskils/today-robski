@@ -22,7 +22,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
-  goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, goalsTab: 'goals', goalsFilter: null,
+  goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
   note: null, tables_open: null,
@@ -255,7 +255,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -270,6 +270,7 @@ function labelForView(v) {
     case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'goals': return 'Goals'; case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
+    case 'visioncard': return (state.vision_open && `${state.vision_open.area.title} · Vision`) || 'Vision'; case 'visionwall': return 'The wall';
     default: return 'Home';
   }
 }
@@ -285,6 +286,7 @@ function openView(v) {
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
+    case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
     default: return openHome();
   }
 }
@@ -3051,8 +3053,8 @@ function goalMeasure(g) {
 async function openGoals(tab) {
   state.view = { type: 'goals' };
   if (tab) state.goalsTab = tab;
-  if (!state.areas.length) state.areas = (await api('/api/blocks?kind=area')).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  const [goals, bucket, reviews] = await Promise.all([api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket'), api('/api/blocks?kind=review')]);
+  const [areas, goals, bucket, reviews] = await Promise.all([api('/api/blocks?kind=area'), api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket'), api('/api/blocks?kind=review')]);
+  state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.goals = goals; state.bucket = bucket; state.reviews = reviews;
   renderNav(); renderGoals();
 }
@@ -3065,9 +3067,10 @@ function goalCardMini(g) {
 }
 function renderGoals() {
   const tab = state.goalsTab || 'goals';
-  const seg = `<div class="seg"><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button><button class="seg-b ${tab === 'reviews' ? 'on' : ''}" data-goals-tab="reviews">Reviews</button></div>`;
-  const body = tab === 'bucket' ? bucketBody() : tab === 'reviews' ? reviewsBody() : goalsBody();
+  const seg = `<div class="seg"><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button><button class="seg-b ${tab === 'reviews' ? 'on' : ''}" data-goals-tab="reviews">Reviews</button><button class="seg-b ${tab === 'vision' ? 'on' : ''}" data-goals-tab="vision">Vision</button></div>`;
+  const body = tab === 'bucket' ? bucketBody() : tab === 'reviews' ? reviewsBody() : tab === 'vision' ? visionBody() : goalsBody();
   $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Reviews</h1></div>${seg}${body}`;
+  if (tab === 'vision') loadVisionThumbs();
 }
 function goalsBody() {
   const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
@@ -3314,6 +3317,64 @@ function setWheel(areaId, score) {
   const r = state.review_open.review; const w = { ...(r.props.wheel || {}) };
   w[areaId] = w[areaId] === score ? 0 : score;   // tap the same pip to clear
   patchReview(r.id, { wheel: w }, true).then(renderReviewCard);
+}
+
+// ── vision board ─────────────────────────────────────
+// A written vision + images per Life Area (stored on the area block: props.vision
+// + its attachments), and a whole-life 'wall' gathering every vision image and
+// the bucket-list moments you've lived.
+function visionBody() {
+  const cards = state.areas.map((a) => {
+    const p = a.props || {}; const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
+    return `<button class="vision-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">
+      <div class="vc-head"><span class="vc-dot"></span><span class="vc-title">${esc(a.title)}</span></div>
+      ${(p.vision || '').trim() ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best…</div>'}
+      ${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}
+    </button>`;
+  }).join('');
+  return `<div class="goals-actions"><button class="add-btn wide" data-vision-wall>🖼 Open the wall</button></div>
+    <div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Life Areas to build your vision.</div>'}</div>`;
+}
+async function loadVisionThumbs() {
+  for (const a of state.areas) for (const im of ((a.props && a.props.attachments) || [])) {
+    if (!isImgType(im.type)) continue;
+    const el = document.querySelector(`img[data-vimg="${a.id}:${im.id}"]`);
+    if (!el || el.dataset.loaded) continue;
+    try { el.src = await attUrl(a.id, im); el.dataset.loaded = '1'; } catch {}
+  }
+}
+async function openVisionCard(id) { const a = await api(`/api/blocks/${id}`); state.vision_open = { area: a }; state.view = { type: 'visioncard', id }; renderNav(); renderVisionCard(); }
+function renderVisionCard() {
+  const a = state.vision_open.area; const p = a.props || {};
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
+    <div class="task-focus" style="--h:${hueOf(a)}"><span class="vc-dot big"></span><h1 class="vision-h1">${esc(a.title)}</h1></div>
+    <label class="tf-field goal-why"><span class="tf-label">Your vision for this area</span><textarea class="sel" id="visioncard-text" rows="4" placeholder="Picture this part of your life at its best — write it in the present tense…">${esc(p.vision || '')}</textarea></label>
+    ${attachSection(a)}`;
+  loadThumbs();
+}
+async function openVisionWall() {
+  const [areas, bucket] = await Promise.all([api('/api/blocks?kind=area'), api('/api/blocks?kind=bucket')]);
+  state.areas = areas.sort((x, y) => (x.title || '').localeCompare(y.title || '')); state.bucket = bucket;
+  state.view = { type: 'visionwall' };
+  renderNav(); renderVisionWall();
+}
+function renderVisionWall() {
+  const tiles = [];
+  state.areas.forEach((a) => ((a.props && a.props.attachments) || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: a.id, att: im, hue: hueOf(a), cap: a.title }); }));
+  (state.bucket || []).forEach((b) => { const p = b.props || {}; if (p.status === 'done') (p.attachments || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: b.id, att: im, hue: hueOf(areaById(p.area)), cap: b.title, lived: true }); }); });
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
+    <div class="pane-head"><h1>The wall</h1></div>
+    <p class="rv-period">The life you're reaching for — and the moments you've lived.</p>
+    ${tiles.length ? `<div class="wall-grid">${tiles.map((x) => `<figure class="wall-tile ${x.lived ? 'lived' : ''}" style="--h:${x.hue}"><img data-wimg="${x.block}:${x.att.id}" alt=""><figcaption>${x.lived ? '✓ ' : ''}${esc(x.cap)}</figcaption></figure>`).join('')}</div>` : '<div class="empty" style="padding:50px">Add images to your areas’ visions and to bucket-list moments you’ve lived — they gather here on one wall.</div>'}`;
+  loadWallThumbs(tiles);
+}
+async function loadWallThumbs(tiles) { for (const x of tiles) { const el = document.querySelector(`img[data-wimg="${x.block}:${x.att.id}"]`); if (!el || el.dataset.loaded) continue; try { el.src = await attUrl(x.block, x.att); el.dataset.loaded = '1'; } catch {} } }
+function patchVisionText(id, text) {
+  const a = state.vision_open && state.vision_open.area; if (a && a.id === id) { a.props = a.props || {}; a.props.vision = text; }
+  const inList = state.areas.find((x) => x.id === id); if (inList) { inList.props = inList.props || {}; inList.props.vision = text; }
+  api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { vision: text } }) }).catch((e) => toast(e.message));
 }
 
 // ── view: note ───────────────────────────────────────
@@ -3912,6 +3973,9 @@ document.addEventListener('click', (e) => {
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
+  if (t.closest('[data-open-vision-tab]')) { openGoals('vision').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-vision-wall]')) { openVisionWall().catch((x) => toast(x.message)); return; }
+  const ovi = t.closest('[data-open-vision]'); if (ovi) { openVisionCard(ovi.dataset.openVision).catch((x) => toast(x.message)); return; }
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
   const obk = t.closest('[data-open-bucket]'); if (obk) { openBucketCard(obk.dataset.openBucket).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-goal]')) { newGoal(null).catch((x) => toast(x.message)); return; }
@@ -4182,6 +4246,7 @@ document.addEventListener('change', (e) => {
     else if (id === 'bucketcard-status') patchBucket(bid, { status: e.target.value }, true).then(renderBucketCard);
     else if (id === 'bucketcard-year') patchBucket(bid, { targetYear: e.target.value.trim() || null }, true);
   }
+  if (state.view.type === 'visioncard' && e.target.id === 'visioncard-text') patchVisionText(state.vision_open.area.id, e.target.value);
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
@@ -4514,6 +4579,7 @@ function attHost() {
   if (state.view.type === 'note') return state.note && state.note.current;
   if (state.view.type === 'taskcard') return state.task_open && state.task_open.task;
   if (state.view.type === 'bucketcard') return state.bucket_open && state.bucket_open.item;
+  if (state.view.type === 'visioncard') return state.vision_open && state.vision_open.area;
   if (state.view.type === 'table' && state.tables_view && state.tables_view.openRow) {
     return state.tables_rows && state.tables_rows.find((x) => x.id === state.tables_view.openRow);
   }
@@ -4539,6 +4605,7 @@ function rerenderHost() {
   if (state.view.type === 'note') renderNote();
   else if (state.view.type === 'taskcard') renderTaskCard();
   else if (state.view.type === 'bucketcard') renderBucketCard();
+  else if (state.view.type === 'visioncard') renderVisionCard();
   else if (state.view.type === 'table') renderTable();
 }
 function attachSection(block) {
