@@ -1709,6 +1709,7 @@ async function mailReconcileUnread() {
       const r = await mailApi('/reconcile-unread', { method: 'POST', body: JSON.stringify({ account: id }) });
       cleared += r.cleared || 0;
       state.mail.unseen = state.mail.unseen || {}; state.mail.unseen[id] = r.unseen || 0;
+      state.mail.liveUnseen = state.mail.liveUnseen || {}; state.mail.liveUnseen[id] = r.unseen || 0;
     } catch (e) { toast(e && e.message ? e.message : 'Could not clear'); }
   }
   await refreshMailUnread();
@@ -1864,6 +1865,9 @@ async function loadMessages(quiet) {
       try {
         const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
         state.mail.unseen[a.id] = r.unseen || 0;
+        // The live IMAP unseen count, kept apart from the cache-poll number so a
+        // background /unread refresh can't stomp the stray-unread banner signal.
+        if (f.mailbox === 'INBOX' && !f.flagged && !q) { state.mail.liveUnseen = state.mail.liveUnseen || {}; state.mail.liveUnseen[a.id] = r.unseen || 0; }
         // A search sweeps every folder, so each hit carries its own mailbox;
         // key by it too, since UIDs are only unique within a mailbox.
         const msgs = (r.messages || []).map((x) => { const mb = x.mailbox || f.mailbox; return { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}` }; });
@@ -2525,7 +2529,8 @@ function renderMail(loading) {
   // A "stray" unread: the account's unseen count is higher than the unread you
   // can actually see in the list (an old message flagged unread, older than the
   // newest page). Offer to clear it, since it's otherwise unreachable.
-  const scopeUnseen = m.account === 'all' ? totalUnseen : unseenOf(m.account);
+  const liveUnseenOf = (id) => (m.liveUnseen && m.liveUnseen[id]) || 0;
+  const scopeUnseen = m.account === 'all' ? (m.accounts || []).reduce((a, x) => a + liveUnseenOf(x.id), 0) : liveUnseenOf(m.account);
   const visibleUnread = (m.messages || []).filter((x) => !x.seen).length;
   const strayUnread = (m.folder || 'inbox') === 'inbox' && !mailSearching() ? Math.max(0, scopeUnseen - visibleUnread) : 0;
   // One compact dropdown instead of a row of account tabs: defaults to All, pick
