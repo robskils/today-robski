@@ -140,6 +140,22 @@ async function imapOpen(env, acct) {
     },
     async logout() { try { await cmd('LOGOUT'); } catch {} try { await writer.close(); } catch {} },
     async select(mbox) { const r = await cmd(`SELECT ${imapStr(mbox)}`); if (!r.ok) throw new Error(`Cannot open ${mbox}`); const ex = r.lines.map((l) => l.match(/\* (\d+) EXISTS/)).find(Boolean); return ex ? Number(ex[1]) : 0; },
+    // APPEND a raw message into a mailbox (used to save a copy of what we send
+    // to Sent). Uses an IMAP literal: send the byte count, wait for the "+"
+    // continuation, then the bytes and a terminating CRLF.
+    async append(mbox, raw, flags) {
+      const bytes = enc.encode(raw);
+      const t = 'A' + (++tag);
+      const fl = flags ? ` (${flags})` : '';
+      await writer.write(enc.encode(`${t} APPEND ${imapStr(mbox)}${fl} {${bytes.length}}\r\n`));
+      const c = await withTimeout(readResponse(t), 20000, 'IMAP append');
+      if (!c.cont) { if (c.ok) return true; throw new Error(`APPEND ${mbox} rejected`); }
+      await writer.write(bytes);
+      await writer.write(enc.encode('\r\n'));
+      const fin = await withTimeout(readResponse(t), 20000, 'IMAP append body');
+      if (!fin.ok) throw new Error(`APPEND ${mbox} failed`);
+      return true;
+    },
     async listMailboxes() {
       const r = await cmd('LIST "" "*"'); const out = [];
       for (const l of r.lines) { const m = l.match(/^\* LIST \(([^)]*)\) (?:"[^"]*"|NIL) (?:"([^"]*)"|(\S+))/); if (m) out.push({ path: m[2] || m[3], flags: m[1] }); }
@@ -223,6 +239,35 @@ async function imapOpen(env, acct) {
     },
     cmd, reader, writer, enc,
   };
+}
+
+// Providers name their special folders differently (Gmail "[Gmail]/Sent Mail",
+// Outlook "Sent Items", plain "Sent", dovecot "INBOX.Sent"). Resolve a logical
+// name to the real path via RFC 6154 special-use flags, then common-name
+// fallbacks. Returns the wanted name unchanged if nothing matches, so a real
+// path (e.g. a search hit's own mailbox) passes straight through.
+const SPECIAL_USE = { Sent: '\\Sent', Archive: '\\Archive', Junk: '\\Junk', Trash: '\\Trash', Drafts: '\\Drafts' };
+const SPECIAL_NAMES = {
+  Sent: ['Sent', 'Sent Items', 'Sent Mail', 'Sent Messages', '[Gmail]/Sent Mail', 'INBOX.Sent'],
+  Archive: ['Archive', 'All Mail', '[Gmail]/All Mail', 'INBOX.Archive'],
+  Junk: ['Junk', 'Spam', 'Junk E-mail', 'Junk Email', '[Gmail]/Spam', 'INBOX.Junk', 'INBOX.spam'],
+  Trash: ['Trash', 'Deleted', 'Deleted Items', 'Deleted Messages', '[Gmail]/Trash', 'INBOX.Trash'],
+  Drafts: ['Drafts', 'Draft', '[Gmail]/Drafts', 'INBOX.Drafts'],
+};
+async function resolveMailbox(im, wanted) {
+  if (!wanted || /^INBOX$/i.test(wanted)) return 'INBOX';
+  const flag = SPECIAL_USE[wanted];
+  if (!flag) return wanted;   // already a real path
+  let boxes;
+  try { boxes = await im.listMailboxes(); } catch { return wanted; }
+  const byFlag = boxes.find((b) => (b.flags || '').toLowerCase().includes(flag.toLowerCase()));
+  if (byFlag) return byFlag.path;
+  const names = (SPECIAL_NAMES[wanted] || [wanted]).map((n) => n.toLowerCase());
+  const lc = (b) => (b.path || '').toLowerCase();
+  const exact = boxes.find((b) => names.includes(lc(b)));
+  if (exact) return exact.path;
+  const suffix = boxes.find((b) => names.some((n) => lc(b).endsWith(n)));
+  return suffix ? suffix.path : wanted;
 }
 
 // ── header decoding ───────────────────────────────────────────────────
@@ -707,10 +752,14 @@ export async function handleMail(request, env, url, json, err) {
           out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
           return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll: true }, request);
         }
-        const total = await im.select(mailbox);
+        const box = await resolveMailbox(im, mailbox);
+        const total = await im.select(box);
         let messages = !total ? []
           : flagged ? await im.listFlagged(limit)
           : await im.listRange(total, offset, limit);
+        // Stamp the real path so star/move/open on a Sent (etc.) message hit the
+        // provider's actual folder, not the logical alias the client asked for.
+        if (box !== 'INBOX') messages = messages.map((m) => ({ ...m, mailbox: box }));
         // Blocked senders: sweep them out of the inbox into Junk and hide them.
         // Only on the first inbox page.
         if (blocked.size && !flagged && offset === 0 && mailbox === 'INBOX') {
@@ -852,7 +901,7 @@ export async function handleMail(request, env, url, json, err) {
       if (!/^(junk|spam|trash|deleted)/i.test(mailbox) && !/(junk|spam|trash|deleted)$/i.test(mailbox)) return err('Only Spam or Trash can be emptied', request, 400);
       const im = await imapOpen(env, acct);
       try {
-        await im.login(); const total = await im.select(mailbox);
+        await im.login(); const total = await im.select(await resolveMailbox(im, mailbox));
         if (total) { await im.cmd('STORE 1:* +FLAGS (\\Deleted)'); await im.cmd('EXPUNGE'); }
         return json({ ok: true, emptied: total }, request);
       } finally { await im.logout(); }
@@ -887,7 +936,17 @@ export async function handleMail(request, env, url, json, err) {
         const obj = await env.ATTACHMENTS.get(`mailout/${a.id}`); if (!obj) continue;
         outAtts.push({ name: a.name, type: a.type, b64: bufToB64(new Uint8Array(await obj.arrayBuffer())) });
       }
-      await smtpSend(env, acct, { rcpts, raw: buildMessage(acct, { ...b, attachments: outAtts }) });
+      const raw = buildMessage(acct, { ...b, attachments: outAtts });
+      await smtpSend(env, acct, { rcpts, raw });
+      // Save a copy to Sent so it's visible in the app. Gmail's SMTP already
+      // files sent mail itself, so appending there would duplicate it - skip it.
+      const isGmail = /g(oogle)?mail\.com/i.test(`${acct.smtp_host || ''} ${acct.imap_host || ''}`);
+      if (!isGmail) {
+        const im = await imapOpen(env, acct);
+        try { await im.login(); const box = await resolveMailbox(im, 'Sent'); await im.append(box, raw, '\\Seen'); }
+        catch (e) { console.error('mail: save-to-sent failed:', e.message); }
+        finally { try { await im.logout(); } catch {} }
+      }
       // Best-effort cleanup of the throwaway blobs.
       for (const a of (Array.isArray(b.attachments) ? b.attachments : [])) { if (env.ATTACHMENTS && a && a.id) { try { await env.ATTACHMENTS.delete(`mailout/${a.id}`); } catch {} } }
       return json({ ok: true }, request);

@@ -1526,6 +1526,7 @@ const MAIL_FOLDERS = [
   { key: 'inbox', label: 'Inbox', mailbox: 'INBOX' },
   { key: 'starred', label: '★ Starred', mailbox: 'INBOX', flagged: true },
   { key: 'drafts', label: 'Drafts', local: true },
+  { key: 'sent', label: 'Sent', mailbox: 'Sent' },
   { key: 'archive', label: 'Archive', mailbox: 'Archive' },
   { key: 'spam', label: 'Spam', mailbox: 'Junk' },
   { key: 'trash', label: 'Trash', mailbox: 'Trash' },
