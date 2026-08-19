@@ -2535,7 +2535,7 @@ function renderMail(loading) {
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
     const convStrip = (oThread && oThread.count > 1)
-      ? `<div class="mail-conv-strip">${oThread.messages.slice().reverse().map((mm) => `<button class="mail-conv-item ${mm._key === o._key ? 'on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mc-from">${esc(mailFrom(mm) || '?')}</span><span class="mc-date">${mailDate(mm.date)}</span>${mm.flagged ? '<span class="mc-star">★</span>' : ''}</button>`).join('')}</div>`
+      ? `<div class="mail-conv-strip">${oThread.messages.map((mm) => `<button class="mail-conv-item ${mm._key === o._key ? 'on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mc-from">${esc(mailFrom(mm) || '?')}</span><span class="mc-date">${mailDate(mm.date)}</span>${mm.flagged ? '<span class="mc-star">★</span>' : ''}</button>`).join('')}</div>`
       : '';
     reader = `<div class="mail-msg">
       <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
