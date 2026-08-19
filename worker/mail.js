@@ -612,7 +612,15 @@ export async function handleMail(request, env, url, json, err) {
       return json({ ...publicAccount(acct), warning }, request, 201);
     }
 
-    if (sub === 'accounts' && method === 'DELETE') { await env.DB.prepare('DELETE FROM mail_accounts WHERE id = ?').bind(seg[1]).run(); return json({ ok: true }, request); }
+    if (sub === 'accounts' && method === 'DELETE') {
+      const id = seg[1];
+      await env.DB.batch([
+        env.DB.prepare('DELETE FROM mail_accounts WHERE id = ?').bind(id),
+        env.DB.prepare('DELETE FROM mail_cache WHERE account = ?').bind(id),
+        env.DB.prepare('DELETE FROM mail_cache_meta WHERE account = ?').bind(id),   // no orphan = no ghost unread
+      ]);
+      return json({ ok: true }, request);
+    }
 
     if (sub === 'accounts' && seg[1] && method === 'PATCH') {
       const b = await request.json();
@@ -644,7 +652,9 @@ export async function handleMail(request, env, url, json, err) {
     // Cheap unread counts straight from the cache meta (no IMAP) - polled by the
     // client to keep the Mail badges fresh on their own.
     if (sub === 'unread' && method === 'GET') {
-      const { results } = await env.DB.prepare("SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX'").all();
+      // Only accounts that still exist - a deleted mailbox left an orphan meta
+      // row that kept the badge stuck on a ghost unread.
+      const { results } = await env.DB.prepare("SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX' AND account IN (SELECT id FROM mail_accounts)").all();
       const unseen = {}; let total = 0; (results || []).forEach((r) => { unseen[r.account] = r.unseen; total += r.unseen || 0; });
       return json({ unseen, total }, request);
     }
