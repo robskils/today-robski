@@ -2581,6 +2581,9 @@ function renderMail(loading) {
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
     ${m.moveMenu ? mailMoveMenuHtml() : ''}`;
   if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
+  // Keep keyboard focus on the reader (not the body iframe / a stale button) so
+  // single-key shortcuts - R reply, E archive… - land every time you're reading.
+  if (m.open && !m.composing) { const el = document.querySelector('.mail-msg'); if (el) { el.tabIndex = -1; setTimeout(() => { try { el.focus({ preventScroll: true }); } catch {} }, 0); } }
 }
 
 function showQuickTask() {

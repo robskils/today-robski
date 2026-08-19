@@ -1096,6 +1096,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-row.unread .mail-from { font-weight:700; } .mail-row.unread .mail-subject { color:var(--ink); font-weight:500; }
 .mail-empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--ink-3); font-size:16px; }
 .mail-msg { padding:20px 26px 28px; }
+.mail-msg:focus { outline:none; }
 .mail-reader-head { display:flex; align-items:center; gap:10px; }
 .mail-reader-head .mail-msg-act { margin-left:auto; margin-top:0; }
 .mail-reader-title { font-weight:500; color:var(--ink-2); }
