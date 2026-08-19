@@ -1168,7 +1168,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Compose actions live in the sticky header now, so Send/Attach/Cancel are
    always in reach even mid-way down a very long email. */
 .mail-compose-head-act { margin-left:auto; display:flex; gap:8px; align-items:center; flex:none; }
-.mail-compose-head-act .add-btn { padding:8px 18px; }
+.mail-compose-head-act .add-btn { padding:8px 18px; white-space:nowrap; }
+/* Keep Send/Attach/Discard fully visible: the back button and actions never
+   shrink; the title and the "Resumed draft" note give up space and truncate,
+   so a large font size can't push Send off the card's rounded edge. */
+.mail-compose-head { flex-wrap:nowrap; min-width:0; }
+.mail-compose-head .mail-back { flex:none; }
+.mail-compose-head .mail-reader-title { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mail-compose-head .mail-draft-note { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* Spark-style: the action toolbar stays pinned while the email scrolls under
    it. It must sit BELOW the 44px tab strip (sticky, z:25) - top:0 would pin it
    behind the tabs, which read as "not pinned at all". */
