@@ -186,11 +186,12 @@ async function imapOpen(env, acct) {
       const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
     },
-    async unseenCount() {
+    async searchUnseenUids() {
       const s = await cmd('UID SEARCH UNSEEN');
       const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
-      return raw ? raw.split(/\s+/).filter(Boolean).length : 0;
+      return raw ? raw.split(/\s+/).filter(Boolean) : [];
     },
+    async unseenCount() { return (await this.searchUnseenUids()).length; },
     // Starred = the \Flagged flag. Find them, then fetch their headers.
     async listFlagged(limit) {
       const s = await cmd('UID SEARCH FLAGGED');
@@ -717,6 +718,25 @@ export async function handleMail(request, env, url, json, err) {
     if (!acct) return err('unknown account', request, 400);
 
     if (sub === 'mailboxes') { const im = await imapOpen(env, acct); try { await im.login(); return json(await im.listMailboxes(), request); } finally { await im.logout(); } }
+
+    // Clear a "stray" unread: a message flagged unseen but sitting older than
+    // the newest 40 the inbox shows, so the badge counts it but you can't reach
+    // it. Mark exactly those read - never one that's visible in the list.
+    if (sub === 'reconcile-unread' && method === 'POST') {
+      const im = await imapOpen(env, acct);
+      try {
+        await im.login();
+        const total = await im.select('INBOX');
+        const unseenUids = total ? await im.searchUnseenUids() : [];
+        const recent = total ? await im.listRange(total, 0, 40) : [];
+        const recentSet = new Set(recent.map((m) => String(m.uid)));
+        const stray = unseenUids.filter((u) => !recentSet.has(String(u)));
+        if (stray.length) await im.cmd(`UID STORE ${stray.join(',')} +FLAGS (\\Seen)`);
+        const remaining = Math.max(0, unseenUids.length - stray.length);
+        await env.DB.prepare("UPDATE mail_cache_meta SET unseen=? WHERE account=? AND mailbox='INBOX'").bind(remaining, acct.id).run();
+        return json({ cleared: stray.length, unseen: remaining }, request);
+      } finally { await im.logout(); }
+    }
 
     if (sub === 'messages') {
       const mailbox = url.searchParams.get('mailbox') || 'INBOX';

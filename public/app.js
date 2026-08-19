@@ -1697,6 +1697,24 @@ async function mailUnblock(address, accountId) {
     toast(`Unblocked ${address}`); await openMailAccounts();
   } catch (e) { toast(e.message); }
 }
+// Clear stray unread (old messages flagged unread, older than the visible page)
+// across the current scope, then refresh the badge and the list.
+async function mailReconcileUnread() {
+  const ids = state.mail.account === 'all' ? (state.mail.accounts || []).map((a) => a.id) : [state.mail.account];
+  toast('Clearing…');
+  let cleared = 0;
+  for (const id of ids) {
+    if (!id) continue;
+    try {
+      const r = await mailApi('/reconcile-unread', { method: 'POST', body: JSON.stringify({ account: id }) });
+      cleared += r.cleared || 0;
+      state.mail.unseen = state.mail.unseen || {}; state.mail.unseen[id] = r.unseen || 0;
+    } catch (e) { toast(e && e.message ? e.message : 'Could not clear'); }
+  }
+  await refreshMailUnread();
+  toast(cleared ? `Cleared ${cleared} unread` : 'Nothing stray to clear');
+  loadMessages();
+}
 // Keep the unread badges fresh on their own, from the cheap D1 cache count.
 async function refreshMailUnread() {
   try {
@@ -2504,6 +2522,12 @@ function renderMail(loading) {
   const unseenOf = (id) => (m.unseen && m.unseen[id]) || 0;
   const badge = (n) => n ? `<span class="mail-unread-b">${n}</span>` : '';
   const totalUnseen = Object.values(m.unseen || {}).reduce((a, b) => a + b, 0);
+  // A "stray" unread: the account's unseen count is higher than the unread you
+  // can actually see in the list (an old message flagged unread, older than the
+  // newest page). Offer to clear it, since it's otherwise unreachable.
+  const scopeUnseen = m.account === 'all' ? totalUnseen : unseenOf(m.account);
+  const visibleUnread = (m.messages || []).filter((x) => !x.seen).length;
+  const strayUnread = (m.folder || 'inbox') === 'inbox' && !mailSearching() ? Math.max(0, scopeUnseen - visibleUnread) : 0;
   // One compact dropdown instead of a row of account tabs: defaults to All, pick
   // a single box only when you want to.
   const accScope = (m.accounts || []).length > 1 ? `<select class="sel mail-acct-scope-sel" data-mail-acct-sel title="Which mailbox">
@@ -2572,6 +2596,7 @@ function renderMail(loading) {
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}
+    ${(!m.open && !m.composing && strayUnread) ? `<div class="mail-stray"><span>${strayUnread} unread message${strayUnread > 1 ? 's' : ''} you can't see - older mail still flagged unread.</span><button class="ghost" data-mail-reconcile>Mark read</button></div>` : ''}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     ${(m.selected && m.selected.size && !m.open && !m.composing) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
@@ -4124,6 +4149,7 @@ document.addEventListener('click', (e) => {
   const mo = t.closest('[data-mail-open]'); if (mo) { if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
+  if (t.closest('[data-mail-reconcile]')) { mailReconcileUnread(); return; }
   if (t.closest('[data-mail-cancel]')) { saveDraft(); state.mail.composing = false; renderMail(); return; }
   if (t.closest('[data-mail-attach]')) { const f = $('#mc-file'); if (f) f.click(); return; }
   const madel = t.closest('[data-mail-att-del]'); if (madel) { mailRemoveAttachment(madel.dataset.mailAttDel); return; }
