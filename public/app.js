@@ -3871,6 +3871,59 @@ document.addEventListener('pointerdown', (e) => { const h = e.target.closest && 
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.mail && state.mail.composing) saveDraft(); });
 window.addEventListener('pagehide', () => { if (state.mail && state.mail.composing) saveDraft(); });
 window.addEventListener('blur', () => { if (state.mail && state.mail.composing) saveDraft(); });
+// ── markdown paste ───────────────────────────────────
+// Paste Markdown text into any prose editor and it renders: headings, bold,
+// italic, lists, links, code, blockquotes and tables. Only plain-text pastes
+// that actually look like Markdown are converted; rich (HTML) pastes and
+// ordinary text are left alone.
+function mdInline(s) {
+  let t = esc(s);
+  t = t.replace(/`([^`]+)`/g, (_m, c) => `<code>${c}</code>`);
+  t = t.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>').replace(/__([^_]+?)__/g, '<strong>$1</strong>');
+  t = t.replace(/(^|[^*])\*(?!\s)([^*]+?)\*/g, '$1<em>$2</em>').replace(/(^|[^\w])_(?!\s)([^_]+?)_(?!\w)/g, '$1<em>$2</em>');
+  t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_m, txt, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${txt}</a>`);
+  return t;
+}
+const mdSplitRow = (line) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((s) => s.trim());
+const mdIsBlock = (l) => /^(#{1,3}\s|>\s?|\s*[-*+]\s|\s*\d+\.\s|```)/.test(l);
+function mdPasteHtml(text) {
+  const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+  const out = []; let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) { i++; continue; }
+    const h = line.match(/^(#{1,3})\s+(.*)$/);
+    if (h) { out.push(`<h${h[1].length}>${mdInline(h[2])}</h${h[1].length}>`); i++; continue; }
+    if (/^```/.test(line)) { i++; const buf = []; while (i < lines.length && !/^```/.test(lines[i])) { buf.push(esc(lines[i])); i++; } i++; out.push(`<p><code>${buf.join('<br>')}</code></p>`); continue; }
+    if (/^>\s?/.test(line)) { const buf = []; while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, '')); i++; } out.push(`<blockquote>${mdInline(buf.join(' '))}</blockquote>`); continue; }
+    if (/\|/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(lines[i + 1])) {
+      const header = mdSplitRow(line); i += 2; const rows = [];
+      while (i < lines.length && /\|/.test(lines[i]) && lines[i].trim()) { rows.push(mdSplitRow(lines[i])); i++; }
+      out.push(`<table><thead><tr>${header.map((c) => `<th>${mdInline(c)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${mdInline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+      continue;
+    }
+    if (/^\s*[-*+]\s+/.test(line)) { const buf = []; while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) { buf.push(lines[i].replace(/^\s*[-*+]\s+/, '')); i++; } out.push(`<ul>${buf.map((li) => `<li>${mdInline(li)}</li>`).join('')}</ul>`); continue; }
+    if (/^\s*\d+\.\s+/.test(line)) { const buf = []; while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) { buf.push(lines[i].replace(/^\s*\d+\.\s+/, '')); i++; } out.push(`<ol>${buf.map((li) => `<li>${mdInline(li)}</li>`).join('')}</ol>`); continue; }
+    const buf = []; while (i < lines.length && lines[i].trim() && !mdIsBlock(lines[i])) { buf.push(lines[i]); i++; }
+    out.push(`<p>${buf.map(mdInline).join('<br>')}</p>`);
+  }
+  return out.join('');
+}
+function looksMarkdown(t) {
+  return /(^|\n)#{1,6}\s/.test(t) || /(^|\n)\s*[-*+]\s+\S/.test(t) || /(^|\n)\s*\d+\.\s+\S/.test(t) || /(^|\n)>\s/.test(t) || /\*\*[^*\n]+\*\*/.test(t) || /`[^`\n]+`/.test(t) || /\[[^\]\n]+\]\(https?:\/\//.test(t) || /(^|\n)\s*\|[^\n]*\|[^\n]*\n\s*\|?[\s:|-]*-/.test(t) || /(^|\n)```/.test(t);
+}
+document.addEventListener('paste', (e) => {
+  const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
+  if (!prose) return;
+  const cd = e.clipboardData; if (!cd) return;
+  const html = cd.getData('text/html');
+  if (html && html.trim()) return;                       // rich source: keep its formatting (sanitised on save)
+  const text = cd.getData('text/plain');
+  if (!text || !looksMarkdown(text)) return;             // plain, non-markdown: paste as-is
+  e.preventDefault();
+  document.execCommand('insertHTML', false, mdPasteHtml(text));
+  prose.dispatchEvent(new Event('input', { bubbles: true }));   // trigger the debounced save
+});
 document.addEventListener('input', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
