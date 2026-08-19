@@ -2213,7 +2213,10 @@ function renderMailAccounts(note) {
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>
     ${(state.mail.accounts || []).length ? `<button class="mail-add-more" data-mail-add-acct>+ Add another mailbox</button>` : ''}
-    ${pushSectionHtml()}`;
+    ${pushSectionHtml()}
+    <section class="push-sec"><div class="home-sec-h">Default email app</div>
+      <p class="scope" style="margin:0 0 12px">Make Robski Life open when you click a <b>mailto:</b> email link in your browser. Your browser will ask you to allow it, then you set it as the default (Brave/Chrome: <b>Settings → Site &amp; Shields settings → Handlers</b>, or the ⛓ icon in the address bar).</p>
+      <button class="add-btn wide" data-mail-handler>Set Robski Life as my email app</button></section>`;
 }
 async function saveSignature(id) {
   const ed = document.querySelector(`[data-sig-acct="${id}"]`); if (!ed) return;
@@ -4094,6 +4097,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-push-enable]')) { enablePush(); return; }
   if (t.closest('[data-push-test]')) { pushTest(); return; }
+  if (t.closest('[data-mail-handler]')) { if (navigator.registerProtocolHandler) { registerMailHandler(); toast('Allow it in the prompt, then set Robski Life as your default in the browser’s handler settings.'); } else toast('This browser doesn’t support setting a mail handler (Safari/iOS don’t).'); return; }
   const dpo = t.closest('[data-dp-open]'); if (dpo) { openDatePicker(dpo.dataset.dpOpen); return; }
   const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick); return; }
   const dpst = t.closest('[data-dp-step]'); if (dpst) { dpStep(+dpst.dataset.dpStep); return; }
@@ -5324,6 +5328,25 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
 document.addEventListener('click', (e) => { if (e.target.id === 'gate-sms') gateSend('sms'); });
 
 // ── boot ─────────────────────────────────────────────
+// Parse a mailto: URI (to + ?subject/body/cc/bcc) into compose fields.
+function parseMailto(s) {
+  const raw = String(s || '').replace(/^mailto:/i, '');
+  const qi = raw.indexOf('?');
+  let addr = qi >= 0 ? raw.slice(0, qi) : raw;
+  try { addr = decodeURIComponent(addr); } catch {}
+  const q = new URLSearchParams(qi >= 0 ? raw.slice(qi + 1) : '');
+  return { to: addr, cc: q.get('cc') || '', bcc: q.get('bcc') || '', subject: q.get('subject') || '', body: q.get('body') || '' };
+}
+async function openMailCompose(c) {
+  await openMail();
+  state.mail.composing = { _draftId: newDraftId(), to: c.to || '', cc: c.cc || '', bcc: c.bcc || '', subject: c.subject || '', body: esc(c.body || '').replace(/\n/g, '<br>') };
+  renderMail();
+  setTimeout(() => { const el = document.getElementById(c.to ? 'mc-body' : 'mc-to'); if (el) el.focus(); }, 40);
+}
+// Offer Robski Life as the browser's mailto handler (Chromium/Firefox). The
+// browser then asks the user to allow it, and to make it the default.
+function registerMailHandler() { try { if (navigator.registerProtocolHandler) navigator.registerProtocolHandler('mailto', location.origin + '/?mailto=%s'); } catch {} }
+
 (async function boot() {
   initTheme();
   if (!token()) { showGate(); return; }
@@ -5341,12 +5364,15 @@ document.addEventListener('click', (e) => { if (e.target.id === 'gate-sms') gate
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
     } else { state.tabs = [{ id: uid(), view: { type: 'home' }, label: 'Home' }]; state.activeTab = state.tabs[0].id; }
     const route = location.pathname.replace(/\/$/, '');
-    if (route === '/calendar') await openCalendar();
+    const mailtoParam = new URLSearchParams(location.search).get('mailto');
+    if (mailtoParam) { history.replaceState(null, '', location.pathname); await openMailCompose(parseMailto(mailtoParam)).catch(() => openHome()); }
+    else if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
     else if (route === '/journal') await openJournal();
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     initPush();              // register the SW; refresh the push subscription if already granted
+    registerMailHandler();   // offer Robski Life as the browser's mailto: handler
   } catch (e) { toast(e.message); renderNav(); }
 })();
