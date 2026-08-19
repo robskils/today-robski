@@ -3916,10 +3916,12 @@ document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!prose) return;
   const cd = e.clipboardData; if (!cd) return;
-  const html = cd.getData('text/html');
-  if (html && html.trim()) return;                       // rich source: keep its formatting (sanitised on save)
+  // If the plain text is Markdown, convert it - even when a text/html copy is
+  // present (apps attach a trivial plain-text-as-HTML wrapper, which would
+  // otherwise paste the raw '#'/'**' as literal text). Non-markdown falls
+  // through to the browser's default paste, keeping genuinely rich content.
   const text = cd.getData('text/plain');
-  if (!text || !looksMarkdown(text)) return;             // plain, non-markdown: paste as-is
+  if (!text || !looksMarkdown(text)) return;
   e.preventDefault();
   document.execCommand('insertHTML', false, mdPasteHtml(text));
   prose.dispatchEvent(new Event('input', { bubbles: true }));   // trigger the debounced save
