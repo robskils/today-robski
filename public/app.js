@@ -4088,7 +4088,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-scan-capture]')) { scanCapture(); return; }
   if (t.closest('[data-scan-save]')) { scanSave(); return; }
   if (t.closest('[data-scan-retake]')) { scan.src = null; scanStartCamera(); return; }
-  if (t.closest('[data-scan-bw]')) { scan.bw = !scan.bw; scanStage('adjust'); return; }
+  if (t.closest('[data-scan-mode]')) { const order = ['auto', 'bw', 'colour']; scan.mode = order[(order.indexOf(scan.mode || 'auto') + 1) % 3]; scanStage('adjust'); return; }
   if (t.closest('[data-scan-add]')) { scanAddPage(); return; }
   // mail interactions
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
@@ -4826,7 +4826,7 @@ function jpegsToPdf(pages) {
 }
 const scan = { block: null, stage: null, pages: [], bw: true, corners: null, drag: null };
 function openScanner(blockId) {
-  scan.block = blockId; scan.pages = []; scan.bw = true; scan.corners = null;
+  scan.block = blockId; scan.pages = []; scan.mode = 'auto'; scan.corners = null;
   let el = document.getElementById('scanner');
   if (!el) { el = document.createElement('div'); el.id = 'scanner'; document.body.appendChild(el); }
   scanStartCamera();
@@ -4848,7 +4848,7 @@ function scanStage(stage) {
       <div class="scan-view scan-adjust"><canvas id="scan-canvas"></canvas><div id="scan-handles"></div></div>
       <div class="scan-bar">
         <button class="scan-btn ghost" data-scan-retake>Retake</button>
-        <button class="scan-btn tog ${scan.bw ? 'on' : ''}" data-scan-bw>${scan.bw ? 'B&W' : 'Colour'}</button>
+        <button class="scan-btn tog on" data-scan-mode title="Tap to change enhancement">${SCAN_MODES[scan.mode || 'auto']}</button>
         <button class="scan-btn primary" data-scan-add>Add page</button>
       </div></div>`;
     scanDrawAdjust();
@@ -4893,7 +4893,8 @@ function orderCorners(p) {
 // Perspective-correct the quad the user framed into a flat rectangle, then
 // enhance. Pure JS: inverse-map each output pixel through the homography and
 // bilinear-sample the source.
-function warpPage(srcCanvas, corners, bw) {
+const SCAN_MODES = { auto: 'Enhance', bw: 'B&W', colour: 'Colour' };
+function warpPage(srcCanvas, corners, mode) {
   const [tl, tr, br, bl] = corners; const D = (a, z) => Math.hypot(a.x - z.x, a.y - z.y);
   let W = Math.max(8, Math.round(Math.max(D(br, bl), D(tr, tl))));
   let H = Math.max(8, Math.round(Math.max(D(tr, br), D(tl, bl))));
@@ -4914,9 +4915,26 @@ function warpPage(srcCanvas, corners, bw) {
       od[oi + 3] = 255;
     }
   }
-  if (bw) adaptiveBW(od, W, H); else { for (let i = 0; i < od.length; i += 4) for (let k = 0; k < 3; k++) { const val = (od[i + k] - 128) * 1.18 + 128 + 6; od[i + k] = val < 0 ? 0 : val > 255 ? 255 : val; } }
+  enhancePage(od, W, H, mode);
   octx.putImageData(oImg, 0, 0);
   return { out, W, H };
+}
+// Default "Enhance": grayscale + auto levels - stretch the paper to white and
+// the ink to dark from the image's own histogram, so uneven phone lighting is
+// flattened while photos stay legible (no 1-bit destruction). 'colour' keeps
+// hue with a contrast lift; 'bw' is the hard threshold for pure-text pages.
+function enhancePage(od, W, H, mode) {
+  if (mode === 'colour') { for (let i = 0; i < od.length; i += 4) for (let k = 0; k < 3; k++) { const v = (od[i + k] - 128) * 1.22 + 128 + 8; od[i + k] = v < 0 ? 0 : v > 255 ? 255 : v; } return; }
+  if (mode === 'bw') { adaptiveBW(od, W, H); return; }
+  const N = W * H; const gray = new Uint8Array(N); const hist = new Uint32Array(256);
+  for (let i = 0, p = 0; i < N; i++, p += 4) { const gv = (0.299 * od[p] + 0.587 * od[p + 1] + 0.114 * od[p + 2]) | 0; gray[i] = gv; hist[gv]++; }
+  let acc = 0, black = 0, white = 255;
+  for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= N * 0.03) { black = i; break; } }
+  acc = 0; for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= N * 0.12) { white = i; break; } }   // paper ≈ upper 12%
+  if (white <= black + 8) white = Math.min(255, black + 40);
+  const range = white - black, lut = new Uint8Array(256);
+  for (let i = 0; i < 256; i++) { let t = (i - black) / range; t = t < 0 ? 0 : t > 1 ? 1 : t; t = Math.pow(t, 1.35); lut[i] = (t * 255) | 0; }   // gamma darkens ink
+  for (let i = 0, p = 0; i < N; i++, p += 4) { const v = lut[gray[i]]; od[p] = od[p + 1] = od[p + 2] = v; }
 }
 // Local-mean adaptive threshold (integral image) - the crisp "scanned" B&W look
 // that survives uneven lighting far better than a single global cutoff.
@@ -4925,7 +4943,7 @@ function adaptiveBW(od, W, H) {
   for (let i = 0, p = 0; i < N; i++, p += 4) gray[i] = 0.299 * od[p] + 0.587 * od[p + 1] + 0.114 * od[p + 2];
   const iw = W + 1, integ = new Float64Array(iw * (H + 1));
   for (let y = 0; y < H; y++) { let rs = 0; for (let x = 0; x < W; x++) { rs += gray[y * W + x]; integ[(y + 1) * iw + (x + 1)] = integ[y * iw + (x + 1)] + rs; } }
-  const rad = Math.max(8, Math.floor(Math.min(W, H) / 40)), C = 10;
+  const rad = Math.max(14, Math.floor(Math.min(W, H) / 24)), C = 16;   // bigger window + higher offset = far less speckle
   for (let y = 0; y < H; y++) {
     const y0 = y - rad < 0 ? 0 : y - rad, y1 = y + rad >= H ? H - 1 : y + rad;
     for (let x = 0; x < W; x++) {
@@ -4964,7 +4982,7 @@ function scanCornerDown(i, e) {
   document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
 }
 function scanAddPage() {
-  let res; try { res = warpPage(scan.src, scan.corners, scan.bw); } catch (e) { toast('Could not process page'); return; }
+  let res; try { res = warpPage(scan.src, scan.corners, scan.mode || 'auto'); } catch (e) { toast('Could not process page'); return; }
   res.out.toBlob(async (blob) => {
     if (!blob) { toast('Could not process page'); return; }
     const bytes = new Uint8Array(await blob.arrayBuffer());
