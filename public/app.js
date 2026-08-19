@@ -849,8 +849,8 @@ function renderNotesList() {
   $('#pane').innerHTML = `
     ${pageCrumb('Notes')}
     <div class="pane-head home-head"><h1>Notes</h1></div>
-    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${typeChips}${sortSel}<button class="add-btn wide notes-new" data-new-note>+ New note</button></div>
+    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     ${listHtml}`;
 }
 
