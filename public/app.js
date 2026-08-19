@@ -3907,7 +3907,7 @@ function mdPasteHtml(text) {
     const buf = []; while (i < lines.length && lines[i].trim() && !mdIsBlock(lines[i])) { buf.push(lines[i]); i++; }
     out.push(`<p>${buf.map(mdInline).join('<br>')}</p>`);
   }
-  return out.join('');
+  return out.join('').replace(/<\/ul>\s*<ul>/g, '').replace(/<\/ol>\s*<ol>/g, '');   // merge adjacent lists
 }
 function looksMarkdown(t) {
   return /(^|\n)#{1,6}\s/.test(t) || /(^|\n)\s*[-*+]\s+\S/.test(t) || /(^|\n)\s*\d+\.\s+\S/.test(t) || /(^|\n)>\s/.test(t) || /\*\*[^*\n]+\*\*/.test(t) || /`[^`\n]+`/.test(t) || /\[[^\]\n]+\]\(https?:\/\//.test(t) || /(^|\n)\s*\|[^\n]*\|[^\n]*\n\s*\|?[\s:|-]*-/.test(t) || /(^|\n)```/.test(t);
