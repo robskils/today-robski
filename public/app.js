@@ -1935,15 +1935,21 @@ function htmlToPlain(html) {
   return (d.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
 }
 async function mailSend(to, cc, bcc, subject, bodyHtml, inReplyTo) {
-  const from = composeAcctId();
-  const acct = (state.mail.accounts || []).find((a) => a.id === from);
-  const sig = acct && acct.signature;
-  const attachments = (state.mail.composing && state.mail.composing.attachments) || [];
-  const text = htmlToPlain(bodyHtml) + (sig ? `\n\n${sigToText(sig)}` : '');
-  const html = `<div style="font-family:-apple-system,Segoe UI,Inter,sans-serif;font-size:15px;line-height:1.55;color:#1b1820">${sanitizeEmailHtml(bodyHtml || '')}</div>${sig ? `<br>${sig}` : ''}`;
-  const payload = { account: from, to, cc, bcc, subject, text, html, inReplyTo, attachments };
-  try { await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) }); toast('Sent'); clearDraft(); state.mail.composing = false; renderMail(); }
-  catch (e) { toast(e.message); }
+  // Everything is inside the try: building the payload (signature, sanitise)
+  // can throw too, and a silent throw here is a Send that "does nothing".
+  try {
+    const from = composeAcctId();
+    if (!from) { toast('No account to send from'); return; }
+    const acct = (state.mail.accounts || []).find((a) => a.id === from);
+    const sig = acct && acct.signature;
+    const attachments = (state.mail.composing && state.mail.composing.attachments) || [];
+    const text = htmlToPlain(bodyHtml) + (sig ? `\n\n${sigToText(sig)}` : '');
+    const html = `<div style="font-family:-apple-system,Segoe UI,Inter,sans-serif;font-size:15px;line-height:1.55;color:#1b1820">${sanitizeEmailHtml(bodyHtml || '')}</div>${sig ? `<br>${sig}` : ''}`;
+    const payload = { account: from, to, cc, bcc, subject, text, html, inReplyTo, attachments };
+    toast('Sending…');
+    await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) });
+    toast('Sent'); clearDraft(); state.mail.composing = false; renderMail();
+  } catch (e) { toast(e && e.message ? e.message : 'Could not send'); }
 }
 // Upload a File to the mail attachment store; returns {id,name,type,size}.
 async function mailUploadAttachment(file) {
@@ -2509,7 +2515,7 @@ function renderMail(loading) {
   if (m.composing) {
     const catts = m.composing.attachments || [];
     reader = `<form id="mail-compose-form" class="mail-compose">
-      <div class="mail-reader-head"><button type="button" class="ghost mail-back" data-mail-cancel>← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}</div>
+      <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Cancel">← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-act-ic" data-mail-attach title="Attach files">📎</button><button type="button" class="ghost mail-act-ic mail-discard" data-mail-discard title="Discard draft">🗑</button><button class="add-btn" type="submit">Send</button></span></div>
       ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" list="contacts-dl" required>
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}" list="contacts-dl">
@@ -2526,8 +2532,7 @@ function renderMail(loading) {
       <div id="mc-body" class="mail-compose-body prose" contenteditable="true" data-ph="Write your message…">${m.composing.body || ''}</div>
       ${catts.length ? `<div class="mail-att">${catts.map((a) => `<span class="mail-att-chip">📎 ${esc(a.name)}<button type="button" class="mail-att-x" data-mail-att-del="${esc(a.id)}" title="Remove">×</button></span>`).join('')}</div>` : ''}
       ${(() => { const a = (m.accounts || []).find((x) => x.id === composeAcctId()); return a && a.signature ? `<div class="mail-sig-note">✓ Signature for <b>${esc(a.email)}</b> will be added</div>` : ''; })()}
-      <input type="file" id="mc-file" multiple hidden>
-      <div class="mail-compose-act"><button class="add-btn wide" type="submit">Send</button><button type="button" class="ghost" data-mail-attach title="Attach files">📎 Attach</button><button type="button" class="ghost" data-mail-cancel>Cancel</button><button type="button" class="ghost mail-discard" data-mail-discard title="Discard draft">Discard</button></div></form>`;
+      <input type="file" id="mc-file" multiple hidden></form>`;
   } else if (m.open) {
     const o = m.open;
     const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button>`;
@@ -4388,7 +4393,7 @@ document.addEventListener('submit', (e) => {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
     saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });
   }
-  if (e.target.id === 'mail-compose-form') { const to = $('#mc-to').value.trim(); if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } }
+  if (e.target.id === 'mail-compose-form') { const toEl = $('#mc-to'); const to = toEl ? toEl.value.trim() : ''; if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } else { toast('Add a recipient first'); if (toEl) { toEl.scrollIntoView({ block: 'center' }); toEl.focus(); } } }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
   if (e.target.id === 'rw-add-form') { const i = $('#rw-url'); if (i && i.value.trim()) rwSave(i.value); }
   if (e.target.matches('[data-cm-addopt]')) { const i = $('#cm-opt-input'); if (i && state.tables_view && state.tables_view.colMenu) addColOption(state.tables_view.colMenu.colId, i.value); }
