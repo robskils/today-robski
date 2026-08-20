@@ -3075,7 +3075,7 @@ async function patchContact(id, patch, isProps) {
   catch (e) { toast(e.message); }
 }
 async function delContact(id) {
-  if (!(await uiConfirm('Delete this contact?', { danger: true, okLabel: 'Delete' }))) return;
+  // No confirm: the Delete button is a deliberate press on an open contact.
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
   state.contacts = (state.contacts || []).filter((x) => x.id !== id);
   toast('Contact deleted'); openContacts();
