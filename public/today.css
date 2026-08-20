@@ -753,8 +753,10 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
   display: flex; align-items: flex-start; gap: 10px;
 }
 .task-body { min-width: 0; flex: 1; }
-.task-t { font-size: 16px; line-height: 1.35; }
-.task-m { font-size: 13px; color: var(--ink-3); margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; }
+/* A pasted URL is one long unbreakable token; break it so it stays on the card,
+   then clamp the title to two lines with an ellipsis rather than running off. */
+.task-t { font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.task-m { font-size: 13px; color: var(--ink-3); margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere; }
 
 .prio {
   font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 5px;
