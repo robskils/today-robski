@@ -1435,37 +1435,41 @@ table.ttable tr:last-child td { border-bottom:0; }
   .tasks-scroll { overflow:visible; border:0; background:transparent; box-shadow:none; }
   .tasks-scroll .ttable, .tasks-scroll tbody, .tasks-scroll tr, .tasks-scroll td { display:block; }
   .tasks-scroll thead { display:none; }
-  /* Card as a grid: checkbox down the left, title over area in the middle, and
-     the four controls (open · star / priority · delete) as an even 2x2 block on
-     the right, so they read clean and consistent instead of crowding a row. */
+  /* Card layout: checkbox down the left; the title sits over a tidy meta row
+     (area · star · priority); a full-height chevron strip on the right is one
+     big, obvious tap-to-open zone; and delete is a quiet × in the top corner. */
   .tasks-scroll .tr-task {
-    display:grid; align-items:center; column-gap:8px; row-gap:6px;
-    grid-template-columns:auto minmax(0,1fr) 40px 40px 34px;
+    position:relative;
+    display:grid; align-items:center; column-gap:10px; row-gap:6px;
+    grid-template-columns:auto minmax(0,1fr) auto auto 40px;
     grid-template-areas:
-      "done title star prio chev"
-      "done area  del  prio chev";
-    padding:13px 6px 13px 14px; margin-bottom:9px;
-    border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:var(--shadow);
+      "done title title title chev"
+      "done area  star  prio  chev";
+    padding:14px 0 13px 15px; margin-bottom:10px;
+    border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow);
   }
+  .tasks-scroll .tr-task:active { background:var(--paper-2); }
   .tasks-scroll .tr-task td { border:0; padding:0; }
   .tasks-scroll .tc-done { grid-area:done; align-self:center; }
-  .tasks-scroll .tc-title { grid-area:title; min-width:0; font-size:17px; white-space:normal; overflow-wrap:anywhere; word-break:break-word; }
+  .tasks-scroll .tc-title { grid-area:title; min-width:0; font-size:17px; line-height:1.3; padding-right:30px; white-space:normal; overflow-wrap:anywhere; word-break:break-word; }
   .tasks-scroll .tc-title .t { overflow-wrap:anywhere; word-break:break-word; }
-  .tasks-scroll .tc-area { grid-area:area; min-width:0; }
+  .tasks-scroll .tc-area { grid-area:area; min-width:0; justify-self:start; }
   .tasks-scroll .tc-date { display:none; }
   /* Promote each control out of its table cell so it takes a single grid slot. */
   .tasks-scroll .tc-act, .tasks-scroll .tc-prio { display:contents; }
-  .tasks-scroll .row-open-btn { display:none; }   /* replaced by the full-height chevron open-zone */
-  .tasks-scroll .tr-task .star { grid-area:star; }
-  .tasks-scroll .x { grid-area:del; }
+  .tasks-scroll .row-open-btn { display:none; }   /* replaced by the chevron open-zone */
+  .tasks-scroll .tr-task .star { grid-area:star; font-size:19px; }
   .tasks-scroll .tc-prio .ie { grid-area:prio; }
-  .tasks-scroll .tr-task .star, .tasks-scroll .x, .tasks-scroll .tc-prio .ie {
-    display:flex; align-items:center; justify-content:center; height:36px; margin:0; padding:0; opacity:1;
+  .tasks-scroll .tr-task .star, .tasks-scroll .tc-prio .ie {
+    display:flex; align-items:center; justify-content:center; height:34px; margin:0; padding:0; opacity:1;
   }
   .tasks-scroll .ie-add { opacity:1; }
-  /* A tall chevron down the right edge: the obvious "tap to open" zone on mobile. */
-  .tasks-scroll .row-chev { display:flex; grid-area:chev; align-items:center; justify-content:center; align-self:stretch; height:100%; font-size:28px; line-height:1; color:var(--ink-3); }
-  .tasks-scroll .row-chev:active { color:var(--accent); background:var(--paper-2); border-radius:9px; }
+  /* Delete: a quiet × pinned to the top-right corner (not in the flow). */
+  .tasks-scroll .x { position:absolute; top:8px; right:9px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; margin:0; padding:0; font-size:18px; color:var(--ink-3); border-radius:50%; opacity:.7; }
+  .tasks-scroll .x:active { background:var(--paper-2); color:var(--accent); opacity:1; }
+  /* A full-height chevron strip down the right edge: the big tap-to-open zone. */
+  .tasks-scroll .row-chev { display:flex; grid-area:chev; align-items:center; justify-content:center; align-self:stretch; height:100%; font-size:25px; line-height:1; color:var(--ink-3); border-radius:0 13px 13px 0; }
+  .tasks-scroll .row-chev:active { color:var(--accent); background:var(--paper-2); }
   .tasks-scroll .tr-task.done { opacity:.62; }
   .tabbar {
     display:flex; position:fixed; left:0; right:0; bottom:0; z-index:40;
