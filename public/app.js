@@ -2976,7 +2976,7 @@ function contactMenuHtml() {
   const inIds = new Set(groupsOf(c));
   const addable = (state.contactGroups || []).filter((g) => !inIds.has(g.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   const current = liveGroupsOf(c);
-  return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px" role="menu">
+  return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
     <div class="ctx-h">${esc(c.title || 'Contact')}</div>
     ${addable.length ? `<div class="ctx-lbl">Add to group</div>${addable.map((g) => `<button class="ctx-item" data-ctx-add="${g.id}">${esc(g.title)}</button>`).join('')}` : ''}
     <button class="ctx-item ctx-new" data-ctx-newgroup>+ New group…</button>
@@ -2986,7 +2986,13 @@ function contactMenuHtml() {
   </div></div>`;
 }
 function openContactMenu(id, x, y) {
-  state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: Math.min(y, window.innerHeight - 280) };
+  const vh = window.innerHeight;
+  // Don't let a low click pin the menu so far down it runs off the screen: keep
+  // the top where there's room, then cap the height to the space below it so the
+  // menu scrolls within the viewport rather than spilling past the bottom.
+  const top = Math.min(y, Math.max(8, vh - 240));
+  const maxh = Math.max(200, vh - top - 12);
+  state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: top, maxh };
   renderContacts();
 }
 function renderContacts() {
