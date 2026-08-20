@@ -181,6 +181,17 @@ button { cursor:pointer; background:none; border:0; }
 .cc-group-x { border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; padding:0 0 0 2px; }
 .cc-group-x:hover { color:var(--danger,#c0392b); }
 .cc-group-add { padding:8px 12px; font-size:14px; border-radius:999px; max-width:220px; }
+/* Contact right-click menu */
+.ctx-bg { position:fixed; inset:0; z-index:60; }
+.ctx-menu { position:absolute; min-width:216px; max-height:70vh; overflow:auto; background:var(--card); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 16px 40px -16px rgba(0,0,0,.4); padding:6px; }
+.ctx-h { font-size:14px; font-weight:600; color:var(--ink); padding:7px 10px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ctx-lbl { font-size:11.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em; padding:6px 10px 3px; }
+.ctx-item { display:block; width:100%; text-align:left; padding:9px 12px; border-radius:8px; color:var(--ink); font-size:15px; }
+.ctx-item:hover { background:var(--paper-2); color:var(--accent); }
+.ctx-item.ctx-new { color:var(--accent); }
+.ctx-item.ctx-danger { color:var(--danger,#c0392b); }
+.ctx-item.ctx-danger:hover { background:color-mix(in srgb,var(--danger,#c0392b) 12%,transparent); color:var(--danger,#c0392b); }
+.ctx-sep { height:1px; background:var(--line); margin:5px 8px; }
 
 /* Goals & bucket list */
 .seg { display:inline-flex; gap:3px; background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:22px; }

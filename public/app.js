@@ -22,7 +22,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
-  contactGroups: [], contactsGroup: null,
+  contactGroups: [], contactsGroup: null, contactMenu: null,
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
@@ -2969,6 +2969,26 @@ function groupBarHtml() {
     <button class="cg-chip cg-new" data-new-contact-group title="Create a group">+ Group</button>
   </div>`;
 }
+// Right-click menu on a contact card: add to a group, remove from one, delete.
+function contactMenuHtml() {
+  const m = state.contactMenu; if (!m) return '';
+  const c = findContact(m.id); if (!c) return '';
+  const inIds = new Set(groupsOf(c));
+  const addable = (state.contactGroups || []).filter((g) => !inIds.has(g.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const current = liveGroupsOf(c);
+  return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px" role="menu">
+    <div class="ctx-h">${esc(c.title || 'Contact')}</div>
+    ${addable.length ? `<div class="ctx-lbl">Add to group</div>${addable.map((g) => `<button class="ctx-item" data-ctx-add="${g.id}">${esc(g.title)}</button>`).join('')}` : ''}
+    <button class="ctx-item ctx-new" data-ctx-newgroup>+ New group…</button>
+    ${current.length ? `<div class="ctx-sep"></div>${current.map((g) => `<button class="ctx-item" data-ctx-remove="${g.id}">Remove from ${esc(g.title)}</button>`).join('')}` : ''}
+    <div class="ctx-sep"></div>
+    <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
+  </div></div>`;
+}
+function openContactMenu(id, x, y) {
+  state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: Math.min(y, window.innerHeight - 280) };
+  renderContacts();
+}
 function renderContacts() {
   const q = (state.contactsQuery || '').trim().toLowerCase();
   // A deleted group can't stay selected.
@@ -2995,7 +3015,8 @@ function renderContacts() {
     ${groupBarHtml()}
     ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
     ${state.contactAdding ? contactAddForm() : ''}
-    <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>`;
+    <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
+    ${contactMenuHtml()}`;
 }
 function contactAddForm() {
   return `<form id="contact-form" class="add-task expanded">
@@ -3958,6 +3979,7 @@ async function openRowResult(tableId, rowId) {
 document.addEventListener('keydown', (e) => {
   if (document.getElementById('tblpick-overlay') && document.getElementById('tblpick-overlay').innerHTML && e.key === 'Escape') { e.preventDefault(); closeTableEntryPicker(); return; }
   if (state.dp && e.key === 'Escape') { e.preventDefault(); closeDatePicker(); return; }
+  if (state.contactMenu && e.key === 'Escape') { e.preventDefault(); state.contactMenu = null; renderContacts(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
@@ -4219,6 +4241,12 @@ document.addEventListener('click', (e) => {
   const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
   const dcg = t.closest('[data-del-contact-group]'); if (dcg) { delContactGroup(dcg.dataset.delContactGroup); return; }
   const rmg = t.closest('[data-contact-remove-group]'); if (rmg) { removeContactFromGroup(rmg.dataset.cid, rmg.dataset.gid); return; }
+  // Contact right-click menu
+  const ctxAdd = t.closest('[data-ctx-add]'); if (ctxAdd) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) addContactToGroup(id, ctxAdd.dataset.ctxAdd); else renderContacts(); return; }
+  if (t.closest('[data-ctx-newgroup]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; renderContacts(); if (id) addContactViaNewGroup(id); return; }
+  const ctxRm = t.closest('[data-ctx-remove]'); if (ctxRm) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) removeContactFromGroup(id, ctxRm.dataset.ctxRemove); else renderContacts(); return; }
+  if (t.closest('[data-ctx-delete]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) delContact(id); else renderContacts(); return; }
+  if (t.closest('[data-ctx-close]') && !t.closest('.ctx-menu')) { state.contactMenu = null; renderContacts(); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
@@ -4418,7 +4446,10 @@ document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     state.tables_view.colMenu = { colId: th.dataset.sortCol, x: Math.min(e.clientX, window.innerWidth - 232), y: e.clientY };
     renderTable();
+    return;
   }
+  const cc = e.target.closest('.contact-card[data-open-contact]');
+  if (cc && state.view.type === 'contacts') { e.preventDefault(); openContactMenu(cc.dataset.openContact, e.clientX, e.clientY); }
 });
 // change: cells + selects
 document.addEventListener('change', (e) => {
