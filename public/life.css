@@ -157,6 +157,30 @@ button { cursor:pointer; background:none; border:0; }
 .contact-addr-field { display:flex; flex-direction:column; gap:5px; margin-top:14px; max-width:520px; }
 .contact-addr-in { max-width:none; width:100%; resize:vertical; font-family:inherit; line-height:1.5; }
 .contact-actions { margin-top:22px; }
+.contact-card.dragging { opacity:.5; }
+.contact-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:3px; }
+.contact-tag { font-size:11.5px; font-weight:600; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); border-radius:999px; padding:1px 8px; white-space:nowrap; }
+/* Group chip bar */
+.cg-bar { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px; align-items:center; }
+.cg-chip { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:7px 14px; cursor:pointer; }
+.cg-chip:hover { border-color:var(--accent); }
+.cg-chip.on { background:color-mix(in srgb,var(--accent) 14%,transparent); border-color:color-mix(in srgb,var(--accent) 45%,transparent); color:var(--ink); }
+.cg-chip .cg-n { font-size:12px; color:var(--ink-3); font-weight:500; }
+.cg-chip.on .cg-n { color:var(--accent); }
+.cg-chip.cg-new { color:var(--accent); border-style:dashed; }
+/* The drop-target state while dragging a contact over a group chip. */
+.cg-chip.cg-over { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 24%,transparent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent); transform:scale(1.05); }
+.cg-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:8px 0 2px; }
+.cg-head-t { font-size:16px; font-weight:600; color:var(--ink); }
+.cg-head-act { display:flex; gap:6px; }
+.cg-del { color:var(--danger,#c0392b); }
+/* Groups on the contact card */
+.cc-groups { margin-top:18px; }
+.cc-group-list { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
+.cc-group-chip { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:var(--ink); background:color-mix(in srgb,var(--accent) 12%,transparent); border-radius:999px; padding:6px 12px; }
+.cc-group-x { border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; padding:0 0 0 2px; }
+.cc-group-x:hover { color:var(--danger,#c0392b); }
+.cc-group-add { padding:8px 12px; font-size:14px; border-radius:999px; max-width:220px; }
 
 /* Goals & bucket list */
 .seg { display:inline-flex; gap:3px; background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:22px; }
@@ -1168,7 +1192,8 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Compose actions live in the sticky header now, so Send/Attach/Cancel are
    always in reach even mid-way down a very long email. */
 .mail-compose-head-act { margin-left:auto; display:flex; gap:8px; align-items:center; flex:none; }
-.mail-compose-head-act .add-btn { padding:8px 18px; white-space:nowrap; }
+/* Compact the primary Send button for the header (the .wide base is tall). */
+.mail-compose-head-act .mail-send-btn { width:auto; min-height:0; padding:9px 20px; font-size:15.5px; border-radius:11px; white-space:nowrap; }
 /* Keep Send/Attach/Discard fully visible: the back button and actions never
    shrink; the title and the "Resumed draft" note give up space and truncate,
    so a large font size can't push Send off the card's rounded edge. */

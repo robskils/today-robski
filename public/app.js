@@ -22,6 +22,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
+  contactGroups: [], contactsGroup: null,
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
@@ -2549,7 +2550,7 @@ function renderMail(loading) {
   if (m.composing) {
     const catts = m.composing.attachments || [];
     reader = `<form id="mail-compose-form" class="mail-compose">
-      <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Cancel">← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-act-ic" data-mail-attach title="Attach files">📎</button><button type="button" class="ghost mail-act-ic mail-discard" data-mail-discard title="Discard draft">🗑</button><button class="add-btn" type="submit">Send</button></span></div>
+      <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Cancel">← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-act-ic" data-mail-attach title="Attach files">📎</button><button type="button" class="ghost mail-act-ic mail-discard" data-mail-discard title="Discard draft">🗑</button><button class="add-btn wide mail-send-btn" type="submit">Send</button></span></div>
       ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" list="contacts-dl" required>
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}" list="contacts-dl">
@@ -2922,6 +2923,18 @@ async function loadContacts(force) {
 const contactEmail = (c) => ((c.props && c.props.email) || '').toLowerCase();
 const haveContact = (email) => !!email && (state.contacts || []).some((c) => contactEmail(c) === email.toLowerCase());
 function sortContacts(list) { return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')); }
+// Groups are their own blocks (kind='contactgroup', title = name). Membership
+// lives on the contact as props.groups (an array of group ids), so a contact's
+// groups travel with it and are easy to show on the card and filter by.
+let contactGroupsLoaded = false;
+async function loadContactGroups(force) { if (contactGroupsLoaded && !force) return state.contactGroups; state.contactGroups = await api('/api/blocks?kind=contactgroup'); contactGroupsLoaded = true; return state.contactGroups; }
+const findContact = (id) => (state.contacts || []).find((x) => x.id === id) || ((state.contact_open && state.contact_open.contact && state.contact_open.contact.id === id) ? state.contact_open.contact : null);
+const groupsOf = (c) => (Array.isArray(c.props && c.props.groups) ? c.props.groups : []);
+const groupById = (id) => (state.contactGroups || []).find((g) => g.id === id);
+const contactsInGroup = (gid) => (state.contacts || []).filter((c) => groupsOf(c).includes(gid));
+// Only groups that still exist, in name order - a deleted group's stale id on a
+// contact is simply ignored.
+const liveGroupsOf = (c) => groupsOf(c).map(groupById).filter(Boolean).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 // Address is structured. Old contacts (and simple imports) may hold a plain
 // string; those read into the Street field and format as-is.
 const ADDR_FIELDS = [['street', 'Street'], ['city', 'City'], ['postcode', 'Postcode'], ['country', 'Country']];
@@ -2931,7 +2944,7 @@ function cleanAddress(a) { const out = {}; let any = false; for (const [k] of AD
 function readCardAddress() { const a = {}; for (const [k] of ADDR_FIELDS) { const el = $('#contactcard-' + k); if (el) a[k] = el.value; } return cleanAddress(a); }
 async function openContacts() {
   state.view = { type: 'contacts' };
-  await loadContacts(true);
+  await Promise.all([loadContacts(true), loadContactGroups(true)]);
   renderNav(); renderContacts();
 }
 function contactCardHtml(c) {
@@ -2941,14 +2954,35 @@ function contactCardHtml(c) {
   if (p.phone) bits.push(`<span class="cc-row">☎ ${esc(p.phone)}</span>`);
   if (p.birthday) bits.push(`<span class="cc-row">🎂 ${esc(dpLabel(p.birthday))}</span>`);
   if (formatAddress(p.address)) bits.push(`<span class="cc-row">📍 ${esc(formatAddress(p.address))}</span>`);
-  return `<button class="contact-card" data-open-contact="${c.id}">
+  const tags = liveGroupsOf(c);
+  return `<button class="contact-card" data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}" title="Drag onto a group to add">
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
-    <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}</span></button>`;
+    <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${tags.length ? `<span class="contact-tags">${tags.map((g) => `<span class="contact-tag">${esc(g.title)}</span>`).join('')}</span>` : ''}</span></button>`;
+}
+// The row of group chips: All, then each group (droppable + count), then + New.
+function groupBarHtml() {
+  const gs = (state.contactGroups || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const chip = (sel, gid, label, n) => `<button class="cg-chip ${sel ? 'on' : ''}" ${gid ? `data-contact-group="${gid}" data-group-drop="${gid}"` : 'data-contact-group=""'}>${esc(label)}${n != null ? ` <span class="cg-n">${n}</span>` : ''}</button>`;
+  return `<div class="cg-bar">
+    ${chip(!state.contactsGroup, '', 'All', (state.contacts || []).length)}
+    ${gs.map((g) => chip(state.contactsGroup === g.id, g.id, g.title || 'Group', contactsInGroup(g.id).length)).join('')}
+    <button class="cg-chip cg-new" data-new-contact-group title="Create a group">+ Group</button>
+  </div>`;
 }
 function renderContacts() {
   const q = (state.contactsQuery || '').trim().toLowerCase();
-  const match = (c) => { if (!q) return true; const p = c.props || {}; return [c.title, p.email, p.phone].some((v) => (v || '').toLowerCase().includes(q)); };
+  // A deleted group can't stay selected.
+  if (state.contactsGroup && !groupById(state.contactsGroup)) state.contactsGroup = null;
+  const g = state.contactsGroup;
+  const match = (c) => {
+    if (g && !groupsOf(c).includes(g)) return false;
+    if (!q) return true; const p = c.props || {}; return [c.title, p.email, p.phone].some((v) => (v || '').toLowerCase().includes(q));
+  };
   const list = sortContacts((state.contacts || []).filter(match));
+  const grp = g && groupById(g);
+  const emptyMsg = q ? 'No contacts match.'
+    : grp ? `No contacts in ${esc(grp.title)} yet. Drag a contact onto the group chip, or open a contact and add it here.`
+    : 'No contacts yet. Add one, or import your Apple Contacts .vcf.';
   $('#pane').innerHTML = `
     ${pageCrumb('Contacts')}
     <div class="pane-head"><h1>Contacts</h1></div>
@@ -2958,8 +2992,10 @@ function renderContacts() {
       <button class="ghost" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button>
       <input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden>
     </div>
+    ${groupBarHtml()}
+    ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
     ${state.contactAdding ? contactAddForm() : ''}
-    <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${q ? 'No contacts match.' : 'No contacts yet. Add one, or import your Apple Contacts .vcf.'}</div>`}</div>`;
+    <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>`;
 }
 function contactAddForm() {
   return `<form id="contact-form" class="add-task expanded">
@@ -2986,7 +3022,7 @@ async function addContact(o) {
   if (state.contactAdding) { const i = $('#ct-name'); if (i) i.focus(); }
 }
 async function openContactCard(id) {
-  const c = await api(`/api/blocks/${id}`);
+  const [c] = await Promise.all([api(`/api/blocks/${id}`), loadContacts(), loadContactGroups()]);
   state.contact_open = { contact: c };
   state.view = { type: 'contactcard', id };
   renderNav(); renderContactCard();
@@ -3006,9 +3042,29 @@ function renderContactCard() {
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
       ${ADDR_FIELDS.map(([k, l]) => `<label class="tf-field"><span class="tf-label">${l}</span><input class="sel contactcard-addr" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" autocomplete="off"></label>`).join('')}
     </div>
+    ${contactGroupsSection(c)}
     ${notesSection(c.body, 'contact', c.id)}
     ${p.email ? `<div class="contact-actions"><button class="add-btn wide" data-contact-mail="${esc(p.email)}">✉ Email ${esc(c.title || 'them')}</button></div>` : ''}`;
   autoGrowSoon($('#contactcard-name'));
+}
+// Groups on the contact card: current groups as removable chips, plus a picker
+// to add one (or make a new one). The universal, tap-friendly path (drag-drop
+// is the desktop shortcut).
+function contactGroupsSection(c) {
+  const mine = liveGroupsOf(c);
+  const mineIds = new Set(groupsOf(c));
+  const others = (state.contactGroups || []).filter((g) => !mineIds.has(g.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  return `<div class="cc-groups">
+    <span class="tf-label">Groups</span>
+    <div class="cc-group-list">
+      ${mine.map((g) => `<span class="cc-group-chip">${esc(g.title)}<button type="button" class="cc-group-x" data-contact-remove-group data-cid="${c.id}" data-gid="${g.id}" title="Remove from ${esc(g.title)}">×</button></span>`).join('')}
+      <select class="sel cc-group-add" data-contact-add-group="${c.id}" title="Add to a group">
+        <option value="">${mine.length ? '+ Add to group…' : 'Not in any group · add…'}</option>
+        ${others.map((g) => `<option value="${g.id}">${esc(g.title)}</option>`).join('')}
+        <option value="__new">New group…</option>
+      </select>
+    </div>
+  </div>`;
 }
 async function patchContact(id, patch, isProps) {
   const c = state.contact_open && state.contact_open.contact;
@@ -3023,6 +3079,59 @@ async function delContact(id) {
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
   state.contacts = (state.contacts || []).filter((x) => x.id !== id);
   toast('Contact deleted'); openContacts();
+}
+async function newContactGroup() {
+  const name = ((await uiPrompt('New group name:', { title: 'New group', okLabel: 'Create', placeholder: 'e.g. Family, Clients, Forró' })) || '').trim();
+  if (!name) return;
+  try {
+    const g = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contactgroup', title: name }) });
+    state.contactGroups.push(g); state.contactsGroup = g.id; renderContacts();
+  } catch (e) { toast(e.message); }
+}
+async function renameContactGroup(id) {
+  const g = groupById(id); if (!g) return;
+  const name = ((await uiPrompt('Rename group:', { title: 'Rename group', okLabel: 'Save', value: g.title || '' })) || '').trim();
+  if (!name || name === g.title) return;
+  g.title = name;
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title: name }) }); } catch (e) { toast(e.message); }
+  renderContacts();
+}
+async function delContactGroup(id) {
+  const g = groupById(id); if (!g) return;
+  if (!(await uiConfirm(`Delete the group "${g.title}"? The contacts stay; only the group is removed.`, { danger: true, okLabel: 'Delete group' }))) return;
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+  state.contactGroups = (state.contactGroups || []).filter((x) => x.id !== id);
+  if (state.contactsGroup === id) state.contactsGroup = null;
+  // Strip the now-dead id from any contact that carried it, so it doesn't linger.
+  for (const c of (state.contacts || [])) { if (groupsOf(c).includes(id)) setContactGroups(c, groupsOf(c).filter((x) => x !== id), true); }
+  toast('Group deleted'); renderContacts();
+}
+// Set a contact's group ids locally + on the server (quiet = don't re-render or toast).
+function setContactGroups(c, groups, quiet) {
+  c.props = c.props || {}; c.props.groups = groups;
+  const open = state.contact_open && state.contact_open.contact;
+  if (open && open.id === c.id) { open.props = open.props || {}; open.props.groups = groups; }
+  api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { groups } }) }).catch((e) => toast(e.message));
+  if (!quiet) { if (state.view.type === 'contactcard') renderContactCard(); else renderContacts(); }
+}
+async function addContactToGroup(contactId, groupId) {
+  const c = findContact(contactId); const g = groupById(groupId);
+  if (!c || !g) return;
+  if (groupsOf(c).includes(groupId)) { toast(`${c.title || 'Contact'} is already in ${g.title}`); return; }
+  setContactGroups(c, [...groupsOf(c), groupId]);
+  toast(`Added ${c.title || 'contact'} to ${g.title}`);
+}
+function removeContactFromGroup(contactId, groupId) {
+  const c = findContact(contactId); if (!c) return;
+  setContactGroups(c, groupsOf(c).filter((x) => x !== groupId));
+}
+async function addContactViaNewGroup(contactId) {
+  const name = ((await uiPrompt('New group name:', { title: 'New group', okLabel: 'Create', placeholder: 'e.g. Family, Clients, Forró' })) || '').trim();
+  if (!name) return;
+  try {
+    const g = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contactgroup', title: name }) });
+    state.contactGroups.push(g); addContactToGroup(contactId, g.id);
+  } catch (e) { toast(e.message); }
 }
 // Save an email sender straight into contacts (deduped by address).
 async function saveSender(name, email) {
@@ -3830,6 +3939,7 @@ function execItem(it) {
   if (it.kind === 'area') return openArea(it.id).catch((e) => toast(e.message));
   if (it.kind === 'task') return openTaskCard(it.id).catch((e) => toast(e.message));
   if (it.kind === 'row') return openRowResult(it.parent, it.id).catch((e) => toast(e.message));
+  if (it.kind === 'contact') return openContactCard(it.id).catch((e) => toast(e.message));
 }
 // A search hit's display label for a table row: its first filled cell value.
 function rowLabel(b) {
@@ -4104,6 +4214,11 @@ document.addEventListener('click', (e) => {
   const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
   const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
   const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
+  const cgc = t.closest('[data-contact-group]'); if (cgc) { state.contactsGroup = cgc.dataset.contactGroup || null; renderContacts(); return; }
+  if (t.closest('[data-new-contact-group]')) { newContactGroup(); return; }
+  const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
+  const dcg = t.closest('[data-del-contact-group]'); if (dcg) { delContactGroup(dcg.dataset.delContactGroup); return; }
+  const rmg = t.closest('[data-contact-remove-group]'); if (rmg) { removeContactFromGroup(rmg.dataset.cid, rmg.dataset.gid); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
@@ -4308,6 +4423,7 @@ document.addEventListener('contextmenu', (e) => {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
+  const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   // Pick which account this message sends from. Snapshot the in-progress fields
   // first so the re-render (which refreshes the signature note) keeps them.
   if (e.target.id === 'mc-from' && state.mail && state.mail.composing) {
@@ -4445,7 +4561,7 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null;
 function clearDropMarks() {
   document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
 }
@@ -4468,12 +4584,14 @@ function dropBefore(over, list, idOf) {
 document.addEventListener('dragstart', (e) => {
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
-  const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+  const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const cc = e.target.closest('[data-contact-drag]'); if (cc) { dragContact = cc.dataset.contactDrag; cc.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', cc.dataset.contactDrag); } catch {} }
 });
 document.addEventListener('dragover', (e) => {
   if (dragFav && e.target.closest('#favs')) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
+  if (dragContact) { const gd = e.target.closest('[data-group-drop]'); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); if (gd) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; gd.classList.add('cg-over'); } return; }
   const z = e.target.closest('[data-att-zone]');
   if (z && !dragFav && !dragSec && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); z.classList.add('att-drag'); }
 });
@@ -4499,10 +4617,16 @@ document.addEventListener('drop', (e) => {
     e.preventDefault(); const over = e.target.closest('[data-sub-id]');
     const ids = (state.note && state.note.children || []).map((k) => k.id);
     const before = over && over.dataset.subId !== dragSub ? dropBefore(over, ids, (el) => el.dataset.subId) : null;
-    clearDropMarks(); reorderSubs(dragSub, before); dragSub = null;
+    clearDropMarks(); reorderSubs(dragSub, before); dragSub = null; return;
+  }
+  if (dragContact) {
+    const gd = e.target.closest('[data-group-drop]');
+    document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over'));
+    if (gd) { e.preventDefault(); addContactToGroup(dragContact, gd.dataset.groupDrop); }
+    dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); dragFav = null; dragSec = null; dragSub = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
