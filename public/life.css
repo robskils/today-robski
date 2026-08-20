@@ -1440,11 +1440,11 @@ table.ttable tr:last-child td { border-bottom:0; }
      big, obvious tap-to-open zone; and delete is a quiet × in the top corner. */
   .tasks-scroll .tr-task {
     position:relative;
-    display:grid; align-items:center; column-gap:10px; row-gap:6px;
-    grid-template-columns:auto minmax(0,1fr) auto auto 40px;
+    display:grid; align-items:center; column-gap:9px; row-gap:7px;
+    grid-template-columns:auto auto auto auto minmax(0,1fr) 30px;
     grid-template-areas:
-      "done title title title chev"
-      "done area  star  prio  chev";
+      "done title title title title chev"
+      "done area  star  prio  .     chev";
     padding:14px 0 13px 15px; margin-bottom:10px;
     border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow);
   }
@@ -1458,18 +1458,22 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* Promote each control out of its table cell so it takes a single grid slot. */
   .tasks-scroll .tc-act, .tasks-scroll .tc-prio { display:contents; }
   .tasks-scroll .row-open-btn { display:none; }   /* replaced by the chevron open-zone */
-  .tasks-scroll .tr-task .star { grid-area:star; font-size:19px; }
+  .tasks-scroll .tr-task .star { grid-area:star; font-size:18px; }
   .tasks-scroll .tc-prio .ie { grid-area:prio; }
   .tasks-scroll .tr-task .star, .tasks-scroll .tc-prio .ie {
-    display:flex; align-items:center; justify-content:center; height:34px; margin:0; padding:0; opacity:1;
+    display:flex; align-items:center; justify-content:center; height:30px; margin:0; padding:0; opacity:1;
   }
-  .tasks-scroll .ie-add { opacity:1; }
+  /* On the card, star/priority are display-only (you edit them inside). Show the
+     star only when it's set, and drop the inline "+" placeholders - an empty
+     slot just opens the card, so a stray + would only be noise. */
+  .tasks-scroll .tr-task .star:not(.on) { display:none; }
+  .tasks-scroll .ie-add { display:none; }
   /* Delete: a quiet × pinned to the top-right corner (not in the flow). */
   .tasks-scroll .x { position:absolute; top:8px; right:9px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; margin:0; padding:0; font-size:18px; color:var(--ink-3); border-radius:50%; opacity:.7; }
   .tasks-scroll .x:active { background:var(--paper-2); color:var(--accent); opacity:1; }
-  /* A full-height chevron strip down the right edge: the big tap-to-open zone. */
-  .tasks-scroll .row-chev { display:flex; grid-area:chev; align-items:center; justify-content:center; align-self:stretch; height:100%; font-size:25px; line-height:1; color:var(--ink-3); border-radius:0 13px 13px 0; }
-  .tasks-scroll .row-chev:active { color:var(--accent); background:var(--paper-2); }
+  /* The whole card opens now, so the chevron is just a quiet "opens" hint. */
+  .tasks-scroll .row-chev { display:flex; grid-area:chev; align-items:center; justify-content:center; align-self:stretch; height:100%; font-size:22px; line-height:1; color:var(--ink-4,var(--ink-3)); opacity:.6; border-radius:0 13px 13px 0; }
+  .tasks-scroll .tr-task:active .row-chev { color:var(--accent); opacity:1; }
   .tasks-scroll .tr-task.done { opacity:.62; }
   .tabbar {
     display:flex; position:fixed; left:0; right:0; bottom:0; z-index:40;

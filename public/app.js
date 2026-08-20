@@ -4419,6 +4419,11 @@ document.addEventListener('click', (e) => {
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
   const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
+  // On the narrow task cards the whole card opens - only the checkbox (handled
+  // just above) and the × are special. Star/priority/area are display-only here;
+  // you edit them inside the card. Desktop keeps its inline-edit table.
+  const tcard = t.closest('.tasks-scroll .tr-task[data-task-row]');
+  if (tcard && !t.closest('[data-del-task]') && window.matchMedia('(max-width:820px)').matches) { openTaskCard(tcard.dataset.taskRow).catch((x) => toast(x.message)); return; }
   const dt = t.closest('[data-del-task]'); if (dt) { delTask(dt.dataset.delTask); return; }
   const et = t.closest('[data-edit-task]'); if (et) { editTaskTitle(et); return; }
   const ep = t.closest('[data-edit-prio]'); if (ep) { editPrio(ep); return; }
