@@ -190,6 +190,9 @@ function decorateProse(html) {
     const w = document.createElement('div'); w.className = 'ptable-wrap';
     t.replaceWith(w); w.appendChild(t);
   });
+  // Empathy reflections are saved as blockquotes starting with 🫶 (the class is
+  // stripped on save); re-flag them here so they render as the soft callout.
+  d.querySelectorAll('blockquote').forEach((b) => { if ((b.textContent || '').trimStart().startsWith('🫶')) b.classList.add('j-empathy'); });
   // A trailing card leaves nowhere to type; add an empty line after it.
   const last = d.lastElementChild;
   if (last && last.classList && last.classList.contains('lc-inline')) {
@@ -973,7 +976,8 @@ function renderJournalEntry() {
       <div class="note-body">${proseEditor(n.body, 'journal', n.id)}</div>
       <div class="j-deeper-bar">
         <button class="add-btn j-deeper" data-journal-deeper>${journalDeeperLabel(n.props && n.props.mode)}</button>
-        <span class="j-deeper-hint">${isDream ? 'Claude reads your dream, offers a gentle interpretation, then asks a question to explore it further. Use it as often as you like.' : 'Claude reads your entry and asks one question to take it further. Use it as often as you like.'}</span>
+        <button class="add-btn j-empathy-btn" data-journal-empathy title="A warm, understanding reflection - the sort of thing a good therapist might say. No advice, no judgement.">♡ Empathy</button>
+        <span class="j-deeper-hint">${isDream ? 'Dig deeper reads your dream and offers a gentle interpretation plus a question. Empathy gives a warm, understanding reflection. Use either as often as you like.' : 'Dig deeper asks one question to take it further. Empathy gives a warm, understanding reflection, like a good therapist. Use either as often as you like.'}</span>
       </div>
     </div>`;
 }
@@ -993,6 +997,26 @@ async function journalDeepen() {
     }
   } catch (e) { toast(e.message); }
   finally { const b = document.querySelector('[data-journal-deeper]'); if (b) { b.disabled = false; b.textContent = journalDeeperLabel(n.props && n.props.mode); } }
+}
+// Empathy: a warm, validating reflection (no question), inserted as its own soft
+// callout. Marked with a leading 🫶 so decorateProse can re-style it on reload
+// (sanitizeProse strips the class, but the marker survives in the text).
+async function journalEmpathise() {
+  const n = state.journal && state.journal.current; if (!n) return;
+  const ed = document.querySelector('.prose[data-prose="journal"]');
+  const text = ed ? (ed.innerText || '').trim() : '';
+  const btn = document.querySelector('[data-journal-empathy]');
+  if (btn) { btn.disabled = true; btn.textContent = '♡ Listening…'; }
+  try {
+    const { question } = await api('/api/journal/deepen', { method: 'POST', body: JSON.stringify({ kind: 'empathy', mode: n.props && n.props.mode, prompt: n.props && n.props.prompt, text }) });
+    if (ed && question) {
+      ed.insertAdjacentHTML('beforeend', `<blockquote class="j-empathy">🫶 ${esc(question).replace(/\n+/g, '<br>')}</blockquote><p><br></p>`);
+      saveProse('journal', ed.innerHTML, ed.dataset.blockId);
+      const p = ed.lastElementChild;
+      if (p) { const r = document.createRange(); r.selectNodeContents(p); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); ed.focus(); p.scrollIntoView({ block: 'center' }); }
+    }
+  } catch (e) { toast(e.message); }
+  finally { const b = document.querySelector('[data-journal-empathy]'); if (b) { b.disabled = false; b.textContent = '♡ Empathy'; } }
 }
 async function delJournalEntry() {
   const n = state.journal && state.journal.current; if (!n) return;
@@ -4201,6 +4225,7 @@ document.addEventListener('click', (e) => {
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
+  if (t.closest('[data-journal-empathy]')) { journalEmpathise(); return; }
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }

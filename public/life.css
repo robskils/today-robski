@@ -1566,6 +1566,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 .j-deeper:hover { background:color-mix(in srgb,var(--accent) 22%,transparent); }
 .j-deeper:disabled { opacity:.6; cursor:default; }
 .j-deeper-hint { color:var(--ink-3); font-size:13.5px; max-width:420px; line-height:1.4; }
+/* Empathy button: a softer, warmer companion to Dig deeper. */
+.j-empathy-btn { width:auto; white-space:nowrap; padding:11px 20px; background:color-mix(in srgb,var(--gold,#c99) 16%,transparent); color:color-mix(in srgb,var(--gold,#a87) 82%,var(--ink)); border:1px solid color-mix(in srgb,var(--gold,#c99) 42%,var(--line)); }
+.j-empathy-btn:hover { background:color-mix(in srgb,var(--gold,#c99) 26%,transparent); }
+.j-empathy-btn:disabled { opacity:.6; cursor:default; }
+/* An empathy reflection inside the journal prose: a soft, warm callout, clearly
+   not a question to answer. */
+.prose blockquote.j-empathy { border-left:3px solid color-mix(in srgb,var(--gold,#c99) 60%,transparent); background:color-mix(in srgb,var(--gold,#c99) 9%,transparent); border-radius:0 10px 10px 0; padding:12px 16px; color:var(--ink-2); font-style:normal; }
 
 /* ── Read & Watch (bookmarks) ────────────────────────── */
 .rw-add { display:flex; gap:9px; margin:4px 0 16px; }
