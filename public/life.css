@@ -756,7 +756,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .recent-ic { flex:none; width:18px; text-align:center; color:var(--ink-3); font-size:14px; }
 .recent-item:hover .recent-ic { color:var(--accent); }
 .recent-t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-@media (max-width:820px){ .home-body { grid-template-columns:1fr; gap:0; } .home-side { position:static; } .home-side .home-sec { margin-top:26px; } }
+@media (max-width:820px){
+  .home-body { grid-template-columns:1fr; gap:0; } .home-side { position:static; } .home-side .home-sec { margin-top:26px; }
+  /* Everything stacks on mobile - never a sideways scroll. Goal cards go one per
+     row (no 280px min to spill into two columns), the home columns can't be
+     pushed past the screen, and the home clips any stray horizontal overflow. */
+  .goal-grid { grid-template-columns:minmax(0,1fr); }
+  .home, .home-body, .home-main, .home-side { min-width:0; max-width:100%; }
+  .home { overflow-x:clip; }
+  .fav-cards, .fav-card, .fav-card-open { min-width:0; max-width:100%; }
+}
 .home-sec-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin-bottom:12px; display:flex; align-items:baseline; gap:10px; }
 .home-sec-h .muted { font-size:11px; letter-spacing:.04em; text-transform:none; font-weight:400; }
 .home-empty { color:var(--ink-3); font-style:italic; font-family:'Cormorant Garamond',serif; font-size:19px; padding:8px 0; }
