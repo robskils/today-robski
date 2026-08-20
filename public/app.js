@@ -1879,6 +1879,9 @@ async function loadMessages(quiet) {
     let msgs = lists.flat();
     if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
     state.mail.messages = msgs;
+    // Put the cursor on the top row if it isn't on a still-present message, so a
+    // shortcut has a target the moment the list loads (no hover needed).
+    if (!state.mail.open) { const has = msgs.some((x) => x._key === state.mail.sel); if (!has) state.mail.sel = msgs[0] ? msgs[0]._key : null; }
     state.mail.listCache[viewKey] = msgs;   // freshen the cache for next time
     state.mail.hasMore = more && !q && !f.flagged;   // "Load older" only when browsing
     state.mail.error = null;
@@ -1926,6 +1929,7 @@ function mailForgetKeys(keys) {
 }
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key); if (!row) return;
+  state.mail.sel = key; state.mail.hoverThread = null;   // the cursor follows what you open, so it's here after Back
   const cached = state.mail.msgCache && state.mail.msgCache[key];
   // /message doesn't report flags, so carry the row's starred state across -
   // otherwise the reader star always shows empty and needs two clicks to set.
@@ -3866,8 +3870,8 @@ document.addEventListener('keydown', (e) => {
     const editing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     const m = state.mail;
     if (!editing) {
-      const active = m.hover || (m.open && m.open._key) || m.sel;   // a specific message
-      const triage = active || m.hoverThread;                       // may be a whole collapsed thread
+      const active = (m.open && m.open._key) || m.sel;   // reading wins, else the list cursor
+      const triage = active || m.hoverThread;            // may be a whole collapsed thread
       if (e.key === '?') { e.preventDefault(); m.shortcuts = !m.shortcuts; renderMail(); return; }
       if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else m.open = null; renderMail(); return; }
       if (e.key === '/') { e.preventDefault(); const el = $('[data-mail-q]'); if (el) el.focus(); return; }
@@ -3878,7 +3882,6 @@ document.addEventListener('keydown', (e) => {
       if (e.key === 'k' || e.key === 'K') { e.preventDefault(); mailSelMove(1); return; }
       // Enter / o: open the message under the mouse, or expand the thread under it, else open the j/k selection.
       if ((e.key === 'Enter' || e.key === 'o' || e.key === 'O') && !m.open) {
-        if (m.hover) { e.preventDefault(); openMessage(m.hover); return; }
         if (m.hoverThread) { e.preventDefault(); m.expanded = m.expanded || {}; m.expanded[m.hoverThread] = !m.expanded[m.hoverThread]; renderMail(); return; }
         if (m.sel) { e.preventDefault(); openMessage(m.sel); return; }
       }
@@ -4383,14 +4386,23 @@ document.addEventListener('blur', (e) => {
 document.addEventListener('mouseover', (e) => {
   if (!state.mail || state.view.type !== 'mail') return;
   const row = e.target.closest && e.target.closest('[data-mail-open],[data-mail-thread]');
-  if (!row) { state.mail.hover = null; state.mail.hoverThread = null; return; }
+  // The mouse and j/k share ONE cursor (state.mail.sel). Pointing at a row moves
+  // the cursor there and it STAYS when the mouse rests off the list - so E/S/R
+  // always have a target, even with a hand on the keyboard. CSS :hover shows the
+  // live pointer; the cursor is the shortcut target.
+  if (!row) return;
   if (row.dataset.mailOpen !== undefined) {
-    state.mail.hover = row.dataset.mailOpen; state.mail.hoverThread = null;
-    // Prefetch after the mouse rests a moment (not on every row swept over), so
-    // clicking opens instantly.
     const key = row.dataset.mailOpen;
+    if (state.mail.sel !== key) {
+      state.mail.sel = key; state.mail.hoverThread = null;
+      // Move the cursor ring to follow the mouse (cheap class swap, no re-render),
+      // so the ring always marks exactly what E/S/R will act on.
+      document.querySelectorAll('.mail-list-col .mail-row.ksel').forEach((el) => el.classList.remove('ksel'));
+      if (!row.classList.contains('csel')) row.classList.add('ksel');
+    }
+    // Prefetch after the mouse rests a moment (not on every row swept over).
     clearTimeout(window.__mailPrefetchT); window.__mailPrefetchT = setTimeout(() => prefetchMsg(key), 180);
-  } else { state.mail.hover = null; state.mail.hoverThread = row.dataset.mailThread; }
+  } else { state.mail.hoverThread = row.dataset.mailThread; state.mail.sel = null; }
 });
 document.addEventListener('keydown', (e) => {
   // Enter in the note title drops the caret into the note body (at its start),
