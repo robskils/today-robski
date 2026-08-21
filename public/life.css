@@ -1736,6 +1736,16 @@ table.ttable tr:last-child td { border-bottom:0; }
 .prose a.rl-link:hover { border-bottom-style:solid; }
 
 /* ── Journal ─────────────────────────────────────────── */
+.j-head-act { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.j-head-btn { padding:11px 16px; font-size:15px; white-space:nowrap; }
+/* Journal insights card (scan of recent entries) */
+.j-insights { background:color-mix(in srgb,var(--accent) 6%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line)); border-radius:16px; padding:18px 20px; margin-bottom:18px; }
+.j-insights-h { display:flex; align-items:center; gap:10px; font-size:16.5px; font-weight:600; }
+.j-insights-ts { font-size:12.5px; font-weight:400; color:var(--ink-3); }
+.j-insights-tools { margin-left:auto; display:flex; gap:4px; }
+.j-insights-tools .ghost { padding:4px 9px; }
+.j-insights-t { margin-top:10px; font-size:16px; line-height:1.6; color:var(--ink); }
+.j-insights-pts { margin:12px 0 0 4px; padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:15px; color:var(--ink-2); }
 .j-list { display:flex; flex-direction:column; gap:10px; }
 .j-card { display:flex; flex-direction:column; align-items:flex-start; gap:5px; width:100%; text-align:left; padding:15px 18px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s, transform .06s; }
 .j-card:hover { border-color:var(--accent); }

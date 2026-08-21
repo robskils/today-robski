@@ -921,6 +921,25 @@ async function openJournal() {
     state.journal = { entries, picking: false };
   } catch (e) { state.journal = { entries: [], picking: false }; toast(e.message); }
   renderJournalList();
+  // Show the last-generated insights if any (quiet - no spinner).
+  api('/api/journal/insights').then((r) => { if (state.journal && state.view.type === 'journal') { state.journal.insights = r; renderJournalList(); } }).catch(() => {});
+}
+async function newCoachingSession() {
+  if (!state.journal) await openJournal();
+  const date = new Date().toISOString();
+  try {
+    const entry = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title: `Coaching · ${journalDateLabel(date)}`, body: '<p><br></p>', props: { date, mode: 'coaching', prompt: '' } }) });
+    state.journal.entries = state.journal.entries || []; state.journal.entries.unshift(entry);
+    await openJournalEntry(entry.id);
+    journalCoach();   // the coach opens the session with a warm greeting
+  } catch (e) { toast(e.message); }
+}
+async function journalInsights() {
+  if (!state.journal) return;
+  state.journal.insightsLoading = true; renderJournalList();
+  try { const r = await api('/api/journal/insights', { method: 'POST' }); state.journal.insights = (r && r.text) ? r : { text: null }; if (!(r && r.text)) toast('Write a few entries first, then Insights has something to read.'); }
+  catch (e) { toast(e.message); }
+  state.journal.insightsLoading = false; renderJournalList();
 }
 function renderJournalList() {
   const j = state.journal || { entries: [] };
@@ -935,15 +954,23 @@ function renderJournalList() {
   </div>` : '';
   const cards = entries.map((n) => {
     const mode = journalModeOf(n.props && n.props.mode);
+    const modeLabel = mode ? `${mode.icon} ${esc(mode.label)}` : ((n.props && n.props.mode) === 'coaching' ? '🧭 Coaching session' : '');
     return `<button class="j-card" data-open-jentry="${n.id}">
       <span class="j-card-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span>
       <span class="j-card-snip">${esc(journalSnippet(n))}</span>
-      ${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</button>`;
+      ${modeLabel ? `<span class="j-card-mode">${modeLabel}</span>` : ''}</button>`;
   }).join('');
+  const ins = j.insights;
+  const insightsCard = (ins && ins.text) ? `<div class="j-insights">
+      <div class="j-insights-h">✨ Insights<span class="j-insights-ts">${ins.from ? `from your last ${ins.from} entries` : ''}${ins.ts ? ` · ${esc(new Date(ins.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}` : ''}</span><span class="j-insights-tools"><button class="ghost" data-journal-insights title="Regenerate">↻</button><button class="ghost" data-journal-insights-x title="Hide">×</button></span></div>
+      <p class="j-insights-t">${esc(ins.text)}</p>
+      ${(ins.points || []).length ? `<ul class="j-insights-pts">${ins.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+    </div>` : '';
   $('#pane').innerHTML = `
     ${pageCrumb('Journal')}
-    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : '<button class="add-btn wide" data-journal-start>+ New entry</button>'}</div>
+    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><button class="ghost j-head-btn" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading…' : '✨ Insights'}</button><button class="ghost j-head-btn" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-start>+ New entry</button></div>`}</div>
     ${picker}
+    ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
 }
 async function startJournalEntry() {
@@ -979,13 +1006,15 @@ function renderJournalEntry() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Journal</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
-      <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
+      <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ((n.props && n.props.mode) === 'coaching' ? '<span class="j-card-mode">🧭 Coaching session</span>' : '')}</div>
       <div class="note-body">${proseEditor(n.body, 'journal', n.id)}</div>
       <div class="j-deeper-bar">
-        <button class="add-btn j-deeper" data-journal-deeper>${journalDeeperLabel(n.props && n.props.mode)}</button>
-        <button class="add-btn j-empathy-btn" data-journal-empathy title="A warm, understanding reflection - the sort of thing a good therapist might say. No advice, no judgement.">♡ Empathy</button>
-        <button class="add-btn j-coach-btn" data-journal-coach title="Start a back-and-forth coaching session. Write, press Coach, reply, press again - it keeps going until you stop.">🧭 Coach</button>
-        <span class="j-deeper-hint">Dig deeper asks one question. Empathy gives a warm reflection. Coach opens a back-and-forth session - write, press Coach, reply, press again; it keeps going until you stop.</span>
+        ${(n.props && n.props.mode) === 'coaching'
+          ? `<button class="add-btn j-coach-btn" data-journal-coach>🧭 Continue session</button>
+             <span class="j-deeper-hint">Write your reply above, then continue - the coach reads the whole session and responds. Keep going as long as you like.</span>`
+          : `<button class="add-btn j-deeper" data-journal-deeper>${journalDeeperLabel(n.props && n.props.mode)}</button>
+             <button class="add-btn j-empathy-btn" data-journal-empathy title="A warm, understanding reflection - the sort of thing a good therapist might say. No advice, no judgement.">♡ Empathy</button>
+             <span class="j-deeper-hint">Dig deeper asks one question to take it further. Empathy gives a warm, understanding reflection. Use either as often as you like.</span>`}
       </div>
     </div>`;
 }
@@ -1033,6 +1062,7 @@ async function journalCoach() {
   const ed = document.querySelector('.prose[data-prose="journal"]');
   const text = ed ? (ed.innerText || '').trim() : '';
   const btn = document.querySelector('[data-journal-coach]');
+  const label = btn ? btn.textContent : '🧭 Coach';
   if (btn) { btn.disabled = true; btn.textContent = '🧭 Thinking…'; }
   try {
     const { reply } = await api('/api/journal/coach', { method: 'POST', body: JSON.stringify({ mode: n.props && n.props.mode, prompt: n.props && n.props.prompt, text }) });
@@ -1043,7 +1073,7 @@ async function journalCoach() {
       if (p) { const r = document.createRange(); r.selectNodeContents(p); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); ed.focus(); p.scrollIntoView({ block: 'center' }); }
     }
   } catch (e) { toast(e.message); }
-  finally { const b = document.querySelector('[data-journal-coach]'); if (b) { b.disabled = false; b.textContent = '🧭 Coach'; } }
+  finally { const b = document.querySelector('[data-journal-coach]'); if (b) { b.disabled = false; b.textContent = label; } }
 }
 async function delJournalEntry() {
   const n = state.journal && state.journal.current; if (!n) return;
@@ -4664,6 +4694,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
   const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }
+  if (t.closest('[data-journal-coaching]')) { newCoachingSession(); return; }
+  if (t.closest('[data-journal-insights-x]')) { if (state.journal) { state.journal.insights = null; renderJournalList(); } return; }
+  if (t.closest('[data-journal-insights]')) { journalInsights(); return; }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
