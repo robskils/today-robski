@@ -7,6 +7,7 @@ import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
+import { importTxns, clearTxns } from './spending.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -837,7 +838,7 @@ async function searchBlocks(request, env, url) {
       WHERE archived = 0
         AND (title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))
         AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
-        AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo')
+        AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo', 'txn')
       ORDER BY
         CASE kind WHEN 'note' THEN 0 WHEN 'table' THEN 1 WHEN 'area' THEN 2 WHEN 'task' THEN 3 WHEN 'row' THEN 4 ELSE 5 END,
         updated_at DESC
@@ -1776,6 +1777,15 @@ export default {
         if (request.method === 'POST') { try { return json(await synthesiseTrends(env), request); } catch (e) { return err(e.message, request, 502); } }
         const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_fin_trends'").first().catch(() => null);
         return json(row && row.value ? JSON.parse(row.value) : { text: null }, request);
+      }
+
+      // Spending: import parsed statement rows, or wipe them all.
+      if (path === '/api/spend/import' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try { return json(await importTxns(env, b.rows), request); } catch (e) { return err(e.message, request, 400); }
+      }
+      if (path === '/api/spend/clear' && request.method === 'POST') {
+        try { return json(await clearTxns(env), request); } catch (e) { return err(e.message, request, 400); }
       }
 
       // Robski Life block core + search.

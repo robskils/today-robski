@@ -23,7 +23,7 @@ const state = {
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   contactGroups: [], contactsGroup: null, contactMenu: null,
-  financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false },
+  financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null },
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
@@ -3280,7 +3280,14 @@ async function openFinancial(tab) {
   renderNav();
   if (state.financial.tab === 'portfolio' && !state.financial.data) loadPortfolio();
   else if (state.financial.tab === 'advice') loadAdvice();
+  else if (state.financial.tab === 'spending') { if (state.financial.txns == null) loadSpending(); else renderFinancial(); }
   else renderFinancial();
+}
+async function loadSpending() {
+  const f = state.financial;
+  renderFinancial();
+  try { f.txns = await api('/api/blocks?kind=txn'); } catch (e) { toast(e.message); f.txns = f.txns || []; }
+  renderFinancial();
 }
 async function loadAdvice(refreshTrends) {
   const f = state.financial;
@@ -3312,7 +3319,7 @@ function renderFinancial() {
   const f = state.financial;
   const seg = `<div class="seg">${FIN_TABS.map(([k, l]) => `<button class="seg-b ${f.tab === k ? 'on' : ''}" data-fin-tab="${k}">${l}</button>`).join('')}</div>`;
   const body = f.tab === 'advice' ? adviceBody()
-    : f.tab === 'spending' ? finSoon('🧾', 'Spending', 'Import a bank statement (CSV or spreadsheet) - or, later, connect a bank - to categorise spending and see how much is going out against what is coming in.', 'Coming soon.')
+    : f.tab === 'spending' ? spendingBody()
     : portfolioBody();
   $('#pane').innerHTML = `${pageCrumb('Financial')}<div class="pane-head"><h1>Financial</h1></div>${seg}${body}`;
 }
@@ -3439,6 +3446,165 @@ async function advicePoll() {
   catch (e) { toast(e.message); }
   f.polling = false;
   await loadAdvice();
+}
+// ── Spending ─────────────────────────────────────────────────────────────
+const SPEND_CATS = ['Groceries', 'Eating out', 'Transport', 'Housing', 'Utilities', 'Health', 'Shopping', 'Entertainment', 'Travel', 'Subscriptions', 'Fees & charges', 'Cash', 'Transfers', 'Salary', 'Other income', 'Uncategorised'];
+const INCOME_CATS = new Set(['Salary', 'Other income']);
+const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
+const eurSigned = (n) => (n < 0 ? '-' : '') + '€' + Math.abs(Math.round(n)).toLocaleString('en-IE');
+function txnList() { return (state.financial.txns || []).map((t) => ({ id: t.id, ...(t.props || {}) })).filter((t) => t.date); }
+function spendMonths() { return [...new Set(txnList().map((t) => t.date.slice(0, 7)))].sort().reverse(); }
+function spendingBody() {
+  const f = state.financial;
+  if (f.spendImport) return spendImportView();
+  if (f.txns == null) return '<div class="fin-load">Loading…</div>';
+  const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV)<input type="file" id="sp-file" accept=".csv,text/csv" hidden></label>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
+  if (!(f.txns || []).length) return `${importBar}<div class="fin-soon"><div class="fin-soon-ic">🧾</div><h2>Spending</h2><p>Import a bank statement as CSV (Wise: Statement → Download → CSV) to categorise your spending and see income vs outgoings over time.</p><p class="fin-soon-note">Everything stays in your own Robski Life - nothing is sent to a bank.</p></div>`;
+  const months = spendMonths();
+  if (!f.spendMonth || !months.includes(f.spendMonth)) f.spendMonth = months[0];
+  const idx = months.indexOf(f.spendMonth);
+  const rows = txnList().filter((t) => t.date.slice(0, 7) === f.spendMonth);
+  const income = rows.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const out = rows.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const net = income - out;
+  // spending by category
+  const byCat = {}; rows.filter((t) => t.amount < 0).forEach((t) => { const c = t.category || 'Uncategorised'; byCat[c] = (byCat[c] || 0) + Math.abs(t.amount); });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const maxCat = cats.length ? cats[0][1] : 1;
+  const catBars = cats.map(([c, v]) => `<div class="sp-catrow"><span class="sp-catname">${esc(c)}</span><div class="sp-cattrack"><i style="width:${Math.round(v / maxCat * 100)}%"></i></div><span class="sp-catval">${eur0(v)}</span></div>`).join('') || '<div class="home-empty">No spending this month.</div>';
+  // transaction list
+  const list = rows.slice().sort((a, b) => b.date.localeCompare(a.date)).map(spendRow).join('');
+  // monthly trend (last 8)
+  const trend = spendTrend(months.slice(0, 8).reverse());
+  return `${importBar}
+    <div class="sp-monthnav"><button class="ghost" data-sp-month="prev" ${idx >= months.length - 1 ? 'disabled' : ''}>‹</button><span class="sp-month">${esc(monthLabel(f.spendMonth))}</span><button class="ghost" data-sp-month="next" ${idx <= 0 ? 'disabled' : ''}>›</button></div>
+    <div class="sp-summary"><div class="sp-sum in"><span class="lab">In</span><span class="v">${eur0(income)}</span></div><div class="sp-sum out"><span class="lab">Out</span><span class="v">${eur0(out)}</span></div><div class="sp-sum net"><span class="lab">Net</span><span class="v ${net >= 0 ? 'up' : 'down'}">${eurSigned(net)}</span></div></div>
+    ${trend}
+    <div class="sp-sec-h">Where it went</div>
+    <div class="sp-cats">${catBars}</div>
+    <div class="sp-sec-h">Transactions · ${rows.length}</div>
+    <div class="sp-txns">${list}</div>`;
+}
+function spendRow(t) {
+  const opts = SPEND_CATS.map((c) => `<option ${c === t.category ? 'selected' : ''}>${c}</option>`).join('');
+  return `<div class="sp-txn ${t.amount < 0 ? 'out' : 'in'}">
+    <span class="sp-date">${esc(t.date.slice(8, 10))}/${esc(t.date.slice(5, 7))}</span>
+    <span class="sp-desc" title="${esc(t.description || '')}">${esc(t.description || '—')}</span>
+    <select class="sel sp-cat" data-sp-cat="${t.id}">${opts}</select>
+    <span class="sp-amt">${eurSigned(t.amount)}</span>
+  </div>`;
+}
+function spendTrend(months) {
+  if (months.length < 2) return '';
+  const all = txnList();
+  const data = months.map((m) => { const r = all.filter((t) => t.date.slice(0, 7) === m); return { m, in: r.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), out: r.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0) }; });
+  const max = Math.max(1, ...data.map((d) => Math.max(d.in, d.out)));
+  const bars = data.map((d) => `<div class="sp-tcol" data-sp-month-jump="${d.m}"><div class="sp-tbars"><i class="in" style="height:${Math.round(d.in / max * 100)}%" title="In ${eur0(d.in)}"></i><i class="out" style="height:${Math.round(d.out / max * 100)}%" title="Out ${eur0(d.out)}"></i></div><span class="sp-tlab">${esc(new Date(+d.m.slice(0, 4), +d.m.slice(5, 7) - 1).toLocaleDateString('en-GB', { month: 'short' }))}</span></div>`).join('');
+  return `<div class="sp-trend"><div class="sp-trend-h">In vs out · last ${data.length} months <span class="sp-tkey"><i class="in"></i>in <i class="out"></i>out</span></div><div class="sp-trendbars">${bars}</div></div>`;
+}
+function spendImportView() {
+  const im = state.financial.spendImport; const H = im.headers;
+  const sel = (field, val) => `<select class="sel" data-sp-map="${field}"><option value="">—</option>${H.map((h) => `<option value="${esc(h)}" ${h === val ? 'selected' : ''}>${esc(h)}</option>`).join('')}</select>`;
+  const norm = spendNormalize(im.rows.slice(0, 6), im.map);
+  const preview = norm.map((r) => `<tr><td>${esc(r.date || '?')}</td><td class="sp-pv-desc">${esc(r.description || '')}</td><td class="${r.amount < 0 ? 'down' : 'up'}">${r.amount != null ? eurSigned(r.amount) : '?'}</td></tr>`).join('');
+  const okCount = spendNormalize(im.rows, im.map).length;
+  return `<div class="sp-import">
+    <div class="sp-sec-h">Import · ${esc(im.name || 'statement.csv')}</div>
+    <p class="sp-import-note">Check the columns are matched, then import. ${okCount} of ${im.rows.length} rows look valid.</p>
+    <div class="sp-map">
+      <label class="fin-f"><span>Date</span>${sel('date', im.map.date)}</label>
+      <label class="fin-f"><span>Amount (signed)</span>${sel('amount', im.map.amount)}</label>
+      <label class="fin-f"><span>…or Money in</span>${sel('inCol', im.map.inCol)}</label>
+      <label class="fin-f"><span>…or Money out</span>${sel('outCol', im.map.outCol)}</label>
+      <label class="fin-f"><span>Description</span>${sel('desc', im.map.desc)}</label>
+      <label class="fin-f"><span>Currency</span>${sel('currency', im.map.currency)}</label>
+    </div>
+    <table class="sp-preview"><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>${preview}</tbody></table>
+    <div class="fin-edit-act"><button class="add-btn wide" data-sp-do-import ${okCount ? '' : 'disabled'}>Import ${okCount} transactions</button><button class="ghost" data-sp-import-cancel>Cancel</button></div>
+  </div>`;
+}
+function parseCSV(text) {
+  const rows = []; let row = [], cur = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) { const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter((r) => r.some((c) => (c || '').trim() !== ''));
+}
+function spendDetect(headers) {
+  const f = (re) => { const h = headers.find((x) => re.test(x)); return h || ''; };
+  const amount = f(/^amount$/i) || f(/\bamount\b/i) || f(/\bvalue\b/i);
+  return {
+    date: f(/date|data\b/i), amount,
+    inCol: amount ? '' : f(/money in|paid in|\bcredit\b|deposit|received|entrada/i),
+    outCol: amount ? '' : f(/money out|paid out|\bdebit\b|withdrawal|spent|sa[ií]da/i),
+    desc: f(/description|merchant|reference|details|narrative|payee|descri|memo|counterparty|\bname\b/i),
+    currency: f(/currency|moeda/i),
+  };
+}
+function spendNormDate(v) {
+  v = String(v || '').trim(); if (!v) return '';
+  let m = v.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = v.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})/);
+  if (m) { let d = +m[1], mo = +m[2]; let y = +m[3]; if (y < 100) y += 2000; if (mo > 12 && d <= 12) { const t = d; d = mo; mo = t; } return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`; }
+  const dt = new Date(v); if (!isNaN(dt)) return dt.toISOString().slice(0, 10);
+  return '';
+}
+function spendNormAmount(v) {
+  if (v == null) return null; let s = String(v).trim(); if (!s) return null;
+  const neg = /^\(.*\)$/.test(s) || /-/.test(s);
+  s = s.replace(/[^\d.,]/g, '');
+  if (s.includes(',') && s.includes('.')) { s = (s.lastIndexOf(',') > s.lastIndexOf('.')) ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); }
+  else if (s.includes(',')) { s = /,\d{1,2}$/.test(s) ? s.replace(',', '.') : s.replace(/,/g, ''); }
+  let n = parseFloat(s); if (!isFinite(n)) return null; if (neg && n > 0) n = -n; return n;
+}
+function spendNormalize(rows, map) {
+  return rows.map((o) => {
+    const date = spendNormDate(o[map.date]);
+    let amount = null;
+    if (map.amount) amount = spendNormAmount(o[map.amount]);
+    else { const i = spendNormAmount(o[map.inCol]); const ou = spendNormAmount(o[map.outCol]); if (i != null || ou != null) amount = (i || 0) - Math.abs(ou || 0); }
+    return { date, amount, description: String(o[map.desc] || '').trim(), currency: map.currency ? String(o[map.currency] || '').trim() : '' };
+  }).filter((r) => r.date && r.amount != null && r.amount !== 0);
+}
+function spendOpenFile(file) {
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const grid = parseCSV(String(rd.result || ''));
+      if (grid.length < 2) { toast('That CSV looks empty'); return; }
+      const headers = grid[0].map((h) => (h || '').trim());
+      const rows = grid.slice(1).map((r) => { const o = {}; headers.forEach((h, i) => { o[h] = r[i]; }); return o; });
+      state.financial.spendImport = { name: file.name, headers, rows, map: spendDetect(headers) };
+      renderFinancial();
+    } catch (e) { toast('Could not read that file'); }
+  };
+  rd.readAsText(file);
+}
+async function spendDoImport() {
+  const im = state.financial.spendImport; if (!im) return;
+  const rows = spendNormalize(im.rows, im.map);
+  if (!rows.length) { toast('No valid rows to import'); return; }
+  toast('Importing…');
+  try {
+    const r = await api('/api/spend/import', { method: 'POST', body: JSON.stringify({ rows }) });
+    toast(`Imported ${r.added}${r.skipped ? `, skipped ${r.skipped} duplicate${r.skipped === 1 ? '' : 's'}` : ''}`);
+    state.financial.spendImport = null; state.financial.txns = null; loadSpending();
+  } catch (e) { toast(e.message); }
+}
+async function spendSetCat(id, category) {
+  const t = (state.financial.txns || []).find((x) => x.id === id); if (t) { t.props = t.props || {}; t.props.category = category; }
+  renderFinancial();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { category } }) }); } catch (e) { toast(e.message); }
+}
+async function spendClear() {
+  if (!(await uiConfirm('Delete all imported transactions?', { danger: true, okLabel: 'Delete all' }))) return;
+  try { await api('/api/spend/clear', { method: 'POST' }); toast('Cleared'); state.financial.txns = null; loadSpending(); } catch (e) { toast(e.message); }
 }
 async function openGoals(tab) {
   state.view = { type: 'goals' };
@@ -4425,6 +4591,11 @@ document.addEventListener('click', (e) => {
   const acd = t.closest('[data-adv-chan-del]'); if (acd) { delAdviceChannel(acd.dataset.advChanDel); return; }
   if (t.closest('[data-adv-poll]')) { advicePoll(); return; }
   if (t.closest('[data-adv-trends]')) { loadAdvice(true); return; }
+  const spm = t.closest('[data-sp-month]'); if (spm) { const ms = spendMonths(); let i = ms.indexOf(state.financial.spendMonth); i += spm.dataset.spMonth === 'prev' ? 1 : -1; if (ms[i]) { state.financial.spendMonth = ms[i]; renderFinancial(); } return; }
+  const spj = t.closest('[data-sp-month-jump]'); if (spj) { state.financial.spendMonth = spj.dataset.spMonthJump; renderFinancial(); return; }
+  if (t.closest('[data-sp-do-import]')) { spendDoImport(); return; }
+  if (t.closest('[data-sp-import-cancel]')) { state.financial.spendImport = null; renderFinancial(); return; }
+  if (t.closest('[data-sp-clear]')) { spendClear(); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
@@ -4679,6 +4850,9 @@ document.addEventListener('contextmenu', (e) => {
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
+  if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
+  const spc = e.target.closest('[data-sp-cat]'); if (spc) { spendSetCat(spc.dataset.spCat, e.target.value); return; }
+  const spmap = e.target.closest('[data-sp-map]'); if (spmap && state.financial.spendImport) { state.financial.spendImport.map[spmap.dataset.spMap] = e.target.value; renderFinancial(); return; }
   // Pick which account this message sends from. Snapshot the in-progress fields
   // first so the re-render (which refreshes the signature note) keeps them.
   if (e.target.id === 'mc-from' && state.mail && state.mail.composing) {
