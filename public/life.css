@@ -1003,7 +1003,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 
 .pane-head { margin-bottom:20px; }
 .pane-head h1 { font-size:clamp(28px,4vw,38px); }
-.area-chips { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 22px; }
+.area-chips-wrap { margin:14px 0 20px; }
+.area-chips-tog { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); padding:4px 4px; border-radius:8px; margin-bottom:10px; }
+.area-chips-tog:hover { color:var(--ink); }
+.area-chips-tog .acw-chev { font-size:10px; width:9px; }
+.area-chips-tog .acw-active { text-transform:none; letter-spacing:0; font-weight:500; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); border-radius:999px; padding:1px 10px; margin-left:2px; }
+.area-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.area-chips-wrap.collapsed .area-chips { display:none; }
+.area-chips-wrap.collapsed { margin-bottom:12px; }
 .area-filter { display:none; }  /* chips on desktop; this dropdown on mobile */
 /* Completed tasks: hidden by default, revealed by 'Show completed'. */
 .show-completed { margin-top:18px; font-size:15px; }
@@ -1569,7 +1576,8 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-k { display:flex; order:5; flex-basis:100%; margin:10px 0 0; font-size:16px; padding:12px 14px; }
   .pane { padding:20px 18px 96px; }
   /* Tasks: swap the row of category chips for a single dropdown. */
-  .area-chips { display:none; }
+  .area-chips, .area-chips-tog { display:none; }
+  .area-chips-wrap { margin:0; }
   .area-filter { display:block; width:100%; max-width:none; margin:14px 0 20px; }
   /* Tasks: a card list instead of a sideways-scrolling table (only .ttable;
      smart tables keep their scroll). */

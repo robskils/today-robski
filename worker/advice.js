@@ -155,28 +155,32 @@ Be faithful and neutral. This is a summary of the creator's views, not advice to
 }
 
 // ── poll: find new videos, watch + store them ───────────────────────────
-export async function pollChannels(env, { perChannel = 3, max = 8 } = {}) {
+// perChannel: how many recent videos per channel to consider. latestOnly forces
+// a rescan of just the single most-recent video per channel (the page's manual
+// "scan latest" button), summarising it even if others are pending.
+export async function pollChannels(env, { perChannel = 3, max = 8, latestOnly = false } = {}) {
   const channels = await blocksOfKind(env, 'finchannel');
-  if (!channels.length) return { added: 0, channels: 0 };
+  if (!channels.length) return { added: 0, channels: 0, found: 0, errors: [] };
   const known = new Set((await blocksOfKind(env, 'finvideo')).map((v) => v.props.videoId).filter(Boolean));
-  let added = 0;
+  let added = 0, found = 0; const errors = [];
   for (const ch of channels) {
     const cid = ch.props.channelId; if (!cid) continue;
-    let xml; try { xml = await (await fetch(RSS(cid))).text(); } catch { continue; }
-    for (const v of parseFeed(xml).slice(0, perChannel)) {
+    let xml; try { xml = await (await fetch(RSS(cid))).text(); } catch (e) { errors.push(`${ch.title}: feed unreachable`); continue; }
+    const vids = parseFeed(xml).slice(0, latestOnly ? 1 : perChannel);
+    for (const v of vids) {
       if (known.has(v.videoId)) continue;
-      known.add(v.videoId);
-      if (added >= max) return { added, channels: channels.length, capped: true };
+      known.add(v.videoId); found++;
+      if (added >= max) return { added, found, channels: channels.length, capped: true, errors };
       try {
         const s = await summariseVideo(env, v);
         await insertBlock(env, 'finvideo', v.title,
           { videoId: v.videoId, channelId: cid, channelTitle: ch.title, url: v.url, thumb: v.thumb, published: v.published, actions: s.actions, topics: s.topics },
           s.summary);
         added++;
-      } catch (e) { console.error('advice summarise', v.videoId, e.message); }
+      } catch (e) { console.error('advice summarise', v.videoId, e.message); if (errors.length < 3) errors.push(`${ch.title}: ${e.message}`); }
     }
   }
-  return { added, channels: channels.length };
+  return { added, found, channels: channels.length, errors };
 }
 
 // ── long-term trends across recent videos ───────────────────────────────

@@ -27,6 +27,8 @@ const state = {
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
+  taskChipsOpen: readLS('life.taskChipsOpen', true),   // the area-filter chips can be collapsed away
+
   note: null, tables_open: null,
   favs: [], home: { events: [] }, cal: null, mail: null,
   tabs: [], activeTab: null,
@@ -2931,7 +2933,10 @@ function renderTasks() {
       </div>
     </form>`
       : ''}
-    <div class="area-chips">${chips}</div>
+    <div class="area-chips-wrap ${state.taskChipsOpen ? '' : 'collapsed'}">
+      <button class="area-chips-tog" data-toggle-chips title="Show or hide the area filters"><span class="acw-chev">${state.taskChipsOpen ? '▾' : '▸'}</span>Areas${state.taskFilter ? `<span class="acw-active">${esc((areaById(state.taskFilter) || {}).title || '')}</span>` : ''}</button>
+      <div class="area-chips">${chips}</div>
+    </div>
     ${filterSel}
     ${taskTableHtml(open, 'No open tasks here.')}
     ${snoozedSection}
@@ -3442,8 +3447,13 @@ async function delAdviceChannel(id) {
 async function advicePoll() {
   const f = state.financial; if (f.polling) return;
   f.polling = true; renderFinancial();
-  try { const r = await api('/api/fin/poll', { method: 'POST' }); toast(r.added ? `Summarised ${r.added} new video${r.added === 1 ? '' : 's'}` : 'No new videos'); }
-  catch (e) { toast(e.message); }
+  try {
+    const r = await api('/api/fin/poll', { method: 'POST' });
+    if (r.added) toast(`Summarised ${r.added} new video${r.added === 1 ? '' : 's'}`);
+    else if (r.errors && r.errors.length) toast(r.errors[0]);
+    else if (r.found) toast('Found videos but couldn’t summarise them');
+    else toast('No new videos');
+  } catch (e) { toast(e.message); }
   f.polling = false;
   await loadAdvice();
 }
@@ -4776,6 +4786,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-show-snoozed]')) { state.showSnoozed = true; renderTasks(); return; }
   if (t.closest('[data-hide-snoozed]')) { state.showSnoozed = false; renderTasks(); return; }
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
+  if (t.closest('[data-toggle-chips]')) { state.taskChipsOpen = !state.taskChipsOpen; try { localStorage.setItem('life.taskChipsOpen', JSON.stringify(state.taskChipsOpen)); } catch {} renderTasks(); return; }
   const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
   // On the narrow task cards the whole card opens - only the checkbox (handled
