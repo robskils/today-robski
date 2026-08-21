@@ -71,6 +71,14 @@ binding = "DB"
 database_name = "today-robski"
 database_id = "22cfad75-5c6f-463c-9dfc-fb96c9257ee8"
 
+# Portfolio holdings + snapshot history. This is the SAME database that
+# portfolio.robski.uk uses - bound here so Robski Life reads/writes the very
+# same data (no migration), and both surfaces stay in sync during the move.
+[[d1_databases]]
+binding = "PORTFOLIO_DB"
+database_name = "portfolio-tracker"
+database_id = "0360e843-4b3c-4d98-beb6-4d185fb12cbc"
+
 # ── R2 ────────────────────────────────────────────────────────────────
 # Note/task/row file attachments. Bytes live here; the per-block list is in
 # props.attachments. ENABLE: turn on R2 in the dashboard, then

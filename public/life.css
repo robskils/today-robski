@@ -20,6 +20,9 @@
   --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 34px -14px rgba(0,0,0,.7);
 }
 
+/* Portfolio allocation swatches (metals + slate), theme-agnostic. */
+:root { --ag:#7f8a93; --ag2:#a6b0b8; --vault:#6f7f8c; --brass:var(--gold); --slate:#8a8279; }
+
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 [hidden] { display:none !important; }
 html { -webkit-text-size-adjust:100%; }
@@ -201,6 +204,54 @@ button { cursor:pointer; background:none; border:0; }
 .goal-group { margin-top:16px; }
 .goal-group-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin-bottom:10px; }
 .goal-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+
+/* ── Financial ──────────────────────────────────────── */
+.fin-load, .fin-err { padding:40px 4px; color:var(--ink-2); font-size:16px; }
+.fin-err-d { color:var(--ink-3); font-size:14px; margin:6px 0 16px; overflow-wrap:anywhere; }
+.fin-port { display:flex; flex-direction:column; gap:22px; }
+.fin-head { margin-top:2px; }
+.fin-total-lab { font-size:12.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); }
+.fin-total { font-family:'Cormorant Garamond',serif; font-weight:600; font-size:clamp(46px,11vw,72px); line-height:1; letter-spacing:-.02em; margin-top:4px; font-variant-numeric:tabular-nums; }
+.fin-asof { color:var(--ink-2); font-size:14.5px; margin-top:10px; } .fin-asof b { color:var(--ink); font-weight:600; }
+.fin-link { background:none; border:0; color:var(--accent); cursor:pointer; font:inherit; }
+.fin-bar { display:flex; height:20px; border-radius:6px; overflow:hidden; border:1px solid var(--line); }
+.fin-bar span { display:block; height:100%; }
+.fin-legend { display:flex; flex-wrap:wrap; gap:8px 20px; font-size:14.5px; color:var(--ink-2); margin-top:-10px; }
+.fin-legend i { display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:7px; vertical-align:baseline; }
+.fin-perf { display:flex; flex-wrap:wrap; gap:12px; }
+.fin-chip { flex:1 1 150px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); }
+.fin-chip .lab { display:block; font-size:12px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); margin-bottom:6px; }
+.fin-cv { font-family:'Cormorant Garamond',serif; font-size:27px; font-weight:600; letter-spacing:-.01em; display:block; font-variant-numeric:tabular-nums; }
+.fin-abs { font-size:14px; color:var(--ink-2); margin-top:2px; display:block; font-variant-numeric:tabular-nums; }
+.fin-na { font-size:16px; font-weight:600; color:var(--ink-3); }
+.up { color:var(--done); } .down { color:var(--accent); } .flat { color:var(--ink-2); }
+.fin-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
+.fin-card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--sw,var(--ag)); border-radius:14px; padding:15px 16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:2px; }
+.fin-card-top { display:flex; align-items:flex-start; gap:8px; }
+.fin-name { font-weight:600; font-size:16.5px; flex:1; min-width:0; text-wrap:balance; }
+.fin-edit-btn { flex:none; border:0; background:none; color:var(--ink-3); cursor:pointer; font-size:15px; padding:2px; } .fin-edit-btn:hover { color:var(--accent); }
+.fin-venue { color:var(--ink-3); font-size:13.5px; }
+.fin-cv2 { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:600; letter-spacing:-.01em; margin-top:8px; font-variant-numeric:tabular-nums; }
+.fin-qty { color:var(--ink-2); font-size:13.5px; }
+.fin-rates { background:var(--paper-2); border:1px solid var(--line); border-radius:14px; padding:4px 18px; }
+.fin-rates dl { display:grid; grid-template-columns:1fr auto; margin:0; font-size:15px; }
+.fin-rates dt, .fin-rates dd { margin:0; padding:11px 0; border-bottom:1px solid var(--line); }
+.fin-rates dt { color:var(--ink-2); } .fin-rates dd { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+.fin-rates dl>:nth-last-child(1), .fin-rates dl>:nth-last-child(2) { border-bottom:0; }
+.fin-sec-h { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:16px; font-weight:600; padding-top:6px; border-top:1px solid var(--line); }
+.fin-editor { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; }
+.fin-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+.fin-f { display:flex; flex-direction:column; gap:5px; }
+.fin-f span { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); }
+.fin-f input, .fin-f select { width:100%; padding:11px 13px; font-size:16px; border-radius:11px; border:1px solid var(--line-2); background:var(--paper); color:var(--ink); }
+.fin-f input:focus-visible, .fin-f select:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+.fin-edit-act { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.fin-edit-act .fin-del { color:var(--danger,#c0392b); margin-left:auto; }
+.fin-soon { text-align:center; max-width:460px; margin:40px auto; color:var(--ink-2); }
+.fin-soon-ic { font-size:44px; margin-bottom:10px; }
+.fin-soon h2 { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:600; color:var(--ink); margin-bottom:10px; }
+.fin-soon p { font-size:16px; line-height:1.55; }
+.fin-soon-note { color:var(--ink-3); font-size:14px; margin-top:14px; }
 .goal-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; gap:9px; text-align:left; padding:16px 18px; border:1px solid var(--line); border-left:4px solid var(--c); border-radius:13px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; }
 .goal-card:hover { border-color:var(--accent); border-left-color:var(--c); }
 .gc-top { display:flex; align-items:flex-start; gap:9px; }

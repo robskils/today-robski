@@ -5,6 +5,7 @@ import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
+import { getPortfolio, addPosition, updatePosition, deletePosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -1626,6 +1627,18 @@ async function maybePushMail(env, res) {
   });
 }
 
+// Portfolio history: on the every-minute tick, only actually fetch prices when
+// the last snapshot is over ~6h old (matching the old 6-hourly cron). Otherwise
+// it's a single indexed read a minute, same shape as the brief.
+async function maybeSnapshotPortfolio(env) {
+  if (!env.PORTFOLIO_DB) return;
+  const now = Math.floor(Date.now() / 1000);
+  const last = await env.PORTFOLIO_DB.prepare('SELECT ts FROM snapshots ORDER BY ts DESC LIMIT 1').first().catch(() => null);
+  if (last && now - last.ts < 6 * 3600) return;
+  const data = await getPortfolio(env);
+  await recordSnapshot(env, data.total, 0);
+}
+
 export default {
   // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
   // keeps the isolate alive until the sends finish.
@@ -1637,6 +1650,8 @@ export default {
     // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min),
     // then push an icon badge if the unread total just rose.
     ctx.waitUntil(syncMailCache(env).then((res) => maybePushMail(env, res)).catch((e) => console.error('syncMailCache/push:', e.message)));
+    // Portfolio value snapshot, self-gated to ~6h so the 24h/7d/30d figures stay real.
+    ctx.waitUntil(maybeSnapshotPortfolio(env).catch((e) => console.error('portfolioSnapshot:', e.message)));
   },
 
   async fetch(request, env) {
@@ -1716,6 +1731,27 @@ export default {
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
+
+      // Portfolio (moved across from portfolio.robski.uk; shares that D1).
+      if (path === '/api/portfolio' && request.method === 'GET') {
+        try {
+          const data = await getPortfolio(env);
+          await recordSnapshot(env, data.total);
+          data.performance = await portfolioPerformance(env, data.total);
+          return json(data, request);
+        } catch (e) {
+          // No fallback figure - a wrong number is worse than none.
+          return json({ error: e.message, detail: e.detail }, request, 503);
+        }
+      }
+      if (path === '/api/holdings' && (request.method === 'POST' || request.method === 'PUT' || request.method === 'DELETE')) {
+        let body; try { body = await request.json(); } catch { return err('Invalid request', request, 400); }
+        try {
+          if (request.method === 'POST') return json(await addPosition(env, body), request);
+          if (request.method === 'PUT') return json(await updatePosition(env, body.id, body), request);
+          await deletePosition(env, body.id); return json({ deleted: body.id }, request);
+        } catch (e) { return err(e.message, request, 400); }
+      }
 
       // Robski Life block core + search.
       if (path === '/api/blocks' && request.method === 'GET') return listBlocks(request, env, url);

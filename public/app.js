@@ -23,6 +23,7 @@ const state = {
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   contactGroups: [], contactsGroup: null, contactMenu: null,
+  financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null },
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
@@ -259,7 +260,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -271,6 +272,7 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
+    case 'financial': return 'Financial';
     case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'goals': return 'Goals'; case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
@@ -288,6 +290,7 @@ function openView(v) {
     case 'readwatch': return openReadwatch();
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
+    case 'financial': return openFinancial(v.tab);
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
@@ -473,6 +476,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
+    <button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Financial</span></button>
     <button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span>🎯</span><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>
     <button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>
     </div>
@@ -729,6 +733,7 @@ function renderHome() {
         <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
         <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
         <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
+        <button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Financial</span></button>
         <button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>
         <button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>
       </nav>
@@ -3264,6 +3269,104 @@ function goalMeasure(g) {
   if (p.gtype === 'number') return `${p.current || 0} / ${p.target || 0}${p.unit ? ' ' + p.unit : ''}`;
   const ms = Array.isArray(p.milestones) ? p.milestones : []; return `${ms.filter((m) => m.done).length}/${ms.length} milestones`;
 }
+// ── Financial (Portfolio · Advice · Spending) ────────────────────────────
+// Portfolio moved across from portfolio.robski.uk: same data (shared D1), same
+// pricing (silver valued at spot, never the KAG token). Advice + Spending are
+// staged next.
+const FIN_TABS = [['portfolio', 'Portfolio'], ['advice', 'Advice'], ['spending', 'Spending']];
+async function openFinancial(tab) {
+  state.financial.tab = tab || state.financial.tab || 'portfolio';
+  state.view = { type: 'financial', tab: state.financial.tab };
+  renderNav();
+  if (state.financial.tab === 'portfolio' && !state.financial.data) loadPortfolio();
+  else renderFinancial();
+}
+async function loadPortfolio(force) {
+  const f = state.financial;
+  if (f.loading) return;
+  f.loading = true; if (force) { f.data = null; f.error = null; }
+  renderFinancial();
+  try {
+    const d = await api('/api/portfolio');
+    f.data = d; f.error = null;
+  } catch (e) { f.error = e.message; }
+  f.loading = false; renderFinancial();
+}
+const eur0 = (n) => '€' + Math.round(Number(n) || 0).toLocaleString('en-IE');
+const fmtQty = (n) => Number(n).toLocaleString('en-GB', { maximumFractionDigits: 4 });
+function renderFinancial() {
+  const f = state.financial;
+  const seg = `<div class="seg">${FIN_TABS.map(([k, l]) => `<button class="seg-b ${f.tab === k ? 'on' : ''}" data-fin-tab="${k}">${l}</button>`).join('')}</div>`;
+  const body = f.tab === 'advice' ? finSoon('📺', 'Financial advice', 'Track finance YouTube channels. When one posts a new video, Robski Life adds a summary with action points, and keeps a running read on the long-term trends across them.', 'Coming next - the channel tracker is being built.')
+    : f.tab === 'spending' ? finSoon('🧾', 'Spending', 'Import a bank statement (CSV or spreadsheet) - or, later, connect a bank - to categorise spending and see how much is going out against what is coming in.', 'Coming soon.')
+    : portfolioBody();
+  $('#pane').innerHTML = `${pageCrumb('Financial')}<div class="pane-head"><h1>Financial</h1></div>${seg}${body}`;
+}
+const finSoon = (ic, title, body, note) => `<div class="fin-soon"><div class="fin-soon-ic">${ic}</div><h2>${esc(title)}</h2><p>${esc(body)}</p><p class="fin-soon-note">${esc(note)}</p></div>`;
+function portfolioBody() {
+  const f = state.financial;
+  if (f.loading && !f.data) return '<div class="fin-load">Fetching live prices…</div>';
+  if (f.error && !f.data) return `<div class="fin-err"><p>Couldn't value the portfolio right now.</p><p class="fin-err-d">${esc(f.error)}</p><button class="add-btn wide" data-fin-refresh>Try again</button></div>`;
+  const d = f.data; if (!d) return '<div class="fin-load">Loading…</div>';
+  const total = d.total || 0;
+  const pctOf = (v) => total ? Math.round(v / total * 100) : 0;
+  const bar = (d.holdings || []).map((h) => `<span style="width:${total ? (h.value / total * 100) : 0}%;background:${h.swatch}"></span>`).join('');
+  const legend = (d.holdings || []).map((h) => `<span><i style="background:${h.swatch}"></i>${esc(h.code)} · ${pctOf(h.value)}%</span>`).join('');
+  const perf = (d.performance || []).map((p) => {
+    if (p.pct == null) return `<div class="fin-chip"><span class="lab">${esc(p.label)}</span><span class="fin-na">—</span></div>`;
+    const cls = p.pct > 0.05 ? 'up' : p.pct < -0.05 ? 'down' : 'flat'; const sign = p.pct >= 0 ? '+' : '';
+    return `<div class="fin-chip"><span class="lab">${esc(p.label)}</span><span class="fin-cv ${cls}">${sign}${p.pct.toFixed(2)}%</span><span class="fin-abs">${sign}${eur0(p.abs)}</span></div>`;
+  }).join('');
+  const cards = (d.holdings || []).map((h) => `<div class="fin-card" style="--sw:${h.swatch}">
+    <div class="fin-card-top"><span class="fin-name">${esc(h.name)}</span><button class="fin-edit-btn" data-fin-edit="${h.id}" title="Edit holding">✎</button></div>
+    <span class="fin-venue">${esc(h.venue || h.code)}</span>
+    <span class="fin-cv2">${eur0(h.value)}</span>
+    <span class="fin-qty">${fmtQty(h.qty)} ${esc(h.unit)}${total ? ` · ${pctOf(h.value)}%` : ''}</span>
+  </div>`).join('');
+  const rates = (d.rates || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+  const asOf = d.ts ? new Date(d.ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  return `<div class="fin-port">
+    <div class="fin-head"><div class="fin-total-lab">Total value</div><div class="fin-total">${eur0(total)}</div>${asOf ? `<div class="fin-asof">Live as of <b>${esc(asOf)}</b> · <button class="fin-link" data-fin-refresh>refresh</button></div>` : ''}</div>
+    ${bar ? `<div class="fin-bar">${bar}</div><div class="fin-legend">${legend}</div>` : ''}
+    ${perf ? `<div class="fin-perf">${perf}</div>` : ''}
+    <div class="fin-cards">${cards}</div>
+    ${rates ? `<div class="fin-rates"><dl>${rates}</dl></div>` : ''}
+    <div class="fin-sec-h"><span>Holdings</span>${(!f.adding && f.editId == null) ? '<button class="ghost" data-fin-add>+ Add holding</button>' : ''}</div>
+    ${financialEditor()}
+  </div>`;
+}
+function holdingFields(h, kinds) {
+  const opts = Object.entries(kinds || {}).map(([k, v]) => `<option value="${k}" ${k === h.kind ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
+  return `<div class="fin-fields">
+    <label class="fin-f"><span>Name</span><input class="sel" name="name" value="${esc(h.name || '')}" autocomplete="off" required></label>
+    <label class="fin-f"><span>Code</span><input class="sel" name="code" value="${esc(h.code || '')}" placeholder="e.g. KAG" autocomplete="off" required></label>
+    <label class="fin-f"><span>Venue</span><input class="sel" name="venue" value="${esc(h.venue || '')}" placeholder="e.g. Trading 212" autocomplete="off"></label>
+    <label class="fin-f"><span>Quantity</span><input class="sel" name="qty" type="number" step="any" value="${h.qty != null ? h.qty : ''}" required></label>
+    <label class="fin-f"><span>Priced as</span><select class="sel" name="kind">${opts}</select></label>
+    <label class="fin-f"><span>Ticker (if listed)</span><input class="sel" name="symbol" value="${esc(h.symbol || '')}" placeholder="e.g. NUCG.L" autocomplete="off"></label>
+  </div>`;
+}
+function financialEditor() {
+  const f = state.financial; const d = f.data; if (!d) return '';
+  if (f.adding) return `<form class="fin-editor" id="fin-add-form">${holdingFields({}, d.kinds)}<div class="fin-edit-act"><button class="add-btn wide" type="submit">Add holding</button><button type="button" class="ghost" data-fin-add-cancel>Cancel</button></div></form>`;
+  if (f.editId != null) { const h = (d.holdings || []).find((x) => x.id === f.editId); if (!h) return ''; return `<form class="fin-editor" id="fin-edit-form" data-id="${h.id}">${holdingFields(h, d.kinds)}<div class="fin-edit-act"><button class="add-btn wide" type="submit">Save</button><button type="button" class="ghost" data-fin-edit-cancel>Cancel</button><button type="button" class="ghost fin-del" data-fin-del="${h.id}">Delete</button></div></form>`; }
+  return '';
+}
+const finForm = (form) => { const g = (n) => (form.querySelector(`[name="${n}"]`) || {}).value || ''; return { code: g('code').trim(), name: g('name').trim(), venue: g('venue').trim(), qty: g('qty'), kind: g('kind'), symbol: g('symbol').trim() }; };
+async function addHolding(form) {
+  try { await api('/api/holdings', { method: 'POST', body: JSON.stringify(finForm(form)) }); toast('Holding added'); state.financial.adding = false; loadPortfolio(true); }
+  catch (e) { toast(e.message); }
+}
+async function updateHolding(id, form) {
+  const o = finForm(form); o.id = id;
+  try { await api('/api/holdings', { method: 'PUT', body: JSON.stringify(o) }); toast('Saved'); state.financial.editId = null; loadPortfolio(true); }
+  catch (e) { toast(e.message); }
+}
+async function deleteHolding(id) {
+  if (!(await uiConfirm('Remove this holding?', { danger: true, okLabel: 'Remove' }))) return;
+  try { await api('/api/holdings', { method: 'DELETE', body: JSON.stringify({ id }) }); toast('Removed'); state.financial.editId = null; loadPortfolio(true); }
+  catch (e) { toast(e.message); }
+}
 async function openGoals(tab) {
   state.view = { type: 'goals' };
   if (tab) state.goalsTab = tab;
@@ -3938,6 +4041,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Contacts', run: () => openContacts() },
   { kind: 'action', title: 'New contact', run: () => quickAdd('contact') },
   { kind: 'action', title: 'Go to Goals', run: () => openGoals('goals') },
+  { kind: 'action', title: 'Financial · Portfolio', run: () => openFinancial('portfolio') },
   { kind: 'action', title: 'New goal', run: () => quickAdd('goal') },
   { kind: 'action', title: 'Bucket list', run: () => openGoals('bucket') },
 ];
@@ -4237,6 +4341,14 @@ document.addEventListener('click', (e) => {
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
+  const fseg = t.closest('[data-fin-tab]'); if (fseg) { openFinancial(fseg.dataset.finTab).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-fin-refresh]')) { loadPortfolio(true); return; }
+  if (t.closest('[data-fin-add]')) { state.financial.adding = true; state.financial.editId = null; renderFinancial(); return; }
+  if (t.closest('[data-fin-add-cancel]')) { state.financial.adding = false; renderFinancial(); return; }
+  const fed = t.closest('[data-fin-edit]'); if (fed) { state.financial.editId = Number(fed.dataset.finEdit); state.financial.adding = false; renderFinancial(); return; }
+  if (t.closest('[data-fin-edit-cancel]')) { state.financial.editId = null; renderFinancial(); return; }
+  const fhd = t.closest('[data-fin-del]'); if (fhd) { deleteHolding(Number(fhd.dataset.finDel)); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
@@ -4620,6 +4732,8 @@ document.addEventListener('submit', (e) => {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
     saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });
   }
+  if (e.target.id === 'fin-add-form') { addHolding(e.target); return; }
+  if (e.target.id === 'fin-edit-form') { updateHolding(Number(e.target.dataset.id), e.target); return; }
   if (e.target.id === 'mail-compose-form') { const toEl = $('#mc-to'); const to = toEl ? toEl.value.trim() : ''; if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } else { toast('Add a recipient first'); if (toEl) { toEl.scrollIntoView({ block: 'center' }); toEl.focus(); } } }
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
   if (e.target.id === 'rw-add-form') { const i = $('#rw-url'); if (i && i.value.trim()) rwSave(i.value); }
