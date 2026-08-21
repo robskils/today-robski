@@ -122,7 +122,7 @@ const GEMINI = (model, key) => `https://generativelanguage.googleapis.com/v1beta
 async function geminiJSON(env, parts, schema, { temperature = 0.3 } = {}) {
   const key = env.GEMINI_API_KEY;
   if (!key) throw new Error('Gemini is not set up yet - add the GEMINI_API_KEY secret.');
-  const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
   const body = {
     contents: [{ parts }],
     generationConfig: { temperature, responseMimeType: 'application/json', ...(schema ? { responseSchema: schema } : {}) },
