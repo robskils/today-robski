@@ -23,7 +23,7 @@ const state = {
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   contactGroups: [], contactsGroup: null, contactMenu: null,
-  financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null },
+  financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false },
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
@@ -3279,7 +3279,21 @@ async function openFinancial(tab) {
   state.view = { type: 'financial', tab: state.financial.tab };
   renderNav();
   if (state.financial.tab === 'portfolio' && !state.financial.data) loadPortfolio();
+  else if (state.financial.tab === 'advice') loadAdvice();
   else renderFinancial();
+}
+async function loadAdvice(refreshTrends) {
+  const f = state.financial;
+  renderFinancial();
+  try {
+    const [channels, videos, trends] = await Promise.all([
+      api('/api/blocks?kind=finchannel'),
+      api('/api/blocks?kind=finvideo'),
+      refreshTrends ? api('/api/fin/trends', { method: 'POST' }) : api('/api/fin/trends'),
+    ]);
+    f.channels = channels || []; f.videos = videos || []; f.trends = trends || { text: null };
+  } catch (e) { toast(e.message); }
+  renderFinancial();
 }
 async function loadPortfolio(force) {
   const f = state.financial;
@@ -3297,7 +3311,7 @@ const fmtQty = (n) => Number(n).toLocaleString('en-GB', { maximumFractionDigits:
 function renderFinancial() {
   const f = state.financial;
   const seg = `<div class="seg">${FIN_TABS.map(([k, l]) => `<button class="seg-b ${f.tab === k ? 'on' : ''}" data-fin-tab="${k}">${l}</button>`).join('')}</div>`;
-  const body = f.tab === 'advice' ? finSoon('📺', 'Financial advice', 'Track finance YouTube channels. When one posts a new video, Robski Life adds a summary with action points, and keeps a running read on the long-term trends across them.', 'Coming next - the channel tracker is being built.')
+  const body = f.tab === 'advice' ? adviceBody()
     : f.tab === 'spending' ? finSoon('🧾', 'Spending', 'Import a bank statement (CSV or spreadsheet) - or, later, connect a bank - to categorise spending and see how much is going out against what is coming in.', 'Coming soon.')
     : portfolioBody();
   $('#pane').innerHTML = `${pageCrumb('Financial')}<div class="pane-head"><h1>Financial</h1></div>${seg}${body}`;
@@ -3366,6 +3380,65 @@ async function deleteHolding(id) {
   if (!(await uiConfirm('Remove this holding?', { danger: true, okLabel: 'Remove' }))) return;
   try { await api('/api/holdings', { method: 'DELETE', body: JSON.stringify({ id }) }); toast('Removed'); state.financial.editId = null; loadPortfolio(true); }
   catch (e) { toast(e.message); }
+}
+// ── Financial advice (YouTube tracker) ───────────────────────────────────
+function adviceBody() {
+  const f = state.financial;
+  if (f.channels == null) return '<div class="fin-load">Loading…</div>';
+  const chips = (f.channels || []).map((c) => `<span class="adv-chan"><a href="${esc((c.props || {}).url || '#')}" target="_blank" rel="noopener noreferrer">${esc(c.title || 'Channel')}</a><button class="adv-chan-x" data-adv-chan-del="${c.id}" title="Stop tracking">×</button></span>`).join('');
+  const t = f.trends || {};
+  const trends = t.text ? `<div class="adv-trends">
+      <div class="adv-trends-h">📈 Long-term trends${t.ts ? `<span class="adv-trends-ts">across ${t.from || ''} videos · ${esc(new Date(t.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>` : ''}<button class="ghost adv-trends-r" data-adv-trends title="Regenerate">↻</button></div>
+      <p class="adv-trends-t">${esc(t.text)}</p>
+      ${(t.signals || []).length ? `<ul class="adv-signals">${t.signals.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
+    </div>` : '';
+  const feed = (f.videos || []).map(adviceVideoCard).join('');
+  const empty = !(f.videos || []).length ? `<div class="home-empty">${(f.channels || []).length ? 'No summaries yet. Hit “Check for new videos”, or wait for the next sweep.' : 'Add a finance channel above to start tracking it.'}</div>` : '';
+  return `<div class="adv">
+    <form class="adv-add" id="adv-add-form"><input class="sel" id="adv-input" placeholder="Add a channel - paste its URL or @handle…" autocomplete="off"><button class="add-btn wide" type="submit">Track</button></form>
+    ${chips ? `<div class="adv-chans">${chips}</div>` : ''}
+    <div class="adv-bar"><button class="ghost" data-adv-poll ${f.polling ? 'disabled' : ''}>${f.polling ? 'Watching new videos…' : '↻ Check for new videos'}</button>${(f.videos || []).length ? `<span class="adv-count">${f.videos.length} summarised</span>` : ''}</div>
+    ${trends}
+    <div class="adv-feed">${feed}${empty}</div>
+  </div>`;
+}
+function adviceVideoCard(v) {
+  const p = v.props || {};
+  const when = p.published ? new Date(p.published).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const acts = (p.actions || []).map((a) => `<li>${esc(a)}</li>`).join('');
+  const tops = (p.topics || []).map((tp) => `<span class="adv-topic">${esc(tp)}</span>`).join('');
+  return `<div class="adv-card">
+    <a class="adv-thumb" href="${esc(p.url || '#')}" target="_blank" rel="noopener noreferrer">${p.thumb ? `<img src="${esc(p.thumb)}" alt="" loading="lazy">` : ''}<span class="adv-play">▶</span></a>
+    <div class="adv-main">
+      <div class="adv-meta"><span class="adv-ch">${esc(p.channelTitle || '')}</span>${when ? `<span class="adv-when">${esc(when)}</span>` : ''}</div>
+      <a class="adv-title" href="${esc(p.url || '#')}" target="_blank" rel="noopener noreferrer">${esc(v.title || 'Untitled')}</a>
+      <p class="adv-sum">${esc(v.body || '')}</p>
+      ${acts ? `<div class="adv-acts-h">Action points</div><ul class="adv-acts">${acts}</ul>` : ''}
+      ${tops ? `<div class="adv-topics">${tops}</div>` : ''}
+    </div>
+  </div>`;
+}
+async function addAdviceChannel(input) {
+  const v = (input || '').trim(); if (!v) return;
+  toast('Finding channel…');
+  try {
+    const r = await api('/api/fin/channels', { method: 'POST', body: JSON.stringify({ input: v }) });
+    const el = $('#adv-input'); if (el) el.value = '';
+    toast(r.already ? 'Already tracking that channel' : `Tracking ${r.channel && r.channel.title || 'channel'}`);
+    await loadAdvice();
+    if (!r.already) advicePoll();   // fetch + summarise its latest right away
+  } catch (e) { toast(e.message); }
+}
+async function delAdviceChannel(id) {
+  try { await api(`/api/fin/channels/${id}`, { method: 'DELETE' }); await loadAdvice(); } catch (e) { toast(e.message); }
+}
+async function advicePoll() {
+  const f = state.financial; if (f.polling) return;
+  f.polling = true; renderFinancial();
+  try { const r = await api('/api/fin/poll', { method: 'POST' }); toast(r.added ? `Summarised ${r.added} new video${r.added === 1 ? '' : 's'}` : 'No new videos'); }
+  catch (e) { toast(e.message); }
+  f.polling = false;
+  await loadAdvice();
 }
 async function openGoals(tab) {
   state.view = { type: 'goals' };
@@ -4349,6 +4422,9 @@ document.addEventListener('click', (e) => {
   const fed = t.closest('[data-fin-edit]'); if (fed) { state.financial.editId = Number(fed.dataset.finEdit); state.financial.adding = false; renderFinancial(); return; }
   if (t.closest('[data-fin-edit-cancel]')) { state.financial.editId = null; renderFinancial(); return; }
   const fhd = t.closest('[data-fin-del]'); if (fhd) { deleteHolding(Number(fhd.dataset.finDel)); return; }
+  const acd = t.closest('[data-adv-chan-del]'); if (acd) { delAdviceChannel(acd.dataset.advChanDel); return; }
+  if (t.closest('[data-adv-poll]')) { advicePoll(); return; }
+  if (t.closest('[data-adv-trends]')) { loadAdvice(true); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
@@ -4732,6 +4808,7 @@ document.addEventListener('submit', (e) => {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
     saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });
   }
+  if (e.target.id === 'adv-add-form') { const el = $('#adv-input'); addAdviceChannel(el ? el.value : ''); return; }
   if (e.target.id === 'fin-add-form') { addHolding(e.target); return; }
   if (e.target.id === 'fin-edit-form') { updateHolding(Number(e.target.dataset.id), e.target); return; }
   if (e.target.id === 'mail-compose-form') { const toEl = $('#mc-to'); const to = toEl ? toEl.value.trim() : ''; if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } else { toast('Add a recipient first'); if (toEl) { toEl.scrollIntoView({ block: 'center' }); toEl.focus(); } } }

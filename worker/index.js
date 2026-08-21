@@ -6,6 +6,7 @@ import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
+import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 
 const TZ = 'Europe/Lisbon';
 
@@ -836,7 +837,7 @@ async function searchBlocks(request, env, url) {
       WHERE archived = 0
         AND (title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))
         AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
-        AND kind != 'contactgroup'
+        AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo')
       ORDER BY
         CASE kind WHEN 'note' THEN 0 WHEN 'table' THEN 1 WHEN 'area' THEN 2 WHEN 'task' THEN 3 WHEN 'row' THEN 4 ELSE 5 END,
         updated_at DESC
@@ -1652,6 +1653,8 @@ export default {
     ctx.waitUntil(syncMailCache(env).then((res) => maybePushMail(env, res)).catch((e) => console.error('syncMailCache/push:', e.message)));
     // Portfolio value snapshot, self-gated to ~6h so the 24h/7d/30d figures stay real.
     ctx.waitUntil(maybeSnapshotPortfolio(env).catch((e) => console.error('portfolioSnapshot:', e.message)));
+    // Financial advice: sweep tracked YouTube channels for new videos, self-gated to ~3h.
+    ctx.waitUntil(maybePollChannels(env).catch((e) => console.error('advicePoll:', e.message)));
   },
 
   async fetch(request, env) {
@@ -1751,6 +1754,28 @@ export default {
           if (request.method === 'PUT') return json(await updatePosition(env, body.id, body), request);
           await deletePosition(env, body.id); return json({ deleted: body.id }, request);
         } catch (e) { return err(e.message, request, 400); }
+      }
+
+      // Financial advice: YouTube channel tracker (Gemini watches new videos).
+      if (path === '/api/fin/channels' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try { return json(await addChannel(env, b.input), request); } catch (e) { return err(e.message, request, 400); }
+      }
+      {
+        const fc = path.match(/^\/api\/fin\/channels\/([0-9a-f-]{36})$/);
+        if (fc && request.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM blocks WHERE id = ? AND kind = ?').bind(fc[1], 'finchannel').run();
+          return json({ deleted: fc[1] }, request);
+        }
+      }
+      if (path === '/api/fin/poll' && request.method === 'POST') {
+        try { const r = await pollChannels(env); if (r.added) await synthesiseTrends(env).catch(() => {}); return json(r, request); }
+        catch (e) { return err(e.message, request, 502); }
+      }
+      if (path === '/api/fin/trends') {
+        if (request.method === 'POST') { try { return json(await synthesiseTrends(env), request); } catch (e) { return err(e.message, request, 502); } }
+        const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_fin_trends'").first().catch(() => null);
+        return json(row && row.value ? JSON.parse(row.value) : { text: null }, request);
       }
 
       // Robski Life block core + search.
