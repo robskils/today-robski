@@ -1078,12 +1078,15 @@ function renderReadwatch() {
   const tabs = RW_TABS.map(([k, l]) => `<button class="rw-tab ${rw.filter === k ? 'on' : ''}" data-rw-filter="${k}">${l}<span class="rw-tab-n">${count(k)}</span></button>`).join('');
   const shown = items.filter((b) => rwMatch(b, rw.filter));
   const cards = shown.map((b) => {
-    const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video';
-    return `<div class="rw-card ${done ? 'done' : ''}">
-      <a class="rw-thumb ${vid ? 'vid' : ''}" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${vid ? '▶' : '▤'}</span></a>
+    const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video'; const book = p.media === 'book';
+    // A book has no link of its own; tapping it looks it up so you can find/buy it.
+    const href = book ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' book')}` : (p.url || '#');
+    const icon = vid ? '▶' : book ? '📖' : '▤';
+    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''}">
+      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
       <div class="rw-body">
-        <a class="rw-title" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
-        <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : '▤ Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
+        <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
+        <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : book ? '📖 Book' : '▤ Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
       </div>
       <div class="rw-actions">
         <button class="rw-done ${done ? 'on' : ''}" data-rw-done="${b.id}" title="${done ? 'Mark unread' : 'Mark done'}">✓</button>
@@ -1094,7 +1097,7 @@ function renderReadwatch() {
   $('#pane').innerHTML = `
     ${pageCrumb('Read & Watch')}
     <div class="pane-head home-head"><h1>Read &amp; Watch</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
-    <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link to save…" autocomplete="off" inputmode="url" ${rw.saving ? 'disabled' : ''}><button class="add-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
+    <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
     <div class="rw-tabs">${tabs}</div>
     <div class="rw-list">${cards || `<div class="empty">${rw.filter === 'done' ? 'Nothing finished yet.' : 'Nothing here yet. Paste a link above, or set up one-tap saving.'}</div>`}</div>`;
@@ -1120,11 +1123,21 @@ async function rwToggleSetup() {
   if (state.rw.showSetup && !state.rw.setup) { try { state.rw.setup = await api('/api/bookmark/setup'); } catch (e) { toast(e.message); } }
   renderReadwatch();
 }
-async function rwSave(url) {
-  url = (url || '').trim(); if (!url || !state.rw) return;
+async function rwSave(input) {
+  input = (input || '').trim(); if (!input || !state.rw) return;
+  // A link (http… or a bare domain with no spaces) is fetched for its metadata;
+  // anything else is treated as a book / title recommendation - stored as-is.
+  const isLink = /^https?:\/\//i.test(input) || /^[^\s]+\.[a-z]{2,}(\/|\?|#|$)/i.test(input);
   state.rw.saving = true; renderReadwatch();
-  try { const bm = await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url }) }); state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch(); toast('Saved'); }
-  catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
+  try {
+    let bm;
+    if (isLink) { bm = await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: input }) }); }
+    else {
+      const props = { title: input.slice(0, 300), url: '', image: '', site: '', media: 'book', status: 'todo', added: new Date().toISOString() };
+      bm = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: props.title, props }) });
+    }
+    state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch(); toast(isLink ? 'Saved' : '📖 Book added');
+  } catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
 }
 async function rwSetDone(id, done) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
