@@ -864,6 +864,9 @@ function renderNotesList() {
 // answers are ordinary paragraphs. Nothing leaves the device unless Dig deeper
 // is pressed (see /api/journal/deepen).
 const JOURNAL_MODES = [
+  { key: 'free', label: 'Free write', icon: '✍️', prompts: [
+    'Just start writing, and do not stop to edit. See where it goes.',
+  ] },
   { key: 'reflect', label: 'Reflect on the day', icon: '🌙', prompts: [
     'What happened today that I want to remember?',
     'What went well today, and what part did I play in it?',
@@ -890,9 +893,6 @@ const JOURNAL_MODES = [
     'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.',
     'What was the strongest feeling in the dream, and did it linger after I woke?',
     'What in the dream felt most strange, vivid, or important?',
-  ] },
-  { key: 'free', label: 'Free write', icon: '✍️', prompts: [
-    'Just start writing, and do not stop to edit. See where it goes.',
   ] },
 ];
 const journalModeOf = (key) => JOURNAL_MODES.find((m) => m.key === key) || null;
