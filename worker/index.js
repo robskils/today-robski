@@ -459,6 +459,18 @@ async function fetchLinkMeta(rawUrl) {
   // A site's favicon, via Google's icon service. Always reachable (it's Google,
   // not the source site) so even a scrape-blocked page gets a branded card.
   meta.icon = host ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64` : '';
+  // YouTube serves a consent wall to a Worker, so scraping its title gives junk
+  // ("Watch", etc.). oEmbed returns the real video title, channel and thumbnail
+  // with no scraping - use it and skip the scrape.
+  const ytId = (url.match(/(?:youtube\.com\/(?:watch\?(?:[^&\s]*&)*v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/i) || [])[1];
+  if (ytId) {
+    try {
+      const o = await (await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + ytId)}&format=json`)).json();
+      if (o && o.title) {
+        return { url, title: String(o.title).trim().slice(0, 300), image: o.thumbnail_url || `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`, site: o.author_name || 'YouTube', media: 'video', icon: meta.icon, desc: '' };
+      }
+    } catch {}
+  }
   // Pose as a real browser, then as the Facebook link crawler: many sites block
   // an unknown agent but serve og tags to a browser or to social scrapers. (Full
   // Cloudflare bot-protection verifies crawlers by IP, so nothing server-side

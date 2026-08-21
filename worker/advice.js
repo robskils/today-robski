@@ -59,9 +59,24 @@ export async function resolveChannel(input) {
     let url = raw;
     if (/^@/.test(raw)) url = 'https://www.youtube.com/' + raw;
     else if (!/^https?:/i.test(raw)) url = 'https://www.youtube.com/@' + raw.replace(/^@/, '');
+    // ucbcb=1 + the consent cookies skip YouTube's "before you continue" redirect
+    // (a Worker otherwise lands on the consent page, which has no channel id).
+    url += (url.includes('?') ? '&' : '?') + 'ucbcb=1&hl=en';
     let html = '';
-    try { html = await (await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0', 'accept-language': 'en-US,en' } })).text(); } catch {}
-    const m = html.match(/"(?:channelId|externalId)":"(UC[0-9A-Za-z_-]{22})"/) || html.match(/channel\/(UC[0-9A-Za-z_-]{22})/);
+    try {
+      html = await (await fetch(url, { headers: {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'accept-language': 'en-US,en',
+        cookie: 'SOCS=CAISNQgDEitib3F1ZXQ; CONSENT=YES+1',
+      } })).text();
+    } catch {}
+    // The page's OWN id, in priority order - never the first "channelId" in the
+    // HTML, which is often a recommended channel, not this one.
+    const m = html.match(/rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[0-9A-Za-z_-]{22})"/)
+      || html.match(/"externalId":"(UC[0-9A-Za-z_-]{22})"/)
+      || html.match(/property="og:url" content="https:\/\/www\.youtube\.com\/channel\/(UC[0-9A-Za-z_-]{22})"/)
+      || html.match(/channel_id=(UC[0-9A-Za-z_-]{22})/)
+      || html.match(/"channelId":"(UC[0-9A-Za-z_-]{22})"/);
     if (m) channelId = m[1];
   }
   if (!channelId) throw new Error('Could not find that channel - try the full channel URL');
