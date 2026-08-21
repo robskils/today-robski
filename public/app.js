@@ -3386,7 +3386,18 @@ function portfolioBody() {
     ${perf ? `<div class="fin-perf">${perf}</div>` : ''}
     <div class="fin-cards">${cards}</div>
     ${rates ? `<div class="fin-rates"><dl>${rates}</dl></div>` : ''}
-    <div class="fin-sec-h"><span>Holdings</span>${(!f.adding && f.editId == null) ? '<button class="ghost" data-fin-add>+ Add holding</button>' : ''}</div>
+    <div class="fin-sec-h"><span>What you hold</span></div>
+    <div class="fh-wrap"><table class="fh-table">
+      <thead><tr><th>Holding</th><th class="fh-r">Units held</th><th>Where held</th><th class="fh-r">Value</th></tr></thead>
+      <tbody>${(d.holdings || []).map((h) => `<tr>
+        <td class="fh-name"><span class="fh-sw" style="background:${h.swatch}"></span>${esc(h.name)}</td>
+        <td class="fh-r fh-units">${fmtQty(h.qty)} ${esc(h.unit)}</td>
+        <td class="fh-where">${esc(h.venue || '—')}</td>
+        <td class="fh-r fh-val">${eur0(h.value)}</td>
+      </tr>`).join('')}</tbody>
+      ${total ? `<tfoot><tr><td>Total</td><td></td><td></td><td class="fh-r">${eur0(total)}</td></tr></tfoot>` : ''}
+    </table></div>
+    <div class="fin-sec-h"><span>Manage holdings</span>${(!f.adding && f.editId == null) ? '<button class="ghost" data-fin-add>+ Add holding</button>' : ''}</div>
     ${financialEditor()}
   </div>`;
 }
