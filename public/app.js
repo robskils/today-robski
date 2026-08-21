@@ -23,7 +23,7 @@ const state = {
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   contactGroups: [], contactsGroup: null, contactMenu: null,
-  financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null },
+  financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null, tracker: null, trackerLoading: false },
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
   taskSort: readLS('life.taskSort', { col: 'priority', dir: 'asc' }),   // default by priority, and remember the user's choice
@@ -195,7 +195,7 @@ function decorateProse(html) {
   });
   // Empathy reflections are saved as blockquotes starting with 🫶 (the class is
   // stripped on save); re-flag them here so they render as the soft callout.
-  d.querySelectorAll('blockquote').forEach((b) => { if ((b.textContent || '').trimStart().startsWith('🫶')) b.classList.add('j-empathy'); });
+  d.querySelectorAll('blockquote').forEach((b) => { const tx = (b.textContent || '').trimStart(); if (tx.startsWith('🫶')) b.classList.add('j-empathy'); else if (tx.startsWith('🧭')) b.classList.add('j-coach'); });
   // A trailing card leaves nowhere to type; add an empty line after it.
   const last = d.lastElementChild;
   if (last && last.classList && last.classList.contains('lc-inline')) {
@@ -984,7 +984,8 @@ function renderJournalEntry() {
       <div class="j-deeper-bar">
         <button class="add-btn j-deeper" data-journal-deeper>${journalDeeperLabel(n.props && n.props.mode)}</button>
         <button class="add-btn j-empathy-btn" data-journal-empathy title="A warm, understanding reflection - the sort of thing a good therapist might say. No advice, no judgement.">♡ Empathy</button>
-        <span class="j-deeper-hint">${isDream ? 'Dig deeper reads your dream and offers a gentle interpretation plus a question. Empathy gives a warm, understanding reflection. Use either as often as you like.' : 'Dig deeper asks one question to take it further. Empathy gives a warm, understanding reflection, like a good therapist. Use either as often as you like.'}</span>
+        <button class="add-btn j-coach-btn" data-journal-coach title="Start a back-and-forth coaching session. Write, press Coach, reply, press again - it keeps going until you stop.">🧭 Coach</button>
+        <span class="j-deeper-hint">Dig deeper asks one question. Empathy gives a warm reflection. Coach opens a back-and-forth session - write, press Coach, reply, press again; it keeps going until you stop.</span>
       </div>
     </div>`;
 }
@@ -1024,6 +1025,25 @@ async function journalEmpathise() {
     }
   } catch (e) { toast(e.message); }
   finally { const b = document.querySelector('[data-journal-empathy]'); if (b) { b.disabled = false; b.textContent = '♡ Empathy'; } }
+}
+// The coach: an ongoing session. Each press reads the whole entry (its own turns
+// marked 🧭) and appends the next coaching message, then a blank line to reply.
+async function journalCoach() {
+  const n = state.journal && state.journal.current; if (!n) return;
+  const ed = document.querySelector('.prose[data-prose="journal"]');
+  const text = ed ? (ed.innerText || '').trim() : '';
+  const btn = document.querySelector('[data-journal-coach]');
+  if (btn) { btn.disabled = true; btn.textContent = '🧭 Thinking…'; }
+  try {
+    const { reply } = await api('/api/journal/coach', { method: 'POST', body: JSON.stringify({ mode: n.props && n.props.mode, prompt: n.props && n.props.prompt, text }) });
+    if (ed && reply) {
+      ed.insertAdjacentHTML('beforeend', `<blockquote class="j-coach">🧭 ${esc(reply).replace(/\n+/g, '<br>')}</blockquote><p><br></p>`);
+      saveProse('journal', ed.innerHTML, ed.dataset.blockId);
+      const p = ed.lastElementChild;
+      if (p) { const r = document.createRange(); r.selectNodeContents(p); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); ed.focus(); p.scrollIntoView({ block: 'center' }); }
+    }
+  } catch (e) { toast(e.message); }
+  finally { const b = document.querySelector('[data-journal-coach]'); if (b) { b.disabled = false; b.textContent = '🧭 Coach'; } }
 }
 async function delJournalEntry() {
   const n = state.journal && state.journal.current; if (!n) return;
@@ -3278,7 +3298,7 @@ function goalMeasure(g) {
 // Portfolio moved across from portfolio.robski.uk: same data (shared D1), same
 // pricing (silver valued at spot, never the KAG token). Advice + Spending are
 // staged next.
-const FIN_TABS = [['portfolio', 'Portfolio'], ['advice', 'Advice'], ['spending', 'Spending']];
+const FIN_TABS = [['portfolio', 'Portfolio'], ['tracker', 'Tracker'], ['advice', 'Advice'], ['spending', 'Spending']];
 async function openFinancial(tab) {
   state.financial.tab = tab || state.financial.tab || 'portfolio';
   state.view = { type: 'financial', tab: state.financial.tab };
@@ -3286,7 +3306,15 @@ async function openFinancial(tab) {
   if (state.financial.tab === 'portfolio' && !state.financial.data) loadPortfolio();
   else if (state.financial.tab === 'advice') loadAdvice();
   else if (state.financial.tab === 'spending') { if (state.financial.txns == null) loadSpending(); else renderFinancial(); }
+  else if (state.financial.tab === 'tracker') loadTracker();
   else renderFinancial();
+}
+async function loadTracker(force) {
+  const f = state.financial;
+  if (force) f.tracker = null;
+  f.trackerLoading = true; renderFinancial();
+  try { f.tracker = await api('/api/tracker'); } catch (e) { toast(e.message); f.tracker = f.tracker || { items: [] }; }
+  f.trackerLoading = false; renderFinancial();
 }
 async function loadSpending() {
   const f = state.financial;
@@ -3325,6 +3353,7 @@ function renderFinancial() {
   const seg = `<div class="seg">${FIN_TABS.map(([k, l]) => `<button class="seg-b ${f.tab === k ? 'on' : ''}" data-fin-tab="${k}">${l}</button>`).join('')}</div>`;
   const body = f.tab === 'advice' ? adviceBody()
     : f.tab === 'spending' ? spendingBody()
+    : f.tab === 'tracker' ? trackerBody()
     : portfolioBody();
   $('#pane').innerHTML = `${pageCrumb('Financial')}<div class="pane-head"><h1>Financial</h1></div>${seg}${body}`;
 }
@@ -3615,6 +3644,42 @@ async function spendSetCat(id, category) {
 async function spendClear() {
   if (!(await uiConfirm('Delete all imported transactions?', { danger: true, okLabel: 'Delete all' }))) return;
   try { await api('/api/spend/clear', { method: 'POST' }); toast('Cleared'); state.financial.txns = null; loadSpending(); } catch (e) { toast(e.message); }
+}
+// ── Tracker (market watchlist) ───────────────────────────────────────────
+const trkPrice = (v, cur) => { if (v == null) return '—'; const n = Number(v); const s = n >= 100 ? Math.round(n).toLocaleString('en-IE') : n >= 1 ? n.toFixed(2) : n.toPrecision(4); return (cur === 'EUR' ? '€' + s : cur === 'USD' ? '$' + s : cur === 'GBP' ? '£' + s : `${s}${cur ? ' ' + cur : ''}`); };
+function trkChange(v) {
+  if (v == null) return '<span class="trk-ch flat">—</span>';
+  const cls = v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'flat'; const sign = v >= 0 ? '+' : '';
+  return `<span class="trk-ch ${cls}">${sign}${v.toFixed(1)}%</span>`;
+}
+function trackerBody() {
+  const f = state.financial;
+  const addForm = `<form class="trk-add" id="trk-add-form"><input class="sel" id="trk-input" placeholder="Add a symbol or name - BTC, XRP, AAPL, NUCG.L…" autocomplete="off"><select class="sel" id="trk-type"><option value="crypto">Crypto</option><option value="stock">Share / ETF</option></select><button class="add-btn wide" type="submit">Add</button></form>`;
+  if (f.tracker == null) return `${addForm}<div class="fin-load">Loading prices…</div>`;
+  const items = f.tracker.items || [];
+  const asOf = f.tracker.ts ? new Date(f.tracker.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+  const cell = (lab, v) => `<span class="trk-cell"><span class="trk-lab">${lab}</span>${trkChange(v)}</span>`;
+  const rows = items.map((it) => `<div class="trk-row">
+    <span class="trk-name"><span class="trk-sym">${esc(it.symbol || '')}</span><span class="trk-nm">${esc(it.name || '')}</span></span>
+    <span class="trk-changes">${cell('24h', it.ch24)}${cell('7d', it.ch7)}${cell('30d', it.ch30)}</span>
+    <span class="trk-px">${esc(trkPrice(it.price, it.currency))}</span>
+    <button class="trk-x" data-trk-del="${it.id}" title="Remove">×</button>
+  </div>`).join('');
+  return `${addForm}
+    <div class="trk-bar">${items.length ? `<button class="ghost" data-trk-refresh ${f.trackerLoading ? 'disabled' : ''}>${f.trackerLoading ? 'Refreshing…' : '↻ Refresh'}</button>${asOf ? `<span class="fin-asof">as of ${esc(asOf)}</span>` : ''}` : ''}</div>
+    ${items.length ? `<div class="trk-list">${rows}</div>` : '<div class="home-empty">Add crypto, shares or ETFs above to watch their 24h / 7d / 30d moves.</div>'}`;
+}
+async function addTracker(input, type) {
+  const v = (input || '').trim(); if (!v) return;
+  toast('Finding…');
+  try {
+    await api('/api/tracker', { method: 'POST', body: JSON.stringify({ input: v, type }) });
+    const el = $('#trk-input'); if (el) el.value = '';
+    toast('Added'); loadTracker(true);
+  } catch (e) { toast(e.message); }
+}
+async function delTracker(id) {
+  try { await api(`/api/tracker/${id}`, { method: 'DELETE' }); const f = state.financial; if (f.tracker) f.tracker.items = (f.tracker.items || []).filter((x) => x.id !== id); renderFinancial(); } catch (e) { toast(e.message); }
 }
 async function openGoals(tab) {
   state.view = { type: 'goals' };
@@ -4579,6 +4644,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
   if (t.closest('[data-journal-empathy]')) { journalEmpathise(); return; }
+  if (t.closest('[data-journal-coach]')) { journalCoach(); return; }
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
@@ -4606,6 +4672,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-sp-do-import]')) { spendDoImport(); return; }
   if (t.closest('[data-sp-import-cancel]')) { state.financial.spendImport = null; renderFinancial(); return; }
   if (t.closest('[data-sp-clear]')) { spendClear(); return; }
+  if (t.closest('[data-trk-refresh]')) { loadTracker(true); return; }
+  const tkd = t.closest('[data-trk-del]'); if (tkd) { delTracker(tkd.dataset.trkDel); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
@@ -4994,6 +5062,7 @@ document.addEventListener('submit', (e) => {
     saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });
   }
   if (e.target.id === 'adv-add-form') { const el = $('#adv-input'); addAdviceChannel(el ? el.value : ''); return; }
+  if (e.target.id === 'trk-add-form') { addTracker($('#trk-input') ? $('#trk-input').value : '', $('#trk-type') ? $('#trk-type').value : 'crypto'); return; }
   if (e.target.id === 'fin-add-form') { addHolding(e.target); return; }
   if (e.target.id === 'fin-edit-form') { updateHolding(Number(e.target.dataset.id), e.target); return; }
   if (e.target.id === 'mail-compose-form') { const toEl = $('#mc-to'); const to = toEl ? toEl.value.trim() : ''; if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } else { toast('Add a recipient first'); if (toEl) { toEl.scrollIntoView({ block: 'center' }); toEl.focus(); } } }

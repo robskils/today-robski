@@ -333,6 +333,33 @@ button { cursor:pointer; background:none; border:0; }
 .sp-preview td { padding:8px 10px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
 .sp-pv-desc { max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 @media (max-width:560px){ .sp-txn { grid-template-columns:40px 1fr auto; } .sp-txn .sp-cat { grid-column:2/4; max-width:none; justify-self:start; margin-top:2px; } }
+/* Tracker (watchlist) */
+.trk-add { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.trk-add input { flex:1; min-width:160px; padding:12px 15px; font-size:16px; border-radius:12px; border:1px solid var(--line-2); background:var(--paper); color:var(--ink); }
+.trk-add input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+.trk-add select { padding:12px 14px; font-size:15px; border-radius:12px; border:1px solid var(--line-2); background:var(--paper); color:var(--ink); }
+.trk-bar { display:flex; align-items:center; gap:12px; min-height:20px; margin-bottom:8px; }
+.trk-list { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card); box-shadow:var(--shadow); }
+.trk-row { display:flex; align-items:center; gap:14px; padding:13px 16px; border-bottom:1px solid var(--line); }
+.trk-row:last-child { border-bottom:0; }
+.trk-name { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.trk-sym { font-weight:600; font-size:16px; }
+.trk-nm { font-size:12.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.trk-changes { display:flex; gap:16px; flex:none; }
+.trk-cell { display:flex; flex-direction:column; align-items:flex-end; gap:2px; min-width:52px; }
+.trk-lab { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); }
+.trk-ch { font-weight:600; font-size:15px; font-variant-numeric:tabular-nums; }
+.trk-ch.up { color:var(--done); } .trk-ch.down { color:var(--accent); } .trk-ch.flat { color:var(--ink-3); }
+.trk-px { flex:none; min-width:88px; text-align:right; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+.trk-x { flex:none; border:0; background:none; color:var(--ink-3); font-size:18px; cursor:pointer; line-height:1; }
+.trk-x:hover { color:var(--accent); }
+@media (max-width:560px){
+  .trk-row { flex-wrap:wrap; gap:8px 12px; }
+  .trk-name { flex:1 1 60%; }
+  .trk-px { flex:0 0 auto; min-width:0; margin-left:auto; }
+  .trk-changes { flex:1 1 100%; justify-content:space-between; gap:10px; }
+  .trk-cell { align-items:flex-start; }
+}
 .goal-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; gap:9px; text-align:left; padding:16px 18px; border:1px solid var(--line); border-left:4px solid var(--c); border-radius:13px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; }
 .goal-card:hover { border-color:var(--accent); border-left-color:var(--c); }
 .gc-top { display:flex; align-items:flex-start; gap:9px; }
@@ -1730,6 +1757,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* An empathy reflection inside the journal prose: a soft, warm callout, clearly
    not a question to answer. */
 .prose blockquote.j-empathy { border-left:3px solid color-mix(in srgb,var(--gold,#c99) 60%,transparent); background:color-mix(in srgb,var(--gold,#c99) 9%,transparent); border-radius:0 10px 10px 0; padding:12px 16px; color:var(--ink-2); font-style:normal; }
+/* Coach button: a calmer blue-teal companion to Dig deeper / Empathy. */
+.j-coach-btn { width:auto; white-space:nowrap; padding:11px 20px; background:color-mix(in srgb,var(--done,#4a7a52) 15%,transparent); color:color-mix(in srgb,var(--done,#4a7a52) 88%,var(--ink)); border:1px solid color-mix(in srgb,var(--done,#4a7a52) 42%,var(--line)); }
+.j-coach-btn:hover { background:color-mix(in srgb,var(--done,#4a7a52) 24%,transparent); }
+.j-coach-btn:disabled { opacity:.6; cursor:default; }
+/* A coach turn in the session: a calm callout, clearly a different voice. */
+.prose blockquote.j-coach { border-left:3px solid color-mix(in srgb,var(--done,#4a7a52) 60%,transparent); background:color-mix(in srgb,var(--done,#4a7a52) 9%,transparent); border-radius:0 10px 10px 0; padding:12px 16px; color:var(--ink); font-style:normal; }
 
 /* ── Read & Watch (bookmarks) ────────────────────────── */
 .rw-add { display:flex; gap:9px; margin:4px 0 16px; }
