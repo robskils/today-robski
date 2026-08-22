@@ -1947,7 +1947,7 @@ async function loadMessages(quiet) {
     try {
       const r = await mailApi(`/cached?account=${encodeURIComponent(state.mail.account)}`);
       if (state.mail._gen !== gen) return;
-      if (r && Array.isArray(r.messages) && r.messages.length) { applyCachedList(r); renderMail(); painted = true; }
+      if (r && Array.isArray(r.messages) && r.messages.length) { applyCachedList(r); renderMail(); painted = true; prefetchTop(); }
     } catch {}
   }
   // 3) Nothing cached: a loader while the live fetch runs.
@@ -1990,6 +1990,7 @@ async function loadMessages(quiet) {
   state.mail.hasMore = more && !q && !f.flagged;          // "Load older" only when browsing
   if (!q) persistMailCache();                             // instant cold open next time
   renderMailList(false);
+  prefetchTop();   // warm the top few bodies so tapping one is instant
 }
 // Persist accounts + the recent folder lists so opening Mail after an app
 // restart paints the last-seen inbox immediately, then refreshes. No secrets
@@ -2021,6 +2022,26 @@ function mailFetchMsg(row) {
 function prefetchMsg(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key);
   if (row && !(state.mail.msgCache && state.mail.msgCache[key])) mailFetchMsg(row).catch(() => {});
+}
+// Warm the bodies of the top few messages so opening one (a tap, no hover to
+// prefetch on) is instant - especially on mobile. Gentle: only a handful, two
+// at a time, and it bails the moment you open/leave so it never competes.
+let _prefetchGen = 0;
+async function prefetchTop(n = 6) {
+  const m = state.mail; if (!m || m.open || m.composing || mailSearching() || state.view.type !== 'mail') return;
+  m.msgCache = m.msgCache || {};
+  const rows = (m.messages || []).filter((r) => !m.msgCache[r._key]).slice(0, n);
+  if (!rows.length) return;
+  const gen = ++_prefetchGen;
+  let i = 0;
+  const worker = async () => {
+    while (i < rows.length) {
+      const row = rows[i++];
+      if (gen !== _prefetchGen || state.view.type !== 'mail' || m.open || m.composing) return;
+      try { await mailFetchMsg(row); } catch {}
+    }
+  };
+  await Promise.all([worker(), worker()]);
 }
 // Drop keys from every cached list, so an archived/deleted message doesn't
 // reappear when you navigate back to a view served from the list cache.
