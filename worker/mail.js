@@ -192,6 +192,14 @@ async function imapOpen(env, acct) {
       return raw ? raw.split(/\s+/).filter(Boolean) : [];
     },
     async unseenCount() { return (await this.searchUnseenUids()).length; },
+    // Find a message by its Message-ID header (used to undo a move). Returns the
+    // newest matching UID in the currently-selected mailbox, or null.
+    async searchMessageId(mid) {
+      const s = await cmd(`UID SEARCH HEADER MESSAGE-ID ${imapStr(mid)}`);
+      const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
+      const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
+      return ids.length ? ids[ids.length - 1] : null;
+    },
     // Starred = the \Flagged flag. Find them, then fetch their headers.
     async listFlagged(limit) {
       const s = await cmd('UID SEARCH FLAGGED');
@@ -909,6 +917,25 @@ export async function handleMail(request, env, url, json, err) {
           if (cur && !cur.seen) await env.DB.prepare("UPDATE mail_cache_meta SET unseen = MAX(0, unseen - 1) WHERE account=? AND mailbox='INBOX'").bind(acct.id).run();
           if (cur) await env.DB.prepare("DELETE FROM mail_cache WHERE account=? AND mailbox='INBOX' AND uid=?").bind(acct.id, b.uid).run();
         }
+        return json({ ok: true }, request);
+      } finally { await im.logout(); }
+    }
+
+    // Undo a move: find the message by Message-ID in the folder it was moved to,
+    // and move it back (the UID changed in the move, so we can't use the old one).
+    if (sub === 'move-by-msgid' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const mid = String(b.messageId || '').replace(/^<|>$/g, '').trim();
+      if (!mid) return err('no message id', request, 400);
+      const im = await imapOpen(env, acct);
+      try {
+        await im.login();
+        const from = await resolveMailbox(im, b.from || 'Archive');
+        const total = await im.select(from);
+        if (!total) return err('nothing to undo', request, 404);
+        const uid = await im.searchMessageId(mid);
+        if (!uid) return err('message not found to undo', request, 404);
+        await im.move(uid, await resolveMailbox(im, b.to || 'INBOX'));
         return json({ ok: true }, request);
       } finally { await im.logout(); }
     }

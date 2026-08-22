@@ -14,7 +14,16 @@ async function api(path, opts = {}) {
   return res.status === 204 ? null : res.json();
 }
 let toastT;
-function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2600); }
+function toast(m, undoFn) {
+  const t = $('#toast');
+  if (undoFn) {
+    t.innerHTML = '<span class="toast-msg"></span><button class="toast-undo" type="button">Undo</button>';
+    t.querySelector('.toast-msg').textContent = m;
+    t.querySelector('.toast-undo').onclick = () => { t.hidden = true; clearTimeout(toastT); try { undoFn(); } catch {} };
+  } else { t.textContent = m; }
+  t.hidden = false; clearTimeout(toastT);
+  toastT = setTimeout(() => { t.hidden = true; }, undoFn ? 7000 : 2600);
+}
 
 const readLS = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch { return fb; } };
 const state = {
@@ -613,6 +622,19 @@ function recordRecent(kind, id, title) {
   // and-forget, debounced; openHome merges it back in by recency (the ts).
   clearTimeout(window.__recentSyncT);
   window.__recentSyncT = setTimeout(() => { api('/api/kv/home_recent', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(capped) }) }).catch(() => {}); }, 500);
+}
+// Keep a recent entry's title in step when a block is renamed, so "Recently
+// viewed" doesn't sit on a stale "Untitled" until the item is reopened.
+function updateRecentTitle(kind, id, title) {
+  const list = recentItems();
+  const it = list.find((x) => x && x.kind === kind && x.id === id);
+  if (!it) return;
+  const t = (title || '').trim() || 'Untitled';
+  if (it.title === t) return;
+  it.title = t;
+  try { localStorage.setItem('life.recent', JSON.stringify(list)); } catch {}
+  clearTimeout(window.__recentSyncT);
+  window.__recentSyncT = setTimeout(() => { api('/api/kv/home_recent', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(list) }) }).catch(() => {}); }, 800);
 }
 // Union the server's recent list with this device's, dedupe by kind+id keeping
 // the newer touch, and cache the result locally for instant render.
@@ -1676,7 +1698,16 @@ async function mailMoveTo(key, target, label) {
     const gone = new Set(keys);
     const openKey = state.mail.open && state.mail.open._key;
     const openIdx = openKey ? msgs.findIndex((m) => m._key === openKey) : -1;
-    toast(rows.length > 1 ? `${label} · ${rows.length} messages` : label);
+    // Undo: move each message back from `target` to where it came from, found by
+    // its Message-ID (its UID changed in the move).
+    const undoRows = rows.filter((r) => r.messageId).map((r) => ({ account: r._acct, from: target, messageId: r.messageId, to: r._mailbox || 'INBOX' }));
+    const undo = undoRows.length ? async () => {
+      toast('Restoring…');
+      let ok = 0;
+      for (const u of undoRows) { try { await mailApi('/move-by-msgid', { method: 'POST', body: JSON.stringify(u) }); ok++; } catch {} }
+      toast(ok ? (ok > 1 ? `Restored ${ok} messages` : 'Restored') : 'Could not undo'); loadMessages();
+    } : null;
+    toast(rows.length > 1 ? `${label} · ${rows.length} messages` : label, undo);
     state.mail.messages = msgs.filter((m) => !gone.has(m._key));
     mailForgetKeys(keys);
     // Keep keyboard triage flowing: move the highlight to the next row.
@@ -5482,7 +5513,7 @@ async function patchTaskProps(id, patch) {
 }
 async function patchTaskTitle(id, title) {
   const copies = taskCopies(id); if (!copies.length || !title) return;
-  copies.forEach((b) => (b.title = title)); rerenderCurrent();
+  copies.forEach((b) => (b.title = title)); updateRecentTitle('task', id, title); rerenderCurrent();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }); } catch (e) { toast(e.message); }
 }
 function toggleTask(id) {
@@ -5977,6 +6008,7 @@ async function saveNoteTitle(v) {
   const n = state.note.current; if (!n || v === n.title) return; n.title = v;
   const top = state.noteTops.find((t) => t.id === n.id); if (top) top.title = v;
   const cr = $('.note-crumbs .crumb.cur'); if (cr) cr.textContent = v || 'Untitled';
+  updateRecentTitle('note', n.id, v);
   try { await api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); }
 }
 async function delNote() {
@@ -6032,10 +6064,11 @@ async function addRow() {
   renderTable();
 }
 async function addColumn(name, type) { const col = { id: uid(), name: name || 'Column', type }; state.tables_view.addingCol = false; await saveTableColumns([...tcols(), col]); renderTable(); }
-async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
+async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; updateRecentTitle('table', t.id, v); try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
 async function renameArea(v) {
   const a = state.area_open && state.area_open.area; if (!a || !v || v === a.title) return;
   a.title = v; const s = state.areas.find((x) => x.id === a.id); if (s) s.title = v;
+  updateRecentTitle('area', a.id, v);
   try { await api(`/api/blocks/${a.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); }
 }
 async function renameColumn(id, v) { const cols = tcols().map((c) => c.id === id ? { ...c, name: v } : c); await saveTableColumns(cols).catch((x) => toast(x.message)); }

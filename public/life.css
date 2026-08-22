@@ -1739,6 +1739,9 @@ table.ttable tr:last-child td { border-bottom:0; }
   background:var(--ink); color:var(--paper); padding:12px 20px; border-radius:999px;
   font-size:15.5px; box-shadow:var(--shadow); z-index:40; max-width:90vw;
 }
+.toast:has(.toast-undo) { display:inline-flex; align-items:center; gap:14px; padding:10px 12px 10px 20px; }
+.toast-undo { flex:none; border:0; background:color-mix(in srgb,var(--paper) 22%,transparent); color:var(--paper); font:inherit; font-weight:600; padding:6px 14px; border-radius:999px; cursor:pointer; }
+.toast-undo:hover { background:color-mix(in srgb,var(--paper) 34%,transparent); }
 
 @media (max-width:760px){
   .grid { grid-template-columns:1fr; gap:24px; }
