@@ -3458,7 +3458,7 @@ function holdingFields(h, kinds) {
 function financialEditor() {
   const f = state.financial; const d = f.data; if (!d) return '';
   if (f.adding) return `<form class="fin-editor" id="fin-add-form">${holdingFields({}, d.kinds)}<div class="fin-edit-act"><button class="add-btn wide" type="submit">Add holding</button><button type="button" class="ghost" data-fin-add-cancel>Cancel</button></div></form>`;
-  if (f.editId != null) { const h = (d.holdings || []).find((x) => x.id === f.editId); if (!h) return ''; return `<form class="fin-editor" id="fin-edit-form" data-id="${h.id}">${holdingFields(h, d.kinds)}<div class="fin-edit-act"><button class="add-btn wide" type="submit">Save</button><button type="button" class="ghost" data-fin-edit-cancel>Cancel</button><button type="button" class="ghost fin-del" data-fin-del="${h.id}">Delete</button></div></form>`; }
+  if (f.editId != null) { const h = (d.holdings || []).find((x) => x.id === f.editId); if (!h) return ''; return `<form class="fin-editor" id="fin-edit-form" data-id="${h.id}">${holdingFields(h, d.kinds)}<div class="fin-edit-act"><button class="add-btn wide" type="submit">Save</button><button type="button" class="ghost" data-fin-edit-cancel>Cancel</button><button type="button" class="ghost fin-sell" data-fin-sell="${h.id}">Sold some…</button><button type="button" class="ghost fin-del" data-fin-del="${h.id}">Delete</button></div></form>`; }
   return '';
 }
 const finForm = (form) => { const g = (n) => (form.querySelector(`[name="${n}"]`) || {}).value || ''; return { code: g('code').trim(), name: g('name').trim(), venue: g('venue').trim(), qty: g('qty'), kind: g('kind'), symbol: g('symbol').trim() }; };
@@ -3475,6 +3475,20 @@ async function deleteHolding(id) {
   if (!(await uiConfirm('Remove this holding?', { danger: true, okLabel: 'Remove' }))) return;
   try { await api('/api/holdings', { method: 'DELETE', body: JSON.stringify({ id }) }); toast('Removed'); state.financial.editId = null; loadPortfolio(true); }
   catch (e) { toast(e.message); }
+}
+// Record a (part-)sale by reducing the units held. Sell the lot and it's removed.
+async function sellHolding(id) {
+  const h = ((state.financial.data || {}).holdings || []).find((x) => x.id === id); if (!h) return;
+  const ans = await uiPrompt(`How many ${h.unit || 'units'} of ${h.name} did you sell?`, { title: 'Record a sale', okLabel: 'Record sale', value: String(h.qty), placeholder: 'e.g. 500' });
+  if (ans == null) return;
+  const sold = Number(String(ans).replace(/[^0-9.\-]/g, ''));
+  if (!isFinite(sold) || sold <= 0) { toast('Enter how many units you sold'); return; }
+  const remaining = Math.round((h.qty - sold) * 1e8) / 1e8;
+  try {
+    if (remaining <= 0) { await api('/api/holdings', { method: 'DELETE', body: JSON.stringify({ id }) }); toast(`Sold all of ${h.name}`); }
+    else { await api('/api/holdings', { method: 'PUT', body: JSON.stringify({ id, code: h.code, name: h.name, venue: h.venue, kind: h.kind, symbol: h.symbol, qty: remaining }) }); toast(`Sold ${fmtQty(sold)} ${h.unit || ''} · ${fmtQty(remaining)} left`); }
+    state.financial.editId = null; loadPortfolio(true);
+  } catch (e) { toast(e.message); }
 }
 // ── Financial advice (YouTube tracker) ───────────────────────────────────
 function adviceBody() {
@@ -4720,6 +4734,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-fin-add-cancel]')) { state.financial.adding = false; renderFinancial(); return; }
   const fed = t.closest('[data-fin-edit]'); if (fed) { state.financial.editId = Number(fed.dataset.finEdit); state.financial.adding = false; renderFinancial(); return; }
   if (t.closest('[data-fin-edit-cancel]')) { state.financial.editId = null; renderFinancial(); return; }
+  const fhs = t.closest('[data-fin-sell]'); if (fhs) { sellHolding(Number(fhs.dataset.finSell)); return; }
   const fhd = t.closest('[data-fin-del]'); if (fhd) { deleteHolding(Number(fhd.dataset.finDel)); return; }
   const acd = t.closest('[data-adv-chan-del]'); if (acd) { delAdviceChannel(acd.dataset.advChanDel); return; }
   if (t.closest('[data-adv-poll]')) { advicePoll(); return; }

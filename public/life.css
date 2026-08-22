@@ -246,6 +246,7 @@ button { cursor:pointer; background:none; border:0; }
 .fin-f input, .fin-f select { width:100%; padding:11px 13px; font-size:16px; border-radius:11px; border:1px solid var(--line-2); background:var(--paper); color:var(--ink); }
 .fin-f input:focus-visible, .fin-f select:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
 .fin-edit-act { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.fin-edit-act .fin-sell { color:var(--gold); border-color:color-mix(in srgb,var(--gold) 40%,var(--line)); }
 .fin-edit-act .fin-del { color:var(--danger,#c0392b); margin-left:auto; }
 /* Portfolio "what you hold" breakdown */
 .fh-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
