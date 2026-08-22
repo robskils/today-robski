@@ -1954,36 +1954,42 @@ async function loadMessages(quiet) {
   if (!painted) { if (quiet) renderMailList(true); else renderMail(true); }
   state.mail.unseen = {};
   const acctErrors = [];
-  try {
-    let more = false;
-    const lists = await Promise.all(accts.map(async (a) => {
-      try {
-        const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
-        state.mail.unseen[a.id] = r.unseen || 0;
-        // The live IMAP unseen count, kept apart from the cache-poll number so a
-        // background /unread refresh can't stomp the stray-unread banner signal.
-        if (f.mailbox === 'INBOX' && !f.flagged && !q) { state.mail.liveUnseen = state.mail.liveUnseen || {}; state.mail.liveUnseen[a.id] = r.unseen || 0; }
-        // A search sweeps every folder, so each hit carries its own mailbox;
-        // key by it too, since UIDs are only unique within a mailbox.
-        const msgs = (r.messages || []).map((x) => { const mb = x.mailbox || f.mailbox; return { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}` }; });
-        if (!r.searchedAll && (r.total || 0) > msgs.length) more = true;
-        return msgs;
-      } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); return []; }
-    }));
-    if (state.mail._gen !== gen) return;   // a newer load has superseded this one
-    let msgs = lists.flat();
+  let more = false;
+  // Progressive load: seed per-account buckets from what's already on screen (the
+  // cached paint), then refresh each mailbox independently and re-render as each
+  // returns - so fast mailboxes show at once instead of the whole list waiting on
+  // the slowest account (Gmail throttles cloud IPs). Each keeps its cached rows
+  // until its own live result lands, so nothing blanks out mid-load.
+  const bucket = {};
+  for (const mm of (state.mail.messages || [])) (bucket[mm._acct] = bucket[mm._acct] || []).push(mm);
+  const rebuild = () => {
+    let msgs = accts.flatMap((a) => bucket[a.id] || []);
     if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
     state.mail.messages = msgs;
-    // Put the cursor on the top row if it isn't on a still-present message, so a
-    // shortcut has a target the moment the list loads (no hover needed).
     if (!state.mail.open) { const has = msgs.some((x) => x._key === state.mail.sel); if (!has) state.mail.sel = msgs[0] ? msgs[0]._key : null; }
-    state.mail.listCache[viewKey] = msgs;   // freshen the cache for next time
-    state.mail.hasMore = more && !q && !f.flagged;   // "Load older" only when browsing
-    state.mail.error = null;
-    state.mail.acctErrors = acctErrors;
-    if (!q) persistMailCache();   // remember the (non-search) inbox for an instant cold open
-  } catch (e) { if (state.mail._gen !== gen) return; state.mail.error = e.message; }
-  if (quiet) renderMailList(false); else renderMail();
+    state.mail.error = null; state.mail.acctErrors = acctErrors;
+    renderMailList(false);
+  };
+  await Promise.all(accts.map(async (a) => {
+    try {
+      const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
+      if (state.mail._gen !== gen) return;
+      state.mail.unseen[a.id] = r.unseen || 0;
+      // Live IMAP unseen count, kept apart from the cache-poll number so a
+      // background /unread refresh can't stomp the stray-unread banner signal.
+      if (f.mailbox === 'INBOX' && !f.flagged && !q) { state.mail.liveUnseen = state.mail.liveUnseen || {}; state.mail.liveUnseen[a.id] = r.unseen || 0; }
+      // A search sweeps every folder, so each hit carries its own mailbox; key by
+      // it too, since UIDs are only unique within a mailbox.
+      bucket[a.id] = (r.messages || []).map((x) => { const mb = x.mailbox || f.mailbox; return { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}` }; });
+      if (!r.searchedAll && (r.total || 0) > bucket[a.id].length) more = true;
+    } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); if (bucket[a.id] === undefined) bucket[a.id] = []; }
+    if (state.mail._gen === gen) rebuild();   // render as each mailbox lands
+  }));
+  if (state.mail._gen !== gen) return;   // a newer load superseded this one
+  state.mail.listCache[viewKey] = state.mail.messages;   // freshen for next time
+  state.mail.hasMore = more && !q && !f.flagged;          // "Load older" only when browsing
+  if (!q) persistMailCache();                             // instant cold open next time
+  renderMailList(false);
 }
 // Persist accounts + the recent folder lists so opening Mail after an app
 // restart paints the last-seen inbox immediately, then refreshes. No secrets
