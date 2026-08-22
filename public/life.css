@@ -1407,6 +1407,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-stray { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; padding:11px 15px; background:var(--paper-2); border:1px solid var(--line); border-radius:12px; color:var(--ink-2); font-size:14.5px; }
 .mail-stray span { flex:1; min-width:0; }
 .mail-stray button { flex:none; }
+.mail-stray .mail-stray-act { flex:none; display:flex; gap:6px; align-items:center; }
+.mail-stray-x { width:32px; padding:0; font-size:18px; color:var(--ink-3); }
+.mail-stray-x:hover { color:var(--ink); }
 /* Spark-style: the action toolbar stays pinned while the email scrolls under
    it. It must sit BELOW the 44px tab strip (sticky, z:25) - top:0 would pin it
    behind the tabs, which read as "not pinned at all". */

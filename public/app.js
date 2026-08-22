@@ -2632,6 +2632,7 @@ function renderMail(loading) {
   const scopeUnseen = m.account === 'all' ? (m.accounts || []).reduce((a, x) => a + liveUnseenOf(x.id), 0) : liveUnseenOf(m.account);
   const visibleUnread = (m.messages || []).filter((x) => !x.seen).length;
   const strayUnread = (m.folder || 'inbox') === 'inbox' && !mailSearching() ? Math.max(0, scopeUnseen - visibleUnread) : 0;
+  m._stray = strayUnread;   // remembered so the hide button knows which count was dismissed
   // One compact dropdown instead of a row of account tabs: defaults to All, pick
   // a single box only when you want to.
   const accScope = (m.accounts || []).length > 1 ? `<select class="sel mail-acct-scope-sel" data-mail-acct-sel title="Which mailbox">
@@ -2700,7 +2701,7 @@ function renderMail(loading) {
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}
-    ${(!m.open && !m.composing && strayUnread) ? `<div class="mail-stray"><span>${strayUnread} unread message${strayUnread > 1 ? 's' : ''} you can't see - older mail still flagged unread.</span><button class="ghost" data-mail-reconcile>Mark read</button></div>` : ''}
+    ${(!m.open && !m.composing && strayUnread && m.strayHidden !== strayUnread) ? `<div class="mail-stray"><span>${strayUnread} unread message${strayUnread > 1 ? 's' : ''} you can't see - older mail still flagged unread.</span><span class="mail-stray-act"><button class="ghost" data-mail-reconcile>Mark read</button><button class="ghost mail-stray-x" data-mail-stray-hide title="Hide">×</button></span></div>` : ''}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     ${(m.selected && m.selected.size && !m.open && !m.composing) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
@@ -4864,6 +4865,7 @@ document.addEventListener('click', (e) => {
   const mo = t.closest('[data-mail-open]'); if (mo) { if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
+  if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }
   if (t.closest('[data-mail-reconcile]')) { mailReconcileUnread(); return; }
   if (t.closest('[data-mail-cancel]')) { saveDraft(); state.mail.composing = false; renderMail(); return; }
   if (t.closest('[data-mail-attach]')) { const f = $('#mc-file'); if (f) f.click(); return; }
