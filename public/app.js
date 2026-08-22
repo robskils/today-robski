@@ -3465,15 +3465,16 @@ function portfolioBody() {
     ${rates ? `<div class="fin-rates"><dl>${rates}</dl></div>` : ''}
     <div class="fin-sec-h"><span>What you hold</span></div>
     <div class="fh-wrap"><table class="fh-table">
-      <thead><tr><th>Holding</th><th class="fh-r">Units held</th><th>Where held</th><th class="fh-r">Value</th>${anyCost ? '<th class="fh-r">Gain</th>' : ''}</tr></thead>
+      <thead><tr><th>Holding</th><th class="fh-r">Units held</th><th>Where held</th><th class="fh-r">Value</th>${anyCost ? '<th class="fh-r">Gain</th>' : ''}<th></th></tr></thead>
       <tbody>${(d.holdings || []).map((h) => `<tr>
         <td class="fh-name"><span class="fh-sw" style="background:${h.swatch}"></span>${esc(h.name)}</td>
         <td class="fh-r fh-units">${fmtQty(h.qty)} ${esc(h.unit)}</td>
         <td class="fh-where">${esc(h.venue || '—')}</td>
         <td class="fh-r fh-val">${eur0(h.value)}</td>
         ${anyCost ? gainCell(h) : ''}
+        <td class="fh-act"><button class="fh-rowbtn" data-fin-sell="${h.id}" title="Record a sale">Sell</button><button class="fh-rowbtn" data-fin-edit="${h.id}" title="Edit holding">Edit</button><button class="fh-rowbtn fh-rowdel" data-fin-del="${h.id}" title="Remove holding">Remove</button></td>
       </tr>`).join('')}</tbody>
-      ${total ? `<tfoot><tr><td>Total</td><td></td><td></td><td class="fh-r">${eur0(total)}</td>${anyCost ? `<td class="fh-r ${(d.unrealisedTotal || 0) >= 0 ? 'up' : 'down'}">${d.unrealisedTotal != null ? eurSigned(d.unrealisedTotal) : ''}</td>` : ''}</tr></tfoot>` : ''}
+      ${total ? `<tfoot><tr><td>Total</td><td></td><td></td><td class="fh-r">${eur0(total)}</td>${anyCost ? `<td class="fh-r ${(d.unrealisedTotal || 0) >= 0 ? 'up' : 'down'}">${d.unrealisedTotal != null ? eurSigned(d.unrealisedTotal) : ''}</td>` : ''}<td></td></tr></tfoot>` : ''}
     </table></div>
     ${sales.length ? `<div class="fin-sec-h"><span>Sales</span></div>
     <div class="fh-wrap"><table class="fh-table">
