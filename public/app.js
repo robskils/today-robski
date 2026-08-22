@@ -3848,6 +3848,7 @@ async function openGoals(tab) {
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.goals = goals; state.bucket = bucket; state.reviews = reviews;
   renderNav(); renderGoals();
+  api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewReminders = r.reminders || []; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
 }
 function goalCardMini(g) {
   const a = goalArea(g); const p = gp(g); const pct = Math.round(goalProgress(g) * 100);
@@ -4027,7 +4028,40 @@ function reviewsBody() {
   const starts = RTYPE_ORDER.map((k, i) => `<button class="rv-start" data-start-review="${k}"><span class="rv-depth" data-d="${i + 1}"><i></i><i></i><i></i><i></i></span><span class="rv-start-l">${REVIEWS[k].label}</span><span class="rv-start-s">${REVIEWS[k].sub}</span></button>`).join('');
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const list = past.map((r) => { const p = r.props || {}; const wv = wheelAvg(p.wheel); return `<button class="rv-row" data-open-review="${r.id}"><span class="rv-row-l"><b>${esc((REVIEWS[p.rtype] || {}).label || 'Review')}</b> · ${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span><span class="rv-row-m">${p.tasksDone != null ? `${p.tasksDone} done` : ''}${wv ? ` · wheel ${wv}` : ''}</span></button>`; }).join('');
-  return `<div class="rv-starts">${starts}</div>${past.length ? `<section class="home-sec"><div class="home-sec-h">Past reviews</div><div class="rv-list">${list}</div></section>` : '<div class="empty" style="padding:30px">No reviews yet. Start with a weekly — it takes ten minutes.</div>'}`;
+  return `<div class="rv-starts">${starts}</div>${reviewRemindersHtml()}${past.length ? `<section class="home-sec"><div class="home-sec-h">Past reviews</div><div class="rv-list">${list}</div></section>` : '<div class="empty" style="padding:30px">No reviews yet. Start with a weekly — it takes ten minutes.</div>'}`;
+}
+const REM_REPEATS = [['once', 'Once'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+function fmtReminder(at) { try { const d = new Date(at); return d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return at; } }
+function reviewRemindersHtml() {
+  const rem = (state.reviewReminders || []).slice().sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  const list = rem.map((r) => `<div class="rv-rem"><span class="rv-rem-t">⏰ <b>${esc((REVIEWS[r.rtype] || {}).label || 'Review')}</b> · ${esc(fmtReminder(r.at))}${r.repeat && r.repeat !== 'once' ? ` · repeats ${esc(r.repeat)}` : ''}</span><button class="rv-rem-x" data-rem-del="${esc(r.id)}" title="Remove reminder">×</button></div>`).join('');
+  const notifOff = (typeof Notification !== 'undefined' && Notification.permission !== 'granted');
+  return `<section class="home-sec"><div class="home-sec-h">⏰ Reminders</div>
+    ${list ? `<div class="rv-rems">${list}</div>` : ''}
+    <form class="rv-rem-add" id="rv-rem-form">
+      <select class="sel" name="rtype">${RTYPE_ORDER.map((k) => `<option value="${k}">${REVIEWS[k].label}</option>`).join('')}</select>
+      <input class="sel" type="date" name="date" required>
+      <input class="sel" type="time" name="time" value="09:00" required>
+      <select class="sel" name="repeat">${REM_REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>
+      <button class="add-btn wide" type="submit">Add reminder</button>
+    </form>
+    ${notifOff ? '<div class="rv-rem-note">Turn on notifications so a reminder can reach you: <button class="ghost" data-push-enable>Enable notifications</button></div>' : ''}
+  </section>`;
+}
+async function saveReviewReminders() {
+  try { await api('/api/review-reminders', { method: 'PUT', body: JSON.stringify({ reminders: state.reviewReminders || [] }) }); } catch (e) { toast(e.message); }
+}
+function addReviewReminder(form) {
+  const g = (n) => (form.querySelector(`[name="${n}"]`) || {}).value || '';
+  const date = g('date'), time = g('time') || '09:00';
+  if (!date) { toast('Pick a date'); return; }
+  state.reviewReminders = state.reviewReminders || [];
+  state.reviewReminders.push({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), rtype: g('rtype') || 'weekly', at: `${date}T${time}`, repeat: g('repeat') || 'once' });
+  saveReviewReminders(); renderGoals(); toast('Reminder set');
+}
+function delReviewReminder(id) {
+  state.reviewReminders = (state.reviewReminders || []).filter((r) => r.id !== id);
+  saveReviewReminders(); renderGoals();
 }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
@@ -4842,6 +4876,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
+  const remd = t.closest('[data-rem-del]'); if (remd) { delReviewReminder(remd.dataset.remDel); return; }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
@@ -5226,6 +5261,7 @@ document.addEventListener('submit', (e) => {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
     saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });
   }
+  if (e.target.id === 'rv-rem-form') { addReviewReminder(e.target); return; }
   if (e.target.id === 'adv-add-form') { const el = $('#adv-input'); addAdviceChannel(el ? el.value : ''); return; }
   if (e.target.id === 'trk-add-form') { addTracker($('#trk-input') ? $('#trk-input').value : '', $('#trk-type') ? $('#trk-type').value : 'crypto'); return; }
   if (e.target.id === 'fin-add-form') { addHolding(e.target); return; }

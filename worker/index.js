@@ -1721,6 +1721,47 @@ async function maybePushMail(env, res) {
   });
 }
 
+// Review reminders: user-set nudges to do a review. Stored in settings under
+// kv_review_reminders as [{id, rtype, at:'YYYY-MM-DDTHH:MM' (Lisbon wall-clock),
+// repeat}]. The every-minute cron fires a push when one is due, then advances a
+// repeating one to its next date or drops a one-off.
+const REVIEW_LABELS = { weekly: 'weekly', monthly: 'monthly', quarterly: 'quarterly', yearly: 'yearly' };
+function lisbonNowStr() {
+  const p = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+  const g = (t) => (p.find((x) => x.type === t) || {}).value;
+  return `${g('year')}-${g('month')}-${g('day')}T${g('hour')}:${g('minute')}`;
+}
+function advanceReminderDate(dateStr, repeat) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d, 12));   // noon UTC: date-only maths, DST-safe
+  if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
+  else if (repeat === 'monthly') dt.setUTCMonth(dt.getUTCMonth() + 1);
+  else if (repeat === 'quarterly') dt.setUTCMonth(dt.getUTCMonth() + 3);
+  else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+async function maybeReviewReminders(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_review_reminders'").first().catch(() => null);
+  if (!row || !row.value) return;
+  let arr; try { arr = JSON.parse(row.value); } catch { return; }
+  if (!Array.isArray(arr) || !arr.length) return;
+  const now = lisbonNowStr();
+  let changed = false; const keep = [];
+  for (const r of arr) {
+    if (r && r.at && String(r.at) <= now) {
+      const label = REVIEW_LABELS[r.rtype] || 'review';
+      await pushAll(env, { title: `Time for your ${label} review`, body: 'Open Robski Life → Goals → Reviews to do it.', type: 'review' }).catch(() => {});
+      changed = true;
+      if (r.repeat && r.repeat !== 'once') {
+        const [date, time] = String(r.at).split('T');
+        r.at = `${advanceReminderDate(date, r.repeat)}T${time || '09:00'}`;
+        keep.push(r);
+      }   // one-off: drop it
+    } else keep.push(r);
+  }
+  if (changed) await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_review_reminders', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(keep)).run();
+}
+
 // Portfolio history: on the every-minute tick, only actually fetch prices when
 // the last snapshot is over ~6h old (matching the old 6-hourly cron). Otherwise
 // it's a single indexed read a minute, same shape as the brief.
@@ -1748,6 +1789,8 @@ export default {
     ctx.waitUntil(maybeSnapshotPortfolio(env).catch((e) => console.error('portfolioSnapshot:', e.message)));
     // Financial advice: sweep tracked YouTube channels for new videos, self-gated to ~3h.
     ctx.waitUntil(maybePollChannels(env).catch((e) => console.error('advicePoll:', e.message)));
+    // Review reminders: push a nudge when one the user set falls due.
+    ctx.waitUntil(maybeReviewReminders(env).catch((e) => console.error('reviewReminders:', e.message)));
   },
 
   async fetch(request, env) {
@@ -1948,6 +1991,16 @@ export default {
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
       if (path === '/api/journal/coach' && request.method === 'POST') return journalCoach(request, env, json, err);
       if (path === '/api/journal/insights') return journalInsights(request, env, json, err);
+      if (path === '/api/review-reminders') {
+        if (request.method === 'PUT') {
+          const b = await request.json().catch(() => ({}));
+          const arr = (Array.isArray(b.reminders) ? b.reminders : []).filter((r) => r && r.at && r.rtype).slice(0, 50);
+          await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_review_reminders', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(arr)).run();
+          return json({ ok: true, reminders: arr }, request);
+        }
+        const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_review_reminders'").first().catch(() => null);
+        return json({ reminders: row && row.value ? JSON.parse(row.value) : [] }, request);
+      }
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
       if (path === '/api/bookmark' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (!b.url) return err('url required', request, 400); return json(await createBookmark(env, b.url, b.title), request, 201); }
       if (path === '/api/bookmark/setup' && request.method === 'GET') return json({ key: await bookmarkKey(env), origin: new URL(request.url).origin }, request);
