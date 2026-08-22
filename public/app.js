@@ -3812,31 +3812,72 @@ function trkChange(v) {
   const cls = v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'flat'; const sign = v >= 0 ? '+' : '';
   return `<span class="trk-ch ${cls}">${sign}${v.toFixed(1)}%</span>`;
 }
+const trkCats = () => (state.financial.tracker && state.financial.tracker.categories) || [];
+const trkCatOpts = (sel) => `<option value="">No category</option>${trkCats().map((c) => `<option value="${esc(c)}" ${c === sel ? 'selected' : ''}>${esc(c)}</option>`).join('')}`;
 function trackerBody() {
   const f = state.financial;
-  const addForm = `<form class="trk-add" id="trk-add-form"><input class="sel" id="trk-input" placeholder="Add a symbol or name - BTC, XRP, AAPL, NUCG.L…" autocomplete="off"><select class="sel" id="trk-type"><option value="crypto">Crypto</option><option value="stock">Share / ETF</option></select><button class="add-btn wide" type="submit">Add</button></form>`;
+  const addForm = `<form class="trk-add" id="trk-add-form"><input class="sel" id="trk-input" placeholder="Add a symbol or name - BTC, XRP, AAPL, NUCG.L…" autocomplete="off"><select class="sel" id="trk-type"><option value="crypto">Crypto</option><option value="stock">Share / ETF</option></select><select class="sel" id="trk-cat">${trkCatOpts('')}</select><button class="add-btn wide" type="submit">Add</button></form>`;
   if (f.tracker == null) return `${addForm}<div class="fin-load">Loading prices…</div>`;
   const items = f.tracker.items || [];
+  const cats = trkCats();
   const asOf = f.tracker.ts ? new Date(f.tracker.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
   const cell = (lab, v) => `<span class="trk-cell"><span class="trk-lab">${lab}</span>${trkChange(v)}</span>`;
-  const rows = items.map((it) => `<div class="trk-row">
+  const rowHtml = (it) => `<div class="trk-row">
     <span class="trk-name"><span class="trk-sym">${esc(it.symbol || '')}</span><span class="trk-nm">${esc(it.name || '')}</span></span>
     <span class="trk-changes">${cell('24h', it.ch24)}${cell('7d', it.ch7)}${cell('30d', it.ch30)}</span>
     <span class="trk-px">${esc(trkPrice(it.price, it.currency))}</span>
+    <select class="sel trk-rowcat" data-trk-cat="${it.id}" title="Move to a category">${trkCatOpts(it.category || '')}</select>
     <button class="trk-x" data-trk-del="${it.id}" title="Remove">×</button>
-  </div>`).join('');
+  </div>`;
+  // Group by category: named categories in the user's order, then any stray
+  // category, then uncategorised last.
+  const byCat = {}; for (const it of items) { const c = it.category || ''; (byCat[c] = byCat[c] || []).push(it); }
+  const order = [...cats.filter((c) => byCat[c]), ...Object.keys(byCat).filter((c) => c && !cats.includes(c))];
+  const grouped = order.map((c) => `<div class="trk-group"><div class="trk-group-h">${esc(c)}</div><div class="trk-list">${byCat[c].map(rowHtml).join('')}</div></div>`).join('');
+  const uncat = byCat[''] ? `<div class="trk-group">${order.length ? '<div class="trk-group-h">Uncategorised</div>' : ''}<div class="trk-list">${byCat[''].map(rowHtml).join('')}</div></div>` : '';
+  const manage = `<div class="fin-sec-h"><span>Categories</span><button class="ghost" data-trk-cat-add>+ Category</button></div>
+    <div class="trk-cats">${cats.length ? cats.map((c) => `<span class="trk-cat-chip">${esc(c)}<button class="trk-cat-btn" data-trk-cat-rename="${esc(c)}" title="Rename">✎</button><button class="trk-cat-btn trk-cat-del" data-trk-cat-del="${esc(c)}" title="Delete">×</button></span>`).join('') : '<span class="trk-cats-empty">No categories yet - add one to group your watchlist.</span>'}</div>`;
   return `${addForm}
     <div class="trk-bar">${items.length ? `<button class="ghost" data-trk-refresh ${f.trackerLoading ? 'disabled' : ''}>${f.trackerLoading ? 'Refreshing…' : '↻ Refresh'}</button>${asOf ? `<span class="fin-asof">as of ${esc(asOf)}</span>` : ''}` : ''}</div>
-    ${items.length ? `<div class="trk-list">${rows}</div>` : '<div class="home-empty">Add crypto, shares or ETFs above to watch their 24h / 7d / 30d moves.</div>'}`;
+    ${items.length ? `${grouped}${uncat}` : '<div class="home-empty">Add crypto, shares or ETFs above to watch their 24h / 7d / 30d moves.</div>'}
+    ${manage}`;
 }
-async function addTracker(input, type) {
+async function addTracker(input, type, category) {
   const v = (input || '').trim(); if (!v) return;
   toast('Finding…');
   try {
-    await api('/api/tracker', { method: 'POST', body: JSON.stringify({ input: v, type }) });
+    await api('/api/tracker', { method: 'POST', body: JSON.stringify({ input: v, type, category: category || '' }) });
     const el = $('#trk-input'); if (el) el.value = '';
     toast('Added'); loadTracker(true);
   } catch (e) { toast(e.message); }
+}
+async function saveTrkCats(cats) {
+  if (state.financial.tracker) state.financial.tracker.categories = cats;
+  renderFinancial();
+  try { await api('/api/tracker/categories', { method: 'PUT', body: JSON.stringify({ categories: cats }) }); } catch (e) { toast(e.message); }
+}
+async function setTrackerCat(id, category) {
+  const it = (state.financial.tracker.items || []).find((x) => x.id === id); if (it) it.category = category;
+  renderFinancial();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { category } }) }); } catch (e) { toast(e.message); }
+}
+async function addTrkCat() {
+  const name = ((await uiPrompt('New category name:', { title: 'New category', okLabel: 'Add', placeholder: 'e.g. Precious metals' })) || '').trim();
+  if (!name) return; if (trkCats().includes(name)) { toast('That category already exists'); return; }
+  saveTrkCats([...trkCats(), name]);
+}
+async function renameTrkCat(old) {
+  const name = ((await uiPrompt('Rename category:', { title: 'Rename category', okLabel: 'Save', value: old })) || '').trim();
+  if (!name || name === old) return;
+  saveTrkCats(trkCats().map((c) => (c === old ? name : c)));
+  for (const it of (state.financial.tracker.items || []).filter((x) => x.category === old)) { it.category = name; api(`/api/blocks/${it.id}`, { method: 'PATCH', body: JSON.stringify({ props: { category: name } }) }).catch(() => {}); }
+  renderFinancial();
+}
+async function delTrkCat(name) {
+  if (!(await uiConfirm(`Delete the category "${name}"? Items in it become uncategorised.`, { danger: true, okLabel: 'Delete' }))) return;
+  saveTrkCats(trkCats().filter((c) => c !== name));
+  for (const it of (state.financial.tracker.items || []).filter((x) => x.category === name)) { it.category = ''; api(`/api/blocks/${it.id}`, { method: 'PATCH', body: JSON.stringify({ props: { category: '' } }) }).catch(() => {}); }
+  renderFinancial();
 }
 async function delTracker(id) {
   try { await api(`/api/tracker/${id}`, { method: 'DELETE' }); const f = state.financial; if (f.tracker) f.tracker.items = (f.tracker.items || []).filter((x) => x.id !== id); renderFinancial(); } catch (e) { toast(e.message); }
@@ -4872,6 +4913,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-sp-clear]')) { spendClear(); return; }
   if (t.closest('[data-trk-refresh]')) { loadTracker(true); return; }
   const tkd = t.closest('[data-trk-del]'); if (tkd) { delTracker(tkd.dataset.trkDel); return; }
+  if (t.closest('[data-trk-cat-add]')) { addTrkCat(); return; }
+  const tcr = t.closest('[data-trk-cat-rename]'); if (tcr) { renameTrkCat(tcr.dataset.trkCatRename); return; }
+  const tcx = t.closest('[data-trk-cat-del]'); if (tcx) { delTrkCat(tcx.dataset.trkCatDel); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
@@ -5131,6 +5175,7 @@ document.addEventListener('change', (e) => {
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
   const spc = e.target.closest('[data-sp-cat]'); if (spc) { spendSetCat(spc.dataset.spCat, e.target.value); return; }
+  const tcc = e.target.closest('[data-trk-cat]'); if (tcc) { setTrackerCat(tcc.dataset.trkCat, e.target.value); return; }
   const spmap = e.target.closest('[data-sp-map]'); if (spmap && state.financial.spendImport) { state.financial.spendImport.map[spmap.dataset.spMap] = e.target.value; renderFinancial(); return; }
   // Pick which account this message sends from. Snapshot the in-progress fields
   // first so the re-render (which refreshes the signature note) keeps them.
@@ -5263,7 +5308,7 @@ document.addEventListener('submit', (e) => {
   }
   if (e.target.id === 'rv-rem-form') { addReviewReminder(e.target); return; }
   if (e.target.id === 'adv-add-form') { const el = $('#adv-input'); addAdviceChannel(el ? el.value : ''); return; }
-  if (e.target.id === 'trk-add-form') { addTracker($('#trk-input') ? $('#trk-input').value : '', $('#trk-type') ? $('#trk-type').value : 'crypto'); return; }
+  if (e.target.id === 'trk-add-form') { addTracker($('#trk-input') ? $('#trk-input').value : '', $('#trk-type') ? $('#trk-type').value : 'crypto', $('#trk-cat') ? $('#trk-cat').value : ''); return; }
   if (e.target.id === 'fin-add-form') { addHolding(e.target); return; }
   if (e.target.id === 'fin-edit-form') { updateHolding(Number(e.target.dataset.id), e.target); return; }
   if (e.target.id === 'mail-compose-form') { const toEl = $('#mc-to'); const to = toEl ? toEl.value.trim() : ''; if (to) { const be = $('#mc-body'); mailSend(to, $('#mc-cc').value.trim(), $('#mc-bcc').value.trim(), $('#mc-subject').value.trim(), be ? be.innerHTML : '', state.mail.composing && state.mail.composing.inReplyTo); } else { toast('Add a recipient first'); if (toEl) { toEl.scrollIntoView({ block: 'center' }); toEl.focus(); } } }

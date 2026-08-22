@@ -1937,7 +1937,17 @@ export default {
       }
       if (path === '/api/tracker' && request.method === 'POST') {
         const b = await request.json().catch(() => ({}));
-        try { return json(await addTrackerItem(env, b.input, b.type), request); } catch (e) { return err(e.message, request, 400); }
+        try { return json(await addTrackerItem(env, b.input, b.type, b.category), request); } catch (e) { return err(e.message, request, 400); }
+      }
+      if (path === '/api/tracker/categories') {
+        if (request.method === 'PUT') {
+          const b = await request.json().catch(() => ({}));
+          const arr = (Array.isArray(b.categories) ? b.categories : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 40);
+          await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_tracker_categories', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(arr)).run();
+          return json({ ok: true, categories: arr }, request);
+        }
+        const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_tracker_categories'").first().catch(() => null);
+        return json({ categories: row && row.value ? JSON.parse(row.value) : [] }, request);
       }
       {
         const tk = path.match(/^\/api\/tracker\/([0-9a-f-]{36})$/);

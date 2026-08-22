@@ -55,8 +55,9 @@ async function loadTrackerBlocks(env) {
   return (results || []).map((r) => ({ id: r.id, ...safeJSON(r.props) }));
 }
 
-export async function addTrackerItem(env, input, type) {
+export async function addTrackerItem(env, input, type, category) {
   const meta = await resolveTrackerItem(input, type);
+  meta.category = String(category || '').trim();
   const existing = await loadTrackerBlocks(env);
   if (existing.some((p) => p.ySym && p.ySym.toUpperCase() === meta.ySym.toUpperCase())) {
     throw new Error(`${meta.symbol} is already tracked`);
@@ -65,6 +66,10 @@ export async function addTrackerItem(env, input, type) {
   await env.DB.prepare('INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived) VALUES (?, ?, NULL, 0, ?, NULL, ?, ?, ?, 0)')
     .bind(id, 'tracker', meta.name, JSON.stringify(meta), now, now).run();
   return { id, ...meta };
+}
+export async function trackerCategories(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_tracker_categories'").first().catch(() => null);
+  try { return row && row.value ? JSON.parse(row.value) : []; } catch { return []; }
 }
 
 function nearestClose(ts, closes, target) {
@@ -83,7 +88,7 @@ export async function getTracker(env) {
   const items = await loadTrackerBlocks(env);
   const now = Math.floor(Date.now() / 1000);
   const priced = await Promise.all(items.map(async (it) => {
-    const base = { id: it.id, name: it.name, symbol: it.symbol, type: it.type };
+    const base = { id: it.id, name: it.name, symbol: it.symbol, type: it.type, category: it.category || '' };
     try {
       const res = await yahoo(it.ySym);
       const m = res.meta; const ts = res.timestamp || []; const closes = (res.indicators.quote[0] || {}).close || [];
@@ -92,5 +97,5 @@ export async function getTracker(env) {
       return { ...base, price: cur, currency: m.currency || it.currency || '', ch24: pct(cur, c24), ch7: pct(cur, nearestClose(ts, closes, now - 7 * 86400)), ch30: pct(cur, nearestClose(ts, closes, now - 30 * 86400)) };
     } catch { return { ...base, price: null, currency: it.currency || '', ch24: null, ch7: null, ch30: null }; }
   }));
-  return { ts: new Date().toISOString(), items: priced };
+  return { ts: new Date().toISOString(), items: priced, categories: await trackerCategories(env) };
 }
