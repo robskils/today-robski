@@ -294,7 +294,7 @@ function labelForView(v) {
 function openView(v) {
   switch (v.type) {
     case 'tasks': return openTasks(); case 'taskcard': return openTaskCard(v.id);
-    case 'calendar': return openCalendar(); case 'mail': return openMail(); case 'today': return openToday();
+    case 'calendar': return openCalendar(); case 'mail': return openMail(v.open); case 'today': return openToday();
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'journal': return openJournal(); case 'journalentry': return openJournalEntry(v.id);
@@ -1916,14 +1916,17 @@ function startMailUnreadPoll() {
   refreshMailUnread();
   window.__mailUnreadT = setInterval(() => { if (!document.hidden) refreshMailUnread(); }, 90000);
 }
-async function openMail() {
+async function openMail(openKey) {
   startMailUnreadPoll();
   loadContacts().then(() => { if (state.view.type === 'mail' && state.mail && (state.mail.open || state.mail.composing)) renderMail(); }).catch(() => {});
-  state.view = { type: 'mail' };
   if (!state.mail) {
     let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {}
     state.mail = { account: seed.account || null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), mailboxes: [], moveMenu: null, accounts: Array.isArray(seed.accounts) && seed.accounts.length ? seed.accounts : undefined, listCache: seed.listCache || {} };
   }
+  // Come back to Mail and land where you left off: reopen the message that was
+  // open (from the tab's remembered view, or the still-open one in memory).
+  if (!openKey && state.mail.open && !state.mail.composing) openKey = state.mail.open._key;
+  state.view = openKey ? { type: 'mail', open: openKey } : { type: 'mail' };
   if (!state.mailTrust) {
     state.mailTrust = new Set();
     api('/api/kv/mail_trusted').then((r) => { try { (JSON.parse(r.value || '[]') || []).forEach((a) => state.mailTrust.add(String(a).toLowerCase())); } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
@@ -1944,6 +1947,11 @@ async function openMail() {
     mailApi(`/mailboxes?account=${primary}`).then((mb) => { state.mail.mailboxes = Array.isArray(mb) ? mb : []; }).catch(() => {});
     persistMailCache();
     if (!haveCache || changed) await loadMessages();   // already loading above unless nothing was cached / accounts changed
+    // Restore the message that was open in this tab before you switched away.
+    if (openKey && !state.mail.composing) {
+      if (!(state.mail.messages || []).some((m) => m._key === openKey)) await loadMessages().catch(() => {});
+      if ((state.mail.messages || []).some((m) => m._key === openKey)) openMessage(openKey);
+    }
   } catch (e) { state.mail.error = e.message; renderMail(); }
 }
 // Map the D1 inbox-cache response into the keyed message shape the list uses.
@@ -2083,6 +2091,8 @@ function mailForgetKeys(keys) {
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key); if (!row) return;
   state.mail.sel = key; state.mail.hoverThread = null;   // the cursor follows what you open, so it's here after Back
+  // Record the open message on the view so this tab reopens it after a switch.
+  state.view = { type: 'mail', open: key }; syncActiveTab();
   const cached = state.mail.msgCache && state.mail.msgCache[key];
   // /message doesn't report flags, so carry the row's starred state across -
   // otherwise the reader star always shows empty and needs two clicks to set.
@@ -5040,7 +5050,7 @@ document.addEventListener('click', (e) => {
   const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(mblk.dataset.mailBlock, mblk.dataset.mailFrom || ''); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
   const mo = t.closest('[data-mail-open]'); if (mo) { if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
-  if (t.closest('[data-mail-back]')) { state.mail.open = null; renderMail(); return; }
+  if (t.closest('[data-mail-back]')) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
   if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }
   if (t.closest('[data-mail-reconcile]')) { mailReconcileUnread(); return; }
