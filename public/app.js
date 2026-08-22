@@ -3617,8 +3617,8 @@ function spendingBody() {
   const f = state.financial;
   if (f.spendImport) return spendImportView();
   if (f.txns == null) return '<div class="fin-load">Loading…</div>';
-  const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV)<input type="file" id="sp-file" accept=".csv,text/csv" hidden></label>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
-  if (!(f.txns || []).length) return `${importBar}<div class="fin-soon"><div class="fin-soon-ic">🧾</div><h2>Spending</h2><p>Import a bank statement as CSV (Wise: Statement → Download → CSV) to categorise your spending and see income vs outgoings over time.</p><p class="fin-soon-note">Everything stays in your own Robski Life - nothing is sent to a bank.</p></div>`;
+  const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV or PDF)<input type="file" id="sp-file" accept=".csv,.pdf,text/csv,application/pdf" hidden></label>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
+  if (!(f.txns || []).length) return `${importBar}<div class="fin-soon"><div class="fin-soon-ic">🧾</div><h2>Spending</h2><p>Import a bank statement - CSV (Wise: Statement → Download → CSV) or a PDF statement - to categorise your spending and see income vs outgoings over time.</p><p class="fin-soon-note">PDFs are read by Gemini to pull out the transactions; nothing is sent to a bank.</p></div>`;
   const months = spendMonths();
   if (!f.spendMonth || !months.includes(f.spendMonth)) f.spendMonth = months[0];
   const idx = months.indexOf(f.spendMonth);
@@ -3662,7 +3662,22 @@ function spendTrend(months) {
   return `<div class="sp-trend"><div class="sp-trend-h">In vs out · last ${data.length} months <span class="sp-tkey"><i class="in"></i>in <i class="out"></i>out</span></div><div class="sp-trendbars">${bars}</div></div>`;
 }
 function spendImportView() {
-  const im = state.financial.spendImport; const H = im.headers;
+  const im = state.financial.spendImport;
+  if (im.loading) return `<div class="sp-import"><div class="sp-sec-h">Reading · ${esc(im.name || 'statement.pdf')}</div><div class="fin-load">Reading the statement with Gemini… this can take a moment for a long PDF.</div></div>`;
+  // PDF rows come back already normalised (date/amount/description) - no column
+  // mapping needed, just a preview and confirm.
+  if (im.pdf) {
+    const rows = im.rows || [];
+    const preview = rows.slice(0, 8).map((r) => `<tr><td>${esc(r.date || '?')}</td><td class="sp-pv-desc">${esc(r.description || '')}</td><td class="${r.amount < 0 ? 'down' : 'up'}">${r.amount != null ? eurSigned(r.amount) : '?'}</td></tr>`).join('');
+    return `<div class="sp-import">
+      <div class="sp-sec-h">Import · ${esc(im.name || 'statement.pdf')}</div>
+      <p class="sp-import-note">Gemini pulled ${rows.length} transaction${rows.length === 1 ? '' : 's'} out of this PDF. Have a quick look, then import.</p>
+      <table class="sp-preview"><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>${preview}</tbody></table>
+      ${rows.length > 8 ? `<p class="sp-import-note">…and ${rows.length - 8} more.</p>` : ''}
+      <div class="fin-edit-act"><button class="add-btn wide" data-sp-do-import ${rows.length ? '' : 'disabled'}>Import ${rows.length} transactions</button><button class="ghost" data-sp-import-cancel>Cancel</button></div>
+    </div>`;
+  }
+  const H = im.headers;
   const sel = (field, val) => `<select class="sel" data-sp-map="${field}"><option value="">—</option>${H.map((h) => `<option value="${esc(h)}" ${h === val ? 'selected' : ''}>${esc(h)}</option>`).join('')}</select>`;
   const norm = spendNormalize(im.rows.slice(0, 6), im.map);
   const preview = norm.map((r) => `<tr><td>${esc(r.date || '?')}</td><td class="sp-pv-desc">${esc(r.description || '')}</td><td class="${r.amount < 0 ? 'down' : 'up'}">${r.amount != null ? eurSigned(r.amount) : '?'}</td></tr>`).join('');
@@ -3732,6 +3747,8 @@ function spendNormalize(rows, map) {
   }).filter((r) => r.date && r.amount != null && r.amount !== 0);
 }
 function spendOpenFile(file) {
+  const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+  if (isPdf) { spendOpenPdf(file); return; }
   const rd = new FileReader();
   rd.onload = () => {
     try {
@@ -3745,9 +3762,31 @@ function spendOpenFile(file) {
   };
   rd.readAsText(file);
 }
+// PDF: read as base64, hand it to Gemini on the worker to extract transactions.
+function spendOpenPdf(file) {
+  if (file.size > 18 * 1024 * 1024) { toast('That PDF is very large - try a shorter statement'); return; }
+  state.financial.spendImport = { name: file.name, pdf: true, loading: true, rows: [] };
+  renderFinancial();
+  const rd = new FileReader();
+  rd.onload = async () => {
+    try {
+      const buf = new Uint8Array(rd.result);
+      let bin = ''; const CH = 0x8000;
+      for (let i = 0; i < buf.length; i += CH) bin += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+      const data = btoa(bin);
+      const r = await api('/api/spend/parse-pdf', { method: 'POST', body: JSON.stringify({ data, name: file.name }) });
+      if (!state.financial.spendImport || !state.financial.spendImport.pdf) return;   // cancelled
+      if (!r.rows || !r.rows.length) { toast('No transactions found in that PDF'); state.financial.spendImport = null; renderFinancial(); return; }
+      state.financial.spendImport = { name: file.name, pdf: true, rows: r.rows };
+      renderFinancial();
+    } catch (e) { toast(e.message); state.financial.spendImport = null; renderFinancial(); }
+  };
+  rd.onerror = () => { toast('Could not read that PDF'); state.financial.spendImport = null; renderFinancial(); };
+  rd.readAsArrayBuffer(file);
+}
 async function spendDoImport() {
   const im = state.financial.spendImport; if (!im) return;
-  const rows = spendNormalize(im.rows, im.map);
+  const rows = im.pdf ? im.rows : spendNormalize(im.rows, im.map);
   if (!rows.length) { toast('No valid rows to import'); return; }
   toast('Importing…');
   try {

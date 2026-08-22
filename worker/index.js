@@ -7,7 +7,7 @@ import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
-import { importTxns, clearTxns } from './spending.js';
+import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
 import { addTrackerItem, getTracker } from './tracker.js';
 
 const TZ = 'Europe/Lisbon';
@@ -1882,6 +1882,10 @@ export default {
       }
       if (path === '/api/spend/clear' && request.method === 'POST') {
         try { return json(await clearTxns(env), request); } catch (e) { return err(e.message, request, 400); }
+      }
+      if (path === '/api/spend/parse-pdf' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try { return json(await parseStatementPdf(env, b.data, b.name), request); } catch (e) { return err(e.message, request, 502); }
       }
 
       // Tracker: a market watchlist (crypto + listed), priced live.

@@ -82,6 +82,38 @@ export async function importTxns(env, rows) {
   return { added, skipped };
 }
 
+// Parse a bank-statement PDF into transaction rows with Gemini (reads the PDF
+// natively - text + table layout - and returns structured rows). Rows then go
+// through the normal importTxns path (dedupe + categorise).
+export async function parseStatementPdf(env, dataB64, name) {
+  const key = env.GEMINI_API_KEY;
+  if (!key) throw new Error('PDF import needs the GEMINI_API_KEY secret (same one as Advice).');
+  if (!dataB64) throw new Error('No PDF data');
+  const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
+  const prompt = `This is a bank or account statement PDF. Extract EVERY individual transaction.
+For each transaction return:
+- date: the transaction date as YYYY-MM-DD (infer the year from the statement).
+- amount: a NUMBER, signed so money OUT (debits, payments, purchases, withdrawals) is NEGATIVE and money IN (credits, deposits, salary) is POSITIVE.
+- description: the payee / merchant / reference text.
+- currency: the 3-letter currency code if shown, else "".
+Ignore opening/closing balances, running balances, subtotals, page headers/footers and anything that isn't a real transaction. Do not invent transactions. Return JSON: {"rows":[{"date","amount","currency","description"}]}.`;
+  const body = {
+    contents: [{ parts: [{ inline_data: { mime_type: 'application/pdf', data: dataB64 } }, { text: prompt }] }],
+    generationConfig: {
+      temperature: 0,
+      responseMimeType: 'application/json',
+      responseSchema: { type: 'object', properties: { rows: { type: 'array', items: { type: 'object', properties: { date: { type: 'string' }, amount: { type: 'number' }, currency: { type: 'string' }, description: { type: 'string' } }, required: ['date', 'amount'] } } }, required: ['rows'] },
+    },
+  };
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`Gemini ${res.status}: ${t.slice(0, 240)}`); }
+  const data = await res.json();
+  const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text).filter(Boolean).join('');
+  let out; try { out = JSON.parse(text); } catch { out = { rows: [] }; }
+  const rows = Array.isArray(out.rows) ? out.rows.filter((r) => r && r.date && r.amount != null) : [];
+  return { rows, count: rows.length };
+}
+
 // Wipe every imported transaction (the page's "clear all" - it asks first).
 export async function clearTxns(env) {
   await env.DB.prepare("DELETE FROM blocks WHERE kind = 'txn'").run();
