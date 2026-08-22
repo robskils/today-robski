@@ -81,7 +81,7 @@ const num = (v) => (typeof v === "number" && isFinite(v) && v > 0 ? v : null);
 
 export async function loadPositions(env) {
   const { results } = await env.PORTFOLIO_DB.prepare(
-    "SELECT id, code, name, venue, qty, kind, symbol, sort FROM positions ORDER BY sort, id"
+    "SELECT id, code, name, venue, qty, kind, symbol, cost, sort FROM positions ORDER BY sort, id"
   ).all();
   if (results && results.length) return results;
 
@@ -92,7 +92,7 @@ export async function loadPositions(env) {
     DEFAULT_POSITIONS.map((p) => stmt.bind(p.code, p.name, p.venue, p.qty, p.kind, p.symbol, p.sort))
   );
   const seeded = await env.PORTFOLIO_DB.prepare(
-    "SELECT id, code, name, venue, qty, kind, symbol, sort FROM positions ORDER BY sort, id"
+    "SELECT id, code, name, venue, qty, kind, symbol, cost, sort FROM positions ORDER BY sort, id"
   ).all();
   return seeded.results;
 }
@@ -108,23 +108,27 @@ function validate(p) {
   if (!Number.isFinite(qty) || qty < 0) throw new Error("Quantity must be zero or more");
   const symbol = String(p.symbol || "").trim() || null;
   if (KINDS[kind].needsSymbol && !symbol) throw new Error("That price type needs a ticker, e.g. NUCG.L");
-  return { code, name, venue: String(p.venue || "").trim() || null, qty, kind, symbol };
+  // cost = total EUR paid for the units currently held (optional; enables
+  // realised/unrealised gain). Blank/0 means "not tracked".
+  const cost = (p.cost === "" || p.cost == null) ? null : Number(p.cost);
+  if (cost != null && (!Number.isFinite(cost) || cost < 0)) throw new Error("Cost must be a number");
+  return { code, name, venue: String(p.venue || "").trim() || null, qty, kind, symbol, cost };
 }
 
 export async function addPosition(env, p) {
   const v = validate(p);
   const row = await env.PORTFOLIO_DB.prepare("SELECT COALESCE(MAX(sort), 0) + 1 AS s FROM positions").first();
   const res = await env.PORTFOLIO_DB.prepare(
-    "INSERT INTO positions (code, name, venue, qty, kind, symbol, sort) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, row.s).run();
+    "INSERT INTO positions (code, name, venue, qty, kind, symbol, cost, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, v.cost, row.s).run();
   return { id: res.meta.last_row_id, ...v };
 }
 
 export async function updatePosition(env, id, p) {
   const v = validate(p);
   const res = await env.PORTFOLIO_DB.prepare(
-    "UPDATE positions SET code = ?, name = ?, venue = ?, qty = ?, kind = ?, symbol = ? WHERE id = ?"
-  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, Number(id)).run();
+    "UPDATE positions SET code = ?, name = ?, venue = ?, qty = ?, kind = ?, symbol = ?, cost = ? WHERE id = ?"
+  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, v.cost, Number(id)).run();
   if (!res.meta.changes) throw new Error("No such holding");
   return { id: Number(id), ...v };
 }
@@ -133,6 +137,39 @@ export async function deletePosition(env, id) {
   const res = await env.PORTFOLIO_DB.prepare("DELETE FROM positions WHERE id = ?").bind(Number(id)).run();
   if (!res.meta.changes) throw new Error("No such holding");
   return true;
+}
+
+// Record a sale: reduce units (and cost basis, pro-rata by average cost), log a
+// realised-P&L row. proceeds = EUR actually received. Selling the lot removes it.
+export async function sellPosition(env, id, unitsSold, proceeds) {
+  const pos = await env.PORTFOLIO_DB.prepare("SELECT id, code, name, qty, cost FROM positions WHERE id = ?").bind(Number(id)).first();
+  if (!pos) throw new Error("No such holding");
+  const units = Number(unitsSold);
+  if (!Number.isFinite(units) || units <= 0) throw new Error("Enter how many units you sold");
+  const got = Number(proceeds);
+  if (!Number.isFinite(got) || got < 0) throw new Error("Enter what you got for the sale");
+  const sellAll = units >= pos.qty - 1e-9;
+  const soldQty = sellAll ? pos.qty : units;
+  const costOut = (pos.cost != null && pos.qty > 0) ? (pos.cost * (soldQty / pos.qty)) : null;
+  const realised = costOut != null ? (got - costOut) : null;
+  await env.PORTFOLIO_DB.prepare(
+    "INSERT INTO sales (ts, code, name, units, proceeds, cost_out, realised, currency) VALUES (?, ?, ?, ?, ?, ?, ?, 'EUR')"
+  ).bind(new Date().toISOString(), pos.code, pos.name, soldQty, got, costOut, realised).run();
+  if (sellAll) {
+    await env.PORTFOLIO_DB.prepare("DELETE FROM positions WHERE id = ?").bind(Number(id)).run();
+  } else {
+    const newQty = pos.qty - soldQty;
+    const newCost = pos.cost != null ? Math.max(0, pos.cost - costOut) : null;
+    await env.PORTFOLIO_DB.prepare("UPDATE positions SET qty = ?, cost = ? WHERE id = ?").bind(newQty, newCost, Number(id)).run();
+  }
+  return { soldQty, proceeds: got, costOut, realised, sellAll };
+}
+
+export async function listSales(env, limit = 100) {
+  const { results } = await env.PORTFOLIO_DB.prepare(
+    "SELECT id, ts, code, name, units, proceeds, cost_out, realised, currency FROM sales ORDER BY ts DESC LIMIT ?"
+  ).bind(limit).all().catch(() => ({ results: [] }));
+  return results || [];
 }
 
 // ── valuation ─────────────────────────────────────────────────────────
@@ -192,18 +229,24 @@ export async function getPortfolio(env) {
     }
   };
 
-  const holdings = positions.map((p, i) => ({
-    id: p.id,
-    code: p.code,
-    name: p.name,
-    venue: p.venue || "",
-    qty: p.qty,
-    kind: p.kind,
-    symbol: p.symbol,
-    unit: KINDS[p.kind]?.unit || "",
-    swatch: SWATCHES[i % SWATCHES.length],
-    value: Math.round(valueOf(p)),
-  }));
+  const holdings = positions.map((p, i) => {
+    const value = Math.round(valueOf(p));
+    const cost = (p.cost == null) ? null : Math.round(p.cost);
+    return {
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      venue: p.venue || "",
+      qty: p.qty,
+      kind: p.kind,
+      symbol: p.symbol,
+      unit: KINDS[p.kind]?.unit || "",
+      swatch: SWATCHES[i % SWATCHES.length],
+      value,
+      cost,
+      gain: cost != null ? value - cost : null,   // unrealised
+    };
+  });
 
   const eur2 = (n) => n.toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const rates = [];
@@ -220,11 +263,23 @@ export async function getPortfolio(env) {
   if (needsGbp) rates.push(["GBP → EUR", px.gbp.toFixed(4)]);
   if (needsUsd) rates.push(["USD → EUR", px.usd.toFixed(4)]);
 
+  // Realised P&L to date, and unrealised across holdings that have a cost set.
+  const sales = await listSales(env, 200);
+  const realisedTotal = sales.reduce((s, r) => s + (r.realised || 0), 0);
+  const tracked = holdings.filter((h) => h.cost != null);
+  const investedTracked = tracked.reduce((s, h) => s + h.cost, 0);
+  const valueTracked = tracked.reduce((s, h) => s + h.value, 0);
+  const unrealisedTotal = tracked.length ? valueTracked - investedTracked : null;
+
   return {
     ts: new Date().toISOString(),
     holdings,
     total: Math.round(holdings.reduce((s, h) => s + h.value, 0)),
     rates,
+    realisedTotal: Math.round(realisedTotal),
+    unrealisedTotal: unrealisedTotal == null ? null : Math.round(unrealisedTotal),
+    investedTracked: Math.round(investedTracked),
+    sales: sales.slice(0, 60).map((r) => ({ ts: r.ts, name: r.name, code: r.code, units: r.units, proceeds: Math.round(r.proceeds), realised: r.realised == null ? null : Math.round(r.realised) })),
     kinds: Object.fromEntries(Object.entries(KINDS).map(([k, v]) => [k, { label: v.label, needsSymbol: v.needsSymbol }])),
   };
 }

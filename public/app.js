@@ -3423,23 +3423,40 @@ function portfolioBody() {
   </div>`).join('');
   const rates = (d.rates || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
   const asOf = d.ts ? new Date(d.ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const gains = [];
+  if (d.unrealisedTotal != null) gains.push(`<span class="fin-gain ${d.unrealisedTotal >= 0 ? 'up' : 'down'}">${d.unrealisedTotal >= 0 ? '▲' : '▼'} ${eurSigned(d.unrealisedTotal)} unrealised</span>`);
+  if (d.realisedTotal) gains.push(`<span class="fin-gain ${d.realisedTotal >= 0 ? 'up' : 'down'}">${d.realisedTotal >= 0 ? '▲' : '▼'} ${eurSigned(d.realisedTotal)} realised</span>`);
+  const anyCost = (d.holdings || []).some((h) => h.cost != null);
+  const gainCell = (h) => h.gain == null ? '<td class="fh-r fh-gaincell">—</td>' : `<td class="fh-r fh-gaincell ${h.gain >= 0 ? 'up' : 'down'}">${eurSigned(h.gain)}</td>`;
+  const sales = d.sales || [];
   return `<div class="fin-port">
-    <div class="fin-head"><div class="fin-total-lab">Total value</div><div class="fin-total">${eur0(total)}</div>${asOf ? `<div class="fin-asof">Live as of <b>${esc(asOf)}</b> · <button class="fin-link" data-fin-refresh>refresh</button></div>` : ''}</div>
+    <div class="fin-head"><div class="fin-total-lab">Total value</div><div class="fin-total">${eur0(total)}</div>${gains.length ? `<div class="fin-gains">${gains.join('')}</div>` : ''}${asOf ? `<div class="fin-asof">Live as of <b>${esc(asOf)}</b> · <button class="fin-link" data-fin-refresh>refresh</button></div>` : ''}</div>
     ${bar ? `<div class="fin-bar">${bar}</div><div class="fin-legend">${legend}</div>` : ''}
     ${perf ? `<div class="fin-perf">${perf}</div>` : ''}
     <div class="fin-cards">${cards}</div>
     ${rates ? `<div class="fin-rates"><dl>${rates}</dl></div>` : ''}
     <div class="fin-sec-h"><span>What you hold</span></div>
     <div class="fh-wrap"><table class="fh-table">
-      <thead><tr><th>Holding</th><th class="fh-r">Units held</th><th>Where held</th><th class="fh-r">Value</th></tr></thead>
+      <thead><tr><th>Holding</th><th class="fh-r">Units held</th><th>Where held</th><th class="fh-r">Value</th>${anyCost ? '<th class="fh-r">Gain</th>' : ''}</tr></thead>
       <tbody>${(d.holdings || []).map((h) => `<tr>
         <td class="fh-name"><span class="fh-sw" style="background:${h.swatch}"></span>${esc(h.name)}</td>
         <td class="fh-r fh-units">${fmtQty(h.qty)} ${esc(h.unit)}</td>
         <td class="fh-where">${esc(h.venue || '—')}</td>
         <td class="fh-r fh-val">${eur0(h.value)}</td>
+        ${anyCost ? gainCell(h) : ''}
       </tr>`).join('')}</tbody>
-      ${total ? `<tfoot><tr><td>Total</td><td></td><td></td><td class="fh-r">${eur0(total)}</td></tr></tfoot>` : ''}
+      ${total ? `<tfoot><tr><td>Total</td><td></td><td></td><td class="fh-r">${eur0(total)}</td>${anyCost ? `<td class="fh-r ${(d.unrealisedTotal || 0) >= 0 ? 'up' : 'down'}">${d.unrealisedTotal != null ? eurSigned(d.unrealisedTotal) : ''}</td>` : ''}</tr></tfoot>` : ''}
     </table></div>
+    ${sales.length ? `<div class="fin-sec-h"><span>Sales</span></div>
+    <div class="fh-wrap"><table class="fh-table">
+      <thead><tr><th>Sold</th><th>When</th><th class="fh-r">Proceeds</th><th class="fh-r">Realised</th></tr></thead>
+      <tbody>${sales.map((s) => `<tr>
+        <td class="fh-name">${esc(s.name)}${s.units ? ` · ${fmtQty(s.units)}` : ''}</td>
+        <td class="fh-where">${esc(new Date(s.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))}</td>
+        <td class="fh-r">${eur0(s.proceeds)}</td>
+        <td class="fh-r ${s.realised == null ? '' : (s.realised >= 0 ? 'up' : 'down')}">${s.realised == null ? '—' : eurSigned(s.realised)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : ''}
     <div class="fin-sec-h"><span>Manage holdings</span>${(!f.adding && f.editId == null) ? '<button class="ghost" data-fin-add>+ Add holding</button>' : ''}</div>
     ${financialEditor()}
   </div>`;
@@ -3453,6 +3470,7 @@ function holdingFields(h, kinds) {
     <label class="fin-f"><span>Quantity</span><input class="sel" name="qty" type="number" step="any" value="${h.qty != null ? h.qty : ''}" required></label>
     <label class="fin-f"><span>Priced as</span><select class="sel" name="kind">${opts}</select></label>
     <label class="fin-f"><span>Ticker (if listed)</span><input class="sel" name="symbol" value="${esc(h.symbol || '')}" placeholder="e.g. NUCG.L" autocomplete="off"></label>
+    <label class="fin-f"><span>Cost — total € paid (optional)</span><input class="sel" name="cost" type="number" step="any" value="${h.cost != null ? h.cost : ''}" placeholder="what you paid, for gain tracking" autocomplete="off"></label>
   </div>`;
 }
 function financialEditor() {
@@ -3461,7 +3479,7 @@ function financialEditor() {
   if (f.editId != null) { const h = (d.holdings || []).find((x) => x.id === f.editId); if (!h) return ''; return `<form class="fin-editor" id="fin-edit-form" data-id="${h.id}">${holdingFields(h, d.kinds)}<div class="fin-edit-act"><button class="add-btn wide" type="submit">Save</button><button type="button" class="ghost" data-fin-edit-cancel>Cancel</button><button type="button" class="ghost fin-sell" data-fin-sell="${h.id}">Sold some…</button><button type="button" class="ghost fin-del" data-fin-del="${h.id}">Delete</button></div></form>`; }
   return '';
 }
-const finForm = (form) => { const g = (n) => (form.querySelector(`[name="${n}"]`) || {}).value || ''; return { code: g('code').trim(), name: g('name').trim(), venue: g('venue').trim(), qty: g('qty'), kind: g('kind'), symbol: g('symbol').trim() }; };
+const finForm = (form) => { const g = (n) => (form.querySelector(`[name="${n}"]`) || {}).value || ''; return { code: g('code').trim(), name: g('name').trim(), venue: g('venue').trim(), qty: g('qty'), kind: g('kind'), symbol: g('symbol').trim(), cost: g('cost').trim() }; };
 async function addHolding(form) {
   try { await api('/api/holdings', { method: 'POST', body: JSON.stringify(finForm(form)) }); toast('Holding added'); state.financial.adding = false; loadPortfolio(true); }
   catch (e) { toast(e.message); }
@@ -3476,17 +3494,23 @@ async function deleteHolding(id) {
   try { await api('/api/holdings', { method: 'DELETE', body: JSON.stringify({ id }) }); toast('Removed'); state.financial.editId = null; loadPortfolio(true); }
   catch (e) { toast(e.message); }
 }
-// Record a (part-)sale by reducing the units held. Sell the lot and it's removed.
+// Record a (part-)sale: how many units, and what you got for it. Reduces the
+// units (and cost basis pro-rata) and logs the realised gain. Sell all = removed.
 async function sellHolding(id) {
   const h = ((state.financial.data || {}).holdings || []).find((x) => x.id === id); if (!h) return;
-  const ans = await uiPrompt(`How many ${h.unit || 'units'} of ${h.name} did you sell?`, { title: 'Record a sale', okLabel: 'Record sale', value: String(h.qty), placeholder: 'e.g. 500' });
-  if (ans == null) return;
-  const sold = Number(String(ans).replace(/[^0-9.\-]/g, ''));
-  if (!isFinite(sold) || sold <= 0) { toast('Enter how many units you sold'); return; }
-  const remaining = Math.round((h.qty - sold) * 1e8) / 1e8;
+  const uAns = await uiPrompt(`How many ${h.unit || 'units'} of ${h.name} did you sell?`, { title: 'Record a sale', okLabel: 'Next', value: String(h.qty), placeholder: 'e.g. 500' });
+  if (uAns == null) return;
+  const units = Number(String(uAns).replace(/[^0-9.\-]/g, ''));
+  if (!isFinite(units) || units <= 0) { toast('Enter how many units you sold'); return; }
+  const est = h.value && h.qty ? Math.round(h.value * (Math.min(units, h.qty) / h.qty)) : '';
+  const pAns = await uiPrompt(`What did you get for it, in €? (roughly €${est ? est.toLocaleString('en-IE') : '…'} at today's price)`, { title: 'Sale proceeds', okLabel: 'Record sale', value: est ? String(est) : '', placeholder: '€ received' });
+  if (pAns == null) return;
+  const proceeds = Number(String(pAns).replace(/[^0-9.\-]/g, ''));
+  if (!isFinite(proceeds) || proceeds < 0) { toast('Enter what you got for the sale'); return; }
   try {
-    if (remaining <= 0) { await api('/api/holdings', { method: 'DELETE', body: JSON.stringify({ id }) }); toast(`Sold all of ${h.name}`); }
-    else { await api('/api/holdings', { method: 'PUT', body: JSON.stringify({ id, code: h.code, name: h.name, venue: h.venue, kind: h.kind, symbol: h.symbol, qty: remaining }) }); toast(`Sold ${fmtQty(sold)} ${h.unit || ''} · ${fmtQty(remaining)} left`); }
+    const r = await api('/api/portfolio/sell', { method: 'POST', body: JSON.stringify({ id, units, proceeds }) });
+    const gain = r.realised == null ? '' : ` · ${r.realised >= 0 ? 'gain' : 'loss'} ${eurSigned(r.realised)}`;
+    toast(`${r.sellAll ? `Sold all of ${h.name}` : `Sold ${fmtQty(r.soldQty)} ${h.unit || ''}`}${gain}`);
     state.financial.editId = null; loadPortfolio(true);
   } catch (e) { toast(e.message); }
 }

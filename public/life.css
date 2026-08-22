@@ -212,6 +212,9 @@ button { cursor:pointer; background:none; border:0; }
 .fin-head { margin-top:2px; }
 .fin-total-lab { font-size:12.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); }
 .fin-total { font-family:'Cormorant Garamond',serif; font-weight:600; font-size:clamp(46px,11vw,72px); line-height:1; letter-spacing:-.02em; margin-top:4px; font-variant-numeric:tabular-nums; }
+.fin-gains { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:8px; }
+.fin-gain { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+.fh-gaincell { font-variant-numeric:tabular-nums; font-weight:600; }
 .fin-asof { color:var(--ink-2); font-size:14.5px; margin-top:10px; } .fin-asof b { color:var(--ink); font-weight:600; }
 .fin-link { background:none; border:0; color:var(--accent); cursor:pointer; font:inherit; }
 .fin-bar { display:flex; height:20px; border-radius:6px; overflow:hidden; border:1px solid var(--line); }

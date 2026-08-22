@@ -5,7 +5,7 @@ import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
-import { getPortfolio, addPosition, updatePosition, deletePosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
+import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns } from './spending.js';
 import { addTrackerItem, getTracker } from './tracker.js';
@@ -1839,6 +1839,10 @@ export default {
           // No fallback figure - a wrong number is worse than none.
           return json({ error: e.message, detail: e.detail }, request, 503);
         }
+      }
+      if (path === '/api/portfolio/sell' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try { return json(await sellPosition(env, b.id, b.units, b.proceeds), request); } catch (e) { return err(e.message, request, 400); }
       }
       if (path === '/api/holdings' && (request.method === 'POST' || request.method === 'PUT' || request.method === 'DELETE')) {
         let body; try { body = await request.json(); } catch { return err('Invalid request', request, 400); }
