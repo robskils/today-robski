@@ -210,6 +210,14 @@ async function imapOpen(env, acct) {
       const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
     },
+    // Unread = the messages without \Seen. Same shape as listFlagged.
+    async listUnseen(limit) {
+      const ids = await this.searchUnseenUids();
+      if (!ids.length) return [];
+      const set = ids.slice(-limit).join(',');
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
+      return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1)).slice(0, limit);
+    },
     async fetchRaw(uid) {
       const t = 'A' + (++tag);
       await writer.write(enc.encode(`${t} UID FETCH ${uid} (BODY.PEEK[])\r\n`));
@@ -749,6 +757,7 @@ export async function handleMail(request, env, url, json, err) {
     if (sub === 'messages') {
       const mailbox = url.searchParams.get('mailbox') || 'INBOX';
       const flagged = url.searchParams.get('flagged') === '1';   // Starred view
+      const unseen = url.searchParams.get('unseen') === '1';      // Unread view
       const q = (url.searchParams.get('q') || '').trim();
       const limit = Number(url.searchParams.get('limit')) || 40;
       const offset = Number(url.searchParams.get('offset')) || 0;
@@ -783,6 +792,7 @@ export async function handleMail(request, env, url, json, err) {
         const box = await resolveMailbox(im, mailbox);
         const total = await im.select(box);
         let messages = !total ? []
+          : unseen ? await im.listUnseen(limit)
           : flagged ? await im.listFlagged(limit)
           : await im.listRange(total, offset, limit);
         // Stamp the real path so star/move/open on a Sent (etc.) message hit the

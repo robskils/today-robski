@@ -1642,6 +1642,7 @@ const mailDate = (iso) => { if (!iso) return ''; const d = new Date(iso), now = 
 // not a real mailbox. Purelymail uses INBOX / Archive / Junk / Trash.
 const MAIL_FOLDERS = [
   { key: 'inbox', label: 'Inbox', mailbox: 'INBOX' },
+  { key: 'unread', label: 'Unread', mailbox: 'INBOX', unseen: true },
   { key: 'starred', label: '★ Starred', mailbox: 'INBOX', flagged: true },
   { key: 'drafts', label: 'Drafts', local: true },
   { key: 'sent', label: 'Sent', mailbox: 'Sent' },
@@ -1974,11 +1975,11 @@ async function loadMessages(quiet) {
   const limit = state.mail.limit || 40;
   // Stale-while-revalidate: show the last list for this view instantly, then
   // refresh behind it, so switching folders/accounts or going back feels snappy.
-  const viewKey = `${state.mail.account}|${f.mailbox}|${f.flagged ? 'F' : ''}|${q}|${limit}`;
+  const viewKey = `${state.mail.account}|${f.mailbox}|${f.flagged ? 'F' : ''}${f.unseen ? 'U' : ''}|${q}|${limit}`;
   state.mail._viewKey = viewKey;
   state.mail.listCache = state.mail.listCache || {};
   const cached = state.mail.listCache[viewKey];
-  const isDefaultInbox = !q && !f.flagged && f.mailbox === 'INBOX' && limit <= 40;
+  const isDefaultInbox = !q && !f.flagged && !f.unseen && f.mailbox === 'INBOX' && limit <= 40;
   let painted = false;
   // 1) In-memory cache is freshest within a session (reflects this session's triage).
   if (cached && !quiet) { state.mail.messages = cached; state.mail.error = null; state.mail.acctErrors = []; renderMail(); painted = true; }
@@ -2012,7 +2013,7 @@ async function loadMessages(quiet) {
   };
   await Promise.all(accts.map(async (a) => {
     try {
-      const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
+      const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${f.unseen ? '&unseen=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
       if (state.mail._gen !== gen) return;
       state.mail.unseen[a.id] = r.unseen || 0;
       // Live IMAP unseen count, kept apart from the cache-poll number so a
@@ -2027,7 +2028,7 @@ async function loadMessages(quiet) {
   }));
   if (state.mail._gen !== gen) return;   // a newer load superseded this one
   state.mail.listCache[viewKey] = state.mail.messages;   // freshen for next time
-  state.mail.hasMore = more && !q && !f.flagged;          // "Load older" only when browsing
+  state.mail.hasMore = more && !q && !f.flagged && !f.unseen;   // "Load older" only when browsing
   if (!q) persistMailCache();                             // instant cold open next time
   renderMailList(false);
   prefetchTop();   // warm the top few bodies so tapping one is instant
@@ -2679,7 +2680,8 @@ function mailListInner(loading) {
   const errBanner = (!loading && (m.acctErrors || []).length)
     ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
     : '';
-  return `${errBanner}${loading ? '<div class="home-empty">Searching…</div>' : (rows || `<div class="home-empty">${m.query ? 'No matches.' : 'No messages.'}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
+  const emptyMsg = m.query ? 'No matches.' : m.folder === 'unread' ? 'No unread messages. Inbox zero.' : 'No messages.';
+  return `${errBanner}${loading ? '<div class="home-empty">Searching…</div>' : (rows || `<div class="home-empty">${emptyMsg}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
 }
 // Refresh only the message list in place, keeping the header/search box intact.
 function renderMailList(loading) {
@@ -2764,7 +2766,7 @@ function renderMail(loading) {
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
-    <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
+    <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
     <div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
