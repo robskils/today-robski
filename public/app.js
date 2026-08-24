@@ -943,6 +943,7 @@ async function openJournal() {
     state.journal = { entries, picking: false };
   } catch (e) { state.journal = { entries: [], picking: false }; toast(e.message); }
   renderJournalList();
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}   // always land at the top
   // Show the last-generated insights if any (quiet - no spinner).
   api('/api/journal/insights').then((r) => { if (state.journal && state.view.type === 'journal') { state.journal.insights = r; renderJournalList(); } }).catch(() => {});
 }
@@ -983,14 +984,14 @@ function renderJournalList() {
       ${modeLabel ? `<span class="j-card-mode">${modeLabel}</span>` : ''}</button>`;
   }).join('');
   const ins = j.insights;
-  const insightsCard = (ins && ins.text) ? `<div class="j-insights">
-      <div class="j-insights-h">✨ Insights<span class="j-insights-ts">${ins.from ? `from your last ${ins.from} entries` : ''}${ins.ts ? ` · ${esc(new Date(ins.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}` : ''}</span><span class="j-insights-tools"><button class="ghost" data-journal-insights title="Regenerate">↻</button><button class="ghost" data-journal-insights-x title="Hide">×</button></span></div>
-      <p class="j-insights-t">${esc(ins.text)}</p>
-      ${(ins.points || []).length ? `<ul class="j-insights-pts">${ins.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+  const open = !!j.insightsOpen;   // collapsed by default each visit
+  const insightsCard = (ins && ins.text) ? `<div class="j-insights ${open ? '' : 'collapsed'}">
+      <div class="j-insights-h" data-journal-insights-toggle><span class="acw-chev">${open ? '▾' : '▸'}</span>✨ Insights<span class="j-insights-ts">${ins.from ? `from your last ${ins.from} entries` : ''}${ins.ts ? ` · ${esc(new Date(ins.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}` : ''}</span>${open ? `<span class="j-insights-tools"><button class="ghost" data-journal-insights title="Regenerate">↻</button><button class="ghost" data-journal-insights-x title="Hide">×</button></span>` : ''}</div>
+      <div class="j-insights-body"><p class="j-insights-t">${esc(ins.text)}</p>${(ins.points || []).length ? `<ul class="j-insights-pts">${ins.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</div>
     </div>` : '';
   $('#pane').innerHTML = `
     ${pageCrumb('Journal')}
-    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><button class="ghost j-head-btn" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading…' : '✨ Insights'}</button><button class="ghost j-head-btn" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-start>+ New entry</button></div>`}</div>
+    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><button class="ghost j-head-btn" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading…' : '✨ Insights'}</button><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
@@ -4919,6 +4920,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-coaching]')) { newCoachingSession(); return; }
   if (t.closest('[data-journal-insights-x]')) { if (state.journal) { state.journal.insights = null; renderJournalList(); } return; }
   if (t.closest('[data-journal-insights]')) { journalInsights(); return; }
+  if (t.closest('[data-journal-insights-toggle]')) { if (state.journal) { state.journal.insightsOpen = !state.journal.insightsOpen; renderJournalList(); } return; }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }

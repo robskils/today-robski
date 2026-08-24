@@ -1770,9 +1770,17 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* ── Journal ─────────────────────────────────────────── */
 .j-head-act { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .j-head-btn { padding:11px 16px; font-size:15px; white-space:nowrap; }
+.j-head-primary { display:flex; gap:10px; }
+@media (max-width:820px){
+  .j-head-act { width:100%; }
+  .j-head-primary { flex:1; }
+  .j-head-primary .add-btn.wide { flex:1; }   /* Coaching + New entry share the row */
+}
 /* Journal insights card (scan of recent entries) */
 .j-insights { background:color-mix(in srgb,var(--accent) 6%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line)); border-radius:16px; padding:18px 20px; margin-bottom:18px; }
-.j-insights-h { display:flex; align-items:center; gap:10px; font-size:16.5px; font-weight:600; }
+.j-insights-h { display:flex; align-items:center; gap:10px; font-size:16.5px; font-weight:600; cursor:pointer; }
+.j-insights-h .acw-chev { font-size:11px; color:var(--ink-3); width:11px; flex:none; }
+.j-insights.collapsed .j-insights-body { display:none; }
 .j-insights-ts { font-size:12.5px; font-weight:400; color:var(--ink-3); }
 .j-insights-tools { margin-left:auto; display:flex; gap:4px; }
 .j-insights-tools .ghost { padding:4px 9px; }
