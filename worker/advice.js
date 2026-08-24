@@ -32,16 +32,16 @@ const safeJSON = (s) => { try { return s ? JSON.parse(s) : {}; } catch { return 
 // ── D1 helpers (Robski Life's block table) ──────────────────────────────
 async function blocksOfKind(env, kind) {
   const { results } = await env.DB.prepare(
-    'SELECT id, title, props, body, created_at FROM blocks WHERE kind = ? AND archived = 0 ORDER BY created_at DESC',
-  ).bind(kind).all();
+    'SELECT id, title, props, body, created_at FROM blocks WHERE kind = ? AND user_id = ? AND archived = 0 ORDER BY created_at DESC',
+  ).bind(kind, env.uid).all();
   return (results || []).map((r) => ({ ...r, props: safeJSON(r.props) }));
 }
 async function insertBlock(env, kind, title, props, body) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   await env.DB.prepare(
-    'INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived) VALUES (?, ?, NULL, 0, ?, ?, ?, ?, ?, 0)',
-  ).bind(id, kind, title, body ?? null, JSON.stringify(props || {}), now, now).run();
+    'INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id) VALUES (?, ?, NULL, 0, ?, ?, ?, ?, ?, 0, ?)',
+  ).bind(id, kind, title, body ?? null, JSON.stringify(props || {}), now, now, env.uid).run();
   return { id, kind, title, props: props || {}, body: body ?? null, created_at: now };
 }
 
@@ -200,18 +200,22 @@ ${digest}`;
   const schema = { type: 'object', properties: { text: { type: 'string' }, signals: { type: 'array', items: { type: 'string' } } }, required: ['text'] };
   const out = await geminiJSON(env, [{ text: prompt }], schema, { temperature: 0.4 });
   const payload = { text: String(out.text || '').trim(), signals: Array.isArray(out.signals) ? out.signals.slice(0, 8) : [], ts: new Date().toISOString(), from: vids.length };
-  try { await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_fin_trends', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(payload)).run(); } catch {}
+  try { await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'kv_fin_trends', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, JSON.stringify(payload)).run(); } catch {}
   return payload;
 }
 
 // Gated poll for the every-minute cron: only actually sweep every ~3h.
+// TODO(multi-tenant cron): loops user 1 only for now; iterate all users with
+// channels once the cron is reworked. Scoping env to uid 1 makes the block
+// helpers and settings throttle resolve to Robin's data.
 export async function maybePollChannels(env) {
   if (!env.GEMINI_API_KEY) return;
+  env = { ...env, uid: 1 };
   const now = Math.floor(Date.now() / 1000);
-  const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_fin_last_poll'").first().catch(() => null);
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = 1 AND key = 'kv_fin_last_poll'").first().catch(() => null);
   const last = row && Number(row.value) ? Number(row.value) : 0;
   if (now - last < 3 * 3600) return;
-  await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_fin_last_poll', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(now)).run();
+  await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (1, 'kv_fin_last_poll', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(String(now)).run();
   const res = await pollChannels(env);
   if (res.added) { try { await synthesiseTrends(env); } catch {} }
 }

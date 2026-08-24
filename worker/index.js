@@ -1800,8 +1800,10 @@ async function maybeReviewReminders(env) {
 // it's a single indexed read a minute, same shape as the brief.
 async function maybeSnapshotPortfolio(env) {
   if (!env.PORTFOLIO_DB) return;
+  // TODO(multi-tenant cron): snapshot every user's portfolio; user 1 for now.
+  env = { ...env, uid: 1 };
   const now = Math.floor(Date.now() / 1000);
-  const last = await env.PORTFOLIO_DB.prepare('SELECT ts FROM snapshots ORDER BY ts DESC LIMIT 1').first().catch(() => null);
+  const last = await env.PORTFOLIO_DB.prepare('SELECT ts FROM snapshots WHERE user_id = 1 ORDER BY ts DESC LIMIT 1').first().catch(() => null);
   if (last && now - last.ts < 6 * 3600) return;
   const data = await getPortfolio(env);
   await recordSnapshot(env, data.total, 0);

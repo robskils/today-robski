@@ -45,7 +45,7 @@ export function categorise(description, amount) {
 
 const safeJSON = (s) => { try { return s ? JSON.parse(s) : {}; } catch { return {}; } };
 async function txnHashes(env) {
-  const { results } = await env.DB.prepare("SELECT props FROM blocks WHERE kind = 'txn' AND archived = 0").all();
+  const { results } = await env.DB.prepare("SELECT props FROM blocks WHERE user_id = ? AND kind = 'txn' AND archived = 0").bind(env.uid).all();
   const set = new Set();
   for (const r of (results || [])) { const h = safeJSON(r.props).hash; if (h) set.add(h); }
   return set;
@@ -64,7 +64,7 @@ export async function importTxns(env, rows) {
   const now = new Date().toISOString();
   const stmts = [];
   let added = 0, skipped = 0;
-  const ins = env.DB.prepare('INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived) VALUES (?, ?, NULL, 0, ?, NULL, ?, ?, ?, 0)');
+  const ins = env.DB.prepare('INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id) VALUES (?, ?, NULL, 0, ?, NULL, ?, ?, ?, 0, ?)');
   for (const r of rows.slice(0, 5000)) {
     const date = String(r.date || '').slice(0, 10);
     const amount = Number(r.amount);
@@ -75,7 +75,7 @@ export async function importTxns(env, rows) {
     if (seen.has(hash)) { skipped++; continue; }
     seen.add(hash);
     const props = { date, amount, currency, description: desc, category: categorise(desc, amount), hash };
-    stmts.push(ins.bind(crypto.randomUUID(), 'txn', desc || date, JSON.stringify(props), now, now));
+    stmts.push(ins.bind(crypto.randomUUID(), 'txn', desc || date, JSON.stringify(props), now, now, env.uid));
     added++;
   }
   for (let i = 0; i < stmts.length; i += 40) await env.DB.batch(stmts.slice(i, i + 40));
@@ -116,6 +116,6 @@ Ignore opening/closing balances, running balances, subtotals, page headers/foote
 
 // Wipe every imported transaction (the page's "clear all" - it asks first).
 export async function clearTxns(env) {
-  await env.DB.prepare("DELETE FROM blocks WHERE kind = 'txn'").run();
+  await env.DB.prepare("DELETE FROM blocks WHERE user_id = ? AND kind = 'txn'").bind(env.uid).run();
   return { ok: true };
 }

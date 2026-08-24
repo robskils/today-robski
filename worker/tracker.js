@@ -51,7 +51,7 @@ export async function resolveTrackerItem(input, type) {
 }
 
 async function loadTrackerBlocks(env) {
-  const { results } = await env.DB.prepare("SELECT id, props FROM blocks WHERE kind = 'tracker' AND archived = 0 ORDER BY created_at").all();
+  const { results } = await env.DB.prepare("SELECT id, props FROM blocks WHERE user_id = ? AND kind = 'tracker' AND archived = 0 ORDER BY created_at").bind(env.uid).all();
   return (results || []).map((r) => ({ id: r.id, ...safeJSON(r.props) }));
 }
 
@@ -63,12 +63,12 @@ export async function addTrackerItem(env, input, type, category) {
     throw new Error(`${meta.symbol} is already tracked`);
   }
   const id = crypto.randomUUID(); const now = new Date().toISOString();
-  await env.DB.prepare('INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived) VALUES (?, ?, NULL, 0, ?, NULL, ?, ?, ?, 0)')
-    .bind(id, 'tracker', meta.name, JSON.stringify(meta), now, now).run();
+  await env.DB.prepare('INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id) VALUES (?, ?, NULL, 0, ?, NULL, ?, ?, ?, 0, ?)')
+    .bind(id, 'tracker', meta.name, JSON.stringify(meta), now, now, env.uid).run();
   return { id, ...meta };
 }
 export async function trackerCategories(env) {
-  const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_tracker_categories'").first().catch(() => null);
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'kv_tracker_categories'").bind(env.uid).first().catch(() => null);
   try { return row && row.value ? JSON.parse(row.value) : []; } catch { return []; }
 }
 

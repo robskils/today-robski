@@ -57,7 +57,8 @@ CREATE TABLE IF NOT EXISTS positions (
   qty    REAL NOT NULL,
   kind   TEXT NOT NULL,
   symbol TEXT,
-  sort   INTEGER NOT NULL DEFAULT 0
+  sort   INTEGER NOT NULL DEFAULT 0,
+  user_id INTEGER NOT NULL DEFAULT 1
 );`;
 
 async function fetchJSON(url, headers) {
@@ -81,18 +82,21 @@ const num = (v) => (typeof v === "number" && isFinite(v) && v > 0 ? v : null);
 
 export async function loadPositions(env) {
   const { results } = await env.PORTFOLIO_DB.prepare(
-    "SELECT id, code, name, venue, qty, kind, symbol, cost, sort FROM positions ORDER BY sort, id"
-  ).all();
+    "SELECT id, code, name, venue, qty, kind, symbol, cost, sort FROM positions WHERE user_id = ? ORDER BY sort, id"
+  ).bind(env.uid).all();
   if (results && results.length) return results;
+  // Seed the default holdings for Robin (user 1) only. A brand-new account
+  // starts with an empty portfolio, not a copy of someone else's.
+  if (env.uid !== 1) return [];
 
   const stmt = env.PORTFOLIO_DB.prepare(
-    "INSERT INTO positions (code, name, venue, qty, kind, symbol, sort) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO positions (code, name, venue, qty, kind, symbol, sort, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, 1)"
   );
   await env.PORTFOLIO_DB.batch(
     DEFAULT_POSITIONS.map((p) => stmt.bind(p.code, p.name, p.venue, p.qty, p.kind, p.symbol, p.sort))
   );
   const seeded = await env.PORTFOLIO_DB.prepare(
-    "SELECT id, code, name, venue, qty, kind, symbol, cost, sort FROM positions ORDER BY sort, id"
+    "SELECT id, code, name, venue, qty, kind, symbol, cost, sort FROM positions WHERE user_id = 1 ORDER BY sort, id"
   ).all();
   return seeded.results;
 }
@@ -117,24 +121,24 @@ function validate(p) {
 
 export async function addPosition(env, p) {
   const v = validate(p);
-  const row = await env.PORTFOLIO_DB.prepare("SELECT COALESCE(MAX(sort), 0) + 1 AS s FROM positions").first();
+  const row = await env.PORTFOLIO_DB.prepare("SELECT COALESCE(MAX(sort), 0) + 1 AS s FROM positions WHERE user_id = ?").bind(env.uid).first();
   const res = await env.PORTFOLIO_DB.prepare(
-    "INSERT INTO positions (code, name, venue, qty, kind, symbol, cost, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, v.cost, row.s).run();
+    "INSERT INTO positions (code, name, venue, qty, kind, symbol, cost, sort, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, v.cost, row.s, env.uid).run();
   return { id: res.meta.last_row_id, ...v };
 }
 
 export async function updatePosition(env, id, p) {
   const v = validate(p);
   const res = await env.PORTFOLIO_DB.prepare(
-    "UPDATE positions SET code = ?, name = ?, venue = ?, qty = ?, kind = ?, symbol = ?, cost = ? WHERE id = ?"
-  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, v.cost, Number(id)).run();
+    "UPDATE positions SET code = ?, name = ?, venue = ?, qty = ?, kind = ?, symbol = ?, cost = ? WHERE id = ? AND user_id = ?"
+  ).bind(v.code, v.name, v.venue, v.qty, v.kind, v.symbol, v.cost, Number(id), env.uid).run();
   if (!res.meta.changes) throw new Error("No such holding");
   return { id: Number(id), ...v };
 }
 
 export async function deletePosition(env, id) {
-  const res = await env.PORTFOLIO_DB.prepare("DELETE FROM positions WHERE id = ?").bind(Number(id)).run();
+  const res = await env.PORTFOLIO_DB.prepare("DELETE FROM positions WHERE id = ? AND user_id = ?").bind(Number(id), env.uid).run();
   if (!res.meta.changes) throw new Error("No such holding");
   return true;
 }
@@ -142,7 +146,7 @@ export async function deletePosition(env, id) {
 // Record a sale: reduce units (and cost basis, pro-rata by average cost), log a
 // realised-P&L row. proceeds = EUR actually received. Selling the lot removes it.
 export async function sellPosition(env, id, unitsSold, proceeds) {
-  const pos = await env.PORTFOLIO_DB.prepare("SELECT id, code, name, qty, cost FROM positions WHERE id = ?").bind(Number(id)).first();
+  const pos = await env.PORTFOLIO_DB.prepare("SELECT id, code, name, qty, cost FROM positions WHERE id = ? AND user_id = ?").bind(Number(id), env.uid).first();
   if (!pos) throw new Error("No such holding");
   const units = Number(unitsSold);
   if (!Number.isFinite(units) || units <= 0) throw new Error("Enter how many units you sold");
@@ -153,22 +157,22 @@ export async function sellPosition(env, id, unitsSold, proceeds) {
   const costOut = (pos.cost != null && pos.qty > 0) ? (pos.cost * (soldQty / pos.qty)) : null;
   const realised = costOut != null ? (got - costOut) : null;
   await env.PORTFOLIO_DB.prepare(
-    "INSERT INTO sales (ts, code, name, units, proceeds, cost_out, realised, currency) VALUES (?, ?, ?, ?, ?, ?, ?, 'EUR')"
-  ).bind(new Date().toISOString(), pos.code, pos.name, soldQty, got, costOut, realised).run();
+    "INSERT INTO sales (ts, code, name, units, proceeds, cost_out, realised, currency, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'EUR', ?)"
+  ).bind(new Date().toISOString(), pos.code, pos.name, soldQty, got, costOut, realised, env.uid).run();
   if (sellAll) {
-    await env.PORTFOLIO_DB.prepare("DELETE FROM positions WHERE id = ?").bind(Number(id)).run();
+    await env.PORTFOLIO_DB.prepare("DELETE FROM positions WHERE id = ? AND user_id = ?").bind(Number(id), env.uid).run();
   } else {
     const newQty = pos.qty - soldQty;
     const newCost = pos.cost != null ? Math.max(0, pos.cost - costOut) : null;
-    await env.PORTFOLIO_DB.prepare("UPDATE positions SET qty = ?, cost = ? WHERE id = ?").bind(newQty, newCost, Number(id)).run();
+    await env.PORTFOLIO_DB.prepare("UPDATE positions SET qty = ?, cost = ? WHERE id = ? AND user_id = ?").bind(newQty, newCost, Number(id), env.uid).run();
   }
   return { soldQty, proceeds: got, costOut, realised, sellAll };
 }
 
 export async function listSales(env, limit = 100) {
   const { results } = await env.PORTFOLIO_DB.prepare(
-    "SELECT id, ts, code, name, units, proceeds, cost_out, realised, currency FROM sales ORDER BY ts DESC LIMIT ?"
-  ).bind(limit).all().catch(() => ({ results: [] }));
+    "SELECT id, ts, code, name, units, proceeds, cost_out, realised, currency FROM sales WHERE user_id = ? ORDER BY ts DESC LIMIT ?"
+  ).bind(env.uid, limit).all().catch(() => ({ results: [] }));
   return results || [];
 }
 
@@ -290,8 +294,10 @@ const HOUR = 3600;
 
 export const SNAPSHOT_SCHEMA = `
 CREATE TABLE IF NOT EXISTS snapshots (
-  ts    INTEGER PRIMARY KEY,   -- unix seconds
-  total REAL NOT NULL          -- EUR
+  ts      INTEGER NOT NULL,        -- unix seconds
+  total   REAL NOT NULL,           -- EUR
+  user_id INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (user_id, ts)
 );`;
 
 /**
@@ -303,13 +309,13 @@ export async function recordSnapshot(env, total, minGap = HOUR) {
   try {
     if (minGap > 0) {
       const last = await env.PORTFOLIO_DB.prepare(
-        "SELECT ts FROM snapshots ORDER BY ts DESC LIMIT 1"
-      ).first();
+        "SELECT ts FROM snapshots WHERE user_id = ? ORDER BY ts DESC LIMIT 1"
+      ).bind(env.uid).first();
       if (last && now - last.ts < minGap) return;
     }
     await env.PORTFOLIO_DB.prepare(
-      "INSERT INTO snapshots (ts, total) VALUES (?, ?) ON CONFLICT(ts) DO NOTHING"
-    ).bind(now, total).run();
+      "INSERT INTO snapshots (ts, total, user_id) VALUES (?, ?, ?) ON CONFLICT(user_id, ts) DO NOTHING"
+    ).bind(now, total, env.uid).run();
   } catch {
     /* history is a nicety; never fail a page load over it */
   }
@@ -331,8 +337,8 @@ export async function performance(env, total) {
   let rows = [];
   try {
     const res = await env.PORTFOLIO_DB.prepare(
-      "SELECT ts, total FROM snapshots WHERE ts >= ? ORDER BY ts"
-    ).bind(Math.floor(Date.now() / 1000) - 40 * 24 * HOUR).all();
+      "SELECT ts, total FROM snapshots WHERE user_id = ? AND ts >= ? ORDER BY ts"
+    ).bind(env.uid, Math.floor(Date.now() / 1000) - 40 * 24 * HOUR).all();
     rows = res.results || [];
   } catch {
     return WINDOWS.map((w) => ({ label: w.label, pct: null, abs: null }));
