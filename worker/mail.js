@@ -54,12 +54,16 @@ async function saveBlocked(env, id, list) {
 // The password (pass_enc) is never exposed. Host/port/username are connection
 // settings, not secrets, so the account editor can show and change them.
 const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '', blocked: blockedList(a), imapHost: a.imap_host, imapPort: a.imap_port, smtpHost: a.smtp_host, smtpPort: a.smtp_port, username: a.username });
-async function listAccounts(env) {
-  const { results } = await env.DB.prepare('SELECT * FROM mail_accounts ORDER BY position, email').all();
+// uid scopes to one tenant's accounts (the request path). The cron cache-warmer
+// passes no uid and gets EVERY account, across all users, on purpose.
+async function listAccounts(env, uid = null) {
+  const { results } = uid == null
+    ? await env.DB.prepare('SELECT * FROM mail_accounts ORDER BY position, email').all()
+    : await env.DB.prepare('SELECT * FROM mail_accounts WHERE user_id = ? ORDER BY position, email').bind(uid).all();
   return results;
 }
-async function getAcct(env, id) {
-  return env.DB.prepare('SELECT * FROM mail_accounts WHERE id = ?').bind(id).first();
+async function getAcct(env, id, uid = env.uid) {
+  return env.DB.prepare('SELECT * FROM mail_accounts WHERE id = ? AND user_id = ?').bind(id, uid).first();
 }
 
 // ── a byte-buffered line/literal reader over a socket ─────────────────
@@ -651,7 +655,7 @@ export async function handleMail(request, env, url, json, err) {
   const sub = seg[0] || '';
 
   try {
-    if (sub === 'accounts' && method === 'GET') return json((await listAccounts(env)).map(publicAccount), request);
+    if (sub === 'accounts' && method === 'GET') return json((await listAccounts(env, env.uid)).map(publicAccount), request);
 
     if (sub === 'accounts' && method === 'POST') {
       const b = await request.json();
@@ -668,16 +672,19 @@ export async function handleMail(request, env, url, json, err) {
       let warning = null;
       try { const im = await imapOpen(env, acct); try { await im.login(); } finally { await im.logout(); } }
       catch (e) { warning = `Saved, but the sign-in check failed (${e.message}). Check the settings if mail doesn't load.`; }
-      const pos = ((await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM mail_accounts').first()) || {}).p || 0;
-      await env.DB.prepare('INSERT INTO mail_accounts (id,email,name,color,imap_host,imap_port,smtp_host,smtp_port,username,pass_enc,position) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-        .bind(acct.id, acct.email, acct.name, acct.color, acct.imap_host, acct.imap_port, acct.smtp_host, acct.smtp_port, acct.username, acct.pass_enc, pos).run();
+      const pos = ((await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM mail_accounts WHERE user_id = ?').bind(env.uid).first()) || {}).p || 0;
+      await env.DB.prepare('INSERT INTO mail_accounts (id,email,name,color,imap_host,imap_port,smtp_host,smtp_port,username,pass_enc,position,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+        .bind(acct.id, acct.email, acct.name, acct.color, acct.imap_host, acct.imap_port, acct.smtp_host, acct.smtp_port, acct.username, acct.pass_enc, pos, env.uid).run();
       return json({ ...publicAccount(acct), warning }, request, 201);
     }
 
     if (sub === 'accounts' && method === 'DELETE') {
       const id = seg[1];
+      // Ownership check first: only touch this account's caches if it is the
+      // signed-in user's, or a delete could clear another tenant's cache rows.
+      if (!(await getAcct(env, id))) return err('account not found', request, 404);
       await env.DB.batch([
-        env.DB.prepare('DELETE FROM mail_accounts WHERE id = ?').bind(id),
+        env.DB.prepare('DELETE FROM mail_accounts WHERE id = ? AND user_id = ?').bind(id, env.uid),
         env.DB.prepare('DELETE FROM mail_cache WHERE account = ?').bind(id),
         env.DB.prepare('DELETE FROM mail_cache_meta WHERE account = ?').bind(id),   // no orphan = no ghost unread
       ]);
@@ -699,7 +706,7 @@ export async function handleMail(request, env, url, json, err) {
       if ('username' in b) { fields.push('username = ?'); vals.push(b.username || existing.email); }
       // A new password is re-encrypted; an empty one leaves the stored one alone.
       if (b.pass) { fields.push('pass_enc = ?'); vals.push(await encryptPass(env, b.pass)); }
-      if (fields.length) { vals.push(seg[1]); await env.DB.prepare(`UPDATE mail_accounts SET ${fields.join(', ')} WHERE id = ?`).bind(...vals).run(); }
+      if (fields.length) { vals.push(seg[1], env.uid); await env.DB.prepare(`UPDATE mail_accounts SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`).bind(...vals).run(); }
       // If credentials changed, re-run the courtesy sign-in check so the editor
       // can flag a bad password right away (never blocks the save).
       let warning = null;
@@ -716,7 +723,7 @@ export async function handleMail(request, env, url, json, err) {
     if (sub === 'unread' && method === 'GET') {
       // Only accounts that still exist - a deleted mailbox left an orphan meta
       // row that kept the badge stuck on a ghost unread.
-      const { results } = await env.DB.prepare("SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX' AND account IN (SELECT id FROM mail_accounts)").all();
+      const { results } = await env.DB.prepare("SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX' AND account IN (SELECT id FROM mail_accounts WHERE user_id = ?)").bind(env.uid).all();
       const unseen = {}; let total = 0; (results || []).forEach((r) => { unseen[r.account] = r.unseen; total += r.unseen || 0; });
       return json({ unseen, total }, request);
     }
@@ -724,7 +731,7 @@ export async function handleMail(request, env, url, json, err) {
     // Instant inbox from the D1 cache (no IMAP). 'all' spans every account.
     if (sub === 'cached' && method === 'GET') {
       const accParam = url.searchParams.get('account') || 'all';
-      const accts = await listAccounts(env);
+      const accts = await listAccounts(env, env.uid);
       const ids = accParam === 'all' ? accts.map((a) => a.id) : [accParam];
       const { messages, unseen } = await readCachedInbox(env, ids);
       return json({ messages, unseen, cached: true }, request);

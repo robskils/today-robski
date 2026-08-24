@@ -1885,7 +1885,12 @@ export default {
         && String(p.uid) === (url.searchParams.get('uid') || '')
         && (partQ != null ? String(p.part) === partQ : String(p.idx) === (url.searchParams.get('idx') || '0'));
       if (!ok) return err('this attachment link has expired - reopen the email', request, 401);
-      return handleMail(request, env, url, json, err);
+      // This path is pre-auth-gate (signed token, not a Bearer JWT), so env.uid
+      // isn't set - but the token binds a specific account. Scope to that
+      // account's owner so the tenant-scoped getAcct in handleMail resolves it.
+      const owner = await env.DB.prepare('SELECT user_id FROM mail_accounts WHERE id = ?').bind(p.a).first();
+      if (!owner) return err('unknown account', request, 400);
+      return handleMail(request, { ...env, uid: owner.user_id }, url, json, err);
     }
 
     // Public: getting in. Rate limited inside; see auth.js.
