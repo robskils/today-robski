@@ -3,6 +3,10 @@
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';
+// The wordmark: <owner> Daybook. Owner is the account holder's name — hard-coded
+// to Robski while single-tenant; becomes the signed-in account's name once each
+// user has their own tara.daybook.fyi.
+const BRAND = { owner: 'Robski', app: 'Daybook' };
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const token = () => localStorage.getItem(KEY) || '';
@@ -472,7 +476,7 @@ function renderNav() {
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
-    <div class="nav-brand" data-view-home title="Home">Robski<span class="dot">·</span><em>Life</em></div>
+    <div class="nav-brand" data-view-home title="Home">${esc(BRAND.owner)}<span class="dot"> </span><em>${esc(BRAND.app)}</em></div>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
@@ -6331,7 +6335,7 @@ let gateStep = 'email', gateEmail = '';
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><em>Life</em><span class="dot">·</span>Robski</div>
+      <div class="gate2-mark">${esc(BRAND.owner)}<span class="dot"> </span><em>${esc(BRAND.app)}</em></div>
       <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
