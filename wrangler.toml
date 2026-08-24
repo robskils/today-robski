@@ -64,6 +64,53 @@ BRIEF_EMAIL = "robin@lumley-savile.com"
 [triggers]
 crons = ["* * * * *"]
 
+# ── Staging: the Daybook multi-tenant build ───────────────────────────
+# A SEPARATE Worker (daybook-staging.<subdomain>.workers.dev) on its OWN D1 and
+# R2 bucket, so the multi-tenant rewrite can't touch the live daily-driver.
+#   Deploy:  npm run deploy:staging   (npx wrangler deploy --env staging)
+#   Schema:  npm run db:staging       (applies worker/schema.sql to the staging DB)
+# Deliberately NO [env.staging.triggers]: staging must never run the every-minute
+# cron, or it would double-send Robin's SMS alerts, morning brief and mail pushes.
+# Secrets are per-environment and must be set by Robin, e.g.
+#   npx wrangler secret put AUTH_SECRET --env staging
+# (see the list at the bottom of this file; without them staging can't sign in).
+[env.staging]
+name = "daybook-staging"
+workers_dev = true
+# CRITICAL: named envs inherit the top-level [[routes]] and [triggers] unless
+# they set their own. Without these two overrides, `deploy --env staging` would
+# reattach today.robski.uk / life.robski.uk to the STAGING worker (pointing the
+# live domains at the empty staging DB) and try to claim a cron. Keep them empty:
+# staging lives ONLY at daybook-staging.<subdomain>.workers.dev, with no cron.
+routes = []
+
+[env.staging.triggers]
+crons = []
+
+[env.staging.vars]
+GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
+# Only Robin to start; invite-only test users get added here (or, once the users
+# table drives access, this list stops being the gate).
+ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robinsavile.com"
+FROM_EMAIL = "Robski Today <today@incremento.co>"
+BRIEF_EMAIL = "robin@lumley-savile.com"
+
+# Both DB and PORTFOLIO_DB point at the one staging database: on staging the
+# portfolio is just more tenant-scoped tables, not the shared live portfolio DB.
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "daybook-staging"
+database_id = "b7f2b6c9-ee72-44df-a493-73bb7b6a1ad5"
+
+[[env.staging.d1_databases]]
+binding = "PORTFOLIO_DB"
+database_name = "daybook-staging"
+database_id = "b7f2b6c9-ee72-44df-a493-73bb7b6a1ad5"
+
+[[env.staging.r2_buckets]]
+binding = "ATTACHMENTS"
+bucket_name = "daybook-staging-attachments"
+
 # ── D1 ────────────────────────────────────────────────────────────────
 # Created in WEUR. Schema: npx wrangler d1 execute today-robski --file worker/schema.sql --remote
 [[d1_databases]]
