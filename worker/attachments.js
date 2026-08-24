@@ -9,15 +9,18 @@ const MAX_BYTES = 25 * 1024 * 1024; // 25 MB per file
 
 const keyFor = (blockId, attId) => `att/${blockId}/${attId}`;
 
+// Scoped to the signed-in user: attachments hang off a block, so a user may only
+// touch attachments on a block they own. A non-owned (or missing) id reads null,
+// and the handler bails before it ever reaches R2.
 async function loadProps(env, id) {
-  const row = await env.DB.prepare('SELECT props FROM blocks WHERE id = ?').bind(id).first();
+  const row = await env.DB.prepare('SELECT props FROM blocks WHERE id = ? AND user_id = ?').bind(id, env.uid).first();
   if (!row) return null;
   try { return row.props ? JSON.parse(row.props) : {}; } catch { return {}; }
 }
 
 async function saveProps(env, id, props) {
-  await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?')
-    .bind(JSON.stringify(props), new Date().toISOString(), id).run();
+  await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+    .bind(JSON.stringify(props), new Date().toISOString(), id, env.uid).run();
 }
 
 export async function handleAttachments(request, env, url, json, err) {

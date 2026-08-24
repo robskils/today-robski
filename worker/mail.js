@@ -595,10 +595,12 @@ async function lightFetchMessage(im, uid) {
 export async function syncMailCache(env, { force = false } = {}) {
   const now = Date.now();
   if (!force) {
-    const row = await env.DB.prepare("SELECT value FROM settings WHERE key='mail_sync_at'").first();
+    // Global cron throttle (warms every account), so it lives on the system row
+    // user_id=1 rather than per-tenant. settings PK is (user_id, key).
+    const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id=1 AND key='mail_sync_at'").first();
     if (row && now - Number(row.value || 0) < 120000) return { newUnread: 0 };   // at most once every 2 min
   }
-  await env.DB.prepare("INSERT INTO settings (key,value) VALUES ('mail_sync_at',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
+  await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,'mail_sync_at',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
   const accts = await listAccounts(env);
   const results = await Promise.allSettled(accts.map((a) => syncOneInbox(env, a)));
   // Count genuinely new unread arrivals across every account (message-id based,
