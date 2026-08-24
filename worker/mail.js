@@ -805,8 +805,8 @@ export async function handleMail(request, env, url, json, err) {
           for (const m of messages.filter(isBlocked)) { try { await im.move(m.uid, 'Junk'); } catch {} }
           messages = messages.filter((m) => !isBlocked(m));
         }
-        const unseen = mailbox === 'INBOX' ? await im.unseenCount() : 0;
-        return json({ total, unseen, offset, messages }, request);
+        const unseenTotal = mailbox === 'INBOX' ? await im.unseenCount() : 0;
+        return json({ total, unseen: unseenTotal, offset, messages }, request);
       } finally { await im.logout(); }
     }
 
