@@ -751,8 +751,12 @@ const EXPORT_TABLES = [
 async function handleExport(request, env) {
   const dump = {};
   for (const t of EXPORT_TABLES) {
-    // Table names here are a fixed allow-list, never user input.
-    const { results } = await env.DB.prepare(`SELECT * FROM ${t}`).all();
+    // Table names here are a fixed allow-list, never user input. Every table but
+    // `quotes` (shared reference data) is tenant-owned, so scope the dump to the
+    // signed-in user - an export must never carry another account's rows.
+    const { results } = t === 'quotes'
+      ? await env.DB.prepare('SELECT * FROM quotes').all()
+      : await env.DB.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(env.uid).all();
     dump[t] = results;
   }
   const now = new Date();
@@ -975,9 +979,11 @@ async function runAlerts(env) {
 
   // A 3-minute window (4-6 min out) absorbs a skipped or late cron tick
   // without alerting twice, since alerted_min guards the repeat.
+  // TODO(multi-tenant cron): user 1 only, so a future user's slots never text
+  // Robin's phone. Rework to per-user alert phones before others use alerts.
   const due = await env.DB.prepare(
     `SELECT id, lane, title, start_min FROM slots
-      WHERE day = ? AND start_min IS NOT NULL
+      WHERE user_id = 1 AND day = ? AND start_min IS NOT NULL
         AND start_min BETWEEN ? AND ?
         AND (alerted_min IS NULL OR alerted_min != start_min)`,
   ).bind(now.date, target - 1, target + 1).all();
@@ -990,7 +996,7 @@ async function runAlerts(env) {
     // Only mark it sent if it actually sent. A GatewayAPI hiccup should let the
     // next tick try again while the block is still inside the window.
     if (r.ok) {
-      await env.DB.prepare('UPDATE slots SET alerted_min = ? WHERE id = ?')
+      await env.DB.prepare('UPDATE slots SET alerted_min = ? WHERE id = ? AND user_id = 1')
         .bind(s.start_min, s.id).run();
     }
   }
@@ -1035,7 +1041,7 @@ async function runDailyBrief(env, { force = false } = {}) {
       // that has sat for a month deserves reading.
       env.DB.prepare(
         `SELECT title, props, created_at FROM blocks
-          WHERE kind = 'task' AND archived = 0
+          WHERE user_id = 1 AND kind = 'task' AND archived = 0
             AND json_extract(props, '$.priority') = 'P1'
             AND IFNULL(json_extract(props, '$.done'), 0) != 1
             AND (json_extract(props, '$.snooze') IS NULL OR json_extract(props, '$.snooze') <= ?)
@@ -1189,12 +1195,12 @@ async function handleDay(request, env, url) {
   const [slotsRes, settings, cal, quote, actsRes, linksRes] = await Promise.all([
     // Floating blocks (start_min NULL) sort last; the client splits them out.
     env.DB.prepare(
-      'SELECT * FROM slots WHERE day = ? ORDER BY start_min IS NULL, start_min',
-    ).bind(day).all(),
+      'SELECT * FROM slots WHERE day = ? AND user_id = ? ORDER BY start_min IS NULL, start_min',
+    ).bind(day, env.uid).all(),
     getSettings(env),
     calendarEvents(env, day),
     quoteForDay(env, day),
-    env.DB.prepare('SELECT * FROM activities ORDER BY lane, position, id').all(),
+    env.DB.prepare('SELECT * FROM activities WHERE user_id = ? ORDER BY lane, position, id').bind(env.uid).all(),
     // The tasks inside each of today's blocks, now Life task blocks (slot_tasks.
     // tana_id holds the block id).
     env.DB.prepare(
@@ -1203,9 +1209,9 @@ async function handleDay(request, env, url) {
          FROM slot_tasks st
          JOIN slots s ON s.id = st.slot_id
          LEFT JOIN blocks b ON b.id = st.tana_id
-        WHERE s.day = ?
+        WHERE s.day = ? AND s.user_id = ?
         ORDER BY st.slot_id, st.position`,
-    ).bind(day).all(),
+    ).bind(day, env.uid).all(),
   ]);
 
   const slots = slotsRes.results;
@@ -1257,11 +1263,11 @@ async function handleTasks(request, env, url) {
   // Pull from Robski Life: open, priority-tagged task blocks.
   const { results } = await env.DB.prepare(
     `SELECT id, title, props, created_at FROM blocks
-      WHERE kind = 'task' AND archived = 0
+      WHERE user_id = ? AND kind = 'task' AND archived = 0
         AND (json_extract(props,'$.done') IS NULL OR json_extract(props,'$.done') = 0)
         AND COALESCE(json_extract(props,'$.priority'), '') != ''
         AND (json_extract(props,'$.snooze') IS NULL OR json_extract(props,'$.snooze') <= ?)`,
-  ).bind(todayLisbon()).all();
+  ).bind(env.uid, todayLisbon()).all();
 
   const areaNames = Object.fromEntries(cfg.areas.map((a) => [a.id, a.title]));
   const all = results.map((r) => blockToTask(r, cfg.areaMap, areaNames));
@@ -1304,12 +1310,12 @@ async function createSlot(request, env) {
   let res;
   try {
     res = await env.DB.prepare(
-      `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, event_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, event_id, created_at, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
     ).bind(
       day, b.lane, b.tana_id || null, b.title,
       startMin, Math.round(duration), b.note || null, safeUrl(b.url), eventId,
-      new Date().toISOString(),
+      new Date().toISOString(), env.uid,
     ).first();
   } catch (e) {
     if (eventId && /UNIQUE|constraint/i.test(e.message)) {
@@ -1321,8 +1327,8 @@ async function createSlot(request, env) {
   // A block created from a task starts as a one-task container.
   if (b.tana_id) {
     await env.DB.prepare(
-      'INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position) VALUES (?, ?, 0)',
-    ).bind(res.id, b.tana_id).run();
+      'INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position, user_id) VALUES (?, ?, 0, ?)',
+    ).bind(res.id, b.tana_id, env.uid).run();
   }
 
   res.tasks = [];
@@ -1335,25 +1341,25 @@ async function addSlotTask(request, env, slotId) {
   const tanaId = String(b.tana_id || '').trim();
   if (!tanaId) return err('tana_id required', request);
 
-  const slot = await env.DB.prepare('SELECT id FROM slots WHERE id = ?').bind(slotId).first();
+  const slot = await env.DB.prepare('SELECT id FROM slots WHERE id = ? AND user_id = ?').bind(slotId, env.uid).first();
   if (!slot) return err('not found', request, 404);
-  const task = await env.DB.prepare("SELECT id FROM blocks WHERE id = ? AND kind = 'task'").bind(tanaId).first();
+  const task = await env.DB.prepare("SELECT id FROM blocks WHERE id = ? AND kind = 'task' AND user_id = ?").bind(tanaId, env.uid).first();
   if (!task) return err('no such task', request, 404);
 
   const next = await env.DB.prepare(
-    'SELECT COALESCE(MAX(position) + 1, 0) AS p FROM slot_tasks WHERE slot_id = ?',
-  ).bind(slotId).first();
+    'SELECT COALESCE(MAX(position) + 1, 0) AS p FROM slot_tasks WHERE slot_id = ? AND user_id = ?',
+  ).bind(slotId, env.uid).first();
 
   await env.DB.prepare(
-    'INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position) VALUES (?, ?, ?)',
-  ).bind(slotId, tanaId, next.p).run();
+    'INSERT OR IGNORE INTO slot_tasks (slot_id, tana_id, position, user_id) VALUES (?, ?, ?, ?)',
+  ).bind(slotId, tanaId, next.p, env.uid).run();
 
   return json({ ok: true }, request);
 }
 
 async function removeSlotTask(env, request, slotId, tanaId) {
-  await env.DB.prepare('DELETE FROM slot_tasks WHERE slot_id = ? AND tana_id = ?')
-    .bind(slotId, tanaId).run();
+  await env.DB.prepare('DELETE FROM slot_tasks WHERE slot_id = ? AND tana_id = ? AND user_id = ?')
+    .bind(slotId, tanaId, env.uid).run();
   return json({ ok: true }, request);
 }
 
@@ -1366,15 +1372,15 @@ async function setSlotTaskDuration(env, request, slotId, tanaId) {
     return err('bad duration', request);
   }
   const res = await env.DB.prepare(
-    'UPDATE slot_tasks SET duration = ? WHERE slot_id = ? AND tana_id = ?',
-  ).bind(Math.round(duration), slotId, tanaId).run();
+    'UPDATE slot_tasks SET duration = ? WHERE slot_id = ? AND tana_id = ? AND user_id = ?',
+  ).bind(Math.round(duration), slotId, tanaId, env.uid).run();
   if (!res.meta.changes) return err('not in that block', request, 404);
   return json({ ok: true }, request);
 }
 
 async function updateSlot(request, env, id) {
   const b = await request.json();
-  const existing = await env.DB.prepare('SELECT * FROM slots WHERE id = ?').bind(id).first();
+  const existing = await env.DB.prepare('SELECT * FROM slots WHERE id = ? AND user_id = ?').bind(id, env.uid).first();
   if (!existing) return err('not found', request, 404);
 
   // Same bounds as createSlot: a negative duration would render a broken
@@ -1403,9 +1409,9 @@ async function updateSlot(request, env, id) {
   if (b.done !== undefined) { fields.push('done = ?'); binds.push(b.done ? 1 : 0); }
   if (!fields.length) return json(existing, request);
 
-  binds.push(id);
+  binds.push(id, env.uid);
   const updated = await env.DB.prepare(
-    `UPDATE slots SET ${fields.join(', ')} WHERE id = ? RETURNING *`,
+    `UPDATE slots SET ${fields.join(', ')} WHERE id = ? AND user_id = ? RETURNING *`,
   ).bind(...binds).first();
 
   // Ticking a block ticks everything in it. The block is the session; saying it
@@ -1417,8 +1423,8 @@ async function updateSlot(request, env, id) {
     const { results } = await env.DB.prepare(
       `SELECT st.tana_id FROM slot_tasks st
          JOIN blocks bl ON bl.id = st.tana_id AND bl.kind = 'task'
-        WHERE st.slot_id = ? AND COALESCE(json_extract(bl.props, '$.done'), 0) != ?`,
-    ).bind(id, b.done ? 1 : 0).all();
+        WHERE st.slot_id = ? AND st.user_id = ? AND COALESCE(json_extract(bl.props, '$.done'), 0) != ?`,
+    ).bind(id, env.uid, b.done ? 1 : 0).all();
     for (const r of results) await setTaskDone(env, r.tana_id, !!b.done);
   }
 
@@ -1451,7 +1457,7 @@ function nextRepeatDate(repeat, anchorISO, today) {
 }
 
 async function setTaskDone(env, id, done) {
-  const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND kind = 'task'").bind(id).first();
+  const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND kind = 'task' AND user_id = ?").bind(id, env.uid).first();
   let p = {}; try { p = row && row.props ? JSON.parse(row.props) : {}; } catch {}
   let slotDone = !!done;
   if (done && p.repeat) {
@@ -1465,24 +1471,25 @@ async function setTaskDone(env, id, done) {
     p.done = !!done;
   }
   await env.DB.batch([
-    env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?')
-      .bind(JSON.stringify(p), new Date().toISOString(), id),
+    env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+      .bind(JSON.stringify(p), new Date().toISOString(), id, env.uid),
     // A block holding exactly this one task *is* this task, so it follows: tick
     // the task and the ring counts the time. A multi-task block is a session and
     // stays open - you tick the block when it's over.
     env.DB.prepare(
       `UPDATE slots SET done = ?
-        WHERE id IN (SELECT slot_id FROM slot_tasks WHERE tana_id = ?)
-          AND (SELECT COUNT(*) FROM slot_tasks x WHERE x.slot_id = slots.id) = 1`,
-    ).bind(slotDone ? 1 : 0, id),
+        WHERE user_id = ?
+          AND id IN (SELECT slot_id FROM slot_tasks WHERE tana_id = ? AND user_id = ?)
+          AND (SELECT COUNT(*) FROM slot_tasks x WHERE x.slot_id = slots.id AND x.user_id = ?) = 1`,
+    ).bind(slotDone ? 1 : 0, env.uid, id, env.uid, env.uid),
   ]);
   return p;
 }
 
 async function updateTask(request, env, id) {
   const b = await request.json().catch(() => ({}));
-  const existing = await env.DB.prepare("SELECT title, props FROM blocks WHERE id = ? AND kind = 'task'")
-    .bind(id).first();
+  const existing = await env.DB.prepare("SELECT title, props FROM blocks WHERE id = ? AND kind = 'task' AND user_id = ?")
+    .bind(id, env.uid).first();
   if (!existing) return err('not found', request, 404);
   let p = {}; try { p = existing.props ? JSON.parse(existing.props) : {}; } catch {}
 
@@ -1491,10 +1498,10 @@ async function updateTask(request, env, id) {
     if (!title) return err('title required', request);
     if (title !== existing.title) {
       await env.DB.batch([
-        env.DB.prepare('UPDATE blocks SET title = ?, updated_at = ? WHERE id = ?').bind(title, new Date().toISOString(), id),
+        env.DB.prepare('UPDATE blocks SET title = ?, updated_at = ? WHERE id = ? AND user_id = ?').bind(title, new Date().toISOString(), id, env.uid),
         // A block titled after the task keeps in step; a category block that
         // merely holds it keeps its own name.
-        env.DB.prepare('UPDATE slots SET title = ? WHERE tana_id = ? AND title = ?').bind(title, id, existing.title),
+        env.DB.prepare('UPDATE slots SET title = ? WHERE tana_id = ? AND title = ? AND user_id = ?').bind(title, id, existing.title, env.uid),
       ]);
     }
   }
@@ -1518,13 +1525,13 @@ async function createActivity(request, env) {
   if (!Number.isFinite(duration) || duration < 5 || duration > 720) return err('bad duration', request);
 
   const next = await env.DB.prepare(
-    'SELECT COALESCE(MAX(position), -1) + 1 AS p FROM activities WHERE lane = ?',
-  ).bind(b.lane).first();
+    'SELECT COALESCE(MAX(position), -1) + 1 AS p FROM activities WHERE lane = ? AND user_id = ?',
+  ).bind(b.lane, env.uid).first();
 
   const row = await env.DB.prepare(
-    `INSERT INTO activities (lane, title, url, duration, position)
-     VALUES (?, ?, ?, ?, ?) RETURNING *`,
-  ).bind(b.lane, title, safeUrl(b.url), Math.round(duration), next.p).first();
+    `INSERT INTO activities (lane, title, url, duration, position, user_id)
+     VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
+  ).bind(b.lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid).first();
 
   return json(row, request, 201);
 }
@@ -1547,9 +1554,9 @@ async function updateActivity(request, env, id) {
   }
   if (!fields.length) return err('nothing to update', request);
 
-  binds.push(id);
+  binds.push(id, env.uid);
   const row = await env.DB.prepare(
-    `UPDATE activities SET ${fields.join(', ')} WHERE id = ? RETURNING *`,
+    `UPDATE activities SET ${fields.join(', ')} WHERE id = ? AND user_id = ? RETURNING *`,
   ).bind(...binds).first();
   if (!row) return err('not found', request, 404);
   return json(row, request);
@@ -1575,11 +1582,11 @@ async function createTask(request, env) {
   const now = new Date().toISOString();
   const props = { area: b.area || null, priority: b.priority || null, done: false };
   if (duration !== null) props.duration = duration;
-  const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
+  const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL AND user_id = ?').bind(env.uid).first();
   await env.DB.prepare(
-    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
-     VALUES (?, 'task', NULL, ?, ?, '', ?, ?, ?, 0)`,
-  ).bind(id, posRow.p, title, JSON.stringify(props), now, now).run();
+    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
+     VALUES (?, 'task', NULL, ?, ?, '', ?, ?, ?, 0, ?)`,
+  ).bind(id, posRow.p, title, JSON.stringify(props), now, now, env.uid).run();
 
   return json({ ok: true, tana_id: id }, request, 201);
 }
@@ -1606,7 +1613,7 @@ async function importContacts(request, env) {
     ? 'e:' + email.toLowerCase()
     : 'n:' + [String(name || '').trim().toLowerCase(), String(phone || '').replace(/\s/g, ''), String(birthday || '')].join('#'));
 
-  const rows = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind = 'contact'").all();
+  const rows = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind = 'contact' AND user_id = ?").bind(env.uid).all();
   const byKey = new Map();
   for (const r of (rows.results || [])) {
     let p = {}; try { p = r.props ? JSON.parse(r.props) : {}; } catch {}
@@ -1615,7 +1622,7 @@ async function importContacts(request, env) {
   }
 
   const now = new Date().toISOString();
-  const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
+  const posRow = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL AND user_id = ?').bind(env.uid).first();
   let pos = posRow.p;
   const insertedKeys = new Set();
   const inserts = [], updates = [];
@@ -1635,7 +1642,7 @@ async function importContacts(request, env) {
       if (address && JSON.stringify(address) !== JSON.stringify(p.address || null)) { p.address = address; changed = true; }
       if (phone && !p.phone) { p.phone = phone; changed = true; }
       if (birthday && !p.birthday) { p.birthday = birthday; changed = true; }
-      if (changed) updates.push(env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(p), now, existing.id));
+      if (changed) updates.push(env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?').bind(JSON.stringify(p), now, existing.id, env.uid));
       else skipped++;
     } else if (insertedKeys.has(key)) {
       skipped++;   // duplicate within the same file
@@ -1643,9 +1650,9 @@ async function importContacts(request, env) {
       insertedKeys.add(key);
       const props = { email: email || null, phone, birthday, address };
       inserts.push(env.DB.prepare(
-        `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
-         VALUES (?, 'contact', NULL, ?, ?, '', ?, ?, ?, 0)`,
-      ).bind(crypto.randomUUID(), pos++, name, JSON.stringify(props), now, now));
+        `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
+         VALUES (?, 'contact', NULL, ?, ?, '', ?, ?, ?, 0, ?)`,
+      ).bind(crypto.randomUUID(), pos++, name, JSON.stringify(props), now, now, env.uid));
     }
   }
   const all = [...inserts, ...updates];
@@ -1696,13 +1703,13 @@ async function handlePush(request, env, path, json, err) {
     const s = b.subscription || b;
     if (!s || !s.endpoint || !s.keys || !s.keys.p256dh || !s.keys.auth) return err('bad subscription', request, 400);
     await env.DB.prepare(
-      'INSERT INTO push_subs (endpoint,p256dh,auth,email,created_at) VALUES (?,?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth, email=excluded.email',
-    ).bind(s.endpoint, s.keys.p256dh, s.keys.auth, await authedEmail(request, env), new Date().toISOString()).run();
+      'INSERT INTO push_subs (endpoint,p256dh,auth,email,created_at,user_id) VALUES (?,?,?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth, email=excluded.email, user_id=excluded.user_id',
+    ).bind(s.endpoint, s.keys.p256dh, s.keys.auth, await authedEmail(request, env), new Date().toISOString(), env.uid).run();
     return json({ ok: true }, request);
   }
   if (path === '/api/push/unsubscribe' && request.method === 'POST') {
     const b = await request.json().catch(() => ({}));
-    if (b.endpoint) await env.DB.prepare('DELETE FROM push_subs WHERE endpoint = ?').bind(b.endpoint).run();
+    if (b.endpoint) await env.DB.prepare('DELETE FROM push_subs WHERE endpoint = ? AND user_id = ?').bind(b.endpoint, env.uid).run();
     return json({ ok: true }, request);
   }
   if (path === '/api/push/test' && request.method === 'POST') {
@@ -1712,12 +1719,13 @@ async function handlePush(request, env, path, json, err) {
   return err('not found', request, 404);
 }
 
-// Push to every stored subscription (single user - all subs are Robin's).
+// Push to a user's stored subscriptions (their installed devices). uid is
+// explicit so cron callers name the recipient; a request-path caller gets env.uid.
 // A 404/410 means the browser dropped the subscription, so prune it.
-async function pushAll(env, payload) {
+async function pushAll(env, payload, uid = env.uid) {
   if (!env.VAPID_PRIVATE_JWK) return { sent: 0, skipped: 'no VAPID key' };
   let jwk; try { jwk = JSON.parse(env.VAPID_PRIVATE_JWK); } catch { return { sent: 0, error: 'bad VAPID jwk' }; }
-  const { results } = await env.DB.prepare('SELECT endpoint,p256dh,auth FROM push_subs').all();
+  const { results } = await env.DB.prepare('SELECT endpoint,p256dh,auth FROM push_subs WHERE user_id = ?').bind(uid).all();
   let sent = 0;
   for (const r of results || []) {
     const sub = { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } };
@@ -1738,10 +1746,11 @@ async function maybePushMail(env, res) {
   if (!res || !res.newUnread) return;
   const row = await env.DB.prepare("SELECT COALESCE(SUM(unseen),0) AS n FROM mail_cache_meta WHERE mailbox='INBOX'").first();
   const total = row ? Number(row.n) || 0 : 0;
+  // TODO(multi-tenant mail cron): route to the account owner; user 1 for now.
   await pushAll(env, {
     type: 'mail', unread: total, title: 'New mail',
     body: res.newUnread === 1 ? 'You have a new email' : `${res.newUnread} new emails`,
-  });
+  }, 1);
 }
 
 // Review reminders: user-set nudges to do a review. Stored in settings under
@@ -1774,7 +1783,7 @@ async function maybeReviewReminders(env) {
   for (const r of arr) {
     if (r && r.at && String(r.at) <= now) {
       const label = REVIEW_LABELS[r.rtype] || 'review';
-      await pushAll(env, { title: `Time for your ${label} review`, body: 'Open Robski Life → Goals → Reviews to do it.', type: 'review' }).catch(() => {});
+      await pushAll(env, { title: `Time for your ${label} review`, body: 'Open Robski Life → Goals → Reviews to do it.', type: 'review' }, 1).catch(() => {});
       changed = true;
       if (r.repeat && r.repeat !== 'once') {
         const [date, time] = String(r.at).split('T');
@@ -2067,8 +2076,8 @@ export default {
         // Practices kept in the window: completed bare-practice slots (no task
         // attached), grouped by their name (Zazen, Art, Forró…).
         const { results } = await env.DB.prepare(
-          "SELECT title, COUNT(*) AS n FROM slots WHERE done = 1 AND tana_id IS NULL AND day >= ? AND day <= ? GROUP BY title ORDER BY n DESC"
-        ).bind(from, to).all();
+          "SELECT title, COUNT(*) AS n FROM slots WHERE user_id = ? AND done = 1 AND tana_id IS NULL AND day >= ? AND day <= ? GROUP BY title ORDER BY n DESC"
+        ).bind(env.uid, from, to).all();
         const practices = (results || []).filter((r) => r.title && r.n > 0).map((r) => ({ title: r.title, count: r.n }));
         return json({ practices, total: practices.reduce((a, p) => a + p.count, 0) }, request);
       }
@@ -2090,7 +2099,7 @@ export default {
         const id = Number(actMatch[1]);
         if (request.method === 'PATCH') return updateActivity(request, env, id);
         if (request.method === 'DELETE') {
-          await env.DB.prepare('DELETE FROM activities WHERE id = ?').bind(id).run();
+          await env.DB.prepare('DELETE FROM activities WHERE id = ? AND user_id = ?').bind(id, env.uid).run();
           return json({ ok: true }, request);
         }
       }
@@ -2116,8 +2125,8 @@ export default {
           // No FK cascade in D1 by default, so clear the links by hand or they
           // outlive the block and leak into the next slot to reuse the id.
           await env.DB.batch([
-            env.DB.prepare('DELETE FROM slot_tasks WHERE slot_id = ?').bind(id),
-            env.DB.prepare('DELETE FROM slots WHERE id = ?').bind(id),
+            env.DB.prepare('DELETE FROM slot_tasks WHERE slot_id = ? AND user_id = ?').bind(id, env.uid),
+            env.DB.prepare('DELETE FROM slots WHERE id = ? AND user_id = ?').bind(id, env.uid),
           ]);
           return json({ ok: true }, request);
         }
