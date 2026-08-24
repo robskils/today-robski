@@ -1,5 +1,5 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
-import { isAuthed, requestCode, verifyCode, verifyJWT } from './auth.js';
+import { isAuthed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -476,12 +476,12 @@ function stripHtmlText(h) {
 }
 async function journalInsights(request, env, json, err) {
   if (request.method === 'GET') {
-    const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_journal_insights'").first().catch(() => null);
-    return json(row && row.value ? JSON.parse(row.value) : { text: null }, request);
+    const v = await getSetting(env, 'kv_journal_insights');
+    return json(v ? JSON.parse(v) : { text: null }, request);
   }
   const key = env.ANTHROPIC_API_KEY;
   if (!key) return err('Insights needs the ANTHROPIC_API_KEY secret.', request, 503);
-  const { results } = await env.DB.prepare("SELECT body, props, created_at FROM blocks WHERE kind = 'journal' AND archived = 0 ORDER BY created_at DESC LIMIT 30").all();
+  const { results } = await env.DB.prepare("SELECT body, props, created_at FROM blocks WHERE user_id = ? AND kind = 'journal' AND archived = 0 ORDER BY created_at DESC LIMIT 30").bind(env.uid).all();
   const entries = (results || []).filter((r) => r.body && stripHtmlText(r.body).length > 20);
   if (!entries.length) return json({ text: null }, request);
   const digest = entries.map((e) => { let p = {}; try { p = JSON.parse(e.props || '{}'); } catch {} const date = String(p.date || e.created_at || '').slice(0, 10); return `[${date}] ${stripHtmlText(e.body).slice(0, 1500)}`; }).join('\n\n---\n\n').slice(0, 24000);
@@ -505,19 +505,36 @@ async function journalInsights(request, env, json, err) {
     const raw = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
     let out; try { out = JSON.parse(raw); } catch { out = { text: raw, points: [] }; }
     const payload = { text: String(out.text || '').trim(), points: Array.isArray(out.points) ? out.points.slice(0, 8) : [], from: entries.length, ts: new Date().toISOString() };
-    try { await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_journal_insights', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(payload)).run(); } catch {}
+    try { await setSetting(env, 'kv_journal_insights', JSON.stringify(payload)); } catch {}
     return json(payload, request);
   } catch (e) { console.error('journalInsights:', e.message); return err('Could not reach Claude.', request, 502); }
+}
+
+// ── Settings (per-user) ───────────────────────────────────────────────
+// The settings table is keyed (user_id, key). These are the ONE place that knows
+// that, so a caller never has to remember the composite key. Pass uid explicitly
+// only for the cron / capture paths that run without a logged-in env.uid.
+async function getSetting(env, key, uid = env.uid) {
+  const row = await env.DB.prepare('SELECT value FROM settings WHERE user_id = ? AND key = ?')
+    .bind(uid, key).first().catch(() => null);
+  return row && row.value != null ? row.value : null;
+}
+async function setSetting(env, key, value, uid = env.uid) {
+  await env.DB.prepare(
+    'INSERT INTO settings (user_id, key, value) VALUES (?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value',
+  ).bind(uid, key, value).run();
 }
 
 // ── Bookmarks (Read & Watch) ─────────────────────────
 // A long-lived capture key (stored in settings, not a wrangler secret) lets the
 // iOS Shortcut and desktop bookmarklet save links without a 7-day JWT.
-async function bookmarkKey(env) {
-  const row = await env.DB.prepare("SELECT value FROM settings WHERE key='bookmark_key'").first();
-  if (row && row.value) return row.value;
+// TODO(multi-tenant): the capture key is currently user 1's. Per-user capture
+// keys (key -> user lookup) come with the capture-provisioning slice.
+async function bookmarkKey(env, uid = env.uid || 1) {
+  const existing = await getSetting(env, 'bookmark_key', uid);
+  if (existing) return existing;
   const key = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
-  await env.DB.prepare("INSERT INTO settings (key,value) VALUES ('bookmark_key',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(key).run();
+  await setSetting(env, 'bookmark_key', key, uid);
   return key;
 }
 // Fetch a page's title / image / site, and guess video vs article.
@@ -587,15 +604,18 @@ async function fetchLinkMeta(rawUrl) {
   meta.site = host;   // the little site line is always the clean hostname
   return meta;
 }
-async function createBookmark(env, rawUrl, titleHint) {
+// uid is explicit because one caller (capture) runs before the JWT gate and has
+// no env.uid: the capture key identifies the owner instead. Falls back to env.uid
+// for the logged-in /api/bookmark path.
+async function createBookmark(env, rawUrl, titleHint, uid = env.uid) {
   const meta = await fetchLinkMeta(rawUrl);
   if (titleHint && (!meta.title || meta.title === meta.site)) meta.title = String(titleHint).slice(0, 300);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const props = { url: meta.url, title: meta.title, image: meta.image || '', site: meta.site || '', media: meta.media, status: 'todo', added: now };
-  const row = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL').first();
-  await env.DB.prepare(`INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived) VALUES (?, 'bookmark', NULL, ?, ?, NULL, ?, ?, ?, 0)`)
-    .bind(id, row.p, meta.title, JSON.stringify(props), now, now).run();
+  const row = await env.DB.prepare('SELECT COALESCE(MAX(position)+1,0) AS p FROM blocks WHERE parent_id IS NULL AND user_id = ?').bind(uid).first();
+  await env.DB.prepare(`INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id) VALUES (?, 'bookmark', NULL, ?, ?, NULL, ?, ?, ?, 0, ?)`)
+    .bind(id, row.p, meta.title, JSON.stringify(props), now, now, uid).run();
   return { id, kind: 'bookmark', parent_id: null, title: meta.title, props, created_at: now };
 }
 // Share-sheet / bookmarklet capture. GET returns a tiny confirmation page (the
@@ -613,7 +633,7 @@ async function handleCapture(request, env, url, json, err) {
   let titleHint = url.searchParams.get('title') || '';
   if (!target && request.method === 'POST') { const b = await request.json().catch(() => ({})); target = b.url || ''; titleHint = titleHint || b.title || ''; }
   if (!target) { if (request.method === 'GET') return page('<h2 style="color:#a3382e">No link found</h2>', 400); return err('url required', request, 400); }
-  const bm = await createBookmark(env, target, titleHint);
+  const bm = await createBookmark(env, target, titleHint, 1);
   if (request.method === 'GET') return page(`<div style="font-size:44px;line-height:1">✓</div><h2 style="font-weight:600;margin:10px 0 6px">Saved to Robski</h2><p style="color:#8a8580;margin:0">${escH(bm.title)}</p><script>setTimeout(function(){window.close()},1100)</script>`);
   return json(bm, request, 201);
 }
@@ -768,12 +788,12 @@ function parseBlock(row) {
 }
 
 async function getBlock(env, id) {
-  const row = await env.DB.prepare('SELECT * FROM blocks WHERE id = ?').bind(id).first();
+  const row = await env.DB.prepare('SELECT * FROM blocks WHERE id = ? AND user_id = ?').bind(id, env.uid).first();
   if (!row) return null;
   const block = parseBlock(row);
   // Backlinks: who points at me. Cheap, and the notes/links phase will lean on it.
-  const links = await env.DB.prepare('SELECT to_id FROM block_links WHERE from_id = ?').bind(id).all();
-  const back = await env.DB.prepare('SELECT from_id FROM block_links WHERE to_id = ?').bind(id).all();
+  const links = await env.DB.prepare('SELECT to_id FROM block_links WHERE from_id = ? AND user_id = ?').bind(id, env.uid).all();
+  const back = await env.DB.prepare('SELECT from_id FROM block_links WHERE to_id = ? AND user_id = ?').bind(id, env.uid).all();
   block.links = links.results.map((r) => r.to_id);
   block.backlinks = back.results.map((r) => r.from_id);
   return block;
@@ -792,21 +812,21 @@ async function createBlock(request, env) {
   let position = Number(b.position);
   if (!Number.isFinite(position)) {
     const row = await env.DB.prepare(
-      'SELECT COALESCE(MAX(position) + 1, 0) AS p FROM blocks WHERE parent_id IS ?',
-    ).bind(parent).first();
+      'SELECT COALESCE(MAX(position) + 1, 0) AS p FROM blocks WHERE parent_id IS ? AND user_id = ?',
+    ).bind(parent, env.uid).first();
     position = row.p;
   }
 
   await env.DB.prepare(
-    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
   ).bind(id, kind, parent, position, b.title ?? null, b.body ?? null,
-    b.props ? JSON.stringify(b.props) : null, now, now).run();
+    b.props ? JSON.stringify(b.props) : null, now, now, env.uid).run();
 
   if (Array.isArray(b.links)) {
     for (const to of b.links) {
-      await env.DB.prepare('INSERT OR IGNORE INTO block_links (from_id, to_id) VALUES (?, ?)')
-        .bind(id, String(to)).run();
+      await env.DB.prepare('INSERT OR IGNORE INTO block_links (from_id, to_id, user_id) VALUES (?, ?, ?)')
+        .bind(id, String(to), env.uid).run();
     }
   }
   return json(await getBlock(env, id), request, 201);
@@ -819,13 +839,13 @@ async function createBlocksBulk(request, env) {
   const blocks = Array.isArray(b.blocks) ? b.blocks : [];
   const now = new Date().toISOString();
   const stmts = blocks.map((bl, i) => env.DB.prepare(
-    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
   ).bind(
     crypto.randomUUID(), String(bl.kind || 'row'), bl.parent_id || null,
     Number.isFinite(bl.position) ? bl.position : i,
     bl.title ?? null, bl.body ?? null, bl.props ? JSON.stringify(bl.props) : null,
-    bl.created_at || now, now,
+    bl.created_at || now, now, env.uid,
   ));
   for (let j = 0; j < stmts.length; j += 40) await env.DB.batch(stmts.slice(j, j + 40));
   return json({ created: stmts.length }, request, 201);
@@ -836,15 +856,15 @@ async function createBlocksBulk(request, env) {
 // what matters, whatever it is.
 async function handleFavorites(request, env) {
   const { results } = await env.DB.prepare(
-    `SELECT * FROM blocks WHERE archived = 0 AND json_extract(props, '$.fav') = 1
+    `SELECT * FROM blocks WHERE user_id = ? AND archived = 0 AND json_extract(props, '$.fav') = 1
       ORDER BY json_extract(props, '$.fav_rank'), updated_at`,
-  ).all();
+  ).bind(env.uid).all();
   return json(results.map(parseBlock), request);
 }
 
 async function listBlocks(request, env, url) {
-  const clauses = [];
-  const args = [];
+  const clauses = ['user_id = ?'];
+  const args = [env.uid];
   const kind = url.searchParams.get('kind');
   if (kind) { clauses.push('kind = ?'); args.push(kind); }
   if (url.searchParams.has('parent_id')) {
@@ -866,7 +886,7 @@ async function listBlocks(request, env, url) {
 }
 
 async function updateBlock(request, env, id) {
-  const existing = await env.DB.prepare('SELECT * FROM blocks WHERE id = ?').bind(id).first();
+  const existing = await env.DB.prepare('SELECT * FROM blocks WHERE id = ? AND user_id = ?').bind(id, env.uid).first();
   if (!existing) return err('not found', request, 404);
   const b = await request.json().catch(() => ({}));
 
@@ -887,14 +907,14 @@ async function updateBlock(request, env, id) {
     sets.push('props = ?'); args.push(JSON.stringify({ ...cur, ...b.props }));
   }
   sets.push('updated_at = ?'); args.push(new Date().toISOString());
-  args.push(id);
-  await env.DB.prepare(`UPDATE blocks SET ${sets.join(', ')} WHERE id = ?`).bind(...args).run();
+  args.push(id, env.uid);
+  await env.DB.prepare(`UPDATE blocks SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`).bind(...args).run();
 
   if (Array.isArray(b.links)) {
-    await env.DB.prepare('DELETE FROM block_links WHERE from_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM block_links WHERE from_id = ? AND user_id = ?').bind(id, env.uid).run();
     for (const to of b.links) {
-      await env.DB.prepare('INSERT OR IGNORE INTO block_links (from_id, to_id) VALUES (?, ?)')
-        .bind(id, String(to)).run();
+      await env.DB.prepare('INSERT OR IGNORE INTO block_links (from_id, to_id, user_id) VALUES (?, ?, ?)')
+        .bind(id, String(to), env.uid).run();
     }
   }
   return json(await getBlock(env, id), request);
@@ -903,12 +923,12 @@ async function updateBlock(request, env, id) {
 async function deleteBlock(env, request, id) {
   // Re-parent orphaned children to this block's parent, so a deleted area or
   // note doesn't strand whatever lived under it.
-  const row = await env.DB.prepare('SELECT parent_id FROM blocks WHERE id = ?').bind(id).first();
+  const row = await env.DB.prepare('SELECT parent_id FROM blocks WHERE id = ? AND user_id = ?').bind(id, env.uid).first();
   if (!row) return err('not found', request, 404);
   await env.DB.batch([
-    env.DB.prepare('UPDATE blocks SET parent_id = ? WHERE parent_id = ?').bind(row.parent_id, id),
-    env.DB.prepare('DELETE FROM block_links WHERE from_id = ? OR to_id = ?').bind(id, id),
-    env.DB.prepare('DELETE FROM blocks WHERE id = ?').bind(id),
+    env.DB.prepare('UPDATE blocks SET parent_id = ? WHERE parent_id = ? AND user_id = ?').bind(row.parent_id, id, env.uid),
+    env.DB.prepare('DELETE FROM block_links WHERE (from_id = ? OR to_id = ?) AND user_id = ?').bind(id, id, env.uid),
+    env.DB.prepare('DELETE FROM blocks WHERE id = ? AND user_id = ?').bind(id, env.uid),
   ]);
   return json({ ok: true }, request);
 }
@@ -927,7 +947,8 @@ async function searchBlocks(request, env, url) {
   // rows to avoid matching internal flags/ids on other kinds.
   const { results } = await env.DB.prepare(
     `SELECT * FROM blocks
-      WHERE archived = 0
+      WHERE user_id = ?
+        AND archived = 0
         AND (title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))
         AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
         AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo', 'txn', 'tracker')
@@ -935,7 +956,7 @@ async function searchBlocks(request, env, url) {
         CASE kind WHEN 'note' THEN 0 WHEN 'table' THEN 1 WHEN 'area' THEN 2 WHEN 'task' THEN 3 WHEN 'row' THEN 4 ELSE 5 END,
         updated_at DESC
       LIMIT 60`,
-  ).bind(like, like, like).all();
+  ).bind(env.uid, like, like, like).all();
   return json(results.map(parseBlock), request);
 }
 
@@ -988,23 +1009,25 @@ async function runAlerts(env) {
 async function runDailyBrief(env, { force = false } = {}) {
   const now = localParts(new Date(), TZ);
   if (!force) {
-    const last = await env.DB.prepare("SELECT value FROM settings WHERE key = 'last_brief_day'").first();
-    if (!briefDue(now.min, now.date, last?.value)) return { sent: false, reason: 'not due' };
+    // TODO(multi-tenant cron): the brief is Robin's (user 1) until the cron is
+    // reworked to run per-user; last_brief_day is his lock row.
+    const last = await getSetting(env, 'last_brief_day', 1);
+    if (!briefDue(now.min, now.date, last)) return { sent: false, reason: 'not due' };
 
     // Claim the day before sending, not after. Two ticks a minute apart both
     // reading "not sent yet" would otherwise send twice, and a duplicate brief
     // is worse than a late one. The UPDATE only fires when the stored day is
     // actually different, so `changes` tells us whether this tick won the claim.
     const claim = await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('last_brief_day', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value
+      `INSERT INTO settings (user_id, key, value) VALUES (1, 'last_brief_day', ?)
+         ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value
           WHERE settings.value <> excluded.value`,
     ).bind(now.date).run();
     if (!claim.meta?.changes) return { sent: false, reason: 'already claimed' };
   }
 
   try {
-    const cfg = await getLaneConfig(env);
+    const cfg = await getLaneConfig(env, 1);
     const [cal, quote, tasksRes] = await Promise.all([
       calendarEvents(env, now.date),
       quoteForDay(env, now.date),
@@ -1060,7 +1083,7 @@ async function runDailyBrief(env, { force = false } = {}) {
     // Hand the day back so a later tick inside the window can try again. A
     // Resend blip before 10:15 should cost a few minutes, not the brief.
     if (!force) {
-      await env.DB.prepare("DELETE FROM settings WHERE key = 'last_brief_day' AND value = ?")
+      await env.DB.prepare("DELETE FROM settings WHERE user_id = 1 AND key = 'last_brief_day' AND value = ?")
         .bind(now.date).run();
     }
     throw e;
@@ -1087,8 +1110,8 @@ async function quoteForDay(env, day) {
     .bind(dayHash(day) % row.n).first();
 }
 
-async function getSettings(env) {
-  const { results } = await env.DB.prepare('SELECT key, value FROM settings').all();
+async function getSettings(env, uid = env.uid) {
+  const { results } = await env.DB.prepare('SELECT key, value FROM settings WHERE user_id = ?').bind(uid).all();
   return Object.fromEntries(results.map((r) => [r.key, r.value]));
 }
 
@@ -1097,8 +1120,8 @@ async function getSettings(env) {
 // labels and choose which Life Area feeds each lane. Both overrides live in
 // settings: `lane_labels` {key:label} and `area_lanes` {lifeAreaId:laneKey}.
 // If area_lanes is unset, we derive it from each area's NAME via AREA_TO_LANE.
-async function getLaneConfig(env) {
-  const s = await getSettings(env);
+async function getLaneConfig(env, uid = env.uid) {
+  const s = await getSettings(env, uid);
   // Full lane definitions live in `lanes_config` once Robin has edited them;
   // before that we fall back to the shared defaults (+ any legacy label edits).
   let stored = null; try { stored = s.lanes_config ? JSON.parse(s.lanes_config) : null; } catch {}
@@ -1113,7 +1136,7 @@ async function getLaneConfig(env) {
   if (!lanes.some((l) => l.key === 'other')) lanes.push({ key: 'other', label: 'Other', hue: 0, untracked: true });
   const laneKeys = new Set(lanes.map((l) => l.key));
   let areaMap = null; try { areaMap = s.area_lanes ? JSON.parse(s.area_lanes) : null; } catch {}
-  const { results: areas } = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='area' AND archived=0 ORDER BY title").all();
+  const { results: areas } = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE user_id = ? AND kind='area' AND archived=0 ORDER BY title").bind(uid).all();
   if (!areaMap) { areaMap = {}; for (const a of areas) areaMap[a.id] = laneForArea(a.title); }
   // Drop any mapping to a lane key that no longer exists.
   for (const k of Object.keys(areaMap)) if (!laneKeys.has(areaMap[k])) delete areaMap[k];
@@ -1147,11 +1170,11 @@ async function handleLanes(request, env) {
         return { key, label: String(l.label || key).slice(0, 40), hue: Math.max(0, Math.min(360, Number(l.hue) || 0)), practice: !!l.practice, ...(zenByKey[key] ? { zen: zenByKey[key] } : {}) };
       });
       if (!lanes.some((l) => l.key === 'other')) lanes.push({ key: 'other', label: 'Other', hue: 0, untracked: true });
-      stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('lanes_config',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(lanes)));
+      stmts.push(env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (?,'lanes_config',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(env.uid, JSON.stringify(lanes)));
     } else if (b.labels && typeof b.labels === 'object') {
-      stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('lane_labels',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.labels)));
+      stmts.push(env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (?,'lane_labels',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(env.uid, JSON.stringify(b.labels)));
     }
-    if (b.areaMap && typeof b.areaMap === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('area_lanes',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.areaMap)));
+    if (b.areaMap && typeof b.areaMap === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (?,'area_lanes',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(env.uid, JSON.stringify(b.areaMap)));
     if (stmts.length) await env.DB.batch(stmts);
   }
   const cfg = await getLaneConfig(env);
@@ -1633,8 +1656,8 @@ async function importContacts(request, env) {
 async function handleSettings(request, env) {
   const b = await request.json();
   const stmts = Object.entries(b).map(([k, v]) =>
-    env.DB.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
-      .bind(k, String(v)),
+    env.DB.prepare('INSERT INTO settings (user_id, key, value) VALUES (?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value')
+      .bind(env.uid, k, String(v)),
   );
   if (stmts.length) await env.DB.batch(stmts);
   return json(await getSettings(env), request);
@@ -1741,9 +1764,10 @@ function advanceReminderDate(dateStr, repeat) {
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 async function maybeReviewReminders(env) {
-  const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_review_reminders'").first().catch(() => null);
-  if (!row || !row.value) return;
-  let arr; try { arr = JSON.parse(row.value); } catch { return; }
+  // TODO(multi-tenant cron): iterate all users; for now this is Robin's (user 1).
+  const value = await getSetting(env, 'kv_review_reminders', 1);
+  if (!value) return;
+  let arr; try { arr = JSON.parse(value); } catch { return; }
   if (!Array.isArray(arr) || !arr.length) return;
   const now = lisbonNowStr();
   let changed = false; const keep = [];
@@ -1759,7 +1783,7 @@ async function maybeReviewReminders(env) {
       }   // one-off: drop it
     } else keep.push(r);
   }
-  if (changed) await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_review_reminders', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(keep)).run();
+  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify(keep), 1);
 }
 
 // Portfolio history: on the every-minute tick, only actually fetch prices when
@@ -1866,7 +1890,13 @@ export default {
     }
 
     if (path.startsWith('/api/')) {
-      if (!(await isAuthed(request, env))) return err('unauthorized', request, 401);
+      // Resolve the tenant once, then hand every handler a scoped env: env.uid
+      // is the current user's id and env.user their row. Reassigning env here
+      // means the hundreds of downstream handler calls need no signature change
+      // - they simply see the scoped env. Every data query reads env.uid.
+      const currentUser = await resolveUser(request, env);
+      if (!currentUser) return err('unauthorized', request, 401);
+      env = { ...env, uid: currentUser.id, user: currentUser };
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
@@ -1904,7 +1934,7 @@ export default {
       {
         const fc = path.match(/^\/api\/fin\/channels\/([0-9a-f-]{36})$/);
         if (fc && request.method === 'DELETE') {
-          await env.DB.prepare('DELETE FROM blocks WHERE id = ? AND kind = ?').bind(fc[1], 'finchannel').run();
+          await env.DB.prepare('DELETE FROM blocks WHERE id = ? AND kind = ? AND user_id = ?').bind(fc[1], 'finchannel', env.uid).run();
           return json({ deleted: fc[1] }, request);
         }
       }
@@ -1914,8 +1944,8 @@ export default {
       }
       if (path === '/api/fin/trends') {
         if (request.method === 'POST') { try { return json(await synthesiseTrends(env), request); } catch (e) { return err(e.message, request, 502); } }
-        const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_fin_trends'").first().catch(() => null);
-        return json(row && row.value ? JSON.parse(row.value) : { text: null }, request);
+        const v = await getSetting(env, 'kv_fin_trends');
+        return json(v ? JSON.parse(v) : { text: null }, request);
       }
 
       // Spending: import parsed statement rows, or wipe them all.
@@ -1943,16 +1973,16 @@ export default {
         if (request.method === 'PUT') {
           const b = await request.json().catch(() => ({}));
           const arr = (Array.isArray(b.categories) ? b.categories : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 40);
-          await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_tracker_categories', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(arr)).run();
+          await setSetting(env, 'kv_tracker_categories', JSON.stringify(arr));
           return json({ ok: true, categories: arr }, request);
         }
-        const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_tracker_categories'").first().catch(() => null);
-        return json({ categories: row && row.value ? JSON.parse(row.value) : [] }, request);
+        const v = await getSetting(env, 'kv_tracker_categories');
+        return json({ categories: v ? JSON.parse(v) : [] }, request);
       }
       {
         const tk = path.match(/^\/api\/tracker\/([0-9a-f-]{36})$/);
         if (tk && request.method === 'DELETE') {
-          await env.DB.prepare('DELETE FROM blocks WHERE id = ? AND kind = ?').bind(tk[1], 'tracker').run();
+          await env.DB.prepare('DELETE FROM blocks WHERE id = ? AND kind = ? AND user_id = ?').bind(tk[1], 'tracker', env.uid).run();
           return json({ deleted: tk[1] }, request);
         }
       }
@@ -1965,12 +1995,12 @@ export default {
       {
         const kv = path.match(/^\/api\/kv\/([a-z0-9_]{1,40})$/);
         if (kv && request.method === 'GET') {
-          const r = await env.DB.prepare('SELECT value FROM settings WHERE key = ?').bind('kv_' + kv[1]).first();
-          return json({ value: r ? r.value : null }, request);
+          const v = await getSetting(env, 'kv_' + kv[1]);
+          return json({ value: v }, request);
         }
         if (kv && request.method === 'PUT') {
           const b = await request.json().catch(() => ({}));
-          await env.DB.prepare("INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind('kv_' + kv[1], String(b.value ?? '')).run();
+          await setSetting(env, 'kv_' + kv[1], String(b.value ?? ''));
           return json({ ok: true }, request);
         }
       }
@@ -2005,11 +2035,11 @@ export default {
         if (request.method === 'PUT') {
           const b = await request.json().catch(() => ({}));
           const arr = (Array.isArray(b.reminders) ? b.reminders : []).filter((r) => r && r.at && r.rtype).slice(0, 50);
-          await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('kv_review_reminders', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(arr)).run();
+          await setSetting(env, 'kv_review_reminders', JSON.stringify(arr));
           return json({ ok: true, reminders: arr }, request);
         }
-        const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'kv_review_reminders'").first().catch(() => null);
-        return json({ reminders: row && row.value ? JSON.parse(row.value) : [] }, request);
+        const v = await getSetting(env, 'kv_review_reminders');
+        return json({ reminders: v ? JSON.parse(v) : [] }, request);
       }
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
       if (path === '/api/bookmark' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (!b.url) return err('url required', request, 400); return json(await createBookmark(env, b.url, b.title), request, 201); }

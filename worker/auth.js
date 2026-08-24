@@ -97,6 +97,30 @@ export async function isAuthed(request, env) {
   return !!payload && isAllowed(payload.sub, env);
 }
 
+// ── Multi-tenant: who is this request? ────────────────────────────────
+// Resolves the signed-in JWT to a row in `users`. This is the single source of
+// the current tenant's id (uid); every data query downstream scopes to it.
+//
+// Resolution is by JWT email for now. Once daybook.fyi is live, the subdomain
+// (tara.daybook.fyi) becomes the primary key and this also checks the hostname
+// matches the user's subdomain - so a valid token for one account can't be
+// replayed against another account's subdomain.
+//
+// Returns the users row, or null when the token is bad / the address isn't
+// allowed / no account exists yet (a valid sign-in that hasn't been provisioned
+// is a 401, not a silent all-tenants view).
+export async function resolveUser(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  if (!auth.startsWith('Bearer ') || !env.AUTH_SECRET) return null;
+  const payload = await verifyJWT(auth.slice(7), env.AUTH_SECRET);
+  if (!payload || !isAllowed(payload.sub, env)) return null;
+  const user = await env.DB.prepare(
+    'SELECT id, email, name, subdomain, plan, status FROM users WHERE email = ?',
+  ).bind(payload.sub).first().catch(() => null);
+  if (!user || user.status === 'suspended') return null;
+  return user;
+}
+
 // ── POST /auth/request-code ───────────────────────────────────────────
 
 export async function requestCode(request, env, json, err) {
