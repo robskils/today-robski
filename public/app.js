@@ -4240,8 +4240,7 @@ function visionBody() {
       ${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}
     </button>`;
   }).join('');
-  return `<div class="goals-actions"><button class="add-btn wide" data-vision-wall>🖼 Open the wall</button></div>
-    <div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Life Areas to build your vision.</div>'}</div>`;
+  return `<div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Life Areas to build your vision.</div>'}</div>`;
 }
 async function loadVisionThumbs() {
   for (const a of state.areas) for (const im of ((a.props && a.props.attachments) || [])) {
@@ -4968,7 +4967,6 @@ document.addEventListener('click', (e) => {
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
   if (t.closest('[data-open-vision-tab]')) { openGoals('vision').catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-vision-wall]')) { openVisionWall().catch((x) => toast(x.message)); return; }
   const ovi = t.closest('[data-open-vision]'); if (ovi) { openVisionCard(ovi.dataset.openVision).catch((x) => toast(x.message)); return; }
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
   const obk = t.closest('[data-open-bucket]'); if (obk) { openBucketCard(obk.dataset.openBucket).catch((x) => toast(x.message)); return; }
