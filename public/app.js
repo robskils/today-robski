@@ -936,6 +936,15 @@ function homeQuoteHtml() {
   if (localStorage.getItem('life.home.quoteHidden') === today) return '';
   return `<figure class="home-quote"><button class="home-quote-x" data-home-quote-x title="Hide for today">×</button><blockquote>“${esc(q.text)}”</blockquote>${q.author ? `<figcaption>— ${esc(q.author)}</figcaption>` : ''}</figure>`;
 }
+// Every Home section can be collapsed; the set of collapsed keys persists.
+function homeCollapsed() { try { return JSON.parse(localStorage.getItem('life.home.collapsed')) || {}; } catch { return {}; } }
+function secOpen(key) { return !homeCollapsed()[key]; }
+function secH(key, title, extra) { return `<div class="home-sec-h home-sec-toggle" data-sec-collapse="${key}"><span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`; }
+function p1Html() {
+  const p1 = (state.home && state.home.alerts && state.home.alerts.p1list) || [];
+  if (!p1.length) return '';
+  return `<section class="home-sec home-sec-p1">${secH('priority', 'Priority', `<span class="muted">${p1.length}</span>`)}${secOpen('priority') ? `<div class="p1-list">${p1.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div>` : ''}</section>`;
+}
 function renderHome() {
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
@@ -983,24 +992,25 @@ function renderHome() {
       <div class="home-body">
         <div class="home-main">
           <section class="home-sec home-sec-today">
-            <div class="home-sec-h">Today</div>
-            <div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>
+            ${secH('today', 'Today')}
+            ${secOpen('today') ? `<div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}
           </section>
-          ${(() => { const f = focusGoals(); if (!f.length) return ''; const collapsed = localStorage.getItem('life.home.focusCollapsed') === '1'; return `<section class="home-sec home-sec-focus"><div class="home-sec-h home-sec-toggle" data-home-focus-toggle><span class="hs-chev">${collapsed ? '▸' : '▾'}</span>🎯 This quarter's focus</div>${collapsed ? '' : `<div class="goal-grid">${f.map((g) => goalCardMini(g, true)).join('')}</div>`}</section>`; })()}
+          ${p1Html()}
+          ${(() => { const f = focusGoals(); if (!f.length) return ''; return `<section class="home-sec home-sec-focus">${secH('focus', "🎯 This quarter's focus")}${secOpen('focus') ? `<div class="goal-grid">${f.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>`; })()}
           <section class="home-sec home-sec-favs">
-            <div class="home-sec-h">Starred</div>
-            ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
+            ${secH('favs', 'Starred')}
+            ${secOpen('favs') ? (favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>') : ''}
           </section>
         </div>
         <aside class="home-side">
           ${pomoHtml()}
           <section class="home-sec home-sec-recent">
-            <div class="home-sec-h">Recently viewed</div>
-            ${recentHtml}
+            ${secH('recent', 'Recently viewed')}
+            ${secOpen('recent') ? recentHtml : ''}
           </section>
           <section class="home-sec home-sec-notepad">
-            <div class="home-sec-h">Notepad</div>
-            <textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>
+            ${secH('notepad', 'Notepad')}
+            ${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}
           </section>
         </aside>
       </div>
@@ -5424,7 +5434,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
-  if (t.closest('[data-home-focus-toggle]')) { const c = localStorage.getItem('life.home.focusCollapsed') === '1'; localStorage.setItem('life.home.focusCollapsed', c ? '0' : '1'); renderHome(); return; }
+  { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; if (c[k]) delete c[k]; else c[k] = true; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
   if (t.closest('[data-create-invite]')) { createInvite(); return; }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }

@@ -948,6 +948,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
+/* Home priority (P1) tasks list. */
+.p1-list { display:flex; flex-direction:column; gap:2px; margin-top:8px; }
+.p1-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; border-radius:10px; color:var(--ink); font-size:15px; }
+.p1-row:hover { background:var(--paper); }
+.p1-dot { flex:none; width:8px; height:8px; border-radius:50%; background:hsl(var(--h,4) 62% 52%); }
+.p1-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* Drag to reorder the focus cards. */
 .home-sec-focus .goal-card { position:relative; cursor:grab; }
 .home-sec-focus .goal-card.dragging { opacity:.4; }

@@ -1263,13 +1263,13 @@ async function homeAlerts(request, env, json) {
   const mmdd = localParts(new Date(), TZ).date.slice(5, 10);   // MM-DD in Lisbon
   const [cts, tks] = await Promise.all([
     env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?").bind(env.uid).all(),
-    env.DB.prepare("SELECT props FROM blocks WHERE kind='task' AND archived=0 AND user_id=?").bind(env.uid).all(),
+    env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='task' AND archived=0 AND user_id=?").bind(env.uid).all(),
   ]);
   const birthdays = [];
   for (const r of cts.results || []) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} if (p.birthday && String(p.birthday).slice(5, 10) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' }); }
-  let p1 = 0;
-  for (const r of tks.results || []) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} if (p.priority === 'P1' && !p.done) p1++; }
-  return json({ birthdays, p1 }, request);
+  let p1 = 0; const p1list = [];
+  for (const r of tks.results || []) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} if (p.priority === 'P1' && !p.done) { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null }); } }
+  return json({ birthdays, p1, p1list }, request);
 }
 
 async function handleDay(request, env, url) {
