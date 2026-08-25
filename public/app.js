@@ -4591,6 +4591,14 @@ function patchVisionText(id, text) {
 // pre-layout width (wrapping one line into many), so size on the next frame.
 function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
 function autoGrowSoon(el) { if (!el) return; requestAnimationFrame(() => autoGrow(el)); }
+// Starred notes, shown in the note sidebar's spare space. One or two columns,
+// depending on how wide the sidebar is. The note you're on drops out.
+function starredNotesHtml(currentId) {
+  const starred = (state.favs || []).filter((f) => f.kind === 'note' && f.id !== currentId);
+  if (!starred.length) return '';
+  return `<div class="note-starred"><div class="sub-h">Starred notes</div>
+    <div class="star-grid">${starred.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">★</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div></div>`;
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -4615,6 +4623,7 @@ function renderNote() {
       <aside class="note-side">
         <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
           ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>
+        ${starredNotesHtml(n.id)}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
     </div>`;

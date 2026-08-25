@@ -934,6 +934,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 @media (pointer:coarse){ .nav-quick { opacity:1; } }
 .nav-grip { color:var(--ink-3); font-size:12px; cursor:grab; opacity:0; transition:opacity .12s; flex:none; padding:0 4px; letter-spacing:-2px; }
 .nav-sec-h[draggable]:active { cursor:grabbing; }
+/* Starred notes in the note sidebar - one or two columns to fill the space. */
+.note-starred { margin-top:22px; }
+.star-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:6px; margin-top:8px; }
+.star-note { display:flex; align-items:center; gap:7px; min-width:0; padding:9px 11px; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:10px; color:var(--ink-2); font-size:14px; cursor:pointer; transition:border-color .12s,color .12s; }
+.star-note:hover { border-color:var(--accent); color:var(--ink); }
+.star-note .sn-ic { color:var(--accent); font-size:12px; flex:none; }
+.star-note .sp-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .nav-sec-body { display:flex; flex-direction:column; gap:1px; margin-top:2px; }
 /* Starred: two columns, echoing the tab grid above it. */
 .nav-sec-body.nav-2col { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
