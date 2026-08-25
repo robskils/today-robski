@@ -483,9 +483,11 @@ function renderTimeline() {
 function renderFilter() {
   const total = Object.values(state.counts).reduce((a, b) => a + b, 0);
   const chips = [`<button class="chip ${state.filter === 'all' ? 'on' : ''}" style="--h:0" data-lane="all">All<span class="chip-n">${total}</span></button>`];
+  // Mirror the rail exactly: every named time stream is always shown (even with
+  // no tasks), and the untracked catch-all only when it holds something.
   for (const l of state.lanes) {
     const n = state.counts[l.key] || 0;
-    if (!n) continue;
+    if (l.untracked && !n) continue;
     chips.push(`<button class="chip ${state.filter === l.key ? 'on' : ''}" style="--h:${l.hue}" data-lane="${l.key}">${esc(l.label)}<span class="chip-n">${n}</span></button>`);
   }
   $('lane-filter').innerHTML = chips.join('');
