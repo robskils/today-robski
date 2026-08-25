@@ -810,16 +810,17 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day, pad, rec, goals] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
     api('/api/kv/home_recent').catch(() => null),
     api('/api/blocks?kind=goal').catch(() => state.goals || []),
+    api('/api/home/alerts').catch(() => null),
   ]);
   state.goals = goals || [];
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
-  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null };
+  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, alerts: alerts || { birthdays: [], p1: 0 } };
   renderNav(); renderHome();
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
@@ -916,6 +917,17 @@ function pomoHtml() {
   </section>`;
 }
 
+// Gentle Home notifications - today's birthdays and open P1 tasks. Each can be
+// dismissed for the day with the ×. Never overwhelming: only shows what's live.
+function alertsHtml() {
+  const a = (state.home && state.home.alerts) || {};
+  const today = new Date().toISOString().slice(0, 10);
+  const gone = (key) => localStorage.getItem('life.home.alert.' + key) === today;
+  const cards = [];
+  (a.birthdays || []).forEach((b) => { const key = 'bday:' + b.id; if (gone(key)) return; cards.push(`<div class="home-alert"><span class="ha-ic">🎂</span><span class="ha-t">It's <b>${esc(b.name)}</b>'s birthday today</span><button class="ha-x" data-alert-x="${esc(key)}" title="Dismiss">×</button></div>`); });
+  if (a.p1 && !gone('p1')) cards.push(`<div class="home-alert ha-click" data-view-tasks role="button"><span class="ha-ic">🔴</span><span class="ha-t">You have <b>${a.p1}</b> priority ${a.p1 === 1 ? 'task' : 'tasks'} open</span><button class="ha-x" data-alert-x="p1" title="Dismiss">×</button></div>`);
+  return cards.length ? `<div class="home-alerts">${cards.join('')}</div>` : '';
+}
 // The day's teaching, moved here from Today. Dismissible - once you've read it,
 // the × hides it for the rest of the day (per-device).
 function homeQuoteHtml() {
@@ -948,6 +960,7 @@ function renderHome() {
         <h1>${greeting()}, <span class="hi-name">Robski</span></h1>
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
+      ${alertsHtml()}
       ${homeQuoteHtml()}
       <div id="qt-wrap"></div>
       <!-- Mobile-only launcher. On desktop the sidebar already lists every
@@ -5392,6 +5405,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-home-quote-x]')) { localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); renderHome(); return; }
+  { const ax = t.closest('[data-alert-x]'); if (ax) { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, new Date().toISOString().slice(0, 10)); renderHome(); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
     if (state.pomoPickType === 'task' && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }
