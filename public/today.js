@@ -705,6 +705,19 @@ function openSheet({ slot, task, lane, activity, blockTask }) {
   $('sheet-float-row').hidden = !!bt;
   $('sheet-start-field').style.display = bt ? 'none' : '';
 
+  // Task mode: a Life Area picker (an area feeds its stream). Populated async;
+  // the current area is preselected once the list lands.
+  $('sheet-area-field').hidden = !bt;
+  if (bt) {
+    state.editing.areaOrig = bt.area_id || '';
+    loadLifeAreas().then((areas) => {
+      if (state.editing?.blockTask?.tana_id !== bt.tana_id) return;   // sheet moved on
+      $('sheet-area').innerHTML = '<option value="">(no area)</option>' +
+        areas.map((a) => `<option value="${esc(a.id)}">${esc(a.title)}</option>`).join('');
+      $('sheet-area').value = bt.area_id || '';
+    }).catch(() => {});
+  }
+
   // The name field. A task behind the sheet - a task in a block, one clicked in
   // the list, or a sole-task block - renames the task block; a bare block edits
   // only its own label.
@@ -905,12 +918,22 @@ $('sheet').addEventListener('submit', async (e) => {
   // a 10-min task in a 90-min block leaves the block at 90.
   if (blockTask) {
     try {
-      await api(`/api/slots/${slot.id}/tasks/${encodeURIComponent(blockTask.tana_id)}`, {
-        method: 'PATCH', body: JSON.stringify({ duration: Number($('sheet-duration').value) }),
-      });
+      if (slot) {
+        await api(`/api/slots/${slot.id}/tasks/${encodeURIComponent(blockTask.tana_id)}`, {
+          method: 'PATCH', body: JSON.stringify({ duration: Number($('sheet-duration').value) }),
+        });
+      }
+      // Life area changed? That lives on the task block itself, and moves the
+      // task to the stream its new area feeds.
+      const area = $('sheet-area').value || null;
+      if ((area || '') !== (state.editing.areaOrig || '')) {
+        await api(`/api/tasks/${encodeURIComponent(blockTask.tana_id)}`, {
+          method: 'PATCH', body: JSON.stringify({ area }),
+        });
+      }
       toast('Task saved');
       closeSheet();
-      await loadDay();
+      await Promise.all([loadDay(), loadTasks()]);
     } catch (e2) { toast(e2.message); }
     return;
   }

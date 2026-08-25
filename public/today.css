@@ -210,6 +210,10 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 .embed body { min-height: 100vh; }
 .embed #app { display: block; }
 .embed .col-acts, .embed .col-tasks { position: static; max-height: none; }
+/* The rail scrolls with the page here (no sticky offset), so the streams sit
+   right under the day header with no dead gap above them. */
+.embed .rail { position: static; }
+.embed .bar { padding-top: 8px; }
 
 /* On-brand wordmark, same style as Life · Robski: serif, italic accent word,
    a gold interpunct. */
@@ -288,7 +292,7 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 /* ── layout ───────────────────────────────────────────────────────── */
 
 .grid {
-  display: grid; grid-template-columns: 210px minmax(0, 1fr) 340px;
+  display: grid; grid-template-columns: 230px minmax(0, 1fr) 370px;
   gap: 26px; padding: 24px 20px 60px; max-width: 1440px; margin: 0 auto;
   align-items: start;
 }

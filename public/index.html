@@ -30,7 +30,7 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css?v=20260826q">
+<link rel="stylesheet" href="/today.css?v=20260826r">
 <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -176,6 +176,12 @@
       <span class="zen-note" id="sheet-zen" hidden></span>
     </label>
 
+    <!-- Task mode only: the task's Life Area (which in turn feeds its stream). -->
+    <label class="field" id="sheet-area-field" hidden>
+      <span>Life area</span>
+      <select id="sheet-area" class="input"></select>
+    </label>
+
     <div class="field-row">
       <label class="field" id="sheet-start-field">
         <span>Start</span>
@@ -297,6 +303,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js?v=20260826q"></script>
+<script type="module" src="/today.js?v=20260826r"></script>
 </body>
 </html>

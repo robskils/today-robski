@@ -1532,6 +1532,14 @@ async function updateTask(request, env, id) {
     }
   }
 
+  // Reassigning the task's Life Area. null clears it (falls to the untracked
+  // lane). Written before done, which re-reads props for itself.
+  if (b.area !== undefined) {
+    p.area = b.area || null;
+    await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(p), new Date().toISOString(), id).run();
+  }
+
   if (b.done !== undefined && !!b.done !== !!p.done) {
     await setTaskDone(env, id, !!b.done);
   }
