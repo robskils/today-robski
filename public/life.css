@@ -935,6 +935,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-grip { color:var(--ink-3); font-size:12px; cursor:grab; opacity:0; transition:opacity .12s; flex:none; padding:0 4px; letter-spacing:-2px; }
 .nav-sec-h[draggable]:active { cursor:grabbing; }
 .nav-sec-body { display:flex; flex-direction:column; gap:1px; margin-top:2px; }
+/* Starred: two columns, echoing the tab grid above it. */
+.nav-sec-body.nav-2col { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.nav-2col .nav-sub { min-width:0; padding:8px 10px; background:var(--card); border:1px solid var(--line); border-radius:9px; }
+.nav-2col .nav-sub:hover { border-color:var(--line-2); }
+.nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-sub.muted { color:var(--ink-3); font-size:14px; font-style:italic; }
 .nav-sub { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:7px 12px 7px 14px; border-radius:8px; color:var(--ink-2); font-size:15.5px; overflow:hidden; }
 .nav-sub:hover { background:var(--paper); color:var(--ink); }
