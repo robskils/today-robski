@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daybook - a calm, private home for your life</title>
+<meta name="description" content="Put it down, trust it to come back. Daybook is a calm, private home for everything you carry - tasks, notes, reflections, money - captured in two taps and resurfaced when you need it.">
+<link rel="icon" href="/favicon.svg">
+<meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17130e" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --paper: #f4f1ea;
+  --paper-2: #ece7db;
+  --card: #fbf9f4;
+  --ink: #211c17;
+  --ink-2: #574e44;
+  --ink-3: #8b8073;
+  --line: rgba(33, 28, 23, 0.12);
+  --line-2: rgba(33, 28, 23, 0.22);
+  --rust: #c4412e;
+  --rust-deep: #a5331f;
+  --rust-soft: rgba(196, 65, 46, 0.11);
+  --rust-ink: #fff;
+  --pine: #2f5d57;
+  --pine-soft: rgba(47, 93, 87, 0.10);
+  --dawn-1: rgba(196, 65, 46, 0.16);
+  --dawn-2: rgba(217, 138, 91, 0.14);
+  --shadow: 0 22px 50px -28px rgba(33, 28, 23, 0.42);
+  --shadow-sm: 0 8px 22px -14px rgba(33, 28, 23, 0.32);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #17130e;
+    --paper-2: #1e1810;
+    --card: #221b12;
+    --ink: #f1ece3;
+    --ink-2: #bcb1a1;
+    --ink-3: #8b8070;
+    --line: rgba(241, 236, 227, 0.12);
+    --line-2: rgba(241, 236, 227, 0.22);
+    --rust: #e37257;
+    --rust-deep: #c4412e;
+    --rust-soft: rgba(227, 114, 87, 0.15);
+    --rust-ink: #1a0f0a;
+    --pine: #7fbdb0;
+    --pine-soft: rgba(127, 189, 176, 0.12);
+    --dawn-1: rgba(227, 114, 87, 0.16);
+    --dawn-2: rgba(217, 138, 91, 0.12);
+    --shadow: 0 22px 55px -26px rgba(0, 0, 0, 0.7);
+    --shadow-sm: 0 8px 24px -14px rgba(0, 0, 0, 0.6);
+  }
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+h1, h2, h3, .serif { font-family: 'Fraunces', Georgia, serif; }
+h2 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; font-weight: 600; letter-spacing: -0.015em; text-wrap: balance; }
+
+.eyebrow {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--rust); margin-bottom: 16px;
+}
+
+a { color: inherit; }
+
+/* ── buttons ── */
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 13px; padding: 14px 24px; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, background .16s, border-color .16s; border: 1px solid transparent; }
+.btn-primary { background: var(--rust); color: var(--rust-ink); box-shadow: var(--shadow-sm); }
+.btn-primary:hover { transform: translateY(-2px); background: var(--rust-deep); box-shadow: 0 16px 34px -16px rgba(196, 65, 46, 0.6); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
+.btn-ghost:hover { transform: translateY(-2px); border-color: var(--ink); }
+
+/* ── nav ── */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-in { display: flex; align-items: center; justify-content: space-between; height: 70px; }
+.brand { display: inline-flex; align-items: center; gap: 11px; font-family: 'Fraunces', serif; font-size: 23px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); }
+.brand-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--rust); flex: none; box-shadow: 0 0 0 4px var(--rust-soft); }
+.nav-links { display: flex; align-items: center; gap: 30px; list-style: none; }
+.nav-links a { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; transition: color .18s; }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta { display: flex; align-items: center; gap: 14px; }
+.nav-cta .btn { padding: 10px 18px; font-size: 15px; border-radius: 11px; }
+@media (max-width: 760px) { .nav-links { display: none; } }
+
+/* ── hero ── */
+.hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
+.hero-glow { position: absolute; inset: -30% 0 auto 0; height: 620px; z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%), radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
+.hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+.hero-badge { display: inline-flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); padding: 7px 15px 7px 12px; border-radius: 999px; margin-bottom: 26px; box-shadow: var(--shadow-sm); }
+.hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 0 var(--rust); animation: pulse 2.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rust) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.hero h1 { font-size: clamp(44px, 6.6vw, 74px); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; }
+.hero h1 em { font-style: italic; color: var(--rust); }
+.hero-sub { margin-top: 24px; font-size: clamp(18px, 2.1vw, 21px); color: var(--ink-2); max-width: 30ch; line-height: 1.55; }
+.hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.hero-note { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); }
+
+/* hero card cluster */
+.cluster { position: relative; min-height: 420px; }
+.dcard { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 17px 19px; width: 300px; }
+.dcard-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rust); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.dcard-label .ic { font-size: 15px; }
+.d-row { display: flex; align-items: center; gap: 11px; padding: 6px 0; font-size: 15.5px; color: var(--ink); }
+.d-check { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--line-2); flex: none; }
+.d-check.on { background: var(--rust); border-color: var(--rust); position: relative; }
+.d-check.on::after { content: '✓'; color: #fff; font-size: 12px; position: absolute; inset: 0; display: grid; place-items: center; }
+.d-row.done { color: var(--ink-3); text-decoration: line-through; }
+.c1 { top: 8px; left: 0; z-index: 3; transform: rotate(-2.5deg); }
+.c2 { top: 150px; right: 0; z-index: 2; transform: rotate(2.5deg); width: 286px; }
+.c3 { bottom: 4px; left: 34px; z-index: 4; width: 292px; transform: rotate(-1deg); }
+.d-quote { font-family: 'Fraunces', serif; font-size: 19px; line-height: 1.4; color: var(--ink); font-style: italic; }
+.d-note { font-size: 15px; color: var(--ink-2); line-height: 1.5; }
+.d-pill { display: inline-block; margin-top: 10px; font-size: 12.5px; font-weight: 600; color: var(--pine); background: var(--pine-soft); padding: 3px 10px; border-radius: 999px; }
+
+@media (max-width: 880px) {
+  .hero-in { grid-template-columns: 1fr; gap: 30px; }
+  .hero-sub { max-width: 46ch; }
+  .cluster { min-height: 380px; margin: 0 auto; max-width: 340px; }
+  .c2 { right: -6px; } .c3 { left: 10px; }
+}
+
+/* ── section scaffolding ── */
+section { position: relative; }
+.band { padding: 96px 0; }
+.band-head { max-width: 640px; margin-bottom: 52px; }
+.band-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+.band-head p { margin-top: 16px; font-size: 19px; color: var(--ink-2); line-height: 1.55; }
+
+/* concept */
+.concept { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.concept-lead { font-family: 'Fraunces', serif; font-size: clamp(24px, 3vw, 31px); line-height: 1.32; font-weight: 400; letter-spacing: -0.01em; }
+.concept-lead em { color: var(--rust); font-style: italic; }
+.concept-body p { color: var(--ink-2); font-size: 18px; line-height: 1.6; }
+.concept-body p + p { margin-top: 18px; }
+@media (max-width: 820px) { .concept-grid { grid-template-columns: 1fr; gap: 28px; } }
+
+/* tools grid */
+.tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.tool { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 26px 24px 28px; box-shadow: var(--shadow-sm); transition: transform .16s, border-color .16s; }
+.tool:hover { transform: translateY(-3px); border-color: var(--line-2); }
+.tool-ic { font-size: 26px; margin-bottom: 16px; display: block; }
+.tool h3 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 8px; }
+.tool p { font-size: 16px; color: var(--ink-2); line-height: 1.5; }
+.tools-foot { margin-top: 30px; text-align: center; font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(20px, 2.6vw, 26px); color: var(--ink); }
+.tools-foot span { color: var(--rust); }
+@media (max-width: 880px) { .tools-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .tools-grid { grid-template-columns: 1fr; } }
+
+/* privacy band (pine) */
+.privacy { background: var(--pine); color: #f3efe6; overflow: hidden; position: relative; }
+.privacy::before { content: ''; position: absolute; inset: 0; background: radial-gradient(50% 80% at 85% 20%, rgba(255,255,255,0.08), transparent 70%); pointer-events: none; }
+.privacy .wrap { position: relative; }
+.privacy .eyebrow { color: #d7ede8; }
+.privacy h2 { color: #fff; }
+.privacy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.privacy-lead { font-size: 19px; line-height: 1.6; color: rgba(243, 239, 230, 0.9); }
+.privacy-lead + .privacy-lead { margin-top: 20px; }
+.privacy-lead b { color: #fff; font-weight: 600; }
+.privacy-points { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+.privacy-points li { display: flex; gap: 14px; font-size: 16.5px; line-height: 1.45; color: rgba(243, 239, 230, 0.92); }
+.privacy-points .tick { flex: none; width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.14); display: grid; place-items: center; font-size: 14px; color: #fff; }
+@media (max-width: 820px) { .privacy-grid { grid-template-columns: 1fr; gap: 30px; } }
+
+/* capture */
+.capture-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: center; }
+.steps { display: flex; flex-direction: column; gap: 14px; }
+.step { display: flex; gap: 16px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 15px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.step-n { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--rust-soft); color: var(--rust); font-family: 'Fraunces', serif; font-weight: 600; font-size: 18px; display: grid; place-items: center; }
+.step-t b { display: block; font-size: 17px; margin-bottom: 3px; }
+.step-t span { font-size: 15px; color: var(--ink-2); }
+@media (max-width: 820px) { .capture-grid { grid-template-columns: 1fr; gap: 28px; } }
+
+/* closing cta */
+.closing { text-align: center; padding: 104px 0; }
+.closing h2 { font-size: clamp(34px, 5vw, 54px); }
+.closing p { margin: 20px auto 0; max-width: 46ch; font-size: 19px; color: var(--ink-2); }
+.closing .hero-actions { justify-content: center; margin-top: 36px; }
+
+/* footer */
+footer { border-top: 1px solid var(--line); padding: 46px 0; }
+.foot-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.foot-links { display: flex; gap: 26px; list-style: none; flex-wrap: wrap; }
+.foot-links a { color: var(--ink-3); text-decoration: none; font-size: 15px; transition: color .18s; }
+.foot-links a:hover { color: var(--ink); }
+.foot-meta { font-size: 14.5px; color: var(--ink-3); }
+
+/* reveal */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-badge .pulse { animation: none; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="/"><span class="brand-dot"></span>Daybook</a>
+    <ul class="nav-links">
+      <li><a href="#idea">The idea</a></li>
+      <li><a href="#tools">Tools</a></li>
+      <li><a href="#private">Private by design</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a class="btn btn-ghost" href="#signin">Sign in</a>
+      <a class="btn btn-primary" href="#invite">Request an invite</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap hero-in">
+    <div class="hero-copy">
+      <div class="hero-badge reveal"><span class="pulse"></span>Invite-only, in early access</div>
+      <h1 class="reveal">Put it down.<br><em>Trust</em> it to come back.</h1>
+      <p class="hero-sub reveal">Daybook is a calm, private home for everything you're carrying - tasks, notes, reflections, money, the lot. Set it down in two taps, and let it resurface exactly when you need it.</p>
+      <div class="hero-actions reveal">
+        <a class="btn btn-primary" href="#invite">Request an invite →</a>
+        <a class="btn btn-ghost" href="#signin">Sign in</a>
+      </div>
+      <p class="hero-note reveal">Your data stays yours. No adverts, no selling, no noise.</p>
+    </div>
+    <div class="cluster reveal">
+      <div class="dcard c1">
+        <div class="dcard-label"><span class="ic">☀</span>Today</div>
+        <div class="d-row done"><span class="d-check on"></span>Morning sit, 20 min</div>
+        <div class="d-row"><span class="d-check"></span>Draft the Sintra proposal</div>
+        <div class="d-row"><span class="d-check"></span>Walk before the light goes</div>
+      </div>
+      <div class="dcard c2">
+        <div class="dcard-label"><span class="ic">✎</span>Reflect</div>
+        <p class="d-quote">"What did today ask of me, and what did I give it?"</p>
+        <span class="d-pill">Journal · Insights · Dreams</span>
+      </div>
+      <div class="dcard c3">
+        <div class="dcard-label"><span class="ic">▤</span>Note</div>
+        <p class="d-note">Spain trip - book the coast road, find the place with the blue door, no rush.</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="band concept" id="idea">
+  <div class="wrap concept-grid">
+    <div class="reveal">
+      <div class="eyebrow">The idea</div>
+      <p class="concept-lead">A daybook is somewhere you <em>set things down</em> - so you can stop holding them in your head, and still trust them to come back.</p>
+    </div>
+    <div class="concept-body reveal">
+      <p>We carry too much at once. Tasks half-remembered, ideas we meant to keep, money we meant to watch, feelings we never sat with. So it leaks - onto sticky notes, into ten different apps, or just quietly lost.</p>
+      <p>Daybook is one place to put all of it. You capture quickly and let go, and Daybook brings the right piece back at the right moment - the task when the day needs it, the note when you're planning, the reflection when you pause.</p>
+      <p>Offload with confidence. Resurface with trust. That's the whole idea.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="tools">
+  <div class="wrap">
+    <div class="band-head center reveal">
+      <div class="eyebrow">One space, many tools</div>
+      <h2>Everything you're carrying, under one calm roof</h2>
+      <p>Not ten apps bolted together - one space, built around the parts of your life that actually matter to you.</p>
+    </div>
+    <div class="tools-grid">
+      <div class="tool reveal"><span class="tool-ic">☀</span><h3>Today &amp; Tasks</h3><p>Your day as calm streams, not a nagging list. Work with the flow when you're in it; nothing turns red.</p></div>
+      <div class="tool reveal"><span class="tool-ic">✎</span><h3>Reflect</h3><p>A home for the inner stuff - journalling, insights, dreams, and gentle coaching when you want it.</p></div>
+      <div class="tool reveal"><span class="tool-ic">💰</span><h3>Financial</h3><p>See where the money goes, sorted by the areas of life you care about. Clear, quiet, no spreadsheets.</p></div>
+      <div class="tool reveal"><span class="tool-ic">▤</span><h3>Notes &amp; Tables</h3><p>Write, structure, and link. From a scribbled idea to a proper table, all in the same place.</p></div>
+      <div class="tool reveal"><span class="tool-ic">◈</span><h3>Life Areas</h3><p>The heart of Daybook. Your streams, goals and spending all organise around what matters most.</p></div>
+      <div class="tool reveal"><span class="tool-ic">✉</span><h3>Calendar &amp; Mail</h3><p>Your day and your inbox in the same calm room, so you never break focus to switch windows.</p></div>
+    </div>
+    <p class="tools-foot reveal">And the best part - <span>the tools talk to each other.</span></p>
+  </div>
+</section>
+
+<section class="band privacy" id="private">
+  <div class="wrap privacy-grid">
+    <div class="reveal">
+      <div class="eyebrow">Private by design</div>
+      <h2>Yours. Genuinely.</h2>
+      <p class="privacy-lead">Daybook holds the most personal parts of your life, so it treats them that way. Your data is <b>private to you</b> - not mined, not sold, not fed to anyone's model.</p>
+      <p class="privacy-lead">Want AI to help? You bring your <b>own</b> AI account. The connection runs straight between you and your provider - your call, on your terms.</p>
+    </div>
+    <ul class="privacy-points reveal">
+      <li><span class="tick">✓</span><div>Your Daybook is yours - export it, keep it, own it.</div></li>
+      <li><span class="tick">✓</span><div>No adverts and no tracking. You're the person here, not the product.</div></li>
+      <li><span class="tick">✓</span><div>AI is opt-in and bring-your-own-key - a secure link between you and your AI provider.</div></li>
+      <li><span class="tick">✓</span><div>One private space per person, on your own corner of Daybook.</div></li>
+    </ul>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap capture-grid">
+    <div class="reveal">
+      <div class="eyebrow">Made to be quick</div>
+      <h2>Two taps and it's safe</h2>
+      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Capture is meant to be effortless, especially on your phone. Get it out of your head in seconds, sort it later - or let Daybook sort it for you.</p></div>
+    </div>
+    <div class="steps reveal">
+      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Open and jot</b><span>A task, a note, a number, a feeling - whatever you're holding.</span></div></div>
+      <div class="step"><span class="step-n">2</span><div class="step-t"><b>Let it go</b><span>It lands in the right place, tagged to the life area it belongs to.</span></div></div>
+      <div class="step"><span class="step-n">3</span><div class="step-t"><b>It comes back</b><span>At the right moment - in your day, your plans, or your review.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="closing" id="invite">
+  <div class="wrap reveal">
+    <div class="eyebrow" style="text-align:center">Early access</div>
+    <h2>Make some space in your head.</h2>
+    <p>Daybook is invite-only while it's young, so it stays calm and well cared for. Ask for an invite and I'll set you up.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="mailto:robin@lumley-savile.com?subject=Daybook%20invite&body=Hi%20Robin%2C%20I%27d%20love%20an%20invite%20to%20Daybook.">Request an invite →</a>
+      <a class="btn btn-ghost" href="#signin">I have an account</a>
+    </div>
+  </div>
+</section>
+
+<footer id="signin">
+  <div class="wrap foot-in">
+    <a class="brand" href="/"><span class="brand-dot"></span>Daybook</a>
+    <ul class="foot-links">
+      <li><a href="#idea">The idea</a></li>
+      <li><a href="#tools">Tools</a></li>
+      <li><a href="#private">Private by design</a></li>
+      <li><a href="#invite">Request an invite</a></li>
+    </ul>
+    <div class="foot-meta">Made with care in Lisbon · <span id="yr">2026</span></div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // Gentle scroll reveal; if IO is unavailable, everything just shows.
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+  }
+</script>
+</body>
+</html>
