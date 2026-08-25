@@ -11,6 +11,11 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 // currentColor so it takes on the user's accent, and sits between the owner
 // name and "Daybook" in the wordmark.
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
+// Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
+// launcher and home. Home itself is always on. A module is ON unless set false.
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
+const modOn = (k) => !(state.modules && state.modules[k] === false);
+async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const token = () => localStorage.getItem(KEY) || '';
@@ -516,6 +521,10 @@ function renderSettings() {
         </div>
       </div>` : ''}
     </section>
+    <section class="home-sec">
+      <div class="home-sec-h set-collapse-h" data-settings-sections><span class="acw-chev">${state.settings.sectionsOpen ? '▾' : '▸'}</span>Sections<span class="muted">turn off anything you don't use</span></div>
+      ${state.settings.sectionsOpen ? `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>` : ''}
+    </section>
     ${(state.me && state.me.id === 1) ? `<section class="home-sec">
       <div class="home-sec-h">Invites<span class="muted">invite people to Daybook (invite-only for now)</span></div>
       <div class="set-card">
@@ -583,19 +592,19 @@ function renderNav() {
     <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
     <div class="nav-grid">
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span><span class="nav-lbl">Home</span></button>
-    <button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>
-    <button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>
-    <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
-    <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
-    <button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
-    <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Reflect</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
-    <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
-    <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
-    <button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Financial</span></button>
-    <button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span>🎯</span><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>
-    <button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>
+    ${modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : ''}
+    ${modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : ''}
+    ${modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : ''}
+    ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>` : ''}
+    ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
+    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Reflect</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
+    ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
+    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>` : ''}
+    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Financial</span></button>` : ''}
+    ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span>🎯</span><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
+    ${modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : ''}
     </div>
-    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
+    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
       <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
       <button class="nav-theme ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings">⚙ Settings</button>
@@ -977,16 +986,16 @@ function renderHome() {
            the sidebar is gone, so home is where you reach the sections the
            bottom tab bar doesn't hold. -->
       <nav class="home-launch">
-        <button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>
-        <button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>
-        <button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>
-        <button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>
-        <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>
-        <button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Financial</span></button>
-        <button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>
-        <button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>
-        <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
-        <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
+        ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
+        ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
+        ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
+        ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
+        ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>` : ''}
+        ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Financial</span></button>` : ''}
+        ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
+        ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>` : ''}
+        ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
+        ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
         <button class="hl-btn" data-open-settings><span class="hl-ic">⚙</span><span class="hl-t">Settings</span></button>
       </nav>
       <div class="home-body">
@@ -1003,15 +1012,15 @@ function renderHome() {
           </section>
         </div>
         <aside class="home-side">
-          ${pomoHtml()}
+          ${modOn('timer') ? pomoHtml() : ''}
           <section class="home-sec home-sec-recent">
             ${secH('recent', 'Recently viewed')}
             ${secOpen('recent') ? recentHtml : ''}
           </section>
-          <section class="home-sec home-sec-notepad">
+          ${modOn('notepad') ? `<section class="home-sec home-sec-notepad">
             ${secH('notepad', 'Notepad')}
             ${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}
-          </section>
+          </section>` : ''}
         </aside>
       </div>
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
@@ -5317,6 +5326,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
+  if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; if (e.target.checked) delete state.modules[k]; else state.modules[k] = false; saveModules(); renderNav(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
@@ -5436,6 +5446,7 @@ document.addEventListener('click', (e) => {
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; if (c[k]) delete c[k]; else c[k] = true; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
+  if (t.closest('[data-settings-sections]')) { state.settings = state.settings || {}; state.settings.sectionsOpen = !state.settings.sectionsOpen; renderSettings(); return; }
   if (t.closest('[data-create-invite]')) { createInvite(); return; }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
@@ -6959,10 +6970,13 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     if (me && me.user) { state.me = me.user; if (me.user.name) BRAND.owner = me.user.name; }
   } catch {}
   try {
-    [state.noteTops, state.tables, state.areas, state.favs] = await Promise.all([
+    let modKv;
+    [state.noteTops, state.tables, state.areas, state.favs, modKv] = await Promise.all([
       api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table'), api('/api/blocks?kind=area'),
       api('/api/favorites').catch(() => []),
+      api('/api/kv/modules').catch(() => null),
     ]);
+    try { state.modules = JSON.parse((modKv && modKv.value) || '{}') || {}; } catch { state.modules = {}; }
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
