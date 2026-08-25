@@ -387,7 +387,7 @@ function navSection(key, v) {
   // the top-level nav items instead, so the word here is purely expand/collapse.
   let title, add = '', rows;
   if (key === 'favs') {
-    title = 'Favourites';
+    title = 'Starred';
     rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"`, f.kind in KIND_IC ? KIND_IC[f.kind] : '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // Notes and tables are one list now; a table note carries the grid icon.
@@ -408,7 +408,7 @@ function navSection(key, v) {
       <span class="nav-sec-title">${title}</span>
       ${add}<span class="nav-grip" title="Drag to reorder">⠿</span>
     </div>
-    ${collapsed ? '' : `<div class="nav-sec-body"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
+    ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
   </div>`;
 }
 // ── theme: automatic by local sunrise/sunset, overridable by the button ──
@@ -886,7 +886,7 @@ function renderHome() {
           </section>
           ${(() => { const f = (state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active'); return f.length ? `<section class="home-sec home-sec-focus"><div class="home-sec-h">🎯 This quarter's focus</div><div class="goal-grid">${f.map(goalCardMini).join('')}</div></section>` : ''; })()}
           <section class="home-sec home-sec-favs">
-            <div class="home-sec-h">Favourites</div>
+            <div class="home-sec-h">Starred</div>
             ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
           </section>
         </div>
@@ -912,7 +912,7 @@ function openTablesList() {
   $('#pane').innerHTML = `
     ${pageCrumb('Tables')}
     <div class="pane-head home-head"><h1>Tables</h1><button class="add-btn wide" data-new-table>+ New table</button></div>
-    ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
+    ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All tables · ${state.tables.length}</div><div class="tbl-cards">${cards(state.tables) || '<div class="empty">No tables yet.</div>'}</div></section>`;
 }
 
@@ -1000,7 +1000,7 @@ function renderNotesList() {
     ${pageCrumb('Notes')}
     <div class="pane-head home-head"><h1>Notes</h1></div>
     <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${typeChips}${sortSel}<button class="add-btn wide notes-new" data-new-note>+ New note</button></div>
-    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
+    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     ${listHtml}`;
 }
 
@@ -1396,7 +1396,7 @@ function openAreasList() {
   $('#pane').innerHTML = `
     ${pageCrumb('Life areas')}
     <div class="pane-head home-head"><h1>Life areas</h1><button class="add-btn wide" data-new-area>+ New area</button></div>
-    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Favourites</div><div class="area-cards">${favAreas.map(card).join('')}</div></section>` : ''}
+    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All areas · ${state.areas.length}</div>
       <div class="area-cards">${state.areas.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
 }
@@ -4591,6 +4591,14 @@ function patchVisionText(id, text) {
 // pre-layout width (wrapping one line into many), so size on the next frame.
 function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
 function autoGrowSoon(el) { if (!el) return; requestAnimationFrame(() => autoGrow(el)); }
+// Starred notes, shown in the note sidebar's spare space. One or two columns,
+// depending on how wide the sidebar is. The note you're on drops out.
+function starredNotesHtml(currentId) {
+  const starred = (state.favs || []).filter((f) => f.kind === 'note' && f.id !== currentId);
+  if (!starred.length) return '';
+  return `<div class="note-starred"><div class="sub-h">Starred notes</div>
+    <div class="star-grid">${starred.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">★</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div></div>`;
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -4615,6 +4623,7 @@ function renderNote() {
       <aside class="note-side">
         <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
           ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>
+        ${starredNotesHtml(n.id)}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
     </div>`;

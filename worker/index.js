@@ -1030,6 +1030,9 @@ async function searchBlocks(request, env, url) {
 // block and it re-arms, leave it and it never fires twice, even if the cron
 // runs late and the block appears in two consecutive windows.
 async function runAlerts(env) {
+  // Robin can turn the 5-minutes-before text off from Today's settings.
+  const pref = await env.DB.prepare("SELECT value FROM settings WHERE key='sms_block_alerts'").first().catch(() => null);
+  if (pref && pref.value === '0') return { checked: null, due: 0, skipped: 'sms off' };
   const now = localParts(new Date(), TZ);          // { date, min } in Lisbon
   const target = now.min + 5;
 
@@ -1237,10 +1240,13 @@ async function handleLanes(request, env) {
       stmts.push(env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (?,'lane_labels',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(env.uid, JSON.stringify(b.labels)));
     }
     if (b.areaMap && typeof b.areaMap === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (?,'area_lanes',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(env.uid, JSON.stringify(b.areaMap)));
+    // Whether the every-minute cron texts a reminder 5 minutes before a block.
+    if (b.smsAlerts !== undefined) stmts.push(env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (?,'sms_block_alerts',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(env.uid, b.smsAlerts ? '1' : '0'));
     if (stmts.length) await env.DB.batch(stmts);
   }
   const cfg = await getLaneConfig(env);
-  return json({ lanes: cfg.lanes, areaMap: cfg.areaMap, areas: cfg.areas.map((a) => { let p = {}; try { p = a.props ? JSON.parse(a.props) : {}; } catch {} return { id: a.id, title: a.title, hue: p.hue ?? null }; }) }, request);
+  const smsRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='sms_block_alerts'").bind(env.uid).first().catch(() => null);
+  return json({ lanes: cfg.lanes, areaMap: cfg.areaMap, smsAlerts: !smsRow || smsRow.value !== '0', areas: cfg.areas.map((a) => { let p = {}; try { p = a.props ? JSON.parse(a.props) : {}; } catch {} return { id: a.id, title: a.title, hue: p.hue ?? null }; }) }, request);
 }
 
 async function handleDay(request, env, url) {
@@ -1561,6 +1567,14 @@ async function updateTask(request, env, id) {
         env.DB.prepare('UPDATE slots SET title = ? WHERE tana_id = ? AND title = ? AND user_id = ?').bind(title, id, existing.title, env.uid),
       ]);
     }
+  }
+
+  // Reassigning the task's Life Area. null clears it (falls to the untracked
+  // lane). Written before done, which re-reads props for itself.
+  if (b.area !== undefined) {
+    p.area = b.area || null;
+    await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(p), new Date().toISOString(), id).run();
   }
 
   if (b.done !== undefined && !!b.done !== !!p.done) {
@@ -1911,6 +1925,18 @@ export default {
       // subdomain like tara.daybook.fyi is the app itself, same as life.robski.uk.
       const isApex = host === 'daybook.fyi' || host === 'www.daybook.fyi';
       const isLife = host === 'life.robski.uk' || (host.endsWith('.daybook.fyi') && !isApex);
+      // Only the marketing apex may be indexed; the private apps and per-user
+      // tenant subdomains must not be.
+      if (path === '/robots.txt') {
+        const body = isApex
+          ? 'User-agent: *\nAllow: /\nSitemap: https://daybook.fyi/sitemap.xml\n'
+          : 'User-agent: *\nDisallow: /\n';
+        return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
+      }
+      if (path === '/sitemap.xml' && isApex) {
+        const body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>https://daybook.fyi/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>\n';
+        return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
+      }
       if (isApex && path === '/') {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request)));
       }

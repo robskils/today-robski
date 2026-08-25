@@ -30,7 +30,7 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css?v=20260826f">
+<link rel="stylesheet" href="/today.css?v=20260826s">
 <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -88,6 +88,13 @@
     </div>
   </header>
 
+  <!-- One teaching for the day, at the top: a moment to reflect before the day's
+       shape. Same on every device, all day. Hidden until the quote loads. -->
+  <figure class="quote quote-top" id="quote" hidden>
+    <blockquote id="quote-text"></blockquote>
+    <figcaption id="quote-author"></figcaption>
+  </figure>
+
   <!-- 只管打坐 shikantaza, "just sitting". Same watermark as the dojo site.
        Decorative: hidden from screen readers, ignores the pointer. -->
   <div class="kanji-watermark" aria-hidden="true">只管打坐</div>
@@ -132,12 +139,6 @@
 
       <!-- What the day actually held. A record, not a scoreboard. -->
       <section class="tally" id="tally" aria-label="What today held" hidden></section>
-
-      <!-- One teaching for the day. Same on every device, all day. -->
-      <figure class="quote" id="quote" hidden>
-        <blockquote id="quote-text"></blockquote>
-        <figcaption id="quote-author"></figcaption>
-      </figure>
     </section>
 
     <aside class="col-tasks">
@@ -173,6 +174,12 @@
       <span>Time stream</span>
       <select id="sheet-lane" class="input"></select>
       <span class="zen-note" id="sheet-zen" hidden></span>
+    </label>
+
+    <!-- Task mode only: the task's Life Area (which in turn feeds its stream). -->
+    <label class="field" id="sheet-area-field" hidden>
+      <span>Life area</span>
+      <select id="sheet-area" class="input"></select>
     </label>
 
     <div class="field-row">
@@ -246,8 +253,14 @@
 <!-- Lanes & areas: rename the Today lanes and choose which Life Area feeds each. -->
 <div class="sheet-bg" id="settings-bg" hidden>
   <form class="sheet sheet-wide" id="settings-form">
-    <h3>Time streams &amp; areas</h3>
-    <p class="sheet-sub">Rename your time streams, and choose which life area feeds each one. These are the categories used across the rail, tasks and the schedule.</p>
+    <h3>Today settings</h3>
+    <p class="sheet-sub">Rename your time streams, choose which life area feeds each one, and how Today reminds you. These categories are used across the rail, tasks and the schedule.</p>
+    <div class="set-sec"><span class="set-h">Reminders</span>
+      <label class="toggle set-toggle">
+        <input type="checkbox" id="set-sms">
+        <span>Text me 5 minutes before a time block starts</span>
+      </label>
+    </div>
     <div class="set-sec"><span class="set-h">Time stream names</span><div id="set-lanes" class="set-lanes"></div></div>
     <div class="set-sec"><span class="set-h">Life area → time stream</span><div id="set-areas" class="set-areas"></div></div>
     <div class="sheet-actions">
@@ -296,6 +309,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js?v=20260826f"></script>
+<script type="module" src="/today.js?v=20260826s"></script>
 </body>
 </html>

@@ -25,6 +25,21 @@ custom_domain = true
 pattern = "life.robski.uk"
 custom_domain = true
 
+# Daybook's public marketing site. Same worker serves /home.html at the apex
+# (see the hostname switch in worker/index.js). The app itself still lives at
+# life.robski.uk until the multi-tenant cutover; this is the front door only.
+#
+# A zone route (not custom_domain) because daybook.fyi already had DNS records:
+# this attaches the worker to the existing PROXIED record rather than creating a
+# new one. The apex/www records must be orange-clouded (proxied) for it to fire.
+[[routes]]
+pattern = "daybook.fyi/*"
+zone_name = "daybook.fyi"
+
+[[routes]]
+pattern = "www.daybook.fyi/*"
+zone_name = "daybook.fyi"
+
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
