@@ -1906,7 +1906,14 @@ export default {
     // per hostname: life.robski.uk is the Life app; everywhere else is Today.
     // Everything non-API/auth falls through to the assets binding untouched.
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
-      const isLife = url.hostname === 'life.robski.uk';
+      const host = url.hostname;
+      // daybook.fyi apex (+ www) is the public marketing site; a per-user
+      // subdomain like tara.daybook.fyi is the app itself, same as life.robski.uk.
+      const isApex = host === 'daybook.fyi' || host === 'www.daybook.fyi';
+      const isLife = host === 'life.robski.uk' || (host.endsWith('.daybook.fyi') && !isApex);
+      if (isApex && path === '/') {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request)));
+      }
       // life.robski.uk/today IS the real day planner (index.html) - the exact
       // same app as today.robski.uk, sharing the Life login (same origin/token).
       if (isLife && /^\/today(\/|$)/.test(path)) {
