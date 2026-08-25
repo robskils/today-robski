@@ -890,7 +890,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 }
 .nav-brand { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; padding:6px 10px 12px; cursor:pointer; border-radius:8px; transition:background .12s,opacity .12s; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
-.nav-brand em { font-style:italic; color:var(--accent); } .nav-brand .dot { color:var(--gold); margin:0 3px; }
+.nav-brand em { font-style:italic; color:var(--accent); }
+.brand-mark { width:.82em; height:.82em; color:var(--accent); vertical-align:-.06em; margin:0 .22em; }
+.nav-brand .brand-mark { margin:0 .16em 0 .2em; }
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
   padding:10px 12px; margin-bottom:8px; border-radius:10px; border:1px solid var(--line-2);
