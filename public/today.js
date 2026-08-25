@@ -733,8 +733,8 @@ function openSheet({ slot, task, lane, activity, blockTask }) {
     : slot?.duration || task?.duration || activity?.duration
       || defaultDuration(slot?.lane || task?.lane || activity?.lane || lane);
 
-  $('sheet-quick').innerHTML = [10, 15, 25, 30, 45, 60]
-    .map((m) => `<button type="button" data-min="${m}">${m}m</button>`).join('');
+  $('sheet-quick').innerHTML = [10, 15, 25, 30, 45, 60, 90, 120, 180, 240]
+    .map((m) => `<button type="button" data-min="${m}">${m <= 60 ? m + 'm' : m % 60 === 0 ? m / 60 + 'h' : m + 'm'}</button>`).join('');
 
   renderSheetTasks(bt ? null : slot);
   syncFloatUI();
@@ -1565,11 +1565,11 @@ let editLanes = [];   // working copy while the sheet is open
 function renderLaneRows() {
   $('set-lanes').innerHTML = editLanes.map((l, i) =>
     `<div class="set-lane">
-      <input type="color" class="set-color" data-lane-hue="${i}" value="${hslToHex(l.hue)}" title="Lane colour">
-      <input class="input set-lane-name" data-lane-name="${i}" value="${esc(l.label)}" placeholder="Lane name">
+      <input type="color" class="set-color" data-lane-hue="${i}" value="${hslToHex(l.hue)}" title="Stream colour">
+      <input class="input set-lane-name" data-lane-name="${i}" value="${esc(l.label)}" placeholder="Time stream name">
       <label class="set-practice" title="Practice: counts the moment it's scheduled, no tick"><input type="checkbox" data-lane-practice="${i}" ${l.practice ? 'checked' : ''}> practice</label>
-      <button type="button" class="set-del" data-lane-del="${i}" aria-label="Delete lane">&times;</button>
-    </div>`).join('') + `<button type="button" class="set-add" id="lane-add">+ Add lane</button>`;
+      <button type="button" class="set-del" data-lane-del="${i}" aria-label="Delete stream">&times;</button>
+    </div>`).join('') + `<button type="button" class="set-add" id="lane-add">+ Add time stream</button>`;
 }
 function renderAreaRows(areas, areaMap) {
   const opts = editLanes.map((l) => `<option value="${esc(l.key)}">${esc(l.label || 'Untitled')}</option>`).join('') + `<option value="other">Other</option>`;
