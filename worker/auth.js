@@ -155,7 +155,7 @@ export async function requestCode(request, env, json, err) {
   ).bind(email, code, now + CODE_TTL, now).run();
 
   if (channel === 'sms') {
-    const sms = await sendSms(env, `${code} is your Robski Life sign-in code. It expires in 10 minutes.`);
+    const sms = await sendSms(env, `${code} is your Daybook sign-in code. It expires in 10 minutes.`);
     // Only report SMS if it actually left: a not-configured or rejected send
     // silently falls through to email, so the user is never stranded without a
     // code just because SMS credit ran out.

@@ -3515,42 +3515,46 @@ async function loadSpending() {
   const f = state.financial;
   renderFinancial();
   try {
-    const [txns, catsRes] = await Promise.all([
+    const [txns, catsRes, areas] = await Promise.all([
       api('/api/blocks?kind=txn'),
       api('/api/kv/spend_categories').catch(() => ({ value: null })),
+      (state.areas && state.areas.length) ? Promise.resolve(state.areas) : api('/api/blocks?kind=area').catch(() => []),
     ]);
     f.txns = txns;
-    try { const arr = catsRes && catsRes.value ? JSON.parse(catsRes.value) : null; f.spendCats = Array.isArray(arr) && arr.length ? arr : SPEND_CATS.slice(); }
-    catch { f.spendCats = SPEND_CATS.slice(); }
+    if ((!state.areas || !state.areas.length) && Array.isArray(areas)) state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    try { const arr = catsRes && catsRes.value ? JSON.parse(catsRes.value) : null; f.spendExtras = Array.isArray(arr) ? arr : []; }
+    catch { f.spendExtras = []; }
   } catch (e) { toast(e.message); f.txns = f.txns || []; }
   renderFinancial();
 }
-async function saveSpendCats(cats) {
-  state.financial.spendCats = cats;
+// Only the EXTRAS are user-editable here; the Life Areas come from the Life Areas
+// section, so renaming/removing one of those happens there, not on this page.
+async function saveSpendExtras(extras) {
+  state.financial.spendExtras = extras;
   renderFinancial();
-  try { await api('/api/kv/spend_categories', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(cats) }) }); } catch (e) { toast(e.message); }
+  try { await api('/api/kv/spend_categories', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(extras) }) }); } catch (e) { toast(e.message); }
 }
 async function spendCatAdd() {
-  const name = String(await uiPrompt('New category:', { placeholder: 'e.g. Childcare' }) || '').trim();
+  const name = String(await uiPrompt('New spending category:', { placeholder: 'e.g. Savings' }) || '').trim();
   if (!name) return;
-  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
-  saveSpendCats([...spendCats().filter((c) => c !== 'Uncategorised'), name, 'Uncategorised']);
+  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Life Areas are categories too)'); return; }
+  saveSpendExtras([...spendExtras(), name]);
 }
 async function spendCatRename(oldName) {
+  if (spendIsArea(oldName)) { toast('This is a Life Area - rename it in the Life Areas section.'); return; }
   const name = String(await uiPrompt('Rename category:', { value: oldName }) || '').trim();
   if (!name || name === oldName) return;
   if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
-  await saveSpendCats(spendCats().map((c) => (c === oldName ? name : c)));
-  // Move transactions in the renamed category across, so nothing is orphaned.
+  await saveSpendExtras(spendExtras().map((c) => (c === oldName ? name : c)));
   for (const t of (state.financial.txns || []).filter((x) => (x.props || {}).category === oldName)) {
     t.props.category = name; api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { category: name } }) }).catch(() => {});
   }
   renderFinancial();
 }
 async function spendCatDel(cat) {
-  if (cat === 'Uncategorised') return;
+  if (cat === 'Uncategorised' || spendIsArea(cat)) return;
   if (!(await uiConfirm(`Delete "${cat}"? Transactions in it become Uncategorised.`, { danger: true, okLabel: 'Delete' }))) return;
-  await saveSpendCats(spendCats().filter((c) => c !== cat));
+  await saveSpendExtras(spendExtras().filter((c) => c !== cat));
   for (const t of (state.financial.txns || []).filter((x) => (x.props || {}).category === cat)) {
     t.props.category = 'Uncategorised'; api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { category: 'Uncategorised' } }) }).catch(() => {});
   }
@@ -3771,14 +3775,15 @@ async function advicePoll() {
   await loadAdvice();
 }
 // ── Spending ─────────────────────────────────────────────────────────────
-const SPEND_CATS = ['Groceries', 'Eating out', 'Transport', 'Housing', 'Utilities', 'Health', 'Shopping', 'Entertainment', 'Travel', 'Subscriptions', 'Fees & charges', 'Cash', 'Transfers', 'Salary', 'Other income', 'Uncategorised'];
-// The user's own category list (falls back to the defaults). 'Uncategorised' is
-// always available as the safety bucket, even if trimmed from the saved list.
-const spendCats = () => {
-  const c = (state.financial.spendCats && state.financial.spendCats.length) ? state.financial.spendCats.slice() : SPEND_CATS.slice();
-  if (!c.includes('Uncategorised')) c.push('Uncategorised');
-  return c;
-};
+// Spending categories ARE the Life Areas by default: add a Life Area and it
+// becomes a spending category automatically. A few money-only buckets (income,
+// the catch-all) sit alongside, and the user can add extra one-off categories
+// that don't map to an area (stored in settings.kv_spend_categories).
+const SPEND_SPECIAL = ['Salary', 'Other income', 'Uncategorised'];
+const spendAreaNames = () => (state.areas || []).map((a) => a.title).filter(Boolean);
+const spendExtras = () => state.financial.spendExtras || [];
+const spendIsArea = (c) => spendAreaNames().includes(c);
+const spendCats = () => [...new Set([...spendAreaNames(), ...spendExtras(), ...SPEND_SPECIAL].filter(Boolean))];
 const INCOME_CATS = new Set(['Salary', 'Other income']);
 const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
 const eurSigned = (n) => (n < 0 ? '-' : '') + '€' + Math.abs(Math.round(n)).toLocaleString('en-IE');
@@ -3789,8 +3794,14 @@ function spendingBody() {
   if (f.spendImport) return spendImportView();
   if (f.txns == null) return '<div class="fin-load">Loading…</div>';
   const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV or PDF)<input type="file" id="sp-file" accept=".csv,.pdf,text/csv,application/pdf" hidden></label><button class="ghost" data-sp-cat-manage title="Add, rename or delete your spending categories">⚙ Categories</button>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
-  const catManage = f.spendCatsOpen ? `<div class="sp-catmanage"><div class="fin-sec-h"><span>Your categories</span><button class="ghost" data-sp-cat-add>+ Category</button></div>
-    <div class="trk-cats">${spendCats().map((c) => `<span class="trk-cat-chip">${esc(c)}<button class="trk-cat-btn" data-sp-cat-rename="${esc(c)}" title="Rename">✎</button>${c === 'Uncategorised' ? '' : `<button class="trk-cat-btn trk-cat-del" data-sp-cat-del="${esc(c)}" title="Delete">×</button>`}</span>`).join('')}</div></div>` : '';
+  const catChip = (c) => {
+    if (spendIsArea(c)) return `<span class="trk-cat-chip sp-cat-area" title="From your Life Areas">${esc(c)}<span class="sp-cat-tag">area</span></span>`;
+    if (SPEND_SPECIAL.includes(c)) return `<span class="trk-cat-chip">${esc(c)}</span>`;
+    return `<span class="trk-cat-chip">${esc(c)}<button class="trk-cat-btn" data-sp-cat-rename="${esc(c)}" title="Rename">✎</button><button class="trk-cat-btn trk-cat-del" data-sp-cat-del="${esc(c)}" title="Delete">×</button></span>`;
+  };
+  const catManage = f.spendCatsOpen ? `<div class="sp-catmanage"><div class="fin-sec-h"><span>Categories</span><button class="ghost" data-sp-cat-add>+ Extra category</button></div>
+    <p class="sp-cat-note">Your <b>Life Areas</b> are your spending categories - add a Life Area and it shows up here automatically. Add an extra below for spending that doesn't fit an area.</p>
+    <div class="trk-cats">${spendCats().map(catChip).join('')}</div></div>` : '';
   if (!(f.txns || []).length) return `${importBar}${catManage}<div class="fin-soon"><div class="fin-soon-ic">🧾</div><h2>Spending</h2><p>Import a bank statement - CSV (Wise: Statement → Download → CSV) or a PDF statement - to categorise your spending and see income vs outgoings over time.</p><p class="fin-soon-note">PDFs are read by Gemini to pull out the transactions; nothing is sent to a bank.</p></div>`;
   const months = spendMonths();
   if (!f.spendMonth || !months.includes(f.spendMonth)) f.spendMonth = months[0];
