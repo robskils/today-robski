@@ -1839,6 +1839,8 @@ table.ttable tr:last-child td { border-bottom:0; }
   box-shadow:var(--shadow); }
 .gate2-mark { font-family:'Cormorant Garamond',serif; font-size:40px; font-weight:600; letter-spacing:-.01em; }
 .gate2-mark em { font-style:italic; color:var(--accent); } .gate2-mark .dot { color:var(--gold); margin:0 5px; }
+/* Keep the sunrise mark on the same line as "Daybook" when the wordmark wraps. */
+.mark-lockup { white-space:nowrap; }
 .gate2-sub { color:var(--ink-2); font-size:16.5px; line-height:1.5; text-wrap:balance; margin-bottom:2px; }
 .gate2-input { width:100%; padding:14px 16px; font-size:17px; text-align:center; color:var(--ink);
   background:var(--paper); border:1px solid var(--line-2); border-radius:13px;

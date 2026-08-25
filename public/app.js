@@ -6690,7 +6690,7 @@ let gateStep = 'email', gateEmail = '';
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark">${esc(BRAND.owner)}${MARK}<em>${esc(BRAND.app)}</em></div>
+      <div class="gate2-mark">${esc(BRAND.owner)} <span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
