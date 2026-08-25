@@ -1383,8 +1383,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-subject { color:var(--ink-2); font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mail-preview { display:block; color:var(--ink-3); font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mail-date { color:var(--ink-3); font-size:13px; white-space:nowrap; flex:none; }
-.mail-row.unread { box-shadow:inset 3px 0 0 var(--accent); }
-.mail-row.unread .mail-from { font-weight:700; } .mail-row.unread .mail-subject { color:var(--ink); font-weight:500; }
+/* Unread stands out: an accent rail, a soft tinted row, a filled accent avatar,
+   and bolder darker text - so a glance shows what's new. */
+.mail-row.unread { box-shadow:inset 3px 0 0 var(--accent); background:color-mix(in srgb,var(--accent) 7%,transparent); }
+.mail-row.unread:hover { background:color-mix(in srgb,var(--accent) 12%,transparent); }
+.mail-row.unread .mail-from { font-weight:700; color:var(--ink); }
+.mail-row.unread .mail-subject { color:var(--ink); font-weight:600; }
+.mail-row.unread .mail-avatar { background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent)); color:var(--accent-ink); }
 .mail-empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--ink-3); font-size:16px; }
 .mail-msg { padding:20px 26px 28px; }
 .mail-msg:focus { outline:none; }
