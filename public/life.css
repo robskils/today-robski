@@ -948,6 +948,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
+/* Drag to reorder the focus cards. */
+.home-sec-focus .goal-card { position:relative; cursor:grab; }
+.home-sec-focus .goal-card.dragging { opacity:.4; }
+.home-sec-focus .drop-before::before, .home-sec-focus .drop-after::after { content:''; position:absolute; top:6px; bottom:6px; width:3px; border-radius:2px; background:var(--accent); z-index:3; }
+.home-sec-focus .drop-before::before { left:-5px; } .home-sec-focus .drop-after::after { right:-5px; }
 /* Home notifications - gentle, dismissible, only what's live today. */
 .home-alerts { display:flex; flex-direction:column; gap:8px; margin:0 0 20px; }
 .home-alert { display:flex; align-items:center; gap:11px; padding:12px 14px; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:12px; font-size:15px; color:var(--ink); }

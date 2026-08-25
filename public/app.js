@@ -986,7 +986,7 @@ function renderHome() {
             <div class="home-sec-h">Today</div>
             <div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>
           </section>
-          ${(() => { const f = (state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active'); if (!f.length) return ''; const collapsed = localStorage.getItem('life.home.focusCollapsed') === '1'; return `<section class="home-sec home-sec-focus"><div class="home-sec-h home-sec-toggle" data-home-focus-toggle><span class="hs-chev">${collapsed ? '▸' : '▾'}</span>🎯 This quarter's focus</div>${collapsed ? '' : `<div class="goal-grid">${f.map(goalCardMini).join('')}</div>`}</section>`; })()}
+          ${(() => { const f = focusGoals(); if (!f.length) return ''; const collapsed = localStorage.getItem('life.home.focusCollapsed') === '1'; return `<section class="home-sec home-sec-focus"><div class="home-sec-h home-sec-toggle" data-home-focus-toggle><span class="hs-chev">${collapsed ? '▸' : '▾'}</span>🎯 This quarter's focus</div>${collapsed ? '' : `<div class="goal-grid">${f.map((g) => goalCardMini(g, true)).join('')}</div>`}</section>`; })()}
           <section class="home-sec home-sec-favs">
             <div class="home-sec-h">Starred</div>
             ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
@@ -4295,9 +4295,20 @@ async function openGoals(tab) {
   renderNav(); renderGoals();
   api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewReminders = r.reminders || []; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
 }
-function goalCardMini(g) {
+// Focus-list order (per device) and helpers, so you can drag the cards around.
+function focusOrderIds() { try { const o = JSON.parse(localStorage.getItem('life.home.focusOrder')); return Array.isArray(o) ? o : []; } catch { return []; } }
+function sortFocus(goals) { const o = focusOrderIds(); return goals.slice().sort((a, b) => { const ia = o.indexOf(a.id), ib = o.indexOf(b.id); return (ia < 0 ? 1e6 : ia) - (ib < 0 ? 1e6 : ib); }); }
+function focusGoals() { return sortFocus((state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active')); }
+function reorderFocus(dragged, before) {
+  const ids = focusGoals().map((g) => g.id).filter((id) => id !== dragged);
+  let i = before ? ids.indexOf(before) : ids.length; if (i < 0) i = ids.length;
+  ids.splice(i, 0, dragged);
+  try { localStorage.setItem('life.home.focusOrder', JSON.stringify(ids)); } catch {}
+  renderHome();
+}
+function goalCardMini(g, drag) {
   const a = goalArea(g); const p = gp(g); const pct = Math.round(goalProgress(g) * 100);
-  return `<button class="goal-card" data-open-goal="${g.id}" style="--h:${hueOf(a)}">
+  return `<button class="goal-card" data-open-goal="${g.id}" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
     <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span><span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
     <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
     <div class="gc-bar"><i style="width:${pct}%"></i></div></button>`;
@@ -5854,7 +5865,7 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null, dragContact = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null;
 function clearDropMarks() {
   document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
 }
@@ -5876,12 +5887,14 @@ function dropBefore(over, list, idOf) {
 }
 document.addEventListener('dragstart', (e) => {
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const fo = e.target.closest('[data-focus-id]'); if (fo) { dragFocus = fo.dataset.focusId; fo.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const cc = e.target.closest('[data-contact-drag]'); if (cc) { dragContact = cc.dataset.contactDrag; cc.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', cc.dataset.contactDrag); } catch {} }
 });
 document.addEventListener('dragover', (e) => {
   if (dragFav && e.target.closest('#favs')) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
+  if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
   if (dragContact) { const gd = e.target.closest('[data-group-drop]'); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); if (gd) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; gd.classList.add('cg-over'); } return; }
@@ -5901,6 +5914,12 @@ document.addEventListener('drop', (e) => {
     const before = over && over.dataset.favId !== dragFav ? dropBefore(over, state.favs.map((x) => x.id), (el) => el.dataset.favId) : null;
     clearDropMarks(); reorderFavs(dragFav, before); dragFav = null; return;
   }
+  if (dragFocus) {
+    e.preventDefault(); const over = e.target.closest('[data-focus-id]');
+    const ids = focusGoals().map((g) => g.id);
+    const before = over && over.dataset.focusId !== dragFocus ? dropBefore(over, ids, (el) => el.dataset.focusId) : null;
+    clearDropMarks(); reorderFocus(dragFocus, before); dragFocus = null; return;
+  }
   if (dragSec) {
     e.preventDefault(); const over = e.target.closest('[data-nav-sec]');
     const before = over && over.dataset.navSec !== dragSec ? dropBefore(over, state.nav.order, (el) => el.dataset.navSec) : null;
@@ -5919,7 +5938,7 @@ document.addEventListener('drop', (e) => {
     dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
