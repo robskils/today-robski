@@ -466,7 +466,16 @@ async function syncAccentFromServer() {
 }
 
 // ── Settings hub ──────────────────────────────────────────────────────
-function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); return Promise.resolve(); }
+function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); if (state.me && state.me.id === 1) loadInvites(); return Promise.resolve(); }
+async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
+async function createInvite() {
+  const plan = ($('#inv-plan') || {}).value || 'standard';
+  const free = ($('#inv-freetoggle') || {}).checked ? 1 : 0;
+  const email = (($('#inv-email') || {}).value || '').trim();
+  try { const r = await api('/api/invites', { method: 'POST', body: JSON.stringify({ plan, free, email }) }); await loadInvites(); toast(`Invite created: ${r.code}`); }
+  catch (e) { toast(e.message); }
+}
+const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}"><code class="inv-code">${esc(i.code)}</code><span class="inv-meta">${i.free ? 'free · ' : ''}${esc(i.plan || '')}${i.email ? ' · ' + esc(i.email) : ''}${i.used_by ? ' · used' : ''}</span>${i.used_by ? '' : `<button class="ghost inv-copy" data-copy-code="${esc(i.code)}">Copy</button>`}</div>`;
 function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
@@ -500,10 +509,22 @@ function renderSettings() {
         </div>
       </div>` : ''}
     </section>
+    ${(state.me && state.me.id === 1) ? `<section class="home-sec">
+      <div class="home-sec-h">Invites<span class="muted">invite people to Daybook (invite-only for now)</span></div>
+      <div class="set-card">
+        <div class="inv-new">
+          <select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
+          <label class="inv-free"><input type="checkbox" id="inv-freetoggle"> Free (100% off)</label>
+          <input class="sel" id="inv-email" placeholder="Pre-assign to an email (optional)" autocomplete="off">
+          <button class="add-btn wide" data-create-invite>Create invite</button>
+        </div>
+        <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet.</div>'}</div>
+      </div>
+    </section>` : ''}
     <section class="home-sec">
       <div class="home-sec-h">More</div>
       <div class="set-links">${links.map(([ic, label, attr]) => `<button class="set-link" ${attr}><span class="set-link-ic">${ic}</span>${label}</button>`).join('')}</div>
-      <p class="home-empty" style="padding:12px 0 0">Your account, notifications and AI keys will live here soon.</p>
+      ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:12px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : '<p class="home-empty" style="padding:12px 0 0">Your account, notifications and AI keys will live here soon.</p>'}
     </section>`;
 }
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
@@ -5215,6 +5236,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
+  if (t.closest('[data-create-invite]')) { createInvite(); return; }
+  const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
@@ -6628,6 +6651,37 @@ function showGate(sub) {
     </form></div>`);
   $('#gate-email').focus();
 }
+// Onboarding gate: a signed-in email with no account yet claims its space here
+// (name + subdomain + invite). Only reached on the multi-tenant build, where
+// /api/me returns needsSignup; on the single-tenant app /api/me 404s and this
+// never shows.
+function showSignup(email) {
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
+      <div class="gate2-mark"><em>${esc(BRAND.app)}</em></div>
+      <p class="gate2-sub">Welcome - let's set up your space.</p>
+      <label class="signup-l">Your name<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
+      <label class="signup-l">Your web address<span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span></label>
+      <label class="signup-l">Invite code<input class="gate2-input" id="su-invite" placeholder="ABCD1234" autocomplete="off" spellcheck="false"></label>
+      <button class="gate2-btn" id="su-btn" type="submit">Create my Daybook</button>
+      <p class="gate2-err" id="su-err" hidden></p>
+      <p class="gate2-alt su-foot">Signed in as ${esc(email)} · <button type="button" class="su-signout" id="su-signout">sign out</button></p>
+    </form></div>`);
+  $('#signup-form').addEventListener('submit', signupSubmit);
+  $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); });
+  $('#su-sub').addEventListener('input', (e) => { e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
+  $('#su-name').focus();
+}
+async function signupSubmit(e) {
+  e.preventDefault();
+  const err = $('#su-err'), btn = $('#su-btn');
+  err.hidden = true; btn.disabled = true;
+  try {
+    const d = await api('/api/signup', { method: 'POST', body: JSON.stringify({ name: $('#su-name').value.trim(), subdomain: $('#su-sub').value.trim(), invite: $('#su-invite').value.trim() }) });
+    if (d && d.user) { location.reload(); return; }
+    throw new Error('Could not create your account.');
+  } catch (e2) { err.textContent = e2.message || 'Could not create your account.'; err.hidden = false; btn.disabled = false; }
+}
 // Ask for a code by email (default) or SMS. SMS is the way in once the mailbox
 // you would fetch the email from lives behind this very gate.
 async function gateSend(channel) {
@@ -6686,6 +6740,13 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
 (async function boot() {
   initTheme();
   if (!token()) { showGate(); return; }
+  // Multi-tenant only: a signed-in email with no account yet must claim one
+  // first. On the single-tenant app /api/me 404s, so this is a no-op.
+  try {
+    const me = await api('/api/me');
+    if (me && me.needsSignup) { showSignup(me.email); return; }
+    if (me && me.user) { state.me = me.user; if (me.user.name) BRAND.owner = me.user.name; }
+  } catch {}
   try {
     [state.noteTops, state.tables, state.areas, state.favs] = await Promise.all([
       api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table'), api('/api/blocks?kind=area'),
