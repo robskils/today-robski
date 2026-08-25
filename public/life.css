@@ -919,7 +919,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-sec-h:hover .nav-chev, .nav-sec-h:hover .nav-sec-title { color:var(--ink); }
 .nav-sec-h:hover .nav-grip { opacity:.55; }
 .nav-chev { color:var(--ink-2); font-size:13px; width:14px; flex:none; text-align:center; }
-.nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; padding:2px 0; }
+.nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:color-mix(in srgb,var(--accent) 80%,var(--ink-3)); font-weight:600; padding:2px 0; }
 .nav-add { color:var(--ink-3); font-size:18px; line-height:1; padding:0 6px; flex:none; } .nav-add:hover { color:var(--accent); }
 /* Quick-add "+" on Tasks/Calendar/Mail/Notes: right-aligned, appears on hover. */
 .nav-badge { margin-left:auto; flex:none; min-width:20px; height:19px; padding:0 6px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:700; line-height:1; }
@@ -966,6 +966,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .set-link { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:14px 16px; border:1px solid var(--line); border-radius:13px; background:var(--card); color:var(--ink); font-size:15.5px; box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s; }
 .set-link:hover { border-color:var(--accent); }
 .set-link-ic { flex:none; width:22px; text-align:center; }
+.set-collapse-h { cursor:pointer; display:flex; align-items:center; gap:9px; user-select:none; }
+.set-collapse-h .acw-chev { font-size:11px; color:var(--ink-3); width:11px; flex:none; }
+.set-areas-grid { display:flex; flex-wrap:wrap; gap:9px; }
+.set-area { display:inline-flex; align-items:center; gap:9px; padding:11px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:15.5px; box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s, transform .06s; }
+.set-area:hover { border-color:var(--accent); }
+.set-area:active { transform:scale(.98); }
+.set-area-dot { width:11px; height:11px; border-radius:50%; flex:none; background:hsl(var(--h) 55% 55%); }
 /* Drag-to-reorder feedback: the dragged item dims and the drop target shows an
    accent insertion line so it's obvious where it will land. */
 .nav-sec, [data-fav-id] { position:relative; }

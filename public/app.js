@@ -477,18 +477,28 @@ function renderSettings() {
     ['🎯', 'Reviews &amp; reminders', 'data-open-reviews=""'],
     ['☀', 'Time streams (Today)', 'data-open-today=""'],
   ];
+  state.settings = state.settings || {};
+  const appOpen = !!state.settings.appearanceOpen;
+  const areaCards = (state.areas || []).length
+    ? (state.areas || []).map((a) => `<button class="set-area" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="set-area-dot"></span><span class="set-area-t">${esc(a.title || 'Untitled')}</span></button>`).join('')
+    : '<div class="home-empty">No life areas yet - add your first: Family, Health, Work, Spirit…</div>';
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
     <div class="pane-head home-head"><h1>Settings</h1></div>
     <section class="home-sec">
-      <div class="home-sec-h">Appearance</div>
-      <div class="set-card">
+      <div class="home-sec-h">Life areas<span class="muted">the heart of Daybook - they drive your streams, goals, spending &amp; more</span></div>
+      <div class="set-areas-grid">${areaCards}</div>
+      <button class="add-btn wide" data-new-area style="margin-top:14px">+ New life area</button>
+    </section>
+    <section class="home-sec">
+      <div class="home-sec-h set-collapse-h" data-settings-appearance><span class="acw-chev">${appOpen ? '▾' : '▸'}</span>Appearance</div>
+      ${appOpen ? `<div class="set-card">
         <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">Auto follows your local sunrise &amp; sunset.</div></div><button class="add-btn wide" data-theme-toggle>${themeLabel()}</button></div>
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
-      </div>
+      </div>` : ''}
     </section>
     <section class="home-sec">
       <div class="home-sec-h">More</div>
@@ -5204,6 +5214,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
+  if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
