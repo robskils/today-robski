@@ -964,8 +964,13 @@ async function openJournal() {
   } catch (e) { state.journal = { entries: [], picking: false }; toast(e.message); }
   renderJournalList();
   try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}   // always land at the top
-  // Show the last-generated insights if any (quiet - no spinner).
-  api('/api/journal/insights').then((r) => { if (state.journal && state.view.type === 'journal') { state.journal.insights = r; renderJournalList(); } }).catch(() => {});
+  // Load the history of generated insights (each is a dated 'insight' block).
+  api('/api/blocks?kind=insight').then((list) => {
+    if (state.journal && state.view.type === 'journal') {
+      state.journal.insightsList = (list || []).sort((a, b) => String((b.props && b.props.ts) || b.created_at || '').localeCompare(String((a.props && a.props.ts) || a.created_at || '')));
+      renderJournalList();
+    }
+  }).catch(() => {});
 }
 async function newCoachingSession() {
   if (!state.journal) await openJournal();
@@ -979,10 +984,25 @@ async function newCoachingSession() {
 }
 async function journalInsights() {
   if (!state.journal) return;
-  state.journal.insightsLoading = true; renderJournalList();
-  try { const r = await api('/api/journal/insights', { method: 'POST' }); state.journal.insights = (r && r.text) ? r : { text: null }; if (!(r && r.text)) toast('Write a few entries first, then Insights has something to read.'); }
-  catch (e) { toast(e.message); }
+  state.journal.insightsOpen = true; state.journal.insightsLoading = true; renderJournalList();
+  try {
+    const r = await api('/api/journal/insights', { method: 'POST' });
+    if (r && r.text) {
+      // Keep every generation as its own dated block, so the history builds up.
+      const block = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'insight', title: '', props: { text: r.text, points: r.points || [], from: r.from || 0, ts: r.ts || new Date().toISOString() } }) });
+      state.journal.insightsList = [block, ...(state.journal.insightsList || [])];
+      state.journal.readingInsight = block.id;   // open the fresh one to read
+    } else {
+      toast('Write a few entries first, then Insights has something to read.');
+    }
+  } catch (e) { toast(e.message); }
   state.journal.insightsLoading = false; renderJournalList();
+}
+async function delInsight(id) {
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
+  state.journal.insightsList = (state.journal.insightsList || []).filter((x) => x.id !== id);
+  if (state.journal.readingInsight === id) state.journal.readingInsight = null;
+  renderJournalList();
 }
 function renderJournalList() {
   const j = state.journal || { entries: [] };
@@ -1003,15 +1023,28 @@ function renderJournalList() {
       <span class="j-card-snip">${esc(journalSnippet(n))}</span>
       ${modeLabel ? `<span class="j-card-mode">${modeLabel}</span>` : ''}</button>`;
   }).join('');
-  const ins = j.insights;
+  const list = j.insightsList || [];
   const open = !!j.insightsOpen;   // collapsed by default each visit
-  const insightsCard = (ins && ins.text) ? `<div class="j-insights ${open ? '' : 'collapsed'}">
-      <div class="j-insights-h" data-journal-insights-toggle><span class="acw-chev">${open ? '▾' : '▸'}</span>✨ Insights<span class="j-insights-ts">${ins.from ? `from your last ${ins.from} entries` : ''}${ins.ts ? ` · ${esc(new Date(ins.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}` : ''}</span>${open ? `<span class="j-insights-tools"><button class="ghost" data-journal-insights title="Regenerate">↻</button><button class="ghost" data-journal-insights-x title="Hide">×</button></span>` : ''}</div>
-      <div class="j-insights-body"><p class="j-insights-t">${esc(ins.text)}</p>${(ins.points || []).length ? `<ul class="j-insights-pts">${ins.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</div>
-    </div>` : '';
+  const insDate = (b) => { try { return new Date((b.props && b.props.ts) || b.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } };
+  const reading = list.find((x) => x.id === j.readingInsight);
+  const insightsCard = `<div class="j-insights ${open ? '' : 'collapsed'}">
+      <div class="j-insights-h" data-journal-insights-toggle><span class="acw-chev">${open ? '▾' : '▸'}</span>✨ Insights${list.length ? `<span class="j-insights-ts">${list.length} generated</span>` : ''}</div>
+      <div class="j-insights-body">
+        <div class="j-ins-actions">
+          <button class="add-btn wide" data-journal-insights-read ${list.length ? '' : 'disabled'}>📖 Read insights</button>
+          <button class="add-btn wide" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading your entries…' : '✨ Create insights'}</button>
+        </div>
+        ${reading ? `<div class="j-ins-read">
+          <div class="j-ins-read-h"><span>${esc(insDate(reading))}${reading.props && reading.props.from ? ` · from your last ${reading.props.from} entries` : ''}</span><button class="ghost j-ins-close" data-journal-insights-close title="Close">×</button></div>
+          <p class="j-insights-t">${esc((reading.props && reading.props.text) || '')}</p>
+          ${((reading.props && reading.props.points) || []).length ? `<ul class="j-insights-pts">${reading.props.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</div>` : ''}
+        ${list.length ? `<div class="j-ins-list"><div class="j-ins-list-h">Previous insights</div>${list.map((b) => `<button class="j-ins-item ${b.id === j.readingInsight ? 'on' : ''}" data-read-insight="${b.id}"><span class="j-ins-item-date">${esc(insDate(b))}</span><span class="j-ins-item-snip">${esc(((b.props && b.props.text) || '').slice(0, 90))}</span><span class="j-ins-del" data-del-insight="${b.id}" title="Delete this insight">×</span></button>`).join('')}</div>`
+          : '<div class="home-empty" style="padding:8px 0 4px">No insights yet. Create one and it reads back your recent entries - the themes, what lifts you, what drains you.</div>'}
+      </div>
+    </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Journal')}
-    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><button class="ghost j-head-btn" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading…' : '✨ Insights'}</button><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
+    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
@@ -1303,7 +1336,7 @@ function renderArea() {
         <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}</p>
-      <div class="area-actions"><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-bucket>+ Bucket</button></div>
+      <div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>
     </div>
     <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
     ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
@@ -4972,7 +5005,10 @@ document.addEventListener('click', (e) => {
   const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }
   if (t.closest('[data-journal-coaching]')) { newCoachingSession(); return; }
-  if (t.closest('[data-journal-insights-x]')) { if (state.journal) { state.journal.insights = null; renderJournalList(); } return; }
+  const delIns = t.closest('[data-del-insight]'); if (delIns) { delInsight(delIns.dataset.delInsight); return; }
+  const readIns = t.closest('[data-read-insight]'); if (readIns) { if (state.journal) { state.journal.readingInsight = readIns.dataset.readInsight; renderJournalList(); } return; }
+  if (t.closest('[data-journal-insights-read]')) { if (state.journal) { const l = state.journal.insightsList || []; if (l.length) { state.journal.readingInsight = l[0].id; renderJournalList(); } } return; }
+  if (t.closest('[data-journal-insights-close]')) { if (state.journal) { state.journal.readingInsight = null; renderJournalList(); } return; }
   if (t.closest('[data-journal-insights]')) { journalInsights(); return; }
   if (t.closest('[data-journal-insights-toggle]')) { if (state.journal) { state.journal.insightsOpen = !state.journal.insightsOpen; renderJournalList(); } return; }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
