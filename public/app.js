@@ -3341,7 +3341,9 @@ function renderTasks() {
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
   // Same filter as the chips, but a compact dropdown - shown on mobile instead.
   const filterSel = `<select class="area-filter sel" data-task-filter><option value="" ${state.taskFilter === null ? 'selected' : ''}>All tasks · ${openCount(null)}</option>${state.areas.filter((a) => openCount(a.id)).map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)} · ${openCount(a.id)}</option>`).join('')}</select>`;
-  const inFilter = (t) => !state.taskFilter || t.props.area === state.taskFilter;
+  const inFilter = (t) => (!state.taskFilter || t.props.area === state.taskFilter) && (!state.taskPrio || t.props.priority === state.taskPrio);
+  const prioCount = (p) => state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && (!state.taskFilter || t.props.area === state.taskFilter) && (p ? t.props.priority === p : true)).length;
+  const prioChips = `<button class="prio-chip ${!state.taskPrio ? 'on' : ''}" data-prio-filter="">All</button>` + ['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="prio-chip pc-${p} ${state.taskPrio === p ? 'on' : ''}" data-prio-filter="${p}">${p}<b>${prioCount(p)}</b></button>`).join('');
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
   const open = state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && inFilter(t) && matchesQ(t));   // ticked or snoozed tasks vanish from view
@@ -3387,6 +3389,7 @@ function renderTasks() {
       <button class="area-chips-tog" data-toggle-chips title="Show or hide the area filters"><span class="acw-chev">${state.taskChipsOpen ? '▾' : '▸'}</span>Areas${state.taskFilter ? `<span class="acw-active">${esc((areaById(state.taskFilter) || {}).title || '')}</span>` : ''}</button>
       <div class="area-chips">${chips}</div>
     </div>
+    <div class="prio-chips">${prioChips}</div>
     ${filterSel}
     ${taskTableHtml(open, 'No open tasks here.')}
     ${snoozedSection}
@@ -5664,6 +5667,7 @@ document.addEventListener('click', (e) => {
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
   if (t.closest('[data-toggle-chips]')) { state.taskChipsOpen = !state.taskChipsOpen; try { localStorage.setItem('life.taskChipsOpen', JSON.stringify(state.taskChipsOpen)); } catch {} renderTasks(); return; }
   const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
+  const pf = t.closest('[data-prio-filter]'); if (pf) { state.taskPrio = pf.dataset.prioFilter || null; renderTasks(); return; }
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
   // On the narrow task cards the whole card opens - only the checkbox (handled
   // just above) and the × are special. Star/priority/area are display-only here;
