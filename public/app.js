@@ -847,15 +847,16 @@ function homeTodayItems() {
 // updates just the digits each second.
 const POMO_MIN = { focus: 25, break: 5 };
 let pomo = (() => { try { const p = JSON.parse(localStorage.getItem('life.pomo')); if (p && p.mode) return p; } catch {} return { mode: 'focus', running: false, endAt: null, remaining: POMO_MIN.focus * 60, target: null }; })();
-// What you're focusing on: a life area, a goal or a task. Tasks lazy-load the
-// first time you open the timer (they're not on Home otherwise).
-function pomoTargetOptions() {
+// What you're focusing on: pick a type (Life area / Goal / Task), then the item.
+// Tasks lazy-load when you first pick that type (they're not on Home otherwise).
+function pomoTargetOptions(type) {
   const t = pomo.target || {};
-  const sel = (k, id) => (t.kind === k && String(t.id) === String(id)) ? ' selected' : '';
-  const areas = (state.areas || []).map((a) => `<option value="area:${a.id}"${sel('area', a.id)}>${esc(a.title || 'Untitled')}</option>`).join('');
-  const goals = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active').map((g) => `<option value="goal:${g.id}"${sel('goal', g.id)}>${esc(g.title || 'Goal')}</option>`).join('');
-  const tasks = (state.pomoTasks || []).map((tk) => `<option value="task:${tk.id}"${sel('task', tk.id)}>${esc(tk.title || 'Task')}</option>`).join('');
-  return `<option value="">Anything</option>${areas ? `<optgroup label="Life areas">${areas}</optgroup>` : ''}${goals ? `<optgroup label="Goals">${goals}</optgroup>` : ''}${tasks ? `<optgroup label="Tasks">${tasks}</optgroup>` : ''}`;
+  const sel = (id) => (t.kind === type && String(t.id) === String(id)) ? ' selected' : '';
+  let items = [];
+  if (type === 'area') items = (state.areas || []).map((a) => [a.id, a.title]);
+  else if (type === 'goal') items = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active').map((g) => [g.id, g.title || 'Goal']);
+  else if (type === 'task') items = (state.pomoTasks || []).map((tk) => [tk.id, tk.title || 'Task']);
+  return `<option value="">Choose…</option>` + items.map(([id, ttl]) => `<option value="${type}:${id}"${sel(id)}>${esc(ttl || 'Untitled')}</option>`).join('');
 }
 function savePomo() { try { localStorage.setItem('life.pomo', JSON.stringify(pomo)); } catch {} }
 function pomoRemaining() { return (pomo.running && pomo.endAt) ? Math.max(0, Math.round((pomo.endAt - Date.now()) / 1000)) : pomo.remaining; }
@@ -889,6 +890,7 @@ if (pomo.running) pomoEnsureTicker();   // a timer left running keeps ticking ac
 function pomoHtml() {
   const r = pomoRemaining();
   const open = localStorage.getItem('life.home.pomoOpen') === '1';
+  const pt = state.pomoPickType || (pomo.target && pomo.target.kind) || '';
   return `<section class="home-sec home-pomo">
     <div class="home-sec-h home-sec-toggle" data-pomo-collapse><span class="hs-chev">${open ? '▾' : '▸'}</span>Focus timer${(!open && pomo.running) ? `<span class="pomo-mini js-pomo-time">${pomoFmt(r)}</span>` : ''}</div>
     ${open ? `<div class="pomo ${pomo.running ? 'running' : ''}">
@@ -901,7 +903,15 @@ function pomoHtml() {
         <button class="add-btn wide" data-pomo-toggle>${pomo.running ? 'Pause' : (r < POMO_MIN[pomo.mode] * 60 ? 'Resume' : 'Start')}</button>
         <button class="ghost pomo-reset" data-pomo-reset title="Reset">↺</button>
       </div>
-      <label class="pomo-focus"><span>Focus on</span><select class="sel" data-pomo-target>${pomoTargetOptions()}</select></label>
+      <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
+        <div class="pomo-cats">
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life areas</button>
+          <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
+          <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
+        </div>
+        ${pt ? `<select class="sel" data-pomo-target>${pomoTargetOptions(pt)}</select>` : ''}
+        ${pomo.target ? `<div class="pomo-on">Focusing on <b>${esc(pomo.target.label)}</b></div>` : ''}
+      </div>
     </div>` : ''}
   </section>`;
 }
@@ -5363,12 +5373,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-home-quote-x]')) { localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); renderHome(); return; }
-  if (t.closest('[data-pomo-collapse]')) {
-    const o = localStorage.getItem('life.home.pomoOpen') === '1';
-    localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome();
-    if (!o && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }
-    return;
-  }
+  if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
+  { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
+    if (state.pomoPickType === 'task' && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }
+    return; } }
   if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
