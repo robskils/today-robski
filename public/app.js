@@ -1449,6 +1449,7 @@ async function setBlockArea(kind, id, areaId) {
     const bump = (b) => { if (b) { b.props = b.props || {}; b.props.area = areaId || null; } };
     if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
     if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
+    if (kind === 'contact') { bump(state.contact_open && state.contact_open.contact); bump((state.contacts || []).find((x) => x.id === id)); }
     toast(areaId ? 'Life area set' : 'Life area cleared');
   } catch (e) { toast(e.message); }
 }
@@ -3409,6 +3410,7 @@ function renderContactCard() {
       <label class="tf-field"><span class="tf-label">Email</span><input class="sel" id="contactcard-email" type="email" value="${esc(p.email || '')}" placeholder="name@example.com"></label>
       <label class="tf-field"><span class="tf-label">Phone</span><input class="sel" id="contactcard-phone" type="tel" value="${esc(p.phone || '')}" placeholder="+351…"></label>
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
+      <label class="tf-field"><span class="tf-label">Life area</span>${areaSelect(p.area, 'data-contact-area')}</label>
       ${ADDR_FIELDS.map(([k, l]) => `<label class="tf-field"><span class="tf-label">${l}</span><input class="sel contactcard-addr" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" autocomplete="off"></label>`).join('')}
     </div>
     ${contactGroupsSection(c)}
@@ -5585,6 +5587,7 @@ document.addEventListener('change', (e) => {
   }
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
   if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
+  if (e.target.matches('[data-contact-area]')) setBlockArea('contact', state.contact_open.contact.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
   if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
