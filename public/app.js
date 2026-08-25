@@ -490,7 +490,7 @@ function renderSettings() {
   const tiles = [
     ['◈', 'Life areas', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
-    ['💰', 'Spending', 'Categories &amp; budgets', 'data-settings-goto="spending"'],
+    ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
   ];
@@ -5276,6 +5276,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-spendcats]')) { state.financial = state.financial || {}; state.financial.spendCatsOpen = true; openFinancial('spending').catch((x) => toast(x.message)); return; }
   const fseg = t.closest('[data-fin-tab]'); if (fseg) { openFinancial(fseg.dataset.finTab).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-fin-refresh]')) { loadPortfolio(true); return; }
   if (t.closest('[data-fin-add]')) { state.financial.adding = true; state.financial.editId = null; renderFinancial(); return; }
