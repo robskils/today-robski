@@ -16,12 +16,21 @@
 <meta name="apple-mobile-web-app-title" content="Daybook">
 <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#131019" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="/life.css?v=20260826g">
+<link rel="stylesheet" href="/life.css?v=20260826h">
 <script>
   try {
     const t = localStorage.getItem('today.theme');
     const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    // Custom accent colour, applied before first paint so there's no red flash.
+    const ac = localStorage.getItem('life.accent');
+    if (ac && /^#?[0-9a-fA-F]{3,6}$/.test(ac)) {
+      const h = ac[0] === '#' ? ac : '#' + ac;
+      const x = h.replace('#', ''); const n = x.length === 3 ? x.split('').map((c) => c + c).join('') : x;
+      const r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16);
+      document.documentElement.style.setProperty('--accent', h);
+      document.documentElement.style.setProperty('--accent-ink', (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff');
+    }
   } catch (e) {}
   // No redirect here: if there's no token, app.js shows a sign-in gate in place
   // (the root of life.robski.uk is this app, so a redirect would loop).
@@ -37,6 +46,6 @@
   </div>
   <div id="palette"></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/app.js?v=20260826g"></script>
+  <script src="/app.js?v=20260826h"></script>
 </body>
 </html>
