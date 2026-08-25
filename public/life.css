@@ -919,7 +919,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-sec-h:hover .nav-chev, .nav-sec-h:hover .nav-sec-title { color:var(--ink); }
 .nav-sec-h:hover .nav-grip { opacity:.55; }
 .nav-chev { color:var(--ink-2); font-size:13px; width:14px; flex:none; text-align:center; }
-.nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:color-mix(in srgb,var(--accent) 80%,var(--ink-3)); font-weight:600; padding:2px 0; }
+.nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--accent); font-weight:700; padding:2px 0; }
 .nav-add { color:var(--ink-3); font-size:18px; line-height:1; padding:0 6px; flex:none; } .nav-add:hover { color:var(--accent); }
 /* Quick-add "+" on Tasks/Calendar/Mail/Notes: right-aligned, appears on hover. */
 .nav-badge { margin-left:auto; flex:none; min-width:20px; height:19px; padding:0 6px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:700; line-height:1; }
@@ -962,10 +962,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .acc-custom { display:flex; align-items:center; gap:14px; margin-top:18px; flex-wrap:wrap; }
 .acc-custom-l { display:inline-flex; align-items:center; gap:9px; font-size:14px; color:var(--ink-2); }
 .acc-color { width:44px; height:30px; border:1px solid var(--line-2); border-radius:8px; background:var(--card); cursor:pointer; padding:2px; }
-.set-links { display:flex; flex-direction:column; gap:8px; }
-.set-link { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:14px 16px; border:1px solid var(--line); border-radius:13px; background:var(--card); color:var(--ink); font-size:15.5px; box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s; }
-.set-link:hover { border-color:var(--accent); }
-.set-link-ic { flex:none; width:22px; text-align:center; }
+/* Dashboard tiles: solid cards, not link strips. */
+.set-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+.set-tile { display:flex; flex-direction:column; align-items:flex-start; gap:3px; text-align:left; padding:16px 16px 15px; min-height:112px; border:1px solid var(--line); border-radius:16px; background:var(--card); color:var(--ink); box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s, transform .12s, box-shadow .12s; }
+.set-tile:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 22px -12px rgba(0,0,0,.32); }
+.set-tile-ic { font-size:22px; line-height:1; margin-bottom:auto; }
+.set-tile-t { font-size:15.5px; font-weight:650; letter-spacing:-.01em; }
+.set-tile-s { font-size:12.5px; color:var(--ink-3); line-height:1.35; }
 .set-collapse-h { cursor:pointer; display:flex; align-items:center; gap:9px; user-select:none; }
 .set-collapse-h .acw-chev { font-size:11px; color:var(--ink-3); width:11px; flex:none; }
 .set-areas-grid { display:flex; flex-wrap:wrap; gap:9px; }
