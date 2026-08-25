@@ -4158,6 +4158,10 @@ function renderGoalCard() {
       <label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>
     </div>
     <div class="goal-measure-block">${typeBody}</div>
+    ${p.gtype !== 'achievement' ? `<div class="goal-actions-sec">
+      <div class="tf-label gt-loose-h">Actions<span class="gt-hint">real tasks to move this forward - they show up in Tasks &amp; Today too</span></div>
+      <div class="ms-tasks">${loose.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
+    </div>` : ''}
     ${notesSection(g.body, 'goal', g.id)}`;
   autoGrowSoon($('#goalcard-title'));
 }
@@ -4212,7 +4216,7 @@ function renderBucketCard() {
   migrateCards(b);
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
-      <span class="crumb-tools"><button class="note-del ghost" data-del-bucket="${b.id}">Delete</button></span></div>
+      <span class="crumb-tools"><button class="ghost" data-bucket-to-goal="${b.id}" title="Turn this into a goal you're actively working towards">🎯 Make a goal</button><button class="note-del ghost" data-del-bucket="${b.id}">Delete</button></span></div>
     <div class="task-focus">
       <button class="bk-done-btn ${p.status === 'done' ? 'on' : ''}" data-bucket-done="${b.id}" title="Mark as done">${p.status === 'done' ? '✓' : '○'}</button>
       <textarea class="note-title" id="bucketcard-title" rows="1" placeholder="Something to do before you die…">${esc(b.title || '')}</textarea>
@@ -4238,6 +4242,20 @@ async function delBucket(id) {
   state.bucket = state.bucket.filter((x) => x.id !== id); toast('Removed'); openGoals('bucket');
 }
 function bucketToggleDone(id) { const b = state.bucket_open.item; const done = (b.props || {}).status === 'done'; patchBucket(id, { status: done ? 'someday' : 'done', doneDate: done ? null : new Date().toISOString().slice(0, 10) }, true).then(renderBucketCard); }
+// Promote a bucket-list dream into an actively-pursued goal. The bucket item
+// stays (the dream), and the new goal links back to it (props.fromBucket); a
+// long-term horizon fits a lifetime ambition. Opens the fresh goal to shape it.
+async function bucketToGoal() {
+  const b = state.bucket_open && state.bucket_open.item; if (!b) return;
+  const p = b.props || {};
+  const props = { area: p.area || null, why: '', horizon: 'longterm', gtype: '', status: 'active', focus: false, milestones: [], fromBucket: b.id };
+  try {
+    const goal = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'goal', title: b.title || 'New goal', props }) });
+    if (state.goals) state.goals.push(goal);
+    toast('🎯 Goal created from this bucket item');
+    openGoalCard(goal.id);
+  } catch (e) { toast(e.message); }
+}
 
 // ── reviews & Wheel of Life ──────────────────────────
 // A review (kind='review') opens with a mirror of the period drawn from your
@@ -5159,6 +5177,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-bucket]')) { newBucket().catch((x) => toast(x.message)); return; }
   const dgl = t.closest('[data-del-goal]'); if (dgl) { delGoal(dgl.dataset.delGoal); return; }
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
+  if (t.closest('[data-bucket-to-goal]')) { bucketToGoal().catch((x) => toast(x.message)); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
   const sgt = t.closest('[data-set-gtype]'); if (sgt) { const g = state.goal_open && state.goal_open.goal; if (g) { patchGoal(g.id, { gtype: sgt.dataset.setGtype }, true); renderGoalCard(); } return; }
