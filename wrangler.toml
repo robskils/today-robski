@@ -40,6 +40,13 @@ zone_name = "daybook.fyi"
 pattern = "www.daybook.fyi/*"
 zone_name = "daybook.fyi"
 
+# Per-user tenant subdomains (robski.daybook.fyi, and everyone else). Needs a
+# proxied wildcard DNS record (*.daybook.fyi) on the zone to resolve; the more
+# specific apex/www routes above still win for those hostnames.
+[[routes]]
+pattern = "*.daybook.fyi/*"
+zone_name = "daybook.fyi"
+
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
