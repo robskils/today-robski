@@ -973,6 +973,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .set-area:hover { border-color:var(--accent); }
 .set-area:active { transform:scale(.98); }
 .set-area-dot { width:11px; height:11px; border-radius:50%; flex:none; background:hsl(var(--h) 55% 55%); }
+/* Invites (admin) */
+.inv-new { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.inv-new .sel { flex:1; min-width:140px; }
+.inv-free { display:inline-flex; align-items:center; gap:7px; font-size:14px; color:var(--ink-2); white-space:nowrap; }
+.inv-list { display:flex; flex-direction:column; gap:7px; margin-top:16px; }
+.inv-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); }
+.inv-row.used { opacity:.55; }
+.inv-code { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:15px; font-weight:600; letter-spacing:.06em; color:var(--ink); flex:none; }
+.inv-meta { flex:1; min-width:0; font-size:13px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.inv-copy { flex:none; padding:5px 12px; }
 /* Drag-to-reorder feedback: the dragged item dims and the drop target shows an
    accent insertion line so it's obvious where it will land. */
 .nav-sec, [data-fav-id] { position:relative; }
@@ -1819,6 +1829,17 @@ table.ttable tr:last-child td { border-bottom:0; }
 .gate2-alt:hover { color:var(--accent); }
 .gate2-alt:disabled { opacity:.5; cursor:default; }
 .gate2-err { color:var(--accent); font-size:14.5px; text-wrap:balance; }
+/* Signup (claim account): labelled fields, left-aligned, with a subdomain suffix. */
+.signup-card { max-width:400px; text-align:left; }
+.signup-card .gate2-mark, .signup-card .gate2-sub { text-align:center; }
+.signup-l { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--ink-2); letter-spacing:.01em; }
+.signup-l .gate2-input { text-align:left; font-size:16px; padding:12px 14px; }
+.su-sub { display:flex; align-items:stretch; border:1px solid var(--line-2); border-radius:12px; overflow:hidden; background:var(--paper); }
+.su-sub:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); }
+.su-sub-in { border:0 !important; box-shadow:none !important; flex:1; min-width:0; background:transparent; }
+.su-sub-suffix { display:flex; align-items:center; padding:0 14px; background:var(--paper-2); color:var(--ink-3); font-size:15px; white-space:nowrap; }
+.su-foot { text-align:center; }
+.su-signout { background:none; border:0; color:var(--accent); text-decoration:underline; text-underline-offset:3px; cursor:pointer; font-size:inherit; padding:0; }
 
 /* ── toast ───────────────────────────────────────── */
 .toast {
