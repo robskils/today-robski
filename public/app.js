@@ -275,7 +275,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -285,6 +285,7 @@ function labelForView(v) {
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
     case 'journal': return 'Reflect'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Reflect';
     case 'readwatch': return 'Read & Watch';
+    case 'settings': return 'Settings';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     case 'financial': return 'Financial';
@@ -306,6 +307,7 @@ function openView(v) {
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'financial': return openFinancial(v.tab);
+    case 'settings': return openSettings();
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
@@ -433,6 +435,67 @@ function cycleTheme() {
   if (next === 'auto') ensureLoc();
 }
 function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(); }
+
+// ── accent colour (per-user) ──────────────────────────────────────────
+// The rusty red is the default; anyone can pick their own. Everything is
+// color-mixed from --accent, so overriding --accent (+ --accent-ink for text
+// on accent) recolours the whole app. Cached in localStorage for instant paint
+// and mirrored to settings (kv_accent) so it follows you across devices.
+const ACCENT_PRESETS = [
+  ['#c4412e', 'Rust'], ['#c2703a', 'Amber'], ['#3f7d93', 'Teal'],
+  ['#5a7d5a', 'Forest'], ['#6b5b95', 'Plum'], ['#4f6d9c', 'Indigo'],
+  ['#a8844a', 'Ochre'], ['#9c5a6e', 'Rose'], ['#4a4f57', 'Slate'],
+];
+function hexRgb(hex) { const h = String(hex || '').replace('#', ''); const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return { r: parseInt(n.slice(0, 2), 16) || 0, g: parseInt(n.slice(2, 4), 16) || 0, b: parseInt(n.slice(4, 6), 16) || 0 }; }
+function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff'; }
+function applyAccent(hex) {
+  const el = document.documentElement.style;
+  if (hex && /^#?[0-9a-fA-F]{3,6}$/.test(hex)) { const h = hex[0] === '#' ? hex : '#' + hex; el.setProperty('--accent', h); el.setProperty('--accent-ink', accentInk(h)); }
+  else { el.removeProperty('--accent'); el.removeProperty('--accent-ink'); }
+}
+function savedAccent() { try { return localStorage.getItem('life.accent') || ''; } catch { return ''; } }
+async function setAccent(hex) {
+  try { hex ? localStorage.setItem('life.accent', hex) : localStorage.removeItem('life.accent'); } catch {}
+  applyAccent(hex);
+  renderNav();
+  if (state.view && state.view.type === 'settings') renderSettings();
+  try { await api('/api/kv/accent', { method: 'PUT', body: JSON.stringify({ value: hex || '' }) }); } catch {}
+}
+async function syncAccentFromServer() {
+  try { const r = await api('/api/kv/accent'); const hex = (r && r.value) || ''; if (hex !== savedAccent()) { try { hex ? localStorage.setItem('life.accent', hex) : localStorage.removeItem('life.accent'); } catch {} applyAccent(hex); renderNav(); } } catch {}
+}
+
+// ── Settings hub ──────────────────────────────────────────────────────
+function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); return Promise.resolve(); }
+function renderSettings() {
+  const cur = (savedAccent() || '#c4412e').toLowerCase();
+  const swatches = ACCENT_PRESETS.map(([hex, name]) =>
+    `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
+  const links = [
+    ['✉', 'Mail accounts', 'data-open-mailaccounts=""'],
+    ['💰', 'Spending categories', 'data-settings-goto="spending"'],
+    ['🎯', 'Reviews &amp; reminders', 'data-open-reviews=""'],
+    ['☀', 'Time streams (Today)', 'data-open-today=""'],
+  ];
+  $('#pane').innerHTML = `
+    ${pageCrumb('Settings')}
+    <div class="pane-head home-head"><h1>Settings</h1></div>
+    <section class="home-sec">
+      <div class="home-sec-h">Appearance</div>
+      <div class="set-card">
+        <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">Auto follows your local sunrise &amp; sunset.</div></div><button class="add-btn wide" data-theme-toggle>${themeLabel()}</button></div>
+        <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
+          <div class="acc-swatches">${swatches}</div>
+          <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
+        </div>
+      </div>
+    </section>
+    <section class="home-sec">
+      <div class="home-sec-h">More</div>
+      <div class="set-links">${links.map(([ic, label, attr]) => `<button class="set-link" ${attr}><span class="set-link-ic">${ic}</span>${label}</button>`).join('')}</div>
+      <p class="home-empty" style="padding:12px 0 0">Your account, notifications and AI keys will live here soon.</p>
+    </section>`;
+}
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
 function ensureLoc() {
   if (cachedLoc() || !navigator.geolocation) return;
@@ -501,6 +564,7 @@ function renderNav() {
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
       <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
+      <button class="nav-theme ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings">⚙ Settings</button>
     </div>`;
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
@@ -783,6 +847,7 @@ function renderHome() {
         <button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>
         <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
         <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
+        <button class="hl-btn" data-open-settings><span class="hl-ic">⚙</span><span class="hl-t">Settings</span></button>
       </nav>
       <div class="home-body">
         <div class="home-main">
@@ -4792,6 +4857,8 @@ const ACTIONS = [
   { kind: 'action', title: 'New note', run: () => newNote(null) },
   { kind: 'action', title: 'New reflection', run: () => quickAdd('journal') },
   { kind: 'action', title: 'Go to Reflect', run: () => openJournal() },
+  { kind: 'action', title: 'Settings', run: () => openSettings() },
+  { kind: 'action', title: 'Change accent colour', run: () => openSettings() },
   { kind: 'action', title: 'Save a link', run: () => quickAdd('save') },
   { kind: 'action', title: 'Go to Read & Watch', run: () => openReadwatch() },
   { kind: 'action', title: 'New table', run: () => newTable() },
@@ -5136,6 +5203,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-settings]')) { openSettings(); return; }
+  if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
+  const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
+  const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
   const fseg = t.closest('[data-fin-tab]'); if (fseg) { openFinancial(fseg.dataset.finTab).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-fin-refresh]')) { loadPortfolio(true); return; }
   if (t.closest('[data-fin-add]')) { state.financial.adding = true; state.financial.editId = null; renderFinancial(); return; }
@@ -5438,6 +5509,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
   if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
+  if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
   if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
@@ -6627,5 +6699,6 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     initPush();              // register the SW; refresh the push subscription if already granted
     registerMailHandler();   // offer Robski Life as the browser's mailto: handler
+    syncAccentFromServer();  // pick up a custom accent colour saved on another device
   } catch (e) { toast(e.message); renderNav(); }
 })();
