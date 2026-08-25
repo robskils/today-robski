@@ -7,6 +7,10 @@ const KEY = 'today.token';
 // to Robski while single-tenant; becomes the signed-in account's name once each
 // user has their own tara.daybook.fyi.
 const BRAND = { owner: 'Robski', app: 'Daybook' };
+// The Daybook mark: a sun rising over two page-lines (a book of days). Uses
+// currentColor so it takes on the user's accent, and sits between the owner
+// name and "Daybook" in the wordmark.
+const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const token = () => localStorage.getItem(KEY) || '';
@@ -480,24 +484,22 @@ function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
     `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
+  state.settings = state.settings || {};
+  // Life areas is the first tile at the top - the same treatment as the rest,
+  // just first. Its tile opens a small management subpage (like the others do).
   const tiles = [
+    ['◈', 'Life areas', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['💰', 'Spending', 'Categories &amp; budgets', 'data-settings-goto="spending"'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
   ];
-  state.settings = state.settings || {};
   const appOpen = !!state.settings.appearanceOpen;
-  const areaCards = (state.areas || []).length
-    ? (state.areas || []).map((a) => `<button class="set-area" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="set-area-dot"></span><span class="set-area-t">${esc(a.title || 'Untitled')}</span></button>`).join('')
-    : '<div class="home-empty">No life areas yet - add your first: Family, Health, Work, Spirit…</div>';
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
     <div class="pane-head home-head"><h1>Settings</h1></div>
     <section class="home-sec">
-      <div class="home-sec-h">Life areas<span class="muted">the heart of Daybook - they drive your streams, goals, spending &amp; more</span></div>
-      <div class="set-areas-grid">${areaCards}</div>
-      <button class="add-btn wide" data-new-area style="margin-top:14px">+ New life area</button>
+      <div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>
     </section>
     <section class="home-sec">
       <div class="home-sec-h set-collapse-h" data-settings-appearance><span class="acw-chev">${appOpen ? '▾' : '▸'}</span>Appearance</div>
@@ -521,11 +523,7 @@ function renderSettings() {
         <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet.</div>'}</div>
       </div>
     </section>` : ''}
-    <section class="home-sec">
-      <div class="home-sec-h">Manage</div>
-      <div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>
-      ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:14px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : '<p class="home-empty" style="padding:14px 0 0">Your account, notifications and AI keys will live here soon.</p>'}
-    </section>`;
+    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : '<p class="home-empty" style="padding:6px 0 0">Your account, notifications and AI keys will live here soon.</p>'}`;
 }
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
 function ensureLoc() {
@@ -573,7 +571,7 @@ function renderNav() {
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
-    <div class="nav-brand" data-view-home title="Home">${esc(BRAND.owner)}<span class="dot"> </span><em>${esc(BRAND.app)}</em></div>
+    <div class="nav-brand" data-view-home title="Home">${esc(BRAND.owner)}${MARK}<em>${esc(BRAND.app)}</em></div>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
@@ -6679,7 +6677,7 @@ let gateStep = 'email', gateEmail = '';
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark">${esc(BRAND.owner)}<span class="dot"> </span><em>${esc(BRAND.app)}</em></div>
+      <div class="gate2-mark">${esc(BRAND.owner)}${MARK}<em>${esc(BRAND.app)}</em></div>
       <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
