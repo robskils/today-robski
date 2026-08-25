@@ -411,6 +411,16 @@ button { cursor:pointer; background:none; border:0; }
 .goal-why { display:flex; flex-direction:column; gap:6px; margin:14px 0 4px; }
 .goal-why textarea { resize:vertical; font-family:inherit; line-height:1.5; min-height:52px; width:100%; max-width:none; }
 .goal-measure-block { margin:16px 0 4px; }
+/* First choice on a new goal: how to track it. Two big, plain-language cards. */
+.gtype-choose .tf-label { margin-bottom:10px; }
+.gtype-opts { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.gtype-opt { display:flex; flex-direction:column; align-items:flex-start; gap:3px; text-align:left; padding:16px 18px; border:1px solid var(--line-2); border-radius:16px; background:var(--card); color:var(--ink); cursor:pointer; box-shadow:var(--shadow); transition:border-color .12s, transform .06s; }
+.gtype-opt:hover { border-color:var(--accent); }
+.gtype-opt:active { transform:scale(.98); }
+.gtype-opt .gto-ic { font-size:24px; line-height:1; margin-bottom:4px; }
+.gtype-opt b { font-size:16.5px; font-weight:600; }
+.gtype-opt small { color:var(--ink-3); font-size:13px; line-height:1.35; }
+@media (max-width:600px){ .gtype-opts { grid-template-columns:1fr; } }
 .gnum { display:flex; align-items:center; gap:10px; }
 .gnum input { max-width:110px; } .gnum .gc-unit { max-width:120px; } .gnum span { color:var(--ink-3); }
 .ms-block { margin-top:4px; }
@@ -955,7 +965,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .recent-item:hover .recent-ic { color:var(--accent); }
 .recent-t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 @media (max-width:820px){
-  .home-body { grid-template-columns:1fr; gap:0; } .home-side { position:static; } .home-side .home-sec { margin-top:26px; }
+  /* One column on mobile, but interleave both desktop columns into a chosen
+     order: Today, then the scratchpad, then Recently viewed, then the quarter's
+     focus, then Favourites. display:contents dissolves the two column wrappers so
+     every section is a direct flex child that `order` can arrange; the flex gap
+     replaces the per-section margins. */
+  .home-body { display:flex; flex-direction:column; gap:26px; grid-template-columns:none; }
+  .home-main, .home-side { display:contents; position:static; }
+  .home-body .home-sec { margin:0; }
+  .home-sec-today { order:1; } .home-sec-notepad { order:2; } .home-sec-recent { order:3; }
+  .home-sec-focus { order:4; } .home-sec-favs { order:5; }
   /* Everything stacks on mobile - never a sideways scroll. Goal cards go one per
      row (no 280px min to spill into two columns), the home columns can't be
      pushed past the screen, and the home clips any stray horizontal overflow. */
@@ -1849,7 +1868,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .rw-type-btn { padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:13.5px; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
 .rw-type-btn:hover { border-color:var(--accent); }
 .rw-type-btn.on { background:color-mix(in srgb,var(--accent) 16%,var(--card)); color:var(--ink); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); }
-.rw-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.rw-tabs { display:flex; gap:6px; align-items:center; margin-bottom:14px; }
+.rw-tabs-scroll { display:flex; gap:6px; flex-wrap:wrap; flex:1; min-width:0; }
+.rw-sort { flex:none; padding:7px 10px; font-size:13.5px; border-radius:9px; background:var(--card); border:1px solid var(--line); color:var(--ink-2); }
 .rw-tab { display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:14.5px; cursor:pointer; transition:border-color .12s, color .12s; }
 .rw-tab:hover { border-color:var(--accent); }
 .rw-tab.on { background:var(--accent); color:var(--accent-ink); border-color:transparent; }
