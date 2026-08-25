@@ -1916,6 +1916,12 @@ export default {
     }
     const path = url.pathname;
 
+    // Robski Life retired: life.robski.uk now 301s to Robin's Daybook, path and
+    // query preserved, so old bookmarks and links follow to the new home.
+    if (url.hostname === 'life.robski.uk') {
+      return new Response(null, { status: 301, headers: { Location: 'https://robski.daybook.fyi' + path + url.search, 'Strict-Transport-Security': HSTS } });
+    }
+
     // Static assets (the Worker runs first). The root serves a different app
     // per hostname: life.robski.uk is the Life app; everywhere else is Today.
     // Everything non-API/auth falls through to the assets binding untouched.
