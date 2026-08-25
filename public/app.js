@@ -4210,8 +4210,9 @@ async function newGoal(area) {
 }
 async function openGoalCard(id) {
   const g = await api(`/api/blocks/${id}`);
-  const tasks = (await api('/api/blocks?kind=task')).filter((t) => t.props && t.props.goal === id);
-  state.goal_open = { goal: g, tasks };
+  const all = await api('/api/blocks?kind=task');
+  const tasks = all.filter((t) => t.props && t.props.goal === id);
+  state.goal_open = { goal: g, tasks, allTasks: all, areaQuery: '' };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
 }
@@ -4258,8 +4259,43 @@ function renderGoalCard() {
       <div class="tf-label gt-loose-h">Actions<span class="gt-hint">real tasks to move this forward - they show up in Tasks &amp; Today too</span></div>
       <div class="ms-tasks">${loose.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
     </div>` : ''}
+    ${goalAreaTasksHtml()}
     ${notesSection(g.body, 'goal', g.id)}`;
   autoGrowSoon($('#goalcard-title'));
+}
+// Every task already sitting in this goal's life area, so you can pull an
+// existing one in rather than only ever adding fresh tasks. Linked tasks and
+// done ones drop out; a search narrows it.
+function goalAreaTasksHtml() {
+  const go = state.goal_open; if (!go) return '';
+  const p = gp(go.goal); if (!p.area) return '';
+  const a = areaById(p.area); const aname = a ? esc(a.title) : 'this area';
+  return `<div class="goal-arealist" style="--h:${hueOf(a)}">
+    <div class="tf-label gt-loose-h">Tasks in ${aname}<span class="gt-hint">link an existing task into this goal</span></div>
+    <input class="sel gal-search" data-gal-q placeholder="Search ${aname} tasks…" value="${esc(go.areaQuery || '')}">
+    <div class="gal-list">${goalAreaListInner()}</div></div>`;
+}
+function goalAreaListInner() {
+  const go = state.goal_open; const p = gp(go.goal);
+  const q = (go.areaQuery || '').trim().toLowerCase();
+  const linked = new Set((go.tasks || []).map((t) => t.id));
+  let list = (go.allTasks || []).filter((t) => t.props && t.props.area === p.area && !t.props.done && !linked.has(t.id));
+  if (q) list = list.filter((t) => (t.title || '').toLowerCase().includes(q));
+  if (!list.length) return `<div class="home-empty" style="padding:8px 0 0">No ${q ? 'matching ' : 'unlinked '}tasks in this area${q ? '' : ' yet'}.</div>`;
+  return list.slice(0, 60).map((t) => `<div class="gal-row"><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span><button class="ghost gal-link" data-goal-link="${t.id}" title="Link to this goal">＋ Link</button></div>`).join('')
+    + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
+}
+function renderGoalAreaList() { const el = $('.gal-list'); if (el) el.innerHTML = goalAreaListInner(); }
+// Link an existing area task into this goal: it keeps its place in Tasks/Today
+// and now also shows under the goal (props.goal). No copy is made.
+async function linkTaskToGoal(taskId) {
+  const go = state.goal_open; if (!go) return;
+  const t = (go.allTasks || []).find((x) => x.id === taskId); if (!t) return;
+  t.props = t.props || {}; t.props.goal = go.goal.id;
+  go.tasks.push(t);
+  renderGoalCard();
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: go.goal.id } }) }); toast('Linked to goal'); }
+  catch (e) { toast(e.message); }
 }
 async function patchGoal(id, patch, isProps) {
   const g = state.goal_open && state.goal_open.goal;
@@ -5127,6 +5163,7 @@ document.addEventListener('input', (e) => {
   liveSearch('[data-cal-q]', (v) => (state.calQuery = v), renderCalendar);
   // Table search + filter value inputs: only the tbody re-renders, so the input keeps focus.
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
+  if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
@@ -5283,6 +5320,7 @@ document.addEventListener('click', (e) => {
   const dgl = t.closest('[data-del-goal]'); if (dgl) { delGoal(dgl.dataset.delGoal); return; }
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
   if (t.closest('[data-bucket-to-goal]')) { bucketToGoal().catch((x) => toast(x.message)); return; }
+  const glink = t.closest('[data-goal-link]'); if (glink) { linkTaskToGoal(glink.dataset.goalLink); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
   const sgt = t.closest('[data-set-gtype]'); if (sgt) { const g = state.goal_open && state.goal_open.goal; if (g) { patchGoal(g.id, { gtype: sgt.dataset.setGtype }, true); renderGoalCard(); } return; }
