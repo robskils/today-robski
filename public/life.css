@@ -1957,6 +1957,11 @@ table.ttable tr:last-child td { border-bottom:0; }
 .prose:not(.mail-sig-ed):not(.mail-compose-body) th { background:var(--paper-2); font-weight:600; }
 .prose:not(.mail-sig-ed):not(.mail-compose-body) caption { text-align:left; color:var(--ink-3); font-size:13.5px; padding-bottom:6px; }
 .prose ul, .prose ol { margin:0 0 14px; padding-left:26px; }
+/* Nested (indented) bullets: tighter spacing per level, and rotate the marker
+   so the depth reads at a glance. Tab indents, Shift+Tab outdents. */
+.prose li > ul, .prose li > ol { margin:3px 0; padding-left:24px; }
+.prose ul ul { list-style:circle; } .prose ul ul ul { list-style:square; }
+.prose ul ul ul ul { list-style:disc; } .prose ul ul ul ul ul { list-style:circle; }
 .prose ul { list-style:disc; } .prose ol { list-style:decimal; }
 .prose li { margin:3px 0; position:relative; }
 /* A grab handle in the marker gutter: drag a list item up or down to reorder. */

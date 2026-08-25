@@ -4848,6 +4848,29 @@ document.addEventListener('keydown', (e) => {
   if (state.contactMenu && e.key === 'Escape') { e.preventDefault(); state.contactMenu = null; renderContacts(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
+  // Tab in the rich prose editor indents rather than leaving the field. In a
+  // bullet/numbered list it nests the item (up to ~7 levels); Shift+Tab pulls it
+  // back out; in plain free-writing it inserts an indent at the caret.
+  if (e.key === 'Tab' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const ed = e.target.closest && e.target.closest('.prose[contenteditable="true"]');
+    if (ed) {
+      e.preventDefault();
+      const sel = window.getSelection();
+      const node = sel && sel.anchorNode ? (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement) : null;
+      const li = node && node.closest ? node.closest('li') : null;
+      if (li) {
+        if (e.shiftKey) { document.execCommand('outdent'); }
+        else {
+          let depth = 0; for (let n = li; n && ed.contains(n); n = n.parentElement) if (n.tagName === 'UL' || n.tagName === 'OL') depth++;
+          if (depth < 8) document.execCommand('indent');   // cap the nesting
+        }
+      } else if (!e.shiftKey) {
+        document.execCommand('insertText', false, '    ');
+      }
+      ed.dispatchEvent(new Event('input', { bubbles: true }));   // trigger autosave
+      return;
+    }
+  }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); state.shortcutsOpen ? closeShortcuts() : openShortcuts(); return; }
   // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
