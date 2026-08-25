@@ -114,9 +114,12 @@ export async function resolveUser(request, env) {
   if (!auth.startsWith('Bearer ') || !env.AUTH_SECRET) return null;
   const payload = await verifyJWT(auth.slice(7), env.AUTH_SECRET);
   if (!payload || !isAllowed(payload.sub, env)) return null;
+  // Match the account's primary email, or any alias in user_emails, so all of a
+  // person's addresses sign into the one account.
   const user = await env.DB.prepare(
-    'SELECT id, email, name, subdomain, plan, status FROM users WHERE email = ?',
-  ).bind(payload.sub).first().catch(() => null);
+    `SELECT id, email, name, subdomain, plan, status FROM users
+      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ?)`,
+  ).bind(payload.sub, payload.sub).first().catch(() => null);
   if (!user || user.status === 'suspended') return null;
   return user;
 }

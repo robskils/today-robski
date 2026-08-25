@@ -131,6 +131,13 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
+-- Email aliases: extra addresses that sign in to the same account. The primary
+-- address lives on users.email; every other address a person uses maps here.
+CREATE TABLE IF NOT EXISTS user_emails (
+  email   TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL
+);
+
 -- Zazen is an hour, and is the only target Robin has actually specified.
 -- The rest are starting guesses, all editable.
 INSERT OR IGNORE INTO settings (key, value) VALUES

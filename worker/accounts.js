@@ -26,9 +26,14 @@ export function normSubdomain(s) {
   return v;
 }
 
+// Resolves by the account's primary email OR any alias in user_emails, so all
+// of a person's addresses reach the one account.
 export async function getUserByEmail(env, email) {
-  return env.DB.prepare('SELECT id, email, name, subdomain, plan, status FROM users WHERE email = ?')
-    .bind(String(email || '').toLowerCase()).first().catch(() => null);
+  const e = String(email || '').toLowerCase();
+  return env.DB.prepare(
+    `SELECT id, email, name, subdomain, plan, status FROM users
+      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ?)`,
+  ).bind(e, e).first().catch(() => null);
 }
 
 // Is this subdomain free to claim?
