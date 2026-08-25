@@ -3324,7 +3324,7 @@ function taskTableHtml(list, emptyMsg) {
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
-      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add">+</span>'}</span></td>
+      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Area</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button><button class="row-chev" data-open-task="${t.id}" title="Open" aria-label="Open task">›</button></td>
     </tr>`;
@@ -6090,7 +6090,8 @@ function editTaskTitle(span) {
 function editInlineSelect(span, cur, options, onPick) {
   const sel = document.createElement('select'); sel.className = 'ie-sel';
   sel.innerHTML = options.map((o) => `<option value="${esc(o.value)}" ${o.value === (cur || '') ? 'selected' : ''}>${esc(o.label)}</option>`).join('');
-  span.replaceWith(sel); sel.focus(); let d = false;
+  span.replaceWith(sel); sel.focus(); try { sel.showPicker(); } catch {}   // open the dropdown straight away - one click, not two
+  let d = false;
   sel.addEventListener('change', () => { if (d) return; d = true; onPick(sel.value || null); });
   sel.addEventListener('blur', () => { if (!d) { d = true; renderTasks(); } });
 }
