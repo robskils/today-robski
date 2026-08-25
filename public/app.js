@@ -856,7 +856,7 @@ function pomoEnsureTicker() {
   pomoTicker = setInterval(() => {
     if (!pomo.running) return;
     const r = pomoRemaining();
-    const el = document.getElementById('pomo-time'); if (el) el.textContent = pomoFmt(r);
+    document.querySelectorAll('.js-pomo-time').forEach((el) => { el.textContent = pomoFmt(r); });
     if (r <= 0) {
       const done = pomo.mode;
       pomo.running = false; pomo.endAt = null;
@@ -878,10 +878,11 @@ function pomoSetMode(m) { if (!POMO_MIN[m]) return; pomo.mode = m; pomo.running 
 if (pomo.running) pomoEnsureTicker();   // a timer left running keeps ticking across reloads
 function pomoHtml() {
   const r = pomoRemaining();
+  const open = localStorage.getItem('life.home.pomoOpen') === '1';
   return `<section class="home-sec home-pomo">
-    <div class="home-sec-h">Focus timer</div>
-    <div class="pomo ${pomo.running ? 'running' : ''}">
-      <div class="pomo-time" id="pomo-time">${pomoFmt(r)}</div>
+    <div class="home-sec-h home-sec-toggle" data-pomo-collapse><span class="hs-chev">${open ? '▾' : '▸'}</span>Focus timer${(!open && pomo.running) ? `<span class="pomo-mini js-pomo-time">${pomoFmt(r)}</span>` : ''}</div>
+    ${open ? `<div class="pomo ${pomo.running ? 'running' : ''}">
+      <div class="pomo-time js-pomo-time" id="pomo-time">${pomoFmt(r)}</div>
       <div class="pomo-modes">
         <button class="pomo-mode ${pomo.mode === 'focus' ? 'on' : ''}" data-pomo-mode="focus">Focus</button>
         <button class="pomo-mode ${pomo.mode === 'break' ? 'on' : ''}" data-pomo-mode="break">Break</button>
@@ -890,7 +891,7 @@ function pomoHtml() {
         <button class="add-btn wide" data-pomo-toggle>${pomo.running ? 'Pause' : (r < POMO_MIN[pomo.mode] * 60 ? 'Resume' : 'Start')}</button>
         <button class="ghost pomo-reset" data-pomo-reset title="Reset">↺</button>
       </div>
-    </div>
+    </div>` : ''}
   </section>`;
 }
 
@@ -5350,6 +5351,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-home-quote-x]')) { localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); renderHome(); return; }
+  if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }

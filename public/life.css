@@ -968,6 +968,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .pomo-ctrls { display:flex; gap:8px; width:100%; }
 .pomo-ctrls .add-btn { flex:1; }
 .pomo-reset { flex:none; padding:0 14px; font-size:17px; }
+.pomo-mini { margin-left:auto; font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:14px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; }
 .nav-sub.muted { color:var(--ink-3); font-size:14px; font-style:italic; }
 .nav-sub { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:7px 12px 7px 14px; border-radius:8px; color:var(--ink-2); font-size:15.5px; overflow:hidden; }
 .nav-sub:hover { background:var(--paper); color:var(--ink); }
