@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Daybook - a calm, private home for your life</title>
-<meta name="description" content="Put it down, trust it to come back. Daybook is a calm, private home for everything you carry - tasks, notes, reflections, money - captured in two taps and resurfaced when you need it.">
+<meta name="description" content="Daybook is the Swiss Army knife for managing your life the sane way - tasks, notes, reflections and money in one calm, private place. You own all your data; it's yours.">
 <link rel="canonical" href="https://daybook.fyi/">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="icon" href="/favicon.svg">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Daybook">
 <meta property="og:title" content="Daybook - a calm, private home for your life">
-<meta property="og:description" content="Put it down, trust it to come back. A calm, private home for everything you carry - tasks, notes, reflections, money - captured in two taps and resurfaced when you need it.">
+<meta property="og:description" content="The Swiss Army knife for managing your life the sane way - tasks, notes, reflections and money in one calm, private place. You own all your data.">
 <meta property="og:url" content="https://daybook.fyi/">
 <meta property="og:image" content="https://daybook.fyi/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -270,6 +270,27 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   .hero-badge .pulse { animation: none; }
   html { scroll-behavior: auto; }
 }
+
+/* sign-in modal */
+.signin-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px;
+  background: color-mix(in srgb, var(--ink) 46%, transparent); backdrop-filter: blur(4px); }
+.signin-overlay[hidden] { display: none; }
+.signin-box { position: relative; width: min(440px, 100%); background: var(--card); border: 1px solid var(--line);
+  border-radius: 20px; padding: 34px 32px 28px; box-shadow: 0 40px 90px -30px rgba(0,0,0,0.5); }
+.signin-close { position: absolute; top: 14px; right: 16px; border: 0; background: none; color: var(--ink-3);
+  font-size: 26px; line-height: 1; cursor: pointer; padding: 4px; }
+.signin-close:hover { color: var(--ink); }
+.signin-h { font-family: 'Fraunces', serif; font-size: 27px; font-weight: 600; letter-spacing: -0.01em; margin-top: 8px; }
+.signin-p { margin-top: 8px; font-size: 15.5px; color: var(--ink-2); line-height: 1.5; }
+.signin-label { display: block; margin: 22px 0 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.signin-field { display: flex; align-items: stretch; border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; background: var(--paper); transition: border-color .15s; }
+.signin-field:focus-within { border-color: var(--rust); }
+.signin-input { flex: 1; min-width: 0; border: 0; background: none; padding: 13px 14px; font-family: inherit; font-size: 17px; color: var(--ink); outline: none; }
+.signin-suffix { display: flex; align-items: center; padding: 0 14px; font-size: 15.5px; color: var(--ink-3); background: color-mix(in srgb, var(--ink) 5%, transparent); border-left: 1px solid var(--line); }
+.signin-go { width: 100%; justify-content: center; margin-top: 16px; }
+.signin-err { margin-top: 10px; font-size: 14px; color: var(--rust); }
+.signin-foot { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); text-align: center; }
+.signin-foot a { color: var(--rust); text-decoration: none; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -283,7 +304,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <li><a href="#private">Private by design</a></li>
     </ul>
     <div class="nav-cta">
-      <a class="btn btn-ghost" href="#signin">Sign in</a>
+      <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
       <a class="btn btn-primary" href="#invite">Request an invite</a>
     </div>
   </div>
@@ -294,11 +315,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap hero-in">
     <div class="hero-copy">
       <div class="hero-badge reveal"><span class="pulse"></span>Invite-only, in early access</div>
-      <h1 class="reveal">Put it down.<br><em>Trust</em> it to come back.</h1>
-      <p class="hero-sub reveal">Daybook is a calm, private home for everything you're carrying - tasks, notes, reflections, money, the lot. Set it down in two taps, and let it resurface exactly when you need it.</p>
+      <h1 class="reveal">Your whole life,<br>in one <em>sane</em> place.</h1>
+      <p class="hero-sub reveal">Daybook is the Swiss Army knife for managing your life - tasks, notes, reflections, money, the lot - kept calm and simple in one place. And every piece of it is yours: your data, your account, no one mining it.</p>
       <div class="hero-actions reveal">
         <a class="btn btn-primary" href="#invite">Request an invite →</a>
-        <a class="btn btn-ghost" href="#signin">Sign in</a>
+        <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
       </div>
       <p class="hero-note reveal">Your data stays yours. No adverts, no selling, no noise.</p>
     </div>
@@ -408,7 +429,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <p>Daybook is invite-only while it's young, so it stays calm and well cared for. Ask for an invite and I'll set you up.</p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="mailto:robin@lumley-savile.com?subject=Daybook%20invite&body=Hi%20Robin%2C%20I%27d%20love%20an%20invite%20to%20Daybook.">Request an invite →</a>
-      <a class="btn btn-ghost" href="#signin">I have an account</a>
+      <a class="btn btn-ghost" href="#" data-signin>I have an account</a>
     </div>
   </div>
 </section>
@@ -426,8 +447,43 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </footer>
 
+<div class="signin-overlay" id="signin-modal" hidden>
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Sign in to your Daybook">
+    <button class="signin-close" data-signin-close aria-label="Close">&times;</button>
+    <div class="eyebrow">Welcome back</div>
+    <h3 class="signin-h">Sign in to your Daybook</h3>
+    <p class="signin-p">Head to your own Daybook and confirm with the code we email you.</p>
+    <form id="signin-form">
+      <label class="signin-label" for="signin-name">Your Daybook name</label>
+      <div class="signin-field">
+        <input id="signin-name" class="signin-input" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="robski">
+        <span class="signin-suffix">.daybook.fyi</span>
+      </div>
+      <button class="btn btn-primary signin-go" type="submit">Continue →</button>
+      <p class="signin-err" id="signin-err" hidden></p>
+    </form>
+    <p class="signin-foot">Don't have a Daybook yet? <a href="#invite" data-signin-close>Request an invite</a></p>
+  </div>
+</div>
+
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
+  // Sign-in: enter your Daybook name -> go to your subdomain, where the email
+  // code sign-in lives. (Each Daybook is private to its own address.)
+  const sm = document.getElementById('signin-modal');
+  const openSignin = (e) => { if (e) e.preventDefault(); sm.hidden = false; setTimeout(() => document.getElementById('signin-name').focus(), 30); };
+  const closeSignin = () => { sm.hidden = true; };
+  document.querySelectorAll('[data-signin]').forEach((el) => el.addEventListener('click', openSignin));
+  document.querySelectorAll('[data-signin-close]').forEach((el) => el.addEventListener('click', closeSignin));
+  sm.addEventListener('click', (e) => { if (e.target === sm) closeSignin(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
+  document.getElementById('signin-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signin-name').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const err = document.getElementById('signin-err');
+    if (!name) { err.textContent = 'Enter your Daybook name.'; err.hidden = false; return; }
+    location.href = 'https://' + name + '.daybook.fyi';
+  });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const io = new IntersectionObserver((entries) => {
