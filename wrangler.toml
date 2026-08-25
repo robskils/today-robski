@@ -69,7 +69,7 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 #
 # onboarding@resend.dev would not work here: it only delivers to the Resend
 # account's own address, and codes go to robin@lumley-savile.com.
-FROM_EMAIL = "Robski Today <today@incremento.co>"
+FROM_EMAIL = "Daybook <today@incremento.co>"
 
 # Where the 08:45 morning brief lands. One address, not the ADMIN_EMAILS list:
 # that list is who may sign in, which is a different question from who gets
@@ -114,7 +114,7 @@ GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 # Only Robin to start; invite-only test users get added here (or, once the users
 # table drives access, this list stops being the gate).
 ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robinsavile.com"
-FROM_EMAIL = "Robski Today <today@incremento.co>"
+FROM_EMAIL = "Daybook <today@incremento.co>"
 BRIEF_EMAIL = "robin@lumley-savile.com"
 
 # Both DB and PORTFOLIO_DB point at the one staging database: on staging the

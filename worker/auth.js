@@ -177,9 +177,9 @@ export async function requestCode(request, env, json, err) {
       to: [email],
       // ASCII only: a non-ASCII subject needs RFC 2047 encoding, and a hyphen
       // reads the same as a dash for the sake of it.
-      subject: `${code} - your Today sign-in code`,
+      subject: `${code} - your Daybook sign-in code`,
       html: codeEmail(code),
-      text: `Your Today sign-in code is ${code}. It expires in 10 minutes.`,
+      text: `Your Daybook sign-in code is ${code}. It expires in 10 minutes.`,
     }),
   });
 
@@ -244,64 +244,57 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-// Robski branding, not the app's. This lands in an inbox next to everything
-// else, so it should be unmistakably Robin's at a glance. Inside the app it
-// goes back to paper and ink.
+// Daybook branding: warm paper and rust, matching the app and the homepage.
 //
 // Table layout and inline styles throughout: Gmail strips <style> blocks, and
 // Outlook's renderer is Word. No flexbox, no CSS variables, no SVG.
 function codeEmail(code) {
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="color-scheme" content="light only"></head>
-<body style="margin:0;padding:0;background:#15161a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+<body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
   <!-- Preheader: what the inbox shows before you open it. -->
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0">${code} is your Today sign-in code. It expires in 10 minutes.</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">${code} is your Daybook sign-in code. It expires in 10 minutes.</div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#15161a;padding:40px 0">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#efeae0;padding:40px 0">
     <tr><td align="center">
-      <table role="presentation" width="440" cellpadding="0" cellspacing="0" style="width:440px;max-width:440px;background:#1f2025;border-radius:18px;overflow:hidden;border:1px solid #2c2d34">
+      <table role="presentation" width="440" cellpadding="0" cellspacing="0" style="width:440px;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
 
-        <!-- The graffiti wordmark, as on robski.uk -->
-        <tr><td style="padding:0;line-height:0">
-          <img src="https://robski.uk/sig-robski.png" width="440" alt="ROBSKI"
-               style="display:block;width:100%;max-width:440px;height:auto;border:0">
+        <!-- Wordmark: a rust sunrise dot + Daybook in a warm serif. -->
+        <tr><td style="padding:34px 38px 0" align="center">
+          <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#c4412e;vertical-align:middle"></span>
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17;vertical-align:middle;padding-left:9px">Daybook</span>
         </td></tr>
 
-        <!-- The gradient from the site, as a keyline. A single row of solid
-             cells: gradients are the first thing Outlook throws away. -->
-        <tr><td style="padding:0;line-height:0;font-size:0">
+        <!-- A warm keyline. Solid cells: gradients are the first thing Outlook drops. -->
+        <tr><td style="padding:22px 38px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td width="20%" style="background:#4a1d7a;height:4px;line-height:4px;font-size:0">&nbsp;</td>
-            <td width="20%" style="background:#2440b0;height:4px;line-height:4px;font-size:0">&nbsp;</td>
-            <td width="20%" style="background:#1784c4;height:4px;line-height:4px;font-size:0">&nbsp;</td>
-            <td width="20%" style="background:#14a9b8;height:4px;line-height:4px;font-size:0">&nbsp;</td>
-            <td width="20%" style="background:#e0732e;height:4px;line-height:4px;font-size:0">&nbsp;</td>
+            <td style="background:#c4412e;height:3px;line-height:3px;font-size:0">&nbsp;</td>
           </tr></table>
         </td></tr>
 
-        <tr><td style="padding:32px 38px 0" align="center">
-          <p style="margin:0;font-size:13px;letter-spacing:0.34em;text-transform:uppercase;color:#8b8d98">Today</p>
+        <tr><td style="padding:26px 38px 0" align="center">
+          <p style="margin:0;font-size:13px;letter-spacing:0.24em;text-transform:uppercase;color:#8b7f72">Sign in</p>
         </td></tr>
 
-        <tr><td style="padding:16px 38px 0">
-          <p style="margin:0;font-size:15px;color:#c9ccd4;line-height:1.6;text-align:center">Your sign-in code. It expires in <strong style="color:#ffffff">10 minutes</strong>.</p>
+        <tr><td style="padding:12px 38px 0">
+          <p style="margin:0;font-size:15px;color:#574e44;line-height:1.6;text-align:center">Your sign-in code. It expires in <strong style="color:#211c17">10 minutes</strong>.</p>
         </td></tr>
 
         <tr><td style="padding:24px 38px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td align="center" style="background:#15161a;border:1px solid #33343c;border-radius:12px;padding:24px">
-              <span style="font-size:38px;font-weight:700;letter-spacing:0.2em;color:#38c5ff;font-family:'Courier New',Courier,monospace">${code}</span>
+            <tr><td align="center" style="background:#f4f1ea;border:1px solid #e4ddcf;border-radius:12px;padding:24px">
+              <span style="font-size:38px;font-weight:700;letter-spacing:0.2em;color:#c4412e;font-family:'Courier New',Courier,monospace">${code}</span>
             </td></tr>
           </table>
         </td></tr>
 
         <tr><td style="padding:24px 38px 30px">
-          <p style="margin:0;font-size:12px;color:#7c7e88;line-height:1.6;text-align:center">Didn't ask for this? Ignore it, and nothing happens.</p>
+          <p style="margin:0;font-size:12px;color:#8b7f72;line-height:1.6;text-align:center">Didn't ask for this? Ignore it, and nothing happens.</p>
         </td></tr>
 
-        <tr><td style="padding:16px 38px;border-top:1px solid #2c2d34">
-          <p style="margin:0;font-size:11px;color:#6b6d76;text-align:center">
-            <a href="https://today.robski.uk" style="color:#38c5ff;text-decoration:none">today.robski.uk</a>
+        <tr><td style="padding:16px 38px;border-top:1px solid #e4ddcf">
+          <p style="margin:0;font-size:11px;color:#8b7f72;text-align:center">
+            <a href="https://daybook.fyi" style="color:#c4412e;text-decoration:none">daybook.fyi</a>
           </p>
         </td></tr>
 

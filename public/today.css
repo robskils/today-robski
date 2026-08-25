@@ -107,6 +107,7 @@ button { cursor: pointer; background: none; border: 0; }
   text-align: center;
 }
 .gate-mark { display: block; width: 100%; height: auto; }
+.gate-wordmark { padding: 46px 20px 12px; text-align: center; font-family: var(--serif); font-size: 44px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
 .gate-stripe {
   height: 4px;
   background: linear-gradient(90deg,

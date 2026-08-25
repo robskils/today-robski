@@ -947,6 +947,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-2col .nav-sub { min-width:0; padding:8px 10px; background:var(--card); border:1px solid var(--line); border-radius:9px; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
+.nav-2col .nav-sub-wide { grid-column:1 / -1; }
 .nav-sub.muted { color:var(--ink-3); font-size:14px; font-style:italic; }
 .nav-sub { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:7px 12px 7px 14px; border-radius:8px; color:var(--ink-2); font-size:15.5px; overflow:hidden; }
 .nav-sub:hover { background:var(--paper); color:var(--ink); }
@@ -958,7 +959,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-foot a, .nav-foot button { font-size:13px; color:var(--ink-3); padding:6px 8px; border-radius:7px; text-decoration:none; }
 .nav-foot a:hover, .nav-foot button:hover { background:var(--paper); color:var(--ink); }
 /* Theme switch pinned to the bottom of the sidebar. */
-.nav-bottom { margin-top:auto; padding-top:12px; display:flex; flex-direction:column; gap:8px; }
+.nav-bottom { margin-top:auto; padding-top:12px; display:flex; gap:8px; }
+.nav-bottom .nav-theme { flex:1; width:auto; min-width:0; }
 .nav-theme { width:100%; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; border-radius:10px; color:var(--ink-2); font-size:14.5px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
 .nav-theme:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
 .nav-theme.on { border-color:var(--accent); color:var(--accent); }

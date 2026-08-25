@@ -135,7 +135,7 @@ function empty(text) {
   return `<p style="margin:2px 0 0;font-family:${SERIF};font-size:19px;font-style:italic;color:${MIST};border-top:1px solid ${RULE};padding:14px 0 0">${text}</p>`;
 }
 
-export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl = 'https://today.robski.uk' }) {
+export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl = 'https://robski.daybook.fyi' }) {
   const timed = [...events].sort((a, b) => (a.allDay ? -1 : b.allDay ? 1 : a.start_min - b.start_min));
 
   const calendar = timed.length
@@ -189,7 +189,7 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
         <tr><td style="padding:38px 34px 34px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${RULE}">
             <tr><td align="center" style="padding:22px 0 0">
-              <a href="${siteUrl}" style="font-family:${SANS};font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:${GOLD};text-decoration:none">Open today &#8594;</a>
+              <a href="${siteUrl}" style="font-family:${SANS};font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:${GOLD};text-decoration:none">Open Daybook &#8594;</a>
               <p style="margin:16px 0 0;font-family:${SERIF};font-size:17px;font-style:italic;color:${MIST}">Sit first. The rest will keep.</p>
             </td></tr>
           </table>

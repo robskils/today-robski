@@ -388,7 +388,12 @@ function navSection(key, v) {
   let title, add = '', rows;
   if (key === 'favs') {
     title = 'Starred';
-    rows = state.favs.map((f) => sub(false, `data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"`, f.kind in KIND_IC ? KIND_IC[f.kind] : '•', f.title)).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
+    // Short titles ride two-up; longer ones take a full-width row so you can
+    // actually read them.
+    rows = state.favs.map((f) => {
+      const wide = (f.title || '').length > 15 ? ' nav-sub-wide' : '';
+      return `<button class="nav-sub${wide}" data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"><span class="i">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="t">${esc(f.title || 'Untitled')}</span></button>`;
+    }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // Notes and tables are one list now; a table note carries the grid icon.
     title = 'Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
