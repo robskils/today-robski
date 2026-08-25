@@ -480,11 +480,11 @@ function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
     `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
-  const links = [
-    ['✉', 'Mail accounts', 'data-open-mailaccounts=""'],
-    ['💰', 'Spending categories', 'data-settings-goto="spending"'],
-    ['🎯', 'Reviews &amp; reminders', 'data-open-reviews=""'],
-    ['☀', 'Time streams (Today)', 'data-open-today=""'],
+  const tiles = [
+    ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
+    ['💰', 'Spending', 'Categories &amp; budgets', 'data-settings-goto="spending"'],
+    ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
+    ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
   ];
   state.settings = state.settings || {};
   const appOpen = !!state.settings.appearanceOpen;
@@ -522,9 +522,9 @@ function renderSettings() {
       </div>
     </section>` : ''}
     <section class="home-sec">
-      <div class="home-sec-h">More</div>
-      <div class="set-links">${links.map(([ic, label, attr]) => `<button class="set-link" ${attr}><span class="set-link-ic">${ic}</span>${label}</button>`).join('')}</div>
-      ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:12px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : '<p class="home-empty" style="padding:12px 0 0">Your account, notifications and AI keys will live here soon.</p>'}
+      <div class="home-sec-h">Manage</div>
+      <div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>
+      ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:14px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : '<p class="home-empty" style="padding:14px 0 0">Your account, notifications and AI keys will live here soon.</p>'}
     </section>`;
 }
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
