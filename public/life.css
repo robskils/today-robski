@@ -958,6 +958,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .home-sec-toggle { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
 .home-sec-toggle .hs-chev { color:var(--ink-3); font-size:12px; }
 .home-sec-toggle:hover .hs-chev { color:var(--accent); }
+/* Pomodoro focus timer - quiet by default, comes alive when running. */
+.pomo { display:flex; flex-direction:column; align-items:center; gap:12px; padding:6px 0 2px; }
+.pomo-time { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:44px; font-weight:600; letter-spacing:.02em; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
+.pomo.running .pomo-time { color:var(--accent); }
+.pomo-modes { display:inline-flex; gap:4px; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:3px; }
+.pomo-mode { padding:5px 14px; border-radius:999px; font-size:13.5px; color:var(--ink-3); }
+.pomo-mode.on { background:var(--card); color:var(--ink); font-weight:600; box-shadow:var(--shadow-sm); }
+.pomo-ctrls { display:flex; gap:8px; width:100%; }
+.pomo-ctrls .add-btn { flex:1; }
+.pomo-reset { flex:none; padding:0 14px; font-size:17px; }
 .nav-sub.muted { color:var(--ink-3); font-size:14px; font-style:italic; }
 .nav-sub { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:7px 12px 7px 14px; border-radius:8px; color:var(--ink-2); font-size:15.5px; overflow:hidden; }
 .nav-sub:hover { background:var(--paper); color:var(--ink); }

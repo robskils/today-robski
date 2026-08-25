@@ -841,6 +841,59 @@ function homeTodayItems() {
   }
   return items.sort((a, b) => a.sort - b.sort);
 }
+// ── Pomodoro focus timer (Home) ───────────────────────────────────────
+// Subtle, opt-in: sits quietly in the Home sidebar. Runs off a wall-clock end
+// time so it stays accurate across navigation and reloads; a single ticker
+// updates just the digits each second.
+const POMO_MIN = { focus: 25, break: 5 };
+let pomo = (() => { try { const p = JSON.parse(localStorage.getItem('life.pomo')); if (p && p.mode) return p; } catch {} return { mode: 'focus', running: false, endAt: null, remaining: POMO_MIN.focus * 60 }; })();
+function savePomo() { try { localStorage.setItem('life.pomo', JSON.stringify(pomo)); } catch {} }
+function pomoRemaining() { return (pomo.running && pomo.endAt) ? Math.max(0, Math.round((pomo.endAt - Date.now()) / 1000)) : pomo.remaining; }
+const pomoFmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+let pomoTicker = null;
+function pomoEnsureTicker() {
+  if (pomoTicker) return;
+  pomoTicker = setInterval(() => {
+    if (!pomo.running) return;
+    const r = pomoRemaining();
+    const el = document.getElementById('pomo-time'); if (el) el.textContent = pomoFmt(r);
+    if (r <= 0) {
+      const done = pomo.mode;
+      pomo.running = false; pomo.endAt = null;
+      pomo.mode = done === 'focus' ? 'break' : 'focus';
+      pomo.remaining = POMO_MIN[pomo.mode] * 60;
+      savePomo();
+      toast(done === 'focus' ? '🍅 Focus done — take a break' : '✓ Break over — back to it');
+      if (state.view && state.view.type === 'home') renderHome();
+    }
+  }, 1000);
+}
+function pomoToggle() {
+  if (pomo.running) { pomo.remaining = pomoRemaining(); pomo.running = false; pomo.endAt = null; }
+  else { pomo.endAt = Date.now() + pomoRemaining() * 1000; pomo.running = true; pomoEnsureTicker(); }
+  savePomo(); renderHome();
+}
+function pomoReset() { pomo.running = false; pomo.endAt = null; pomo.remaining = POMO_MIN[pomo.mode] * 60; savePomo(); renderHome(); }
+function pomoSetMode(m) { if (!POMO_MIN[m]) return; pomo.mode = m; pomo.running = false; pomo.endAt = null; pomo.remaining = POMO_MIN[m] * 60; savePomo(); renderHome(); }
+if (pomo.running) pomoEnsureTicker();   // a timer left running keeps ticking across reloads
+function pomoHtml() {
+  const r = pomoRemaining();
+  return `<section class="home-sec home-pomo">
+    <div class="home-sec-h">Focus timer</div>
+    <div class="pomo ${pomo.running ? 'running' : ''}">
+      <div class="pomo-time" id="pomo-time">${pomoFmt(r)}</div>
+      <div class="pomo-modes">
+        <button class="pomo-mode ${pomo.mode === 'focus' ? 'on' : ''}" data-pomo-mode="focus">Focus</button>
+        <button class="pomo-mode ${pomo.mode === 'break' ? 'on' : ''}" data-pomo-mode="break">Break</button>
+      </div>
+      <div class="pomo-ctrls">
+        <button class="add-btn wide" data-pomo-toggle>${pomo.running ? 'Pause' : (r < POMO_MIN[pomo.mode] * 60 ? 'Resume' : 'Start')}</button>
+        <button class="ghost pomo-reset" data-pomo-reset title="Reset">↺</button>
+      </div>
+    </div>
+  </section>`;
+}
+
 // The day's teaching, moved here from Today. Dismissible - once you've read it,
 // the × hides it for the rest of the day (per-device).
 function homeQuoteHtml() {
@@ -905,6 +958,7 @@ function renderHome() {
           </section>
         </div>
         <aside class="home-side">
+          ${pomoHtml()}
           <section class="home-sec home-sec-recent">
             <div class="home-sec-h">Recently viewed</div>
             ${recentHtml}
@@ -5296,6 +5350,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-home-quote-x]')) { localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); renderHome(); return; }
+  if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
+  if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
+  { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
   if (t.closest('[data-home-focus-toggle]')) { const c = localStorage.getItem('life.home.focusCollapsed') === '1'; localStorage.setItem('life.home.focusCollapsed', c ? '0' : '1'); renderHome(); return; }
   if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
   if (t.closest('[data-create-invite]')) { createInvite(); return; }
