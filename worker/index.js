@@ -696,8 +696,10 @@ async function lookupMedia(request, env, url, json, err) {
         const m = await sum.json().catch(() => ({}));
         const desc = m.description || '';
         const ym = `${m.extract || ''} ${desc}`.match(/\b(19|20)\d{2}\b/);
+        // Drop Wikipedia's disambiguation suffix, e.g. "Parasite (2019 film)".
+        const cleanTitle = (m.title || q).replace(/\s*\((?:\d{4}\s+)?[^)]*\bfilm\b[^)]*\)\s*$/i, '').trim();
         return json({
-          title: m.title || q,
+          title: cleanTitle || m.title || q,
           image: (m.thumbnail || {}).source || '',
           url: (((m.content_urls || {}).desktop) || {}).page || `https://en.wikipedia.org/wiki/${encodeURIComponent(hit.title)}`,
           site: desc || 'Film',
