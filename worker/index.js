@@ -672,6 +672,59 @@ async function ytInfo(request, env, url, json, err) {
   }
 }
 
+// Look up a film or book by title and return a card's worth of details (cover,
+// year, a link). Both sources are keyless and free - iTunes Search for films
+// (poster + year), Open Library for books (cover + author + year) - which suits
+// a personal tool that should cost nothing to run. Any miss returns just the
+// typed title, so adding by name always works even when the lookup is blank.
+async function lookupMedia(request, env, url, json, err) {
+  const q = (url.searchParams.get('q') || '').trim();
+  const type = url.searchParams.get('type') === 'film' ? 'film' : 'book';
+  if (!q) return err('q required', request, 400);
+  const base = { title: q, image: '', url: '', site: '', year: '', media: type };
+  try {
+    if (type === 'film') {
+      // Wikipedia, in two hops: find the film's page, then pull its summary
+      // (poster thumbnail + a one-line blurb like "2010 film by Christopher
+      // Nolan"). Keyless and reliable where iTunes' movie storefront isn't.
+      const WIKI = { 'User-Agent': 'RobskiDaybook/1.0 (personal reading list)' };
+      const s = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q + ' film')}&srlimit=1&format=json`, { headers: WIKI, cf: { cacheTtl: 86400, cacheEverything: true } });
+      const sd = await s.json().catch(() => ({}));
+      const hit = (((sd.query || {}).search) || [])[0];
+      if (hit && hit.title) {
+        const sum = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}`, { headers: WIKI, cf: { cacheTtl: 86400, cacheEverything: true } });
+        const m = await sum.json().catch(() => ({}));
+        const desc = m.description || '';
+        const ym = `${m.extract || ''} ${desc}`.match(/\b(19|20)\d{2}\b/);
+        return json({
+          title: m.title || q,
+          image: (m.thumbnail || {}).source || '',
+          url: (((m.content_urls || {}).desktop) || {}).page || `https://en.wikipedia.org/wiki/${encodeURIComponent(hit.title)}`,
+          site: desc || 'Film',
+          year: ym ? ym[0] : '',
+          media: 'film',
+        }, request);
+      }
+    } else {
+      const r = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=1&fields=title,author_name,first_publish_year,cover_i,key`, { cf: { cacheTtl: 86400, cacheEverything: true } });
+      const d = await r.json().catch(() => ({}));
+      const b = (d.docs || [])[0];
+      if (b) {
+        const author = (b.author_name || [])[0] || '';
+        const year = b.first_publish_year ? String(b.first_publish_year) : '';
+        return json({
+          title: b.title || q,
+          image: b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : '',
+          url: b.key ? `https://openlibrary.org${b.key}` : '',
+          site: [author, year].filter(Boolean).join(' · ') || 'Book',
+          year, media: 'book',
+        }, request);
+      }
+    }
+  } catch { /* fall through to the bare title */ }
+  return json(base, request);
+}
+
 // Google keeps a deleted event in the calendar's bin for 30 days, so this is
 // undoable at their end. Still the only destructive reach this app has outside
 // its own D1, hence the confirm step in the UI.
@@ -2058,6 +2111,7 @@ export default {
         return json({ reminders: v ? JSON.parse(v) : [] }, request);
       }
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
+      if (path === '/api/lookup' && request.method === 'GET') return lookupMedia(request, env, url, json, err);
       if (path === '/api/bookmark' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (!b.url) return err('url required', request, 400); return json(await createBookmark(env, b.url, b.title), request, 201); }
       if (path === '/api/bookmark/setup' && request.method === 'GET') return json({ key: await bookmarkKey(env), origin: new URL(request.url).origin }, request);
       if (path === '/api/linkinfo' && request.method === 'GET') { const u = url.searchParams.get('url'); if (!u) return err('url required', request, 400); return json(await fetchLinkMeta(u), request); }

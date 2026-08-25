@@ -501,6 +501,23 @@ function renderNav() {
     </div>`;
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
+  queueNavH();
+}
+// The mobile top bar (brand + full-width search box) is sticky and its height
+// varies as it wraps, so measure it into --navh; the breadcrumb pins just below
+// it (see .crumbbar in the mobile CSS). Desktop ignores --navh.
+function setNavH() {
+  const nav = document.getElementById('nav');
+  const h = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+  document.documentElement.style.setProperty('--navh', (h || 56) + 'px');
+}
+let _navHBound = false;
+function queueNavH() {
+  requestAnimationFrame(setNavH);
+  if (_navHBound) return;
+  _navHBound = true;
+  window.addEventListener('resize', setNavH);
+  window.addEventListener('orientationchange', () => setTimeout(setNavH, 120));
 }
 // Keyboard shortcuts reference. Open with ⌘/, the palette, or the home link.
 const SHORTCUTS = [
@@ -1135,15 +1152,17 @@ function renderReadwatch() {
   const tabs = RW_TABS.map(([k, l]) => `<button class="rw-tab ${rw.filter === k ? 'on' : ''}" data-rw-filter="${k}">${l}<span class="rw-tab-n">${count(k)}</span></button>`).join('');
   const shown = items.filter((b) => rwMatch(b, rw.filter));
   const cards = shown.map((b) => {
-    const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video'; const book = p.media === 'book';
-    // A book has no link of its own; tapping it looks it up so you can find/buy it.
-    const href = book ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' book')}` : (p.url || '#');
-    const icon = vid ? '▶' : book ? '📖' : '▤';
-    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''}">
-      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
+    const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video'; const book = p.media === 'book'; const film = p.media === 'film';
+    // A book/film with no stored link falls back to a web search, so tapping it
+    // always leads somewhere (find it, buy it, watch it).
+    const href = p.url || (book ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' book')}`
+      : film ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' film')}` : '#');
+    const icon = vid ? '▶' : book ? '📖' : film ? '🎬' : '▤';
+    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''}">
+      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
       <div class="rw-body">
         <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
-        <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : book ? '📖 Book' : '▤ Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
+        <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : book ? '📖 Book' : film ? '🎬 Film' : '▤ Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
       </div>
       <div class="rw-actions">
         <button class="rw-done ${done ? 'on' : ''}" data-rw-done="${b.id}" title="${done ? 'Mark unread' : 'Mark done'}">✓</button>
@@ -1154,7 +1173,8 @@ function renderReadwatch() {
   $('#pane').innerHTML = `
     ${pageCrumb('Read & Watch')}
     <div class="pane-head home-head"><h1>Read &amp; Watch</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
-    <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
+    <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
+    <div class="rw-type" title="For a title (not a link): look it up as a book or a film">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${(rw.addType || 'book') === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
     <div class="rw-tabs">${tabs}</div>
     <div class="rw-list">${cards || `<div class="empty">${rw.filter === 'done' ? 'Nothing finished yet.' : 'Nothing here yet. Paste a link above, or set up one-tap saving.'}</div>`}</div>`;
@@ -1185,15 +1205,21 @@ async function rwSave(input) {
   // A link (http… or a bare domain with no spaces) is fetched for its metadata;
   // anything else is treated as a book / title recommendation - stored as-is.
   const isLink = /^https?:\/\//i.test(input) || /^[^\s]+\.[a-z]{2,}(\/|\?|#|$)/i.test(input);
+  const type = state.rw.addType === 'film' ? 'film' : 'book';
   state.rw.saving = true; renderReadwatch();
   try {
     let bm;
     if (isLink) { bm = await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: input }) }); }
     else {
-      const props = { title: input.slice(0, 300), url: '', image: '', site: '', media: 'book', status: 'todo', added: new Date().toISOString() };
+      // Look the title up (poster/cover + year + a link), then store it. The
+      // lookup never fails hard: a blank result just gives the bare title.
+      let d = { title: input.slice(0, 300), url: '', image: '', site: '', year: '', media: type };
+      try { d = await api(`/api/lookup?type=${type}&q=${encodeURIComponent(input)}`); } catch {}
+      const props = { title: (d.title || input).slice(0, 300), url: d.url || '', image: d.image || '', site: d.site || '', year: d.year || '', media: type, status: 'todo', added: new Date().toISOString() };
       bm = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: props.title, props }) });
     }
-    state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch(); toast(isLink ? 'Saved' : '📖 Book added');
+    state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch();
+    toast(isLink ? 'Saved' : type === 'film' ? '🎬 Film added' : '📖 Book added');
   } catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
 }
 async function rwSetDone(id, done) {
@@ -4934,6 +4960,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
+  const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { state.rw.addType = rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) i.focus(); } return; }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
   const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
