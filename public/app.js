@@ -1044,7 +1044,7 @@ function renderJournalList() {
     </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Journal')}
-    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
+    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
@@ -5005,6 +5005,7 @@ document.addEventListener('click', (e) => {
   const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }
   if (t.closest('[data-journal-coaching]')) { newCoachingSession(); return; }
+  if (t.closest('[data-journal-dream]')) { newJournalEntry('dreams', 'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.'); return; }
   const delIns = t.closest('[data-del-insight]'); if (delIns) { delInsight(delIns.dataset.delInsight); return; }
   const readIns = t.closest('[data-read-insight]'); if (readIns) { if (state.journal) { state.journal.readingInsight = readIns.dataset.readInsight; renderJournalList(); } return; }
   if (t.closest('[data-journal-insights-read]')) { if (state.journal) { const l = state.journal.insightsList || []; if (l.length) { state.journal.readingInsight = l[0].id; renderJournalList(); } } return; }
