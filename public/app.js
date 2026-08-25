@@ -1703,7 +1703,7 @@ function uiPrompt(message, opts = {}) {
 // while living inside the Life shell. ?embed hides its own header chrome.
 function openToday() { state.view = { type: 'today' }; renderNav(); renderToday(); return Promise.resolve(); }
 function renderToday() {
-  $('#pane').innerHTML = `<iframe class="today-frame" src="/today?embed=1" title="Today - your day"></iframe>`;
+  $('#pane').innerHTML = `<div class="today-topbar">${pageCrumb('Today')}</div><iframe class="today-frame" src="/today?embed=1" title="Today - your day"></iframe>`;
 }
 
 // ── view: mail ───────────────────────────────────────

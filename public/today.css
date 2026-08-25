@@ -252,36 +252,42 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
    tool isn't doing its job. Pinned under the bar for the same reason - what's
    still owed today shouldn't scroll away with the schedule.
    Below the bar's z-index, above everything in the day. */
+.rail-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px 0;
+}
+.rail-title { margin: 0; font-size: 12.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3); font-weight: 600; }
+.rail-settings-btn { font-size: 13px; padding: 6px 12px; }
 .rail {
-  display: flex; flex-wrap: wrap; gap: 9px; padding: 16px 20px;
+  display: flex; flex-wrap: wrap; gap: 9px; padding: 12px 20px 16px;
   border-bottom: 1px solid var(--line);
   position: sticky; top: var(--bar-h, 76px); z-index: 15;
   background: color-mix(in srgb, var(--paper) 88%, transparent);
   backdrop-filter: blur(12px);
 }
 
+/* Compact, ring-free pills so every stream fits on one line. Progress reads from
+   the text ("30m / 60m", "45m ✓") and the hit state colours the pill. A small
+   left dot carries the stream's colour without a full ring. */
 .lane {
   --c: hsl(var(--h) var(--lane-s) var(--lane-l));
-  flex: none; display: flex; align-items: center; gap: 11px;
-  padding: 11px 16px 11px 12px; border-radius: 999px;
+  flex: none; display: inline-flex; align-items: baseline; gap: 7px;
+  padding: 8px 14px; border-radius: 999px;
   background: var(--card); border: 1px solid var(--line);
-  transition: border-color .15s, transform .12s;
+  transition: border-color .15s, transform .12s, background .15s;
+}
+.lane::before {
+  content: ""; align-self: center; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--c); flex: none; margin-right: 1px;
 }
 .lane:hover { border-color: var(--c); transform: translateY(-1px); }
 .lane.hit { border-color: var(--c); background: hsl(var(--h) var(--lane-s) var(--lane-l) / var(--lane-wash-a)); }
 /* Rest is a want, not a debt. A dashed edge says "optional" without nagging. */
 .lane.optional { border-style: dashed; }
 
-.lane-ring { width: 34px; height: 34px; flex: none; transform: rotate(-90deg); }
-.lane-ring circle { fill: none; stroke-width: 4; stroke-linecap: round; }
-.lane-ring .track { stroke: var(--line-2); }
-/* Faint arc = planned but not yet done. Solid arc = actually done. */
-.lane-ring .plan { stroke: var(--c); opacity: .3; }
-.lane-ring .fill { stroke: var(--c); transition: stroke-dashoffset .5s ease; }
-
-.lane-txt { display: flex; flex-direction: column; line-height: 1.25; }
-.lane-name { font-size: 16px; font-weight: 600; }
-.lane-min { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lane-name { font-size: 14.5px; font-weight: 600; }
+.lane-min { font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lane.hit .lane-min { color: var(--c); font-weight: 600; }
 .lane.hit .lane-min { color: var(--c); font-weight: 600; }
 
 /* ── layout ───────────────────────────────────────────────────────── */
@@ -712,7 +718,17 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
   max-height: calc(100vh - var(--bar-h, 76px) - var(--rail-h, 0px) - 24px);
   display: flex; flex-direction: column;
 }
-.task-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; }
+.task-list { display: flex; flex-direction: column; gap: 18px; overflow-y: auto; flex: 1; }
+/* Tasks grouped by stream (same area->stream map as the rail). */
+.task-group { display: flex; flex-direction: column; gap: 8px; }
+.task-group-h {
+  --c: hsl(var(--h) var(--lane-s) var(--lane-l));
+  display: flex; align-items: center; gap: 8px; margin: 0 0 2px;
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--c);
+}
+.task-group-h .tg-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); flex: none; }
+.task-group-h .tg-n { color: var(--ink-3); font-weight: 500; letter-spacing: 0; }
 
 @media (max-width: 900px) {
   /* One column: sticking it would cover the schedule it's meant to fill. */

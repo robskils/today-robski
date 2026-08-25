@@ -209,13 +209,10 @@ function renderRail() {
     // just without a goal - a relationship owes no daily quota of minutes.
     if (!target) {
       if (l.untracked && !p.planned) return '';
-      const sub = p.done ? `${humanMin(p.done)} done` : 'no set time';
+      const sub = p.done ? `${humanMin(p.done)} done` : '';
       return `<button class="lane" style="--h:${l.hue}" data-lane-add="${l.key}" draggable="true"
           title="${esc(l.label)}: no daily target. Click to add a block, or drag it onto the schedule.">
-        <div class="lane-txt">
-          <span class="lane-name">${esc(l.label)}</span>
-          <span class="lane-min">${sub}</span>
-        </div></button>`;
+        <span class="lane-name">${esc(l.label)}</span>${sub ? `<span class="lane-min">${sub}</span>` : ''}</button>`;
     }
 
     // A practice (Zazen, Body, Music, Rest) is fulfilled by being done at all,
@@ -242,17 +239,8 @@ function renderRail() {
     return `<button class="lane ${hit ? 'hit' : ''} ${l.optional ? 'optional' : ''}"
         style="--h:${l.hue}" data-lane-add="${l.key}" draggable="true"
         title="${title}">
-      <svg class="lane-ring" viewBox="0 0 34 34" aria-hidden="true">
-        <circle class="track" cx="17" cy="17" r="${R}"></circle>
-        <circle class="plan" cx="17" cy="17" r="${R}"
-          stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - planPct)}"></circle>
-        <circle class="fill" cx="17" cy="17" r="${R}"
-          stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - pct)}"></circle>
-      </svg>
-      <div class="lane-txt">
-        <span class="lane-name">${esc(l.label)}</span>
-        <span class="lane-min">${sub}</span>
-      </div>
+      <span class="lane-name">${esc(l.label)}</span>
+      <span class="lane-min">${sub}</span>
     </button>`;
   }).join('');
 }
@@ -503,6 +491,27 @@ function renderFilter() {
   $('lane-filter').innerHTML = chips.join('');
 }
 
+// One task card. The lane label is omitted (the group header carries it).
+function taskCardHtml(t) {
+  const l = laneMeta(t.lane);
+  const meta = [];
+  if (t.duration) meta.push(humanMin(t.duration));
+  if (t.area && t.area !== l.label) meta.push(esc(t.area));
+  const id = esc(t.tana_id);
+  // The tick and the body are separate controls: one finishes the task, the
+  // other schedules it. The row is also draggable onto the timeline.
+  return `<div class="task" style="--h:${l.hue}" data-task-row="${id}" draggable="true">
+    <button class="task-check" data-task-check="${id}" aria-label="Mark done: ${esc(t.title)}">✓</button>
+    <button class="task-open" data-task="${id}">
+      <div class="task-body">
+        <div class="task-t">${esc(t.title)}</div>
+        ${meta.length ? `<div class="task-m">${meta.map((m) => `<span>${m}</span>`).join('')}</div>` : ''}
+      </div>
+      ${t.priority ? `<span class="prio ${esc(t.priority)}">${esc(t.priority)}</span>` : ''}
+    </button>
+  </div>`;
+}
+
 function renderTasks() {
   $('task-count').textContent = state.tasks.length ? `${state.tasks.length}` : '';
 
@@ -511,28 +520,20 @@ function renderTasks() {
     return;
   }
 
-  $('task-list').innerHTML = state.tasks.map((t) => {
-    const l = laneMeta(t.lane);
-    const meta = [esc(l.label)];
-    if (t.duration) meta.push(humanMin(t.duration));
-    if (t.area && t.area !== l.label) meta.push(esc(t.area));
-    const id = esc(t.tana_id);
+  // Group tasks by stream, in the rail's order, using the same area->stream
+  // settings the streams above use (each task's `lane` is set from that map).
+  const byLane = new Map();
+  for (const t of state.tasks) { const k = t.lane || 'other'; (byLane.get(k) || byLane.set(k, []).get(k)).push(t); }
+  const order = state.lanes.map((l) => l.key);
+  const rank = (k) => { const i = order.indexOf(k); return i < 0 ? 999 : i; };
+  const keys = [...byLane.keys()].sort((a, b) => rank(a) - rank(b));
 
-    // The tick and the body are separate controls: one finishes the task, the
-    // other schedules it. Nesting them would make the whole card ambiguous.
-    // The row is also draggable onto the timeline, which is the same action as
-    // clicking the body, just with the time chosen by where you let go.
-    return `<div class="task" style="--h:${l.hue}" data-task-row="${id}" draggable="true">
-      <button class="task-check" data-task-check="${id}"
-              aria-label="Mark done: ${esc(t.title)}">✓</button>
-      <button class="task-open" data-task="${id}">
-        <div class="task-body">
-          <div class="task-t">${esc(t.title)}</div>
-          <div class="task-m">${meta.map((m) => `<span>${m}</span>`).join('')}</div>
-        </div>
-        ${t.priority ? `<span class="prio ${esc(t.priority)}">${esc(t.priority)}</span>` : ''}
-      </button>
-    </div>`;
+  $('task-list').innerHTML = keys.map((k) => {
+    const l = laneMeta(k);
+    const items = byLane.get(k);
+    return `<div class="task-group" style="--h:${l.hue}">
+      <h3 class="task-group-h"><span class="tg-dot"></span>${esc(l.label)}<span class="tg-n">${items.length}</span></h3>
+      ${items.map(taskCardHtml).join('')}</div>`;
   }).join('');
 }
 
@@ -1589,6 +1590,7 @@ async function openSettings() {
 // Keep the current area selections while re-rendering (add/delete a lane).
 function snapshotAreaMap() { document.querySelectorAll('[data-area]').forEach((s) => { state.setAreaMap[s.dataset.area] = s.value; }); }
 $('settings-btn').addEventListener('click', openSettings);
+$('rail-settings-btn')?.addEventListener('click', openSettings);
 $('settings-cancel').addEventListener('click', () => { $('settings-bg').hidden = true; });
 $('settings-bg').addEventListener('click', (e) => { if (e.target === $('settings-bg')) $('settings-bg').hidden = true; });
 $('set-lanes').addEventListener('click', (e) => {
