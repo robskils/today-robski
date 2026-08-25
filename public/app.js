@@ -846,7 +846,17 @@ function homeTodayItems() {
 // time so it stays accurate across navigation and reloads; a single ticker
 // updates just the digits each second.
 const POMO_MIN = { focus: 25, break: 5 };
-let pomo = (() => { try { const p = JSON.parse(localStorage.getItem('life.pomo')); if (p && p.mode) return p; } catch {} return { mode: 'focus', running: false, endAt: null, remaining: POMO_MIN.focus * 60 }; })();
+let pomo = (() => { try { const p = JSON.parse(localStorage.getItem('life.pomo')); if (p && p.mode) return p; } catch {} return { mode: 'focus', running: false, endAt: null, remaining: POMO_MIN.focus * 60, target: null }; })();
+// What you're focusing on: a life area, a goal or a task. Tasks lazy-load the
+// first time you open the timer (they're not on Home otherwise).
+function pomoTargetOptions() {
+  const t = pomo.target || {};
+  const sel = (k, id) => (t.kind === k && String(t.id) === String(id)) ? ' selected' : '';
+  const areas = (state.areas || []).map((a) => `<option value="area:${a.id}"${sel('area', a.id)}>${esc(a.title || 'Untitled')}</option>`).join('');
+  const goals = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active').map((g) => `<option value="goal:${g.id}"${sel('goal', g.id)}>${esc(g.title || 'Goal')}</option>`).join('');
+  const tasks = (state.pomoTasks || []).map((tk) => `<option value="task:${tk.id}"${sel('task', tk.id)}>${esc(tk.title || 'Task')}</option>`).join('');
+  return `<option value="">Anything</option>${areas ? `<optgroup label="Life areas">${areas}</optgroup>` : ''}${goals ? `<optgroup label="Goals">${goals}</optgroup>` : ''}${tasks ? `<optgroup label="Tasks">${tasks}</optgroup>` : ''}`;
+}
 function savePomo() { try { localStorage.setItem('life.pomo', JSON.stringify(pomo)); } catch {} }
 function pomoRemaining() { return (pomo.running && pomo.endAt) ? Math.max(0, Math.round((pomo.endAt - Date.now()) / 1000)) : pomo.remaining; }
 const pomoFmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -891,6 +901,7 @@ function pomoHtml() {
         <button class="add-btn wide" data-pomo-toggle>${pomo.running ? 'Pause' : (r < POMO_MIN[pomo.mode] * 60 ? 'Resume' : 'Start')}</button>
         <button class="ghost pomo-reset" data-pomo-reset title="Reset">↺</button>
       </div>
+      <label class="pomo-focus"><span>Focus on</span><select class="sel" data-pomo-target>${pomoTargetOptions()}</select></label>
     </div>` : ''}
   </section>`;
 }
@@ -5242,6 +5253,7 @@ document.addEventListener('input', (e) => {
   // Table search + filter value inputs: only the tbody re-renders, so the input keeps focus.
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
+  if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
@@ -5351,7 +5363,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-home-quote-x]')) { localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); renderHome(); return; }
-  if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
+  if (t.closest('[data-pomo-collapse]')) {
+    const o = localStorage.getItem('life.home.pomoOpen') === '1';
+    localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome();
+    if (!o && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }
+    return;
+  }
   if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
