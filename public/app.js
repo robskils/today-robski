@@ -1212,6 +1212,26 @@ function renderJournalList() {
   }).join('');
   const list = j.insightsList || [];
   const open = !!j.insightsOpen;   // collapsed by default each visit
+  // Rescue older insights that stored the raw JSON as their text, and always
+  // read text + points back cleanly.
+  const insParsed = (props) => {
+    let text = (props && props.text) || '', points = (props && props.points) || [];
+    const s = String(text).trim();
+    if (s.startsWith('{') && /"text"\s*:/.test(s)) {
+      try { const o = JSON.parse(s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)); if (o && o.text != null) { text = String(o.text); if (Array.isArray(o.points) && !points.length) points = o.points; } } catch {}
+    }
+    return { text, points };
+  };
+  // Render the overview as paragraphs: split on blank lines / newlines, else
+  // group the sentences a few at a time so it isn't one wall of text.
+  const insParas = (text) => {
+    let t = String(text || '').trim(); if (!t) return '';
+    let paras;
+    if (/\n\s*\n/.test(t)) paras = t.split(/\n\s*\n/);
+    else if (/\n/.test(t)) paras = t.split(/\n/);
+    else { const sents = t.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [t]; paras = []; for (let i = 0; i < sents.length; i += 3) paras.push(sents.slice(i, i + 3).join('').trim()); }
+    return paras.map((p) => p.trim()).filter(Boolean).map((p) => `<p class="j-insights-t">${esc(p)}</p>`).join('');
+  };
   const insDate = (b) => { try { return new Date((b.props && b.props.ts) || b.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } };
   const reading = list.find((x) => x.id === j.readingInsight);
   const insightsCard = `<div class="j-insights ${open ? '' : 'collapsed'}">
@@ -1223,9 +1243,8 @@ function renderJournalList() {
         </div>
         ${reading ? `<div class="j-ins-read">
           <div class="j-ins-read-h"><span>${esc(insDate(reading))}${reading.props && reading.props.from ? ` · from your last ${reading.props.from} entries` : ''}</span><button class="ghost j-ins-close" data-journal-insights-close title="Close">×</button></div>
-          <p class="j-insights-t">${esc((reading.props && reading.props.text) || '')}</p>
-          ${((reading.props && reading.props.points) || []).length ? `<ul class="j-insights-pts">${reading.props.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</div>` : ''}
-        ${list.length ? `<div class="j-ins-list"><div class="j-ins-list-h">Previous insights</div>${list.map((b) => `<button class="j-ins-item ${b.id === j.readingInsight ? 'on' : ''}" data-read-insight="${b.id}"><span class="j-ins-item-date">${esc(insDate(b))}</span><span class="j-ins-item-snip">${esc(((b.props && b.props.text) || '').slice(0, 90))}</span><span class="j-ins-del" data-del-insight="${b.id}" title="Delete this insight">×</span></button>`).join('')}</div>`
+          ${(() => { const p = insParsed(reading.props); return `${insParas(p.text)}${p.points.length ? `<ul class="j-insights-pts">${p.points.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`; })()}</div>` : ''}
+        ${list.length ? `<div class="j-ins-list"><div class="j-ins-list-h">Previous insights</div>${list.map((b) => `<button class="j-ins-item ${b.id === j.readingInsight ? 'on' : ''}" data-read-insight="${b.id}"><span class="j-ins-item-date">${esc(insDate(b))}</span><span class="j-ins-item-snip">${esc(insParsed(b.props).text.slice(0, 90))}</span><span class="j-ins-del" data-del-insight="${b.id}" title="Delete this insight">×</span></button>`).join('')}</div>`
           : '<div class="home-empty" style="padding:8px 0 4px">No insights yet. Create one and it reads back your recent entries - the themes, what lifts you, what drains you.</div>'}
       </div>
     </div>`;
