@@ -30,7 +30,7 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css">
+<link rel="stylesheet" href="/today.css?v=20260825e">
 <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -94,7 +94,11 @@
 
   <!-- The lanes. This is the whole point of the tool: a glance tells you
        which part of your life you've been starving. -->
-  <section class="rail" id="rail" aria-label="Lane progress"></section>
+  <div class="rail-head">
+    <h2 class="rail-title">Time streams</h2>
+    <button class="ghost-btn rail-settings-btn" id="rail-settings-btn" title="Choose which life areas feed each stream">&#9881; Group areas</button>
+  </div>
+  <section class="rail" id="rail" aria-label="Time streams"></section>
 
   <main class="grid">
     <!-- The repeating practices. Unlike a task, an activity is never used up:
@@ -292,6 +296,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js"></script>
+<script type="module" src="/today.js?v=20260825e"></script>
 </body>
 </html>

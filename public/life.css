@@ -1245,8 +1245,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 @media (max-width:820px){ .tabstrip { display:none; } }
 
 /* The real day planner, embedded edge-to-edge in the Life pane. */
-.today-frame { display:block; width:100%; height:calc(100vh - 44px); border:0; background:var(--paper); }
-.pane:has(.today-frame) { padding:0; max-width:none; }
+.pane:has(.today-frame) { padding:0; max-width:none; display:flex; flex-direction:column; height:calc(100vh - 44px); }
+.today-frame { display:block; width:100%; flex:1; min-height:0; border:0; background:var(--paper); }
+/* A breadcrumb strip above the embedded Today planner, like every other page.
+   Neutralise the sticky/full-bleed desktop crumbbar treatment inside it. */
+.today-topbar { flex:none; padding:11px clamp(16px,4vw,28px); border-bottom:1px solid var(--line); background:var(--paper); }
+.today-topbar .crumbbar { position:static; margin:0; padding:0; border:0; background:none; backdrop-filter:none; }
+@media (max-width:820px){ .pane:has(.today-frame) { height:calc(100vh - 52px); } }
 
 /* ── today (day planner, read view) ──────────────────── */
 .tp-date { font-family:'Cormorant Garamond',serif; font-size:.6em; font-weight:400; font-style:italic; color:var(--ink-3); margin-left:8px; }
