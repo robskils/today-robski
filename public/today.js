@@ -1607,6 +1607,7 @@ async function openSettings() {
     editLanes = cfg.lanes.filter((l) => l.key !== 'other').map((l) => ({ key: l.key, label: l.label, hue: l.hue, practice: !!l.practice }));
     renderLaneRows();
     renderAreaRows(cfg.areas, cfg.areaMap);
+    $('set-sms').checked = cfg.smsAlerts !== false;
     $('settings-bg').hidden = false;
   } catch (e) { toast(e.message); }
 }
@@ -1632,7 +1633,7 @@ $('settings-form').addEventListener('submit', async (e) => {
   const areaMap = {}; document.querySelectorAll('[data-area]').forEach((s) => { areaMap[s.dataset.area] = s.value; });
   const btn = $('settings-save'); btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    await api('/api/lanes', { method: 'PUT', body: JSON.stringify({ lanes, areaMap }) });
+    await api('/api/lanes', { method: 'PUT', body: JSON.stringify({ lanes, areaMap, smsAlerts: $('set-sms').checked }) });
     $('settings-bg').hidden = true; state.lifeAreas = null; toast('Saved');
     await loadDay(); await loadTasks();
   } catch (e2) { toast(e2.message); }

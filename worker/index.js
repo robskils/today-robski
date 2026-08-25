@@ -1004,6 +1004,9 @@ async function searchBlocks(request, env, url) {
 // block and it re-arms, leave it and it never fires twice, even if the cron
 // runs late and the block appears in two consecutive windows.
 async function runAlerts(env) {
+  // Robin can turn the 5-minutes-before text off from Today's settings.
+  const pref = await env.DB.prepare("SELECT value FROM settings WHERE key='sms_block_alerts'").first().catch(() => null);
+  if (pref && pref.value === '0') return { checked: null, due: 0, skipped: 'sms off' };
   const now = localParts(new Date(), TZ);          // { date, min } in Lisbon
   const target = now.min + 5;
 
@@ -1207,10 +1210,13 @@ async function handleLanes(request, env) {
       stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('lane_labels',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.labels)));
     }
     if (b.areaMap && typeof b.areaMap === 'object') stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('area_lanes',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(JSON.stringify(b.areaMap)));
+    // Whether the every-minute cron texts a reminder 5 minutes before a block.
+    if (b.smsAlerts !== undefined) stmts.push(env.DB.prepare("INSERT INTO settings (key,value) VALUES ('sms_block_alerts',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(b.smsAlerts ? '1' : '0'));
     if (stmts.length) await env.DB.batch(stmts);
   }
   const cfg = await getLaneConfig(env);
-  return json({ lanes: cfg.lanes, areaMap: cfg.areaMap, areas: cfg.areas.map((a) => { let p = {}; try { p = a.props ? JSON.parse(a.props) : {}; } catch {} return { id: a.id, title: a.title, hue: p.hue ?? null }; }) }, request);
+  const smsRow = await env.DB.prepare("SELECT value FROM settings WHERE key='sms_block_alerts'").first().catch(() => null);
+  return json({ lanes: cfg.lanes, areaMap: cfg.areaMap, smsAlerts: !smsRow || smsRow.value !== '0', areas: cfg.areas.map((a) => { let p = {}; try { p = a.props ? JSON.parse(a.props) : {}; } catch {} return { id: a.id, title: a.title, hue: p.hue ?? null }; }) }, request);
 }
 
 async function handleDay(request, env, url) {
