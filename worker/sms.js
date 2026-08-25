@@ -19,7 +19,7 @@ export async function sendSms(env, message) {
     body: JSON.stringify({
       // Alphanumeric sender: a code isn't a conversation, and it's the same
       // brand the rest of the tool carries.
-      sender: env.ALERT_SENDER || 'Robski',
+      sender: env.ALERT_SENDER || 'Daybook',
       message,
       recipients: [{ msisdn: to }],
     }),
