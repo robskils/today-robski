@@ -320,6 +320,7 @@ function renderTally() {
 }
 
 function renderQuote() {
+  if (!$('quote')) return;   // quote lives on the Daybook home now, not here
   const q = state.data.quote;
   $('quote').hidden = !q;
   if (!q) return;

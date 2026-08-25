@@ -211,9 +211,9 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 .embed body { min-height: 100vh; }
 .embed #app { display: block; }
 .embed .col-acts, .embed .col-tasks { position: static; max-height: none; }
-/* The rail scrolls with the page here (no sticky offset), so the streams sit
-   right under the day header with no dead gap above them. */
-.embed .rail { position: static; }
+/* The time-stream categories pin to the very top as you scroll, so you always
+   see them; the day header above scrolls away under them. */
+.embed .rail { position: sticky; top: 0; z-index: 15; }
 .embed .bar { padding-top: 8px; }
 
 /* On-brand wordmark, same style as Life · Robski: serif, italic accent word,

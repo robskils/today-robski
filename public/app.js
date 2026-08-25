@@ -819,7 +819,7 @@ async function openHome() {
   ]);
   state.goals = goals || [];
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
-  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '' };
+  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null };
   renderNav(); renderHome();
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
@@ -840,6 +840,14 @@ function homeTodayItems() {
     }
   }
   return items.sort((a, b) => a.sort - b.sort);
+}
+// The day's teaching, moved here from Today. Dismissible - once you've read it,
+// the × hides it for the rest of the day (per-device).
+function homeQuoteHtml() {
+  const q = state.home && state.home.quote; if (!q) return '';
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem('life.home.quoteHidden') === today) return '';
+  return `<figure class="home-quote"><button class="home-quote-x" data-home-quote-x title="Hide for today">×</button><blockquote>“${esc(q.text)}”</blockquote>${q.author ? `<figcaption>— ${esc(q.author)}</figcaption>` : ''}</figure>`;
 }
 function renderHome() {
   const favs = state.favs || [];
@@ -865,6 +873,7 @@ function renderHome() {
         <h1>${greeting()}, <span class="hi-name">Robski</span></h1>
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
+      ${homeQuoteHtml()}
       <div id="qt-wrap"></div>
       <!-- Mobile-only launcher. On desktop the sidebar already lists every
            section, so this is hidden (see .home-launch in life.css). On mobile
@@ -889,7 +898,7 @@ function renderHome() {
             <div class="home-sec-h">Today</div>
             <div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>
           </section>
-          ${(() => { const f = (state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active'); return f.length ? `<section class="home-sec home-sec-focus"><div class="home-sec-h">🎯 This quarter's focus</div><div class="goal-grid">${f.map(goalCardMini).join('')}</div></section>` : ''; })()}
+          ${(() => { const f = (state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active'); if (!f.length) return ''; const collapsed = localStorage.getItem('life.home.focusCollapsed') === '1'; return `<section class="home-sec home-sec-focus"><div class="home-sec-h home-sec-toggle" data-home-focus-toggle><span class="hs-chev">${collapsed ? '▸' : '▾'}</span>🎯 This quarter's focus</div>${collapsed ? '' : `<div class="goal-grid">${f.map(goalCardMini).join('')}</div>`}</section>`; })()}
           <section class="home-sec home-sec-favs">
             <div class="home-sec-h">Starred</div>
             ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
@@ -5286,6 +5295,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
+  if (t.closest('[data-home-quote-x]')) { localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); renderHome(); return; }
+  if (t.closest('[data-home-focus-toggle]')) { const c = localStorage.getItem('life.home.focusCollapsed') === '1'; localStorage.setItem('life.home.focusCollapsed', c ? '0' : '1'); renderHome(); return; }
   if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
   if (t.closest('[data-create-invite]')) { createInvite(); return; }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }

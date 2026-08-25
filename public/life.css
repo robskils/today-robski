@@ -948,6 +948,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
+/* Home: the day's teaching, dismissible. */
+.home-quote { position:relative; margin:0 0 22px; padding:20px 44px 20px 22px; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:14px; }
+.home-quote blockquote { margin:0; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:22px; line-height:1.45; color:var(--ink); }
+.home-quote figcaption { margin-top:8px; font-size:12.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
+.home-quote-x { position:absolute; top:10px; right:12px; border:0; background:none; color:var(--ink-3); font-size:22px; line-height:1; cursor:pointer; padding:4px; }
+.home-quote-x:hover { color:var(--ink); }
+/* Collapsible section header (chevron toggles hide/show). */
+.home-sec-toggle { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
+.home-sec-toggle .hs-chev { color:var(--ink-3); font-size:12px; }
+.home-sec-toggle:hover .hs-chev { color:var(--accent); }
 .nav-sub.muted { color:var(--ink-3); font-size:14px; font-style:italic; }
 .nav-sub { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:7px 12px 7px 14px; border-radius:8px; color:var(--ink-2); font-size:15.5px; overflow:hidden; }
 .nav-sub:hover { background:var(--paper); color:var(--ink); }
