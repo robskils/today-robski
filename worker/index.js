@@ -1497,6 +1497,7 @@ function addPeriod(iso, repeat) {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
+  else if (repeat === 'every3d') dt.setUTCDate(dt.getUTCDate() + 3);
   else if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
   else if (repeat === 'monthly') { dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() + 1); const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate(); dt.setUTCDate(Math.min(d, dim)); }
   else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);

@@ -773,33 +773,32 @@ function renderHome() {
         <button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>
         <button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>
         <button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>
-        <button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>
         <button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>
         <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
-        <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
-        <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
         <button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Financial</span></button>
         <button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>
         <button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>
+        <button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>
+        <button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>
       </nav>
       <div class="home-body">
         <div class="home-main">
-          <section class="home-sec">
+          <section class="home-sec home-sec-today">
             <div class="home-sec-h">Today</div>
             <div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>
           </section>
-          ${(() => { const f = (state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active'); return f.length ? `<section class="home-sec"><div class="home-sec-h">🎯 This quarter's focus</div><div class="goal-grid">${f.map(goalCardMini).join('')}</div></section>` : ''; })()}
-          <section class="home-sec">
+          ${(() => { const f = (state.goals || []).filter((g) => gp(g).focus && (gp(g).status || 'active') === 'active'); return f.length ? `<section class="home-sec home-sec-focus"><div class="home-sec-h">🎯 This quarter's focus</div><div class="goal-grid">${f.map(goalCardMini).join('')}</div></section>` : ''; })()}
+          <section class="home-sec home-sec-favs">
             <div class="home-sec-h">Favourites</div>
             ${favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>'}
           </section>
         </div>
         <aside class="home-side">
-          <section class="home-sec">
+          <section class="home-sec home-sec-recent">
             <div class="home-sec-h">Recently viewed</div>
             ${recentHtml}
           </section>
-          <section class="home-sec">
+          <section class="home-sec home-sec-notepad">
             <div class="home-sec-h">Notepad</div>
             <textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>
           </section>
@@ -1129,6 +1128,18 @@ async function delJournalEntry() {
 // Saved links: blocks kind 'bookmark', props {url,title,image,site,media,status,added}.
 // Captured via the iOS Shortcut / desktop bookmarklet (/api/capture) or pasted here.
 const RW_TABS = [['todo', 'Unread'], ['read', 'To read'], ['watch', 'To watch'], ['done', 'Done']];
+const RW_SORTS = [['added-desc', 'Newest'], ['added-asc', 'Oldest'], ['title', 'Title A–Z'], ['media', 'Type']];
+function rwSortList(list, sort) {
+  const added = (b) => String((b.props && b.props.added) || b.created_at || '');
+  const title = (b) => String((b.props && b.props.title) || b.title || '').toLowerCase();
+  const media = (b) => String((b.props && b.props.media) || 'article');
+  const s = list.slice();
+  if (sort === 'added-asc') s.sort((a, b) => added(a).localeCompare(added(b)));
+  else if (sort === 'title') s.sort((a, b) => title(a).localeCompare(title(b)));
+  else if (sort === 'media') s.sort((a, b) => media(a).localeCompare(media(b)) || added(b).localeCompare(added(a)));
+  else s.sort((a, b) => added(b).localeCompare(added(a)));   // newest first (default)
+  return s;
+}
 function rwMatch(b, f) {
   const p = b.props || {}; const done = p.status === 'done';
   if (f === 'done') return done;
@@ -1140,7 +1151,8 @@ async function openReadwatch() {
   state.view = { type: 'readwatch' };
   renderNav();
   const prev = state.rw || {};
-  try { state.rw = { items: await api('/api/blocks?kind=bookmark&parent_id='), filter: prev.filter || 'todo', setup: prev.setup, showSetup: false, saving: false }; }
+  const savedSort = (() => { try { return localStorage.getItem('life.rwSort'); } catch { return null; } })();
+  try { state.rw = { items: await api('/api/blocks?kind=bookmark&parent_id='), filter: prev.filter || 'todo', sort: prev.sort || savedSort || 'added-desc', addType: prev.addType, setup: prev.setup, showSetup: false, saving: false }; }
   catch (e) { state.rw = { items: [], filter: 'todo' }; toast(e.message); }
   state.rw.items.sort((a, b) => String((b.props && b.props.added) || b.created_at || '').localeCompare(String((a.props && a.props.added) || a.created_at || '')));
   renderReadwatch();
@@ -1150,7 +1162,7 @@ function renderReadwatch() {
   const items = rw.items || [];
   const count = (f) => items.filter((b) => rwMatch(b, f)).length;
   const tabs = RW_TABS.map(([k, l]) => `<button class="rw-tab ${rw.filter === k ? 'on' : ''}" data-rw-filter="${k}">${l}<span class="rw-tab-n">${count(k)}</span></button>`).join('');
-  const shown = items.filter((b) => rwMatch(b, rw.filter));
+  const shown = rwSortList(items.filter((b) => rwMatch(b, rw.filter)), rw.sort || 'added-desc');
   const cards = shown.map((b) => {
     const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video'; const book = p.media === 'book'; const film = p.media === 'film';
     // A book/film with no stored link falls back to a web search, so tapping it
@@ -1176,7 +1188,7 @@ function renderReadwatch() {
     <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
     <div class="rw-type" title="For a title (not a link): look it up as a book or a film">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${(rw.addType || 'book') === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
-    <div class="rw-tabs">${tabs}</div>
+    <div class="rw-tabs"><div class="rw-tabs-scroll">${tabs}</div><select class="rw-sort sel" data-rw-sort title="Order">${RW_SORTS.map(([k, l]) => `<option value="${k}" ${(rw.sort || 'added-desc') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
     <div class="rw-list">${cards || `<div class="empty">${rw.filter === 'done' ? 'Nothing finished yet.' : 'Nothing here yet. Paste a link above, or set up one-tap saving.'}</div>`}</div>`;
 }
 function rwSetupHtml() {
@@ -3005,13 +3017,14 @@ function taskTitleHtml(title) {
 }
 // Snooze + repeat. A snoozed task hides from the open list until its date; a
 // repeating task rolls that date forward each time it's ticked (see toggleTask).
-const REPEATS = [['', 'Does not repeat'], ['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly']];
-const repeatShort = (r) => ({ daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }[r] || '');
+const REPEATS = [['', 'Does not repeat'], ['daily', 'Daily'], ['every3d', 'Every 3 days'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly']];
+const repeatShort = (r) => ({ daily: 'Daily', every3d: 'Every 3 days', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }[r] || '');
 const isSnoozed = (t) => !!(t.props && t.props.snooze && t.props.snooze > todayISO());
 function taskAddPeriod(iso, repeat) {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
+  else if (repeat === 'every3d') dt.setUTCDate(dt.getUTCDate() + 3);
   else if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
   else if (repeat === 'monthly') { dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() + 1); const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate(); dt.setUTCDate(Math.min(d, dim)); }
   else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);
@@ -3437,6 +3450,7 @@ function goalProgress(g) {
 function goalMeasure(g) {
   const p = gp(g);
   if (p.gtype === 'number') return `${p.current || 0} / ${p.target || 0}${p.unit ? ' ' + p.unit : ''}`;
+  if (p.gtype !== 'achievement') return '';
   const ms = Array.isArray(p.milestones) ? p.milestones : []; return `${ms.filter((m) => m.done).length}/${ms.length} milestones`;
 }
 // ── Financial (Portfolio · Advice · Spending) ────────────────────────────
@@ -3993,7 +4007,10 @@ function goalsBody() {
     ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
 }
 async function newGoal(area) {
-  const props = { area: area || null, why: '', horizon: 'quarter', gtype: 'achievement', status: 'active', focus: false, milestones: [] };
+  // No type up front: a new goal is just a goal. The card then asks how you want
+  // to track it (milestones or a number) - milestones is a kind of goal, not the
+  // starting point, so we don't drop you straight into the milestone editor.
+  const props = { area: area || null, why: '', horizon: 'quarter', gtype: '', status: 'active', focus: false, milestones: [] };
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'goal', title: 'New goal', props }) });
   state.goals.push(b); openGoalCard(b.id);
 }
@@ -4011,7 +4028,13 @@ function renderGoalCard() {
   const gtasks = state.goal_open.tasks || [];
   const msIds = new Set(ms.map((m) => m.id));
   const loose = gtasks.filter((t) => !t.props.milestone || !msIds.has(t.props.milestone));
-  const typeBody = p.gtype === 'number'
+  const typeBody = !p.gtype
+    ? `<div class="gtype-choose"><div class="tf-label">How do you want to track this goal?</div>
+        <div class="gtype-opts">
+          <button class="gtype-opt" data-set-gtype="achievement"><span class="gto-ic">📋</span><b>Milestones</b><small>Steps to tick off along the way</small></button>
+          <button class="gtype-opt" data-set-gtype="number"><span class="gto-ic">🎯</span><b>Number</b><small>A target to reach, e.g. €2k/mo or 12kg</small></button>
+        </div></div>`
+    : p.gtype === 'number'
     ? `<label class="tf-field"><span class="tf-label">Progress</span><div class="gnum"><input class="sel" id="gc-current" type="number" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div></label>`
     : `<div class="ms-block"><div class="tf-label">Milestones &amp; tasks</div>
         ${ms.map((m) => { const mt = gtasks.filter((t) => t.props.milestone === m.id); return `<div class="ms-group">
@@ -4032,7 +4055,7 @@ function renderGoalCard() {
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Life area</span><select class="sel" id="goalcard-area">${areaOpts}</select></label>
       <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${p.gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype"><option value="" ${!p.gtype ? 'selected' : ''} disabled hidden>Choose…</option>${GTYPES.map(([v, l]) => `<option value="${v}" ${p.gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>
     </div>
@@ -5009,6 +5032,7 @@ document.addEventListener('click', (e) => {
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
+  const sgt = t.closest('[data-set-gtype]'); if (sgt) { const g = state.goal_open && state.goal_open.goal; if (g) { patchGoal(g.id, { gtype: sgt.dataset.setGtype }, true); renderGoalCard(); } return; }
   if (t.closest('[data-ms-add]')) { msAdd(); return; }
   const mst = t.closest('[data-ms-toggle]'); if (mst) { msToggle(mst.dataset.msToggle); return; }
   const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
@@ -5265,6 +5289,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
   if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
+  if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
   if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
