@@ -969,6 +969,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .set-tile-ic { font-size:22px; line-height:1; margin-bottom:auto; }
 .set-tile-t { font-size:15.5px; font-weight:650; letter-spacing:-.01em; }
 .set-tile-s { font-size:12.5px; color:var(--ink-3); line-height:1.35; }
+/* Goal: existing tasks in the same life area, to link in */
+.goal-arealist { margin-top:22px; }
+.gal-search { margin:8px 0 10px; }
+.gal-list { display:flex; flex-direction:column; gap:2px; }
+.gal-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; }
+.gal-row:hover { background:var(--paper); }
+.gal-row .ga-t { flex:1; min-width:0; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gal-link { flex:none; padding:4px 11px; font-size:13px; opacity:.7; }
+.gal-row:hover .gal-link { opacity:1; border-color:var(--accent); color:var(--accent); }
 .set-collapse-h { cursor:pointer; display:flex; align-items:center; gap:9px; user-select:none; }
 .set-collapse-h .acw-chev { font-size:11px; color:var(--ink-3); width:11px; flex:none; }
 .set-areas-grid { display:flex; flex-wrap:wrap; gap:9px; }
