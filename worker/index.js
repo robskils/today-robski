@@ -1,5 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
-import { isAuthed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
+import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
+import { handleSignup, getUserByEmail, listInvites, createInvite } from './accounts.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -1962,6 +1963,21 @@ export default {
     }
 
     if (path.startsWith('/api/')) {
+      // Onboarding endpoints run for any signed-in, allow-listed email - even one
+      // with no account yet - so a freshly-invited person can claim their space.
+      const bearer = request.headers.get('Authorization') || '';
+      const jwt = bearer.startsWith('Bearer ') && env.AUTH_SECRET ? await verifyJWT(bearer.slice(7), env.AUTH_SECRET) : null;
+      const authedEmail = jwt && isAllowed(jwt.sub, env) ? jwt.sub : null;
+      if (path === '/api/me' && request.method === 'GET') {
+        if (!authedEmail) return err('unauthorized', request, 401);
+        const user = await getUserByEmail(env, authedEmail);
+        return json({ email: authedEmail, user: user || null, needsSignup: !user }, request);
+      }
+      if (path === '/api/signup' && request.method === 'POST') {
+        if (!authedEmail) return err('unauthorized', request, 401);
+        return handleSignup(request, env, authedEmail, json, err);
+      }
+
       // Resolve the tenant once, then hand every handler a scoped env: env.uid
       // is the current user's id and env.user their row. Reassigning env here
       // means the hundreds of downstream handler calls need no signature change
@@ -1969,6 +1985,13 @@ export default {
       const currentUser = await resolveUser(request, env);
       if (!currentUser) return err('unauthorized', request, 401);
       env = { ...env, uid: currentUser.id, user: currentUser };
+
+      // Invites are admin-only (Robin = user 1 for now).
+      if (path === '/api/invites') {
+        if (env.uid !== 1) return err('not allowed', request, 403);
+        if (request.method === 'GET') return json({ invites: await listInvites(env) }, request);
+        if (request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await createInvite(env, b), request, 201); }
+      }
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
