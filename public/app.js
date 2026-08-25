@@ -283,7 +283,7 @@ function labelForView(v) {
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
-    case 'journal': return 'Journal'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Journal';
+    case 'journal': return 'Reflect'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Reflect';
     case 'readwatch': return 'Read & Watch';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
@@ -491,7 +491,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>
     <button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>
     <button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>
-    <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Journal</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
+    <button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Reflect</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>
     <button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>
     <button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>
     <button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Financial</span></button>
@@ -777,7 +777,7 @@ function renderHome() {
         <button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>
         <button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>
         <button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>
-        <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>
+        <button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>
         <button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Financial</span></button>
         <button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>
         <button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>
@@ -1046,8 +1046,8 @@ function renderJournalList() {
       </div>
     </div>`;
   $('#pane').innerHTML = `
-    ${pageCrumb('Journal')}
-    <div class="pane-head home-head"><h1>Journal</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
+    ${pageCrumb('Reflect')}
+    <div class="pane-head home-head"><h1>Reflect</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
@@ -1071,7 +1071,7 @@ async function openJournalEntry(id) {
   state.journal = state.journal || { entries: [] };
   state.journal.current = entry;
   state.view = { type: 'journalentry', id };
-  recordRecent('journal', id, entry.title || 'Journal entry');
+  recordRecent('journal', id, entry.title || 'Reflect entry');
   renderNav(); renderJournalEntry();
 }
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
@@ -1082,7 +1082,7 @@ function renderJournalEntry() {
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Journal</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Reflect</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ((n.props && n.props.mode) === 'coaching' ? '<span class="j-card-mode">🧭 Coaching session</span>' : '')}</div>
@@ -4790,8 +4790,8 @@ function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; 
 const ACTIONS = [
   { kind: 'action', title: 'Keyboard shortcuts', run: () => openShortcuts() },
   { kind: 'action', title: 'New note', run: () => newNote(null) },
-  { kind: 'action', title: 'New journal entry', run: () => quickAdd('journal') },
-  { kind: 'action', title: 'Go to Journal', run: () => openJournal() },
+  { kind: 'action', title: 'New reflection', run: () => quickAdd('journal') },
+  { kind: 'action', title: 'Go to Reflect', run: () => openJournal() },
   { kind: 'action', title: 'Save a link', run: () => quickAdd('save') },
   { kind: 'action', title: 'Go to Read & Watch', run: () => openReadwatch() },
   { kind: 'action', title: 'New table', run: () => newTable() },
