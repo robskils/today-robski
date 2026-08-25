@@ -310,7 +310,9 @@ button { cursor:pointer; background:none; border:0; }
 @media (max-width:600px){ .adv-card { flex-direction:column; } .adv-thumb { width:100%; } }
 /* Spending */
 .sp-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:18px; }
-.sp-catmanage { margin:-6px 0 18px; padding:14px 16px; background:var(--card); border:1px solid var(--line); border-radius:14px; }
+/* Stays pinned under the tab bar as you scroll the month's transactions, so
+   your categories are always in view. */
+.sp-catmanage { position:sticky; top:44px; z-index:10; margin:-6px 0 18px; padding:14px 16px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:0 10px 22px -18px rgba(0,0,0,.5); }
 .sp-cat-note { font-size:13px; color:var(--ink-3); margin:8px 0 12px; line-height:1.5; }
 .sp-catmanage .trk-cat-chip:not(:has(.trk-cat-btn)) { padding-right:14px; }
 .sp-cat-tag { font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); background:var(--paper-2); border-radius:5px; padding:1px 5px; margin-left:6px; }

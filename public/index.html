@@ -30,7 +30,7 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css?v=20260826f">
+<link rel="stylesheet" href="/today.css?v=20260826q">
 <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -88,6 +88,13 @@
     </div>
   </header>
 
+  <!-- One teaching for the day, at the top: a moment to reflect before the day's
+       shape. Same on every device, all day. Hidden until the quote loads. -->
+  <figure class="quote quote-top" id="quote" hidden>
+    <blockquote id="quote-text"></blockquote>
+    <figcaption id="quote-author"></figcaption>
+  </figure>
+
   <!-- 只管打坐 shikantaza, "just sitting". Same watermark as the dojo site.
        Decorative: hidden from screen readers, ignores the pointer. -->
   <div class="kanji-watermark" aria-hidden="true">只管打坐</div>
@@ -132,12 +139,6 @@
 
       <!-- What the day actually held. A record, not a scoreboard. -->
       <section class="tally" id="tally" aria-label="What today held" hidden></section>
-
-      <!-- One teaching for the day. Same on every device, all day. -->
-      <figure class="quote" id="quote" hidden>
-        <blockquote id="quote-text"></blockquote>
-        <figcaption id="quote-author"></figcaption>
-      </figure>
     </section>
 
     <aside class="col-tasks">
@@ -296,6 +297,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js?v=20260826f"></script>
+<script type="module" src="/today.js?v=20260826q"></script>
 </body>
 </html>

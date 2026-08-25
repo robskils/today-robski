@@ -201,20 +201,15 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
    the planner keeps only its day navigation. Also drop the sticky top gap. */
 .embed .wordmark, .embed .nav-link, .embed #theme-btn { display: none; }
 .embed .bar { position: static; backdrop-filter: none; background: transparent; padding-top: 20px; }
-/* Embedded, only the schedule scrolls: the header (day + date) and the lane
-   rail stay put, the grid below them scrolls on its own. */
-/* Embedded in the Life app: let Life's own paper show through so the day planner
-   sits on the same background as the rest of the app, in either theme. */
+/* Embedded in the Life app: the whole planner scrolls as one page - the day
+   header, the quote, the rail and the grid all move together when you scroll,
+   rather than pinning the top and scrolling only the grid underneath it. */
+/* Let Life's own paper show through so the day planner sits on the same
+   background as the rest of the app, in either theme. */
 .embed html, .embed body { background: transparent; }
-.embed body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
-.embed #app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.embed .bar, .embed .rail { flex: none; }
-.embed .grid { flex: 1; min-height: 0; overflow-y: auto; }
-/* The grid is the scroll container here, and the bar + rail live OUTSIDE it, so
-   the sticky Practices/Tasks columns must stick to the grid's own top - not
-   offset by bar-h + rail-h, which shoved them ~187px down and left dead space
-   above them while the (non-sticky) Schedule sat at the top. */
-.embed .col-acts, .embed .col-tasks { top: 0; max-height: calc(100vh - var(--bar-h, 76px) - var(--rail-h, 0px) - 24px); }
+.embed body { min-height: 100vh; }
+.embed #app { display: block; }
+.embed .col-acts, .embed .col-tasks { position: static; max-height: none; }
 
 /* On-brand wordmark, same style as Life · Robski: serif, italic accent word,
    a gold interpunct. */
@@ -665,6 +660,9 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
   margin: 34px auto 0; max-width: 500px; text-align: center;
   opacity: 0; transition: opacity 1.2s ease;
 }
+/* At the very top of the page, a moment to reflect before the day's shape. */
+.quote-top { margin: 6px auto 4px; }
+.embed .quote-top { margin: 2px auto 6px; }
 .quote.in { opacity: 1; }
 .quote blockquote {
   font-family: var(--serif); font-style: italic; font-weight: 300;
@@ -714,11 +712,11 @@ a.ghost-btn { text-decoration: none; display: inline-flex; align-items: center; 
 /* The schedule is far taller than the task list, so the list would scroll off
    and leave you dragging into nothing. Pin it under the bar instead. */
 .col-tasks {
-  position: sticky; top: calc(var(--bar-h, 76px) + var(--rail-h, 0px));
-  max-height: calc(100vh - var(--bar-h, 76px) - var(--rail-h, 0px) - 24px);
+  /* Flows with the page rather than a fixed-height panel with its own scroll -
+     the whole column scrolls when you scroll, and only takes the room it needs. */
   display: flex; flex-direction: column;
 }
-.task-list { display: flex; flex-direction: column; gap: 18px; overflow-y: auto; flex: 1; }
+.task-list { display: flex; flex-direction: column; gap: 18px; }
 /* Tasks grouped by stream (same area->stream map as the rail). */
 .task-group { display: flex; flex-direction: column; gap: 8px; }
 .task-group-h {

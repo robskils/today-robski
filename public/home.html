@@ -5,9 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Daybook - a calm, private home for your life</title>
 <meta name="description" content="Put it down, trust it to come back. Daybook is a calm, private home for everything you carry - tasks, notes, reflections, money - captured in two taps and resurfaced when you need it.">
+<link rel="canonical" href="https://daybook.fyi/">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="icon" href="/favicon.svg">
 <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#17130e" media="(prefers-color-scheme: dark)">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Daybook">
+<meta property="og:title" content="Daybook - a calm, private home for your life">
+<meta property="og:description" content="Put it down, trust it to come back. A calm, private home for everything you carry - tasks, notes, reflections, money - captured in two taps and resurfaced when you need it.">
+<meta property="og:url" content="https://daybook.fyi/">
+<meta property="og:image" content="https://daybook.fyi/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Daybook - put it down, trust it to come back.">
+<meta property="og:locale" content="en_GB">
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Daybook - a calm, private home for your life">
+<meta name="twitter:description" content="Put it down, trust it to come back. A calm, private home for everything you carry, resurfaced when you need it.">
+<meta name="twitter:image" content="https://daybook.fyi/og-image.png">
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://daybook.fyi/#website",
+      "url": "https://daybook.fyi/",
+      "name": "Daybook",
+      "description": "A calm, private home for your life - tasks, notes, reflections and money in one place.",
+      "inLanguage": "en-GB"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Daybook",
+      "url": "https://daybook.fyi/",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "description": "Daybook is a calm, private home for everything you carry - tasks, notes, reflections and money - captured in two taps and resurfaced when you need it. Your data is private to you, and AI is opt-in with your own key.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+    }
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -157,6 +200,17 @@ section { position: relative; }
 .concept-body p { color: var(--ink-2); font-size: 18px; line-height: 1.6; }
 .concept-body p + p { margin-top: 18px; }
 @media (max-width: 820px) { .concept-grid { grid-template-columns: 1fr; gap: 28px; } }
+.holds { list-style: none; margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; }
+.holds li { display: flex; flex-direction: column; gap: 2px; padding-left: 15px; border-left: 2px solid var(--rust); }
+.holds b { font-size: 16px; font-weight: 600; }
+.holds span { font-size: 14.5px; color: var(--ink-3); line-height: 1.4; }
+@media (max-width: 460px) { .holds { grid-template-columns: 1fr; } }
+
+/* ethos band */
+.ethos { padding: 88px 0; text-align: center; background: var(--paper); }
+.ethos-line { font-family: 'Fraunces', serif; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.18; font-weight: 500; letter-spacing: -0.02em; text-wrap: balance; max-width: 20ch; margin: 6px auto 0; }
+.ethos-line em { font-style: italic; color: var(--rust); }
+.ethos-sub { margin: 22px auto 0; max-width: 46ch; font-size: 18px; color: var(--ink-2); line-height: 1.55; }
 
 /* tools grid */
 .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -273,12 +327,26 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="reveal">
       <div class="eyebrow">The idea</div>
       <p class="concept-lead">A daybook is somewhere you <em>set things down</em> - so you can stop holding them in your head, and still trust them to come back.</p>
+      <ul class="holds">
+        <li><b>Your day</b><span>Schedule, tasks and appointments</span></li>
+        <li><b>Your habits</b><span>The routines you're keeping up</span></li>
+        <li><b>Your reflections</b><span>Thoughts, feelings, lessons</span></li>
+        <li><b>Your to-dos</b><span>Urgent now, and the long game</span></li>
+      </ul>
     </div>
     <div class="concept-body reveal">
       <p>We carry too much at once. Tasks half-remembered, ideas we meant to keep, money we meant to watch, feelings we never sat with. So it leaks - onto sticky notes, into ten different apps, or just quietly lost.</p>
       <p>Daybook is one place to put all of it. You capture quickly and let go, and Daybook brings the right piece back at the right moment - the task when the day needs it, the note when you're planning, the reflection when you pause.</p>
       <p>Offload with confidence. Resurface with trust. That's the whole idea.</p>
     </div>
+  </div>
+</section>
+
+<section class="ethos">
+  <div class="wrap reveal">
+    <div class="eyebrow" style="text-align:center">The Daybook ethos</div>
+    <p class="ethos-line">The right thing, surfaced in the right place, at the <em>right time.</em></p>
+    <p class="ethos-sub">Everything in Daybook bends towards that one idea - nothing shouts for attention, and nothing worth remembering slips away.</p>
   </div>
 </section>
 

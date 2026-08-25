@@ -1870,7 +1870,24 @@ export default {
     // per hostname: life.robski.uk is the Life app; everywhere else is Today.
     // Everything non-API/auth falls through to the assets binding untouched.
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
-      const isLife = url.hostname === 'life.robski.uk';
+      const host = url.hostname;
+      const isLife = host === 'life.robski.uk';
+      // daybook.fyi (+ www) is the public marketing site; the private apps
+      // (life/today.robski.uk) must never be indexed.
+      const isDaybook = host === 'daybook.fyi' || host === 'www.daybook.fyi';
+      if (path === '/robots.txt') {
+        const body = isDaybook
+          ? 'User-agent: *\nAllow: /\nSitemap: https://daybook.fyi/sitemap.xml\n'
+          : 'User-agent: *\nDisallow: /\n';
+        return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
+      }
+      if (path === '/sitemap.xml' && isDaybook) {
+        const body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>https://daybook.fyi/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>\n';
+        return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
+      }
+      if (isDaybook && path === '/') {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request)));
+      }
       // life.robski.uk/today IS the real day planner (index.html) - the exact
       // same app as today.robski.uk, sharing the Life login (same origin/token).
       if (isLife && /^\/today(\/|$)/.test(path)) {
