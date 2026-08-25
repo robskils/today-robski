@@ -30,7 +30,7 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css?v=20260826e">
+<link rel="stylesheet" href="/today.css?v=20260826f">
 <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -83,7 +83,7 @@
     <div class="bar-actions">
       <button class="ghost-btn" id="today-btn" hidden>Today</button>
       <a class="ghost-btn nav-link" href="https://life.robski.uk" title="Tasks, notes, tables and areas">Life &rarr;</a>
-      <button class="ghost-btn" id="settings-btn" title="Lanes &amp; areas" aria-label="Settings">&#9881;</button>
+      <button class="ghost-btn" id="settings-btn" title="Time streams &amp; areas" aria-label="Settings">&#9881;</button>
       <button class="ghost-btn" id="theme-btn" aria-label="Toggle theme">&#9789;</button>
     </div>
   </header>
@@ -170,7 +170,7 @@
     </div>
 
     <label class="field" id="sheet-lane-field">
-      <span>Lane</span>
+      <span>Time stream</span>
       <select id="sheet-lane" class="input"></select>
       <span class="zen-note" id="sheet-zen" hidden></span>
     </label>
@@ -246,10 +246,10 @@
 <!-- Lanes & areas: rename the Today lanes and choose which Life Area feeds each. -->
 <div class="sheet-bg" id="settings-bg" hidden>
   <form class="sheet sheet-wide" id="settings-form">
-    <h3>Lanes &amp; areas</h3>
-    <p class="sheet-sub">Rename your Today lanes, and choose which life area feeds each one.</p>
-    <div class="set-sec"><span class="set-h">Lane names</span><div id="set-lanes" class="set-lanes"></div></div>
-    <div class="set-sec"><span class="set-h">Life area → lane</span><div id="set-areas" class="set-areas"></div></div>
+    <h3>Time streams &amp; areas</h3>
+    <p class="sheet-sub">Rename your time streams, and choose which life area feeds each one. These are the categories used across the rail, tasks and the schedule.</p>
+    <div class="set-sec"><span class="set-h">Time stream names</span><div id="set-lanes" class="set-lanes"></div></div>
+    <div class="set-sec"><span class="set-h">Life area → time stream</span><div id="set-areas" class="set-areas"></div></div>
     <div class="sheet-actions">
       <button type="button" class="btn btn-ghost" id="settings-cancel">Cancel</button>
       <button type="submit" class="btn btn-primary" id="settings-save">Save</button>
@@ -296,6 +296,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js?v=20260826e"></script>
+<script type="module" src="/today.js?v=20260826f"></script>
 </body>
 </html>

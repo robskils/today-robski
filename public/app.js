@@ -1047,7 +1047,7 @@ function renderJournalList() {
     </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Reflect')}
-    <div class="pane-head home-head"><h1>Reflect</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-journal-start>+ New entry</button></div></div>`}</div>
+    <div class="pane-head home-head"><h1>Reflect</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-journal-start>📓 Journal</button></div></div>`}</div>
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
