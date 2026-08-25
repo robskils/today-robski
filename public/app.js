@@ -319,9 +319,12 @@ const viewKey = (v) => `${v.type}:${v.id || ''}`;
 // actually changes, so Back returns to where you were.
 function recordHistory() {
   const key = viewKey(state.view);
-  if (key === navLastKey) return;
+  if (key === navLastKey) return;   // a re-render of the same view, not a navigation
   if (navLastView) { navHist.push(navLastView); if (navHist.length > 60) navHist.shift(); }
   navLastKey = key; navLastView = { ...state.view };
+  // Landing on a genuinely new page: jump to the top. On mobile the whole page
+  // scrolls, so the previous page's scroll position would otherwise carry over.
+  try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {}
 }
 function navBack() {
   if (!navHist.length) return;
@@ -3490,9 +3493,9 @@ function goalMeasure(g) {
 // Portfolio moved across from portfolio.robski.uk: same data (shared D1), same
 // pricing (silver valued at spot, never the KAG token). Advice + Spending are
 // staged next.
-const FIN_TABS = [['portfolio', 'Portfolio'], ['tracker', 'Tracker'], ['advice', 'Advice'], ['spending', 'Spending']];
+const FIN_TABS = [['spending', 'Spending'], ['portfolio', 'Portfolio'], ['tracker', 'Tracker'], ['advice', 'Advice']];
 async function openFinancial(tab) {
-  state.financial.tab = tab || state.financial.tab || 'portfolio';
+  state.financial.tab = tab || state.financial.tab || 'spending';
   state.view = { type: 'financial', tab: state.financial.tab };
   renderNav();
   if (state.financial.tab === 'portfolio' && !state.financial.data) loadPortfolio();
@@ -3511,7 +3514,46 @@ async function loadTracker(force) {
 async function loadSpending() {
   const f = state.financial;
   renderFinancial();
-  try { f.txns = await api('/api/blocks?kind=txn'); } catch (e) { toast(e.message); f.txns = f.txns || []; }
+  try {
+    const [txns, catsRes] = await Promise.all([
+      api('/api/blocks?kind=txn'),
+      api('/api/kv/spend_categories').catch(() => ({ value: null })),
+    ]);
+    f.txns = txns;
+    try { const arr = catsRes && catsRes.value ? JSON.parse(catsRes.value) : null; f.spendCats = Array.isArray(arr) && arr.length ? arr : SPEND_CATS.slice(); }
+    catch { f.spendCats = SPEND_CATS.slice(); }
+  } catch (e) { toast(e.message); f.txns = f.txns || []; }
+  renderFinancial();
+}
+async function saveSpendCats(cats) {
+  state.financial.spendCats = cats;
+  renderFinancial();
+  try { await api('/api/kv/spend_categories', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(cats) }) }); } catch (e) { toast(e.message); }
+}
+async function spendCatAdd() {
+  const name = String(await uiPrompt('New category:', { placeholder: 'e.g. Childcare' }) || '').trim();
+  if (!name) return;
+  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
+  saveSpendCats([...spendCats().filter((c) => c !== 'Uncategorised'), name, 'Uncategorised']);
+}
+async function spendCatRename(oldName) {
+  const name = String(await uiPrompt('Rename category:', { value: oldName }) || '').trim();
+  if (!name || name === oldName) return;
+  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
+  await saveSpendCats(spendCats().map((c) => (c === oldName ? name : c)));
+  // Move transactions in the renamed category across, so nothing is orphaned.
+  for (const t of (state.financial.txns || []).filter((x) => (x.props || {}).category === oldName)) {
+    t.props.category = name; api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { category: name } }) }).catch(() => {});
+  }
+  renderFinancial();
+}
+async function spendCatDel(cat) {
+  if (cat === 'Uncategorised') return;
+  if (!(await uiConfirm(`Delete "${cat}"? Transactions in it become Uncategorised.`, { danger: true, okLabel: 'Delete' }))) return;
+  await saveSpendCats(spendCats().filter((c) => c !== cat));
+  for (const t of (state.financial.txns || []).filter((x) => (x.props || {}).category === cat)) {
+    t.props.category = 'Uncategorised'; api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { category: 'Uncategorised' } }) }).catch(() => {});
+  }
   renderFinancial();
 }
 async function loadAdvice(refreshTrends) {
@@ -3730,6 +3772,13 @@ async function advicePoll() {
 }
 // ── Spending ─────────────────────────────────────────────────────────────
 const SPEND_CATS = ['Groceries', 'Eating out', 'Transport', 'Housing', 'Utilities', 'Health', 'Shopping', 'Entertainment', 'Travel', 'Subscriptions', 'Fees & charges', 'Cash', 'Transfers', 'Salary', 'Other income', 'Uncategorised'];
+// The user's own category list (falls back to the defaults). 'Uncategorised' is
+// always available as the safety bucket, even if trimmed from the saved list.
+const spendCats = () => {
+  const c = (state.financial.spendCats && state.financial.spendCats.length) ? state.financial.spendCats.slice() : SPEND_CATS.slice();
+  if (!c.includes('Uncategorised')) c.push('Uncategorised');
+  return c;
+};
 const INCOME_CATS = new Set(['Salary', 'Other income']);
 const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
 const eurSigned = (n) => (n < 0 ? '-' : '') + '€' + Math.abs(Math.round(n)).toLocaleString('en-IE');
@@ -3739,8 +3788,10 @@ function spendingBody() {
   const f = state.financial;
   if (f.spendImport) return spendImportView();
   if (f.txns == null) return '<div class="fin-load">Loading…</div>';
-  const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV or PDF)<input type="file" id="sp-file" accept=".csv,.pdf,text/csv,application/pdf" hidden></label>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
-  if (!(f.txns || []).length) return `${importBar}<div class="fin-soon"><div class="fin-soon-ic">🧾</div><h2>Spending</h2><p>Import a bank statement - CSV (Wise: Statement → Download → CSV) or a PDF statement - to categorise your spending and see income vs outgoings over time.</p><p class="fin-soon-note">PDFs are read by Gemini to pull out the transactions; nothing is sent to a bank.</p></div>`;
+  const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV or PDF)<input type="file" id="sp-file" accept=".csv,.pdf,text/csv,application/pdf" hidden></label><button class="ghost" data-sp-cat-manage title="Add, rename or delete your spending categories">⚙ Categories</button>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
+  const catManage = f.spendCatsOpen ? `<div class="sp-catmanage"><div class="fin-sec-h"><span>Your categories</span><button class="ghost" data-sp-cat-add>+ Category</button></div>
+    <div class="trk-cats">${spendCats().map((c) => `<span class="trk-cat-chip">${esc(c)}<button class="trk-cat-btn" data-sp-cat-rename="${esc(c)}" title="Rename">✎</button>${c === 'Uncategorised' ? '' : `<button class="trk-cat-btn trk-cat-del" data-sp-cat-del="${esc(c)}" title="Delete">×</button>`}</span>`).join('')}</div></div>` : '';
+  if (!(f.txns || []).length) return `${importBar}${catManage}<div class="fin-soon"><div class="fin-soon-ic">🧾</div><h2>Spending</h2><p>Import a bank statement - CSV (Wise: Statement → Download → CSV) or a PDF statement - to categorise your spending and see income vs outgoings over time.</p><p class="fin-soon-note">PDFs are read by Gemini to pull out the transactions; nothing is sent to a bank.</p></div>`;
   const months = spendMonths();
   if (!f.spendMonth || !months.includes(f.spendMonth)) f.spendMonth = months[0];
   const idx = months.indexOf(f.spendMonth);
@@ -3757,7 +3808,7 @@ function spendingBody() {
   const list = rows.slice().sort((a, b) => b.date.localeCompare(a.date)).map(spendRow).join('');
   // monthly trend (last 8)
   const trend = spendTrend(months.slice(0, 8).reverse());
-  return `${importBar}
+  return `${importBar}${catManage}
     <div class="sp-monthnav"><button class="ghost" data-sp-month="prev" ${idx >= months.length - 1 ? 'disabled' : ''}>‹</button><span class="sp-month">${esc(monthLabel(f.spendMonth))}</span><button class="ghost" data-sp-month="next" ${idx <= 0 ? 'disabled' : ''}>›</button></div>
     <div class="sp-summary"><div class="sp-sum in"><span class="lab">In</span><span class="v">${eur0(income)}</span></div><div class="sp-sum out"><span class="lab">Out</span><span class="v">${eur0(out)}</span></div><div class="sp-sum net"><span class="lab">Net</span><span class="v ${net >= 0 ? 'up' : 'down'}">${eurSigned(net)}</span></div></div>
     ${trend}
@@ -3767,7 +3818,10 @@ function spendingBody() {
     <div class="sp-txns">${list}</div>`;
 }
 function spendRow(t) {
-  const opts = SPEND_CATS.map((c) => `<option ${c === t.category ? 'selected' : ''}>${c}</option>`).join('');
+  // Include the txn's current category even if it's not in the managed list, so
+  // a renamed/removed category still shows rather than silently blanking.
+  const list = t.category && !spendCats().includes(t.category) ? [t.category, ...spendCats()] : spendCats();
+  const opts = list.map((c) => `<option ${c === t.category ? 'selected' : ''}>${esc(c)}</option>`).join('');
   return `<div class="sp-txn ${t.amount < 0 ? 'out' : 'in'}">
     <span class="sp-date">${esc(t.date.slice(8, 10))}/${esc(t.date.slice(5, 7))}</span>
     <span class="sp-desc" title="${esc(t.description || '')}">${esc(t.description || '—')}</span>
@@ -5046,6 +5100,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-sp-do-import]')) { spendDoImport(); return; }
   if (t.closest('[data-sp-import-cancel]')) { state.financial.spendImport = null; renderFinancial(); return; }
   if (t.closest('[data-sp-clear]')) { spendClear(); return; }
+  if (t.closest('[data-sp-cat-manage]')) { state.financial.spendCatsOpen = !state.financial.spendCatsOpen; renderFinancial(); return; }
+  if (t.closest('[data-sp-cat-add]')) { spendCatAdd(); return; }
+  const scr = t.closest('[data-sp-cat-rename]'); if (scr) { spendCatRename(scr.dataset.spCatRename); return; }
+  const scx = t.closest('[data-sp-cat-del]'); if (scx) { spendCatDel(scx.dataset.spCatDel); return; }
   if (t.closest('[data-trk-refresh]')) { loadTracker(true); return; }
   const tkd = t.closest('[data-trk-del]'); if (tkd) { delTracker(tkd.dataset.trkDel); return; }
   if (t.closest('[data-trk-cat-add]')) { addTrkCat(); return; }

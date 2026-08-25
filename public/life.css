@@ -310,6 +310,7 @@ button { cursor:pointer; background:none; border:0; }
 @media (max-width:600px){ .adv-card { flex-direction:column; } .adv-thumb { width:100%; } }
 /* Spending */
 .sp-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:18px; }
+.sp-catmanage { margin:-6px 0 18px; padding:14px 16px; background:var(--card); border:1px solid var(--line); border-radius:14px; }
 .sp-import-btn { cursor:pointer; }
 .sp-monthnav { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:16px; }
 .sp-monthnav .ghost { width:40px; height:40px; font-size:20px; padding:0; border-radius:10px; }
