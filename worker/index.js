@@ -7,6 +7,7 @@ import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignmen
 import { openMeeting } from './meetings.js';
 import { createWebinar, updateWebinar, listWebinars, deleteWebinar, getPublicWebinar, webinarPage } from './webinars.js';
 import { aiKey, aiNeedsKey, logAiUsage, setAiKey } from './ai.js';
+import { adminOverview, adminUsers, updateUser, adminAiUsage, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -2106,7 +2107,7 @@ export default {
       if (path === '/api/me' && request.method === 'GET') {
         if (!authedEmail) return err('unauthorized', request, 401);
         const user = await getUserByEmail(env, authedEmail);
-        return json({ email: authedEmail, user: user || null, needsSignup: !user, inviteRequired: env.PUBLIC_SIGNUP !== '1' }, request);
+        return json({ email: authedEmail, user: user || null, needsSignup: !user, inviteRequired: !(await isPublicSignup(env)) }, request);
       }
       if (path === '/api/signup' && request.method === 'POST') {
         if (!authedEmail) return err('unauthorized', request, 401);
@@ -2132,10 +2133,15 @@ export default {
       // Admin dashboard (owner only): users list + global daily quotes.
       if (path.startsWith('/api/admin/')) {
         if (env.uid !== 1) return err('not allowed', request, 403);
-        if (path === '/api/admin/users' && request.method === 'GET') {
-          const { results } = await env.DB.prepare('SELECT id, email, name, subdomain, plan, status, created_at FROM users ORDER BY id').all();
-          return json({ users: results || [] }, request);
-        }
+        try {
+          if (path === '/api/admin/overview' && request.method === 'GET') return json(await adminOverview(env), request);
+          if (path === '/api/admin/users' && request.method === 'GET') return json({ users: await adminUsers(env) }, request);
+          if (path === '/api/admin/ai-usage' && request.method === 'GET') return json({ usage: await adminAiUsage(env) }, request);
+          if (path === '/api/admin/settings' && request.method === 'GET') return json(await getAdminSettings(env), request);
+          if (path === '/api/admin/settings' && request.method === 'POST') return json(await setAdminSettings(env, await request.json().catch(() => ({}))), request);
+          const um = path.match(/^\/api\/admin\/user\/(\d+)$/);
+          if (um && request.method === 'PATCH') return json({ users: await updateUser(env, um[1], await request.json().catch(() => ({}))) }, request);
+        } catch (e) { return err(e.message, request, 400); }
         if (path === '/api/admin/quotes') {
           if (request.method === 'GET') { const { results } = await env.DB.prepare('SELECT id, text, author FROM quotes ORDER BY id DESC').all(); return json({ quotes: results || [] }, request); }
           if (request.method === 'POST') { const b = await request.json().catch(() => ({})); const text = String(b.text || '').trim(); if (!text) return err('Quote text required', request); await env.DB.prepare('INSERT OR IGNORE INTO quotes (text, author) VALUES (?, ?)').bind(text, String(b.author || '').trim() || null).run(); return json({ ok: true }, request, 201); }

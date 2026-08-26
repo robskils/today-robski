@@ -1053,6 +1053,25 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .p-tag { font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; background:var(--paper-2,var(--paper)); color:var(--ink-2); }
 .p-tag.p-P1 { color:#c4412e; } .p-tag.p-P2 { color:#c9822e; }
 /* Admin dashboard. */
+/* Admin business dashboard. */
+.adm-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:0 0 14px; }
+.adm-card { padding:16px 18px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow-sm); }
+.adm-card-v { font-size:26px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.adm-card-l { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin-top:2px; }
+.adm-card-s { font-size:12.5px; color:var(--ink-3); margin-top:5px; }
+.adm-plans { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 20px; }
+.adm-plan-chip { font-size:13px; padding:4px 12px; border:1px solid var(--line); border-radius:999px; color:var(--ink-2); text-transform:capitalize; }
+.adm-signup .scope { font-size:12.5px; color:var(--ink-3); font-weight:400; }
+.adm-users { display:flex; flex-direction:column; gap:8px; }
+.adm-user { display:grid; grid-template-columns:1fr auto; gap:4px 12px; align-items:center; padding:12px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+.adm-user.susp { opacity:.6; }
+.adm-user-main { display:flex; align-items:baseline; gap:10px; min-width:0; }
+.adm-user-meta { grid-column:1; font-size:12.5px; color:var(--ink-3); }
+.adm-user-acts { grid-row:1 / span 2; grid-column:2; display:flex; align-items:center; gap:8px; }
+.adm-user-acts .au-plan-sel { width:auto; margin:0; padding:6px 26px 6px 10px; font-size:13.5px; }
+.adm-user-acts .ghost { padding:6px 12px; font-size:13px; }
+.au-usage { color:var(--ink-2); }
+@media (max-width:640px){ .adm-user { grid-template-columns:1fr; } .adm-user-acts { grid-row:auto; grid-column:1; } }
 .admin-list { display:flex; flex-direction:column; gap:6px; }
 .admin-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--card); font-size:14.5px; }
 .au-sub { font-weight:600; color:var(--ink); min-width:90px; }
@@ -1345,7 +1364,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
      focus, then Favourites. display:contents dissolves the two column wrappers so
      every section is a direct flex child that `order` can arrange; the flex gap
      replaces the per-section margins. */
-  .home-body { display:flex; flex-direction:column; gap:26px; grid-template-columns:none; }
+  .home-body { display:flex; flex-direction:column; gap:26px; grid-template-columns:none; align-items:stretch; }
   .home-main, .home-side { display:contents; position:static; }
   .home-body .home-sec { margin:0; }
   .home-sec-today { order:1; } .home-sec-notepad { order:2; } .home-sec-recent { order:3; }

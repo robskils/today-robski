@@ -621,19 +621,64 @@ async function loadInvites() { try { const r = await api('/api/invites'); state.
 // ── Admin / business dashboard (owner only) ───────────────────────────
 async function openAdmin() {
   state.view = { type: 'admin' }; renderNav(); state.admin = state.admin || {}; renderAdmin();
-  try { const [u, q] = await Promise.all([api('/api/admin/users'), api('/api/admin/quotes')]); state.admin = { users: u.users || [], quotes: q.quotes || [] }; } catch (e) { toast(e.message); state.admin = { users: [], quotes: [] }; }
+  try {
+    const [ov, u, ai, s, q] = await Promise.all([
+      api('/api/admin/overview'), api('/api/admin/users'), api('/api/admin/ai-usage'),
+      api('/api/admin/settings'), api('/api/admin/quotes'),
+    ]);
+    state.admin = { overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [] };
+  } catch (e) { toast(e.message); }
   if (!state.invites) loadInvites();
   renderAdmin();
 }
+const admN = (n) => (n || 0).toLocaleString();
+const admUSD = (n) => '$' + (n || 0).toFixed(2);
+const admTok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n || 0));
+function adminUserRow(u) {
+  const owner = u.id === 1;
+  const plans = ['free', 'standard', 'premium', 'power'];
+  return `<div class="adm-user ${u.status === 'suspended' ? 'susp' : ''}">
+    <div class="adm-user-main"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span></div>
+    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDate(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDate(u.last_seen))}` : ''}</div>
+    <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(u.plan)} · owner</span>`
+      : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option ${u.plan === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
+        <button class="ghost ${u.status === 'suspended' ? '' : 'acct-danger'}" data-admin-status="${u.id}" data-status="${u.status === 'suspended' ? 'active' : 'suspended'}">${u.status === 'suspended' ? 'Reactivate' : 'Suspend'}</button>`}
+    </div>
+  </div>`;
+}
 function renderAdmin() {
   const a = state.admin || {};
+  const ov = a.overview || {};
+  const users = a.users || [];
+  const uOv = ov.users || {};
+  const ai = ov.ai || {};
+  const inv = ov.invites || {};
+  const plans = ov.plans || {};
+  const pub = a.settings ? a.settings.publicSignup : ov.publicSignup;
+  const card = (label, value, sub) => `<div class="adm-card"><div class="adm-card-v">${value}</div><div class="adm-card-l">${label}</div>${sub ? `<div class="adm-card-s">${sub}</div>` : ''}</div>`;
+  const planChips = Object.entries(plans).map(([p, n]) => `<span class="adm-plan-chip">${esc(p)} · ${n}</span>`).join('');
   $('#pane').innerHTML = `
     ${pageCrumb('Admin')}
     <div class="pane-head home-head"><h1>Admin</h1></div>
-    <p class="home-empty" style="margin:-6px 0 18px">Running Daybook - your customers, invites and the daily quotes.</p>
-    <section class="home-sec"><div class="home-sec-h">Users<span class="muted">${(a.users || []).length}</span></div>
-      <div class="admin-list">${(a.users || []).map((u) => `<div class="admin-row"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span><span class="au-plan">${esc(u.plan)}</span><span class="au-status au-${esc(u.status)}">${esc(u.status)}</span></div>`).join('') || '<div class="home-empty">No users yet.</div>'}</div>
+    <p class="home-empty" style="margin:-6px 0 18px">Running Daybook - your members, usage and the switches that steer the business.</p>
+    <div class="adm-cards">
+      ${card('Members', admN(uOv.total), `${uOv.active7 || 0} active this week`)}
+      ${card('New members', admN(uOv.new7), `${admN(uOv.new30)} in the last 30 days`)}
+      ${card('AI cost this month', admUSD(ai.totalCost), `${admN(ai.calls)} calls${ai.month ? ' · ' + ai.month : ''}`)}
+      ${card('Invites', admN(inv.total), `${inv.unused || 0} unused`)}
+    </div>
+    ${planChips ? `<div class="adm-plans">${planChips}</div>` : ''}
+    <section class="home-sec"><div class="home-sec-h">Signup</div>
+      <div class="set-card">
+        <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
+      </div>
     </section>
+    <section class="home-sec"><div class="home-sec-h">Members<span class="muted">${users.length}</span></div>
+      <div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>
+    </section>
+    ${(a.aiUsage || []).length ? `<section class="home-sec"><div class="home-sec-h">AI usage · this month</div>
+      <div class="admin-list">${a.aiUsage.map((r) => `<div class="admin-row"><span class="au-sub">${esc(r.subdomain || ('user ' + r.userId))}</span><span class="au-email">${admTok(r.inTokens)} in · ${admTok(r.outTokens)} out · ${admN(r.calls)} calls</span><span class="au-plan">${admUSD(r.cost)}</span></div>`).join('')}</div>
+    </section>` : ''}
     <section class="home-sec"><div class="home-sec-h">Invites</div>
       <div class="set-card">
         <div class="inv-new">
@@ -660,6 +705,19 @@ async function addQuote() {
 }
 async function delQuote(id) {
   try { await api(`/api/admin/quotes/${id}`, { method: 'DELETE' }); state.admin.quotes = (state.admin.quotes || []).filter((q) => String(q.id) !== String(id)); renderAdmin(); }
+  catch (e) { toast(e.message); }
+}
+async function toggleAdminSignup(on) {
+  try { state.admin.settings = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ publicSignup: on }) }); toast(on ? 'Open registration is ON' : 'Invite-only'); }
+  catch (e) { toast(e.message); }
+}
+async function setUserPlan(id, plan) {
+  try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ plan }) })).users; toast('Plan updated'); }
+  catch (e) { toast(e.message); }
+}
+async function setUserStatus(id, status) {
+  if (status === 'suspended' && !(await uiConfirm('Suspend this member? They will be signed out and blocked until reactivated.', { danger: true, okLabel: 'Suspend' }))) return;
+  try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })).users; renderAdmin(); toast(status === 'suspended' ? 'Member suspended' : 'Member reactivated'); }
   catch (e) { toast(e.message); }
 }
 // ── Friends on Daybook ────────────────────────────────────────────────
@@ -6472,6 +6530,7 @@ document.addEventListener('click', (e) => {
   { const sw = t.closest('[data-open-shared]'); if (sw) { openView({ type: sw.dataset.sharedKind, id: sw.dataset.openShared }); return; } }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
+  { const as = t.closest('[data-admin-status]'); if (as) { setUserStatus(as.dataset.adminStatus, as.dataset.status); return; } }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
@@ -6563,6 +6622,8 @@ document.addEventListener('contextmenu', (e) => {
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
+  if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
+  { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
   const spc = e.target.closest('[data-sp-cat]'); if (spc) { spendSetCat(spc.dataset.spCat, e.target.value); return; }

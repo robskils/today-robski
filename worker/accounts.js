@@ -9,6 +9,7 @@
  */
 
 import { sendCodeMail } from './auth.js';
+import { isPublicSignup } from './admin.js';
 
 // Names we keep for infrastructure / the product itself, never handed to a user.
 const RESERVED_SUBDOMAINS = new Set([
@@ -59,7 +60,7 @@ export async function handleSignup(request, env, email, json, err) {
   // drop the invite requirement and let anyone sign up (free plan). Until then a
   // valid invite - from any member, or Robin - is required. A code can also carry
   // a different plan / a pre-assigned email / the BYO-key "free" flag.
-  const publicSignup = env.PUBLIC_SIGNUP === '1';
+  const publicSignup = await isPublicSignup(env);
   const code = String(b.invite || '').trim();
   if (!code && !publicSignup) return err('Daybook is invite-only for now - you need an invite from a member.', request, 403);
   let plan = 'free', free = 0, invitedBy = null;
