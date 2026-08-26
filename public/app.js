@@ -284,7 +284,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -295,6 +295,7 @@ function labelForView(v) {
     case 'journal': return 'Reflect'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Reflect';
     case 'readwatch': return 'Read & Watch';
     case 'settings': return 'Settings';
+    case 'admin': return 'Admin';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     case 'financial': return 'Financial';
@@ -317,6 +318,7 @@ function openView(v) {
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'financial': return openFinancial(v.tab);
     case 'settings': return openSettings();
+    case 'admin': return openAdmin();
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
@@ -502,7 +504,51 @@ async function downloadExport() {
     toast('Your data is downloading');
   } catch (e) { toast(e.message); }
 }
-async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
+async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; if (state.view && (state.view.type === 'settings' || state.view.type === 'admin')) (state.view.type === 'admin' ? renderAdmin : renderSettings)(); } catch {} }
+// ── Admin / business dashboard (owner only) ───────────────────────────
+async function openAdmin() {
+  state.view = { type: 'admin' }; renderNav(); state.admin = state.admin || {}; renderAdmin();
+  try { const [u, q] = await Promise.all([api('/api/admin/users'), api('/api/admin/quotes')]); state.admin = { users: u.users || [], quotes: q.quotes || [] }; } catch (e) { toast(e.message); state.admin = { users: [], quotes: [] }; }
+  if (!state.invites) loadInvites();
+  renderAdmin();
+}
+function renderAdmin() {
+  const a = state.admin || {};
+  $('#pane').innerHTML = `
+    ${pageCrumb('Admin')}
+    <div class="pane-head home-head"><h1>Admin</h1></div>
+    <p class="home-empty" style="margin:-6px 0 18px">Running Daybook - your customers, invites and the daily quotes.</p>
+    <section class="home-sec"><div class="home-sec-h">Users<span class="muted">${(a.users || []).length}</span></div>
+      <div class="admin-list">${(a.users || []).map((u) => `<div class="admin-row"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span><span class="au-plan">${esc(u.plan)}</span><span class="au-status au-${esc(u.status)}">${esc(u.status)}</span></div>`).join('') || '<div class="home-empty">No users yet.</div>'}</div>
+    </section>
+    <section class="home-sec"><div class="home-sec-h">Invites</div>
+      <div class="set-card">
+        <div class="inv-new">
+          <select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
+          <label class="inv-free"><input type="checkbox" id="inv-freetoggle"> Free (100% off)</label>
+          <input class="sel" id="inv-email" placeholder="Pre-assign to an email (optional)" autocomplete="off">
+          <button class="add-btn wide" data-create-invite>Create invite</button>
+        </div>
+        <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet.</div>'}</div>
+      </div>
+    </section>
+    <section class="home-sec"><div class="home-sec-h">Daily quotes<span class="muted">${(a.quotes || []).length}</span></div>
+      <div class="set-card">
+        <div class="inv-new"><input class="sel" id="q-text" placeholder="A quote…" autocomplete="off"><input class="sel" id="q-author" placeholder="Author (optional)" autocomplete="off" style="max-width:190px"><button class="add-btn wide" data-quote-add>Add</button></div>
+        <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
+      </div>
+    </section>`;
+}
+async function addQuote() {
+  const text = ($('#q-text') || {}).value || ''; const author = ($('#q-author') || {}).value || '';
+  if (!text.trim()) return;
+  try { await api('/api/admin/quotes', { method: 'POST', body: JSON.stringify({ text, author }) }); const q = await api('/api/admin/quotes'); state.admin.quotes = q.quotes || []; renderAdmin(); toast('Quote added'); }
+  catch (e) { toast(e.message); }
+}
+async function delQuote(id) {
+  try { await api(`/api/admin/quotes/${id}`, { method: 'DELETE' }); state.admin.quotes = (state.admin.quotes || []).filter((q) => String(q.id) !== String(id)); renderAdmin(); }
+  catch (e) { toast(e.message); }
+}
 async function createInvite() {
   const plan = ($('#inv-plan') || {}).value || 'standard';
   const free = ($('#inv-freetoggle') || {}).checked ? 1 : 0;
@@ -525,6 +571,7 @@ function renderSettings() {
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
   ];
+  if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Users, invites &amp; quotes', 'data-open-admin=""']);
   const appOpen = !!state.settings.appearanceOpen;
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
@@ -5792,6 +5839,9 @@ document.addEventListener('click', (e) => {
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
   if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }
+  if (t.closest('[data-open-admin]')) { openAdmin(); return; }
+  if (t.closest('[data-quote-add]')) { addQuote(); return; }
+  { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }

@@ -2054,6 +2054,20 @@ export default {
         if (request.method === 'GET') return json({ invites: await listInvites(env) }, request);
         if (request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await createInvite(env, b), request, 201); }
       }
+      // Admin dashboard (owner only): users list + global daily quotes.
+      if (path.startsWith('/api/admin/')) {
+        if (env.uid !== 1) return err('not allowed', request, 403);
+        if (path === '/api/admin/users' && request.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT id, email, name, subdomain, plan, status, created_at FROM users ORDER BY id').all();
+          return json({ users: results || [] }, request);
+        }
+        if (path === '/api/admin/quotes') {
+          if (request.method === 'GET') { const { results } = await env.DB.prepare('SELECT id, text, author FROM quotes ORDER BY id DESC').all(); return json({ quotes: results || [] }, request); }
+          if (request.method === 'POST') { const b = await request.json().catch(() => ({})); const text = String(b.text || '').trim(); if (!text) return err('Quote text required', request); await env.DB.prepare('INSERT OR IGNORE INTO quotes (text, author) VALUES (?, ?)').bind(text, String(b.author || '').trim() || null).run(); return json({ ok: true }, request, 201); }
+        }
+        const dq = path.match(/^\/api\/admin\/quotes\/(\d+)$/);
+        if (dq && request.method === 'DELETE') { await env.DB.prepare('DELETE FROM quotes WHERE id = ?').bind(dq[1]).run(); return json({ ok: true }, request); }
+      }
 
       // Account: name, email aliases, phone, plan.
       if (path === '/api/account') {
