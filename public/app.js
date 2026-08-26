@@ -7094,7 +7094,9 @@ function ensureBubble() {
   b.innerHTML = `<button data-fmt="bold" title="Bold  ⌘B"><b>B</b></button>
     <button data-fmt="italic" title="Italic  ⌘I"><i>I</i></button>
     <span class="bub-sep"></span>
-    <button data-fmt="h2" title="Heading">H</button>
+    <button data-fmt="h1" title="Heading 1" class="bub-h">H1</button>
+    <button data-fmt="h2" title="Heading 2" class="bub-h">H2</button>
+    <button data-fmt="h3" title="Heading 3" class="bub-h">H3</button>
     <button data-fmt="quote" title="Quote">&#10077;</button>
     <button data-fmt="ul" title="Bulleted list">&#8226;</button>
     <button data-fmt="ol" title="Numbered list" style="font-size:12px">1.</button>
@@ -7197,7 +7199,7 @@ function applyFmt(cmd) {
   try { document.execCommand('styleWithCSS', false, false); } catch {}
   if (cmd === 'bold') document.execCommand('bold');
   else if (cmd === 'italic') document.execCommand('italic');
-  else if (cmd === 'h2') document.execCommand('formatBlock', false, currentBlockTag() === 'H2' ? '<p>' : '<h2>');
+  else if (cmd === 'h1' || cmd === 'h2' || cmd === 'h3') { const tag = cmd.toUpperCase(); document.execCommand('formatBlock', false, currentBlockTag() === tag ? '<p>' : `<${cmd}>`); }
   else if (cmd === 'quote') document.execCommand('formatBlock', false, currentBlockTag() === 'BLOCKQUOTE' ? '<p>' : '<blockquote>');
   else if (cmd === 'ul') { document.execCommand('insertUnorderedList'); normalizeProseLists(prose); }
   else if (cmd === 'ol') { document.execCommand('insertOrderedList'); normalizeProseLists(prose); }
