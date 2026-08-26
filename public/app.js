@@ -44,6 +44,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   taskFilters: null, taskFiltersOpen: false,
+  webinars: [], webinarAdding: false, webinarEdit: null,
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   contactGroups: [], contactsGroup: null, contactMenu: null,
   financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null, tracker: null, trackerLoading: false },
@@ -584,7 +585,59 @@ async function openFriends() {
   state.view = { type: 'friends' }; renderNav(); renderFriends();
   try { state.friends = await api('/api/friends'); } catch (e) { toast(e.message); state.friends = { friends: [], incoming: [], outgoing: [], suggestions: [] }; }
   try { state.sharedWithMe = (await api('/api/shared')).items || []; } catch { state.sharedWithMe = []; }
+  try { state.webinars = (await api('/api/webinars')).webinars || []; } catch { state.webinars = []; }
   renderFriends();
+}
+// Webinars: host-managed scheduled group calls with a public join link.
+function toLocalInput(iso) { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+function webinarForm() {
+  const w = state.webinarEdit || {};
+  return `<div class="wb-form">
+    <input class="sel" id="wb-title" placeholder="Webinar title" value="${esc(w.title || '')}" autocomplete="off">
+    <textarea class="sel" id="wb-desc" rows="2" placeholder="What's it about? (optional)">${esc(w.description || '')}</textarea>
+    <div class="wb-grid">
+      <label class="atf"><span>Date &amp; time</span><input class="sel" id="wb-when" type="datetime-local" value="${esc(toLocalInput(w.startsAt))}"></label>
+      <label class="atf"><span>External stream URL (optional)</span><input class="sel" id="wb-stream" placeholder="Blank = a Daybook group call" value="${esc(w.streamUrl || '')}" autocomplete="off"></label>
+    </div>
+    <div class="wb-actions"><button class="add-btn wide" data-webinar-save>${w.id ? 'Save changes' : 'Create webinar'}</button><button class="ghost" data-webinar-cancel>Cancel</button></div>
+  </div>`;
+}
+function webinarRow(w) {
+  const when = w.startsAt ? new Date(w.startsAt).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Anytime';
+  return `<div class="wb-row"><span class="wb-body"><span class="wb-t">${esc(w.title)}</span><span class="wb-meta">${esc(when)} · ${w.streamUrl ? 'external stream' : 'Daybook call'}</span></span><span class="wb-acts"><button class="ghost" data-webinar-copy="${w.id}" title="Copy the public link">🔗 Copy link</button><button class="ghost" data-webinar-open="${w.id}" title="Open the join page">Open</button><button class="ghost" data-webinar-edit="${w.id}" title="Edit">✎</button><button class="ghost" data-webinar-del="${w.id}" title="Delete">×</button></span></div>`;
+}
+function webinarsSecHtml() {
+  const ws = state.webinars || [];
+  return `<section class="home-sec"><div class="home-sec-h">Webinars<span class="muted">${ws.length}</span></div>
+    <div class="wb-head"><button class="add-btn wide" data-webinar-new>+ New webinar</button><span class="wb-hint">A scheduled group call anyone can join with a link - no account needed.</span></div>
+    ${state.webinarAdding ? webinarForm() : ''}
+    ${ws.length ? `<div class="wb-list">${ws.map(webinarRow).join('')}</div>` : (state.webinarAdding ? '' : '<div class="home-empty">No webinars yet.</div>')}
+  </section>`;
+}
+function webinarLink(id) { return `${location.origin}/w/${id}`; }
+async function saveWebinar() {
+  const title = (($('#wb-title') || {}).value || '').trim(); if (!title) { toast('Give your webinar a title'); return; }
+  const description = ($('#wb-desc') || {}).value || '';
+  const whenLocal = ($('#wb-when') || {}).value || '';
+  const startsAt = whenLocal ? new Date(whenLocal).toISOString() : null;
+  const streamUrl = (($('#wb-stream') || {}).value || '').trim();
+  try {
+    const edit = state.webinarEdit;
+    const r = edit && edit.id
+      ? await api(`/api/webinars/${edit.id}`, { method: 'PATCH', body: JSON.stringify({ title, description, startsAt, streamUrl }) })
+      : await api('/api/webinars', { method: 'POST', body: JSON.stringify({ title, description, startsAt, streamUrl }) });
+    state.webinars = r.webinars; state.webinarAdding = false; state.webinarEdit = null; renderFriends(); toast('Webinar saved');
+  } catch (e) { toast(e.message); }
+}
+async function delWebinar(id) {
+  const w = (state.webinars || []).find((x) => x.id === id);
+  if (!(await uiConfirm(`Delete “${(w && w.title) || 'this webinar'}”? The link stops working.`, { danger: true, okLabel: 'Delete' }))) return;
+  try { state.webinars = (await api(`/api/webinars/${id}`, { method: 'DELETE' })).webinars; renderFriends(); } catch (e) { toast(e.message); }
+}
+async function copyWebinarLink(id) {
+  const link = webinarLink(id);
+  try { await navigator.clipboard.writeText(link); toast('Link copied'); }
+  catch { await uiPrompt('Copy this link:', { title: 'Webinar link', value: link, okLabel: 'Done' }); }
 }
 function friendRow(f, action) {
   return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
@@ -598,7 +651,8 @@ function renderFriends() {
     <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
     ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
     ${(state.sharedWithMe && state.sharedWithMe.length) ? `<section class="home-sec"><div class="home-sec-h">Shared with you<span class="muted">${state.sharedWithMe.length}</span></div>${state.sharedWithMe.map((s) => `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${s.kind === 'task' ? (s.done ? '☑' : '☐') : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.kind === 'task' ? 'Task' : 'Note'} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`).join('')}</section>` : ''}
-    ${d.suggestions.length ? `<section class="home-sec"><div class="home-sec-h">Your contacts on Daybook</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}</section>` : ''}`;
+    ${d.suggestions.length ? `<section class="home-sec"><div class="home-sec-h">Your contacts on Daybook</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}</section>` : ''}
+    ${webinarsSecHtml()}`;
 }
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
 async function friendAddEmail() { const el = $('#friend-email'); const email = (el && el.value || '').trim(); if (!email) return; try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ email }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
@@ -6233,6 +6287,13 @@ document.addEventListener('click', (e) => {
   { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
+  if (t.closest('[data-webinar-new]')) { state.webinarEdit = null; state.webinarAdding = true; renderFriends(); return; }
+  if (t.closest('[data-webinar-cancel]')) { state.webinarAdding = false; state.webinarEdit = null; renderFriends(); return; }
+  if (t.closest('[data-webinar-save]')) { saveWebinar(); return; }
+  { const wc = t.closest('[data-webinar-copy]'); if (wc) { copyWebinarLink(wc.dataset.webinarCopy); return; } }
+  { const wo = t.closest('[data-webinar-open]'); if (wo) { window.open(webinarLink(wo.dataset.webinarOpen), '_blank', 'noopener'); return; } }
+  { const we = t.closest('[data-webinar-edit]'); if (we) { state.webinarEdit = (state.webinars || []).find((x) => x.id === we.dataset.webinarEdit) || null; state.webinarAdding = true; renderFriends(); return; } }
+  { const wd = t.closest('[data-webinar-del]'); if (wd) { delWebinar(wd.dataset.webinarDel); return; } }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
   if (t.closest('[data-share-close]')) { closeShare(); return; }

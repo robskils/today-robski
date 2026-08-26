@@ -5,6 +5,7 @@ import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, g
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { openMeeting } from './meetings.js';
+import { createWebinar, updateWebinar, listWebinars, deleteWebinar, getPublicWebinar, webinarPage } from './webinars.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -1989,6 +1990,12 @@ export default {
       // subdomain like tara.daybook.fyi is the app itself, same as life.robski.uk.
       const isApex = host === 'daybook.fyi' || host === 'www.daybook.fyi';
       const isLife = host === 'life.robski.uk' || (host.endsWith('.daybook.fyi') && !isApex);
+      // Public webinar join page: /w/<id>, no account needed, on any host.
+      const wm = path.match(/^\/w\/([\w-]{4,40})$/);
+      if (wm) {
+        const w = await getPublicWebinar(env, wm[1]);
+        return withHsts(new Response(webinarPage(w, wm[1]), { status: w ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } }));
+      }
       // Only the marketing apex may be indexed; the private apps and per-user
       // tenant subdomains must not be.
       if (path === '/robots.txt') {
@@ -2257,6 +2264,16 @@ export default {
       if (path === '/api/shared' && request.method === 'GET') return json(await sharedWithMe(env), request);
       // Meeting notes: a shared note per friend pair (Friends phase 3c).
       if (path === '/api/meeting' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await openMeeting(env, b.friendId), request); } catch (e) { return err(e.message, request, 400); } }
+      // Webinars: host-managed scheduled group calls (Friends phase 3d).
+      if (path === '/api/webinars' && request.method === 'GET') return json(await listWebinars(env), request);
+      if (path === '/api/webinars' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await createWebinar(env, b), request, 201); } catch (e) { return err(e.message, request, 400); } }
+      const webMatch = path.match(/^\/api\/webinars\/([\w-]+)$/);
+      if (webMatch) {
+        try {
+          if (request.method === 'PATCH') return json(await updateWebinar(env, webMatch[1], await request.json().catch(() => ({}))), request);
+          if (request.method === 'DELETE') return json(await deleteWebinar(env, webMatch[1]), request);
+        } catch (e) { return err(e.message, request, 400); }
+      }
       // Assigning a task to a friend (Friends phase 3b).
       if (path === '/api/assignments' && request.method === 'GET') return json(await myAssignments(env), request);
       if (path === '/api/assignments/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await acceptAssignment(env, b.taskId), request); } catch (e) { return err(e.message, request, 400); } }

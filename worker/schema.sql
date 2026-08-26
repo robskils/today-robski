@@ -175,6 +175,20 @@ CREATE TABLE IF NOT EXISTS meetings (
   PRIMARY KEY (lo, hi)
 );
 
+-- Webinars: a scheduled group call anyone can join by link (no account). The
+-- public page at /w/<id> embeds a Jitsi room by default, or an external stream
+-- (e.g. YouTube) when the host supplies one.
+CREATE TABLE IF NOT EXISTS webinars (
+  id          TEXT PRIMARY KEY,      -- short public slug
+  host_id     INTEGER NOT NULL,
+  title       TEXT NOT NULL,
+  description TEXT,
+  starts_at   TEXT,                  -- ISO datetime, optional
+  stream_url  TEXT,                  -- external stream; NULL = use the Jitsi room
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_webinars_host ON webinars(host_id);
+
 -- Pending alias confirmations: a 6-digit code emailed to a newly added address.
 -- Separate from otp_codes (sign-in) so an unverified alias can't be used to log
 -- in, and the code is bound to the account that requested it.

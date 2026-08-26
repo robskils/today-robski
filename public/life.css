@@ -978,6 +978,24 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fr-acts { display:flex; gap:8px; flex:none; }
 .fr-act { flex:none; padding:7px 15px; }
 .fr-pending { flex:none; font-size:13px; color:var(--ink-3); font-style:italic; }
+/* Webinars (Friends). */
+.wb-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.wb-head .add-btn.wide { flex:none; }
+.wb-hint { font-size:13px; color:var(--ink-3); }
+.wb-form { display:flex; flex-direction:column; gap:10px; padding:14px; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:14px; }
+.wb-form .sel, .wb-form textarea.sel { width:100%; box-sizing:border-box; margin:0; }
+.wb-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; }
+.wb-grid .atf { display:flex; flex-direction:column; gap:4px; }
+.wb-grid .atf span { font-size:12.5px; color:var(--ink-3); }
+.wb-actions { display:flex; gap:10px; align-items:center; }
+.wb-actions .add-btn.wide { flex:none; }
+.wb-list { display:flex; flex-direction:column; gap:8px; }
+.wb-row { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+.wb-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.wb-t { font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wb-meta { font-size:12.5px; color:var(--ink-3); }
+.wb-acts { display:flex; gap:4px; flex:none; flex-wrap:wrap; justify-content:flex-end; }
+.wb-acts .ghost { padding:6px 10px; font-size:13px; }
 /* Sharing a note/task with friends. */
 .share-panel { z-index:231; }
 .share-note { padding:14px 18px 4px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
