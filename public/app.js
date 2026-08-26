@@ -2030,7 +2030,12 @@ function renderArea() {
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
   const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
-  const noteCards = notes.map((n) => `<button class="tbl-card" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>`).join('');
+  const isFav = (n) => !!(n.props && n.props.fav);
+  const starredNotes = notes.filter(isFav);
+  const otherNotes = notes.filter((n) => !isFav(n));
+  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-ic tc-star">★</span>' : ''}${esc(n.title || 'Untitled')}</button>`;
+  const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
+  const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
@@ -2043,7 +2048,8 @@ function renderArea() {
     <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
     ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
     ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
-    ${sec('Notes', notes.length, `<div class="tbl-cards">${noteCards}</div>`)}
+    ${sec('Starred notes', starredNotes.length, `<div class="tbl-cards">${starredNoteCards}</div>`)}
+    ${sec('Notes', otherNotes.length, `<div class="tbl-cards">${noteCards}</div>`)}
     ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
     ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });

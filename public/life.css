@@ -1403,6 +1403,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tbl-card { display:flex; align-items:center; gap:10px; text-align:left; padding:15px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:16.5px; box-shadow:var(--shadow); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tbl-card:hover { border-color:var(--accent); }
 .tc-ic { color:var(--ink-3); flex:none; }
+.tc-star { color:var(--accent); font-size:12px; }
 .ico-tbl { color:var(--tbl-pink); }   /* table-note grid mark, everywhere it appears */
 .ico-note { color:var(--ink-3); }     /* plain-note mark, matching the sidebar */
 .tc-star { color:var(--gold); flex:none; margin-left:auto; font-size:13px; }
