@@ -1112,7 +1112,8 @@ function renderSettings() {
   const TABS = [
     ['account', 'Account'],
     ['appearance', 'Appearance'],
-    ['sections', 'Sections'],
+    ['notifications', 'Notifications'],
+    ['sections', 'Tools'],
     ['invites', 'Invites'],
     ['manage', 'Manage'],
   ];
@@ -1132,8 +1133,6 @@ function renderSettings() {
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
-        <label class="set-mod"><span>Text me before a time block starts</span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
-        <label class="set-mod"><span>Email me a morning brief<small>Your day's calendar, open P1 tasks and the quote, at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
         <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
         <div class="set-field ai-keys"><span>AI keys</span>
           <p class="ai-hint">${state.account.isOwner ? 'You use the built-in keys; add your own below to override them.' : "AI features (Reflect, Claudius, Advice, statement import) run on your own keys. Get an Anthropic key at console.anthropic.com and a Gemini key at aistudio.google.com."}</p>
@@ -1153,6 +1152,15 @@ function renderSettings() {
 
   const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>`;
 
+  const notificationsPane = state.account ? `<div class="set-card set-notifs">
+        <div class="set-notif-group"><div class="set-notif-h">By email</div>
+          <label class="set-mod"><span>Morning brief<small>Your day's calendar, open P1 tasks and the quote, emailed at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
+        </div>
+        <div class="set-notif-group"><div class="set-notif-h">By text</div>
+          <label class="set-mod"><span>Before a time block starts<small>A text 5 minutes before a scheduled block${state.account.phone ? '' : ' - add a phone number above in Account first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
+        </div>
+      </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
+
   const invitesPane = `<div class="set-card">
         <div class="inv-new">
           ${(state.me && state.me.id === 1) ? `<select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
@@ -1166,8 +1174,8 @@ function renderSettings() {
 
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
-  const panes = { account: accountPane, appearance: appearancePane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: 'Your details, sign-in addresses & AI keys', appearance: 'Theme & accent colour', sections: 'Turn off anything you don\'t use', invites: (state.me && state.me.id === 1) ? 'Invite people to Daybook' : 'Share a code so someone can join', manage: 'Life areas, mail, categories & more' };
+  const panes = { account: accountPane, appearance: appearancePane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: 'Your details, sign-in addresses & AI keys', appearance: 'Theme & accent colour', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: (state.me && state.me.id === 1) ? 'Invite people to Daybook' : 'Share a code so someone can join', manage: 'Life areas, mail, categories & more' };
 
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
@@ -1247,9 +1255,12 @@ function renderNav() {
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
-      ${helpIconHtml()}
-      <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
-      <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings"><span class="ns-ic">⚙</span><span class="ns-lbl"> Settings</span></button>
+      <div class="nav-bottom-row">
+        ${helpIconHtml()}
+        <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
+        <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings"><span class="ns-ic">⚙</span><span class="ns-lbl"> Settings</span></button>
+      </div>
+      ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> Admin</span></button>` : ''}
     </div>`;
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
