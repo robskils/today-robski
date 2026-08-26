@@ -1269,6 +1269,23 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-theme { width:100%; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; border-radius:10px; color:var(--ink-2); font-size:14.5px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
 .nav-theme:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
 .nav-theme.on { border-color:var(--accent); color:var(--accent); }
+/* The info icon: a small "i" that lives with the theme/settings controls, so it
+   rides along on both the desktop sidebar and the mobile top bar. */
+.help-btn { flex:none; width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:Georgia,'Times New Roman',serif; font-style:italic; font-weight:700; font-size:17px; color:var(--ink-3); border:1px solid var(--line); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
+.help-btn:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
+#help-pop.help-pop { position:fixed; z-index:60; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 36px -14px rgba(0,0,0,.42); padding:13px 15px; display:none; }
+.help-pop-t { font-size:14px; font-weight:650; color:var(--ink); margin-bottom:5px; }
+.help-pop-b { font-size:13.5px; line-height:1.5; color:var(--ink-2); }
+.help-pop-hint { margin-top:10px; font-size:12px; color:var(--ink-3); }
+/* The pinned guide page. Base 16px, generous line height - it's for reading. */
+.help-doc { max-width:680px; font-size:16px; line-height:1.65; color:var(--ink); }
+.help-doc p { margin:0 0 14px; }
+.help-doc ul { margin:0 0 16px; padding-left:22px; display:flex; flex-direction:column; gap:8px; }
+.help-doc li { line-height:1.55; }
+.help-doc b { font-weight:650; }
+.help-lede { font-size:18px; color:var(--ink-2); margin-bottom:20px; }
+.help-foot { margin-top:26px; padding-top:16px; border-top:1px solid var(--line); font-size:14px; color:var(--ink-3); }
+.help-inline-i { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:1px solid var(--line-2); font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:12.5px; color:var(--ink-2); }
 /* Settings hub */
 .set-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:20px; }
 .set-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
@@ -2097,6 +2114,7 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* No bottom on a horizontal bar: the theme switch sits inline with the brand. */
   .nav-bottom { margin-top:0; padding-top:0; order:3; }
   .nav-theme { width:auto; border:0; background:transparent; padding:6px 9px; font-size:14px; }
+  .help-btn { width:auto; height:auto; border:0; background:transparent; padding:6px 8px; font-size:19px; }
   /* Settings rides in the top bar as an icon only - the word is redundant next
      to the ⚙, and it's no longer in the mobile launcher grid. */
   .nav-settings .ns-lbl { display:none; }

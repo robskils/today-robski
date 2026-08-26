@@ -331,9 +331,137 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠', friends: '👥' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠', friends: '👥', help: 'ⓘ' };
+// ── In-app guides ─────────────────────────────────────────────────────
+// The little i by the tabs. Hovering shows a one-line tip for whatever tool
+// you're on; clicking pins the full guide in its own tab. Content is plain and
+// task-focused - what the tool is for and how to drive it, not a feature list.
+const HELP = {
+  home: { title: 'Home', tip: 'Your whole day on one screen: today’s schedule, your top tasks, a scratchpad and everything you’ve starred.',
+    body: `<p>Home is the first thing you see and the place to start your day. It pulls the pieces that matter <em>right now</em> into one screen so you don’t have to go looking.</p>
+      <ul><li><b>Today</b> - your calendar events and time blocks for the day.</li>
+      <li><b>Priority Tasks</b> - your open P1s, each on its own card, in the order you drag them. “See all” opens the full board.</li>
+      <li><b>Notepad</b> - a scratchpad that saves as you type, waiting for you next time.</li>
+      <li><b>Starred</b> and <b>Recently viewed</b> - one tap back to the notes, tables and areas you keep returning to.</li></ul>
+      <p>Drag sections’ tasks to reorder them, and collapse any section you don’t want with the arrow by its title. Choose which sections appear in <b>Settings › Sections</b>.</p>` },
+  tasks: { title: 'Tasks', tip: 'A board of everything to do. Filter it your way, sort by any column, and tick things off.',
+    body: `<p>Every task lives here. A task has a title, a priority (P1-P4), an optional life area and an optional due date.</p>
+      <ul><li><b>Add</b> one with <b>+ New</b> or the + by Tasks in the sidebar - it’s usable the instant you type it.</li>
+      <li><b>Filter</b> builds your own view: add conditions (priority is P1, area is Work, due this week…) and stack as many as you like.</li>
+      <li><b>Sort</b> by clicking a column header.</li>
+      <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
+      <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
+  notes: { title: 'Notes', tip: 'Free writing with headings, links and sub-notes. Tag a note to one or more life areas.',
+    body: `<p>Notes are for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse long notes), lists and links.</p>
+      <ul><li><b>Sub-notes</b> nest inside a note (the “Notes inside” panel), so a project can hold its own pages.</li>
+      <li><b>Link</b> highlighted text to another note or even a table row, to weave things together.</li>
+      <li><b>Life areas</b> - tag a note to one or several areas (the chips up top); it then shows on each of those area pages.</li>
+      <li>A note can become a <b>table</b> and back with the Note/Table toggle.</li></ul>
+      <p>Star a note to pin it to the sidebar; recently opened notes are always a click away there too.</p>` },
+  calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
+    body: `<p>The calendar shows your events by month, with an agenda and search. It reads and writes your Google calendar.</p>
+      <ul><li><b>Add</b> an event with a title, a start date and time (or All day), and a length. All-day events can span several days.</li>
+      <li>Set a start date and the end follows to the same day - an event can never end before it begins.</li>
+      <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
+      <li>An event whose title matches one of your Today lanes can be <b>counted as practice</b> on your schedule.</li></ul>` },
+  mail: { title: 'Mail', tip: 'All your inboxes in one place. Read, reply, and search across every account.',
+    body: `<p>Mail merges your real mailboxes (IMAP/SMTP) into one inbox. Add an account in <b>Settings › Mail accounts</b>.</p>
+      <ul><li>Read, reply, forward and compose, choosing which account you send from.</li>
+      <li>The inbox stays warm in the background, so opening Mail is instant, and a new message can nudge you.</li>
+      <li>Search runs across your accounts.</li></ul>
+      <p>Sending, and anything that leaves your account, always waits for you to press the button.</p>` },
+  contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from life areas. See who’s on Daybook.',
+    body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a life area.</p>
+      <p>Contacts with an email are checked against Daybook, so you can see which of your people are here and add them as friends.</p>` },
+  financial: { title: 'Financial', tip: 'Track spending against your life areas, import statements, and watch your portfolio.',
+    body: `<p>Financial is your money in one place. Your <b>life areas double as spending categories</b>, so where your money goes lines up with what your life is about.</p>
+      <ul><li><b>Import</b> a statement and Daybook sorts transactions into categories.</li>
+      <li>Add extra categories for spending that doesn’t fit an area.</li>
+      <li>It remembers the tab you were last on.</li></ul>` },
+  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each life area into goals and actions, and review your progress.',
+    body: `<p>Goals connect the big picture to daily action. For each life area you can write a <b>vision</b>, set <b>goals</b> under it, and break those into actions.</p>
+      <ul><li><b>Bucket list</b> - the things to do before you die.</li>
+      <li><b>Reviews</b> - weekly, monthly, quarterly and yearly check-ins, with reminders when one falls due.</li>
+      <li><b>Wheel of Life</b> and a <b>vision board</b> help you see the whole at a glance.</li></ul>` },
+  areas: { title: 'Life areas', tip: 'The handful of areas your life orbits. Everything - tasks, notes, money, goals - hangs off them.',
+    body: `<p>Life areas are the few domains that matter to you (Work, Health, Family…). They’re the backbone of Daybook: tasks, notes, goals and spending all attach to an area, so any area page gathers everything about that part of your life.</p>
+      <ul><li>Give each area a colour so it reads at a glance across the app.</li>
+      <li>An area page shows its starred notes, all its notes and tables, and its open tasks.</li>
+      <li>Feed a <b>Today lane</b> from an area, so time spent there counts toward it.</li></ul>
+      <p>Rename, recolour or add areas any time - the whole app follows.</p>` },
+  reflect: { title: 'Reflect', tip: 'A journal with prompts, and a “dig deeper” question when you want to go further.',
+    body: `<p>Reflect is for journalling. Pick a prompt or write free; each entry is dated and yours to return to.</p>
+      <p><b>Dig deeper</b> asks you one thoughtful follow-up question about what you’ve written, to take a thought further.</p>` },
+  saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
+    body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
+      <p>One-tap capture (a bookmarklet or an iOS Shortcut) saves a page straight to your list from any browser.</p>` },
+  friends: { title: 'Friends', tip: 'Connect with people on Daybook to share notes, assign tasks, and meet.',
+    body: `<p>Friends are people you’re connected with on Daybook. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
+      <ul><li><b>Share</b> a note or task with a friend, view-only or to edit.</li>
+      <li><b>Assign</b> a task to a friend.</li>
+      <li>Keep <b>shared meeting notes</b>, chat, and start a call.</li></ul>` },
+  today: { title: 'Today', tip: 'Your day as flexible time blocks across your lanes - guidance, never a rigid timetable.',
+    body: `<p>Today lays your day out as time blocks across your <b>lanes</b> - the few kinds of time you want to keep making progress in. It’s built for flexibility: stay in the zone on something and the day bends around you.</p>
+      <ul><li>Each lane has a gentle daily target (a ring), never a debt - there’s no overdue, no streak, no red.</li>
+      <li>Blocks can float (no fixed time) until the day decides where they land.</li>
+      <li>Edit, rename, recolour, add or remove your lanes in <b>Settings › Time streams</b>.</li></ul>` },
+  settings: { title: 'Settings', tip: 'Your account, look and feel, which sections show, invites, and the tools that manage your setup.',
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone, plan and AI keys, plus the morning-brief and text-alert switches. <b>Appearance</b> sets the theme and accent colour. <b>Sections</b> turns tools on or off. <b>Invites</b> lets you bring people in. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
+};
+// Cards and sub-pages fold into their tool's guide.
+function helpKey(v) {
+  if (v && v.type === 'help') return v.tool || 'home';
+  const t = (v && v.type) || 'home';
+  return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
+    journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
+    area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
+    readwatch: 'saved' })[t] || t;
+}
+// The i beside the tabs, keyed to the tool you're on. Hover = the tip; click = pin
+// the full guide in its own tab.
+function helpIconHtml() {
+  const key = helpKey(state.view); const h = HELP[key]; if (!h) return '';
+  // The popover is drawn on hover as a fixed element (below), so it isn't clipped
+  // by the tab strip's horizontal scroll.
+  return `<button class="help-btn" data-help-open="${key}" aria-label="How ${esc(h.title)} works" title="How ${esc(h.title)} works">i</button>`;
+}
+function showHelpPop(btn) {
+  const h = HELP[btn.dataset.helpOpen]; if (!h) return;
+  let el = document.getElementById('help-pop');
+  if (!el) { el = document.createElement('div'); el.id = 'help-pop'; el.className = 'help-pop'; document.body.appendChild(el); }
+  el.innerHTML = `<div class="help-pop-t">${esc(h.title)}</div><div class="help-pop-b">${h.tip}</div><div class="help-pop-hint">Click the i to pin the full guide →</div>`;
+  const r = btn.getBoundingClientRect();
+  const w = Math.min(300, window.innerWidth - 24);
+  el.style.width = `${w}px`;
+  el.style.left = `${Math.max(12, Math.min(r.right - w, window.innerWidth - w - 12))}px`;
+  el.style.top = `${r.bottom + 8}px`;
+  el.style.display = 'block';
+}
+function hideHelpPop() { const el = document.getElementById('help-pop'); if (el) el.style.display = 'none'; }
+function openHelp(key) { state.view = { type: 'help', tool: key }; renderNav(); renderHelp(key); return Promise.resolve(); }
+function renderHelp(key) {
+  const h = HELP[key] || HELP.home;
+  $('#pane').innerHTML = `${pageCrumb('Guide')}
+    <div class="pane-head home-head"><h1>${esc(h.title)}</h1></div>
+    <div class="help-doc"><p class="help-lede">${h.tip}</p>${h.body}
+      <p class="help-foot">Every tool has its own guide - look for the <span class="help-inline-i">i</span> beside the tabs.</p></div>`;
+}
+// Click the i: pin this tool's guide in its own tab. If it's already open, just go there.
+function openHelpTab(key) {
+  hideHelpPop();
+  const view = { type: 'help', tool: key };
+  const existing = state.tabs.find((t) => t.view.type === 'help' && t.view.tool === key);
+  if (existing) { if (!existing.pinned) { existing.pinned = true; } switchTab(existing.id); renderTabs(); saveTabs(); return; }
+  const id = uid();
+  state.tabs.push({ id, view, label: labelForView(view), pinned: true });
+  state.tabs.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  state.activeTab = id;
+  Promise.resolve(openView(view)).catch(() => openHome());
+  saveTabs();
+}
 function labelForView(v) {
   switch (v.type) {
+    case 'help': return `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
     case 'tasks': return 'Tasks';
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
@@ -371,6 +499,7 @@ function openView(v) {
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
+    case 'help': return openHelp(v.tool);
     default: return openHome();
   }
 }
@@ -1118,6 +1247,7 @@ function renderNav() {
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
+      ${helpIconHtml()}
       <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
       <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings"><span class="ns-ic">⚙</span><span class="ns-lbl"> Settings</span></button>
     </div>`;
@@ -6249,6 +6379,10 @@ document.addEventListener('input', (e) => {
   if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); }
 });
 let proseT;
+// The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
+// one pair of document listeners covers the button however the tabs re-render.
+document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
+document.addEventListener('mouseout', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.help-btn'))) hideHelpPop(); });
 document.addEventListener('click', (e) => {
   const t = e.target;
   // Bottom-nav tab: tapping it jumps to the top of that page. If you're already
@@ -6300,6 +6434,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
+  const hlp = t.closest('[data-help-open]'); if (hlp) { hideHelpPop(); if (window.matchMedia('(max-width:820px)').matches) openHelp(hlp.dataset.helpOpen); else openHelpTab(hlp.dataset.helpOpen); return; }
   const tpin = t.closest('[data-tab-pin]'); if (tpin) { togglePin(tpin.dataset.tabPin); return; }
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
