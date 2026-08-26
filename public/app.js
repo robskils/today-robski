@@ -14,7 +14,10 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><pa
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
 const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['friends', 'Friends'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad'], ['quote', 'Daily quote']];
-const modOn = (k) => !(state.modules && state.modules[k] === false);
+// Most modules are on unless explicitly turned off; a few (the Focus timer)
+// start off and only appear once switched on in Settings.
+const MOD_DEFAULT_OFF = new Set(['timer']);
+const modOn = (k) => { const v = state.modules && state.modules[k]; return v === true ? true : v === false ? false : !MOD_DEFAULT_OFF.has(k); };
 async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -236,12 +239,54 @@ function proseEditor(body, key, id, readOnly) {
   // silently overwriting it. That bug wiped notes; do not remove the id.
   return `<div class="prose${readOnly ? ' readonly' : ''}" contenteditable="${readOnly ? 'false' : 'true'}" spellcheck="true" data-prose="${key}" data-block-id="${esc(id || '')}" data-ph="Write something here…">${decorateProse(bodyToHtml(body))}</div>`;
 }
+// ── Collapsible headings (fold content under H1-H3) ──────────────────
+// Each heading gets a live-DOM chevron; clicking it hides the following siblings
+// up to the next heading of the same-or-higher level. Fold state persists per
+// block + heading index; the chevrons are stripped on save (see sanitizeProse).
+const HLVL = { H1: 1, H2: 2, H3: 3 };
+function proseFolds() { try { return JSON.parse(localStorage.getItem('life.prose.folds')) || {}; } catch { return {}; } }
+function getFolds(blockId) { const f = proseFolds()[blockId]; return Array.isArray(f) ? f : []; }
+function setFold(blockId, idx, folded) {
+  const all = proseFolds(); const cur = new Set(getFolds(blockId));
+  if (folded) cur.add(idx); else cur.delete(idx);
+  all[blockId] = [...cur].sort((a, b) => a - b);
+  try { localStorage.setItem('life.prose.folds', JSON.stringify(all)); } catch {}
+}
+function proseSiblingsUnder(head) {
+  const lvl = HLVL[head.tagName]; const out = [];
+  let n = head.nextElementSibling;
+  while (n && !(HLVL[n.tagName] && HLVL[n.tagName] <= lvl)) { out.push(n); n = n.nextElementSibling; }
+  return out;
+}
+function applyFold(head, folded) {
+  proseSiblingsUnder(head).forEach((el) => el.classList.toggle('folded-hidden', folded));
+  head.classList.toggle('folded', folded);
+}
+// Inject the chevrons and re-apply saved folds. Idempotent; safe to call each render.
+function setupFolds() {
+  document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
+    const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')];
+    if (!heads.length) return;
+    const folded = getFolds(prose.dataset.blockId);
+    heads.forEach((h, i) => {
+      let toggle = h.querySelector(':scope > .fold-toggle');
+      if (!toggle) { toggle = document.createElement('span'); toggle.className = 'fold-toggle'; toggle.contentEditable = 'false'; toggle.setAttribute('title', 'Fold / unfold'); h.insertBefore(toggle, h.firstChild); }
+      const isFolded = folded.includes(i);
+      toggle.textContent = isFolded ? '▸' : '▾';
+      applyFold(h, isFolded);
+    });
+  });
+}
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
 // tidiness (stray pasted styles) more than security.
 const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1, DETAILS: 1, SUMMARY: 1, TABLE: 1, THEAD: 1, TBODY: 1, TFOOT: 1, TR: 1, TH: 1, TD: 1, CAPTION: 1 };
 function sanitizeProse(html) {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  // Fold chevrons are live-DOM only (injected on render): remove them so their
+  // glyph never gets saved into a heading. Folded content is just hidden, so it
+  // stays in the body and is preserved.
+  doc.querySelectorAll('.fold-toggle').forEach((el) => el.remove());
   // Inline link cards are display-only: store them back as a plain URL paragraph
   // so the body stays clean text, and decorateProse re-inflates the card on render.
   doc.querySelectorAll('[data-linkcard]').forEach((c) => {
@@ -434,13 +479,14 @@ function navSection(key, v) {
     }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // Notes and tables are one list now; a table note carries the grid icon.
-    title = 'Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
-    rows = noteEntries().map((n) => {
-      const isT = isTableNote(n);
+    title = 'Recent Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
+    // The 20 most recently viewed notes / table-notes, newest first.
+    rows = recentItems().filter((r) => r && (r.kind === 'note' || r.kind === 'table')).slice(0, 20).map((n) => {
+      const isT = n.kind === 'table';
       const active = isT ? (v.type === 'table' && state.tables_open && state.tables_open.id === n.id)
         : (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id);
-      return sub(active, isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`, isT ? TBL_ICO : '', n.title);
-    }).join('') || '<div class="nav-sub muted">No notes yet</div>';
+      return sub(active, isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`, isT ? TBL_ICO : NOTE_ICO, n.title);
+    }).join('') || '<div class="nav-sub muted">Notes you open appear here</div>';
   } else {
     title = 'Life areas'; add = '<button class="nav-add" data-new-area title="New life area">+</button>';
     rows = state.areas.map((a) => sub(v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id, `data-open-area="${a.id}"`, '◈', a.title)).join('') || '<div class="nav-sub muted">No life areas yet</div>';
@@ -1399,9 +1445,10 @@ function renderHome() {
   const favIc = (k) => (k === 'note' ? NOTE_ICO : (KIND_IC[k] || '•'));
   const favCard = (f) => `<div class="fav-card" draggable="true" data-fav-id="${f.id}"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`;
   const favGroup = (label, list) => list.length ? `<div class="fav-group"><div class="fav-group-h">${label}</div><div class="fav-cards">${list.map(favCard).join('')}</div></div>` : '';
+  const favDocs = favs.filter((f) => f.kind === 'note' || f.kind === 'table');
   const favGroups = [
     favGroup('Tasks', favs.filter((f) => f.kind === 'task')),
-    favGroup('Notes &amp; tables', favs.filter((f) => f.kind === 'note' || f.kind === 'table')),
+    favDocs.length ? `<div class="fav-group"><div class="fav-cards">${favDocs.map(favCard).join('')}</div></div>` : '',
   ].join('');
   const evRows = todayItems.map((it) => it.kind === 'event'
     ? (() => { const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
@@ -1410,7 +1457,7 @@ function renderHome() {
     : `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
   const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind)).slice(0, 8);
   const recentHtml = recents.length
-    ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${r.kind in KIND_IC ? KIND_IC[r.kind] : '•'}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
+    ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
@@ -1447,7 +1494,7 @@ function renderHome() {
             today: `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', 'Today', '', true)}${secOpen('today') ? `<div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}</section>`,
             priority: p1Html(),
             focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
-            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred', '', true)}${secOpen('favs') ? (favGroups || '<div class="home-empty">Star a task, note or table (the ☆ on it) to pin it here.</div>') : ''}</section>`,
+            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? (favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>') : ''}</section>`,
           };
           const def = ['favareas', 'today', 'priority', 'focus', 'favs'];
           let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
@@ -2066,7 +2113,7 @@ function renderArea() {
   const isFav = (n) => !!(n.props && n.props.fav);
   const starredNotes = notes.filter(isFav);
   const otherNotes = notes.filter((n) => !isFav(n));
-  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-ic tc-star">★</span>' : ''}${esc(n.title || 'Untitled')}</button>`;
+  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${esc(n.title || 'Untitled')}</button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
@@ -4368,7 +4415,11 @@ function goalMeasure(g) {
 // staged next.
 const FIN_TABS = [['spending', 'Spending'], ['portfolio', 'Portfolio'], ['tracker', 'Tracker'], ['advice', 'Advice']];
 async function openFinancial(tab) {
-  state.financial.tab = tab || state.financial.tab || 'spending';
+  // Remember the last tab across reloads (the in-memory default would otherwise
+  // reset every session).
+  let saved = null; try { saved = localStorage.getItem('life.fin.tab'); } catch {}
+  state.financial.tab = tab || saved || state.financial.tab || 'spending';
+  try { localStorage.setItem('life.fin.tab', state.financial.tab); } catch {}
   state.view = { type: 'financial', tab: state.financial.tab };
   renderNav();
   if (state.financial.tab === 'portfolio' && !state.financial.data) loadPortfolio();
@@ -5415,13 +5466,18 @@ async function newNoteTask(noteId) {
     state.allTasks = state.allTasks || []; state.allTasks.push(t); renderNoteTasks();
   } catch (e) { toast(e.message); }
 }
-// Starred notes, shown in the note sidebar's spare space. One or two columns,
-// depending on how wide the sidebar is. The note you're on drops out.
-function starredNotesHtml(currentId) {
-  const starred = (state.favs || []).filter((f) => f.kind === 'note' && f.id !== currentId);
-  if (!starred.length) return '';
-  return `<div class="note-starred"><div class="sub-h">Starred notes</div>
-    <div class="star-grid">${starred.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">★</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div></div>`;
+// Related notes: other notes in the same life area as the one you're viewing.
+// Collapsed by default; nothing at all if this note has no life area. Up to 12,
+// with a link through to the full area.
+function relatedNotesHtml(note) {
+  const area = note && note.props && note.props.area; if (!area) return '';
+  const list = (state.noteTops || []).filter((x) => x.id !== note.id && x.props && x.props.area === area);
+  if (!list.length) return '';
+  const a = areaById(area);
+  const open = localStorage.getItem('life.note.relatedOpen') === '1';
+  const shown = list.slice(0, 12);
+  return `<div class="note-related"><div class="sub-h note-related-h" data-related-toggle><span class="hs-chev">${open ? '▾' : '▸'}</span>Related notes<span class="muted"> · ${list.length}</span></div>
+    ${open ? `<div class="star-grid">${shown.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">${NOTE_ICO}</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div>${list.length > 12 && a ? `<button class="rel-more" data-open-area="${a.id}">See all ${list.length} in ${esc(a.title)} →</button>` : ''}` : ''}</div>`;
 }
 // A Share button for an owned note/task; the count shows when it's already out.
 function shareBtn(block, kind) {
@@ -5461,11 +5517,11 @@ function renderNote() {
         <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
           ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>
         ${noteTasksHtml(n.id)}
-        ${starredNotesHtml(n.id)}
+        ${relatedNotesHtml(n)}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
     </div>`;
-  autoGrowSoon($('#note-title')); loadThumbs(); hydrateEmbeds();
+  autoGrowSoon($('#note-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
 // ── move a note inside another (re-parent) ───────────
@@ -5697,7 +5753,7 @@ function renderTable() {
         <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
         ${attachSection(r)}</div>`;
-      loadThumbs(); hydrateEmbeds();
+      loadThumbs(); hydrateEmbeds(); setupFolds();
       return;
     }
   }
@@ -6034,7 +6090,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { BRAND.owner = state.account.name; renderNav(); } }), 700); }
   if (e.target.matches('[data-account-phone]')) { clearTimeout(window.__acctPT); const v = e.target.value; window.__acctPT = setTimeout(() => saveAccount({ phone: v }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
-  if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; if (e.target.checked) delete state.modules[k]; else state.modules[k] = false; saveModules(); renderNav(); }
+  if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
@@ -6389,6 +6445,8 @@ document.addEventListener('click', (e) => {
   { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
+  if (t.closest('[data-related-toggle]')) { const o = localStorage.getItem('life.note.relatedOpen') === '1'; try { localStorage.setItem('life.note.relatedOpen', o ? '0' : '1'); } catch {} if (state.note) renderNote(); return; }
+  { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Daybook` : 'No contacts on Daybook yet'); }); return; }
   if (t.closest('[data-webinar-new]')) { state.webinarEdit = null; state.webinarAdding = true; renderFriends(); return; }
   if (t.closest('[data-webinar-cancel]')) { state.webinarAdding = false; state.webinarEdit = null; renderFriends(); return; }
@@ -6936,7 +6994,7 @@ function renderTaskCard() {
     </div>
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
-  autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds();
+  autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by

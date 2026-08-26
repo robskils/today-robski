@@ -1047,24 +1047,41 @@ async function deleteBlock(env, request, id) {
 async function searchBlocks(request, env, url) {
   const q = (url.searchParams.get('q') || '').trim();
   if (q.length < 1) return json([], request);
-  // Strip LIKE wildcards from the query so a stray % or _ can't match everything.
-  const like = `%${q.replace(/[%_\\]/g, '')}%`;
-  // Title + body covers note/table/area/task names and note/task bodies. Table
-  // ROW contents live in props.values (JSON), so match props on rows too - that
-  // makes the cells inside every table searchable. props is only searched for
-  // rows to avoid matching internal flags/ids on other kinds.
-  const { results } = await env.DB.prepare(
-    `SELECT * FROM blocks
-      WHERE user_id = ?
-        AND archived = 0
-        AND (title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))
-        AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
+  // Strip LIKE wildcards so a stray % or _ can't match everything.
+  const clean = (s) => s.replace(/[%_\\]/g, '');
+  // '&' and the word 'and' are interchangeable: build the phrase in every form so
+  // "R&D", "R and D" and "R & D" all find each other.
+  const variants = (s) => {
+    const c = clean(s);
+    const out = new Set([c, c.replace(/\s*&\s*/g, ' and '), c.replace(/\s*\band\b\s*/gi, '&'), c.replace(/\s*\band\b\s*/gi, ' & ')]);
+    return [...out].map((v) => v.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  };
+  // Title + body covers names and note/task bodies; row cells live in props.values
+  // (JSON), searched only for rows so internal flags on other kinds don't match.
+  const TAIL = `AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
         AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo', 'txn', 'tracker', 'insight')
-      ORDER BY
-        CASE kind WHEN 'note' THEN 0 WHEN 'table' THEN 1 WHEN 'area' THEN 2 WHEN 'task' THEN 3 WHEN 'row' THEN 4 ELSE 5 END,
-        updated_at DESC
-      LIMIT 60`,
-  ).bind(env.uid, like, like, like).all();
+      ORDER BY CASE kind WHEN 'note' THEN 0 WHEN 'table' THEN 1 WHEN 'area' THEN 2 WHEN 'task' THEN 3 WHEN 'row' THEN 4 ELSE 5 END, updated_at DESC
+      LIMIT 60`;
+  const groupSql = () => `(title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))`;
+  const runQuery = async (groups, binds) => {
+    const sql = `SELECT * FROM blocks WHERE user_id = ? AND archived = 0 AND (${groups}) ${TAIL}`;
+    return (await env.DB.prepare(sql).bind(...binds).all()).results || [];
+  };
+  // 1) The whole phrase, any &/and form (variants OR'd together).
+  const vs = variants(q);
+  const phraseBinds = [env.uid];
+  for (const v of vs) { const l = `%${v}%`; phraseBinds.push(l, l, l); }
+  let results = await runQuery(vs.map(groupSql).join(' OR '), phraseBinds);
+  // 2) Nothing matched the phrase? Fall back to requiring every WORD to appear
+  //    somewhere - sensible partial matches instead of a dead end.
+  if (!results.length) {
+    const words = clean(q).split(/\s+/).map((w) => w.replace(/&/g, '')).filter((w) => w.length >= 2);
+    if (words.length > 1) {
+      const wordBinds = [env.uid];
+      for (const w of words) { const l = `%${w}%`; wordBinds.push(l, l, l); }
+      results = await runQuery(words.map(groupSql).join(' AND '), wordBinds);
+    }
+  }
   return json(results.map(parseBlock), request);
 }
 
