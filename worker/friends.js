@@ -102,3 +102,24 @@ export async function removeFriend(env, id) {
   ]);
   return getFriends(env);
 }
+
+// Find Daybook members by name (or handle) for the add-a-friend box, so you can
+// connect with someone whose email you don't have. Excludes yourself and anyone
+// you're already connected to or have a pending request with. LIKE wildcards in
+// the query are escaped so a stray % can't match everyone.
+export async function searchPeople(env, q) {
+  const term = String(q || '').trim();
+  if (term.length < 2) return { people: [] };
+  const like = `%${term.replace(/[%_\\]/g, (c) => '\\' + c)}%`;
+  const connected = new Set([env.uid]);
+  const rel = await env.DB.prepare('SELECT friend_id FROM friends WHERE user_id = ?').bind(env.uid).all().catch(() => ({ results: [] }));
+  for (const r of rel.results || []) connected.add(r.friend_id);
+  const rows = (await env.DB.prepare(
+    `SELECT id, name, subdomain FROM users
+       WHERE status = 'active' AND (name LIKE ? ESCAPE '\\' OR subdomain LIKE ? ESCAPE '\\')
+       ORDER BY name LIMIT 25`,
+  ).bind(like, like).all().catch(() => ({ results: [] }))).results || [];
+  const people = rows.filter((r) => !connected.has(r.id)).slice(0, 10)
+    .map((r) => ({ id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain }));
+  return { people };
+}

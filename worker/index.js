@@ -1,7 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
-import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts } from './friends.js';
+import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { openMeeting } from './meetings.js';
@@ -258,6 +258,8 @@ async function calendarRange(env, from, to) {
 async function handleCalendar(request, env, url) {
   const from = url.searchParams.get('from'), to = url.searchParams.get('to');
   if (!from || !to) return err('from and to required', request);
+  // Owner-only: the single Google token is Robin's, so a member's range is empty.
+  if (env.uid !== 1) return json({ events: [] }, request);
   return json(await calendarRange(env, from, to), request);
 }
 
@@ -278,7 +280,7 @@ function rruleFor(repeat) {
   }
 }
 async function createEvent(request, env) {
-  if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
 
   const b = await request.json().catch(() => ({}));
   const title = String(b.title || '').trim();
@@ -347,7 +349,7 @@ async function createEvent(request, env) {
 // Edit an existing calendar event: title, time (day + start_min + duration),
 // and/or location. Only the fields supplied are touched (events.patch).
 async function updateEvent(request, env, id) {
-  if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
   const b = await request.json().catch(() => ({}));
   const patch = {};
   if (b.title !== undefined) { const t = String(b.title).trim(); if (!t) return err('title required', request); patch.summary = t; }
@@ -764,7 +766,7 @@ async function lookupMedia(request, env, url, json, err) {
 // undoable at their end. Still the only destructive reach this app has outside
 // its own D1, hence the confirm step in the UI.
 async function deleteEvent(request, env, id) {
-  if (!env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
   const scope = new URL(request.url).searchParams.get('scope') || 'single';
 
   try {
@@ -1172,6 +1174,11 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     const last = await getSetting(env, 'last_brief_day', uid);
     if (!briefDue(now.min, now.date, last)) return { sent: false, reason: 'not due' };
 
+    // Opt-out: a member can turn the morning email off in Settings. Default on
+    // (absent setting), so existing accounts keep getting it. Checked before the
+    // claim so a disabled account doesn't churn its lock row.
+    if (await getSetting(env, 'brief_enabled', uid) === '0') return { sent: false, reason: 'brief off' };
+
     // Claim the day before sending, not after. Two ticks a minute apart both
     // reading "not sent yet" would otherwise send twice, and a duplicate brief
     // is worse than a late one. The UPDATE only fires when the stored day is
@@ -1397,7 +1404,9 @@ async function handleDay(request, env, url) {
       'SELECT * FROM slots WHERE day = ? AND user_id = ? ORDER BY start_min IS NULL, start_min',
     ).bind(day, env.uid).all(),
     getSettings(env),
-    calendarEvents(env, day),
+    // The Google connection is the owner's alone (one refresh token), so only
+    // the owner's day carries a calendar - a member never sees Robin's diary.
+    env.uid === 1 ? calendarEvents(env, day) : Promise.resolve({ events: [] }),
     quoteForDay(env, day),
     env.DB.prepare('SELECT * FROM activities WHERE user_id = ? ORDER BY lane, position, id').bind(env.uid).all(),
     // The tasks inside each of today's blocks, now Life task blocks (slot_tasks.
@@ -2245,6 +2254,7 @@ export default {
       // Friends on Daybook: presence + connections.
       if (path === '/api/presence' && request.method === 'POST') return json(await touchPresence(env), request);
       if (path === '/api/friends' && request.method === 'GET') return json(await getFriends(env), request);
+      if (path === '/api/friends/search' && request.method === 'GET') return json(await searchPeople(env, url.searchParams.get('q')), request);
       if (path === '/api/friends' && request.method === 'POST') {
         const b = await request.json().catch(() => ({}));
         let id = b.id;

@@ -786,7 +786,8 @@ function renderFriends() {
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
   $('#pane').innerHTML = `${pageCrumb('Friends')}
     <div class="pane-head home-head"><h1>Friends</h1></div>
-    <div class="list-head"><input class="list-search sel" id="friend-email" placeholder="Add a friend by email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Add</button></div>
+    <div class="list-head"><input class="list-search sel" id="friend-email" placeholder="Add a friend by name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Add</button></div>
+    <div id="friend-results" class="fr-results"></div>
     ${d.incoming.length ? `<section class="home-sec"><div class="home-sec-h">Friend requests<span class="muted">${d.incoming.length}</span></div>${d.incoming.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}</section>` : ''}
     <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
     ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
@@ -799,7 +800,28 @@ function renderFriends() {
     ${webinarsSecHtml()}`;
 }
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
-async function friendAddEmail() { const el = $('#friend-email'); const email = (el && el.value || '').trim(); if (!email) return; try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ email }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
+async function friendAddEmail() {
+  const el = $('#friend-email'); const v = (el && el.value || '').trim(); if (!v) return;
+  // Only an email address goes straight to a request; a name is ambiguous, so
+  // send it to the live search and let them pick the right person.
+  if (!v.includes('@')) { peopleSearch(); toast('Pick someone from the results below.'); return; }
+  try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ email: v }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); }
+}
+// Live people-search by name (or handle). Renders into #friend-results without
+// re-rendering the whole page, so the input keeps focus while you type.
+async function peopleSearch() {
+  const el = $('#friend-email'); const box = $('#friend-results'); if (!box) return;
+  const q = (el && el.value || '').trim();
+  if (q.includes('@') || q.length < 2) { box.innerHTML = ''; return; }
+  let people = [];
+  try { people = (await api(`/api/friends/search?q=${encodeURIComponent(q)}`)).people || []; } catch {}
+  // The input may have changed while the request was in flight; only paint if the
+  // query still matches what's typed.
+  if (($('#friend-email') || {}).value?.trim() !== q) return;
+  box.innerHTML = people.length
+    ? `<div class="fr-scan-note">People on Daybook matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
+    : `<div class="home-empty" style="padding:8px 2px">No one on Daybook matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
+}
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Friends now'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
 function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
@@ -982,6 +1004,7 @@ function renderSettings() {
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
         <label class="set-mod"><span>Text me before a time block starts</span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
+        <label class="set-mod"><span>Email me a morning brief<small>Your day's calendar, open P1 tasks and the quote, at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
         <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
         <div class="set-field ai-keys"><span>AI keys</span>
           <p class="ai-hint">${state.account.isOwner ? 'You use the built-in keys; add your own below to override them.' : "AI features (Reflect, Claudius, Advice, statement import) run on your own keys. Get an Anthropic key at console.anthropic.com and a Gemini key at aistudio.google.com."}</p>
@@ -6142,6 +6165,7 @@ document.addEventListener('paste', (e) => {
 document.addEventListener('input', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
+  if (e.target.id === 'friend-email') { clearTimeout(window.__frST); window.__frST = setTimeout(peopleSearch, 250); }
   if (e.target.id === 'move-input') { state.move.q = e.target.value; renderMoveList(); }
   if (e.target.id === 'linkpick-input' && state.linkpick) { state.linkpick.q = e.target.value; renderLinkPickerList(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
@@ -6159,6 +6183,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { BRAND.owner = state.account.name; renderNav(); } }), 700); }
   if (e.target.matches('[data-account-phone]')) { clearTimeout(window.__acctPT); const v = e.target.value; window.__acctPT = setTimeout(() => saveAccount({ phone: v }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
+  if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
