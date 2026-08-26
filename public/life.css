@@ -966,6 +966,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .p1-row:hover { background:var(--paper); }
 .p1-dot { flex:none; width:8px; height:8px; border-radius:50%; background:hsl(var(--h,4) 62% 52%); }
 .p1-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Drag to reorder Starred cards on Home. */
+.home-sec-favs .fav-card { position:relative; }
+.home-sec-favs .fav-card[draggable] { cursor:grab; }
+.home-sec-favs .fav-card.dragging { opacity:.4; }
+.home-sec-favs .drop-before::before, .home-sec-favs .drop-after::after { content:''; position:absolute; top:4px; bottom:4px; width:3px; border-radius:2px; background:var(--accent); z-index:3; }
+.home-sec-favs .drop-before::before { left:-4px; } .home-sec-favs .drop-after::after { right:-4px; }
 /* Drag to reorder the focus cards. */
 .home-sec-focus .goal-card { position:relative; cursor:grab; }
 .home-sec-focus .goal-card.dragging { opacity:.4; }
