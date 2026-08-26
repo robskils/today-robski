@@ -26,17 +26,23 @@ self.addEventListener('push', (event) => {
       badge: '/icon-192.png',
       tag: data.type === 'mail' ? 'robski-mail' : undefined,   // collapse repeats
       renotify: data.type === 'mail',
-      data: { url: data.type === 'mail' ? '/mail' : '/' },
+      data: { url: data.type === 'mail' ? '/mail' : '/', target: data.type === 'mail' ? 'mail' : 'home' },
     });
   })());
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || '/';
+  const d = event.notification.data || {};
   event.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const c of all) { if ('focus' in c) { try { await c.navigate(url); } catch {} return c.focus(); } }
-    if (self.clients.openWindow) return self.clients.openWindow(url);
+    // An app window is already open: DON'T navigate it (that reloads the whole
+    // SPA and wipes the tab the user was on). Focus it and ask the app to open
+    // the target in a NEW tab, so their current tabs stay exactly as they are.
+    for (const c of all) {
+      if ('focus' in c) { try { c.postMessage({ type: 'notification-open', target: d.target || 'home' }); } catch {} return c.focus(); }
+    }
+    // No window open at all - only then open one at the target.
+    if (self.clients.openWindow) return self.clients.openWindow(d.url || '/');
   })());
 });

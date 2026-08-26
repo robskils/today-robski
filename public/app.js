@@ -13,7 +13,7 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['friends', 'Friends'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['friends', 'Friends'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad'], ['quote', 'Daily quote']];
 const modOn = (k) => !(state.modules && state.modules[k] === false);
 async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -396,6 +396,15 @@ function renderTabs() {
     + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`;
 }
 function newTab() { const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome(); }
+// Open a view in a fresh tab, leaving every existing tab untouched. Used when
+// something external (a notification) wants to show a page without hijacking the
+// tab the user is on.
+function openInNewTab(view) {
+  const id = uid();
+  state.tabs.push({ id, view, label: labelForView(view), pinned: false });
+  state.activeTab = id;
+  Promise.resolve(openView(view)).catch(() => openHome());
+}
 function switchTab(id) { if (id === state.activeTab) return; const tab = state.tabs.find((t) => t.id === id); if (!tab) return; state.activeTab = id; Promise.resolve(openView(tab.view)).catch(() => openHome()); }
 function closeTab(id) {
   if (state.tabs.length <= 1) return;
@@ -1372,7 +1381,7 @@ function renderHome() {
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
       ${alertsHtml()}
-      ${homeQuoteHtml()}
+      ${modOn('quote') ? homeQuoteHtml() : ''}
       <div id="qt-wrap"></div>
       <!-- Mobile-only launcher. On desktop the sidebar already lists every
            section, so this is hidden (see .home-launch in life.css). On mobile
@@ -2643,6 +2652,12 @@ async function initPush() {
   if (!pushSupported()) return;
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
+    // A tapped notification asks us (not a hard reload) to show its target - in a
+    // NEW tab, so the tab the user was on is left exactly as they had it.
+    navigator.serviceWorker.addEventListener('message', (ev) => {
+      const d = ev.data || {};
+      if (d.type === 'notification-open') openInNewTab({ type: d.target === 'mail' ? 'mail' : 'home' });
+    });
     if (Notification.permission === 'granted') await subscribePush(reg);
   } catch (e) { /* SW unsupported/blocked - fine, app still works */ }
 }
@@ -5677,11 +5692,29 @@ function renderTable() {
 }
 
 // ── mutations ────────────────────────────────────────
+// iOS only raises the keyboard for a focus() that happens inside the tap that
+// triggered it. Creating a note is async, so by the time the title exists the
+// gesture is spent. Park focus on a throwaway input during the tap to summon the
+// keyboard, then hand focus to the real title once it renders (font-size:16px
+// keeps iOS from zooming). Returns the temp input to clean up, or null on desktop.
+function primeMobileKeyboard() {
+  if (!matchMedia('(pointer:coarse)').matches) return null;
+  const tmp = document.createElement('input');
+  tmp.type = 'text';
+  tmp.setAttribute('aria-hidden', 'true');
+  tmp.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0;z-index:-1;';
+  document.body.appendChild(tmp);
+  tmp.focus();
+  return tmp;
+}
 async function newNote(parentId) {
+  const primer = primeMobileKeyboard();
   const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: 'Untitled', body: '', parent_id: parentId || null }) });
   if (!parentId) { state.noteTops.push(note); }
   await openNote(note.id);
-  const ti = $('#note-title'); if (ti) { ti.focus(); ti.select(); }
+  const ti = $('#note-title');
+  if (ti) { ti.focus(); ti.select(); }   // keyboard carries over from the primer
+  if (primer) primer.remove();
 }
 async function newArea() {
   const name = ((await uiPrompt('New life area name:', { title: 'New life area', okLabel: 'Create', placeholder: 'e.g. Writing / Poetry' })) || '').trim(); if (!name) return;
