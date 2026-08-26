@@ -1018,6 +1018,7 @@ const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).p
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note; regular notes carry no icon
+const NOTE_ICO = '<span class="ico-note">▤</span>';  // the sidebar's note glyph, for note lists
 const KIND_IC = { note: '', table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
 const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
 
@@ -5103,7 +5104,7 @@ function renderNote() {
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
-  const kids = state.note.children.map((c) => { const isT = isTableNote(c); return `<button class="subpage" data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? '<span class="ico-tbl">▦</span>' : ''}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
+  const kids = state.note.children.map((c) => { const isT = isTableNote(c); return `<button class="subpage" data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
