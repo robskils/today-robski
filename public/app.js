@@ -725,7 +725,8 @@ async function openNote(id) {
   while (p.parent_id) { p = await api(`/api/blocks/${p.parent_id}`); path.unshift(p); }
   // Both sub-notes and table notes nested inside this note.
   const children = (await api(`/api/blocks?parent_id=${id}`)).filter((b) => b.kind === 'note' || b.kind === 'table');
-  state.note = { current: note, path, children };
+  if (!state.allTasks) state.allTasks = await api('/api/blocks?kind=task').catch(() => []);
+  state.note = { current: note, path, children, taskQuery: '' };
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title);
   renderNav(); renderNote();
@@ -4748,6 +4749,39 @@ function patchVisionText(id, text) {
 // pre-layout width (wrapping one line into many), so size on the next frame.
 function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
 function autoGrowSoon(el) { if (!el) return; requestAnimationFrame(() => autoGrow(el)); }
+// Tasks linked to a note: the associated tasks, plus a search to link an
+// existing one and a button to make a new one. A task carries props.note.
+function noteTasksHtml(noteId) {
+  const all = state.allTasks || [];
+  const linked = all.filter((t) => t.props && t.props.note === noteId && !t.props.done);
+  const q = ((state.note && state.note.taskQuery) || '').trim().toLowerCase();
+  const results = q ? all.filter((t) => t.props && t.props.note !== noteId && !t.props.done && (t.title || '').toLowerCase().includes(q)).slice(0, 6) : [];
+  return `<div class="note-tasks"><div class="sub-h">Tasks</div>
+    <div class="nt-linked">${linked.map((t) => `<div class="nt-row"><span class="nt-dot"></span><span class="ga-t" data-open-task="${t.id}">${esc(t.title || 'Untitled')}</span><button class="ghost nt-unlink" data-note-task-unlink="${t.id}" title="Unlink">×</button></div>`).join('') || '<div class="home-empty" style="padding:6px 0 2px">No tasks linked yet.</div>'}</div>
+    <input class="sel nt-search" data-note-task-q placeholder="Search a task to link…" value="${esc((state.note && state.note.taskQuery) || '')}">
+    ${results.length ? `<div class="nt-results">${results.map((t) => `<button class="nt-result" data-note-task-link="${t.id}"><span class="ga-t">${esc(t.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join('')}</div>` : ''}
+    <button class="ghost nt-new" data-note-new-task>+ New task for this note</button></div>`;
+}
+function renderNoteTasks() { const el = document.querySelector('.note-tasks'); if (el && state.note) el.outerHTML = noteTasksHtml(state.note.current.id); }
+async function linkTaskToNote(taskId, noteId) {
+  const t = (state.allTasks || []).find((x) => x.id === taskId); if (t) { t.props = t.props || {}; t.props.note = noteId; }
+  if (state.note) state.note.taskQuery = '';
+  renderNoteTasks();
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { note: noteId } }) }); toast('Task linked'); } catch (e) { toast(e.message); }
+}
+async function unlinkTaskFromNote(taskId) {
+  const t = (state.allTasks || []).find((x) => x.id === taskId); if (t && t.props) t.props.note = null;
+  renderNoteTasks();
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { note: null } }) }); } catch (e) { toast(e.message); }
+}
+async function newNoteTask(noteId) {
+  const title = await uiPrompt('New task for this note:', { placeholder: 'e.g. Follow up on…' }); if (!title) return;
+  const area = (state.note && state.note.current && state.note.current.props && state.note.current.props.area) || null;
+  try {
+    const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area, priority: null, done: false, note: noteId } }) });
+    state.allTasks = state.allTasks || []; state.allTasks.push(t); renderNoteTasks();
+  } catch (e) { toast(e.message); }
+}
 // Starred notes, shown in the note sidebar's spare space. One or two columns,
 // depending on how wide the sidebar is. The note you're on drops out.
 function starredNotesHtml(currentId) {
@@ -4780,6 +4814,7 @@ function renderNote() {
       <aside class="note-side">
         <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
           ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>
+        ${noteTasksHtml(n.id)}
         ${starredNotesHtml(n.id)}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
@@ -5329,6 +5364,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
+  if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; if (e.target.checked) delete state.modules[k]; else state.modules[k] = false; saveModules(); renderNav(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
@@ -5654,6 +5690,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
+  { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
+  { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
+  if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
