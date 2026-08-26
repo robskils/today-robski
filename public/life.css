@@ -1184,17 +1184,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .home-main .drop-before::before, .home-main .drop-after::after { content:''; position:absolute; left:0; right:0; height:3px; border-radius:2px; background:var(--accent); z-index:4; }
 .home-main .drop-before::before { top:-7px; } .home-main .drop-after::after { bottom:-7px; }
 /* Home priority (P1) tasks list. */
-.p1-list { display:flex; flex-direction:column; gap:2px; margin-top:8px; }
-.p1-all { display:inline-block; margin:8px 0 0 11px; font-size:14px; color:var(--accent); font-weight:500; }
+.p1-list { display:flex; flex-direction:column; gap:9px; margin-top:10px; }
+.p1-all { display:inline-block; margin:12px 0 0 2px; font-size:14px; color:var(--accent); font-weight:500; }
 .p1-all:hover { text-decoration:underline; }
-.p1-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; border-radius:10px; color:var(--ink); font-size:15px; position:relative; }
-.p1-row:hover { background:var(--paper); }
+/* Each priority task is its own little card - the same chrome the Starred cards
+   carry, plus a left stripe in the task's life-area colour so a glance sorts them. */
+.p1-row { display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:12px 15px; border-radius:12px; background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,4) 60% 52%); box-shadow:var(--shadow); color:var(--ink); font-size:15.5px; position:relative; transition:border-color .12s, transform .12s, box-shadow .12s; }
+.p1-row:hover { border-color:var(--line-2); border-left-color:hsl(var(--h,4) 60% 52%); transform:translateY(-1px); box-shadow:0 8px 20px -12px rgba(0,0,0,.34); }
 .p1-row.dragging { opacity:.4; }
-.p1-grip { flex:none; color:var(--ink-3); font-size:12px; opacity:0; cursor:grab; margin-left:-4px; transition:opacity .12s; }
+.p1-grip { flex:none; color:var(--ink-3); font-size:12px; opacity:0; cursor:grab; margin-left:-3px; transition:opacity .12s; }
 .p1-row:hover .p1-grip { opacity:.55; }
-.p1-list .drop-before::before, .p1-list .drop-after::after { content:''; position:absolute; left:8px; right:8px; height:3px; border-radius:2px; background:var(--accent); z-index:3; }
-.p1-list .drop-before::before { top:-2px; } .p1-list .drop-after::after { bottom:-2px; }
-.p1-dot { flex:none; width:8px; height:8px; border-radius:50%; background:hsl(var(--h,4) 62% 52%); }
+.p1-list .drop-before::before, .p1-list .drop-after::after { content:''; position:absolute; left:4px; right:4px; height:3px; border-radius:2px; background:var(--accent); z-index:3; }
+.p1-list .drop-before::before { top:-6px; } .p1-list .drop-after::after { bottom:-6px; }
 .p1-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* Drag to reorder Starred cards on Home. */
 .home-sec-favs .fav-card { position:relative; }

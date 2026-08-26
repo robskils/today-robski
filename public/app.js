@@ -1502,7 +1502,7 @@ function p1Html() {
   const total = (state.home && state.home.alerts && state.home.alerts.p1) || all.length;
   const shown = all.slice(0, 10);
   const more = total - shown.length;
-  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
+  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
 }
 function renderHome() {
   const favs = state.favs || [];
