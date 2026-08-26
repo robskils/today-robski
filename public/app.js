@@ -5644,7 +5644,9 @@ function renderTable() {
   }
   const vc = visibleCols();
   const colWidth = (col, first) => col.width || (first ? 230 : 170);
-  const colgroup = `<colgroup><col style="width:46px">${vc.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:46px"></colgroup>`;
+  // The trailing column holds the "+" (46px), or the add-column form while it's
+  // open - which needs real room, or the form spills out past the table.
+  const colgroup = `<colgroup><col style="width:46px">${vc.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:${vw.addingCol ? 340 : 46}px"></colgroup>`;
   const addCol = vw.addingCol
     ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
