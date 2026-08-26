@@ -1051,6 +1051,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .prio-chip:hover { border-color:var(--line-2); color:var(--ink); }
 .prio-chip.on { border-color:var(--accent); color:var(--ink); background:var(--paper); font-weight:600; }
 .prio-chip.on b { color:var(--accent); }
+/* Home: faved life areas + drag-to-reposition sections. */
+.favarea-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.favarea { display:inline-flex; align-items:center; gap:9px; padding:9px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:15px; box-shadow:var(--shadow-sm); transition:border-color .12s, transform .12s; }
+.favarea:hover { border-color:var(--line-2); transform:translateY(-1px); }
+.fa-dot { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,4) 55% 55%); flex:none; }
+.home-grip { color:var(--ink-3); font-size:12px; opacity:0; cursor:grab; margin-right:1px; }
+.home-drag-h:hover .home-grip { opacity:.6; }
+.home-sec[data-hsec].dragging { opacity:.4; }
+.home-main [data-hsec] { position:relative; }
+.home-main .drop-before::before, .home-main .drop-after::after { content:''; position:absolute; left:0; right:0; height:3px; border-radius:2px; background:var(--accent); z-index:4; }
+.home-main .drop-before::before { top:-7px; } .home-main .drop-after::after { bottom:-7px; }
 /* Home priority (P1) tasks list. */
 .p1-list { display:flex; flex-direction:column; gap:2px; margin-top:8px; }
 .p1-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; border-radius:10px; color:var(--ink); font-size:15px; }

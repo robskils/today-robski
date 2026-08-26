@@ -1087,11 +1087,11 @@ function homeQuoteHtml() {
 // Every Home section can be collapsed; the set of collapsed keys persists.
 function homeCollapsed() { try { return JSON.parse(localStorage.getItem('life.home.collapsed')) || {}; } catch { return {}; } }
 function secOpen(key) { return !homeCollapsed()[key]; }
-function secH(key, title, extra) { return `<div class="home-sec-h home-sec-toggle" data-sec-collapse="${key}"><span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`; }
+function secH(key, title, extra, drag) { return `<div class="home-sec-h home-sec-toggle${drag ? ' home-drag-h' : ''}" data-sec-collapse="${key}" ${drag ? `draggable="true" data-hsec-grip="${key}"` : ''}>${drag ? '<span class="home-grip" title="Drag to reposition">⠿</span>' : ''}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`; }
 function p1Html() {
   const p1 = (state.home && state.home.alerts && state.home.alerts.p1list) || [];
   if (!p1.length) return '';
-  return `<section class="home-sec home-sec-p1">${secH('priority', 'Priority', `<span class="muted">${p1.length}</span>`)}${secOpen('priority') ? `<div class="p1-list">${p1.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div>` : ''}</section>`;
+  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority', `<span class="muted">${p1.length}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${p1.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div>` : ''}</section>`;
 }
 function renderHome() {
   const favs = state.favs || [];
@@ -1138,18 +1138,20 @@ function renderHome() {
         <button class="hl-btn" data-open-settings><span class="hl-ic">⚙</span><span class="hl-t">Settings</span></button>
       </nav>
       <div class="home-body">
-        <div class="home-main">
-          <section class="home-sec home-sec-today">
-            ${secH('today', 'Today')}
-            ${secOpen('today') ? `<div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}
-          </section>
-          ${p1Html()}
-          ${(() => { const f = focusGoals(); if (!f.length) return ''; return `<section class="home-sec home-sec-focus">${secH('focus', "🎯 This quarter's focus")}${secOpen('focus') ? `<div class="goal-grid">${f.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>`; })()}
-          <section class="home-sec home-sec-favs">
-            ${secH('favs', 'Starred')}
-            ${secOpen('favs') ? (favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>') : ''}
-          </section>
-        </div>
+        <div class="home-main">${(() => {
+          const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
+          const fg = focusGoals();
+          const sec = {
+            favareas: favAreas.length ? `<section class="home-sec home-sec-favareas" data-hsec="favareas">${secH('favareas', 'Life areas', '', true)}${secOpen('favareas') ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : ''}</section>` : '',
+            today: `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', 'Today', '', true)}${secOpen('today') ? `<div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}</section>`,
+            priority: p1Html(),
+            focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
+            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred', '', true)}${secOpen('favs') ? (favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>') : ''}</section>`,
+          };
+          const def = ['favareas', 'today', 'priority', 'focus', 'favs'];
+          let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
+          return order.map((k) => sec[k] || '').join('');
+        })()}</div>
         <aside class="home-side">
           ${modOn('timer') ? pomoHtml() : ''}
           <section class="home-sec home-sec-recent">
@@ -6149,7 +6151,14 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null;
+function reorderHomeSec(dragged, before, cur) {
+  const arr = cur.filter((k) => k !== dragged);
+  let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
+  arr.splice(i, 0, dragged);
+  try { localStorage.setItem('life.home.mainOrder', JSON.stringify(arr)); } catch {}
+  renderHome();
+}
 function clearDropMarks() {
   document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
 }
@@ -6172,6 +6181,7 @@ function dropBefore(over, list, idOf) {
 document.addEventListener('dragstart', (e) => {
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const fo = e.target.closest('[data-focus-id]'); if (fo) { dragFocus = fo.dataset.focusId; fo.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const hg = e.target.closest('[data-hsec-grip]'); if (hg) { dragHomeSec = hg.dataset.hsecGrip; const s = e.target.closest('[data-hsec]'); if (s) s.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const cc = e.target.closest('[data-contact-drag]'); if (cc) { dragContact = cc.dataset.contactDrag; cc.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', cc.dataset.contactDrag); } catch {} }
@@ -6179,6 +6189,7 @@ document.addEventListener('dragstart', (e) => {
 document.addEventListener('dragover', (e) => {
   if (dragFav && (e.target.closest('#favs') || e.target.closest('.home-sec-favs'))) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
+  if (dragHomeSec && e.target.closest('.home-main')) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
   if (dragContact) { const gd = e.target.closest('[data-group-drop]'); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); if (gd) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; gd.classList.add('cg-over'); } return; }
@@ -6204,6 +6215,12 @@ document.addEventListener('drop', (e) => {
     const before = over && over.dataset.focusId !== dragFocus ? dropBefore(over, ids, (el) => el.dataset.focusId) : null;
     clearDropMarks(); reorderFocus(dragFocus, before); dragFocus = null; return;
   }
+  if (dragHomeSec) {
+    e.preventDefault(); const over = e.target.closest('[data-hsec]');
+    const cur = [...document.querySelectorAll('.home-main [data-hsec]')].map((el) => el.dataset.hsec);
+    const before = over && over.dataset.hsec !== dragHomeSec ? dropBefore(over, cur, (el) => el.dataset.hsec) : null;
+    clearDropMarks(); reorderHomeSec(dragHomeSec, before, cur); dragHomeSec = null; return;
+  }
   if (dragSec) {
     e.preventDefault(); const over = e.target.closest('[data-nav-sec]');
     const before = over && over.dataset.navSec !== dragSec ? dropBefore(over, state.nav.order, (el) => el.dataset.navSec) : null;
@@ -6222,7 +6239,7 @@ document.addEventListener('drop', (e) => {
     dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
