@@ -5,9 +5,12 @@
 // secrets; without either, SMS is simply off and the caller falls back.
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-export async function sendSms(env, message) {
-  const to = String(env.ALERT_PHONE || '').replace(/\D/g, '');
-  if (!env.GATEWAYAPI_KEY || !to) return { ok: false, skipped: 'not configured' };
+// `to` names the recipient so the per-user cron can text each member their own
+// number; it defaults to ALERT_PHONE (the owner's) for the login code and the
+// test send, which predate multi-tenant alerts.
+export async function sendSms(env, message, to = env.ALERT_PHONE) {
+  const num = String(to || '').replace(/\D/g, '');
+  if (!env.GATEWAYAPI_KEY || !num) return { ok: false, skipped: 'not configured' };
 
   // Robin's account is on GatewayAPI's EU platform, whose tokens are rejected
   // by the default gatewayapi.com host with a bare "Invalid token" - the one
@@ -21,7 +24,7 @@ export async function sendSms(env, message) {
       // brand the rest of the tool carries.
       sender: env.ALERT_SENDER || 'Daybook',
       message,
-      recipients: [{ msisdn: to }],
+      recipients: [{ msisdn: num }],
     }),
   });
 

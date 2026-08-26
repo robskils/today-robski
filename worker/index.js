@@ -544,6 +544,17 @@ async function setSetting(env, key, value, uid = env.uid) {
   ).bind(uid, key, value).run();
 }
 
+// The accounts the per-minute cron fans out over: every active member. A NULL
+// status counts as active - rows created before the column existed have none,
+// and the owner (1) has always been active. Suspended accounts are skipped, so
+// suspending someone in the admin dashboard also silences their brief and texts.
+async function activeUsers(env) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, email, name, subdomain FROM users WHERE status = 'active' OR status IS NULL ORDER BY id",
+  ).all().catch(() => ({ results: [] }));
+  return results || [];
+}
+
 // ── Bookmarks (Read & Watch) ─────────────────────────
 // A long-lived capture key (stored in settings, not a wrangler secret) lets the
 // iOS Shortcut and desktop bookmarklet save links without a 7-day JWT.
@@ -1099,36 +1110,49 @@ async function searchBlocks(request, env, url) {
 // block and it re-arms, leave it and it never fires twice, even if the cron
 // runs late and the block appears in two consecutive windows.
 async function runAlerts(env) {
-  // Robin can turn the 5-minutes-before text off from Today's settings.
-  const pref = await env.DB.prepare("SELECT value FROM settings WHERE key='sms_block_alerts'").first().catch(() => null);
-  if (pref && pref.value === '0') return { checked: null, due: 0, skipped: 'sms off' };
   const now = localParts(new Date(), TZ);          // { date, min } in Lisbon
   const target = now.min + 5;
+  let due = 0;
+  for (const u of await activeUsers(env)) {
+    due += await runAlertsForUser(env, u, now, target)
+      .catch((e) => { console.error('runAlerts', u.id, e.message); return 0; });
+  }
+  return { checked: now, due };
+}
+
+// One member's 5-minutes-before texts. Each texts their own saved number, so a
+// block on someone else's day never reaches the owner's phone. The owner keeps
+// the ALERT_PHONE secret as a fallback; everyone else must save a number first,
+// and an empty number simply means no texts (never a misdirected one).
+async function runAlertsForUser(env, user, now, target) {
+  const uid = user.id;
+  const pref = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='sms_block_alerts'").bind(uid).first().catch(() => null);
+  if (pref && pref.value === '0') return 0;         // default on; only '0' silences
+  const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
+  const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
+  if (!phone) return 0;
 
   // A 3-minute window (4-6 min out) absorbs a skipped or late cron tick
   // without alerting twice, since alerted_min guards the repeat.
-  // TODO(multi-tenant cron): user 1 only, so a future user's slots never text
-  // Robin's phone. Rework to per-user alert phones before others use alerts.
-  const due = await env.DB.prepare(
+  const rows = (await env.DB.prepare(
     `SELECT id, lane, title, start_min FROM slots
-      WHERE user_id = 1 AND day = ? AND start_min IS NOT NULL
+      WHERE user_id = ? AND day = ? AND start_min IS NOT NULL
         AND start_min BETWEEN ? AND ?
         AND (alerted_min IS NULL OR alerted_min != start_min)`,
-  ).bind(now.date, target - 1, target + 1).all();
+  ).bind(uid, now.date, target - 1, target + 1).all()).results || [];
 
-  const rows = due.results || [];
   for (const s of rows) {
     const when = `${String((s.start_min / 60) | 0).padStart(2, '0')}:${String(s.start_min % 60).padStart(2, '0')}`;
     const mins = s.start_min - now.min;
-    const r = await sendSms(env, `You have ${s.title} starting in ${mins} minutes (${when}).`);
+    const r = await sendSms(env, `You have ${s.title} starting in ${mins} minutes (${when}).`, phone);
     // Only mark it sent if it actually sent. A GatewayAPI hiccup should let the
     // next tick try again while the block is still inside the window.
     if (r.ok) {
-      await env.DB.prepare('UPDATE slots SET alerted_min = ? WHERE id = ? AND user_id = 1')
-        .bind(s.start_min, s.id).run();
+      await env.DB.prepare('UPDATE slots SET alerted_min = ? WHERE id = ? AND user_id = ?')
+        .bind(s.start_min, s.id, uid).run();
     }
   }
-  return { checked: now, due: rows.length };
+  return rows.length;
 }
 
 // ── the morning brief ─────────────────────────────────────────────────
@@ -1140,45 +1164,50 @@ async function runAlerts(env) {
 // is complete rather than half a day.
 // `force` is the preview button: it sends today's brief on demand and never
 // touches last_brief_day, so testing it at noon cannot swallow tomorrow's.
-async function runDailyBrief(env, { force = false } = {}) {
+async function runDailyBrief(env, { force = false, user = null } = {}) {
+  const uid = user ? user.id : (env.uid || 1);
+  const owner = uid === 1;
   const now = localParts(new Date(), TZ);
   if (!force) {
-    // TODO(multi-tenant cron): the brief is Robin's (user 1) until the cron is
-    // reworked to run per-user; last_brief_day is his lock row.
-    const last = await getSetting(env, 'last_brief_day', 1);
+    const last = await getSetting(env, 'last_brief_day', uid);
     if (!briefDue(now.min, now.date, last)) return { sent: false, reason: 'not due' };
 
     // Claim the day before sending, not after. Two ticks a minute apart both
     // reading "not sent yet" would otherwise send twice, and a duplicate brief
     // is worse than a late one. The UPDATE only fires when the stored day is
     // actually different, so `changes` tells us whether this tick won the claim.
+    // The lock is per-user (settings PK is (user_id, key)), so each member's
+    // brief claims its own day independently.
     const claim = await env.DB.prepare(
-      `INSERT INTO settings (user_id, key, value) VALUES (1, 'last_brief_day', ?)
+      `INSERT INTO settings (user_id, key, value) VALUES (?, 'last_brief_day', ?)
          ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value
           WHERE settings.value <> excluded.value`,
-    ).bind(now.date).run();
+    ).bind(uid, now.date).run();
     if (!claim.meta?.changes) return { sent: false, reason: 'already claimed' };
   }
 
   try {
-    const cfg = await getLaneConfig(env, 1);
+    const cfg = await getLaneConfig(env, uid);
     const [cal, quote, tasksRes] = await Promise.all([
-      calendarEvents(env, now.date),
+      // The calendar rides a single Google refresh token - the owner's. Fetching
+      // it for anyone else would put Robin's diary in their brief, so only the
+      // owner's brief carries a calendar; others get tasks + the day's quote.
+      owner ? calendarEvents(env, now.date) : Promise.resolve({ events: [] }),
       quoteForDay(env, now.date),
-      // Every open P1, from native Robski Life task blocks. Oldest first: a P1
-      // that has sat for a month deserves reading.
+      // Every open P1, from native task blocks. Oldest first: a P1 that has sat
+      // for a month deserves reading.
       env.DB.prepare(
         `SELECT title, props, created_at FROM blocks
-          WHERE user_id = 1 AND kind = 'task' AND archived = 0
+          WHERE user_id = ? AND kind = 'task' AND archived = 0
             AND json_extract(props, '$.priority') = 'P1'
             AND IFNULL(json_extract(props, '$.done'), 0) != 1
             AND (json_extract(props, '$.snooze') IS NULL OR json_extract(props, '$.snooze') <= ?)
           ORDER BY created_at IS NULL, created_at LIMIT 25`,
-      ).bind(now.date).all(),
+      ).bind(uid, now.date).all(),
     ]);
 
-    // A calendar failure must not cost Robin the rest of the brief. The empty
-    // list reads as "nothing scheduled", so say so explicitly instead.
+    // A calendar failure must not cost the rest of the brief. The empty list
+    // reads as "nothing scheduled", so say so explicitly instead.
     if (cal.error) console.error('brief calendar:', cal.error);
 
     const labels = Object.fromEntries(LANES.map((l) => [l.key, l.label]));
@@ -1188,6 +1217,19 @@ async function runDailyBrief(env, { force = false } = {}) {
       return { title: t.title, lane_label: lane && lane !== 'other' ? (labels[lane] || null) : null };
     });
 
+    // A member with no calendar and no P1s would get a quote-only email every
+    // morning, which reads as spam. The owner always sends (he has a calendar);
+    // everyone else sends only once they have something to be briefed on. The
+    // day stays claimed either way, so this is one decision a morning, not a loop.
+    if (!owner && !cal.events.length && !tasks.length) return { sent: false, reason: 'nothing to brief' };
+
+    // Recipient: the owner keeps his configured BRIEF_EMAIL; every other member
+    // gets it at their own sign-in address.
+    const to = owner ? (env.BRIEF_EMAIL || (user && user.email) || (env.user && env.user.email))
+                     : (user ? user.email : (env.user && env.user.email));
+    if (!to) return { sent: false, reason: 'no recipient' };
+    const home = owner ? 'https://today.robski.uk' : `https://${(user && user.subdomain) || 'app'}.daybook.fyi`;
+
     const payload = { day: now.date, events: cal.events, tasks, quote };
     const subject = briefSubject(payload);
     const html = briefEmail(payload);
@@ -1196,32 +1238,43 @@ async function runDailyBrief(env, { force = false } = {}) {
       // on Purelymail, so a real mailbox there passes SPF/DKIM natively - no
       // Resend domain to verify, no SPF record to edit (see CLAUDE.md).
       const acct = {
-        email: env.BRIEF_FROM || 'today@robski.uk', name: 'Robski Today',
+        email: env.BRIEF_FROM || 'today@robski.uk', name: 'Daybook',
         username: env.BRIEF_SMTP_USER || 'today@robski.uk',
         smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
       };
-      const text = `Your morning brief for ${now.date}.\n\nOpen https://today.robski.uk for the full day.`;
-      const raw = buildMessage(acct, { to: env.BRIEF_EMAIL, subject, html, text });
-      await smtpSend(env, acct, { rcpts: [env.BRIEF_EMAIL], raw });
+      const text = `Your morning brief for ${now.date}.\n\nOpen ${home} for the full day.`;
+      const raw = buildMessage(acct, { to, subject, html, text });
+      await smtpSend(env, acct, { rcpts: [to], raw });
     } else {
       // No SMTP secret yet: fall back to the Resend sender (today@incremento.co).
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: env.FROM_EMAIL, to: [env.BRIEF_EMAIL], subject, html }),
+        body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html }),
       });
       if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
     }
-    return { sent: true, events: cal.events.length, tasks: tasks.length };
+    return { sent: true, uid, events: cal.events.length, tasks: tasks.length };
   } catch (e) {
     // Hand the day back so a later tick inside the window can try again. A
     // Resend blip before 10:15 should cost a few minutes, not the brief.
     if (!force) {
-      await env.DB.prepare("DELETE FROM settings WHERE user_id = 1 AND key = 'last_brief_day' AND value = ?")
-        .bind(now.date).run();
+      await env.DB.prepare("DELETE FROM settings WHERE user_id = ? AND key = 'last_brief_day' AND value = ?")
+        .bind(uid, now.date).run();
     }
     throw e;
   }
+}
+
+// The cron fan-out: run each active member's brief. Each self-gates on its own
+// last_brief_day, so all but one tick a morning return "not due" straight away.
+async function runDailyBriefAll(env) {
+  const out = [];
+  for (const u of await activeUsers(env)) {
+    out.push(await runDailyBrief(env, { user: u })
+      .catch((e) => { console.error('runDailyBrief', u.id, e.message); return { sent: false, uid: u.id, error: e.message }; }));
+  }
+  return out;
 }
 
 // ── handlers ──────────────────────────────────────────────────────────
@@ -1898,14 +1951,20 @@ async function pushAll(env, payload, uid = env.uid) {
 // message arrived unread (message-id based, so it fires even if another client
 // read something in the same window). The badge shows the current unread total.
 async function maybePushMail(env, res) {
-  if (!res || !res.newUnread) return;
-  const row = await env.DB.prepare("SELECT COALESCE(SUM(unseen),0) AS n FROM mail_cache_meta WHERE mailbox='INBOX'").first();
-  const total = row ? Number(row.n) || 0 : 0;
-  // TODO(multi-tenant mail cron): route to the account owner; user 1 for now.
-  await pushAll(env, {
-    type: 'mail', unread: total, title: 'New mail',
-    body: res.newUnread === 1 ? 'You have a new email' : `${res.newUnread} new emails`,
-  }, 1);
+  if (!res || !res.byUser) return;
+  // One push per member who actually got new mail, carrying their own unread
+  // total (summed only over the mailboxes they own), delivered to their devices.
+  for (const [uid, newUnread] of Object.entries(res.byUser)) {
+    if (!newUnread) continue;
+    const row = await env.DB.prepare(
+      "SELECT COALESCE(SUM(m.unseen),0) AS n FROM mail_cache_meta m JOIN mail_accounts a ON a.id = m.account WHERE m.mailbox='INBOX' AND a.user_id = ?",
+    ).bind(uid).first().catch(() => null);
+    const total = row ? Number(row.n) || 0 : 0;
+    await pushAll(env, {
+      type: 'mail', unread: total, title: 'New mail',
+      body: newUnread === 1 ? 'You have a new email' : `${newUnread} new emails`,
+    }, Number(uid)).catch((e) => console.error('maybePushMail', uid, e.message));
+  }
 }
 
 // Review reminders: user-set nudges to do a review. Stored in settings under
@@ -1928,17 +1987,21 @@ function advanceReminderDate(dateStr, repeat) {
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 async function maybeReviewReminders(env) {
-  // TODO(multi-tenant cron): iterate all users; for now this is Robin's (user 1).
-  const value = await getSetting(env, 'kv_review_reminders', 1);
+  const now = lisbonNowStr();
+  for (const u of await activeUsers(env)) {
+    await reviewRemindersForUser(env, u.id, now).catch((e) => console.error('reviewReminders', u.id, e.message));
+  }
+}
+async function reviewRemindersForUser(env, uid, now) {
+  const value = await getSetting(env, 'kv_review_reminders', uid);
   if (!value) return;
   let arr; try { arr = JSON.parse(value); } catch { return; }
   if (!Array.isArray(arr) || !arr.length) return;
-  const now = lisbonNowStr();
   let changed = false; const keep = [];
   for (const r of arr) {
     if (r && r.at && String(r.at) <= now) {
       const label = REVIEW_LABELS[r.rtype] || 'review';
-      await pushAll(env, { title: `Time for your ${label} review`, body: 'Open Robski Life → Goals → Reviews to do it.', type: 'review' }, 1).catch(() => {});
+      await pushAll(env, { title: `Time for your ${label} review`, body: 'Open Daybook → Goals → Reviews to do it.', type: 'review' }, uid).catch(() => {});
       changed = true;
       if (r.repeat && r.repeat !== 'once') {
         const [date, time] = String(r.at).split('T');
@@ -1947,7 +2010,7 @@ async function maybeReviewReminders(env) {
       }   // one-off: drop it
     } else keep.push(r);
   }
-  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify(keep), 1);
+  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify(keep), uid);
 }
 
 // Portfolio history: on the every-minute tick, only actually fetch prices when
@@ -1971,7 +2034,7 @@ export default {
     ctx.waitUntil(runAlerts(env).catch((e) => console.error('runAlerts:', e.message)));
     // Both run off the same every-minute tick. The brief returns immediately on
     // all but one tick a day, so this costs a single indexed D1 read a minute.
-    ctx.waitUntil(runDailyBrief(env).catch((e) => console.error('runDailyBrief:', e.message)));
+    ctx.waitUntil(runDailyBriefAll(env).catch((e) => console.error('runDailyBrief:', e.message)));
     // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min),
     // then push an icon badge if the unread total just rose.
     ctx.waitUntil(syncMailCache(env).then((res) => maybePushMail(env, res)).catch((e) => console.error('syncMailCache/push:', e.message)));

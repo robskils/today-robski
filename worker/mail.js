@@ -606,10 +606,17 @@ export async function syncMailCache(env, { force = false } = {}) {
   const results = await Promise.allSettled(accts.map((a) => syncOneInbox(env, a)));
   // Count genuinely new unread arrivals across every account (message-id based,
   // so it fires even if the total count didn't net-rise or another client read
-  // something in the same window).
-  let newUnread = 0;
-  for (const r of results) if (r.status === 'fulfilled' && r.value) newUnread += r.value.newUnread || 0;
-  return { newUnread };
+  // something in the same window), and group them by the account's owner so the
+  // cron can push each member about their own mail rather than everyone's.
+  const acctUser = {}; for (const a of accts) acctUser[a.id] = a.user_id;
+  let newUnread = 0; const byUser = {};
+  for (const r of results) {
+    if (r.status !== 'fulfilled' || !r.value) continue;
+    const nu = r.value.newUnread || 0; newUnread += nu;
+    const uid = acctUser[r.value.account];
+    if (uid != null && nu) byUser[uid] = (byUser[uid] || 0) + nu;
+  }
+  return { newUnread, byUser };
 }
 async function syncOneInbox(env, acct) {
   const im = await imapOpen(env, acct);
