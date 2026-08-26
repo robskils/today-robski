@@ -527,6 +527,18 @@ async function saveAiKey(provider) {
   try { state.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ provider, value }) }); renderSettings(); toast('Key saved'); }
   catch (e) { toast(e.message); }
 }
+async function closeMyAccount() {
+  if (state.me && state.me.id === 1) { toast('The owner account cannot be closed here.'); return; }
+  if (!(await uiConfirm('Close your account? This permanently deletes your Daybook and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
+  const typed = await uiPrompt('Type DELETE to confirm you want to permanently erase your account.', { title: 'Are you sure?', okLabel: 'Close my account', placeholder: 'DELETE' });
+  if ((typed || '').trim().toUpperCase() !== 'DELETE') { toast('Account not closed.'); return; }
+  try {
+    await api('/api/account/close', { method: 'POST' });
+    try { localStorage.clear(); } catch {}
+    toast('Your account has been closed.');
+    setTimeout(() => { location.href = 'https://daybook.fyi'; }, 900);
+  } catch (e) { toast(e.message); }
+}
 async function clearAiKey(provider) {
   try { state.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ provider, value: '' }) }); renderSettings(); toast('Key removed'); }
   catch (e) { toast(e.message); }
@@ -6159,7 +6171,7 @@ document.addEventListener('click', (e) => {
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
   if (t.closest('[data-account-export]')) { downloadExport(); return; }
-  if (t.closest('[data-account-close]')) { uiConfirm("Close your account? This permanently deletes your Daybook and everything in it. It cannot be undone.", { danger: true, okLabel: 'I understand' }).then((ok) => { if (ok) toast("Account closure isn't switched on yet - message me and I'll handle it safely."); }); return; }
+  if (t.closest('[data-account-close]')) { closeMyAccount(); return; }
   if (t.closest('[data-create-invite]')) { createInvite(); return; }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }

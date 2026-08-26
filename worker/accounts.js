@@ -217,6 +217,38 @@ export async function verifyAlias(env, email, code) {
   ]);
   return getAccount(env);
 }
+// Permanently delete this account and everything it owns. Irreversible; the
+// owner (user 1) is protected. Best-effort per table so a missing table/column
+// never blocks the rest. Portfolio data lives in a separate DB and is untouched.
+export async function closeAccount(env) {
+  const uid = env.uid;
+  if (uid === 1) throw new Error('The owner account cannot be closed here.');
+  const email = env.user && env.user.email ? String(env.user.email).toLowerCase() : null;
+  const del = async (sql, ...binds) => { try { await env.DB.prepare(sql).bind(...binds).run(); } catch {} };
+  // Mail cache is keyed by the account id, so clear it before the accounts go.
+  await del('DELETE FROM mail_cache WHERE account IN (SELECT id FROM mail_accounts WHERE user_id = ?)', uid);
+  await del('DELETE FROM mail_cache_meta WHERE account IN (SELECT id FROM mail_accounts WHERE user_id = ?)', uid);
+  await del('DELETE FROM mail_accounts WHERE user_id = ?', uid);
+  await del('DELETE FROM blocks WHERE user_id = ?', uid);
+  await del('DELETE FROM block_links WHERE user_id = ?', uid);
+  await del('DELETE FROM slots WHERE user_id = ?', uid);
+  await del('DELETE FROM slot_tasks WHERE user_id = ?', uid);
+  await del('DELETE FROM settings WHERE user_id = ?', uid);
+  await del('DELETE FROM ai_usage WHERE user_id = ?', uid);
+  await del('DELETE FROM push_subs WHERE user_id = ?', uid);
+  await del('DELETE FROM webinars WHERE host_id = ?', uid);
+  await del('DELETE FROM shares WHERE owner_id = ? OR friend_id = ?', uid, uid);
+  await del('DELETE FROM assignments WHERE from_id = ? OR to_id = ?', uid, uid);
+  await del('DELETE FROM friends WHERE user_id = ? OR friend_id = ?', uid, uid);
+  await del('DELETE FROM messages WHERE from_id = ? OR to_id = ?', uid, uid);
+  await del('DELETE FROM meetings WHERE lo = ? OR hi = ?', uid, uid);
+  await del('DELETE FROM invites WHERE created_by = ? AND used_by IS NULL', uid);
+  await del('DELETE FROM alias_codes WHERE user_id = ?', uid);
+  await del('DELETE FROM user_emails WHERE user_id = ?', uid);
+  if (email) await del('DELETE FROM otp_codes WHERE email = ?', email);
+  await del('DELETE FROM users WHERE id = ?', uid);
+  return { closed: true };
+}
 export async function removeAlias(env, email) {
   const e = String(email || '').toLowerCase();
   await env.DB.batch([
