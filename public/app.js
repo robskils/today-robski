@@ -480,7 +480,28 @@ async function syncAccentFromServer() {
 }
 
 // ── Settings hub ──────────────────────────────────────────────────────
-function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); if (state.me && state.me.id === 1) loadInvites(); return Promise.resolve(); }
+function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); loadAccount(); if (state.me && state.me.id === 1) loadInvites(); return Promise.resolve(); }
+async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
+async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
+async function addAlias() {
+  const el = $('#alias-input'); const email = (el && el.value || '').trim(); if (!email) return;
+  try { state.account = await api('/api/account/alias', { method: 'POST', body: JSON.stringify({ email }) }); renderSettings(); toast('Address added'); }
+  catch (e) { toast(e.message); }
+}
+async function delAlias(email) {
+  try { state.account = await api('/api/account/alias', { method: 'DELETE', body: JSON.stringify({ email }) }); renderSettings(); }
+  catch (e) { toast(e.message); }
+}
+async function downloadExport() {
+  try {
+    const res = await fetch('/api/export', { headers: { Authorization: `Bearer ${localStorage.getItem('today.token')}` } });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `daybook-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('Your data is downloading');
+  } catch (e) { toast(e.message); }
+}
 async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 async function createInvite() {
   const plan = ($('#inv-plan') || {}).value || 'standard';
@@ -511,6 +532,21 @@ function renderSettings() {
     <section class="home-sec">
       <div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>
     </section>
+    ${state.account ? `<section class="home-sec">
+      <div class="home-sec-h set-collapse-h" data-settings-account><span class="acw-chev">${state.settings.accountOpen ? '▾' : '▸'}</span>Account</div>
+      ${state.settings.accountOpen ? `<div class="set-card set-account">
+        <label class="set-field"><span>Name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your name"></label>
+        <label class="set-field"><span>Primary email</span><input class="sel" value="${esc(state.account.email || '')}" disabled></label>
+        <div class="set-field"><span>Also sign in with these addresses</span>
+          <div class="alias-list">${(state.account.aliases || []).map((a) => `<span class="alias-chip">${esc(a)}<button class="alias-x" data-alias-del="${esc(a)}" title="Remove">×</button></span>`).join('') || '<span class="muted" style="font-size:14px">No extra addresses yet.</span>'}</div>
+          <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
+        </div>
+        <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
+        <label class="set-mod"><span>Text me before a time block starts</span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
+        <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
+        <div class="acct-actions"><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
+      </div>` : ''}
+    </section>` : ''}
     <section class="home-sec">
       <div class="home-sec-h set-collapse-h" data-settings-appearance><span class="acw-chev">${appOpen ? '▾' : '▸'}</span>Appearance</div>
       ${appOpen ? `<div class="set-card">
@@ -5365,6 +5401,9 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { BRAND.owner = state.account.name; renderNav(); } }), 700); }
+  if (e.target.matches('[data-account-phone]')) { clearTimeout(window.__acctPT); const v = e.target.value; window.__acctPT = setTimeout(() => saveAccount({ phone: v }), 700); }
+  if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; if (e.target.checked) delete state.modules[k]; else state.modules[k] = false; saveModules(); renderNav(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
@@ -5486,6 +5525,11 @@ document.addEventListener('click', (e) => {
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; if (c[k]) delete c[k]; else c[k] = true; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
   if (t.closest('[data-settings-sections]')) { state.settings = state.settings || {}; state.settings.sectionsOpen = !state.settings.sectionsOpen; renderSettings(); return; }
+  if (t.closest('[data-settings-account]')) { state.settings = state.settings || {}; state.settings.accountOpen = !state.settings.accountOpen; renderSettings(); return; }
+  if (t.closest('[data-alias-add]')) { addAlias(); return; }
+  { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
+  if (t.closest('[data-account-export]')) { downloadExport(); return; }
+  if (t.closest('[data-account-close]')) { uiConfirm("Close your account? This permanently deletes your Daybook and everything in it. It cannot be undone.", { danger: true, okLabel: 'I understand' }).then((ok) => { if (ok) toast("Account closure isn't switched on yet - message me and I'll handle it safely."); }); return; }
   if (t.closest('[data-create-invite]')) { createInvite(); return; }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }

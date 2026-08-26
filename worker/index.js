@@ -1,6 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
-import { handleSignup, getUserByEmail, listInvites, createInvite } from './accounts.js';
+import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias } from './accounts.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -2053,6 +2053,19 @@ export default {
         if (env.uid !== 1) return err('not allowed', request, 403);
         if (request.method === 'GET') return json({ invites: await listInvites(env) }, request);
         if (request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await createInvite(env, b), request, 201); }
+      }
+
+      // Account: name, email aliases, phone, plan.
+      if (path === '/api/account') {
+        if (request.method === 'GET') return json(await getAccount(env), request);
+        if (request.method === 'PATCH') return json(await patchAccount(env, await request.json().catch(() => ({}))), request);
+      }
+      if (path === '/api/account/alias') {
+        const b = await request.json().catch(() => ({}));
+        try {
+          if (request.method === 'POST') return json(await addAlias(env, b.email), request, 201);
+          if (request.method === 'DELETE') return json(await removeAlias(env, b.email), request);
+        } catch (e) { return err(e.message, request, 400); }
       }
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
