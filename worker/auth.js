@@ -113,7 +113,10 @@ export async function resolveUser(request, env) {
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ') || !env.AUTH_SECRET) return null;
   const payload = await verifyJWT(auth.slice(7), env.AUTH_SECRET);
-  if (!payload || !isAllowed(payload.sub, env)) return null;
+  if (!payload) return null;
+  // Access is by being *provisioned* now, not by an allow-list: the users-row
+  // lookup below IS the gate. A verified token with no account resolves to null
+  // (a 401 that routes to signup), never to a silent all-tenants view.
   // Match the account's primary email, or any alias in user_emails, so all of a
   // person's addresses sign into the one account.
   const user = await env.DB.prepare(
@@ -137,9 +140,11 @@ export async function requestCode(request, env, json, err) {
   // is locked behind this very sign-in, the phone still gets you in.
   const channel = body.channel === 'sms' ? 'sms' : 'email';
 
-  // Deliberately the same response either way. Telling a stranger which
-  // addresses are allowed is free reconnaissance.
-  if (!isAllowed(email, env)) return json({ ok: true });
+  // Open registration: any valid email can request a code and sign up. The
+  // kill-switch env.SIGNUP_CLOSED='1' reverts to admin-only (allow-listed emails
+  // still get in; everyone else gets the same silent ok, so the list can't be
+  // probed). Rate limiting below still applies to every request.
+  if (env.SIGNUP_CLOSED === '1' && !isAllowed(email, env)) return json({ ok: true });
 
   const now = Math.floor(Date.now() / 1000);
   const existing = await env.DB.prepare('SELECT sent_at FROM otp_codes WHERE email = ?')

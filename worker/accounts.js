@@ -55,22 +55,27 @@ export async function handleSignup(request, env, email, json, err) {
   if (!sub) return err('Choose a web address: 2-30 letters, numbers or hyphens, e.g. tara', request, 400);
   if (await subdomainTaken(env, sub)) return err(`"${sub}.daybook.fyi" is taken - try another`, request, 409);
 
+  // Open registration: an invite is optional. With no code you get the free
+  // plan; a valid code can carry a different plan / a pre-assigned email / the
+  // BYO-key "free" flag.
   const code = String(b.invite || '').trim();
-  if (!code) return err('Daybook is invite-only right now - you need an invite code.', request, 403);
-  const inv = await env.DB.prepare('SELECT code, email, plan, free, created_by, used_by FROM invites WHERE code = ?')
-    .bind(code).first().catch(() => null);
-  if (!inv) return err('That invite code is not valid.', request, 400);
-  if (inv.used_by) return err('That invite has already been used.', request, 400);
-  if (inv.email && inv.email.toLowerCase() !== email.toLowerCase()) return err('That invite is for a different email address.', request, 400);
-
-  const plan = inv.plan || 'standard';
-  const free = inv.free ? 1 : 0;
+  let plan = 'free', free = 0, invitedBy = null;
+  if (code) {
+    const inv = await env.DB.prepare('SELECT code, email, plan, free, created_by, used_by FROM invites WHERE code = ?')
+      .bind(code).first().catch(() => null);
+    if (!inv) return err('That invite code is not valid.', request, 400);
+    if (inv.used_by) return err('That invite has already been used.', request, 400);
+    if (inv.email && inv.email.toLowerCase() !== email.toLowerCase()) return err('That invite is for a different email address.', request, 400);
+    plan = inv.plan || 'standard';
+    free = inv.free ? 1 : 0;
+    invitedBy = inv.created_by || null;
+  }
   const now = new Date().toISOString();
   const res = await env.DB.prepare(
     'INSERT INTO users (email, name, subdomain, plan, status, invited_by, voucher, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-  ).bind(email.toLowerCase(), name, sub, plan, 'active', inv.created_by || null, code, now).run();
+  ).bind(email.toLowerCase(), name, sub, plan, 'active', invitedBy, code || null, now).run();
   const uid = res.meta.last_row_id;
-  await env.DB.prepare('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').bind(uid, now, code).run();
+  if (code) await env.DB.prepare('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').bind(uid, now, code).run();
   await seedNewUser(env, uid);
   return json({ user: await getUserByEmail(env, email), free: !!free }, request, 201);
 }

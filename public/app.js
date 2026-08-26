@@ -7650,13 +7650,17 @@ function showGate(sub) {
 // /api/me returns needsSignup; on the single-tenant app /api/me 404s and this
 // never shows.
 function showSignup(email) {
+  // Prefill the web address from the subdomain they arrived on (name.daybook.fyi),
+  // so if they picked it on the homepage they don't retype it.
+  let presub = '';
+  try { const h = location.hostname; if (h.endsWith('.daybook.fyi')) { const f = h.split('.')[0]; if (f && f !== 'www') presub = f; } } catch {}
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><em>${esc(BRAND.app)}</em></div>
       <p class="gate2-sub">Welcome - let's set up your space.</p>
       <label class="signup-l">Your name<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
-      <label class="signup-l">Your web address<span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span></label>
-      <label class="signup-l">Invite code<input class="gate2-input" id="su-invite" placeholder="ABCD1234" autocomplete="off" spellcheck="false"></label>
+      <label class="signup-l">Your web address<span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" value="${esc(presub)}" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span></label>
+      <label class="signup-l">Invite code <span class="su-opt">(optional)</span><input class="gate2-input" id="su-invite" placeholder="Leave blank if you don't have one" autocomplete="off" spellcheck="false"></label>
       <button class="gate2-btn" id="su-btn" type="submit">Create my Daybook</button>
       <p class="gate2-err" id="su-err" hidden></p>
       <p class="gate2-alt su-foot">Signed in as ${esc(email)} · <button type="button" class="su-signout" id="su-signout">sign out</button></p>

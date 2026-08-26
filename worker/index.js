@@ -2067,11 +2067,13 @@ export default {
     }
 
     if (path.startsWith('/api/')) {
-      // Onboarding endpoints run for any signed-in, allow-listed email - even one
-      // with no account yet - so a freshly-invited person can claim their space.
+      // Onboarding endpoints run for any signed-in email - even one with no
+      // account yet - so a newcomer who verified their email can claim their
+      // space. Their token proves they control the inbox; the account they then
+      // create is fully isolated (env.uid scoping), so this is safe to open.
       const bearer = request.headers.get('Authorization') || '';
       const jwt = bearer.startsWith('Bearer ') && env.AUTH_SECRET ? await verifyJWT(bearer.slice(7), env.AUTH_SECRET) : null;
-      const authedEmail = jwt && isAllowed(jwt.sub, env) ? jwt.sub : null;
+      const authedEmail = jwt ? jwt.sub : null;
       if (path === '/api/me' && request.method === 'GET') {
         if (!authedEmail) return err('unauthorized', request, 401);
         const user = await getUserByEmail(env, authedEmail);
