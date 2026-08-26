@@ -1156,6 +1156,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .home-main .drop-before::before { top:-7px; } .home-main .drop-after::after { bottom:-7px; }
 /* Home priority (P1) tasks list. */
 .p1-list { display:flex; flex-direction:column; gap:2px; margin-top:8px; }
+.p1-all { display:inline-block; margin:8px 0 0 11px; font-size:14px; color:var(--accent); font-weight:500; }
+.p1-all:hover { text-decoration:underline; }
 .p1-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; border-radius:10px; color:var(--ink); font-size:15px; position:relative; }
 .p1-row:hover { background:var(--paper); }
 .p1-row.dragging { opacity:.4; }

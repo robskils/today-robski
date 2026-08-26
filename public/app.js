@@ -1333,10 +1333,19 @@ function reorderP1(dragged, before) {
   try { localStorage.setItem('life.home.p1Order', JSON.stringify(ids)); } catch {}
   renderHome();
 }
+// Jump to the Tasks board showing every P1: set a priority filter, then open it.
+function openP1Tasks() {
+  loadTaskFilters();
+  state.taskFilters = [{ field: 'priority', op: 'is', value: 'P1' }];
+  state.taskFiltersOpen = false; saveTaskFilters(); openTasks();
+}
 function p1Html() {
-  const p1 = priorityTasks();
-  if (!p1.length) return '';
-  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${p1.length}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${p1.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div>` : ''}</section>`;
+  const all = priorityTasks();
+  if (!all.length) return '';
+  const total = (state.home && state.home.alerts && state.home.alerts.p1) || all.length;
+  const shown = all.slice(0, 10);
+  const more = total - shown.length;
+  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
 }
 function renderHome() {
   const favs = state.favs || [];
@@ -6157,6 +6166,7 @@ document.addEventListener('click', (e) => {
   const ctxRm = t.closest('[data-ctx-remove]'); if (ctxRm) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) removeContactFromGroup(id, ctxRm.dataset.ctxRemove); else renderContacts(); return; }
   if (t.closest('[data-ctx-delete]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) delContact(id); else renderContacts(); return; }
   if (t.closest('[data-ctx-close]') && !t.closest('.ctx-menu')) { state.contactMenu = null; renderContacts(); return; }
+  if (t.closest('[data-open-p1]')) { openP1Tasks(); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
