@@ -1360,11 +1360,16 @@ function renderHome() {
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
   const todayItems = homeTodayItems();
-  // Compact cards, grouped by kind (Tasks, Notes, Tables, Life areas).
-  const favGroups = ['task', 'note', 'table', 'area'].map((k) => {
-    const list = favs.filter((f) => f.kind === k); if (!list.length) return '';
-    return `<div class="fav-group"><div class="fav-group-h">${KIND_LABEL[k]}</div><div class="fav-cards">${list.map((f) => `<div class="fav-card" draggable="true" data-fav-id="${f.id}"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`).join('')}</div></div>`;
-  }).join('');
+  // Compact cards. Tasks stay their own group; notes and tables share one list,
+  // each with its own icon so you can tell them apart. Life areas are omitted -
+  // faved areas have their own section at the top of Home.
+  const favIc = (k) => (k === 'note' ? NOTE_ICO : (KIND_IC[k] || '•'));
+  const favCard = (f) => `<div class="fav-card" draggable="true" data-fav-id="${f.id}"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`;
+  const favGroup = (label, list) => list.length ? `<div class="fav-group"><div class="fav-group-h">${label}</div><div class="fav-cards">${list.map(favCard).join('')}</div></div>` : '';
+  const favGroups = [
+    favGroup('Tasks', favs.filter((f) => f.kind === 'task')),
+    favGroup('Notes &amp; tables', favs.filter((f) => f.kind === 'note' || f.kind === 'table')),
+  ].join('');
   const evRows = todayItems.map((it) => it.kind === 'event'
     ? (() => { const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
         return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`; })()
@@ -1409,7 +1414,7 @@ function renderHome() {
             today: `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', 'Today', '', true)}${secOpen('today') ? `<div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}</section>`,
             priority: p1Html(),
             focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
-            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred', '', true)}${secOpen('favs') ? (favs.length ? favGroups : '<div class="home-empty">Star a task, note, table or area (the ☆ on it) to pin it here.</div>') : ''}</section>`,
+            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred', '', true)}${secOpen('favs') ? (favGroups || '<div class="home-empty">Star a task, note or table (the ☆ on it) to pin it here.</div>') : ''}</section>`,
           };
           const def = ['favareas', 'today', 'priority', 'focus', 'favs'];
           let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
