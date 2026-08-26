@@ -13,7 +13,7 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['friends', 'Friends'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
 const modOn = (k) => !(state.modules && state.modules[k] === false);
 async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -284,7 +284,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠', friends: '👥' };
 function labelForView(v) {
   switch (v.type) {
     case 'tasks': return 'Tasks';
@@ -296,6 +296,7 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'settings': return 'Settings';
     case 'admin': return 'Admin';
+    case 'friends': return 'Friends';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     case 'financial': return 'Financial';
@@ -319,6 +320,7 @@ function openView(v) {
     case 'financial': return openFinancial(v.tab);
     case 'settings': return openSettings();
     case 'admin': return openAdmin();
+    case 'friends': return openFriends();
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
@@ -549,6 +551,30 @@ async function delQuote(id) {
   try { await api(`/api/admin/quotes/${id}`, { method: 'DELETE' }); state.admin.quotes = (state.admin.quotes || []).filter((q) => String(q.id) !== String(id)); renderAdmin(); }
   catch (e) { toast(e.message); }
 }
+// ── Friends on Daybook ────────────────────────────────────────────────
+async function openFriends() {
+  state.view = { type: 'friends' }; renderNav(); renderFriends();
+  try { state.friends = await api('/api/friends'); } catch (e) { toast(e.message); state.friends = { friends: [], incoming: [], outgoing: [], suggestions: [] }; }
+  renderFriends();
+}
+function friendRow(f, action) {
+  return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
+}
+function renderFriends() {
+  const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
+  $('#pane').innerHTML = `${pageCrumb('Friends')}
+    <div class="pane-head home-head"><h1>Friends</h1></div>
+    <div class="list-head"><input class="list-search sel" id="friend-email" placeholder="Add a friend by email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Add</button></div>
+    ${d.incoming.length ? `<section class="home-sec"><div class="home-sec-h">Friend requests<span class="muted">${d.incoming.length}</span></div>${d.incoming.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}</section>` : ''}
+    <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">Remove</button>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
+    ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
+    ${d.suggestions.length ? `<section class="home-sec"><div class="home-sec-h">Your contacts on Daybook</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}</section>` : ''}`;
+}
+async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
+async function friendAddEmail() { const el = $('#friend-email'); const email = (el && el.value || '').trim(); if (!email) return; try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ email }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
+async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Friends now'); } catch (e) { toast(e.message); } }
+async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
+function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
 async function createInvite() {
   const plan = ($('#inv-plan') || {}).value || 'standard';
   const free = ($('#inv-freetoggle') || {}).checked ? 1 : 0;
@@ -685,6 +711,7 @@ function renderNav() {
     ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Financial</span></button>` : ''}
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
     ${modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : ''}
+    ${modOn('friends') ? `<button class="nav-item ${v.type === 'friends' ? 'on' : ''}" data-open-friends><span>👥</span><span class="nav-lbl">Friends</span></button>` : ''}
     ${modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : ''}
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
@@ -5840,6 +5867,11 @@ document.addEventListener('click', (e) => {
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
   if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }
   if (t.closest('[data-open-admin]')) { openAdmin(); return; }
+  if (t.closest('[data-open-friends]')) { openFriends(); return; }
+  if (t.closest('[data-friend-add-email]')) { friendAddEmail(); return; }
+  { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }
+  { const fac = t.closest('[data-friend-accept]'); if (fac) { friendAccept(fac.dataset.friendAccept); return; } }
+  { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
@@ -7190,6 +7222,7 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
+    startPresence();         // heartbeat so friends can see you're online
     initPush();              // register the SW; refresh the push subscription if already granted
     registerMailHandler();   // offer Robski Life as the browser's mailto: handler
     syncAccentFromServer();  // pick up a custom accent colour saved on another device

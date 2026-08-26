@@ -1,6 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias } from './accounts.js';
+import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend } from './friends.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -2081,6 +2082,18 @@ export default {
           if (request.method === 'DELETE') return json(await removeAlias(env, b.email), request);
         } catch (e) { return err(e.message, request, 400); }
       }
+
+      // Friends on Daybook: presence + connections.
+      if (path === '/api/presence' && request.method === 'POST') return json(await touchPresence(env), request);
+      if (path === '/api/friends' && request.method === 'GET') return json(await getFriends(env), request);
+      if (path === '/api/friends' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        let id = b.id;
+        if (!id && b.email) { const u = await getUserByEmail(env, b.email); if (!u) return err('No Daybook account uses that email.', request, 404); id = u.id; }
+        try { return json(await requestFriend(env, id), request, 201); } catch (e) { return err(e.message, request, 400); }
+      }
+      if (path === '/api/friends/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await acceptFriend(env, b.id), request); }
+      if (path === '/api/friends/remove' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await removeFriend(env, b.id), request); }
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/home/alerts' && request.method === 'GET') return homeAlerts(request, env, json);

@@ -948,6 +948,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
+/* Friends on Daybook. */
+.friend-row { display:flex; align-items:center; gap:13px; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:8px; }
+.fr-av { flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:var(--paper-2,var(--paper)); color:var(--ink-2); font-weight:600; font-size:16px; position:relative; }
+.fr-av.online::after { content:''; position:absolute; right:-1px; bottom:-1px; width:12px; height:12px; border-radius:50%; background:#3fae5a; border:2px solid var(--card); }
+.fr-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.fr-name { font-weight:600; color:var(--ink); display:flex; align-items:center; gap:8px; }
+.fr-on { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:#3fae5a; }
+.fr-sub { font-size:13px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fr-acts { display:flex; gap:8px; flex:none; }
+.fr-act { flex:none; padding:7px 15px; }
+.fr-pending { flex:none; font-size:13px; color:var(--ink-3); font-style:italic; }
 /* Admin dashboard. */
 .admin-list { display:flex; flex-direction:column; gap:6px; }
 .admin-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--card); font-size:14.5px; }
