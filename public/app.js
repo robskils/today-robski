@@ -651,7 +651,11 @@ function renderFriends() {
     <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
     ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
     ${(state.sharedWithMe && state.sharedWithMe.length) ? `<section class="home-sec"><div class="home-sec-h">Shared with you<span class="muted">${state.sharedWithMe.length}</span></div>${state.sharedWithMe.map((s) => `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${s.kind === 'task' ? (s.done ? '☑' : '☐') : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.kind === 'task' ? 'Task' : 'Note'} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`).join('')}</section>` : ''}
-    ${d.suggestions.length ? `<section class="home-sec"><div class="home-sec-h">Your contacts on Daybook</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}</section>` : ''}
+    <section class="home-sec"><div class="home-sec-h">Contacts on Daybook${d.suggestions && d.suggestions.length ? `<span class="muted">${d.suggestions.length}</span>` : ''}<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻ Rescan</button></div>
+      ${d.suggestions && d.suggestions.length
+        ? `<div class="fr-scan-note">${d.suggestions.length} of your contacts ${d.suggestions.length === 1 ? 'is' : 'are'} on Daybook - add them as friends:</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
+        : `<div class="home-empty">${(d.scanned || 0) ? `Checked ${d.scanned} of your contacts by email - none are on Daybook yet. When they join, they'll appear here.` : 'Add contacts with email addresses and Daybook will tell you which of them are here.'}</div>`}
+    </section>
     ${webinarsSecHtml()}`;
 }
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
@@ -935,7 +939,7 @@ function renderNav() {
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
       <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
-      <button class="nav-theme ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings">⚙ Settings</button>
+      <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings"><span class="ns-ic">⚙</span><span class="ns-lbl"> Settings</span></button>
     </div>`;
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
@@ -1376,7 +1380,7 @@ function renderHome() {
         ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>` : ''}
         ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
         ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
-        <button class="hl-btn" data-open-settings><span class="hl-ic">⚙</span><span class="hl-t">Settings</span></button>
+        ${modOn('friends') ? `<button class="hl-btn" data-open-friends><span class="hl-ic">👥</span><span class="hl-t">Friends</span></button>` : ''}
       </nav>
       <div class="home-body">
         <div class="home-main">${(() => {
@@ -6287,6 +6291,7 @@ document.addEventListener('click', (e) => {
   { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
+  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Daybook` : 'No contacts on Daybook yet'); }); return; }
   if (t.closest('[data-webinar-new]')) { state.webinarEdit = null; state.webinarAdding = true; renderFriends(); return; }
   if (t.closest('[data-webinar-cancel]')) { state.webinarAdding = false; state.webinarEdit = null; renderFriends(); return; }
   if (t.closest('[data-webinar-save]')) { saveWebinar(); return; }

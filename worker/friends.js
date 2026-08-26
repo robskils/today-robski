@@ -43,7 +43,9 @@ export async function getFriends(env) {
     const seen = new Set();
     for (const [em, title] of emails) { const u = byEmail[em]; if (u && !connected.has(u.id) && !seen.has(u.id)) { seen.add(u.id); suggestions.push({ id: u.id, name: u.name || u.subdomain, subdomain: u.subdomain, contactName: title }); } }
   }
-  return { friends, incoming, outgoing, suggestions };
+  // scanned = how many distinct contact emails we checked against Daybook, so the
+  // UI can say "checked N of your contacts" even when nothing matched.
+  return { friends, incoming, outgoing, suggestions, scanned: uniq.length, contacts: cts.length };
 }
 
 export async function requestFriend(env, targetId) {

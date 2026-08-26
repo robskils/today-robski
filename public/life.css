@@ -978,6 +978,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fr-acts { display:flex; gap:8px; flex:none; }
 .fr-act { flex:none; padding:7px 15px; }
 .fr-pending { flex:none; font-size:13px; color:var(--ink-3); font-style:italic; }
+.home-sec-h:has(.fr-rescan) { display:flex; align-items:center; gap:9px; }
+.fr-rescan { margin-left:auto; font-size:13px; padding:5px 11px; border:1px solid var(--line); border-radius:999px; color:var(--ink-3); }
+.fr-rescan:hover { color:var(--accent); border-color:var(--line-2); }
+.fr-scan-note { font-size:13.5px; color:var(--ink-2); margin:2px 0 10px; }
 /* Webinars (Friends). */
 .wb-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
 .wb-head .add-btn.wide { flex:none; }
@@ -2036,6 +2040,10 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* No bottom on a horizontal bar: the theme switch sits inline with the brand. */
   .nav-bottom { margin-top:0; padding-top:0; order:3; }
   .nav-theme { width:auto; border:0; background:transparent; padding:6px 9px; font-size:14px; }
+  /* Settings rides in the top bar as an icon only - the word is redundant next
+     to the ⚙, and it's no longer in the mobile launcher grid. */
+  .nav-settings .ns-lbl { display:none; }
+  .nav-settings { font-size:19px; padding:6px 8px; }
   /* A real, tappable search box on every page (opens the universal palette). */
   .nav-k { display:flex; order:5; flex-basis:100%; margin:10px 0 0; font-size:16px; padding:12px 14px; }
   .pane { padding:20px 18px 96px; }
