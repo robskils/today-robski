@@ -598,6 +598,8 @@ button { cursor:pointer; background:none; border:0; }
 .dp-other { color:var(--ink-3); opacity:.5; }
 .dp-today { font-weight:700; color:var(--accent); }
 .dp-sel, .dp-sel:hover { background:var(--accent); color:var(--accent-ink); }
+.dp-disabled { color:var(--ink-3); opacity:.28; cursor:default; }
+.dp-disabled:hover { background:none; }
 .dp-foot { display:flex; justify-content:flex-end; margin-top:12px; }
 .dp-link { color:var(--accent); font-size:15px; padding:6px 10px; border-radius:8px; }
 .dp-link:hover { background:var(--paper-2); }

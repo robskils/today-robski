@@ -2306,7 +2306,10 @@ function openDatePicker(id) {
   const inp = document.getElementById(id); if (!inp) return;
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(inp.value || '') ? inp.value : todayISO();
   const [y, m] = iso.split('-').map(Number);
-  state.dp = { id, y, m: m - 1 };
+  // An event's end can't fall before its start, so the end picker greys out any
+  // day earlier than the chosen start.
+  const min = id === 'ce-enddate' ? ((document.getElementById('ce-date') || {}).value || null) : null;
+  state.dp = { id, y, m: m - 1, min };
   renderDatePicker();
 }
 function renderDatePicker() {
@@ -2325,7 +2328,9 @@ function renderDatePicker() {
     if (d.getMonth() !== dp.m) cls.push('dp-other');
     if (iso === cur) cls.push('dp-sel');
     if (iso === today) cls.push('dp-today');
-    cells += `<button type="button" class="${cls.join(' ')}" data-dp-pick="${iso}">${d.getDate()}</button>`;
+    const disabled = dp.min && iso < dp.min;
+    if (disabled) cls.push('dp-disabled');
+    cells += `<button type="button" class="${cls.join(' ')}"${disabled ? ' disabled' : ` data-dp-pick="${iso}"`}>${d.getDate()}</button>`;
   }
   el.innerHTML = `<div class="dp-bg" data-dp-close><div class="dp-cal" role="dialog" aria-label="Pick a date">
     <div class="dp-head"><button type="button" class="dp-nav" data-dp-step="-1" aria-label="Previous month">‹</button>
@@ -2337,12 +2342,18 @@ function renderDatePicker() {
   </div></div>`;
 }
 function closeDatePicker() { const el = document.getElementById('dp-pop'); if (el) el.innerHTML = ''; state.dp = null; }
+// Set a date field's value and refresh its button label. No change event, so a
+// caller adjusting one field in response to another can't loop.
+function setDateField(id, iso) {
+  const inp = document.getElementById(id); if (!inp) return;
+  inp.value = iso || '';
+  const btn = document.querySelector(`[data-dp-open="${id}"]`); if (btn) btn.textContent = dpLabel(iso);
+}
 function datePick(iso) {
   const dp = state.dp; if (!dp) return;
   const inp = document.getElementById(dp.id);
   if (inp) {
-    inp.value = iso || '';
-    const btn = document.querySelector(`[data-dp-open="${dp.id}"]`); if (btn) btn.textContent = dpLabel(iso);
+    setDateField(dp.id, iso);
     inp.dispatchEvent(new Event('change', { bubbles: true }));
   }
   closeDatePicker();
@@ -6756,6 +6767,13 @@ document.addEventListener('change', (e) => {
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const r = $('#ce-timerow'); if (r) r.hidden = e.target.checked; }
+  // An event can't end before it starts. Pushing the start date past the end (or
+  // setting an end earlier than the start) snaps the end to the start day; a later
+  // end is kept, so a multi-day trip still works.
+  if (e.target.id === 'ce-date' || e.target.id === 'ce-enddate') {
+    const s = $('#ce-date'), en = $('#ce-enddate');
+    if (s && en && s.value && (!en.value || en.value < s.value)) setDateField('ce-enddate', s.value);
+  }
   // Table filters
   const scol = e.target.closest('[data-sortl-col]'); if (scol) { const i = +scol.dataset.sortlCol; if (state.tables_view.sorts[i]) { state.tables_view.sorts[i].colId = scol.value; setSorts(state.tables_view.sorts); } return; }
   const sdir = e.target.closest('[data-sortl-dir]'); if (sdir) { const i = +sdir.dataset.sortlDir; if (state.tables_view.sorts[i]) { state.tables_view.sorts[i].dir = sdir.value; setSorts(state.tables_view.sorts); } return; }
