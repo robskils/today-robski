@@ -273,7 +273,7 @@ function sanitizeProse(html) {
       // would otherwise match the http test below, get target=_blank, and open
       // in a browser tab instead of navigating in-app. Store just the #rl-…
       // fragment so it always routes internally.
-      const rlm = href && href.match(/#rl-(note|table|area)-[\w-]+/i);
+      const rlm = href && href.match(/#rl-(note|table|area|row)-[\w-]+/i);
       if (rlm) { el.setAttribute('href', rlm[0]); el.setAttribute('class', 'rl-link'); }
       else if (href && /^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
       if (keepOpen) el.setAttribute('open', '');
@@ -5985,8 +5985,15 @@ document.addEventListener('click', (e) => {
   if (alink) {
     // Match the #rl- fragment anywhere in the href, so a link stored as an
     // absolute URL still routes in-app rather than opening a browser tab.
-    const rl = (alink.getAttribute('href') || '').match(/#rl-(note|table|area)-([\w-]+)/i);
-    if (rl) { e.preventDefault(); const id = rl[2]; const nav = rl[1].toLowerCase() === 'note' ? openNote(id) : rl[1].toLowerCase() === 'table' ? openTable(id) : openArea(id); nav.catch((x) => toast(x.message)); return; }
+    const rl = (alink.getAttribute('href') || '').match(/#rl-(note|table|area|row)-([\w-]+)/i);
+    if (rl) {
+      e.preventDefault(); const kind = rl[1].toLowerCase(); const id = rl[2];
+      // A row link carries both ids: #rl-row-<tableId>_<rowId>.
+      let nav;
+      if (kind === 'row') { const u = id.indexOf('_'); nav = openRowResult(id.slice(0, u), id.slice(u + 1)); }
+      else nav = kind === 'note' ? openNote(id) : kind === 'table' ? openTable(id) : openArea(id);
+      nav.catch((x) => toast(x.message)); return;
+    }
   }
   // Our own synthesised open-in-browser click - let it proceed, don't re-handle
   // it (that would loop forever, since this listener is on document).
@@ -7432,14 +7439,21 @@ async function openLinkPicker(prose, range) {
   state.linkpick = { prose, range, q: '', opts: [], loaded: false };
   renderLinkPicker();
   try {
-    const [notes, tables, areas] = await Promise.all([
+    const [notes, tables, areas, rows] = await Promise.all([
       api('/api/blocks?kind=note').catch(() => []),
       api('/api/blocks?kind=table').catch(() => []),
       api('/api/blocks?kind=area').catch(() => []),
+      api('/api/blocks?kind=row').catch(() => []),
     ]);
     const map = (arr, kind, icon) => (arr || []).map((b) => ({ id: b.id, kind, icon, title: b.title || 'Untitled' }));
+    // Table rows are cards in a table-style note. Include the ones that carry a
+    // label so you can link straight to a card; note which table it lives in.
+    const tblName = {}; (tables || []).forEach((t) => { tblName[t.id] = t.title || 'Table'; });
+    const rowOpts = (rows || []).map((b) => ({ b, label: b.title || rowLabel(b) }))
+      .filter((x) => x.label && x.label !== 'Row')
+      .map((x) => ({ id: `${x.b.parent_id}_${x.b.id}`, kind: 'row', icon: TBL_ICO, title: x.label + (tblName[x.b.parent_id] ? ` · ${tblName[x.b.parent_id]}` : '') }));
     if (!state.linkpick) return;
-    state.linkpick.opts = [...map(notes, 'note', ''), ...map(tables, 'table', TBL_ICO), ...map(areas, 'area', '◈')];
+    state.linkpick.opts = [...map(notes, 'note', ''), ...map(tables, 'table', TBL_ICO), ...rowOpts, ...map(areas, 'area', '◈')];
     state.linkpick.loaded = true;
     renderLinkPickerList();
   } catch {}
@@ -7448,7 +7462,7 @@ function renderLinkPicker() {
   let el = document.getElementById('linkpick-overlay');
   if (!el) { el = document.createElement('div'); el.id = 'linkpick-overlay'; document.body.appendChild(el); }
   el.innerHTML = `<div class="pal-bg" data-linkpick-bg><div class="pal">
-    <input id="linkpick-input" placeholder="Paste a URL, or search notes, tables & areas…" value="${esc(state.linkpick.q)}" autocomplete="off" spellcheck="false">
+    <input id="linkpick-input" placeholder="Paste a URL, or search notes, tables, cards & areas…" value="${esc(state.linkpick.q)}" autocomplete="off" spellcheck="false">
     <div class="pal-hint">Press Enter to link a web URL, or pick a page below to link internally.</div>
     <div class="pal-list" id="linkpick-list"></div></div></div>`;
   renderLinkPickerList();
