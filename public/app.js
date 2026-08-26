@@ -3962,13 +3962,61 @@ async function delContact(id) {
   state.contacts = (state.contacts || []).filter((x) => x.id !== id);
   toast('Contact deleted'); openContacts();
 }
+// New group: type a name, or spin one up from a life area. A group made from an
+// area is linked to it (props.area) and pulls in every contact already tagged to
+// that area, so "the Family group" and "the Family life area" line up.
 async function newContactGroup() {
-  const name = ((await uiPrompt('New group name:', { title: 'New group', okLabel: 'Create', placeholder: 'e.g. Family, Clients, Forró' })) || '').trim();
-  if (!name) return;
-  try {
-    const g = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contactgroup', title: name }) });
-    state.contactGroups.push(g); state.contactsGroup = g.id; renderContacts();
-  } catch (e) { toast(e.message); }
+  await Promise.all([loadContacts(), loadContactGroups()]);
+  if (!state.areas || !state.areas.length) { try { state.areas = await api('/api/blocks?kind=area'); } catch {} }
+  const el = uiDialogHost();
+  const haveNames = () => new Set((state.contactGroups || []).map((g) => (g.title || '').trim().toLowerCase()));
+  const createNamed = async (name, select) => {
+    name = (name || '').trim(); if (!name) return false;
+    if (haveNames().has(name.toLowerCase())) { toast('A group with that name already exists.'); return false; }
+    try {
+      const g = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contactgroup', title: name }) });
+      state.contactGroups.push(g); if (select) state.contactsGroup = g.id; return true;
+    } catch (e) { toast(e.message); return false; }
+  };
+  const createFromArea = async (area) => {
+    if (haveNames().has((area.title || '').trim().toLowerCase())) { toast('A group with that name already exists.'); return; }
+    try {
+      const g = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contactgroup', title: area.title || 'Untitled', props: { area: area.id } }) });
+      state.contactGroups.push(g);
+      const members = (state.contacts || []).filter((c) => (c.props && c.props.area) === area.id);
+      for (const c of members) if (!groupsOf(c).includes(g.id)) setContactGroups(c, [...groupsOf(c), g.id], true);
+      toast(members.length ? `“${area.title}” group created with ${members.length} contact${members.length === 1 ? '' : 's'}` : `“${area.title}” group created`);
+    } catch (e) { toast(e.message); }
+  };
+  const render = () => {
+    const have = haveNames();
+    const chips = (state.areas || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((a) => {
+      const made = have.has((a.title || '').trim().toLowerCase());
+      return `<button class="cgm-area${made ? ' made' : ''}" data-cgm-area="${a.id}" ${made ? 'disabled' : ''} style="--h:${hueOf(a)}"><span class="cgm-dot"></span>${esc(a.title || 'Untitled')}${made ? ' <span class="cgm-tick">✓</span>' : ''}</button>`;
+    }).join('');
+    el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box cgm-dialog">
+      <div class="recur-h">New group</div>
+      <input class="ui-dialog-input" id="cgm-input" placeholder="e.g. Family, Clients, Forró" autocomplete="off">
+      <div class="cgm-or">Or create from a life area</div>
+      <div class="cgm-areas">${chips || '<span class="muted">No life areas yet.</span>'}</div>
+      <div class="ui-dialog-btns">
+        <button class="ui-btn cancel" data-cgm-close>Done</button>
+        <button class="ui-btn primary" data-cgm-create>Create</button>
+      </div></div></div>`;
+    setTimeout(() => { const i = el.querySelector('#cgm-input'); if (i) i.focus(); }, 20);
+  };
+  const close = () => { el.innerHTML = ''; el.removeEventListener('click', onClick); el.removeEventListener('keydown', onKeyEl); document.removeEventListener('keydown', onKey, true); renderContacts(); };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  const onKeyEl = (e) => { if (e.key === 'Enter' && e.target.id === 'cgm-input') { e.preventDefault(); createNamed(e.target.value, true).then((ok) => { if (ok) close(); }); } };
+  const onClick = async (e) => {
+    if (e.target.closest('[data-cgm-close]') || e.target.classList.contains('pal-bg')) { close(); return; }
+    if (e.target.closest('[data-cgm-create]')) { const i = el.querySelector('#cgm-input'); const ok = await createNamed(i && i.value, true); if (ok) close(); return; }
+    const ac = e.target.closest('[data-cgm-area]'); if (ac) { const a = areaById(ac.dataset.cgmArea); if (a) { await createFromArea(a); render(); } }
+  };
+  el.addEventListener('click', onClick);
+  el.addEventListener('keydown', onKeyEl);
+  document.addEventListener('keydown', onKey, true);
+  render();
 }
 async function renameContactGroup(id) {
   const g = groupById(id); if (!g) return;
