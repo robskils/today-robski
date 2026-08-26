@@ -948,6 +948,23 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
+/* Spirit Cards - a gentle oracle draw in Reflect. */
+#spirit .spirit-bg { position:fixed; inset:0; z-index:220; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:24px; background:color-mix(in srgb,var(--ink) 58%,transparent); backdrop-filter:blur(7px); }
+.spirit-x { position:absolute; top:16px; right:20px; border:0; background:none; color:#fff; font-size:30px; line-height:1; cursor:pointer; opacity:.8; }
+.spirit-x:hover { opacity:1; }
+.spirit-card { width:min(300px,80vw); aspect-ratio:3 / 4.4; cursor:pointer; position:relative; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.2,.8,.2,1); }
+.spirit-card.drawn { transform:rotateY(180deg); }
+.sc-face { position:absolute; inset:0; border-radius:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 34px 80px -34px rgba(0,0,0,.7); }
+.sc-back { background:linear-gradient(160deg,#3a2f2a,#1d1813); color:#e8dcc8; border:1px solid rgba(255,255,255,.13); gap:16px; }
+.sc-back .sc-mark { font-size:58px; color:#e0684f; }
+.sc-hint { font-size:12.5px; letter-spacing:.2em; text-transform:uppercase; opacity:.68; }
+.sc-front { background:linear-gradient(160deg,#faf6ee,#efe7d4); color:#211c17; transform:rotateY(180deg); gap:16px; border:1px solid rgba(0,0,0,.06); }
+.sc-sym { font-size:56px; line-height:1; }
+.sc-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:33px; font-weight:600; margin:0; }
+.sc-msg { font-size:17px; line-height:1.5; color:#574e44; margin:0; max-width:23ch; }
+.spirit-again { padding:11px 24px; border-radius:12px; background:var(--accent); color:#fff; border:0; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; box-shadow:0 10px 26px -12px var(--accent); }
+.spirit-again:hover { filter:brightness(1.06); }
+.spirit-again[hidden] { display:none; }
 /* Settings: account. */
 .set-account { display:flex; flex-direction:column; gap:15px; }
 .set-field { display:flex; flex-direction:column; gap:6px; }

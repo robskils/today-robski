@@ -1210,6 +1210,61 @@ function journalSnippet(n) {
   const p = [...d.querySelectorAll('p')].map((x) => x.textContent.trim()).find(Boolean);
   return (p || d.textContent.trim() || 'Empty entry').slice(0, 120);
 }
+// ── Spirit Cards ──────────────────────────────────────────────────────
+// A gentle oracle deck inside Reflect: draw a card for a moment's reflection.
+// Built-in deck for now; publisher decks + payouts come later.
+const SPIRIT_CARDS = [
+  ['Stillness', '✦', 'The answer arrives when you stop chasing it.'],
+  ['Courage', '🔥', "The thing you're avoiding is smaller than the story about it."],
+  ['Rest', '🌙', "You're allowed to do nothing and still be worthy."],
+  ['Trust', '🌊', "You don't have to see the whole staircase to take the first step."],
+  ['Release', '🍃', "Not everything you're carrying is yours to hold."],
+  ['Beginning', '🌱', 'You can start again, right now, in the middle of anything.'],
+  ['Presence', '☀', 'Life is happening in this breath, not the next one.'],
+  ['Gentleness', '🕊', 'Speak to yourself as you would to someone you love.'],
+  ['Enough', '🪷', 'You are already enough. The rest is decoration.'],
+  ['Patience', '🌾', 'Some things only grow in the dark, and in their own time.'],
+  ['Truth', '🗝', 'The thing you keep circling is the thing to say out loud.'],
+  ['Play', '🎈', 'Take yourself less seriously and life gets lighter.'],
+  ['Boundaries', '🧱', 'No is a complete sentence.'],
+  ['Wonder', '✨', "Look again - you've stopped seeing what's in front of you."],
+  ['Forgiveness', '🤍', 'You can set it down without saying it was okay.'],
+  ['Focus', '🎯', 'One thing, done with your whole heart, is plenty.'],
+  ['Change', '🦋', 'What feels like falling apart may be falling into place.'],
+  ['Body', '🌿', "Come back into your body - it's been waiting."],
+  ['Connection', '🔗', 'Reach out. The bridge is built from your side too.'],
+  ['Simplicity', '🪟', 'Remove one thing today. Notice the room it makes.'],
+  ['Gratitude', '🌻', 'Name three ordinary things. They were never ordinary.'],
+  ['Faith', '🌅', "The sun doesn't ask permission to rise. Neither should you."],
+  ['Solitude', '🏔', "Time alone isn't lonely. It's where you meet yourself."],
+  ['Flow', '💧', 'Stop forcing the river. Let it carry you a while.'],
+];
+const scFront = (c) => `<span class="sc-sym">${c[1]}</span><h3 class="sc-name">${esc(c[0])}</h3><p class="sc-msg">${esc(c[2])}</p>`;
+function renderSpirit() {
+  let el = document.getElementById('spirit'); if (!el) { el = document.createElement('div'); el.id = 'spirit'; document.body.appendChild(el); }
+  const c = state.spirit && state.spirit.card;
+  el.innerHTML = `<div class="spirit-bg">
+    <button class="spirit-x" data-spirit-close title="Close">×</button>
+    <div class="spirit-card ${c ? 'drawn' : ''}" data-spirit-draw>
+      <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-hint">Tap to draw</span></div>
+      <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
+    </div>
+    <button class="spirit-again" data-spirit-draw ${c ? '' : 'hidden'}>Draw another</button>
+  </div>`;
+}
+function openSpiritCards() { state.spirit = { card: null }; renderSpirit(); }
+function drawSpiritCard() {
+  const prev = state.spirit && state.spirit.card;
+  let c; do { c = SPIRIT_CARDS[Math.floor(Math.random() * SPIRIT_CARDS.length)]; } while (prev && c[0] === prev[0]);
+  state.spirit = { card: c };
+  const card = document.querySelector('.spirit-card'); if (!card) { renderSpirit(); return; }
+  const again = document.querySelector('.spirit-again'); if (again) again.hidden = false;
+  const setFront = () => { const f = document.querySelector('.sc-front'); if (f) f.innerHTML = scFront(c); };
+  if (card.classList.contains('drawn')) { card.classList.remove('drawn'); setTimeout(() => { setFront(); card.classList.add('drawn'); }, 300); }
+  else { setFront(); card.classList.add('drawn'); }
+}
+function closeSpirit() { const el = document.getElementById('spirit'); if (el) el.remove(); state.spirit = null; }
+
 async function openJournal() {
   state.view = { type: 'journal' };
   renderNav();
@@ -1319,7 +1374,7 @@ function renderJournalList() {
     </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Reflect')}
-    <div class="pane-head home-head"><h1>Reflect</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-journal-start>📓 Journal</button></div></div>`}</div>
+    <div class="pane-head home-head"><h1>Reflect</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-spirit-open title="Draw a card for a moment's reflection">🃏 Spirit Cards</button><button class="add-btn wide" data-journal-start>📓 Journal</button></div></div>`}</div>
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
@@ -5737,6 +5792,9 @@ document.addEventListener('click', (e) => {
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
   if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }
+  if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
+  if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
+  if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
