@@ -84,31 +84,63 @@ export async function handleSignup(request, env, email, json, err) {
   return json({ user: await getUserByEmail(env, email), free: !!free }, request, 201);
 }
 
-// First-run defaults so the app is usable immediately: lane targets + day
-// window, and a starter set of life areas.
+// A newcomer's default Today lanes. Robin's own lanes are his zen practice
+// (Zazen, Forró...) and don't belong to a stranger; these are the generic set
+// he chose. Stored per-account in lanes_config, so each member edits, adds and
+// removes their own from day one via the Time streams settings. `other` is added
+// automatically as the catch-all. Rest is the optional siesta; the rest are
+// ordinary tracked lanes that can receive tasks. minutes = the daily target ring
+// (0 = no ring, like a relationship you don't put a quota on).
+const DEFAULT_LANES = [
+  { key: 'body', label: 'Body / Health', hue: 145, minutes: 45 },
+  { key: 'hobbies', label: 'Hobbies', hue: 25, minutes: 45 },
+  { key: 'work', label: 'Work', hue: 220, minutes: 180 },
+  { key: 'family', label: 'Family', hue: 70, minutes: 0 },
+  { key: 'rest', label: 'Rest', hue: 305, minutes: 45, optional: true, practice: true },
+  { key: 'personal', label: 'Personal', hue: 190, minutes: 30 },
+  { key: 'reflect', label: 'Reflect', hue: 268, minutes: 15 },
+];
+// A starter life area maps onto the lane it most naturally feeds, so tasks tagged
+// to that area land in the right Today lane. Titles must match STARTERS below.
+const STARTER_AREA_LANE = {
+  Work: 'work', Health: 'body', Relationships: 'family', Money: 'personal',
+  Home: 'personal', 'Personal growth': 'reflect', Fun: 'hobbies',
+};
+
+// First-run defaults so the app is usable immediately: the day window, a starter
+// set of Today lanes with their targets, and a starter set of life areas mapped
+// onto those lanes. The owner (1) is never seeded - these run once, at signup.
 async function seedNewUser(env, uid) {
-  const defaults = [
-    ['target_zazen', '60'], ['target_body', '50'], ['target_music', '60'], ['target_art', '30'],
-    ['target_portuguese', '30'], ['target_work', '180'], ['target_mylife', '30'], ['target_rest', '60'],
-    ['day_start', '360'], ['day_end', '1380'],
-  ];
-  await env.DB.batch(defaults.map(([k, v]) =>
-    env.DB.prepare('INSERT OR IGNORE INTO settings (user_id, key, value) VALUES (?, ?, ?)').bind(uid, k, v)));
+  const now = new Date().toISOString();
+  const lanes = DEFAULT_LANES.map((l) => ({ key: l.key, label: l.label, hue: l.hue, ...(l.practice ? { practice: true } : {}), ...(l.optional ? { optional: true } : {}) }));
 
   // A blank Life Areas page doesn't tell a newcomer that Daybook orbits their
   // life areas. Seed the common ones (a Wheel-of-Life spread) so tasks, notes,
-  // goals and spending categories all have somewhere to land from day one. They
-  // are ordinary blocks - rename, recolour or delete any of them. Hues walk the
-  // wheel from a blue base so each reads distinct. The owner is never seeded.
+  // goals and spending categories all have somewhere to land. Ordinary blocks:
+  // rename, recolour or delete any. Hues walk the wheel from a blue base so each
+  // reads distinct. Keep their ids to map each area onto its Today lane.
   const STARTERS = ['Work', 'Health', 'Relationships', 'Money', 'Home', 'Personal growth', 'Fun'];
-  const now = new Date().toISOString();
-  await env.DB.batch(STARTERS.map((title, i) => {
+  const areaMap = {};
+  const areaStmts = STARTERS.map((title, i) => {
+    const id = crypto.randomUUID();
+    areaMap[id] = STARTER_AREA_LANE[title] || 'other';
     const hue = Math.round((210 + i * 137.5) % 360);
     return env.DB.prepare(
       `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
        VALUES (?, 'area', NULL, ?, ?, NULL, ?, ?, ?, 0, ?)`,
-    ).bind(crypto.randomUUID(), i, title, JSON.stringify({ hue }), now, now, uid);
-  }));
+    ).bind(id, i, title, JSON.stringify({ hue }), now, now, uid);
+  });
+
+  const settings = [
+    ['day_start', '360'], ['day_end', '1380'],
+    ['lanes_config', JSON.stringify(lanes)],
+    ['area_lanes', JSON.stringify(areaMap)],
+    ...DEFAULT_LANES.filter((l) => l.minutes > 0).map((l) => [`target_${l.key}`, String(l.minutes)]),
+  ];
+  const setStmts = settings.map(([k, v]) =>
+    env.DB.prepare('INSERT OR IGNORE INTO settings (user_id, key, value) VALUES (?, ?, ?)').bind(uid, k, v));
+
+  await env.DB.batch([...areaStmts, ...setStmts]);
 }
 
 // ── Invites ───────────────────────────────────────────────────────────

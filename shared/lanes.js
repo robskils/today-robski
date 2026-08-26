@@ -28,8 +28,9 @@ export const LANES = [
   { key: 'work',  label: 'Work',  hue: 220,
     zen: { kanji: '作務', romaji: 'samu', gloss: 'work as practice' } },
   // Everything that is just living: admin, money, Portugal, the body's upkeep.
-  // Was called Admin, which undersold it.
-  { key: 'mylife', label: 'My Life', hue: 190 },
+  // Was called Admin, then My Life; now Personal. The key stays `mylife` so
+  // target_mylife and every area mapping still point here.
+  { key: 'mylife', label: 'Personal', hue: 190 },
   // Maya. A person, so no daily target - you don't owe a relationship a quota
   // of minutes. No `target_maya` setting exists, which is what leaves its ring
   // off; the rail shows a plain count instead.
@@ -71,6 +72,7 @@ export const AREA_TO_LANE = {
   // A person gets her own lane, no target. See the 'maya' lane.
   'Maya Das': 'maya',
 
+  'Personal': 'mylife',
   'My Life': 'mylife',
   'Tool / Admin': 'mylife',
   'Tool': 'mylife',           // stray near-duplicate of the above, 1 task
