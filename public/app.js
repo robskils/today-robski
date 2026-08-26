@@ -1153,7 +1153,8 @@ function alertsHtml() {
   const gone = (key) => localStorage.getItem('life.home.alert.' + key) === today;
   const cards = [];
   (a.birthdays || []).forEach((b) => { const key = 'bday:' + b.id; if (gone(key)) return; cards.push(`<div class="home-alert"><span class="ha-ic">🎂</span><span class="ha-t">It's <b>${esc(b.name)}</b>'s birthday today</span><button class="ha-x" data-alert-x="${esc(key)}" title="Dismiss">×</button></div>`); });
-  if (a.p1 && !gone('p1')) cards.push(`<div class="home-alert ha-click" data-view-tasks role="button"><span class="ha-ic">🔴</span><span class="ha-t">You have <b>${a.p1}</b> priority ${a.p1 === 1 ? 'task' : 'tasks'} open</span><button class="ha-x" data-alert-x="p1" title="Dismiss">×</button></div>`);
+  // The priority-task count lived here, but the Priority Tasks section below
+  // already lists them on Home, so the banner was just noise.
   return cards.length ? `<div class="home-alerts">${cards.join('')}</div>` : '';
 }
 // The day's teaching, moved here from Today. Dismissible - once you've read it,
@@ -1168,10 +1169,23 @@ function homeQuoteHtml() {
 function homeCollapsed() { try { return JSON.parse(localStorage.getItem('life.home.collapsed')) || {}; } catch { return {}; } }
 function secOpen(key) { return !homeCollapsed()[key]; }
 function secH(key, title, extra, drag) { return `<div class="home-sec-h home-sec-toggle${drag ? ' home-drag-h' : ''}" data-sec-collapse="${key}" ${drag ? `draggable="true" data-hsec-grip="${key}"` : ''}>${drag ? '<span class="home-grip" title="Drag to reposition">⠿</span>' : ''}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`; }
+// The Priority Tasks list, in whatever order you've dragged it into. A custom
+// order persists in localStorage; anything not yet ordered (a freshly-flagged
+// task) falls to the end until you place it.
+function p1OrderIds() { try { const o = JSON.parse(localStorage.getItem('life.home.p1Order')); return Array.isArray(o) ? o : []; } catch { return []; } }
+function sortP1(list) { const o = p1OrderIds(); return list.slice().sort((a, b) => { const ia = o.indexOf(a.id), ib = o.indexOf(b.id); return (ia < 0 ? 1e6 : ia) - (ib < 0 ? 1e6 : ib); }); }
+function priorityTasks() { return sortP1((state.home && state.home.alerts && state.home.alerts.p1list) || []); }
+function reorderP1(dragged, before) {
+  const ids = priorityTasks().map((t) => t.id).filter((id) => id !== dragged);
+  let i = before ? ids.indexOf(before) : ids.length; if (i < 0) i = ids.length;
+  ids.splice(i, 0, dragged);
+  try { localStorage.setItem('life.home.p1Order', JSON.stringify(ids)); } catch {}
+  renderHome();
+}
 function p1Html() {
-  const p1 = (state.home && state.home.alerts && state.home.alerts.p1list) || [];
+  const p1 = priorityTasks();
   if (!p1.length) return '';
-  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority', `<span class="muted">${p1.length}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${p1.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div>` : ''}</section>`;
+  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${p1.length}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${p1.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-dot"></span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div>` : ''}</section>`;
 }
 function renderHome() {
   const favs = state.favs || [];
@@ -5776,7 +5790,7 @@ document.addEventListener('click', (e) => {
   { const ax = t.closest('[data-alert-x]'); if (ax) { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, new Date().toISOString().slice(0, 10)); renderHome(); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
-    if (state.pomoPickType === 'task' && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }
+    if (state.pomoPickType === 'task' && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).sort((a, b) => (PRIO_ORDER[(a.props && a.props.priority) || ''] || 5) - (PRIO_ORDER[(b.props && b.props.priority) || ''] || 5)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }
     return; } }
   if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
@@ -6254,7 +6268,7 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null;
 function reorderHomeSec(dragged, before, cur) {
   const arr = cur.filter((k) => k !== dragged);
   let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
@@ -6284,6 +6298,7 @@ function dropBefore(over, list, idOf) {
 document.addEventListener('dragstart', (e) => {
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const fo = e.target.closest('[data-focus-id]'); if (fo) { dragFocus = fo.dataset.focusId; fo.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const pr = e.target.closest('[data-p1-id]'); if (pr) { dragP1 = pr.dataset.p1Id; pr.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const hg = e.target.closest('[data-hsec-grip]'); if (hg) { dragHomeSec = hg.dataset.hsecGrip; const s = e.target.closest('[data-hsec]'); if (s) s.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
@@ -6292,6 +6307,7 @@ document.addEventListener('dragstart', (e) => {
 document.addEventListener('dragover', (e) => {
   if (dragFav && (e.target.closest('#favs') || e.target.closest('.home-sec-favs'))) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
+  if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'v'); return; }
   if (dragHomeSec && e.target.closest('.home-main')) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
@@ -6318,6 +6334,12 @@ document.addEventListener('drop', (e) => {
     const before = over && over.dataset.focusId !== dragFocus ? dropBefore(over, ids, (el) => el.dataset.focusId) : null;
     clearDropMarks(); reorderFocus(dragFocus, before); dragFocus = null; return;
   }
+  if (dragP1) {
+    e.preventDefault(); const over = e.target.closest('[data-p1-id]');
+    const ids = priorityTasks().map((t) => t.id);
+    const before = over && over.dataset.p1Id !== dragP1 ? dropBefore(over, ids, (el) => el.dataset.p1Id) : null;
+    clearDropMarks(); reorderP1(dragP1, before); dragP1 = null; return;
+  }
   if (dragHomeSec) {
     e.preventDefault(); const over = e.target.closest('[data-hsec]');
     const cur = [...document.querySelectorAll('.home-main [data-hsec]')].map((el) => el.dataset.hsec);
@@ -6342,7 +6364,7 @@ document.addEventListener('drop', (e) => {
     dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
