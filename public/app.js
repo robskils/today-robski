@@ -882,7 +882,7 @@ async function createInvite() {
   try { const r = await api('/api/invites', { method: 'POST', body: JSON.stringify({ plan, free, email }) }); await loadInvites(); toast(`Invite created: ${r.code}`); }
   catch (e) { toast(e.message); }
 }
-const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}"><code class="inv-code">${esc(i.code)}</code><span class="inv-meta">${i.free ? 'free · ' : ''}${esc(i.plan || '')}${i.email ? ' · ' + esc(i.email) : ''}${i.used_by ? ' · used' : ''}</span>${i.used_by ? '' : `<button class="ghost inv-copy" data-copy-code="${esc(i.code)}">Copy</button>`}</div>`;
+const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}"><code class="inv-code">${esc(i.code)}</code><span class="inv-meta">${i.free ? 'free · ' : ''}${esc(i.plan || '')}${i.email ? ' · ' + esc(i.email) : ''}${i.used_by ? ' · used' : ''}</span>${i.used_by ? '' : `<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Copy link</button>`}</div>`;
 function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
@@ -6230,6 +6230,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-account-close]')) { closeMyAccount(); return; }
   if (t.closest('[data-create-invite]')) { createInvite(); return; }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
+  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://daybook.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
@@ -7748,13 +7749,14 @@ function showSignup(email, inviteRequired) {
   let presub = '';
   try { const h = location.hostname; if (h.endsWith('.daybook.fyi')) { const f = h.split('.')[0]; if (f && f !== 'www') presub = f; } } catch {}
   const inviteLabel = inviteRequired ? 'Invite code' : 'Invite code <span class="su-opt">(optional)</span>';
+  let preInvite = ''; try { preInvite = localStorage.getItem('life.invite') || ''; } catch {}
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><em>${esc(BRAND.app)}</em></div>
       <p class="gate2-sub">Welcome - let's set up your space.</p>
       <label class="signup-l">Your name<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <label class="signup-l">Your web address<span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" value="${esc(presub)}" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span></label>
-      <label class="signup-l">${inviteLabel}<input class="gate2-input" id="su-invite" placeholder="${inviteRequired ? 'From a member who invited you' : "Leave blank if you don't have one"}" autocomplete="off" spellcheck="false" ${inviteRequired ? 'required' : ''}></label>
+      <label class="signup-l">${inviteLabel}<input class="gate2-input" id="su-invite" value="${esc(preInvite)}" placeholder="${inviteRequired ? 'From a member who invited you' : "Leave blank if you don't have one"}" autocomplete="off" spellcheck="false" ${inviteRequired ? 'required' : ''}></label>
       <button class="gate2-btn" id="su-btn" type="submit">Create my Daybook</button>
       <p class="gate2-err" id="su-err" hidden></p>
       <p class="gate2-alt su-foot">Signed in as ${esc(email)} · <button type="button" class="su-signout" id="su-signout">sign out</button></p>
@@ -7770,7 +7772,7 @@ async function signupSubmit(e) {
   err.hidden = true; btn.disabled = true;
   try {
     const d = await api('/api/signup', { method: 'POST', body: JSON.stringify({ name: $('#su-name').value.trim(), subdomain: $('#su-sub').value.trim(), invite: $('#su-invite').value.trim() }) });
-    if (d && d.user) { location.reload(); return; }
+    if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} location.reload(); return; }
     throw new Error('Could not create your account.');
   } catch (e2) { err.textContent = e2.message || 'Could not create your account.'; err.hidden = false; btn.disabled = false; }
 }
@@ -7831,6 +7833,13 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
 
 (async function boot() {
   initTheme();
+  // Invite link: /join/CODE (or ?invite=CODE) stashes the code so the signup form
+  // prefills it, then tidies the URL.
+  try {
+    const m = location.pathname.match(/^\/join\/([A-Za-z0-9-]{4,24})$/);
+    const code = (m && m[1]) || new URLSearchParams(location.search).get('invite');
+    if (code) { localStorage.setItem('life.invite', code.toUpperCase()); history.replaceState(null, '', '/'); }
+  } catch {}
   if (!token()) { showGate(); return; }
   // Multi-tenant only: a signed-in email with no account yet must claim one
   // first. On the single-tenant app /api/me 404s, so this is a no-op.

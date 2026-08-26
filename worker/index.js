@@ -2017,6 +2017,11 @@ export default {
         const w = await getPublicWebinar(env, wm[1]);
         return withHsts(new Response(webinarPage(w, wm[1]), { status: w ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } }));
       }
+      // Invite links: /join/<CODE> boots the app (on any host) so the signup form
+      // can pick the code out of the URL and prefill it.
+      if (/^\/join\/[A-Za-z0-9-]{4,24}$/.test(path)) {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
+      }
       // Only the marketing apex may be indexed; the private apps and per-user
       // tenant subdomains must not be.
       if (path === '/robots.txt') {
