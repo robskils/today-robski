@@ -67,6 +67,31 @@ export async function acceptFriend(env, id) {
   ]);
   return getFriends(env);
 }
+// ── Chat ──────────────────────────────────────────────────────────────
+async function areFriends(env, other) {
+  return !!(await env.DB.prepare("SELECT 1 FROM friends WHERE user_id=? AND friend_id=? AND status='accepted'").bind(env.uid, Number(other)).first().catch(() => null));
+}
+export async function getMessages(env, withId) {
+  withId = Number(withId);
+  if (!(await areFriends(env, withId))) throw new Error('You are not connected with that person.');
+  const rows = (await env.DB.prepare('SELECT id, from_id, body, ts FROM messages WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?) ORDER BY id').bind(env.uid, withId, withId, env.uid).all()).results || [];
+  await env.DB.prepare('UPDATE messages SET read_at=? WHERE to_id=? AND from_id=? AND read_at IS NULL').bind(new Date().toISOString(), env.uid, withId).run().catch(() => {});
+  return { messages: rows.map((r) => ({ id: r.id, mine: r.from_id === env.uid, body: r.body, ts: r.ts })) };
+}
+export async function sendMessage(env, toId, body) {
+  toId = Number(toId); body = String(body || '').slice(0, 4000).trim();
+  if (!body) throw new Error('Empty message.');
+  if (!(await areFriends(env, toId))) throw new Error('You are not connected with that person.');
+  await env.DB.prepare('INSERT INTO messages (from_id, to_id, body, ts) VALUES (?,?,?,?)').bind(env.uid, toId, body, new Date().toISOString()).run();
+  return getMessages(env, toId);
+}
+export async function unreadCounts(env) {
+  const rows = (await env.DB.prepare('SELECT from_id, COUNT(*) AS n FROM messages WHERE to_id=? AND read_at IS NULL GROUP BY from_id').bind(env.uid).all()).results || [];
+  const byFriend = {}; let total = 0;
+  for (const r of rows) { byFriend[r.from_id] = r.n; total += r.n; }
+  return { total, byFriend };
+}
+
 export async function removeFriend(env, id) {
   id = Number(id);
   await env.DB.batch([

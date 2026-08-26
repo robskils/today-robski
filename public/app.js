@@ -566,7 +566,7 @@ function renderFriends() {
     <div class="pane-head home-head"><h1>Friends</h1></div>
     <div class="list-head"><input class="list-search sel" id="friend-email" placeholder="Add a friend by email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Add</button></div>
     ${d.incoming.length ? `<section class="home-sec"><div class="home-sec-h">Friend requests<span class="muted">${d.incoming.length}</span></div>${d.incoming.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}</section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">Remove</button>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
+    <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
     ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
     ${d.suggestions.length ? `<section class="home-sec"><div class="home-sec-h">Your contacts on Daybook</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}</section>` : ''}`;
 }
@@ -575,6 +575,34 @@ async function friendAddEmail() { const el = $('#friend-email'); const email = (
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Friends now'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
 function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
+// Chat with a friend: a slide-in panel that polls for new messages while open.
+let chatPoll = null;
+async function openChat(id, name) { state.chat = { with: Number(id), name, messages: [] }; renderChat(); await loadChat(); if (chatPoll) clearInterval(chatPoll); chatPoll = setInterval(() => { if (state.chat) loadChat(); else { clearInterval(chatPoll); chatPoll = null; } }, 4000); }
+async function loadChat() { if (!state.chat) return; try { const r = await api(`/api/messages?with=${state.chat.with}`); if (r.messages.length !== state.chat.messages.length) { state.chat.messages = r.messages; renderChatMessages(); } } catch {} }
+function renderChat() {
+  let el = document.getElementById('chat'); if (!el) { el = document.createElement('div'); el.id = 'chat'; document.body.appendChild(el); }
+  const c = state.chat;
+  el.innerHTML = `<div class="chat-bg" data-chat-close></div><div class="chat-panel">
+    <div class="chat-head"><span class="chat-title">${esc(c.name)}</span><button class="chat-x" data-chat-close title="Close">×</button></div>
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <form class="chat-form" id="chat-form"><input class="chat-input" id="chat-input" placeholder="Message ${esc(c.name)}…" autocomplete="off"><button class="chat-send" type="submit">Send</button></form>
+  </div>`;
+  renderChatMessages();
+  const f = document.getElementById('chat-form'); if (f) f.addEventListener('submit', sendChat);
+  const inp = document.getElementById('chat-input'); if (inp) inp.focus();
+}
+function renderChatMessages() {
+  const box = document.getElementById('chat-msgs'); if (!box || !state.chat) return;
+  box.innerHTML = state.chat.messages.map((m) => `<div class="chat-msg ${m.mine ? 'mine' : ''}"><span class="cm-body">${esc(m.body)}</span></div>`).join('') || '<div class="chat-empty">Say hello 👋</div>';
+  box.scrollTop = box.scrollHeight;
+}
+async function sendChat(e) {
+  if (e) e.preventDefault();
+  const inp = document.getElementById('chat-input'); const body = (inp && inp.value || '').trim(); if (!body || !state.chat) return;
+  inp.value = '';
+  try { const r = await api('/api/messages', { method: 'POST', body: JSON.stringify({ to: state.chat.with, body }) }); state.chat.messages = r.messages; renderChatMessages(); } catch (err) { toast(err.message); }
+}
+function closeChat() { if (chatPoll) { clearInterval(chatPoll); chatPoll = null; } const el = document.getElementById('chat'); if (el) el.remove(); state.chat = null; }
 async function createInvite() {
   const plan = ($('#inv-plan') || {}).value || 'standard';
   const free = ($('#inv-freetoggle') || {}).checked ? 1 : 0;
@@ -5872,6 +5900,9 @@ document.addEventListener('click', (e) => {
   { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }
   { const fac = t.closest('[data-friend-accept]'); if (fac) { friendAccept(fac.dataset.friendAccept); return; } }
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
+  { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
+  { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
+  if (t.closest('[data-chat-close]')) { closeChat(); return; }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }

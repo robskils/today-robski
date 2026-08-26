@@ -1,7 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias } from './accounts.js';
-import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend } from './friends.js';
+import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts } from './friends.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -2094,6 +2094,9 @@ export default {
       }
       if (path === '/api/friends/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await acceptFriend(env, b.id), request); }
       if (path === '/api/friends/remove' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await removeFriend(env, b.id), request); }
+      if (path === '/api/messages' && request.method === 'GET') { try { return json(await getMessages(env, url.searchParams.get('with')), request); } catch (e) { return err(e.message, request, 403); } }
+      if (path === '/api/messages' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await sendMessage(env, b.to, b.body), request, 201); } catch (e) { return err(e.message, request, 403); } }
+      if (path === '/api/messages/unread' && request.method === 'GET') return json(await unreadCounts(env), request);
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/home/alerts' && request.method === 'GET') return homeAlerts(request, env, json);
