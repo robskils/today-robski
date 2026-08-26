@@ -144,7 +144,15 @@ export async function addAlias(env, email) {
   ).bind(e, e, env.uid).first().catch(() => null);
   if (clash) throw new Error('That email is already in use.');
   await env.DB.prepare('INSERT OR IGNORE INTO user_emails (email, user_id, verified) VALUES (?, ?, 0)').bind(e, env.uid).run();
-  await sendAliasCode(env, e);
+  // If the code can't be sent, don't leave a stranded pending alias behind.
+  try { await sendAliasCode(env, e); }
+  catch (err) {
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM user_emails WHERE email = ? AND user_id = ? AND verified = 0').bind(e, env.uid),
+      env.DB.prepare('DELETE FROM alias_codes WHERE email = ? AND user_id = ?').bind(e, env.uid),
+    ]);
+    throw err;
+  }
   return getAccount(env);
 }
 // Email (or re-email) the confirmation code for a pending alias on this account.
