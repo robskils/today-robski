@@ -663,6 +663,48 @@ function renderShare() {
 async function shareSet(fid, canEdit) { try { const r = await api(`/api/blocks/${state.share.id}/share`, { method: 'POST', body: JSON.stringify({ friendId: fid, canEdit }) }); state.share.shares = r.shares; renderShare(); } catch (e) { toast(e.message); } }
 async function shareOff(fid) { try { const r = await api(`/api/blocks/${state.share.id}/share`, { method: 'DELETE', body: JSON.stringify({ friendId: fid }) }); state.share.shares = r.shares; renderShare(); } catch (e) { toast(e.message); } }
 function closeShare() { const el = document.getElementById('share'); if (el) el.remove(); state.share = null; }
+// ── Assigning a task to a friend (Friends phase 3b) ───────────────────
+async function openAssign(id, title) {
+  state.assign = { id, title, friends: (state.friends && state.friends.friends) || [], assignees: [], loading: true };
+  renderAssign();
+  try {
+    const [fr, as] = await Promise.all([api('/api/friends'), api(`/api/tasks/${id}/assignees`)]);
+    state.friends = fr; state.assign.friends = fr.friends || []; state.assign.assignees = as.assignees || [];
+  } catch (e) { toast(e.message); }
+  state.assign.loading = false; renderAssign();
+}
+function assignStatusFor(fid) { const a = (state.assign.assignees || []).find((x) => x.id === fid); return a ? a.status : ''; }
+function renderAssign() {
+  let el = document.getElementById('assign'); if (!el) { el = document.createElement('div'); el.id = 'assign'; document.body.appendChild(el); }
+  const s = state.assign; const friends = s.friends || [];
+  const rows = s.loading ? '<div class="chat-empty">Loading…</div>'
+    : (friends.length ? friends.map((f) => {
+      const st = assignStatusFor(f.id);
+      return `<div class="share-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${st
+        ? `<span class="share-acts"><span class="assign-status ${st}">${st === 'accepted' ? '✓ Accepted' : 'Pending'}</span><button class="ghost share-off" data-assign-off="${f.id}" title="Unassign">×</button></span>`
+        : `<button class="add-btn wide" data-assign-on="${f.id}">Assign</button>`}</div>`;
+    }).join('') : '<div class="home-empty">Add a friend first, then you can assign tasks to them.</div>');
+  el.innerHTML = `<div class="chat-bg" data-assign-close></div><div class="chat-panel share-panel">
+    <div class="chat-head"><span class="chat-title">Assign this task</span><button class="chat-x" data-assign-close title="Close">×</button></div>
+    <div class="share-note">They get a request; once they accept, it becomes a shared task and ticking it off stays in sync for both of you.</div>
+    <div class="share-list">${rows}</div>
+  </div>`;
+}
+async function assignTo(fid) { try { const r = await api(`/api/tasks/${state.assign.id}/assign`, { method: 'POST', body: JSON.stringify({ toId: fid }) }); state.assign.assignees = r.assignees; renderAssign(); toast('Assigned - waiting for them to accept'); } catch (e) { toast(e.message); } }
+async function unassignFrom(fid) { try { const r = await api(`/api/tasks/${state.assign.id}/assign`, { method: 'DELETE', body: JSON.stringify({ toId: fid }) }); state.assign.assignees = r.assignees; renderAssign(); } catch (e) { toast(e.message); } }
+function closeAssign() { const el = document.getElementById('assign'); if (el) el.remove(); state.assign = null; if (state.view && state.view.type === 'taskcard') openTaskCard(state.view.id); }
+async function acceptAssign(taskId) { try { state.assignments = await api('/api/assignments/accept', { method: 'POST', body: JSON.stringify({ taskId }) }); toast('Accepted - it\'s in your tasks now'); if (state.view && state.view.type === 'tasks') { await openTasks(); } } catch (e) { toast(e.message); } }
+async function declineAssign(taskId) { try { state.assignments = await api('/api/assignments/decline', { method: 'POST', body: JSON.stringify({ taskId }) }); if (state.view && state.view.type === 'tasks') renderTasks(); } catch (e) { toast(e.message); } }
+// Tick a task I don't own but can edit (an accepted assignment / shared task):
+// write straight to the shared block, so the owner sees the same status.
+async function sharedToggleDone(id, done) {
+  try {
+    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { done } }) });
+    if (modOn('friends')) { try { state.assignments = await api('/api/assignments'); } catch {} }
+    if (state.view && state.view.type === 'taskcard' && state.view.id === id) openTaskCard(id);
+    else if (state.view && state.view.type === 'tasks') renderTasks();
+  } catch (e) { toast(e.message); }
+}
 async function createInvite() {
   const plan = ($('#inv-plan') || {}).value || 'standard';
   const free = ($('#inv-freetoggle') || {}).checked ? 1 : 0;
@@ -920,6 +962,22 @@ async function openTasks(filter) {
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.tasks = tasks;
   renderNav(); renderTasks();
+  // Tasks friends have assigned to me (loads quietly, then re-renders the section).
+  if (modOn('friends')) api('/api/assignments').then((a) => { state.assignments = a; if (state.view && state.view.type === 'tasks') renderTasks(); }).catch(() => {});
+}
+// The "Assigned to you" strip: pending requests to accept/decline, then the
+// accepted ones you can open. Accepted assigned tasks are the owner's blocks, so
+// opening one uses the shared-access path.
+function assignedSectionHtml() {
+  const a = state.assignments || { pending: [], accepted: [] };
+  if (!a.pending.length && !a.accepted.length) return '';
+  const prio = (p) => p ? `<span class="p-tag p-${p}">${p}</span>` : '';
+  const pend = a.pending.map((t) => `<div class="assigned-row pending"><span class="ar-body"><span class="ar-t">${esc(t.title || 'Untitled task')}</span><span class="ar-meta">from ${esc(t.from)}</span></span><span class="ar-acts"><button class="add-btn wide" data-assign-accept="${t.id}">Accept</button><button class="ghost" data-assign-decline="${t.id}">Decline</button></span></div>`).join('');
+  const acc = a.accepted.map((t) => `<div class="assigned-row"><button class="ar-check-btn" data-assign-tick="${t.id}" data-done="${t.done ? 1 : 0}" title="${t.done ? 'Mark not done' : 'Mark done'}">${t.done ? '☑' : '☐'}</button><button class="ar-open" data-open-task="${t.id}"><span class="ar-t ${t.done ? 'struck' : ''}">${esc(t.title || 'Untitled task')}</span><span class="ar-meta">${prio(t.priority)}from ${esc(t.from)}</span></button></div>`).join('');
+  return `<section class="assigned-sec">
+    <div class="home-sec-h">👤 Assigned to you${a.pending.length ? `<span class="assign-badge">${a.pending.length} new</span>` : ''}</div>
+    ${pend}${acc}
+  </section>`;
 }
 async function openNote(id) {
   const note = await api(`/api/blocks/${id}`);
@@ -3757,6 +3815,7 @@ function renderTasks() {
       </div>
     </form>`
       : ''}
+    ${assignedSectionHtml()}
     ${filterBar}
     ${taskTableHtml(open, (conds.length || tq) ? 'No tasks match these filters.' : 'No open tasks here.')}
     ${snoozedSection}
@@ -6145,6 +6204,14 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-share-close]')) { closeShare(); return; }
   { const son = t.closest('[data-share-on]'); if (son) { shareSet(Number(son.dataset.shareOn), true); return; } }
   { const sof = t.closest('[data-share-off]'); if (sof) { shareOff(Number(sof.dataset.shareOff)); return; } }
+  { const ao = t.closest('[data-assign-open]'); if (ao) { openAssign(ao.dataset.assignOpen, ao.dataset.assignTitle || ''); return; } }
+  if (t.closest('[data-assign-close]')) { closeAssign(); return; }
+  { const aon = t.closest('[data-assign-on]'); if (aon) { assignTo(Number(aon.dataset.assignOn)); return; } }
+  { const aof = t.closest('[data-assign-off]'); if (aof) { unassignFrom(Number(aof.dataset.assignOff)); return; } }
+  { const aac = t.closest('[data-assign-accept]'); if (aac) { acceptAssign(aac.dataset.assignAccept); return; } }
+  { const adc = t.closest('[data-assign-decline]'); if (adc) { declineAssign(adc.dataset.assignDecline); return; } }
+  { const atk = t.closest('[data-assign-tick]'); if (atk) { sharedToggleDone(atk.dataset.assignTick, atk.dataset.done !== '1'); return; } }
+  { const sc = t.closest('[data-shared-check]'); if (sc) { sharedToggleDone(sc.dataset.sharedCheck, sc.dataset.done !== '1'); return; } }
   { const sw = t.closest('[data-open-shared]'); if (sw) { openView({ type: sw.dataset.sharedKind, id: sw.dataset.openShared }); return; } }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
@@ -6649,10 +6716,11 @@ function renderTaskCard() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
       <span class="crumb-tools">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
       ${shareBtn(t, 'task')}
+      ${t.sharedBy ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a friend">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
       ${t.sharedBy ? '' : '<button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button>'}</span></div>
     ${sharedBanner(t)}
     <div class="task-focus">
-      <button class="tf-check ${t.props.done ? 'done' : ''}" data-check="${t.id}" title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
+      <button class="tf-check ${t.props.done ? 'done' : ''}" ${t.sharedBy ? `data-shared-check="${t.id}" data-done="${t.props.done ? 1 : 0}"` : `data-check="${t.id}"`} title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
       <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task" ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>${esc(t.title || '')}</textarea>
     </div>
     ${(() => { const m = focusMinsFor('task', t.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this task</div>` : ''; })()}

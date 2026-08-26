@@ -3,6 +3,7 @@ import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } 
 import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode } from './accounts.js';
 import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
+import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -886,6 +887,7 @@ async function getBlock(env, id) {
   if (acc.mine) {
     const c = await env.DB.prepare('SELECT COUNT(*) AS n FROM shares WHERE block_id = ? AND owner_id = ?').bind(id, env.uid).first().catch(() => null);
     block.sharedWith = c ? c.n : 0;
+    if (block.kind === 'task') { const ac = await env.DB.prepare('SELECT COUNT(*) AS n FROM assignments WHERE task_id = ? AND from_id = ?').bind(id, env.uid).first().catch(() => null); block.assignedCount = ac ? ac.n : 0; }
   } else {
     // Shown to a recipient so the UI can label a borrowed block and gate edits.
     const o = await env.DB.prepare('SELECT name, subdomain FROM users WHERE id = ?').bind(oid).first().catch(() => null);
@@ -2252,6 +2254,20 @@ export default {
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
       // Sharing: notes & tasks handed to a friend (Friends phase 3a).
       if (path === '/api/shared' && request.method === 'GET') return json(await sharedWithMe(env), request);
+      // Assigning a task to a friend (Friends phase 3b).
+      if (path === '/api/assignments' && request.method === 'GET') return json(await myAssignments(env), request);
+      if (path === '/api/assignments/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await acceptAssignment(env, b.taskId), request); } catch (e) { return err(e.message, request, 400); } }
+      if (path === '/api/assignments/decline' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await declineAssignment(env, b.taskId), request); } catch (e) { return err(e.message, request, 400); } }
+      const assignMatch = path.match(/^\/api\/tasks\/([\w-]+)\/assign(ees)?$/);
+      if (assignMatch) {
+        const tid = assignMatch[1];
+        try {
+          if (request.method === 'GET') return json(await listTaskAssignees(env, tid), request);
+          const b = await request.json().catch(() => ({}));
+          if (request.method === 'POST') return json(await assignTask(env, tid, b.toId), request, 201);
+          if (request.method === 'DELETE') return json(await unassign(env, tid, b.toId), request);
+        } catch (e) { return err(e.message, request, 400); }
+      }
       const shareMatch = path.match(/^\/api\/blocks\/([\w-]+)\/shares?$/);
       if (shareMatch) {
         const bid = shareMatch[1];

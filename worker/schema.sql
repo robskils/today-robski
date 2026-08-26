@@ -152,6 +152,19 @@ CREATE TABLE IF NOT EXISTS shares (
 );
 CREATE INDEX IF NOT EXISTS idx_shares_friend ON shares(friend_id);
 
+-- Assigning a task to a friend. One row per (task, assignee); status is
+-- 'pending' until they accept, then 'accepted' (at which point a shares row
+-- grants them edit access to the one task block, so status syncs both ways).
+CREATE TABLE IF NOT EXISTS assignments (
+  task_id    TEXT NOT NULL,
+  from_id    INTEGER NOT NULL,
+  to_id      INTEGER NOT NULL,
+  status     TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, to_id)
+);
+CREATE INDEX IF NOT EXISTS idx_assignments_to ON assignments(to_id);
+
 -- Pending alias confirmations: a 6-digit code emailed to a newly added address.
 -- Separate from otp_codes (sign-in) so an unverified alias can't be used to log
 -- in, and the code is bound to the account that requested it.
