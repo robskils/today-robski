@@ -66,6 +66,15 @@ or the other and would deliver half a brief, which is what the old one did.
   `settings.last_brief_day` before sending**, not after. The conditional UPDATE
   is the lock: `meta.changes` says whether this tick won it. A send failure
   hands the day back so a later tick retries.
+- **Multi-tenant.** `runDailyBriefAll` fans the brief out over every active
+  account (`activeUsers`); each claims its own `last_brief_day` (settings PK is
+  `(user_id, key)`). The **calendar rides a single Google refresh token - the
+  owner's** - so `calendarEvents` is called **only for user 1**; a member's
+  brief is tasks + quote, never the owner's diary. Don't "fix" that by calling
+  it for everyone. A member with no calendar and no P1s is skipped, not emailed
+  a quote-only note. The SMS alerts and mail-push fan out the same way: each
+  member texts their own saved `phone` (owner falls back to `ALERT_PHONE`) and
+  is pushed their own inbox's unread, not the sum across tenants.
 - `POST /api/brief/test` sends it now and deliberately does *not* claim the
   day, so testing at noon cannot swallow tomorrow's.
 - Everything in brief.js is pure, and `npm test` renders the page without a
