@@ -38,7 +38,7 @@ export async function getFriends(env) {
     const byEmail = {};
     const us = await env.DB.prepare(`SELECT id, name, subdomain, lower(email) AS em FROM users WHERE lower(email) IN (${ph})`).bind(...uniq).all().catch(() => ({ results: [] }));
     for (const r of us.results || []) byEmail[r.em] = r;
-    const al = await env.DB.prepare(`SELECT lower(ue.email) AS em, u.id, u.name, u.subdomain FROM user_emails ue JOIN users u ON u.id = ue.user_id WHERE lower(ue.email) IN (${ph})`).bind(...uniq).all().catch(() => ({ results: [] }));
+    const al = await env.DB.prepare(`SELECT lower(ue.email) AS em, u.id, u.name, u.subdomain FROM user_emails ue JOIN users u ON u.id = ue.user_id WHERE ue.verified = 1 AND lower(ue.email) IN (${ph})`).bind(...uniq).all().catch(() => ({ results: [] }));
     for (const r of al.results || []) byEmail[r.em] = { id: r.id, name: r.name, subdomain: r.subdomain };
     const seen = new Set();
     for (const [em, title] of emails) { const u = byEmail[em]; if (u && !connected.has(u.id) && !seen.has(u.id)) { seen.add(u.id); suggestions.push({ id: u.id, name: u.name || u.subdomain, subdomain: u.subdomain, contactName: title }); } }

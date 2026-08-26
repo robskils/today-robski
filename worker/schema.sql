@@ -134,8 +134,21 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Email aliases: extra addresses that sign in to the same account. The primary
 -- address lives on users.email; every other address a person uses maps here.
 CREATE TABLE IF NOT EXISTS user_emails (
-  email   TEXT PRIMARY KEY,
-  user_id INTEGER NOT NULL
+  email    TEXT PRIMARY KEY,
+  user_id  INTEGER NOT NULL,
+  verified INTEGER NOT NULL DEFAULT 0   -- 1 once the owner confirmed the address by code
+);
+
+-- Pending alias confirmations: a 6-digit code emailed to a newly added address.
+-- Separate from otp_codes (sign-in) so an unverified alias can't be used to log
+-- in, and the code is bound to the account that requested it.
+CREATE TABLE IF NOT EXISTS alias_codes (
+  email      TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL,
+  code       TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,   -- unix seconds
+  attempts   INTEGER DEFAULT 0,
+  sent_at    INTEGER NOT NULL
 );
 
 -- Zazen is an hour, and is the only target Robin has actually specified.

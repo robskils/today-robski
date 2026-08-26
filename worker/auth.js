@@ -118,7 +118,7 @@ export async function resolveUser(request, env) {
   // person's addresses sign into the one account.
   const user = await env.DB.prepare(
     `SELECT id, email, name, subdomain, plan, status FROM users
-      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ?)`,
+      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ? AND verified = 1)`,
   ).bind(payload.sub, payload.sub).first().catch(() => null);
   if (!user || user.status === 'suspended') return null;
   return user;
@@ -166,22 +166,7 @@ export async function requestCode(request, env, json, err) {
     console.error('sms login send failed, falling back to email:', sms && (sms.skipped || sms.status));
   }
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: env.FROM_EMAIL,
-      to: [email],
-      // ASCII only: a non-ASCII subject needs RFC 2047 encoding, and a hyphen
-      // reads the same as a dash for the sake of it.
-      subject: `${code} - your Daybook sign-in code`,
-      html: codeEmail(code),
-      text: `Your Daybook sign-in code is ${code}. It expires in 10 minutes.`,
-    }),
-  });
+  const res = await sendCodeMail(env, email, code, 'signin');
 
   if (!res.ok) {
     // The code is already in D1 at this point, so this is recoverable:
@@ -237,6 +222,26 @@ export async function verifyCode(request, env, json, err) {
   return json({ token, email });
 }
 
+// Deliver a 6-digit code by Resend, worded for either sign-in or confirming a
+// newly added alias. Returns the fetch Response so the caller can react to a
+// non-ok send. ASCII subjects only: a non-ASCII subject needs RFC 2047 encoding.
+export async function sendCodeMail(env, email, code, kind) {
+  const alias = kind === 'alias';
+  return fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: env.FROM_EMAIL,
+      to: [email],
+      subject: alias ? `${code} - confirm your email for Daybook` : `${code} - your Daybook sign-in code`,
+      html: codeEmail(code, kind),
+      text: alias
+        ? `Enter ${code} in Daybook to add this address to your account. It expires in 10 minutes.`
+        : `Your Daybook sign-in code is ${code}. It expires in 10 minutes.`,
+    }),
+  });
+}
+
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -248,12 +253,18 @@ function timingSafeEqual(a, b) {
 //
 // Table layout and inline styles throughout: Gmail strips <style> blocks, and
 // Outlook's renderer is Word. No flexbox, no CSS variables, no SVG.
-function codeEmail(code) {
+export function codeEmail(code, kind) {
+  const alias = kind === 'alias';
+  const eyebrow = alias ? 'Confirm email' : 'Sign in';
+  const line = alias
+    ? `Enter this code in Daybook to add this address to your account. It expires in <strong style="color:#211c17">10 minutes</strong>.`
+    : `Your sign-in code. It expires in <strong style="color:#211c17">10 minutes</strong>.`;
+  const pre = alias ? `${code} confirms this email for your Daybook account.` : `${code} is your Daybook sign-in code. It expires in 10 minutes.`;
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
   <!-- Preheader: what the inbox shows before you open it. -->
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0">${code} is your Daybook sign-in code. It expires in 10 minutes.</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">${pre}</div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#efeae0;padding:40px 0">
     <tr><td align="center">
@@ -273,11 +284,11 @@ function codeEmail(code) {
         </td></tr>
 
         <tr><td style="padding:26px 38px 0" align="center">
-          <p style="margin:0;font-size:13px;letter-spacing:0.24em;text-transform:uppercase;color:#8b7f72">Sign in</p>
+          <p style="margin:0;font-size:13px;letter-spacing:0.24em;text-transform:uppercase;color:#8b7f72">${eyebrow}</p>
         </td></tr>
 
         <tr><td style="padding:12px 38px 0">
-          <p style="margin:0;font-size:15px;color:#574e44;line-height:1.6;text-align:center">Your sign-in code. It expires in <strong style="color:#211c17">10 minutes</strong>.</p>
+          <p style="margin:0;font-size:15px;color:#574e44;line-height:1.6;text-align:center">${line}</p>
         </td></tr>
 
         <tr><td style="padding:24px 38px 0">

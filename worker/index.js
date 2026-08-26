@@ -1,6 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
-import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias } from './accounts.js';
+import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode } from './accounts.js';
 import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts } from './friends.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
@@ -2081,6 +2081,14 @@ export default {
           if (request.method === 'POST') return json(await addAlias(env, b.email), request, 201);
           if (request.method === 'DELETE') return json(await removeAlias(env, b.email), request);
         } catch (e) { return err(e.message, request, 400); }
+      }
+      if (path === '/api/account/alias/verify' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try { return json(await verifyAlias(env, b.email, b.code), request); } catch (e) { return err(e.message, request, 400); }
+      }
+      if (path === '/api/account/alias/resend' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try { return json(await sendAliasCode(env, b.email), request); } catch (e) { return err(e.message, request, 400); }
       }
 
       // Friends on Daybook: presence + connections.

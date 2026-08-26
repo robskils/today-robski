@@ -364,18 +364,36 @@ function crumbNav(trail, areaId) {
 }
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
-function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); } catch {} }
+function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label, pinned: !!t.pinned })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); } catch {} }
 function syncActiveTab() {
-  const tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
+  let tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
+  // A pinned tab is locked to its destination. Navigating elsewhere while it's
+  // active doesn't overwrite it: it spills into a working (unpinned) tab,
+  // creating one if every tab is pinned.
+  if (tab.pinned && viewKey(tab.view) !== viewKey(state.view)) {
+    let work = state.tabs.find((t) => !t.pinned);
+    if (!work) { work = { id: uid(), view: { type: 'home' }, label: 'Home', pinned: false }; state.tabs.push(work); }
+    state.activeTab = work.id; tab = work; renderTabs();
+  }
   tab.view = { ...state.view }; tab.label = labelForView(state.view); saveTabs();
+}
+function togglePin(id) {
+  const tab = state.tabs.find((t) => t.id === id); if (!tab) return;
+  tab.pinned = !tab.pinned;
+  // Keep pinned tabs at the front, each group holding its relative order (JS
+  // sort is stable), so a pin literally moves the tab to the top of the strip.
+  state.tabs.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  renderTabs(); saveTabs();
 }
 function renderTabs() {
   const el = $('#tabstrip'); if (!el) return;
-  el.innerHTML = state.tabs.map((t) => `<button class="tab ${t.id === state.activeTab ? 'on' : ''}" data-tab="${t.id}">
-    <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${state.tabs.length > 1 ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
+  const many = state.tabs.length > 1;
+  el.innerHTML = state.tabs.map((t) => `<button class="tab ${t.id === state.activeTab ? 'on' : ''}${t.pinned ? ' pinned' : ''}" data-tab="${t.id}">
+    <span class="tab-pin ${t.pinned ? 'on' : ''}" data-tab-pin="${t.id}" title="${t.pinned ? 'Unpin' : 'Pin to keep this tab'}">📌</span>
+    <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${!t.pinned && many ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
     + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`;
 }
-function newTab() { const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home' }); state.activeTab = id; openHome(); }
+function newTab() { const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome(); }
 function switchTab(id) { if (id === state.activeTab) return; const tab = state.tabs.find((t) => t.id === id); if (!tab) return; state.activeTab = id; Promise.resolve(openView(tab.view)).catch(() => openHome()); }
 function closeTab(id) {
   if (state.tabs.length <= 1) return;
@@ -489,11 +507,20 @@ async function loadAccount() { try { state.account = await api('/api/account'); 
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 async function addAlias() {
   const el = $('#alias-input'); const email = (el && el.value || '').trim(); if (!email) return;
-  try { state.account = await api('/api/account/alias', { method: 'POST', body: JSON.stringify({ email }) }); renderSettings(); toast('Address added'); }
+  try { state.account = await api('/api/account/alias', { method: 'POST', body: JSON.stringify({ email }) }); state.aliasVerify = email.toLowerCase(); renderSettings(); toast('Code sent — check that inbox'); }
+  catch (e) { toast(e.message); }
+}
+async function verifyAlias(email) {
+  const el = document.querySelector(`[data-alias-code="${CSS.escape(email)}"]`); const code = (el && el.value || '').trim(); if (!code) { toast('Enter the code from the email'); return; }
+  try { state.account = await api('/api/account/alias/verify', { method: 'POST', body: JSON.stringify({ email, code }) }); state.aliasVerify = null; renderSettings(); toast('Address confirmed'); }
+  catch (e) { toast(e.message); }
+}
+async function resendAlias(email) {
+  try { await api('/api/account/alias/resend', { method: 'POST', body: JSON.stringify({ email }) }); state.aliasVerify = email; renderSettings(); toast('New code sent'); }
   catch (e) { toast(e.message); }
 }
 async function delAlias(email) {
-  try { state.account = await api('/api/account/alias', { method: 'DELETE', body: JSON.stringify({ email }) }); renderSettings(); }
+  try { state.account = await api('/api/account/alias', { method: 'DELETE', body: JSON.stringify({ email }) }); if (state.aliasVerify === email) state.aliasVerify = null; renderSettings(); }
   catch (e) { toast(e.message); }
 }
 async function downloadExport() {
@@ -639,7 +666,11 @@ function renderSettings() {
         <label class="set-field"><span>Name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your name"></label>
         <label class="set-field"><span>Primary email</span><input class="sel" value="${esc(state.account.email || '')}" disabled></label>
         <div class="set-field"><span>Also sign in with these addresses</span>
-          <div class="alias-list">${(state.account.aliases || []).map((a) => `<span class="alias-chip">${esc(a)}<button class="alias-x" data-alias-del="${esc(a)}" title="Remove">×</button></span>`).join('') || '<span class="muted" style="font-size:14px">No extra addresses yet.</span>'}</div>
+          <div class="alias-list">${(state.account.aliases || []).map((a) => {
+            const em = typeof a === 'string' ? a : a.email; const ok = typeof a === 'object' && a.verified;
+            return `<span class="alias-chip ${ok ? 'ok' : 'pending'}"><span class="alias-badge" title="${ok ? 'Confirmed' : 'Awaiting confirmation'}">${ok ? '✓' : '⏳'}</span>${esc(em)}<button class="alias-x" data-alias-del="${esc(em)}" title="Remove">×</button></span>`;
+          }).join('') || '<span class="muted" style="font-size:14px">No extra addresses yet.</span>'}</div>
+          ${(state.account.aliases || []).filter((a) => typeof a === 'object' && !a.verified).map((a) => `<div class="alias-verify"><span class="av-note">Enter the code we emailed to <b>${esc(a.email)}</b>:</span><div class="alias-verify-row"><input class="sel" data-alias-code="${esc(a.email)}" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button class="add-btn wide" data-alias-verify="${esc(a.email)}">Confirm</button><button class="ghost" data-alias-resend="${esc(a.email)}">Resend</button></div></div>`).join('')}
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
@@ -1008,6 +1039,19 @@ function pomoTargetOptions(type) {
   return `<option value="">Choose…</option>` + items.map(([id, ttl]) => `<option value="${type}:${id}"${sel(id)}>${esc(ttl || 'Untitled')}</option>`).join('');
 }
 function savePomo() { try { localStorage.setItem('life.pomo', JSON.stringify(pomo)); } catch {} }
+// Focus log: one entry per completed focus block, attributed to whatever you
+// were focusing on. Only whole completed blocks count (standard Pomodoro) - a
+// paused or reset block doesn't, so the numbers stay honest.
+function pomoLog() { try { const a = JSON.parse(localStorage.getItem('life.pomo.log')); return Array.isArray(a) ? a : []; } catch { return []; } }
+function logFocusSession(mins) {
+  const t = pomo.target || {};
+  const log = pomoLog();
+  log.push({ ts: Date.now(), mins, kind: t.kind || null, id: t.id != null ? String(t.id) : null, label: t.label || null });
+  try { localStorage.setItem('life.pomo.log', JSON.stringify(log.slice(-2000))); } catch {}
+}
+function focusMinsFor(kind, id) { return pomoLog().filter((e) => e.kind === kind && String(e.id) === String(id)).reduce((s, e) => s + (e.mins || 0), 0); }
+function focusMinsToday() { const d = new Date(); d.setHours(0, 0, 0, 0); const t0 = d.getTime(); return pomoLog().filter((e) => e.ts >= t0).reduce((s, e) => s + (e.mins || 0), 0); }
+const fmtMins = (m) => (m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ' ' + (m % 60) + 'm' : ''}` : `${m}m`);
 function pomoRemaining() { return (pomo.running && pomo.endAt) ? Math.max(0, Math.round((pomo.endAt - Date.now()) / 1000)) : pomo.remaining; }
 const pomoFmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 let pomoTicker = null;
@@ -1020,6 +1064,7 @@ function pomoEnsureTicker() {
     if (r <= 0) {
       const done = pomo.mode;
       pomo.running = false; pomo.endAt = null;
+      if (done === 'focus') logFocusSession(POMO_MIN.focus);
       pomo.mode = done === 'focus' ? 'break' : 'focus';
       pomo.remaining = POMO_MIN[pomo.mode] * 60;
       savePomo();
@@ -1059,8 +1104,9 @@ function pomoHtml() {
           <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
         </div>
         ${pt ? `<select class="sel" data-pomo-target>${pomoTargetOptions(pt)}</select>` : ''}
-        ${pomo.target ? `<div class="pomo-on">Focusing on <b>${esc(pomo.target.label)}</b></div>` : ''}
+        ${pomo.target ? `<div class="pomo-on">Focusing on <b>${esc(pomo.target.label)}</b>${(() => { const m = focusMinsFor(pomo.target.kind, pomo.target.id); return m ? ` · <span class="pomo-tot">${fmtMins(m)} logged</span>` : ''; })()}</div>` : ''}
       </div>
+      ${(() => { const m = focusMinsToday(); return `<div class="pomo-today">${m ? `🍅 ${fmtMins(m)} focused today` : 'Complete a focus block to log time'}</div>`; })()}
     </div>` : ''}
   </section>`;
 }
@@ -1769,7 +1815,7 @@ function renderArea() {
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
         <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename></h1>
-      <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}</p>
+      <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       <div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>
     </div>
     <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
@@ -4602,6 +4648,7 @@ function renderGoalCard() {
       <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="Focus this quarter">${p.focus ? '★' : '☆'}</button>
       <textarea class="note-title" id="goalcard-title" rows="1" placeholder="What do you want to achieve?">${esc(g.title || '')}</textarea>
     </div>
+    ${(() => { const m = focusMinsFor('goal', g.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this goal</div>` : ''; })()}
     <label class="tf-field goal-why"><span class="tf-label">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Life area</span><select class="sel" id="goalcard-area">${areaOpts}</select></label>
@@ -5634,6 +5681,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
+  const tpin = t.closest('[data-tab-pin]'); if (tpin) { togglePin(tpin.dataset.tabPin); return; }
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
   if (t.closest('[data-tab-new]')) { newTab(); return; }
@@ -5691,6 +5739,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-settings-sections]')) { state.settings = state.settings || {}; state.settings.sectionsOpen = !state.settings.sectionsOpen; renderSettings(); return; }
   if (t.closest('[data-settings-account]')) { state.settings = state.settings || {}; state.settings.accountOpen = !state.settings.accountOpen; renderSettings(); return; }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
+  { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
+  { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
   if (t.closest('[data-account-export]')) { downloadExport(); return; }
   if (t.closest('[data-account-close]')) { uiConfirm("Close your account? This permanently deletes your Daybook and everything in it. It cannot be undone.", { danger: true, okLabel: 'I understand' }).then((ok) => { if (ok) toast("Account closure isn't switched on yet - message me and I'll handle it safely."); }); return; }
@@ -6405,6 +6455,7 @@ function renderTaskCard() {
       <button class="tf-check ${t.props.done ? 'done' : ''}" data-check="${t.id}" title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
       <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task">${esc(t.title || '')}</textarea>
     </div>
+    ${(() => { const m = focusMinsFor('task', t.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this task</div>` : ''; })()}
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Priority</span>
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
@@ -7263,7 +7314,7 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
-      state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home' }));
+      state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home', pinned: !!t.pinned }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
     } else { state.tabs = [{ id: uid(), view: { type: 'home' }, label: 'Home' }]; state.activeTab = state.tabs[0].id; }
     const route = location.pathname.replace(/\/$/, '');

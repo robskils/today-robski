@@ -8,6 +8,8 @@
  * schema-tenant.sql backfill, so he never sees signup.
  */
 
+import { sendCodeMail } from './auth.js';
+
 // Names we keep for infrastructure / the product itself, never handed to a user.
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'app', 'api', 'mail', 'admin', 'root', 'support', 'help', 'status',
@@ -26,13 +28,14 @@ export function normSubdomain(s) {
   return v;
 }
 
-// Resolves by the account's primary email OR any alias in user_emails, so all
-// of a person's addresses reach the one account.
+// Resolves by the account's primary email OR any *verified* alias in
+// user_emails, so all of a person's addresses reach the one account - but an
+// unconfirmed alias can't sign in until its owner proves control of it.
 export async function getUserByEmail(env, email) {
   const e = String(email || '').toLowerCase();
   return env.DB.prepare(
     `SELECT id, email, name, subdomain, plan, status FROM users
-      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ?)`,
+      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ? AND verified = 1)`,
   ).bind(e, e).first().catch(() => null);
 }
 
@@ -110,14 +113,14 @@ export async function createInvite(env, input) {
 // Name, primary email, extra email aliases, phone, plan. All scoped to env.uid.
 export async function getAccount(env) {
   const u = await env.DB.prepare('SELECT id, email, name, subdomain, plan, status FROM users WHERE id = ?').bind(env.uid).first();
-  const al = await env.DB.prepare('SELECT email FROM user_emails WHERE user_id = ? ORDER BY email').bind(env.uid).all().catch(() => ({ results: [] }));
+  const al = await env.DB.prepare('SELECT email, verified FROM user_emails WHERE user_id = ? ORDER BY email').bind(env.uid).all().catch(() => ({ results: [] }));
   const ph = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'phone'").bind(env.uid).first().catch(() => null);
   const sms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'sms_block_alerts'").bind(env.uid).first().catch(() => null);
   return {
     name: (u && u.name) || '', email: (u && u.email) || '', subdomain: (u && u.subdomain) || '',
     plan: (u && u.plan) || 'free', status: (u && u.status) || 'active',
     phone: ph ? ph.value : '', smsAlerts: !sms || sms.value !== '0',
-    aliases: (al.results || []).map((r) => r.email),
+    aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),
   };
 }
 export async function patchAccount(env, body) {
@@ -125,17 +128,65 @@ export async function patchAccount(env, body) {
   if (body.phone !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'phone', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(body.phone).slice(0, 40)).run();
   return getAccount(env);
 }
-// Adding an alias here trusts the owner. Before public signups, gate this behind
-// an emailed verification of the alias address (same code flow as sign-in).
+// Adding an alias no longer trusts the owner on its own: the address is stored
+// unverified and a 6-digit code is emailed to it. Only once the owner enters
+// that code (proving they control the inbox) does the alias become usable to
+// sign in - so nobody can attach someone else's address to their account.
 export async function addAlias(env, email) {
   const e = String(email || '').trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) throw new Error('That does not look like an email address.');
-  const clash = await env.DB.prepare('SELECT 1 AS x FROM users WHERE email = ? UNION SELECT 1 AS x FROM user_emails WHERE email = ?').bind(e, e).first().catch(() => null);
+  const u = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(env.uid).first().catch(() => null);
+  if (u && String(u.email).toLowerCase() === e) throw new Error('That is already your primary address.');
+  // A clash with someone else's account (primary or a verified alias) is a hard
+  // stop. An unverified alias already sitting on *your* account just re-sends.
+  const clash = await env.DB.prepare(
+    'SELECT user_id FROM users WHERE email = ? UNION SELECT user_id FROM user_emails WHERE email = ? AND (verified = 1 OR user_id <> ?)',
+  ).bind(e, e, env.uid).first().catch(() => null);
   if (clash) throw new Error('That email is already in use.');
-  await env.DB.prepare('INSERT OR IGNORE INTO user_emails (email, user_id) VALUES (?, ?)').bind(e, env.uid).run();
+  await env.DB.prepare('INSERT OR IGNORE INTO user_emails (email, user_id, verified) VALUES (?, ?, 0)').bind(e, env.uid).run();
+  await sendAliasCode(env, e);
+  return getAccount(env);
+}
+// Email (or re-email) the confirmation code for a pending alias on this account.
+export async function sendAliasCode(env, email) {
+  const e = String(email || '').trim().toLowerCase();
+  const own = await env.DB.prepare('SELECT verified FROM user_emails WHERE email = ? AND user_id = ?').bind(e, env.uid).first().catch(() => null);
+  if (!own) throw new Error('That address is not on your account.');
+  if (own.verified) throw new Error('That address is already confirmed.');
+  const now = Math.floor(Date.now() / 1000);
+  const recent = await env.DB.prepare('SELECT sent_at FROM alias_codes WHERE email = ?').bind(e).first().catch(() => null);
+  if (recent && now - recent.sent_at < 30) throw new Error(`Hold on ${30 - (now - recent.sent_at)}s before asking for another code.`);
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, '0');
+  await env.DB.prepare(
+    `INSERT INTO alias_codes (email, user_id, code, expires_at, attempts, sent_at) VALUES (?, ?, ?, ?, 0, ?)
+     ON CONFLICT(email) DO UPDATE SET user_id = excluded.user_id, code = excluded.code, expires_at = excluded.expires_at, attempts = 0, sent_at = excluded.sent_at`,
+  ).bind(e, env.uid, code, now + 600, now).run();
+  const res = await sendCodeMail(env, e, code, 'alias');
+  if (!res.ok) { console.error('alias code send:', res.status, await res.text().catch(() => '')); throw new Error('Could not send the code. Try again shortly.'); }
+  return { ok: true };
+}
+// Confirm a pending alias with the code emailed to it.
+export async function verifyAlias(env, email, code) {
+  const e = String(email || '').trim().toLowerCase();
+  const c = String(code || '').trim();
+  if (!e || !c) throw new Error('Missing email or code.');
+  const row = await env.DB.prepare('SELECT code, expires_at, attempts, user_id FROM alias_codes WHERE email = ?').bind(e).first().catch(() => null);
+  if (!row || row.user_id !== env.uid) throw new Error('No code outstanding for that address. Send a new one.');
+  const now = Math.floor(Date.now() / 1000);
+  if (now > row.expires_at) { await env.DB.prepare('DELETE FROM alias_codes WHERE email = ?').bind(e).run(); throw new Error('That code has expired. Send a new one.'); }
+  if (row.attempts >= 5) { await env.DB.prepare('DELETE FROM alias_codes WHERE email = ?').bind(e).run(); throw new Error('Too many attempts. Send a new code.'); }
+  if (String(row.code) !== c) { await env.DB.prepare('UPDATE alias_codes SET attempts = attempts + 1 WHERE email = ?').bind(e).run(); throw new Error('Incorrect code.'); }
+  await env.DB.batch([
+    env.DB.prepare('UPDATE user_emails SET verified = 1 WHERE email = ? AND user_id = ?').bind(e, env.uid),
+    env.DB.prepare('DELETE FROM alias_codes WHERE email = ?').bind(e),
+  ]);
   return getAccount(env);
 }
 export async function removeAlias(env, email) {
-  await env.DB.prepare('DELETE FROM user_emails WHERE email = ? AND user_id = ?').bind(String(email || '').toLowerCase(), env.uid).run();
+  const e = String(email || '').toLowerCase();
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM user_emails WHERE email = ? AND user_id = ?').bind(e, env.uid),
+    env.DB.prepare('DELETE FROM alias_codes WHERE email = ? AND user_id = ?').bind(e, env.uid),
+  ]);
   return getAccount(env);
 }
