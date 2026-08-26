@@ -641,9 +641,12 @@ async function createBookmark(env, rawUrl, titleHint, uid = env.uid) {
 async function handleCapture(request, env, url, json, err) {
   const escH = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const key = url.searchParams.get('key') || request.headers.get('X-Capture-Key') || bearer(request);
-  const stored = await bookmarkKey(env);
   const page = (body, status) => new Response(`<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="font:17px -apple-system,BlinkMacSystemFont,sans-serif;margin:0;padding:44px 28px;text-align:center;color:#1b1820;background:#f4f1ea">${body}</body>`, { status: status || 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
-  if (!key || !safeEqual(key, stored)) {
+  // Resolve the capture key to its owner (keys are per-user in settings), so each
+  // person's bookmarklet / Shortcut saves to their own account. The key is
+  // 40 high-entropy chars, so an exact-value lookup is safe.
+  const owner = key ? await env.DB.prepare("SELECT user_id FROM settings WHERE key = 'bookmark_key' AND value = ?").bind(key).first().catch(() => null) : null;
+  if (!owner) {
     if (request.method === 'GET') return page('<h2 style="color:#a3382e">Not authorised</h2><p style="color:#8a8580">This save link is out of date.</p>', 401);
     return err('unauthorized', request, 401);
   }
@@ -651,8 +654,8 @@ async function handleCapture(request, env, url, json, err) {
   let titleHint = url.searchParams.get('title') || '';
   if (!target && request.method === 'POST') { const b = await request.json().catch(() => ({})); target = b.url || ''; titleHint = titleHint || b.title || ''; }
   if (!target) { if (request.method === 'GET') return page('<h2 style="color:#a3382e">No link found</h2>', 400); return err('url required', request, 400); }
-  const bm = await createBookmark(env, target, titleHint, 1);
-  if (request.method === 'GET') return page(`<div style="font-size:44px;line-height:1">✓</div><h2 style="font-weight:600;margin:10px 0 6px">Saved to Robski</h2><p style="color:#8a8580;margin:0">${escH(bm.title)}</p><script>setTimeout(function(){window.close()},1100)</script>`);
+  const bm = await createBookmark(env, target, titleHint, owner.user_id);
+  if (request.method === 'GET') return page(`<div style="font-size:44px;line-height:1">✓</div><h2 style="font-weight:600;margin:10px 0 6px">Saved to Daybook</h2><p style="color:#8a8580;margin:0">${escH(bm.title)}</p><script>setTimeout(function(){window.close()},1100)</script>`);
   return json(bm, request, 201);
 }
 
