@@ -43,6 +43,7 @@ const state = {
   view: { type: 'home' },
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
+  taskFilters: null, taskFiltersOpen: false,
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   contactGroups: [], contactsGroup: null, contactMenu: null,
   financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null, tracker: null, trackerLoading: false },
@@ -3630,19 +3631,94 @@ function taskTableHtml(list, emptyMsg) {
       <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">${emptyMsg || 'No tasks here yet.'}</td></tr>`}</tbody>
     </table></div>`;
 }
+// ── Tasks: a build-your-own filter (by priority, area, date, duration…) ──
+// Each filter is { field, op, value }; they AND together. Definitions are
+// data-driven so a new filterable field is one entry here, not new UI code.
+const TASK_FIELDS = {
+  priority: { label: 'Priority', ops: ['is', 'isnot'], choices: () => [['P1', 'P1'], ['P2', 'P2'], ['P3', 'P3'], ['P4', 'P4'], ['', 'None']], get: (t) => t.props.priority || '' },
+  area: { label: 'Life area', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
+  duration: { label: 'Duration', ops: ['gte', 'lte', 'isset', 'notset'], kind: 'minutes', get: (t) => (t.props.duration != null && t.props.duration !== '' ? Number(t.props.duration) : null) },
+  repeat: { label: 'Repeat', ops: ['isset', 'notset'], get: (t) => t.props.repeat || '' },
+  snoozed: { label: 'Snoozed', ops: ['yes', 'no'], get: (t) => isSnoozed(t) },
+  created: { label: 'Created', ops: ['after', 'before'], kind: 'date', get: (t) => (t.created_at || '').slice(0, 10) },
+  updated: { label: 'Last updated', ops: ['after', 'before'], kind: 'date', get: (t) => (t.updated_at || '').slice(0, 10) },
+};
+const TASK_OP_LABEL = { is: 'is', isnot: 'is not', gte: 'at least', lte: 'at most', isset: 'is set', notset: 'is empty', yes: 'yes', no: 'no', after: 'on or after', before: 'before' };
+function loadTaskFilters() {
+  if (state.taskFilters == null) { try { state.taskFilters = JSON.parse(localStorage.getItem('life.tasks.filters')) || []; } catch { state.taskFilters = []; } }
+}
+function saveTaskFilters() {
+  try { localStorage.setItem('life.tasks.filters', JSON.stringify(state.taskFilters || [])); } catch {}
+}
+function taskMatchesCond(t, c) {
+  const f = TASK_FIELDS[c.field]; if (!f) return true;
+  const v = f.get(t);
+  switch (c.op) {
+    case 'is': return String(v) === String(c.value);
+    case 'isnot': return String(v) !== String(c.value);
+    case 'gte': return v != null && c.value !== '' && Number(v) >= Number(c.value);
+    case 'lte': return v != null && c.value !== '' && Number(v) <= Number(c.value);
+    case 'isset': return v != null && v !== '';
+    case 'notset': return v == null || v === '';
+    case 'yes': return !!v;
+    case 'no': return !v;
+    case 'after': return v && c.value && v >= c.value;
+    case 'before': return v && c.value && v < c.value;
+    default: return true;
+  }
+}
+function taskMatchesFilters(t) { return (state.taskFilters || []).every((c) => taskMatchesCond(t, c)); }
+// The value control for one condition: a dropdown of choices, a number, a date,
+// or nothing at all for operators that don't take a value.
+function condValueCtrl(c, i) {
+  const f = TASK_FIELDS[c.field]; if (!f) return '';
+  if (['isset', 'notset', 'yes', 'no'].includes(c.op)) return '';
+  if (f.choices) { const opts = f.choices().map(([v, l]) => `<option value="${esc(v)}" ${String(c.value) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join(''); return `<select class="sel tf-val" data-tf-val="${i}">${opts}</select>`; }
+  if (f.kind === 'minutes') return `<input class="sel tf-val tf-num" type="number" min="0" step="5" data-tf-val="${i}" value="${esc(c.value || '')}" placeholder="min">`;
+  if (f.kind === 'date') return `<input class="sel tf-val" type="date" data-tf-val="${i}" value="${esc(c.value || '')}">`;
+  return `<input class="sel tf-val" data-tf-val="${i}" value="${esc(c.value || '')}">`;
+}
+function taskCondRow(c, i) {
+  const f = TASK_FIELDS[c.field] || {};
+  const fieldSel = `<select class="sel tf-field" data-tf-field="${i}">${Object.entries(TASK_FIELDS).map(([k, v]) => `<option value="${k}" ${k === c.field ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`;
+  const opSel = `<select class="sel tf-op" data-tf-op="${i}">${(f.ops || []).map((o) => `<option value="${o}" ${o === c.op ? 'selected' : ''}>${esc(TASK_OP_LABEL[o] || o)}</option>`).join('')}</select>`;
+  return `<div class="tf-cond">${fieldSel}${opSel}${condValueCtrl(c, i)}<button class="tf-del" data-tf-del="${i}" title="Remove">×</button></div>`;
+}
+// A short human summary of one active condition, for the collapsed chip row.
+function condChip(c, i) {
+  const f = TASK_FIELDS[c.field]; if (!f) return '';
+  let val = '';
+  if (!['isset', 'notset', 'yes', 'no'].includes(c.op)) {
+    if (f.choices) { const m = f.choices().find(([v]) => String(v) === String(c.value)); val = m ? m[1] : c.value; }
+    else if (f.kind === 'minutes') val = `${c.value} min`;
+    else val = c.value;
+  }
+  return `<span class="tf-chip">${esc(f.label)} ${esc(TASK_OP_LABEL[c.op] || c.op)}${val ? ' ' + esc(val) : ''}<button class="tf-chip-x" data-tf-del="${i}" title="Remove">×</button></span>`;
+}
+// A sensible default value when a field (or its operator) changes.
+function defaultCondValue(field, op) {
+  const f = TASK_FIELDS[field]; if (!f || ['isset', 'notset', 'yes', 'no'].includes(op)) return '';
+  if (f.choices) return String(f.choices()[0][0]);
+  return '';
+}
 function renderTasks() {
-  const openCount = (aid) => state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && (aid ? t.props.area === aid : true)).length;
-  const chips = `<button class="area-chip ${state.taskFilter === null ? 'on' : ''}" data-filter="">All <b>${openCount(null)}</b></button>` +
-    state.areas.filter((a) => openCount(a.id)).map((a) => `<button class="area-chip ${state.taskFilter === a.id ? 'on' : ''}" style="--h:${hueOf(a)}" data-filter="${a.id}"><span class="cd"></span>${esc(a.title)} <b>${openCount(a.id)}</b></button>`).join('');
-  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
-  // Same filter as the chips, but a compact dropdown - shown on mobile instead.
-  const filterSel = `<select class="area-filter sel" data-task-filter><option value="" ${state.taskFilter === null ? 'selected' : ''}>All tasks · ${openCount(null)}</option>${state.areas.filter((a) => openCount(a.id)).map((a) => `<option value="${a.id}" ${state.taskFilter === a.id ? 'selected' : ''}>${esc(a.title)} · ${openCount(a.id)}</option>`).join('')}</select>`;
-  const inFilter = (t) => (!state.taskFilter || t.props.area === state.taskFilter) && (!state.taskPrio || t.props.priority === state.taskPrio);
-  const prioCount = (p) => state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && (!state.taskFilter || t.props.area === state.taskFilter) && (p ? t.props.priority === p : true)).length;
-  const prioChips = `<button class="prio-chip ${!state.taskPrio ? 'on' : ''}" data-prio-filter="">All</button>` + ['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="prio-chip pc-${p} ${state.taskPrio === p ? 'on' : ''}" data-prio-filter="${p}">${p}<b>${prioCount(p)}</b></button>`).join('');
+  loadTaskFilters();
+  const conds = state.taskFilters || [];
+  const filterBar = `<div class="task-filters">
+    <div class="tf-head">
+      <button class="tf-toggle" data-tf-toggle><span class="acw-chev">${state.taskFiltersOpen ? '▾' : '▸'}</span>⚲ Filters${conds.length ? `<span class="tf-count">${conds.length}</span>` : ''}</button>
+      ${conds.length && !state.taskFiltersOpen ? `<div class="tf-chips">${conds.map((c, i) => condChip(c, i)).join('')}</div>` : ''}
+    </div>
+    ${state.taskFiltersOpen ? `<div class="tf-panel">
+      ${conds.map((c, i) => taskCondRow(c, i)).join('') || '<div class="tf-empty">No filters yet. Add one to narrow the list.</div>'}
+      <div class="tf-panel-acts"><button class="add-btn wide" data-tf-add>+ Add filter</button>${conds.length ? '<button class="ghost" data-tf-clear>Clear all</button>' : ''}</div>
+    </div>` : ''}
+  </div>`;
+  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
+  const inFilter = (t) => taskMatchesFilters(t);
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
-  const open = state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && inFilter(t) && matchesQ(t));   // ticked or snoozed tasks vanish from view
+  const open = state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && inFilter(t) && matchesQ(t));   // ticked or snoozed tasks vanish from view (taskTableHtml sorts via the column headers)
   const snoozed = state.tasks.filter((t) => !t.props.done && isSnoozed(t) && inFilter(t)).sort((a, b) => (a.props.snooze || '').localeCompare(b.props.snooze || ''));
   const snoozedSection = state.showSnoozed
     ? `<section class="completed-sec">
@@ -3681,13 +3757,8 @@ function renderTasks() {
       </div>
     </form>`
       : ''}
-    <div class="area-chips-wrap ${state.taskChipsOpen ? '' : 'collapsed'}">
-      <button class="area-chips-tog" data-toggle-chips title="Show or hide the area filters"><span class="acw-chev">${state.taskChipsOpen ? '▾' : '▸'}</span>Areas${state.taskFilter ? `<span class="acw-active">${esc((areaById(state.taskFilter) || {}).title || '')}</span>` : ''}</button>
-      <div class="area-chips">${chips}</div>
-    </div>
-    <div class="prio-chips">${prioChips}</div>
-    ${filterSel}
-    ${taskTableHtml(open, 'No open tasks here.')}
+    ${filterBar}
+    ${taskTableHtml(open, (conds.length || tq) ? 'No tasks match these filters.' : 'No open tasks here.')}
     ${snoozedSection}
     ${completedSection}`;
 }
@@ -6043,9 +6114,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-show-snoozed]')) { state.showSnoozed = true; renderTasks(); return; }
   if (t.closest('[data-hide-snoozed]')) { state.showSnoozed = false; renderTasks(); return; }
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
-  if (t.closest('[data-toggle-chips]')) { state.taskChipsOpen = !state.taskChipsOpen; try { localStorage.setItem('life.taskChipsOpen', JSON.stringify(state.taskChipsOpen)); } catch {} renderTasks(); return; }
-  const fc = t.closest('[data-filter]'); if (fc) { state.taskFilter = fc.dataset.filter || null; renderTasks(); return; }
-  const pf = t.closest('[data-prio-filter]'); if (pf) { state.taskPrio = pf.dataset.prioFilter || null; renderTasks(); return; }
+  if (t.closest('[data-tf-toggle]')) { state.taskFiltersOpen = !state.taskFiltersOpen; renderTasks(); return; }
+  if (t.closest('[data-tf-add]')) { loadTaskFilters(); state.taskFilters.push({ field: 'priority', op: 'is', value: 'P1' }); state.taskFiltersOpen = true; saveTaskFilters(); renderTasks(); return; }
+  if (t.closest('[data-tf-clear]')) { state.taskFilters = []; saveTaskFilters(); renderTasks(); return; }
+  { const td = t.closest('[data-tf-del]'); if (td) { loadTaskFilters(); state.taskFilters.splice(Number(td.dataset.tfDel), 1); saveTaskFilters(); renderTasks(); return; } }
   const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
   // On the narrow task cards the whole card opens - only the checkbox (handled
   // just above) and the × are special. Star/priority/area are display-only here;
@@ -6137,7 +6209,9 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
   if (e.target.matches('[data-contact-area]')) setBlockArea('contact', state.contact_open.contact.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
-  if (e.target.matches('[data-task-filter]')) { state.taskFilter = e.target.value || null; renderTasks(); }
+  { const tff = e.target.closest('[data-tf-field]'); if (tff) { loadTaskFilters(); const i = Number(tff.dataset.tfField); const c = state.taskFilters[i]; c.field = e.target.value; c.op = (TASK_FIELDS[c.field].ops || [])[0]; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
+  { const tfo = e.target.closest('[data-tf-op]'); if (tfo) { loadTaskFilters(); const i = Number(tfo.dataset.tfOp); const c = state.taskFilters[i]; c.op = e.target.value; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
+  { const tfv = e.target.closest('[data-tf-val]'); if (tfv) { loadTaskFilters(); const i = Number(tfv.dataset.tfVal); state.taskFilters[i].value = e.target.value; saveTaskFilters(); renderTasks(); return; } }
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
   if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
