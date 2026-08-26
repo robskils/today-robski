@@ -9,6 +9,8 @@
  * page from the raw txns, so this module is just import + (re)categorise.
  */
 
+import { aiKey, aiNeedsKey, logAiUsage } from './ai.js';
+
 // The category set. `income:true` marks the money-in buckets.
 export const SPEND_CATEGORIES = [
   'Groceries', 'Eating out', 'Transport', 'Housing', 'Utilities', 'Health',
@@ -86,8 +88,8 @@ export async function importTxns(env, rows) {
 // natively - text + table layout - and returns structured rows). Rows then go
 // through the normal importTxns path (dedupe + categorise).
 export async function parseStatementPdf(env, dataB64, name) {
-  const key = env.GEMINI_API_KEY;
-  if (!key) throw new Error('PDF import needs the GEMINI_API_KEY secret (same one as Advice).');
+  const key = await aiKey(env, 'gemini');
+  if (!key) throw new Error(aiNeedsKey('gemini'));
   if (!dataB64) throw new Error('No PDF data');
   const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
   const prompt = `This is a bank or account statement PDF. Extract EVERY individual transaction.
@@ -108,6 +110,7 @@ Ignore opening/closing balances, running balances, subtotals, page headers/foote
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`Gemini ${res.status}: ${t.slice(0, 240)}`); }
   const data = await res.json();
+  await logAiUsage(env, 'gemini', 'statement-pdf', model, data.usageMetadata && data.usageMetadata.promptTokenCount, data.usageMetadata && data.usageMetadata.candidatesTokenCount);
   const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text).filter(Boolean).join('');
   let out; try { out = JSON.parse(text); } catch { out = { rows: [] }; }
   const rows = Array.isArray(out.rows) ? out.rows.filter((r) => r && r.date && r.amount != null) : [];

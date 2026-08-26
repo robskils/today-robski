@@ -6,6 +6,7 @@
 // derived from AUTH_SECRET. Robin types it once in the app; it's never logged.
 import { connect } from 'cloudflare:sockets';
 import PostalMime from 'postal-mime';
+import { aiKey, aiNeedsKey, logAiUsage } from './ai.js';
 import { signJWT } from './auth.js';
 
 // A short-lived signed URL for one attachment, so the reader can open it as a
@@ -1039,8 +1040,8 @@ export async function handleMail(request, env, url, json, err) {
 // sent here. Thinking is disabled for a fast, predictable short reply (no tools in
 // play), with an explicit no-internal-tags rule to keep stray markup out.
 async function claudiusDraft(env, acct, msg) {
-  const key = env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error('Claudius is not set up yet - add the ANTHROPIC_API_KEY secret.');
+  const key = await aiKey(env, 'anthropic');
+  if (!key) throw new Error(aiNeedsKey('anthropic'));
   const me = acct.name && acct.name !== acct.email ? acct.name : 'Robin Lumley-Savile';
   const from = String(msg.from || 'the sender').slice(0, 200);
   const subject = String(msg.subject || '(no subject)').slice(0, 300);
@@ -1068,6 +1069,7 @@ async function claudiusDraft(env, acct, msg) {
   });
   if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`Claudius API error ${res.status}: ${t.slice(0, 200)}`); }
   const data = await res.json();
+  await logAiUsage(env, 'anthropic', 'mail-reply', data.model, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens);
   if (data.stop_reason === 'refusal') throw new Error('Claudius declined to draft this one.');
   const text = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
   if (!text) throw new Error('Claudius returned an empty draft.');

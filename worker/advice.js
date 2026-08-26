@@ -15,6 +15,8 @@
  * The long-term-trends text lives in settings under kv_fin_trends.
  */
 
+import { aiKey, aiNeedsKey, logAiUsage } from './ai.js';
+
 const RSS = (id) => `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`;
 const WATCH = (id) => `https://www.youtube.com/watch?v=${id}`;
 const THUMB = (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
@@ -120,8 +122,8 @@ function parseFeed(xml) {
 const GEMINI = (model, key) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
 
 async function geminiJSON(env, parts, schema, { temperature = 0.3 } = {}) {
-  const key = env.GEMINI_API_KEY;
-  if (!key) throw new Error('Gemini is not set up yet - add the GEMINI_API_KEY secret.');
+  const key = await aiKey(env, 'gemini');
+  if (!key) throw new Error(aiNeedsKey('gemini'));
   const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
   const body = {
     contents: [{ parts }],
@@ -130,6 +132,7 @@ async function geminiJSON(env, parts, schema, { temperature = 0.3 } = {}) {
   const res = await fetch(GEMINI(model, key), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`Gemini ${res.status}: ${t.slice(0, 240)}`); }
   const data = await res.json();
+  await logAiUsage(env, 'gemini', 'advice', model, data.usageMetadata && data.usageMetadata.promptTokenCount, data.usageMetadata && data.usageMetadata.candidatesTokenCount);
   const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text).filter(Boolean).join('');
   try { return JSON.parse(text); } catch { return { summary: text }; }
 }

@@ -1282,6 +1282,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .inv-new .sel { flex:1; min-width:140px; }
 .inv-free { display:inline-flex; align-items:center; gap:7px; font-size:14px; color:var(--ink-2); white-space:nowrap; }
 .inv-hint { font-size:13px; color:var(--ink-3); margin:10px 0 0; }
+.ai-keys { gap:4px; }
+.ai-hint { font-size:12.5px; color:var(--ink-3); line-height:1.5; margin:2px 0 8px; }
+.ai-key-row { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.ai-key-l { font-size:13px; font-weight:500; color:var(--ink-2); }
+.ai-set { color:#3f9e5f; font-weight:600; font-size:12px; }
+.ai-key-in { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.ai-key-in .sel { flex:1; min-width:180px; margin:0; }
+.ai-key-in .add-btn.wide, .ai-key-in .ghost { flex:none; }
 .inv-list { display:flex; flex-direction:column; gap:7px; margin-top:16px; }
 .inv-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); }
 .inv-row.used { opacity:.55; }

@@ -6,6 +6,7 @@ import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './shari
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { openMeeting } from './meetings.js';
 import { createWebinar, updateWebinar, listWebinars, deleteWebinar, getPublicWebinar, webinarPage } from './webinars.js';
+import { aiKey, aiNeedsKey, logAiUsage, setAiKey } from './ai.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -396,8 +397,8 @@ const JOURNAL_MODE_HINT = {
   intention: 'setting an intention for tomorrow', free: 'free-writing',
 };
 async function journalDeepen(request, env, json, err) {
-  const key = env.ANTHROPIC_API_KEY;
-  if (!key) return err('Dig deeper is not set up yet - add the ANTHROPIC_API_KEY secret.', request, 503);
+  const key = await aiKey(env, 'anthropic');
+  if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const text = String(b.text || '').slice(0, 8000).trim();
   const prompt = String(b.prompt || '').slice(0, 500).trim();
@@ -430,6 +431,7 @@ async function journalDeepen(request, env, json, err) {
     });
     if (!res.ok) { const t = await res.text().catch(() => ''); return err(`Dig deeper error ${res.status}: ${t.slice(0, 200)}`, request, 502); }
     const data = await res.json();
+    await logAiUsage(env, 'anthropic', 'journal-deepen', data.model, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens);
     if (data.stop_reason === 'refusal') return err('Claude held back on this one.', request, 200);
     const q = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
     if (!q) return err('No question came back.', request, 502);
@@ -442,8 +444,8 @@ async function journalDeepen(request, env, json, err) {
 // the whole entry is the transcript, the person's coach turns are the lines
 // beginning 🧭, and each call returns the NEXT single coaching message.
 async function journalCoach(request, env, json, err) {
-  const key = env.ANTHROPIC_API_KEY;
-  if (!key) return err('Coach is not set up yet - add the ANTHROPIC_API_KEY secret.', request, 503);
+  const key = await aiKey(env, 'anthropic');
+  if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const text = String(b.text || '').slice(0, 12000).trim();
   const prompt = String(b.prompt || '').slice(0, 500).trim();
@@ -464,6 +466,7 @@ async function journalCoach(request, env, json, err) {
     });
     if (!res.ok) { const t = await res.text().catch(() => ''); return err(`Coach error ${res.status}: ${t.slice(0, 200)}`, request, 502); }
     const data = await res.json();
+    await logAiUsage(env, 'anthropic', 'journal-coach', data.model, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens);
     if (data.stop_reason === 'refusal') return err('Claude held back on this one.', request, 200);
     const reply = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
     if (!reply) return err('No reply came back.', request, 502);
@@ -485,8 +488,8 @@ async function journalInsights(request, env, json, err) {
     const v = await getSetting(env, 'kv_journal_insights');
     return json(v ? JSON.parse(v) : { text: null }, request);
   }
-  const key = env.ANTHROPIC_API_KEY;
-  if (!key) return err('Insights needs the ANTHROPIC_API_KEY secret.', request, 503);
+  const key = await aiKey(env, 'anthropic');
+  if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const { results } = await env.DB.prepare("SELECT body, props, created_at FROM blocks WHERE user_id = ? AND kind = 'journal' AND archived = 0 ORDER BY created_at DESC LIMIT 30").bind(env.uid).all();
   const entries = (results || []).filter((r) => r.body && stripHtmlText(r.body).length > 20);
   if (!entries.length) return json({ text: null }, request);
@@ -507,6 +510,7 @@ async function journalInsights(request, env, json, err) {
     });
     if (!res.ok) { const t = await res.text().catch(() => ''); return err(`Insights error ${res.status}: ${t.slice(0, 200)}`, request, 502); }
     const data = await res.json();
+    await logAiUsage(env, 'anthropic', 'journal-insights', data.model, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens);
     if (data.stop_reason === 'refusal') return err('Claude held back on this one.', request, 200);
     const raw = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
     // Models sometimes wrap the JSON in ```fences``` or add a preamble. Strip a
@@ -2126,6 +2130,11 @@ export default {
           if (request.method === 'POST') return json(await addAlias(env, b.email), request, 201);
           if (request.method === 'DELETE') return json(await removeAlias(env, b.email), request);
         } catch (e) { return err(e.message, request, 400); }
+      }
+      if (path === '/api/account/ai-key' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const provider = b.provider === 'gemini' ? 'gemini' : 'anthropic';
+        try { await setAiKey(env, provider, b.value); return json(await getAccount(env), request); } catch (e) { return err(e.message, request, 400); }
       }
       if (path === '/api/account/alias/verify' && request.method === 'POST') {
         const b = await request.json().catch(() => ({}));

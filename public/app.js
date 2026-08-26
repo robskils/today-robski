@@ -516,6 +516,21 @@ async function syncAccentFromServer() {
 function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
+function aiKeyRow(provider, label, isSet, ph) {
+  return `<div class="ai-key-row"><span class="ai-key-l">${label}${isSet ? ' <span class="ai-set">✓ set</span>' : ''}</span>
+    <div class="ai-key-in"><input class="sel" type="password" data-ai-key="${provider}" placeholder="${isSet ? '•••••• — enter a new key to replace' : ph}" autocomplete="off" spellcheck="false">
+    <button class="add-btn wide" data-ai-key-save="${provider}">Save</button>${isSet ? `<button class="ghost" data-ai-key-clear="${provider}">Clear</button>` : ''}</div></div>`;
+}
+async function saveAiKey(provider) {
+  const el = document.querySelector(`[data-ai-key="${provider}"]`); const value = (el && el.value || '').trim();
+  if (!value) { toast('Paste a key first'); return; }
+  try { state.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ provider, value }) }); renderSettings(); toast('Key saved'); }
+  catch (e) { toast(e.message); }
+}
+async function clearAiKey(provider) {
+  try { state.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ provider, value: '' }) }); renderSettings(); toast('Key removed'); }
+  catch (e) { toast(e.message); }
+}
 async function addAlias() {
   const el = $('#alias-input'); const email = (el && el.value || '').trim(); if (!email) return;
   try { state.account = await api('/api/account/alias', { method: 'POST', body: JSON.stringify({ email }) }); state.aliasVerify = email.toLowerCase(); renderSettings(); toast('Code sent — check that inbox'); }
@@ -848,6 +863,11 @@ function renderSettings() {
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
         <label class="set-mod"><span>Text me before a time block starts</span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
         <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
+        <div class="set-field ai-keys"><span>AI keys</span>
+          <p class="ai-hint">${state.account.isOwner ? 'You use the built-in keys; add your own below to override them.' : "AI features (Reflect, Claudius, Advice, statement import) run on your own keys. Get an Anthropic key at console.anthropic.com and a Gemini key at aistudio.google.com."}</p>
+          ${aiKeyRow('anthropic', 'Anthropic (Claude)', state.account.aiAnthropicSet, 'sk-ant-…')}
+          ${aiKeyRow('gemini', 'Google Gemini', state.account.aiGeminiSet, 'AIza…')}
+        </div>
         <div class="acct-actions"><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>` : ''}
     </section>` : ''}
@@ -6133,6 +6153,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-settings-sections]')) { state.settings = state.settings || {}; state.settings.sectionsOpen = !state.settings.sectionsOpen; renderSettings(); return; }
   if (t.closest('[data-settings-account]')) { state.settings = state.settings || {}; state.settings.accountOpen = !state.settings.accountOpen; renderSettings(); return; }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
+  { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
+  { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }

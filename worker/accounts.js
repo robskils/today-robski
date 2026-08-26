@@ -136,7 +136,7 @@ export async function createInvite(env, input) {
 // ── Account ───────────────────────────────────────────────────────────
 // Name, primary email, extra email aliases, phone, plan. All scoped to env.uid.
 export async function getAccount(env) {
-  const u = await env.DB.prepare('SELECT id, email, name, subdomain, plan, status FROM users WHERE id = ?').bind(env.uid).first();
+  const u = await env.DB.prepare('SELECT id, email, name, subdomain, plan, status, ai_anthropic_enc, ai_gemini_enc FROM users WHERE id = ?').bind(env.uid).first();
   const al = await env.DB.prepare('SELECT email, verified FROM user_emails WHERE user_id = ? ORDER BY email').bind(env.uid).all().catch(() => ({ results: [] }));
   const ph = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'phone'").bind(env.uid).first().catch(() => null);
   const sms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'sms_block_alerts'").bind(env.uid).first().catch(() => null);
@@ -145,6 +145,9 @@ export async function getAccount(env) {
     plan: (u && u.plan) || 'free', status: (u && u.status) || 'active',
     phone: ph ? ph.value : '', smsAlerts: !sms || sms.value !== '0',
     aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),
+    // Never return the keys themselves - only whether one is stored.
+    aiAnthropicSet: !!(u && u.ai_anthropic_enc), aiGeminiSet: !!(u && u.ai_gemini_enc),
+    isOwner: env.uid === 1,
   };
 }
 export async function patchAccount(env, body) {
