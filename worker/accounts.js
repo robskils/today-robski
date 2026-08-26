@@ -84,7 +84,8 @@ export async function handleSignup(request, env, email, json, err) {
   return json({ user: await getUserByEmail(env, email), free: !!free }, request, 201);
 }
 
-// First-run defaults so the app is usable immediately (lane targets + day window).
+// First-run defaults so the app is usable immediately: lane targets + day
+// window, and a starter set of life areas.
 async function seedNewUser(env, uid) {
   const defaults = [
     ['target_zazen', '60'], ['target_body', '50'], ['target_music', '60'], ['target_art', '30'],
@@ -93,6 +94,21 @@ async function seedNewUser(env, uid) {
   ];
   await env.DB.batch(defaults.map(([k, v]) =>
     env.DB.prepare('INSERT OR IGNORE INTO settings (user_id, key, value) VALUES (?, ?, ?)').bind(uid, k, v)));
+
+  // A blank Life Areas page doesn't tell a newcomer that Daybook orbits their
+  // life areas. Seed the common ones (a Wheel-of-Life spread) so tasks, notes,
+  // goals and spending categories all have somewhere to land from day one. They
+  // are ordinary blocks - rename, recolour or delete any of them. Hues walk the
+  // wheel from a blue base so each reads distinct. The owner is never seeded.
+  const STARTERS = ['Work', 'Health', 'Relationships', 'Money', 'Home', 'Personal growth', 'Fun'];
+  const now = new Date().toISOString();
+  await env.DB.batch(STARTERS.map((title, i) => {
+    const hue = Math.round((210 + i * 137.5) % 360);
+    return env.DB.prepare(
+      `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
+       VALUES (?, 'area', NULL, ?, ?, NULL, ?, ?, ?, 0, ?)`,
+    ).bind(crypto.randomUUID(), i, title, JSON.stringify({ hue }), now, now, uid);
+  }));
 }
 
 // ── Invites ───────────────────────────────────────────────────────────
