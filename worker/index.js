@@ -2077,7 +2077,7 @@ export default {
       if (path === '/api/me' && request.method === 'GET') {
         if (!authedEmail) return err('unauthorized', request, 401);
         const user = await getUserByEmail(env, authedEmail);
-        return json({ email: authedEmail, user: user || null, needsSignup: !user }, request);
+        return json({ email: authedEmail, user: user || null, needsSignup: !user, inviteRequired: env.PUBLIC_SIGNUP !== '1' }, request);
       }
       if (path === '/api/signup' && request.method === 'POST') {
         if (!authedEmail) return err('unauthorized', request, 401);
@@ -2092,11 +2092,13 @@ export default {
       if (!currentUser) return err('unauthorized', request, 401);
       env = { ...env, uid: currentUser.id, user: currentUser };
 
-      // Invites are admin-only (Robin = user 1 for now).
+      // Invites: any member can invite others; Robin (user 1) is admin and sees
+      // all. A member sees only their own and can only grant the free plan.
       if (path === '/api/invites') {
-        if (env.uid !== 1) return err('not allowed', request, 403);
-        if (request.method === 'GET') return json({ invites: await listInvites(env) }, request);
-        if (request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await createInvite(env, b), request, 201); }
+        try {
+          if (request.method === 'GET') return json({ invites: await listInvites(env), admin: env.uid === 1 }, request);
+          if (request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await createInvite(env, b), request, 201); }
+        } catch (e) { return err(e.message, request, 400); }
       }
       // Admin dashboard (owner only): users list + global daily quotes.
       if (path.startsWith('/api/admin/')) {

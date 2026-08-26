@@ -55,10 +55,13 @@ export async function handleSignup(request, env, email, json, err) {
   if (!sub) return err('Choose a web address: 2-30 letters, numbers or hyphens, e.g. tara', request, 400);
   if (await subdomainTaken(env, sub)) return err(`"${sub}.daybook.fyi" is taken - try another`, request, 409);
 
-  // Open registration: an invite is optional. With no code you get the free
-  // plan; a valid code can carry a different plan / a pre-assigned email / the
-  // BYO-key "free" flag.
+  // Invite-gated for now, but fully public-ready: set env.PUBLIC_SIGNUP='1' to
+  // drop the invite requirement and let anyone sign up (free plan). Until then a
+  // valid invite - from any member, or Robin - is required. A code can also carry
+  // a different plan / a pre-assigned email / the BYO-key "free" flag.
+  const publicSignup = env.PUBLIC_SIGNUP === '1';
   const code = String(b.invite || '').trim();
+  if (!code && !publicSignup) return err('Daybook is invite-only for now - you need an invite from a member.', request, 403);
   let plan = 'free', free = 0, invitedBy = null;
   if (code) {
     const inv = await env.DB.prepare('SELECT code, email, plan, free, created_by, used_by FROM invites WHERE code = ?')
@@ -91,11 +94,15 @@ async function seedNewUser(env, uid) {
     env.DB.prepare('INSERT OR IGNORE INTO settings (user_id, key, value) VALUES (?, ?, ?)').bind(uid, k, v)));
 }
 
-// ── Invites (admin) ───────────────────────────────────────────────────
+// ── Invites ───────────────────────────────────────────────────────────
+// Any member can invite others (referral model); Robin (user 1) is admin and
+// sees/controls everything. A member sees only their own invites.
 export async function listInvites(env) {
-  const { results } = await env.DB.prepare(
-    'SELECT code, email, plan, free, note, used_by, used_at, created_at FROM invites ORDER BY created_at DESC',
-  ).all();
+  const admin = env.uid === 1;
+  const stmt = admin
+    ? env.DB.prepare('SELECT code, email, plan, free, note, used_by, used_at, created_at, created_by FROM invites ORDER BY created_at DESC')
+    : env.DB.prepare('SELECT code, email, plan, free, note, used_by, used_at, created_at, created_by FROM invites WHERE created_by = ? ORDER BY created_at DESC').bind(env.uid);
+  const { results } = await stmt.all();
   return results || [];
 }
 
@@ -105,12 +112,24 @@ function randomCode() {
   for (const n of crypto.getRandomValues(new Uint8Array(8))) s += CODE_ALPHABET[n % CODE_ALPHABET.length];
   return s;
 }
+const MEMBER_INVITE_CAP = 5;   // unused invites a non-admin member may hold at once
 export async function createInvite(env, input) {
+  const admin = env.uid === 1;
+  if (!admin) {
+    const c = await env.DB.prepare('SELECT COUNT(*) AS n FROM invites WHERE created_by = ? AND used_by IS NULL').bind(env.uid).first().catch(() => ({ n: 0 }));
+    if ((c.n || 0) >= MEMBER_INVITE_CAP) throw new Error(`You already have ${MEMBER_INVITE_CAP} unused invites out. Wait for one to be used before making more.`);
+  }
   const code = (String(input.code || '').trim() || randomCode()).toUpperCase().slice(0, 24);
   const now = new Date().toISOString();
+  // Only the owner may set a plan / the free (BYO-key) flag / pre-assign an email.
+  // A member's invite always grants the default free plan.
+  const plan = admin ? (input.plan || 'standard') : 'free';
+  const free = admin && input.free ? 1 : 0;
+  const email = admin ? ((input.email || '').trim().toLowerCase() || null) : null;
+  const note = admin ? (input.note || null) : null;
   await env.DB.prepare(
     'INSERT INTO invites (code, email, plan, free, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  ).bind(code, (input.email || '').trim().toLowerCase() || null, input.plan || 'standard', input.free ? 1 : 0, input.note || null, env.uid, now).run();
+  ).bind(code, email, plan, free, note, env.uid, now).run();
   return { code };
 }
 

@@ -513,7 +513,7 @@ async function syncAccentFromServer() {
 }
 
 // ── Settings hub ──────────────────────────────────────────────────────
-function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); loadAccount(); if (state.me && state.me.id === 1) loadInvites(); return Promise.resolve(); }
+function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 async function addAlias() {
@@ -865,18 +865,19 @@ function renderSettings() {
       <div class="home-sec-h set-collapse-h" data-settings-sections><span class="acw-chev">${state.settings.sectionsOpen ? '▾' : '▸'}</span>Sections<span class="muted">turn off anything you don't use</span></div>
       ${state.settings.sectionsOpen ? `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>` : ''}
     </section>
-    ${(state.me && state.me.id === 1) ? `<section class="home-sec">
-      <div class="home-sec-h">Invites<span class="muted">invite people to Daybook (invite-only for now)</span></div>
+    <section class="home-sec">
+      <div class="home-sec-h">Invite friends<span class="muted">${(state.me && state.me.id === 1) ? 'invite people to Daybook' : 'share a code so someone can join'}</span></div>
       <div class="set-card">
         <div class="inv-new">
-          <select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
+          ${(state.me && state.me.id === 1) ? `<select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
           <label class="inv-free"><input type="checkbox" id="inv-freetoggle"> Free (100% off)</label>
-          <input class="sel" id="inv-email" placeholder="Pre-assign to an email (optional)" autocomplete="off">
+          <input class="sel" id="inv-email" placeholder="Pre-assign to an email (optional)" autocomplete="off">` : ''}
           <button class="add-btn wide" data-create-invite>Create invite</button>
         </div>
-        <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet.</div>'}</div>
+        ${(state.me && state.me.id === 1) ? '' : '<p class="inv-hint">Give a code to someone and they can create their own Daybook. Up to 5 unused at a time.</p>'}
+        <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet - create one to share.</div>'}</div>
       </div>
-    </section>` : ''}
+    </section>
     ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : '<p class="home-empty" style="padding:6px 0 0">Your account, notifications and AI keys will live here soon.</p>'}`;
 }
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
@@ -7649,18 +7650,19 @@ function showGate(sub) {
 // (name + subdomain + invite). Only reached on the multi-tenant build, where
 // /api/me returns needsSignup; on the single-tenant app /api/me 404s and this
 // never shows.
-function showSignup(email) {
+function showSignup(email, inviteRequired) {
   // Prefill the web address from the subdomain they arrived on (name.daybook.fyi),
   // so if they picked it on the homepage they don't retype it.
   let presub = '';
   try { const h = location.hostname; if (h.endsWith('.daybook.fyi')) { const f = h.split('.')[0]; if (f && f !== 'www') presub = f; } } catch {}
+  const inviteLabel = inviteRequired ? 'Invite code' : 'Invite code <span class="su-opt">(optional)</span>';
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><em>${esc(BRAND.app)}</em></div>
       <p class="gate2-sub">Welcome - let's set up your space.</p>
       <label class="signup-l">Your name<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <label class="signup-l">Your web address<span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" value="${esc(presub)}" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span></label>
-      <label class="signup-l">Invite code <span class="su-opt">(optional)</span><input class="gate2-input" id="su-invite" placeholder="Leave blank if you don't have one" autocomplete="off" spellcheck="false"></label>
+      <label class="signup-l">${inviteLabel}<input class="gate2-input" id="su-invite" placeholder="${inviteRequired ? 'From a member who invited you' : "Leave blank if you don't have one"}" autocomplete="off" spellcheck="false" ${inviteRequired ? 'required' : ''}></label>
       <button class="gate2-btn" id="su-btn" type="submit">Create my Daybook</button>
       <p class="gate2-err" id="su-err" hidden></p>
       <p class="gate2-alt su-foot">Signed in as ${esc(email)} · <button type="button" class="su-signout" id="su-signout">sign out</button></p>
@@ -7742,7 +7744,7 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
   // first. On the single-tenant app /api/me 404s, so this is a no-op.
   try {
     const me = await api('/api/me');
-    if (me && me.needsSignup) { showSignup(me.email); return; }
+    if (me && me.needsSignup) { showSignup(me.email, me.inviteRequired); return; }
     if (me && me.user) { state.me = me.user; if (me.user.name) BRAND.owner = me.user.name; }
   } catch {}
   try {

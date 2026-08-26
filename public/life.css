@@ -1281,6 +1281,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .inv-new { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
 .inv-new .sel { flex:1; min-width:140px; }
 .inv-free { display:inline-flex; align-items:center; gap:7px; font-size:14px; color:var(--ink-2); white-space:nowrap; }
+.inv-hint { font-size:13px; color:var(--ink-3); margin:10px 0 0; }
 .inv-list { display:flex; flex-direction:column; gap:7px; margin-top:16px; }
 .inv-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); }
 .inv-row.used { opacity:.55; }
@@ -2160,6 +2161,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .signup-card { max-width:400px; text-align:left; }
 .signup-card .gate2-mark, .signup-card .gate2-sub { text-align:center; }
 .signup-l { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--ink-2); letter-spacing:.01em; }
+.su-opt { font-weight:400; color:var(--ink-3); }
 .signup-l .gate2-input { text-align:left; font-size:16px; padding:12px 14px; }
 .su-sub { display:flex; align-items:stretch; border:1px solid var(--line-2); border-radius:12px; overflow:hidden; background:var(--paper); }
 .su-sub:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); }
