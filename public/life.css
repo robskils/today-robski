@@ -1448,6 +1448,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* a life-area tag riding on a note card, pushed to the right */
 .area-tag { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 40%,transparent); padding:2px 9px; border-radius:999px; flex:none; }
 .area-tag .cd { width:8px; height:8px; border-radius:50%; background:var(--c); }
+.area-tags { margin-left:auto; display:inline-flex; align-items:center; flex-wrap:wrap; gap:6px; flex:none; justify-content:flex-end; }
+.area-tags .area-tag { margin-left:0; }
 
 /* ── life areas ──────────────────────────────────── */
 /* the area picker on a note / table, styled as a quiet pill */
@@ -1455,6 +1457,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .area-sel { padding:7px 12px; font-size:14.5px; background:var(--card); border:1px solid var(--line-2); border-radius:999px; color:var(--ink-2); max-width:200px; }
 .area-sel:hover { border-color:var(--accent); }
 .tbl-head .area-sel { margin-left:auto; }
+/* A note's life-area chips: one per area, each linking to its area and removable. */
+.note-areas { display:inline-flex; align-items:center; flex-wrap:wrap; gap:7px; }
+.area-chip-pick { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; font-size:13.5px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 42%,transparent); background:color-mix(in srgb,var(--c) 9%,transparent); border-radius:999px; overflow:hidden; }
+.acp-link { display:inline-flex; align-items:center; gap:6px; padding:4px 5px 4px 11px; color:inherit; }
+.acp-link .cd { width:8px; height:8px; border-radius:50%; background:var(--c); flex:none; }
+.acp-link:hover { text-decoration:underline; }
+.acp-x { padding:4px 9px 4px 5px; color:inherit; opacity:.5; font-size:15px; line-height:1; }
+.acp-x:hover { opacity:1; }
 
 .area-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
 .area-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:center; gap:11px; text-align:left; padding:16px 17px; border:1px solid var(--line); border-left:4px solid var(--c); border-radius:12px; background:var(--card); color:var(--ink); font-size:17px; box-shadow:var(--shadow); transition:border-color .12s,transform .08s; }

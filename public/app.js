@@ -1626,8 +1626,9 @@ function openNotesList() {
 }
 const NOTE_SORTS = [['added-desc', 'Newest first'], ['added-asc', 'Oldest first'], ['az', 'Name A-Z'], ['za', 'Name Z-A'], ['area', 'Life area']];
 function notesSortMode() { return state.notesSort || (state.notesSort = localStorage.getItem('life.notesSort') || 'added-desc'); }
-// A note's life-area title for sorting; no-area sorts last (￿).
-const noteAreaTitle = (n) => { const a = n.props && n.props.area && areaById(n.props.area); return a ? (a.title || '') : '￿'; };
+// A note's life-area title for sorting (its first, if it has several); no-area
+// sorts last (￿).
+const noteAreaTitle = (n) => { const ids = blockAreas(n); const a = ids[0] && areaById(ids[0]); return a ? (a.title || '') : '￿'; };
 function sortNotes(list) {
   const mode = notesSortMode();
   const t = (n) => (n.title || '').toLowerCase();
@@ -1693,7 +1694,9 @@ function renderNotesList() {
   let listHtml;
   if (mode === 'area' && !q) {
     const groups = new Map();
-    for (const n of all) { const k = (n.props && n.props.area) || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }
+    // A note in several areas shows under each of them; one with none groups
+    // under "No life area".
+    for (const n of all) { const ks = blockAreas(n); (ks.length ? ks : ['']).forEach((k) => { if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }); }
     const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
     listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life area') : 'No life area'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
   } else {
@@ -2154,14 +2157,25 @@ async function rwDelete(id) {
 // ── view: life areas ─────────────────────────────────
 // A small coloured tag showing a block's life area, if it has one.
 function areaTag(b) {
-  const a = b.props && b.props.area && areaById(b.props.area);
-  return a ? `<span class="area-tag" style="--h:${hueOf(a)}"><span class="cd"></span>${esc(a.title)}</span>` : '';
+  const tags = blockAreas(b).map((id) => areaById(id)).filter(Boolean)
+    .map((a) => `<span class="area-tag" style="--h:${hueOf(a)}"><span class="cd"></span>${esc(a.title)}</span>`).join('');
+  return tags ? `<span class="area-tags">${tags}</span>` : '';
 }
 // A picker to set a block's life area, used on note and table pages.
 function areaSelect(cur, attr) {
   return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Life area</option>${
     state.areas.map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}</option>`).join('')
   }</select></span>`;
+}
+// A note can sit in several life areas. Each shows as a removable chip that also
+// links to its area; the dropdown lists the areas it isn't in yet, so picking one
+// adds it. With none chosen it's just the familiar "+ Life area" control.
+function noteAreasControl(n) {
+  const ids = blockAreas(n);
+  const chips = ids.map((id) => { const a = areaById(id); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${id}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-note-area-remove="${id}" title="Remove from this area">×</button></span>`; }).join('');
+  const remaining = state.areas.filter((a) => !ids.includes(a.id));
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-note-area-add><option value="">${ids.length ? '+ Add area' : '+ Life area'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  return `<span class="note-areas">${chips}${add}</span>`;
 }
 function openAreasList() {
   state.view = { type: 'areas' };
@@ -2236,6 +2250,19 @@ async function setBlockArea(kind, id, areaId) {
     toast(areaId ? 'Life area set' : 'Life area cleared');
   } catch (e) { toast(e.message); }
 }
+// Set a note's full list of life areas. props.area mirrors the first so any
+// single-area reader (and older code) still works. Updates the in-memory copies
+// and re-renders before the save so the chips feel instant.
+async function setNoteAreas(id, ids) {
+  ids = [...new Set(ids.filter(Boolean))];
+  const props = { areas: ids, area: ids[0] || null };
+  const bump = (b) => { if (b) { b.props = b.props || {}; b.props.areas = ids; b.props.area = ids[0] || null; } };
+  bump(state.note && state.note.current); bump(state.noteTops && state.noteTops.find((n) => n.id === id));
+  if (state.note && state.note.current && state.note.current.id === id) renderNote();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props }) }); } catch (e) { toast(e.message); }
+}
+function addNoteArea(id, areaId) { if (!areaId) return; const cur = blockAreas(state.note && state.note.current); setNoteAreas(id, [...cur, areaId]); toast('Added to life area'); }
+function removeNoteArea(id, areaId) { const cur = blockAreas(state.note && state.note.current); setNoteAreas(id, cur.filter((x) => x !== areaId)); }
 // From a life-area page: create a task/note already tagged to this area, then
 // open it for naming. It shows up in the Tasks/Notes lists too.
 async function areaAddTask() {
@@ -3914,6 +3941,11 @@ function openFav(ref) {
 // ── view: tasks ──────────────────────────────────────
 const hueOf = (a) => (a && a.props && Number.isFinite(a.props.hue) ? a.props.hue : 220);
 const areaById = (id) => state.areas.find((a) => a.id === id);
+// A note can belong to several life areas: props.areas is the list. props.area
+// is kept as the first, for anything still reading a single area and for notes
+// written before multi-area. blockAreas gives the list from whichever is set.
+function blockAreas(b) { const p = (b && b.props) || {}; if (Array.isArray(p.areas)) return p.areas.filter(Boolean); return p.area ? [p.area] : []; }
+function blockInArea(b, areaId) { return blockAreas(b).includes(areaId); }
 const PRIO_ORDER = { P1: 1, P2: 2, P3: 3, P4: 4, '': 5 };
 const fmtDate = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`; };
 function sortTasks(ts) {
@@ -5558,14 +5590,14 @@ async function newNoteTask(noteId) {
     state.allTasks = state.allTasks || []; state.allTasks.push(t); renderNoteTasks();
   } catch (e) { toast(e.message); }
 }
-// Related notes: other notes in the same life area as the one you're viewing.
-// Collapsed by default; nothing at all if this note has no life area. Up to 12,
-// with a link through to the full area.
+// Related notes: other notes that share any life area with the one you're
+// viewing. Collapsed by default; nothing at all if this note has no life area.
+// Up to 12, with a link through to the first shared area.
 function relatedNotesHtml(note) {
-  const area = note && note.props && note.props.area; if (!area) return '';
-  const list = (state.noteTops || []).filter((x) => x.id !== note.id && x.props && x.props.area === area);
+  const areas = blockAreas(note); if (!areas.length) return '';
+  const list = (state.noteTops || []).filter((x) => x.id !== note.id && blockAreas(x).some((id) => areas.includes(id)));
   if (!list.length) return '';
-  const a = areaById(area);
+  const a = areaById(areas[0]);
   const open = localStorage.getItem('life.note.relatedOpen') === '1';
   const shown = list.slice(0, 12);
   return `<div class="note-related"><div class="sub-h note-related-h" data-related-toggle><span class="hs-chev">${open ? '▾' : '▸'}</span>Related notes<span class="muted"> · ${list.length}</span></div>
@@ -5592,7 +5624,7 @@ function renderNote() {
   const kids = state.note.children.map((c) => { const isT = isTableNote(c); return `<button class="subpage" data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
-      <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
+      <span class="crumb-tools">${noteAreasControl(n)}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       ${noteTypeToggle(n.id, 'note')}
       ${shareBtn(n, 'note')}
@@ -6538,6 +6570,7 @@ document.addEventListener('click', (e) => {
   { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
+  { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   if (t.closest('[data-related-toggle]')) { const o = localStorage.getItem('life.note.relatedOpen') === '1'; try { localStorage.setItem('life.note.relatedOpen', o ? '0' : '1'); } catch {} if (state.note) renderNote(); return; }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Daybook` : 'No contacts on Daybook yet'); }); return; }
@@ -6673,7 +6706,7 @@ document.addEventListener('change', (e) => {
     c._acct = e.target.value; renderMail(); return;
   }
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
-  if (e.target.matches('[data-note-area]')) setBlockArea('note', state.note.current.id, e.target.value);
+  if (e.target.matches('[data-note-area-add]') && state.note && state.note.current) { const v = e.target.value; e.target.value = ''; addNoteArea(state.note.current.id, v); }
   if (e.target.matches('[data-contact-area]')) setBlockArea('contact', state.contact_open.contact.id, e.target.value);
   if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
   { const tff = e.target.closest('[data-tf-field]'); if (tff) { loadTaskFilters(); const i = Number(tff.dataset.tfField); const c = state.taskFilters[i]; c.field = e.target.value; c.op = (TASK_FIELDS[c.field].ops || [])[0]; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }

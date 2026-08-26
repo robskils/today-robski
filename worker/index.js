@@ -991,10 +991,14 @@ async function listBlocks(request, env, url) {
     clauses.push('parent_id IS ?'); args.push(url.searchParams.get('parent_id') || null);
   }
   // ?area=<id> returns every block tagged with that life area, across kinds -
-  // tasks, notes and tables all carry it in props.area. Rows have no area, so
-  // they never match. This is what an area page queries.
+  // tasks and tables carry a single id in props.area; a note can belong to
+  // several, held in the props.areas array. Match either. json_each over a NULL
+  // (no areas array) yields no rows, so the OR safely falls back to props.area.
+  // Rows have no area, so they never match. This is what an area page queries.
   if (url.searchParams.has('area')) {
-    clauses.push("json_extract(props, '$.area') = ?"); args.push(url.searchParams.get('area'));
+    const aid = url.searchParams.get('area');
+    clauses.push("(json_extract(props, '$.area') = ? OR EXISTS (SELECT 1 FROM json_each(json_extract(props, '$.areas')) WHERE value = ?))");
+    args.push(aid, aid);
   }
   if (url.searchParams.get('archived') !== '1') clauses.push('archived = 0');
 
