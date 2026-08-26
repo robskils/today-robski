@@ -165,6 +165,16 @@ CREATE TABLE IF NOT EXISTS assignments (
 );
 CREATE INDEX IF NOT EXISTS idx_assignments_to ON assignments(to_id);
 
+-- Meeting notes: one shared note per pair of friends, taken together (e.g. during
+-- a call). Keyed by the sorted pair so either side reaches the same note.
+CREATE TABLE IF NOT EXISTS meetings (
+  lo         INTEGER NOT NULL,
+  hi         INTEGER NOT NULL,
+  note_id    TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (lo, hi)
+);
+
 -- Pending alias confirmations: a 6-digit code emailed to a newly added address.
 -- Separate from otp_codes (sign-in) so an unverified alias can't be used to log
 -- in, and the code is bound to the account that requested it.

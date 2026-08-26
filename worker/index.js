@@ -4,6 +4,7 @@ import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, pa
 import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
+import { openMeeting } from './meetings.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -2254,6 +2255,8 @@ export default {
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
       // Sharing: notes & tasks handed to a friend (Friends phase 3a).
       if (path === '/api/shared' && request.method === 'GET') return json(await sharedWithMe(env), request);
+      // Meeting notes: a shared note per friend pair (Friends phase 3c).
+      if (path === '/api/meeting' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await openMeeting(env, b.friendId), request); } catch (e) { return err(e.message, request, 400); } }
       // Assigning a task to a friend (Friends phase 3b).
       if (path === '/api/assignments' && request.method === 'GET') return json(await myAssignments(env), request);
       if (path === '/api/assignments/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await acceptAssignment(env, b.taskId), request); } catch (e) { return err(e.message, request, 400); } }

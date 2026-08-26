@@ -990,6 +990,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-share { flex:none; }
 .note-share.on { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 35%,var(--line)); }
 .shared-banner { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 8%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:10px; padding:8px 13px; margin:0 0 12px; } .shared-banner b { color:var(--ink); }
+.note-remote-pill { font-size:13px; color:#9a7b2e; background:color-mix(in srgb,#c99a2e 12%,transparent); border:1px solid color-mix(in srgb,#c99a2e 30%,transparent); border-radius:9px; padding:7px 12px; margin:0 0 12px; animation:pill-in .2s ease; }
+@keyframes pill-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
 .prose.readonly { opacity:.96; cursor:default; }
 .shared-row { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:8px; }
 .shared-row:hover { border-color:var(--line-2); }

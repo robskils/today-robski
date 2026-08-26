@@ -595,7 +595,7 @@ function renderFriends() {
     <div class="pane-head home-head"><h1>Friends</h1></div>
     <div class="list-head"><input class="list-search sel" id="friend-email" placeholder="Add a friend by email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Add</button></div>
     ${d.incoming.length ? `<section class="home-sec"><div class="home-sec-h">Friend requests<span class="muted">${d.incoming.length}</span></div>${d.incoming.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}</section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
+    <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
     ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
     ${(state.sharedWithMe && state.sharedWithMe.length) ? `<section class="home-sec"><div class="home-sec-h">Shared with you<span class="muted">${state.sharedWithMe.length}</span></div>${state.sharedWithMe.map((s) => `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${s.kind === 'task' ? (s.done ? '☑' : '☐') : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.kind === 'task' ? 'Task' : 'Note'} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`).join('')}</section>` : ''}
     ${d.suggestions.length ? `<section class="home-sec"><div class="home-sec-h">Your contacts on Daybook</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}</section>` : ''}`;
@@ -695,6 +695,36 @@ async function unassignFrom(fid) { try { const r = await api(`/api/tasks/${state
 function closeAssign() { const el = document.getElementById('assign'); if (el) el.remove(); state.assign = null; if (state.view && state.view.type === 'taskcard') openTaskCard(state.view.id); }
 async function acceptAssign(taskId) { try { state.assignments = await api('/api/assignments/accept', { method: 'POST', body: JSON.stringify({ taskId }) }); toast('Accepted - it\'s in your tasks now'); if (state.view && state.view.type === 'tasks') { await openTasks(); } } catch (e) { toast(e.message); } }
 async function declineAssign(taskId) { try { state.assignments = await api('/api/assignments/decline', { method: 'POST', body: JSON.stringify({ taskId }) }); if (state.view && state.view.type === 'tasks') renderTasks(); } catch (e) { toast(e.message); } }
+// Open (or create) the shared meeting note for a friend, then show it. It's a
+// normal shared note, so the live-sync poll in openNote keeps both sides in step.
+async function openMeetingNote(friendId) {
+  try { const r = await api('/api/meeting', { method: 'POST', body: JSON.stringify({ friendId }) }); if (r.created) toast('Shared notes started - take them together'); await openNote(r.noteId); }
+  catch (e) { toast(e.message); }
+}
+// Live-ish sync for a shared note: poll the block, and when the other side has
+// changed it, reload - unless you're mid-edit, in which case wait and flag it so
+// your typing is never clobbered.
+let notePoll = null;
+function stopNotePoll() { if (notePoll) { clearInterval(notePoll); notePoll = null; } const p = document.getElementById('note-remote-pill'); if (p) p.remove(); }
+function startNotePoll(id) {
+  stopNotePoll();
+  notePoll = setInterval(async () => {
+    if (!state.note || !state.note.current || state.note.current.id !== id || !state.view || state.view.type !== 'note') { stopNotePoll(); return; }
+    let latest; try { latest = await api(`/api/blocks/${id}`); } catch { return; }
+    if (!latest || !latest.updated_at || latest.updated_at <= (state.note.current.updated_at || '')) return;
+    const prose = document.querySelector(`.note-body .prose[data-block-id="${id}"]`);
+    const editing = prose && (document.activeElement === prose || prose.contains(document.activeElement));
+    if (editing) { showNotePill(latest.sharedBy || 'Your co-editor'); return; }
+    state.note.current = latest; renderNote();
+  }, 5000);
+}
+function showNotePill(name) {
+  if (document.getElementById('note-remote-pill')) return;
+  const host = document.querySelector('.note-main'); if (!host) return;
+  const pill = document.createElement('div'); pill.id = 'note-remote-pill'; pill.className = 'note-remote-pill';
+  pill.textContent = `✎ ${name} is editing - new changes appear when you pause.`;
+  host.prepend(pill);
+}
 // Tick a task I don't own but can edit (an accepted assignment / shared task):
 // write straight to the shared block, so the owner sees the same status.
 async function sharedToggleDone(id, done) {
@@ -980,6 +1010,7 @@ function assignedSectionHtml() {
   </section>`;
 }
 async function openNote(id) {
+  stopNotePoll();
   const note = await api(`/api/blocks/${id}`);
   const path = [note]; let p = note;
   // Stop the ancestry walk at the first parent we can't reach - a note shared
@@ -992,6 +1023,8 @@ async function openNote(id) {
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title);
   renderNav(); renderNote();
+  // A shared note (given to me, or one I've shared out) syncs live while open.
+  if (note.sharedBy || note.sharedWith) startNotePoll(id);
 }
 async function openTable(id) {
   const table = await api(`/api/blocks/${id}`);
@@ -6199,6 +6232,7 @@ document.addEventListener('click', (e) => {
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
   { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
+  { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
   if (t.closest('[data-share-close]')) { closeShare(); return; }
@@ -7142,7 +7176,7 @@ async function saveProse(key, rawHtml, blockId) {
   // YouTube players live in the strip below; refresh it if that set changed.
   const ytChanged = youtubeIds(html).join() !== youtubeIds(prev).join();
   if (isCurrent && ytChanged && !focused) rerenderHost();
-  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); } catch (e) { toast(e.message); }
+  try { const upd = await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); if (isCurrent && cur && upd && upd.updated_at) cur.updated_at = upd.updated_at; } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {
   const t = state.task_open.task; if (!(await uiConfirm(`Delete “${t.title || 'Untitled'}”?`, { title: 'Delete task', okLabel: 'Delete', danger: true }))) return;
