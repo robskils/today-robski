@@ -946,8 +946,8 @@ function renderSettings() {
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
     `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
   state.settings = state.settings || {};
-  // Life areas is the first tile at the top - the same treatment as the rest,
-  // just first. Its tile opens a small management subpage (like the others do).
+  // The management tiles (Life areas, Mail accounts, ...) each open a small
+  // subpage; they live together under the Manage tab.
   const tiles = [
     ['◈', 'Life areas', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
@@ -956,16 +956,20 @@ function renderSettings() {
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
   ];
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Users, invites &amp; quotes', 'data-open-admin=""']);
-  const appOpen = !!state.settings.appearanceOpen;
-  $('#pane').innerHTML = `
-    ${pageCrumb('Settings')}
-    <div class="pane-head home-head"><h1>Settings</h1></div>
-    <section class="home-sec">
-      <div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>
-    </section>
-    ${state.account ? `<section class="home-sec">
-      <div class="home-sec-h set-collapse-h" data-settings-account><span class="acw-chev">${state.settings.accountOpen ? '▾' : '▸'}</span>Account</div>
-      ${state.settings.accountOpen ? `<div class="set-card set-account">
+  // Account and Appearance lead. Each section is its own tab rather than a long
+  // collapsing scroll, so the settings you reach for most are one tap in.
+  const TABS = [
+    ['account', 'Account'],
+    ['appearance', 'Appearance'],
+    ['sections', 'Sections'],
+    ['invites', 'Invites'],
+    ['manage', 'Manage'],
+  ];
+  if (!TABS.some(([k]) => k === state.settings.tab)) state.settings.tab = 'account';
+  const tab = state.settings.tab;
+  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
+
+  const accountPane = state.account ? `<div class="set-card set-account">
         <label class="set-field"><span>Name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your name"></label>
         <label class="set-field"><span>Primary email</span><input class="sel" value="${esc(state.account.email || '')}" disabled></label>
         <div class="set-field"><span>Also sign in with these addresses</span>
@@ -985,25 +989,19 @@ function renderSettings() {
           ${aiKeyRow('gemini', 'Google Gemini', state.account.aiGeminiSet, 'AIza…')}
         </div>
         <div class="acct-actions"><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
-      </div>` : ''}
-    </section>` : ''}
-    <section class="home-sec">
-      <div class="home-sec-h set-collapse-h" data-settings-appearance><span class="acw-chev">${appOpen ? '▾' : '▸'}</span>Appearance</div>
-      ${appOpen ? `<div class="set-card">
+      </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
+
+  const appearancePane = `<div class="set-card">
         <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">Auto follows your local sunrise &amp; sunset.</div></div><button class="add-btn wide" data-theme-toggle>${themeLabel()}</button></div>
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
-      </div>` : ''}
-    </section>
-    <section class="home-sec">
-      <div class="home-sec-h set-collapse-h" data-settings-sections><span class="acw-chev">${state.settings.sectionsOpen ? '▾' : '▸'}</span>Sections<span class="muted">turn off anything you don't use</span></div>
-      ${state.settings.sectionsOpen ? `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>` : ''}
-    </section>
-    <section class="home-sec">
-      <div class="home-sec-h">Invite friends<span class="muted">${(state.me && state.me.id === 1) ? 'invite people to Daybook' : 'share a code so someone can join'}</span></div>
-      <div class="set-card">
+      </div>`;
+
+  const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>`;
+
+  const invitesPane = `<div class="set-card">
         <div class="inv-new">
           ${(state.me && state.me.id === 1) ? `<select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
           <label class="inv-free"><input type="checkbox" id="inv-freetoggle"> Free (100% off)</label>
@@ -1012,9 +1010,22 @@ function renderSettings() {
         </div>
         ${(state.me && state.me.id === 1) ? '' : '<p class="inv-hint">Give a code to someone and they can create their own Daybook. Up to 5 unused at a time.</p>'}
         <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet - create one to share.</div>'}</div>
-      </div>
+      </div>`;
+
+  const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
+
+  const panes = { account: accountPane, appearance: appearancePane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: 'Your details, sign-in addresses & AI keys', appearance: 'Theme & accent colour', sections: 'Turn off anything you don\'t use', invites: (state.me && state.me.id === 1) ? 'Invite people to Daybook' : 'Share a code so someone can join', manage: 'Life areas, mail, categories & more' };
+
+  $('#pane').innerHTML = `
+    ${pageCrumb('Settings')}
+    <div class="pane-head home-head"><h1>Settings</h1></div>
+    ${seg}
+    <section class="home-sec">
+      <div class="home-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${subs[tab] || ''}</span></div>
+      ${panes[tab] || ''}
     </section>
-    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : '<p class="home-empty" style="padding:6px 0 0">Your account, notifications and AI keys will live here soon.</p>'}`;
+    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : ''}`;
 }
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
 function ensureLoc() {
@@ -6275,9 +6286,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; if (c[k]) delete c[k]; else c[k] = true; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
-  if (t.closest('[data-settings-appearance]')) { state.settings = state.settings || {}; state.settings.appearanceOpen = !state.settings.appearanceOpen; renderSettings(); return; }
-  if (t.closest('[data-settings-sections]')) { state.settings = state.settings || {}; state.settings.sectionsOpen = !state.settings.sectionsOpen; renderSettings(); return; }
-  if (t.closest('[data-settings-account]')) { state.settings = state.settings || {}; state.settings.accountOpen = !state.settings.accountOpen; renderSettings(); return; }
+  { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
