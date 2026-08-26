@@ -227,12 +227,12 @@ function decorateProse(html) {
 }
 // An always-on inline editor. No modes, no markup - you just write, and the
 // selection bubble (or ⌘B/⌘I) formats in place. `key` says which block it saves.
-function proseEditor(body, key, id) {
+function proseEditor(body, key, id, readOnly) {
   // data-block-id ties this editor to ITS block. saveProse writes to that id,
   // never to "whatever note is open now" - without it, a save scheduled here
   // that fires after you follow a link lands in the note you navigated to,
   // silently overwriting it. That bug wiped notes; do not remove the id.
-  return `<div class="prose" contenteditable="true" spellcheck="true" data-prose="${key}" data-block-id="${esc(id || '')}" data-ph="Write something here…">${decorateProse(bodyToHtml(body))}</div>`;
+  return `<div class="prose${readOnly ? ' readonly' : ''}" contenteditable="${readOnly ? 'false' : 'true'}" spellcheck="true" data-prose="${key}" data-block-id="${esc(id || '')}" data-ph="Write something here…">${decorateProse(bodyToHtml(body))}</div>`;
 }
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
@@ -582,6 +582,7 @@ async function delQuote(id) {
 async function openFriends() {
   state.view = { type: 'friends' }; renderNav(); renderFriends();
   try { state.friends = await api('/api/friends'); } catch (e) { toast(e.message); state.friends = { friends: [], incoming: [], outgoing: [], suggestions: [] }; }
+  try { state.sharedWithMe = (await api('/api/shared')).items || []; } catch { state.sharedWithMe = []; }
   renderFriends();
 }
 function friendRow(f, action) {
@@ -595,6 +596,7 @@ function renderFriends() {
     ${d.incoming.length ? `<section class="home-sec"><div class="home-sec-h">Friend requests<span class="muted">${d.incoming.length}</span></div>${d.incoming.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}</section>` : ''}
     <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
     ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
+    ${(state.sharedWithMe && state.sharedWithMe.length) ? `<section class="home-sec"><div class="home-sec-h">Shared with you<span class="muted">${state.sharedWithMe.length}</span></div>${state.sharedWithMe.map((s) => `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${s.kind === 'task' ? (s.done ? '☑' : '☐') : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.kind === 'task' ? 'Task' : 'Note'} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`).join('')}</section>` : ''}
     ${d.suggestions.length ? `<section class="home-sec"><div class="home-sec-h">Your contacts on Daybook</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}</section>` : ''}`;
 }
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
@@ -630,6 +632,36 @@ async function sendChat(e) {
   try { const r = await api('/api/messages', { method: 'POST', body: JSON.stringify({ to: state.chat.with, body }) }); state.chat.messages = r.messages; renderChatMessages(); } catch (err) { toast(err.message); }
 }
 function closeChat() { if (chatPoll) { clearInterval(chatPoll); chatPoll = null; } const el = document.getElementById('chat'); if (el) el.remove(); state.chat = null; }
+// ── Sharing a note/task with friends (Friends phase 3a) ───────────────
+async function openShare(id, title, kind) {
+  state.share = { id, title, kind, friends: (state.friends && state.friends.friends) || [], shares: [], loading: true };
+  renderShare();
+  try {
+    const [fr, sh] = await Promise.all([api('/api/friends'), api(`/api/blocks/${id}/shares`)]);
+    state.friends = fr; state.share.friends = fr.friends || []; state.share.shares = sh.shares || [];
+  } catch (e) { toast(e.message); }
+  state.share.loading = false; renderShare();
+}
+function shareModeFor(fid) { const s = (state.share.shares || []).find((x) => x.id === fid); return s ? (s.canEdit ? 'edit' : 'view') : ''; }
+function renderShare() {
+  let el = document.getElementById('share'); if (!el) { el = document.createElement('div'); el.id = 'share'; document.body.appendChild(el); }
+  const s = state.share; const friends = s.friends || [];
+  const rows = s.loading ? '<div class="chat-empty">Loading…</div>'
+    : (friends.length ? friends.map((f) => {
+      const mode = shareModeFor(f.id);
+      return `<div class="share-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${mode
+        ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
+        : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
+    }).join('') : '<div class="home-empty">Add a friend first, then you can share with them here.</div>');
+  el.innerHTML = `<div class="chat-bg" data-share-close></div><div class="chat-panel share-panel">
+    <div class="chat-head"><span class="chat-title">Share this ${s.kind === 'task' ? 'task' : 'note'}</span><button class="chat-x" data-share-close title="Close">×</button></div>
+    <div class="share-note">People you share with can open and edit it. Switch anyone to view-only, or stop sharing anytime.</div>
+    <div class="share-list">${rows}</div>
+  </div>`;
+}
+async function shareSet(fid, canEdit) { try { const r = await api(`/api/blocks/${state.share.id}/share`, { method: 'POST', body: JSON.stringify({ friendId: fid, canEdit }) }); state.share.shares = r.shares; renderShare(); } catch (e) { toast(e.message); } }
+async function shareOff(fid) { try { const r = await api(`/api/blocks/${state.share.id}/share`, { method: 'DELETE', body: JSON.stringify({ friendId: fid }) }); state.share.shares = r.shares; renderShare(); } catch (e) { toast(e.message); } }
+function closeShare() { const el = document.getElementById('share'); if (el) el.remove(); state.share = null; }
 async function createInvite() {
   const plan = ($('#inv-plan') || {}).value || 'standard';
   const free = ($('#inv-freetoggle') || {}).checked ? 1 : 0;
@@ -891,7 +923,9 @@ async function openTasks(filter) {
 async function openNote(id) {
   const note = await api(`/api/blocks/${id}`);
   const path = [note]; let p = note;
-  while (p.parent_id) { p = await api(`/api/blocks/${p.parent_id}`); path.unshift(p); }
+  // Stop the ancestry walk at the first parent we can't reach - a note shared
+  // with us sits under the owner's tree, which isn't ours to read.
+  while (p.parent_id) { try { p = await api(`/api/blocks/${p.parent_id}`); path.unshift(p); } catch { break; } }
   // Both sub-notes and table notes nested inside this note.
   const children = (await api(`/api/blocks?parent_id=${id}`)).filter((b) => b.kind === 'note' || b.kind === 'table');
   if (!state.allTasks) state.allTasks = await api('/api/blocks?kind=task').catch(() => []);
@@ -5037,6 +5071,17 @@ function starredNotesHtml(currentId) {
   return `<div class="note-starred"><div class="sub-h">Starred notes</div>
     <div class="star-grid">${starred.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">★</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div></div>`;
 }
+// A Share button for an owned note/task; the count shows when it's already out.
+function shareBtn(block, kind) {
+  if (block.sharedBy) return '';   // a borrowed block: only its owner can share it
+  const n = block.sharedWith || 0;
+  return `<button class="note-share ghost ${n ? 'on' : ''}" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}" title="Share with a friend">🤝 Share${n ? ` · ${n}` : ''}</button>`;
+}
+// A banner on a block someone shared with me, noting who and whether I can edit.
+function sharedBanner(block) {
+  if (!block.sharedBy) return '';
+  return `<div class="shared-banner">🤝 Shared with you by <b>${esc(block.sharedBy)}</b>${block.canEdit ? '' : ' · view only'}</div>`;
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -5050,12 +5095,14 @@ function renderNote() {
       <span class="crumb-tools">${areaLinkHtml(n.props && n.props.area)}${areaSelect(n.props && n.props.area, 'data-note-area')}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       ${noteTypeToggle(n.id, 'note')}
-      <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
-      <button class="note-del ghost" data-del-note title="Delete this note">Delete</button></span></div>
+      ${shareBtn(n, 'note')}
+      ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
+      <button class="note-del ghost" data-del-note title="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
-        <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled">${esc(n.title || '')}</textarea>
-        <div class="note-body">${proseEditor(n.body, 'note', n.id)}</div>
+        ${sharedBanner(n)}
+        <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
+        <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}</div>
         ${embedsHtml(n.body)}
       </div>
       <aside class="note-side">
@@ -5960,6 +6007,11 @@ document.addEventListener('click', (e) => {
   { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
+  { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
+  if (t.closest('[data-share-close]')) { closeShare(); return; }
+  { const son = t.closest('[data-share-on]'); if (son) { shareSet(Number(son.dataset.shareOn), true); return; } }
+  { const sof = t.closest('[data-share-off]'); if (sof) { shareOff(Number(sof.dataset.shareOff)); return; } }
+  { const sw = t.closest('[data-open-shared]'); if (sw) { openView({ type: sw.dataset.sharedKind, id: sw.dataset.openShared }); return; } }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
@@ -6051,6 +6103,7 @@ document.addEventListener('contextmenu', (e) => {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
+  const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
   const spc = e.target.closest('[data-sp-cat]'); if (spc) { spendSetCat(spc.dataset.spCat, e.target.value); return; }
@@ -6450,10 +6503,12 @@ function renderTaskCard() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
       <span class="crumb-tools">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
-      <button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button></span></div>
+      ${shareBtn(t, 'task')}
+      ${t.sharedBy ? '' : '<button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button>'}</span></div>
+    ${sharedBanner(t)}
     <div class="task-focus">
       <button class="tf-check ${t.props.done ? 'done' : ''}" data-check="${t.id}" title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
-      <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task">${esc(t.title || '')}</textarea>
+      <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task" ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>${esc(t.title || '')}</textarea>
     </div>
     ${(() => { const m = focusMinsFor('task', t.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this task</div>` : ''; })()}
     <div class="tf-meta">
@@ -6468,15 +6523,15 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Repeat</span>
         <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
-    ${notesSection(t.body, 'task', t.id)}
+    ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds();
 }
 
 // A prose Notes section, reused by the task card and the row card. Backed by
 // the block's `body`, edited inline via the shared rich-text editor.
-function notesSection(body, key, id) {
-  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key, id)}${embedsHtml(body)}</section>`;
+function notesSection(body, key, id, readOnly) {
+  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key, id, readOnly)}${embedsHtml(body)}</section>`;
 }
 
 // ── attachments (R2-backed files on a block) ─────────

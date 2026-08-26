@@ -68,7 +68,7 @@ export async function acceptFriend(env, id) {
   return getFriends(env);
 }
 // ── Chat ──────────────────────────────────────────────────────────────
-async function areFriends(env, other) {
+export async function areFriends(env, other) {
   return !!(await env.DB.prepare("SELECT 1 FROM friends WHERE user_id=? AND friend_id=? AND status='accepted'").bind(env.uid, Number(other)).first().catch(() => null));
 }
 export async function getMessages(env, withId) {

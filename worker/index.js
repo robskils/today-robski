@@ -2,6 +2,7 @@ import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode } from './accounts.js';
 import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts } from './friends.js';
+import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { handleAttachments } from './attachments.js';
@@ -856,15 +857,40 @@ function parseBlock(row) {
   return { ...row, props, archived: !!row.archived };
 }
 
+// The single access oracle for one block, re-derived on every read and write.
+// A block is accessible if you own it (full edit), or a friend shared it with
+// you (edit iff can_edit). Returns { ownerId, canEdit, mine } or null. Block ids
+// are unguessable UUIDs, so the initial unscoped id lookup leaks nothing.
+async function blockAccess(env, id) {
+  const own = await env.DB.prepare('SELECT user_id FROM blocks WHERE id = ?').bind(id).first().catch(() => null);
+  if (!own) return null;
+  if (own.user_id === env.uid) return { ownerId: env.uid, canEdit: true, mine: true };
+  const sh = await env.DB.prepare('SELECT can_edit FROM shares WHERE block_id = ? AND friend_id = ?').bind(id, env.uid).first().catch(() => null);
+  if (!sh) return null;
+  return { ownerId: own.user_id, canEdit: !!sh.can_edit, mine: false };
+}
+
 async function getBlock(env, id) {
-  const row = await env.DB.prepare('SELECT * FROM blocks WHERE id = ? AND user_id = ?').bind(id, env.uid).first();
+  const acc = await blockAccess(env, id);
+  if (!acc) return null;
+  const oid = acc.ownerId;
+  const row = await env.DB.prepare('SELECT * FROM blocks WHERE id = ? AND user_id = ?').bind(id, oid).first();
   if (!row) return null;
   const block = parseBlock(row);
-  // Backlinks: who points at me. Cheap, and the notes/links phase will lean on it.
-  const links = await env.DB.prepare('SELECT to_id FROM block_links WHERE from_id = ? AND user_id = ?').bind(id, env.uid).all();
-  const back = await env.DB.prepare('SELECT from_id FROM block_links WHERE to_id = ? AND user_id = ?').bind(id, env.uid).all();
+  // Backlinks: who points at me. Scoped to the owner's graph, not the viewer's.
+  const links = await env.DB.prepare('SELECT to_id FROM block_links WHERE from_id = ? AND user_id = ?').bind(id, oid).all();
+  const back = await env.DB.prepare('SELECT from_id FROM block_links WHERE to_id = ? AND user_id = ?').bind(id, oid).all();
   block.links = links.results.map((r) => r.to_id);
   block.backlinks = back.results.map((r) => r.from_id);
+  block.canEdit = acc.canEdit;
+  if (acc.mine) {
+    const c = await env.DB.prepare('SELECT COUNT(*) AS n FROM shares WHERE block_id = ? AND owner_id = ?').bind(id, env.uid).first().catch(() => null);
+    block.sharedWith = c ? c.n : 0;
+  } else {
+    // Shown to a recipient so the UI can label a borrowed block and gate edits.
+    const o = await env.DB.prepare('SELECT name, subdomain FROM users WHERE id = ?').bind(oid).first().catch(() => null);
+    block.sharedBy = o ? (o.name || o.subdomain) : null;
+  }
   return block;
 }
 
@@ -955,7 +981,12 @@ async function listBlocks(request, env, url) {
 }
 
 async function updateBlock(request, env, id) {
-  const existing = await env.DB.prepare('SELECT * FROM blocks WHERE id = ? AND user_id = ?').bind(id, env.uid).first();
+  // Authorize via the shared access oracle: owner or an edit-granted friend.
+  const acc = await blockAccess(env, id);
+  if (!acc) return err('not found', request, 404);
+  if (!acc.canEdit) return err('This was shared with you as read-only.', request, 403);
+  const oid = acc.ownerId;
+  const existing = await env.DB.prepare('SELECT * FROM blocks WHERE id = ? AND user_id = ?').bind(id, oid).first();
   if (!existing) return err('not found', request, 404);
   const b = await request.json().catch(() => ({}));
 
@@ -976,14 +1007,14 @@ async function updateBlock(request, env, id) {
     sets.push('props = ?'); args.push(JSON.stringify({ ...cur, ...b.props }));
   }
   sets.push('updated_at = ?'); args.push(new Date().toISOString());
-  args.push(id, env.uid);
+  args.push(id, oid);
   await env.DB.prepare(`UPDATE blocks SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`).bind(...args).run();
 
   if (Array.isArray(b.links)) {
-    await env.DB.prepare('DELETE FROM block_links WHERE from_id = ? AND user_id = ?').bind(id, env.uid).run();
+    await env.DB.prepare('DELETE FROM block_links WHERE from_id = ? AND user_id = ?').bind(id, oid).run();
     for (const to of b.links) {
       await env.DB.prepare('INSERT OR IGNORE INTO block_links (from_id, to_id, user_id) VALUES (?, ?, ?)')
-        .bind(id, String(to), env.uid).run();
+        .bind(id, String(to), oid).run();
     }
   }
   return json(await getBlock(env, id), request);
@@ -2219,6 +2250,18 @@ export default {
       if (path.startsWith('/api/attachments/')) return handleAttachments(request, env, url, json, err);
       if (/^\/api\/blocks\/[\w-]+\/attachments$/.test(path) && request.method === 'POST') return handleAttachments(request, env, url, json, err);
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
+      // Sharing: notes & tasks handed to a friend (Friends phase 3a).
+      if (path === '/api/shared' && request.method === 'GET') return json(await sharedWithMe(env), request);
+      const shareMatch = path.match(/^\/api\/blocks\/([\w-]+)\/shares?$/);
+      if (shareMatch) {
+        const bid = shareMatch[1];
+        try {
+          if (request.method === 'GET') return json(await listBlockShares(env, bid), request);
+          const b = await request.json().catch(() => ({}));
+          if (request.method === 'POST') return json(await shareBlock(env, bid, b.friendId, b.canEdit), request, 201);
+          if (request.method === 'DELETE') return json(await unshareBlock(env, bid, b.friendId), request);
+        } catch (e) { return err(e.message, request, 400); }
+      }
       const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);
       if (blockMatch) {
         const id = blockMatch[1];

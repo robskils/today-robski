@@ -978,6 +978,25 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fr-acts { display:flex; gap:8px; flex:none; }
 .fr-act { flex:none; padding:7px 15px; }
 .fr-pending { flex:none; font-size:13px; color:var(--ink-3); font-style:italic; }
+/* Sharing a note/task with friends. */
+.share-panel { z-index:231; }
+.share-note { padding:14px 18px 4px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
+.share-list { padding:12px 16px 20px; overflow-y:auto; }
+.share-row { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); margin-bottom:8px; }
+.share-acts { display:flex; align-items:center; gap:6px; flex:none; }
+.share-mode { padding:5px 8px; font-size:13px; }
+.share-off { font-size:16px; line-height:1; padding:2px 8px; color:var(--ink-3); }
+.share-off:hover { color:var(--accent); }
+.note-share { flex:none; }
+.note-share.on { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 35%,var(--line)); }
+.shared-banner { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 8%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:10px; padding:8px 13px; margin:0 0 12px; } .shared-banner b { color:var(--ink); }
+.prose.readonly { opacity:.96; cursor:default; }
+.shared-row { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:8px; }
+.shared-row:hover { border-color:var(--line-2); }
+.sh-ic { flex:none; font-size:18px; color:var(--ink-3); }
+.sh-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.sh-t { font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sh-meta { font-size:12.5px; color:var(--ink-3); }
 /* Admin dashboard. */
 .admin-list { display:flex; flex-direction:column; gap:6px; }
 .admin-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--card); font-size:14.5px; }

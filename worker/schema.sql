@@ -139,6 +139,19 @@ CREATE TABLE IF NOT EXISTS user_emails (
   verified INTEGER NOT NULL DEFAULT 0   -- 1 once the owner confirmed the address by code
 );
 
+-- Cross-account sharing: one row grants one friend access to one block (note or
+-- task). can_edit = 1 is collaborative (the default), 0 is view-only. Access is
+-- re-derived from this table on every read/write; a deleted row revokes at once.
+CREATE TABLE IF NOT EXISTS shares (
+  block_id   TEXT NOT NULL,
+  owner_id   INTEGER NOT NULL,
+  friend_id  INTEGER NOT NULL,
+  can_edit   INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (block_id, friend_id)
+);
+CREATE INDEX IF NOT EXISTS idx_shares_friend ON shares(friend_id);
+
 -- Pending alias confirmations: a 6-digit code emailed to a newly added address.
 -- Separate from otp_codes (sign-in) so an unverified alias can't be used to log
 -- in, and the code is bound to the account that requested it.
