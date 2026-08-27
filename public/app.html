@@ -5,6 +5,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Don't let the mobile OS auto-detect phone numbers, emails and addresses in
+     note content and turn them into tappable links: a note full of booking
+     details would otherwise open the Phone/Mail app when a finger brushes one
+     while scrolling. The app linkifies real http(s) URLs itself. -->
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Robski Daybook</title>
 <link rel="icon" href="/favicon.svg">
 <!-- Installable to the home screen: launches full-screen with its own icon. -->
