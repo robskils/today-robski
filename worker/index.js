@@ -1301,11 +1301,19 @@ function dayHash(s) {
   return h >>> 0;
 }
 
+// Which quote to show. The admin `quote_mode` switch (user 1's setting) chooses:
+// 'daily' pins one quote to the date (same on every device, all day, via dayHash);
+// anything else - the default - picks a fresh random one each time a quote area is
+// opened, so the home card, the Today page and each morning email vary.
 async function quoteForDay(env, day) {
   const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM quotes').first();
   if (!row?.n) return null;
-  return env.DB.prepare('SELECT text, author FROM quotes ORDER BY id LIMIT 1 OFFSET ?')
-    .bind(dayHash(day) % row.n).first();
+  const mode = await getSetting(env, 'quote_mode', 1);
+  if (mode === 'daily') {
+    return env.DB.prepare('SELECT text, author FROM quotes ORDER BY id LIMIT 1 OFFSET ?')
+      .bind(dayHash(day) % row.n).first();
+  }
+  return env.DB.prepare('SELECT text, author FROM quotes ORDER BY RANDOM() LIMIT 1').first();
 }
 
 async function getSettings(env, uid = env.uid) {
@@ -1462,6 +1470,7 @@ async function handleDay(request, env, url) {
     settings,
     lanes: cfg.lanes,
     quote,
+    quoteMode: await getSetting(env, 'quote_mode', 1) === 'daily' ? 'daily' : 'random',
     activities: actsRes.results,
     last_sync: null,
   }, request);

@@ -13,7 +13,7 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['friends', 'Friends'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad'], ['quote', 'Daily quote']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['friends', 'Friends'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad'], ['quote', 'Quote']];
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -791,6 +791,7 @@ function renderAdmin() {
   const inv = ov.invites || {};
   const plans = ov.plans || {};
   const pub = a.settings ? a.settings.publicSignup : ov.publicSignup;
+  const quoteMode = (a.settings ? a.settings.quoteMode : ov.quoteMode) || 'random';
   const card = (label, value, sub) => `<div class="adm-card"><div class="adm-card-v">${value}</div><div class="adm-card-l">${label}</div>${sub ? `<div class="adm-card-s">${sub}</div>` : ''}</div>`;
   const planChips = Object.entries(plans).map(([p, n]) => `<span class="adm-plan-chip">${esc(p)} · ${n}</span>`).join('');
   $('#pane').innerHTML = `
@@ -807,6 +808,11 @@ function renderAdmin() {
     <section class="home-sec"><div class="home-sec-h">Signup</div>
       <div class="set-card">
         <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
+      </div>
+    </section>
+    <section class="home-sec"><div class="home-sec-h">Quotes</div>
+      <div class="set-card">
+        <label class="set-mod adm-signup"><span><b>Random quotes</b><br><span class="scope">On: a fresh quote each time a quote area opens (home, Today, the morning email). Off: one quote pinned to the day.</span></span><input type="checkbox" data-admin-quotemode ${quoteMode !== 'daily' ? 'checked' : ''}></label>
       </div>
     </section>
     <section class="home-sec"><div class="home-sec-h">Members<span class="muted">${users.length}</span></div>
@@ -845,6 +851,10 @@ async function delQuote(id) {
 }
 async function toggleAdminSignup(on) {
   try { state.admin.settings = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ publicSignup: on }) }); toast(on ? 'Open registration is ON' : 'Invite-only'); }
+  catch (e) { toast(e.message); }
+}
+async function toggleAdminQuoteMode(random) {
+  try { state.admin.settings = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ quoteMode: random ? 'random' : 'daily' }) }); toast(random ? 'Quotes are random' : 'One quote a day'); }
   catch (e) { toast(e.message); }
 }
 async function setUserPlan(id, plan) {
@@ -1512,7 +1522,7 @@ async function openHome() {
   ]);
   state.goals = goals || [];
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
-  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, alerts: alerts || { birthdays: [], p1: 0 } };
+  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 } };
   renderNav(); renderHome();
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
@@ -1640,9 +1650,14 @@ function alertsHtml() {
 // the × hides it for the rest of the day (per-device).
 function homeQuoteHtml() {
   const q = state.home && state.home.quote; if (!q) return '';
+  const daily = (state.home.quoteMode || 'random') === 'daily';
   const today = new Date().toISOString().slice(0, 10);
-  if (localStorage.getItem('life.home.quoteHidden') === today) return '';
-  return `<figure class="home-quote"><button class="home-quote-x" data-home-quote-x title="Hide for today">×</button><blockquote>“${esc(q.text)}”</blockquote>${q.author ? `<figcaption>— ${esc(q.author)}</figcaption>` : ''}</figure>`;
+  // Daily mode: closing hides the day's quote until tomorrow. Random mode: each
+  // Home visit fetches a fresh quote, so the × just dismisses this one for the
+  // current view (state, not stored) and the next visit brings another.
+  if (daily && localStorage.getItem('life.home.quoteHidden') === today) return '';
+  if (!daily && state.home.quoteDismissed) return '';
+  return `<figure class="home-quote"><button class="home-quote-x" data-home-quote-x title="${daily ? 'Hide for today' : 'Dismiss'}">×</button><blockquote>“${esc(q.text)}”</blockquote>${q.author ? `<figcaption>— ${esc(q.author)}</figcaption>` : ''}</figure>`;
 }
 // Every Home section can be collapsed; the set of collapsed keys persists.
 function homeCollapsed() { try { return JSON.parse(localStorage.getItem('life.home.collapsed')) || {}; } catch { return {}; } }
@@ -6497,7 +6512,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
-  if (t.closest('[data-home-quote-x]')) { localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); renderHome(); return; }
+  if (t.closest('[data-home-quote-x]')) { if ((state.home.quoteMode || 'random') === 'daily') localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); else state.home.quoteDismissed = true; renderHome(); return; }
   { const ax = t.closest('[data-alert-x]'); if (ax) { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, new Date().toISOString().slice(0, 10)); renderHome(); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
@@ -6854,6 +6869,7 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
+  if (e.target.matches('[data-admin-quotemode]')) { toggleAdminQuoteMode(e.target.checked); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
