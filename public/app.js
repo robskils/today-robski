@@ -573,7 +573,8 @@ function renderTabs() {
   el.innerHTML = state.tabs.map((t) => `<button class="tab ${t.id === state.activeTab ? 'on' : ''}${t.pinned ? ' pinned' : ''}" data-tab="${t.id}">
     <span class="tab-pin ${t.pinned ? 'on' : ''}" data-tab-pin="${t.id}" title="${t.pinned ? 'Unpin' : 'Pin to keep this tab'}">📌</span>
     <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${!t.pinned && many ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
-    + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`;
+    + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`
+    + helpIconHtml();   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
 }
 function newTab() { const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome(); }
 // Open a view in a fresh tab, leaving every existing tab untouched. Used when

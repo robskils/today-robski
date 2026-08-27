@@ -1274,10 +1274,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-theme { width:100%; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; border-radius:10px; color:var(--ink-2); font-size:14.5px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
 .nav-theme:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
 .nav-theme.on { border-color:var(--accent); color:var(--accent); }
-/* The info icon: a small "i" that lives with the theme/settings controls, so it
-   rides along on both the desktop sidebar and the mobile top bar. */
+/* The guide i. On desktop it lives at the right of the tab strip (top of the
+   content), where its hover tip has room to open downward. On mobile the strip
+   is hidden, so it rides the top bar with the theme/settings controls instead -
+   the copy in the sidebar footer is hidden on desktop to avoid two of them. */
 .help-btn { flex:none; width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:Georgia,'Times New Roman',serif; font-style:italic; font-weight:700; font-size:17px; color:var(--ink-3); border:1px solid var(--line); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .help-btn:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
+.tabstrip .help-btn { margin-left:auto; width:30px; height:30px; font-size:15px; }
+.nav-bottom-row .help-btn { display:none; }   /* desktop: the tab-strip one is used instead */
 #help-pop.help-pop { position:fixed; z-index:60; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 36px -14px rgba(0,0,0,.42); padding:13px 15px; display:none; }
 .help-pop-t { font-size:14px; font-weight:650; color:var(--ink); margin-bottom:5px; }
 .help-pop-b { font-size:13.5px; line-height:1.5; color:var(--ink-2); }
@@ -2121,6 +2125,7 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-bottom-row { display:contents; }   /* its icons join the top-bar row directly */
   .nav-theme { width:auto; border:0; background:transparent; padding:6px 9px; font-size:14px; }
   .help-btn { width:auto; height:auto; border:0; background:transparent; padding:6px 8px; font-size:19px; }
+  .nav-bottom-row .help-btn { display:inline-flex; }   /* mobile: shown in the top bar (no tab strip here) */
   /* Settings and Admin ride in the top bar as icons only - the word is redundant
      next to the glyph, and neither is in the mobile launcher grid. */
   .nav-settings .ns-lbl, .nav-adminlink .ns-lbl { display:none; }
