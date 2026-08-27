@@ -197,7 +197,7 @@ button { cursor:pointer; background:none; border:0; }
 .ctx-sep { height:1px; background:var(--line); margin:5px 8px; }
 
 /* Goals & bucket list */
-.seg { display:inline-flex; gap:3px; background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:22px; }
+.seg { display:inline-flex; flex-wrap:wrap; max-width:100%; gap:3px; background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:22px; }
 .seg-b { border:none; background:none; color:var(--ink-2); font-size:15px; font-weight:600; padding:8px 18px; border-radius:9px; cursor:pointer; }
 .seg-b.on { background:var(--card); color:var(--ink); box-shadow:var(--shadow); }
 .goals-actions { margin-bottom:18px; }
@@ -2292,8 +2292,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .j-head-primary { display:flex; gap:10px; }
 @media (max-width:820px){
   .j-head-act { width:100%; }
-  .j-head-primary { flex:1; }
-  .j-head-primary .add-btn.wide { flex:1; }   /* Coaching + New entry share the row */
+  /* Four entry buttons (Coaching, Dreams, Spirit Cards, Journal) wrap to a 2x2
+     grid rather than overflowing the row. */
+  .j-head-primary { flex:1; flex-wrap:wrap; }
+  .j-head-primary .add-btn.wide { flex:1 1 44%; }
 }
 /* Journal insights card (scan of recent entries) */
 .j-insights { background:color-mix(in srgb,var(--accent) 6%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line)); border-radius:16px; padding:18px 20px; margin-bottom:18px; }
