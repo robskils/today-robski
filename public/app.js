@@ -6400,38 +6400,32 @@ function looksMarkdown(t) {
   return /(^|\n)#{1,6}\s/.test(t) || /(^|\n)\s*[-*+]\s+\S/.test(t) || /(^|\n)\s*\d+\.\s+\S/.test(t) || /(^|\n)>\s/.test(t) || /\*\*[^*\n]+\*\*/.test(t) || /`[^`\n]+`/.test(t) || /\[[^\]\n]+\]\(https?:\/\//.test(t) || /(^|\n)\s*\|[^\n]*\|[^\n]*\n\s*\|?[\s:|-]*-/.test(t) || /(^|\n)```/.test(t);
 }
 // Auto-bullet: typing "- " at the very start of a line turns it into a bullet
-// list, like a Markdown editor. beforeinput (not keydown) so it fires the same
-// on a phone keyboard as on a desktop one.
-document.addEventListener('beforeinput', (e) => {
-  if (e.inputType !== 'insertText' || e.data !== ' ') return;
+// list, like a Markdown editor. Done on `input` (fires reliably on every phone
+// and desktop keyboard, and outside the beforeinput dispatch where execCommand
+// is inert), detecting the moment the line reads exactly "- ".
+document.addEventListener('input', (e) => {
   const ed = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
-  if (!ed) return;
+  if (!ed || ed.__autobullet) return;   // guard: our own execCommands re-fire input
   const sel = window.getSelection();
   if (!sel || !sel.isCollapsed || !sel.rangeCount) return;
   const range = sel.getRangeAt(0);
   let block = range.endContainer; if (block.nodeType === 3) block = block.parentElement;
   block = block && block.closest ? block.closest('p, div, h1, h2, h3, li') : null;
   if (!block || block === ed || !ed.contains(block) || block.tagName === 'LI') return;   // not already a bullet
-  // The line so far (block start → caret) is exactly a lone hyphen.
+  // The line so far (block start → caret) is exactly a hyphen and a space. A
+  // contenteditable turns a trailing space into &nbsp; ( ), so match either.
   const pre = document.createRange(); pre.selectNodeContents(block); pre.setEnd(range.endContainer, range.endOffset);
-  if (pre.toString() !== '-') return;
-  e.preventDefault();   // swallow the space
-  // execCommand is a no-op while a beforeinput is dispatching, so run the edit
-  // just after, on the next tick. The DOM is unchanged (space was swallowed), so
-  // the caret is still sitting right after the "-".
-  const ec = range.endContainer, eo = range.endOffset;
-  setTimeout(() => {
-    const s = window.getSelection(); if (!s) return;
-    const del = document.createRange(); del.selectNodeContents(block); del.setEnd(ec, eo);
-    s.removeAllRanges(); s.addRange(del); document.execCommand('delete');   // drop the "-"
-    document.execCommand('insertUnorderedList');                            // make it a bullet
-    // execCommand can leave the new <ul> wrapped in the old empty <p>; lift it out.
-    let n = window.getSelection().anchorNode;
-    while (n && n !== ed && n.tagName !== 'UL' && n.tagName !== 'OL') n = n.parentElement;
-    const par = n && n.parentElement;
-    if (n && par && par.tagName === 'P' && par !== ed && par.childNodes.length === 1) par.replaceWith(n);
-    ed.dispatchEvent(new Event('input', { bubbles: true }));                // autosave
-  }, 0);
+  if (pre.toString().replace(/\u00a0/g, ' ') !== '- ') return;
+  ed.__autobullet = true;
+  const del = document.createRange(); del.selectNodeContents(block); del.setEnd(range.endContainer, range.endOffset);
+  sel.removeAllRanges(); sel.addRange(del); document.execCommand('delete');   // drop the "- "
+  document.execCommand('insertUnorderedList');                                // make it a bullet
+  // execCommand can leave the new <ul> wrapped in the old empty <p>; lift it out.
+  let n = window.getSelection().anchorNode;
+  while (n && n !== ed && n.tagName !== 'UL' && n.tagName !== 'OL') n = n.parentElement;
+  const par = n && n.parentElement;
+  if (n && par && par.tagName === 'P' && par !== ed && par.childNodes.length === 1) par.replaceWith(n);
+  ed.__autobullet = false;
 });
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
