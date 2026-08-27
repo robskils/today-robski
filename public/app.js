@@ -1848,6 +1848,12 @@ function renderNotesList() {
   const typed = (list) => type === 'all' ? list : list.filter((n) => (isTableNote(n) ? 'table' : 'note') === type);
   const base = typed(noteEntries());
   const favNotes = sortNotes(base.filter((n) => n.props && n.props.fav));
+  // Recently opened notes/tables, newest first, mapped back to the live entries
+  // (so a deleted or type-filtered-out one drops off). Capped for a tidy strip.
+  const byId = new Map(base.map((n) => [n.id, n]));
+  const recentNotes = recentItems()
+    .filter((x) => x && (x.kind === 'note' || x.kind === 'table'))
+    .map((x) => byId.get(x.id)).filter(Boolean).slice(0, 12);
   const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
   const cards = (list) => list.map(noteCard).join('');
   const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
@@ -1869,7 +1875,8 @@ function renderNotesList() {
     ${pageCrumb('Notes')}
     <div class="pane-head home-head"><h1>Notes</h1></div>
     <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${typeChips}${sortSel}<button class="add-btn wide notes-new" data-new-note>+ New note</button></div>
-    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
+    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
+    ${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}
     ${listHtml}`;
 }
 
@@ -6392,6 +6399,40 @@ function mdPasteHtml(text) {
 function looksMarkdown(t) {
   return /(^|\n)#{1,6}\s/.test(t) || /(^|\n)\s*[-*+]\s+\S/.test(t) || /(^|\n)\s*\d+\.\s+\S/.test(t) || /(^|\n)>\s/.test(t) || /\*\*[^*\n]+\*\*/.test(t) || /`[^`\n]+`/.test(t) || /\[[^\]\n]+\]\(https?:\/\//.test(t) || /(^|\n)\s*\|[^\n]*\|[^\n]*\n\s*\|?[\s:|-]*-/.test(t) || /(^|\n)```/.test(t);
 }
+// Auto-bullet: typing "- " at the very start of a line turns it into a bullet
+// list, like a Markdown editor. beforeinput (not keydown) so it fires the same
+// on a phone keyboard as on a desktop one.
+document.addEventListener('beforeinput', (e) => {
+  if (e.inputType !== 'insertText' || e.data !== ' ') return;
+  const ed = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
+  if (!ed) return;
+  const sel = window.getSelection();
+  if (!sel || !sel.isCollapsed || !sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  let block = range.endContainer; if (block.nodeType === 3) block = block.parentElement;
+  block = block && block.closest ? block.closest('p, div, h1, h2, h3, li') : null;
+  if (!block || block === ed || !ed.contains(block) || block.tagName === 'LI') return;   // not already a bullet
+  // The line so far (block start → caret) is exactly a lone hyphen.
+  const pre = document.createRange(); pre.selectNodeContents(block); pre.setEnd(range.endContainer, range.endOffset);
+  if (pre.toString() !== '-') return;
+  e.preventDefault();   // swallow the space
+  // execCommand is a no-op while a beforeinput is dispatching, so run the edit
+  // just after, on the next tick. The DOM is unchanged (space was swallowed), so
+  // the caret is still sitting right after the "-".
+  const ec = range.endContainer, eo = range.endOffset;
+  setTimeout(() => {
+    const s = window.getSelection(); if (!s) return;
+    const del = document.createRange(); del.selectNodeContents(block); del.setEnd(ec, eo);
+    s.removeAllRanges(); s.addRange(del); document.execCommand('delete');   // drop the "-"
+    document.execCommand('insertUnorderedList');                            // make it a bullet
+    // execCommand can leave the new <ul> wrapped in the old empty <p>; lift it out.
+    let n = window.getSelection().anchorNode;
+    while (n && n !== ed && n.tagName !== 'UL' && n.tagName !== 'OL') n = n.parentElement;
+    const par = n && n.parentElement;
+    if (n && par && par.tagName === 'P' && par !== ed && par.childNodes.length === 1) par.replaceWith(n);
+    ed.dispatchEvent(new Event('input', { bubbles: true }));                // autosave
+  }, 0);
+});
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!prose) return;
