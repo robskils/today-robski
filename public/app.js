@@ -430,12 +430,18 @@ function showHelpPop(btn) {
   let el = document.getElementById('help-pop');
   if (!el) { el = document.createElement('div'); el.id = 'help-pop'; el.className = 'help-pop'; document.body.appendChild(el); }
   el.innerHTML = `<div class="help-pop-t">${esc(h.title)}</div><div class="help-pop-b">${h.tip}</div><div class="help-pop-hint">Click the i to pin the full guide →</div>`;
-  const r = btn.getBoundingClientRect();
   const w = Math.min(300, window.innerWidth - 24);
   el.style.width = `${w}px`;
-  el.style.left = `${Math.max(12, Math.min(r.right - w, window.innerWidth - w - 12))}px`;
-  el.style.top = `${r.bottom + 8}px`;
   el.style.display = 'block';
+  const r = btn.getBoundingClientRect();
+  const ph = el.offsetHeight;   // now measurable (display set above)
+  // The icon sits at the bottom of the sidebar, so opening downward runs off the
+  // screen. Prefer below, but flip above whenever it wouldn't fit under the icon.
+  let top = r.bottom + 8;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 8);
+  el.style.top = `${top}px`;
+  // Start at the icon's left edge and extend right, clamped fully on-screen.
+  el.style.left = `${Math.max(12, Math.min(r.left, window.innerWidth - w - 12))}px`;
 }
 function hideHelpPop() { const el = document.getElementById('help-pop'); if (el) el.style.display = 'none'; }
 function openHelp(key) { state.view = { type: 'help', tool: key }; renderNav(); renderHelp(key); return Promise.resolve(); }
