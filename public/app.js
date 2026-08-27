@@ -1512,16 +1512,19 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day, pad, rec, goals, alerts] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts, spirit] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
     api('/api/kv/home_recent').catch(() => null),
     api('/api/blocks?kind=goal').catch(() => state.goals || []),
     api('/api/home/alerts').catch(() => null),
+    api('/api/kv/spirit_card').catch(() => null),
   ]);
   state.goals = goals || [];
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
+  // The pinned spirit card follows the account: take the server's if we have one.
+  if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
   state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 } };
   renderNav(); renderHome();
 }
@@ -1722,6 +1725,7 @@ function renderHome() {
       </div>
       ${alertsHtml()}
       ${modOn('quote') ? homeQuoteHtml() : ''}
+      ${modOn('reflect') ? spiritPinnedHtml() : ''}
       <div id="qt-wrap"></div>
       <!-- Mobile-only launcher. On desktop the sidebar already lists every
            section, so this is hidden (see .home-launch in life.css). On mobile
@@ -1969,11 +1973,29 @@ function renderSpirit() {
     <button class="spirit-again" data-spirit-draw ${c ? '' : 'hidden'}>Draw another</button>
   </div>`;
 }
-function openSpiritCards() { state.spirit = { card: null }; renderSpirit(); }
+// The card you last drew, kept pinned on Home and Reflect. Held per-device in
+// localStorage for instant paint and mirrored to the account so it follows you.
+function loadSpiritCard() { try { const s = JSON.parse(localStorage.getItem('life.spiritCard')); return s && s.name ? s : null; } catch { return null; } }
+function currentSpirit() { return state.spiritCard !== undefined ? state.spiritCard : (state.spiritCard = loadSpiritCard()); }
+function saveSpiritCard(c) {
+  const saved = { name: c[0], symbol: c[1], message: c[2], at: Date.now() };
+  state.spiritCard = saved;
+  try { localStorage.setItem('life.spiritCard', JSON.stringify(saved)); } catch {}
+  api('/api/kv/spirit_card', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(saved) }) }).catch(() => {});
+}
+// The pinned card, a small tap-to-reopen tile. Nothing until you've drawn one.
+function spiritPinnedHtml() {
+  const s = currentSpirit(); if (!s) return '';
+  return `<button class="spirit-pin" data-spirit-open title="Draw another spirit card"><span class="sp-sym">${esc(s.symbol || '✦')}</span><span class="sp-body"><span class="sp-name">${esc(s.name)}</span><span class="sp-msg">${esc(s.message)}</span></span><span class="sp-tag">Spirit card</span></button>`;
+}
+// Opening from Reflect or a pinned tile shows the current card (with "Draw
+// another"); the very first time there's nothing yet, so a blank back to tap.
+function openSpiritCards() { const s = currentSpirit(); state.spirit = { card: s ? [s.name, s.symbol, s.message] : null }; renderSpirit(); }
 function drawSpiritCard() {
   const prev = state.spirit && state.spirit.card;
   let c; do { c = SPIRIT_CARDS[Math.floor(Math.random() * SPIRIT_CARDS.length)]; } while (prev && c[0] === prev[0]);
   state.spirit = { card: c };
+  saveSpiritCard(c);
   const card = document.querySelector('.spirit-card'); if (!card) { renderSpirit(); return; }
   const again = document.querySelector('.spirit-again'); if (again) again.hidden = false;
   const setFront = () => { const f = document.querySelector('.sc-front'); if (f) f.innerHTML = scFront(c); };
@@ -2092,6 +2114,7 @@ function renderJournalList() {
   $('#pane').innerHTML = `
     ${pageCrumb('Reflect')}
     <div class="pane-head home-head"><h1>Reflect</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-spirit-open title="Draw a card for a moment's reflection">🃏 Spirit Cards</button><button class="add-btn wide" data-journal-start>📓 Journal</button></div></div>`}</div>
+    ${j.picking ? '' : spiritPinnedHtml()}
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;

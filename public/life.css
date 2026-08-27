@@ -1231,6 +1231,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .home-quote figcaption { margin-top:8px; font-size:12.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
 .home-quote-x { position:absolute; top:10px; right:12px; border:0; background:none; color:var(--ink-3); font-size:22px; line-height:1; cursor:pointer; padding:4px; }
 .home-quote-x:hover { color:var(--ink); }
+/* The pinned spirit card, on Home and Reflect: your last draw, tap to draw again. */
+.spirit-pin { display:flex; align-items:center; gap:16px; width:100%; text-align:left; margin:0 0 22px; padding:16px 46px 16px 20px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); position:relative; transition:border-color .12s, transform .12s, box-shadow .12s; }
+.spirit-pin:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 8px 22px -12px rgba(0,0,0,.32); }
+.spirit-pin .sp-sym { font-size:34px; line-height:1; flex:none; }
+.spirit-pin .sp-body { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.spirit-pin .sp-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-style:italic; color:var(--ink); line-height:1.1; }
+.spirit-pin .sp-msg { font-size:14.5px; color:var(--ink-2); line-height:1.4; }
+.spirit-pin .sp-tag { position:absolute; top:13px; right:15px; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
 /* Collapsible section header (chevron toggles hide/show). */
 .home-sec-toggle { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
 .home-sec-toggle .hs-chev { color:var(--ink-3); font-size:12px; }
