@@ -4002,7 +4002,8 @@ function renderMail(loading) {
     </div>
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
     ${m.moveMenu ? mailMoveMenuHtml() : ''}
-    ${m.areaMenu ? mailAreaMenuHtml() : ''}`;
+    ${m.areaMenu ? mailAreaMenuHtml() : ''}
+    ${m.taskMenu ? mailTaskMenuHtml() : ''}`;
   if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
   // Keep keyboard focus on the reader (not the body iframe / a stale button) so
   // single-key shortcuts - R reply, E archive… - land every time you're reading.
@@ -4021,8 +4022,11 @@ function showQuickTask() {
 // Turn the open email into a Robski Life task: subject becomes the title, and
 // the sender line + the email's text are carried into the task's note (body).
 // It lands in Tasks with no priority/area set.
-async function mailToTask() {
+// Turning an email into a task opens a little popover first, so the title, life
+// area and priority can be set before it's created (rather than a bare task).
+async function openMailTaskMenu(anchor) {
   const o = state.mail && state.mail.open; if (!o) return;
+  if (!state.areas || !state.areas.length) { try { state.areas = (await api('/api/blocks?kind=area')).sort((a, b) => (a.title || '').localeCompare(b.title || '')); } catch {} }
   const title = ((o.subject || '').trim()) || '(no subject)';
   const name = o.from ? (o.from.name || o.from.address || '') : '';
   const addr = o.from ? (o.from.address || '') : '';
@@ -4031,11 +4035,34 @@ async function mailToTask() {
   const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
   const src = (o.text || '').replace(/\r\n/g, '\n').trim();
   const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
-  const body = hdr + content;
+  const r = anchor ? anchor.getBoundingClientRect() : { left: 240, bottom: 200 };
+  const w = 300;
+  state.mail.taskMenu = { title, body: hdr + content, x: Math.max(12, Math.min(r.left, window.innerWidth - w - 12)), y: r.bottom + 6 };
+  renderMail();
+  setTimeout(() => { const el = document.getElementById('mtask-title'); if (el) { el.focus(); el.select(); } }, 30);
+}
+async function mailTaskCreate() {
+  const tm = state.mail && state.mail.taskMenu; if (!tm) return;
+  const title = (document.getElementById('mtask-title')?.value || '').trim() || tm.title;
+  const area = document.getElementById('mtask-area')?.value || null;
+  const priority = document.getElementById('mtask-prio')?.value || null;
+  state.mail.taskMenu = null; renderMail();
   try {
-    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, body, props: { priority: null, area: null, done: false } }) });
+    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, body: tm.body, props: { priority, area, done: false } }) });
     toast(`Added to Tasks: “${title.length > 40 ? title.slice(0, 40) + '…' : title}”`);
   } catch (e) { toast(e.message); }
+}
+function mailTaskMenuHtml() {
+  const tm = state.mail && state.mail.taskMenu; if (!tm) return '';
+  const areas = state.areas || [];
+  const PRIOS = [['', 'No priority'], ['P1', 'P1 · Urgent'], ['P2', 'P2'], ['P3', 'P3'], ['P4', 'P4']];
+  return `<div class="mail-movebg" data-mail-task-bg><div class="mail-task-pop" style="top:${tm.y}px;left:${tm.x}px" role="dialog" aria-label="New task">
+    <div class="mail-move-h">New task from this email</div>
+    <input class="sel mtask-title" id="mtask-title" value="${esc(tm.title)}" placeholder="Task title" autocomplete="off">
+    <label class="mtask-field"><span>Life area</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
+    <label class="mtask-field"><span>Priority</span><select class="sel" id="mtask-prio">${PRIOS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
+    <div class="mtask-actions"><button class="ghost" data-mail-task-close>Cancel</button><button class="add-btn wide" data-mail-task-add>Add task</button></div>
+  </div></div>`;
 }
 async function homeAddTask(title, area, priority) {
   try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) }); toast('Task added'); }
@@ -6743,7 +6770,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-claudius]')) { mailClaudius(); return; }
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
-  if (t.closest('[data-mail-task]')) { mailToTask(); return; }
+  { const mt = t.closest('[data-mail-task]'); if (mt) { openMailTaskMenu(mt); return; } }
+  if (t.closest('[data-mail-task-add]')) { mailTaskCreate(); return; }
+  if (t.closest('[data-mail-task-close]') || t.matches('[data-mail-task-bg]')) { state.mail.taskMenu = null; renderMail(); return; }
   { const ma = t.closest('[data-mail-area]'); if (ma) { openMailAreaMenu(ma); return; } }
   { const mat = t.closest('[data-mail-area-to]'); if (mat) { mailToArea(mat.dataset.mailAreaTo); return; } }
   if (t.closest('[data-mail-area-close]')) { state.mail.areaMenu = null; renderMail(); return; }
