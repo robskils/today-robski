@@ -2382,7 +2382,7 @@ function renderArea() {
   const isFav = (n) => !!(n.props && n.props.fav);
   const starredNotes = notes.filter(isFav);
   const otherNotes = notes.filter((n) => !isFav(n));
-  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${esc(n.title || 'Untitled')}</button>`;
+  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}${esc(n.title || 'Untitled')}</button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
@@ -2948,6 +2948,43 @@ function mailMoveMenuHtml() {
 function openMoveMenu(keys, anchor) {
   const r = anchor ? anchor.getBoundingClientRect() : { left: 240, bottom: 200 };
   state.mail.moveMenu = { keys: [...keys], x: Math.min(r.left, window.innerWidth - 250), y: r.bottom + 6 };
+  renderMail();
+}
+// The life-area picker for the open email: a small popup of your areas. Picking
+// one files the email in that area (see mailToArea).
+function mailAreaMenuHtml() {
+  const am = state.mail.areaMenu; if (!am) return '';
+  const areas = state.areas || [];
+  return `<div class="mail-movebg" data-mail-area-close><div class="mail-move" style="top:${am.y}px;left:${am.x}px" role="menu">
+    <div class="mail-move-h">File in a life area…</div>
+    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No life areas yet.</div>'}
+  </div></div>`;
+}
+async function openMailAreaMenu(anchor) {
+  if (!state.areas || !state.areas.length) { try { state.areas = (await api('/api/blocks?kind=area')).sort((a, b) => (a.title || '').localeCompare(b.title || '')); } catch {} }
+  const r = anchor ? anchor.getBoundingClientRect() : { left: 240, bottom: 200 };
+  state.mail.areaMenu = { x: Math.min(r.left, window.innerWidth - 250), y: r.bottom + 6 };
+  renderMail();
+}
+// File the open email in a life area: snapshot it as a note tagged to that area
+// (the same shape "Make a task from this email" uses), so it shows on the area
+// page and stays readable even after the message leaves the inbox.
+async function mailToArea(areaId) {
+  state.mail.areaMenu = null;
+  const o = state.mail && state.mail.open; if (!o) { renderMail(); return; }
+  const area = areaById(areaId);
+  const title = ((o.subject || '').trim()) || '(no subject)';
+  const name = o.from ? (o.from.name || o.from.address || '') : '';
+  const addr = o.from ? (o.from.address || '') : '';
+  const when = o.date ? new Date(o.date).toLocaleString() : '';
+  const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
+  const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
+  const src = (o.text || '').replace(/\r\n/g, '\n').trim();
+  const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+  try {
+    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, props: { area: areaId, areas: [areaId], fromEmail: true } }) });
+    toast(`Filed in ${area ? esc(area.title) : 'life area'}`);
+  } catch (e) { toast(e.message); }
   renderMail();
 }
 async function mailMoveTargets(keys, target) {
@@ -3904,7 +3941,7 @@ function renderMail(loading) {
       <input type="file" id="mc-file" multiple hidden></form>`;
   } else if (m.open) {
     const o = m.open;
-    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button>`;
+    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">◈</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -3957,7 +3994,8 @@ function renderMail(loading) {
       <div class="mail-reader">${reader}</div>
     </div>
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
-    ${m.moveMenu ? mailMoveMenuHtml() : ''}`;
+    ${m.moveMenu ? mailMoveMenuHtml() : ''}
+    ${m.areaMenu ? mailAreaMenuHtml() : ''}`;
   if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
   // Keep keyboard focus on the reader (not the body iframe / a stale button) so
   // single-key shortcuts - R reply, E archive… - land every time you're reading.
@@ -6671,6 +6709,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
   if (t.closest('[data-mail-task]')) { mailToTask(); return; }
+  { const ma = t.closest('[data-mail-area]'); if (ma) { openMailAreaMenu(ma); return; } }
+  { const mat = t.closest('[data-mail-area-to]'); if (mat) { mailToArea(mat.dataset.mailAreaTo); return; } }
+  if (t.closest('[data-mail-area-close]')) { state.mail.areaMenu = null; renderMail(); return; }
   if (t.closest('[data-mail-forward]')) { mailForwardStart(); return; }
   const msa = t.closest('[data-mail-save-att]'); if (msa) { mailSaveAttachment(+msa.dataset.mailSaveAtt, msa.dataset.attName); return; }
   // Rich-text compose toolbar: execCommand on the contenteditable body.
