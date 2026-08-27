@@ -1670,7 +1670,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .tabstrip::-webkit-scrollbar { display:none; }
 .tabstrip .tab { display:inline-flex; align-items:center; gap:7px; max-width:190px; padding:6px 9px 6px 11px; border-radius:9px; color:var(--ink-3); font-size:14px; white-space:nowrap; flex:none; transition:background .12s,color .12s; }
 .tabstrip .tab:hover { background:var(--paper-2); color:var(--ink-2); }
-.tabstrip .tab.on { background:var(--card); color:var(--ink); box-shadow:var(--shadow); font-weight:500; }
+.tabstrip .tab.on { background:var(--card); color:var(--ink-2); box-shadow:var(--shadow); font-weight:500; }
 .tabstrip .tab-ic { font-size:11px; color:var(--ink-3); flex:none; }
 .tabstrip .tab.on .tab-ic { color:var(--accent); }
 .tabstrip .tab-t { overflow:hidden; text-overflow:ellipsis; }
