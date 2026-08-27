@@ -298,6 +298,13 @@ export async function closeAccount(env) {
   await del('DELETE FROM alias_codes WHERE user_id = ?', uid);
   await del('DELETE FROM user_emails WHERE user_id = ?', uid);
   if (email) await del('DELETE FROM otp_codes WHERE email = ?', email);
+  // Portfolio holdings live in their own D1, so purge them there too - otherwise a
+  // member who tracked a portfolio leaves orphaned rows behind on closure.
+  if (env.PORTFOLIO_DB) {
+    for (const sql of ['DELETE FROM positions WHERE user_id = ?', 'DELETE FROM sales WHERE user_id = ?', 'DELETE FROM snapshots WHERE user_id = ?']) {
+      try { await env.PORTFOLIO_DB.prepare(sql).bind(uid).run(); } catch {}
+    }
+  }
   await del('DELETE FROM users WHERE id = ?', uid);
   return { closed: true };
 }

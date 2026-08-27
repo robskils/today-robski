@@ -1157,7 +1157,7 @@ function renderSettings() {
           <label class="set-mod"><span>Morning brief<small>Your day's calendar, open P1 tasks and the quote, emailed at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
         </div>
         <div class="set-notif-group"><div class="set-notif-h">By text</div>
-          <label class="set-mod"><span>Before a time block starts<small>A text 5 minutes before a scheduled block${state.account.phone ? '' : ' - add a phone number above in Account first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
+          <label class="set-mod"><span>Before a time block starts<small>A text 5 minutes before a scheduled block${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
