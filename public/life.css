@@ -1254,6 +1254,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .spirit-pin .sp-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-style:italic; color:var(--ink); line-height:1.1; }
 .spirit-pin .sp-msg { font-size:14.5px; color:var(--ink-2); line-height:1.4; }
 .spirit-pin .sp-tag { position:absolute; top:13px; right:15px; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
+/* Dismiss (x) sits under the tag, inside the pin's right-hand padding. */
+.spirit-pin-wrap { position:relative; margin:0 0 22px; }
+.spirit-pin-wrap .spirit-pin { margin-bottom:0; }
+.sp-x { position:absolute; bottom:10px; right:12px; width:26px; height:26px; border:none; background:none; color:var(--ink-3); font-size:18px; line-height:1; border-radius:8px; cursor:pointer; z-index:2; }
+.sp-x:hover { background:var(--surface-2); color:var(--ink); }
 /* Collapsible section header (chevron toggles hide/show). */
 .home-sec-toggle { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
 .home-sec-toggle .hs-chev { color:var(--ink-3); font-size:12px; }
@@ -2517,6 +2522,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-multi-x:hover { background:var(--surface-2); color:var(--danger,#c4412e); }
 .cc-multi-add { align-self:flex-start; border:none; background:none; color:var(--accent); font-size:13.5px; font-weight:600; cursor:pointer; padding:2px 0; }
 .cc-multi-add:hover { text-decoration:underline; }
+/* All four address inputs on one line (Street widest); they reflow to a tidy
+   grid only when the card is too narrow to hold them. */
+.cc-addr { flex-basis:100%; }
+.cc-addr-row { display:flex; flex-wrap:wrap; gap:8px; }
+.cc-addr-row input { flex:1 1 130px; min-width:0; }
+.cc-addr-row .cc-addr-street { flex:2 1 200px; }
 .focus-notes { margin-top:26px; }
 .fn-h { font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin-bottom:10px; }
 

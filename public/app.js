@@ -13,7 +13,7 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -373,8 +373,8 @@ const HELP = {
   contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from life areas. See who’s on Daybook.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a life area.</p>
       <p>Contacts with an email are checked against Daybook, so you can see which of your people are here and add them as friends.</p>` },
-  financial: { title: 'Financial', tip: 'Track spending against your life areas, import statements, and watch your portfolio.',
-    body: `<p>Financial is your money in one place. Your <b>life areas double as spending categories</b>, so where your money goes lines up with what your life is about.</p>
+  financial: { title: 'Money', tip: 'Track spending against your life areas, import statements, and watch your portfolio.',
+    body: `<p>Money is all your finances in one place. Your <b>life areas double as spending categories</b>, so where your money goes lines up with what your life is about.</p>
       <ul><li><b>Import</b> a statement and Daybook sorts transactions into categories.</li>
       <li>Add extra categories for spending that doesn’t fit an area.</li>
       <li>It remembers the tab you were last on.</li></ul>` },
@@ -480,7 +480,7 @@ function labelForView(v) {
     case 'friends': return 'Friends';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
-    case 'financial': return 'Financial';
+    case 'financial': return 'Money';
     case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'goals': return 'Goals'; case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
@@ -1256,7 +1256,7 @@ function renderNav() {
     ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Reflect</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
     ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span>🎯</span><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
-    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Financial</span></button>` : ''}
+    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Money</span></button>` : ''}
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
@@ -1726,7 +1726,7 @@ function renderHome() {
         ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
         ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
         ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>` : ''}
-        ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Financial</span></button>` : ''}
+        ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
         ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
         ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>` : ''}
         ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
@@ -1963,8 +1963,12 @@ function renderSpirit() {
 }
 // The card you last drew, kept pinned on Home and Reflect. Held per-device in
 // localStorage for instant paint and mirrored to the account so it follows you.
-function loadSpiritCard() { try { const s = JSON.parse(localStorage.getItem('life.spiritCard')); return s && s.name ? s : null; } catch { return null; } }
-function currentSpirit() { return state.spiritCard !== undefined ? state.spiritCard : (state.spiritCard = loadSpiritCard()); }
+// A card lasts one day: 24 hours after you draw it (or the moment you dismiss it)
+// it's gone, whichever comes first.
+const SPIRIT_TTL = 24 * 60 * 60 * 1000;
+const spiritFresh = (s) => ((s && s.name && s.at && (Date.now() - s.at) < SPIRIT_TTL) ? s : null);
+function loadSpiritCard() { try { return spiritFresh(JSON.parse(localStorage.getItem('life.spiritCard'))); } catch { return null; } }
+function currentSpirit() { if (state.spiritCard === undefined) state.spiritCard = loadSpiritCard(); return spiritFresh(state.spiritCard); }
 function saveSpiritCard(c) {
   const saved = { name: c[0], symbol: c[1], message: c[2], at: Date.now() };
   state.spiritCard = saved;
@@ -1974,7 +1978,16 @@ function saveSpiritCard(c) {
 // The pinned card, a small tap-to-reopen tile. Nothing until you've drawn one.
 function spiritPinnedHtml() {
   const s = currentSpirit(); if (!s) return '';
-  return `<button class="spirit-pin" data-spirit-open title="Draw another spirit card"><span class="sp-sym">${esc(s.symbol || '✦')}</span><span class="sp-body"><span class="sp-name">${esc(s.name)}</span><span class="sp-msg">${esc(s.message)}</span></span><span class="sp-tag">Spirit card</span></button>`;
+  return `<div class="spirit-pin-wrap"><button class="spirit-pin" data-spirit-open title="Draw another spirit card"><span class="sp-sym">${esc(s.symbol || '✦')}</span><span class="sp-body"><span class="sp-name">${esc(s.name)}</span><span class="sp-msg">${esc(s.message)}</span></span><span class="sp-tag">Spirit card</span></button><button class="sp-x" data-spirit-dismiss title="Dismiss this card">×</button></div>`;
+}
+// Dismiss the pinned card now, before its 24 hours are up. Clears it on this
+// device and on the account so it doesn't come back on your next load.
+function dismissSpirit() {
+  state.spiritCard = null;
+  try { localStorage.removeItem('life.spiritCard'); } catch {}
+  api('/api/kv/spirit_card', { method: 'PUT', body: JSON.stringify({ value: '' }) }).catch(() => {});
+  const v = state.view && state.view.type;
+  if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList();
 }
 // Opening from Reflect or a pinned tile shows the current card (with "Draw
 // another"); the very first time there's nothing yet, so a blank back to tap.
@@ -4654,7 +4667,7 @@ function renderContactCard() {
       ${contactPhoneFields(p)}
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
       <label class="tf-field"><span class="tf-label">Life area</span>${areaSelect(p.area, 'data-contact-area')}</label>
-      ${ADDR_FIELDS.map(([k, l]) => `<label class="tf-field"><span class="tf-label">${l}</span><input class="sel contactcard-addr" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" autocomplete="off"></label>`).join('')}
+      <div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-addr-row">${ADDR_FIELDS.map(([k, l]) => `<input class="sel contactcard-addr cc-addr-${k}" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" placeholder="${l}" autocomplete="off">`).join('')}</div></div>
     </div>
     ${contactGroupsSection(c)}
     ${notesSection(c.body, 'contact', c.id)}
@@ -4984,7 +4997,7 @@ function renderFinancial() {
     : f.tab === 'spending' ? spendingBody()
     : f.tab === 'tracker' ? trackerBody()
     : portfolioBody();
-  $('#pane').innerHTML = `${pageCrumb('Financial')}<div class="pane-head"><h1>Financial</h1></div>${seg}${body}`;
+  $('#pane').innerHTML = `${pageCrumb('Money')}<div class="pane-head"><h1>Money</h1></div>${seg}${body}`;
 }
 const finSoon = (ic, title, body, note) => `<div class="fin-soon"><div class="fin-soon-ic">${ic}</div><h2>${esc(title)}</h2><p>${esc(body)}</p><p class="fin-soon-note">${esc(note)}</p></div>`;
 function portfolioBody() {
@@ -6324,7 +6337,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Contacts', run: () => openContacts() },
   { kind: 'action', title: 'New contact', run: () => quickAdd('contact') },
   { kind: 'action', title: 'Go to Goals', run: () => openGoals('goals') },
-  { kind: 'action', title: 'Financial · Portfolio', run: () => openFinancial('portfolio') },
+  { kind: 'action', title: 'Money · Portfolio', run: () => openFinancial('portfolio') },
   { kind: 'action', title: 'New goal', run: () => quickAdd('goal') },
   { kind: 'action', title: 'Bucket list', run: () => openGoals('bucket') },
 ];
@@ -6987,6 +7000,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
   { const as = t.closest('[data-admin-status]'); if (as) { setUserStatus(as.dataset.adminStatus, as.dataset.status); return; } }
+  if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
