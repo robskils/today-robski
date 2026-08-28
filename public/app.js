@@ -574,6 +574,7 @@ function openView(v) {
     case 'financial': return openFinancial(v.tab);
     case 'settings': return openSettings();
     case 'admin': return openAdmin();
+    case 'practices': return openPractices();
     case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
@@ -1201,6 +1202,7 @@ function renderSettings() {
   const tiles = [
     ['◈', 'Life areas', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
+    ['🧘', 'Daily practices', 'Your practices, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
@@ -1758,21 +1760,21 @@ function pomoPanel() {
     </div>`;
 }
 
-// ── Toolbox: Focus, a plain countdown Timer, and a habit Tracker ─────────
-// A collapsible home strip you click a tool into; each tool's state is local to
-// the device (like the Focus log), so it's instant and offline-friendly.
-function toolboxSel() { try { return localStorage.getItem('life.toolbox.sel') || 'focus'; } catch { return 'focus'; } }
-function setToolboxSel(k) { try { localStorage.setItem('life.toolbox.sel', k); } catch {} renderHome(); }
+// ── Toolbox: Focus, a plain countdown Timer, and Daily Practices ─────────
+// All three tools show at once, each collapsible on its own.
+function tbxToolOpen(k) { try { return !(JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}')[k]); } catch { return true; } }
+function tbxToolToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = true; localStorage.setItem('life.toolbox.collapsed', JSON.stringify(c)); } catch {} renderHome(); }
 function toolboxHtml() {
   const open = secOpen('toolbox');
-  const sel = toolboxSel();
   const badge = (k) => (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
     : (k === 'timer' && timerState.running) ? `<span class="tbx-run js-timer-time">${timerFmt(timerRemaining())}</span>` : '';
-  const tile = (k, ic, label) => `<button class="tbx-tile ${sel === k ? 'on' : ''}" data-tbx="${k}"><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${badge(k)}</button>`;
+  const tool = (k, ic, label, panel) => { const o = tbxToolOpen(k); return `<div class="tbx-tool">
+    <div class="tbx-tool-h" data-tbx-tool="${k}"><span class="hs-chev">${o ? '▾' : '▸'}</span><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${badge(k)}</div>
+    ${o ? `<div class="tbx-tool-body tbx-${k}">${panel}</div>` : ''}
+  </div>`; };
   return `<section class="home-sec home-toolbox" data-hsec="toolbox">
-    ${secH('toolbox', '🧰 Toolbox')}
-    ${open ? `<div class="tbx-strip">${tile('focus', '⏱', 'Focus')}${tile('timer', '⏲', 'Timer')}${tile('tracker', '✓', 'Tracker')}</div>
-      <div class="tbx-panel tbx-${sel}">${sel === 'focus' ? pomoPanel() : sel === 'timer' ? timerPanel() : trackerPanel()}</div>` : ''}
+    ${secH('toolbox', '🧰 Toolbox', '', true)}
+    ${open ? `<div class="tbx-tools">${tool('focus', '⏱', 'Focus', pomoPanel())}${tool('timer', '⏲', 'Timer', timerPanel())}${tool('tracker', '✓', 'Daily Practices', trackerPanel())}</div>` : ''}
   </section>`;
 }
 
@@ -1825,30 +1827,71 @@ function timerReset() { timerState.running = false; timerState.endAt = null; tim
 function timerSet(min) { timerState.dur = min * 60; timerState.running = false; timerState.endAt = null; timerState.remaining = min * 60; saveTimer(); renderHome(); }
 if (timerState.running) timerEnsureTicker();
 
-// ── habit Tracker ───────────────────────────────────────────────────────
-let trackerState = (() => { try { const t = JSON.parse(localStorage.getItem('life.tracker')); if (t && Array.isArray(t.habits)) return t; } catch {} return { habits: [], marks: {} }; })();
-function saveTracker() { try { localStorage.setItem('life.tracker', JSON.stringify(trackerState)); } catch {} }
+// ── Daily Practices (shared with the Today tool via `activities`) ─────────
+// The list of practices lives in the shared `activities` model, grouped by lane
+// (your life-area categories), so editing it here shows in the Today tool and
+// vice-versa. The daily ticks are ours, kept per-user in a kv setting.
 const dayKey = (d) => d.toISOString().slice(0, 10);
-const trackerMarked = (hid, day) => !!trackerState.marks[`${hid}:${day}`];
-function trackerToggle(hid, day) { const k = `${hid}:${day}`; if (trackerState.marks[k]) delete trackerState.marks[k]; else trackerState.marks[k] = 1; saveTracker(); renderHome(); }
-function trackerStreak(hid) { let s = 0; const d = new Date(); for (;;) { if (trackerState.marks[`${hid}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
-function trackerAdd(name) { name = (name || '').trim(); if (!name) return; trackerState.habits.push({ id: uid(), name: name.slice(0, 60) }); saveTracker(); renderHome(); }
-function trackerRemove(hid) { trackerState.habits = trackerState.habits.filter((h) => h.id !== hid); Object.keys(trackerState.marks).forEach((k) => { if (k.startsWith(`${hid}:`)) delete trackerState.marks[k]; }); saveTracker(); renderHome(); }
 function trackerLast7() { const out = []; const d = new Date(); for (let i = 6; i >= 0; i--) { const x = new Date(d); x.setDate(d.getDate() - i); out.push(dayKey(x)); } return out; }
+let practicesLoaded = false;
+async function loadPractices(force) {
+  if (practicesLoaded && !force && state.practices) return state.practices;
+  try {
+    const [a, m] = await Promise.all([api('/api/activities'), api('/api/kv/practice_marks').catch(() => ({ value: null }))]);
+    let marks = {}; try { marks = m && m.value ? JSON.parse(m.value) : {}; } catch {}
+    state.practices = { activities: a.activities || [], lanes: a.lanes || [], marks };
+    practicesLoaded = true;
+  } catch { state.practices = state.practices || { activities: [], lanes: [], marks: {} }; }
+  return state.practices;
+}
+function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
+const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
+function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); }
+async function openPractices() { state.view = { type: 'practices' }; renderNav(); await loadPractices(true); renderPractices(); }
+function renderPractices() {
+  if (!state.practices) return;
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Daily practices' }])}
+    <div class="pane-head home-head"><h1>Daily practices</h1></div>
+    <p class="home-empty" style="margin:-6px 0 18px">The practices you tick each day on Home, grouped by their life-area lane. This is the same list the <b>Today</b> tool uses - add or remove one here and it shows in both.</p>
+    <div class="prc prc-manage">${practicesGroups(false) || '<div class="empty" style="padding:0 0 14px">No practices yet - add your first below.</div>'}${practiceAddForm()}</div>`;
+}
+function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
+function practiceStreak(id) { if (!state.practices) return 0; let s = 0; const d = new Date(); for (;;) { if (state.practices.marks[`${id}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
+async function practiceAdd(lane, title) {
+  title = (title || '').trim(); if (!title || !lane || !state.practices) return;
+  try { const a = await api('/api/activities', { method: 'POST', body: JSON.stringify({ lane, title: title.slice(0, 80), duration: 30 }) }); state.practices.activities.push(a); rerenderPractices(); }
+  catch (e) { toast(e.message); }
+}
+async function practiceDelete(id) {
+  try { await api('/api/activities/' + id, { method: 'DELETE' }); if (state.practices) state.practices.activities = state.practices.activities.filter((a) => String(a.id) !== String(id)); rerenderPractices(); }
+  catch (e) { toast(e.message); }
+}
+// Practices grouped by lane; withWeek adds the 7-day dot row + streak (Home), off
+// for the plain management list (Settings).
+function practicesGroups(withWeek) {
+  const P = state.practices; const today = dayKey(new Date()); const days = trackerLast7(); const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const laneOf = (k) => P.lanes.find((l) => l.key === k) || { label: k, hue: 0 };
+  const byLane = {}; (P.activities || []).forEach((a) => { (byLane[a.lane] = byLane[a.lane] || []).push(a); });
+  const keys = Object.keys(byLane).sort((a, b) => laneOf(a).label.localeCompare(laneOf(b).label));
+  return keys.map((lane) => {
+    const rows = byLane[lane].map((a) => `<div class="prc-row">
+        <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
+        <span class="prc-name">${esc(a.title)}</span>
+        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}` : ''}
+        <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
+      </div>`).join('');
+    return `<div class="prc-group"><div class="prc-lane" style="--h:${laneOf(lane).hue}"><span class="prc-lane-dot"></span>${esc(laneOf(lane).label)}</div>${rows}</div>`;
+  }).join('');
+}
+function practiceAddForm() {
+  const lanes = (state.practices.lanes || []).filter((l) => !l.untracked);
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-lane">${lanes.map((l) => `<option value="${l.key}">${esc(l.label)}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New daily practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+}
 function trackerPanel() {
-  const days = trackerLast7(); const today = dayKey(new Date());
-  const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const rows = trackerState.habits.map((h) => `<div class="trk-hrow">
-      <button class="trk-tick ${trackerMarked(h.id, today) ? 'on' : ''}" data-trk-tick="${h.id}" title="Mark done today">✓</button>
-      <span class="trk-hname">${esc(h.name)}</span>
-      <span class="trk-week">${days.map((d) => `<span class="trk-dot ${trackerMarked(h.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-trk-day="${h.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>
-      ${(() => { const s = trackerStreak(h.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}
-      <button class="trk-del" data-trk-del="${h.id}" title="Remove habit">×</button>
-    </div>`).join('');
-  return `<div class="trk">
-      ${rows || '<div class="home-empty" style="padding:6px 0">No habits yet. Add one below and tick it each day.</div>'}
-      <form class="trk-add" data-trk-add-form><input class="sel" id="trk-new" placeholder="New habit - e.g. Meditate, Read, Gym" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>
-    </div>`;
+  if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHome(); }); return '<div class="home-empty" style="padding:6px 0">Loading practices…</div>'; }
+  const groups = practicesGroups(true);
+  return `<div class="prc">${groups || '<div class="home-empty" style="padding:6px 0">No practices yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
 }
 
 // Gentle Home notifications - today's birthdays and open P1 tasks. Each can be
@@ -1958,7 +2001,6 @@ function renderHome() {
         ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
         ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
       </nav>
-      ${modOn('timer') ? toolboxHtml() : ''}
       <div class="home-body">
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
@@ -1968,9 +2010,10 @@ function renderHome() {
             today: `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', 'Today', '', true)}${secOpen('today') ? `<div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}</section>`,
             priority: p1Html(),
             focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
+            toolbox: modOn('timer') ? toolboxHtml() : '',
             favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? (favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>') : ''}</section>`,
           };
-          const def = ['favareas', 'today', 'priority', 'focus', 'favs'];
+          const def = ['favareas', 'today', 'priority', 'focus', 'toolbox', 'favs'];
           let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
           return order.map((k) => sec[k] || '').join('');
         })()}</div>
@@ -7104,14 +7147,14 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
-  // Toolbox: pick a tool, drive the plain timer, tick habits.
-  { const tb = t.closest('[data-tbx]'); if (tb) { setToolboxSel(tb.dataset.tbx); return; } }
+  // Toolbox: collapse a tool, drive the plain timer, tick practices.
+  { const tb = t.closest('[data-tbx-tool]'); if (tb) { tbxToolToggle(tb.dataset.tbxTool); return; } }
   if (t.closest('[data-timer-toggle]')) { timerToggle(); return; }
   if (t.closest('[data-timer-reset]')) { timerReset(); return; }
   { const ts = t.closest('[data-timer-set]'); if (ts) { timerSet(Number(ts.dataset.timerSet)); return; } }
-  { const tk = t.closest('[data-trk-tick]'); if (tk) { trackerToggle(tk.dataset.trkTick, dayKey(new Date())); return; } }
-  { const td = t.closest('[data-trk-day]'); if (td) { const [hid, day] = td.dataset.trkDay.split(':'); trackerToggle(hid, day); return; } }
-  { const tx = t.closest('[data-trk-del]'); if (tx) { trackerRemove(tx.dataset.trkDel); return; } }
+  { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
+  { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
+  { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; if (c[k]) delete c[k]; else c[k] = true; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
@@ -7157,6 +7200,7 @@ document.addEventListener('click', (e) => {
   const tcx = t.closest('[data-trk-cat-del]'); if (tcx) { delTrkCat(tcx.dataset.trkCatDel); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
   const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   const remd = t.closest('[data-rem-del]'); if (remd) { delReviewReminder(remd.dataset.remDel); return; }
@@ -7641,7 +7685,7 @@ function caretToProseStart(prose) {
 }
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (e.target.matches && e.target.matches('[data-trk-add-form]')) { const i = $('#trk-new'); trackerAdd(i && i.value); return; }
+  if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const lane = $('#prc-lane'), i = $('#prc-new'); practiceAdd(lane && lane.value, i && i.value); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }

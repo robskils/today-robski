@@ -2546,6 +2546,13 @@ export default {
         const practices = (results || []).filter((r) => r.title && r.n > 0).map((r) => ({ title: r.title, count: r.n }));
         return json({ practices, total: practices.reduce((a, p) => a + p.count, 0) }, request);
       }
+      if (path === '/api/activities' && request.method === 'GET') {
+        // The Daily Practices list, shared with the Today tool: activities grouped
+        // by lane, plus the lane definitions so the client can label and colour them.
+        const { lanes } = await getLaneConfig(env);
+        const { results } = await env.DB.prepare('SELECT * FROM activities WHERE user_id = ? ORDER BY lane, position, id').bind(env.uid).all();
+        return json({ activities: results || [], lanes }, request);
+      }
       if (path === '/api/activities' && request.method === 'POST') return createActivity(request, env);
       if (path === '/api/settings' && request.method === 'GET') return json(await getSettings(env), request);
       if (path === '/api/settings' && request.method === 'PATCH') return handleSettings(request, env);

@@ -1319,17 +1319,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .pomo-on { font-size:13px; color:var(--ink-2); } .pomo-on b { color:var(--ink); }
 .pomo-tot { color:var(--accent); font-weight:500; }
 .pomo-today { width:100%; text-align:center; font-size:12.5px; color:var(--ink-3); margin-top:6px; padding-top:8px; border-top:1px solid var(--line); }
-/* ── Toolbox: a home strip of small tools (Focus, Timer, Tracker) ── */
-.home-toolbox { margin:0 0 26px; }
-.tbx-strip { display:flex; flex-wrap:wrap; gap:10px; }
-.tbx-tile { display:inline-flex; align-items:center; gap:9px; padding:11px 16px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink-2); font-size:15px; box-shadow:var(--shadow); transition:border-color .12s,color .12s,transform .08s; }
-.tbx-tile:hover { border-color:var(--accent); color:var(--ink); }
-.tbx-tile.on { border-color:var(--accent); color:var(--accent); background:var(--paper); font-weight:600; }
-.tbx-ic { font-size:18px; line-height:1; }
-.tbx-run { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:13px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; margin-left:2px; }
-.tbx-panel { margin-top:16px; padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); }
-.tbx-panel.tbx-focus, .tbx-panel.tbx-timer { max-width:340px; }
-.tbx-panel.tbx-tracker { max-width:680px; }
+/* ── Toolbox: Focus, Timer and Daily Practices, all shown, each collapsible ── */
+.tbx-tools { display:flex; flex-direction:column; gap:12px; }
+.tbx-tool { border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+.tbx-tool-h { display:flex; align-items:center; gap:9px; padding:12px 15px; cursor:pointer; font-size:15px; color:var(--ink); font-weight:500; user-select:none; }
+.tbx-tool-h:hover { background:var(--paper-2); }
+.tbx-tool-h .hs-chev { color:var(--ink-3); font-size:11px; }
+.tbx-ic { font-size:17px; line-height:1; }
+.tbx-tt { flex:1; }
+.tbx-run { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:13px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; }
+.tbx-tool-body { padding:4px 16px 18px; }
+.tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:360px; }
 /* plain Timer */
 .tmr { display:flex; flex-direction:column; align-items:center; gap:12px; }
 .tmr-time { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:44px; font-weight:600; letter-spacing:.02em; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
@@ -1357,7 +1357,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .trk-del { flex:none; color:var(--ink-3); font-size:18px; padding:0 4px; } .trk-del:hover { color:var(--danger,#c0392b); }
 .trk-add { display:flex; gap:8px; margin-top:10px; }
 .trk-add .sel { flex:1; }
-@media (max-width:640px){ .trk-week { display:none; } .tbx-panel.tbx-focus, .tbx-panel.tbx-timer { max-width:none; } }
+/* Daily Practices: grouped by lane (life-area category). */
+.prc { display:flex; flex-direction:column; gap:14px; }
+.prc-group { display:flex; flex-direction:column; }
+.prc-lane { display:flex; align-items:center; gap:8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin-bottom:6px; }
+.prc-lane-dot { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
+.prc-row { display:flex; align-items:center; gap:12px; padding:7px 2px; border-bottom:1px solid var(--line); }
+.prc-row:last-child { border-bottom:0; }
+.prc-name { flex:1; min-width:0; font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.prc-add { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+.prc-add .prc-lane-sel { flex:0 0 auto; max-width:150px; }
+.prc-add input { flex:1; min-width:120px; }
+@media (max-width:640px){ .trk-week { display:none; } .tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:none; } }
 .focus-stat { font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 7%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:9px; padding:7px 12px; margin:2px 0 4px; display:inline-block; }
 /* Link from a task back to the note it was created from. */
 .task-source { margin:4px 0 6px; }
