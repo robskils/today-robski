@@ -466,6 +466,20 @@ const HELP = {
       <li>Edit, rename, recolour, add or remove your lanes in <b>Settings › Time streams</b>.</li></ul>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which sections show, invites, and the tools that manage your setup.',
     body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> lets you bring people in. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
+  'settings-account': { title: 'Account', tip: 'Your name, the addresses you sign in with, your phone and your plan.',
+    body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on. <b>Download your data</b> exports everything; <b>Close account</b> removes it.</p>` },
+  'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
+    body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
+  'settings-ai': { title: 'AI', tip: 'Your AI keys, and a switch to turn all AI off.',
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflect coaching, Claudius replies, advice, statement import) is disabled across Daybook. Below it, your <b>Anthropic</b> and <b>Google Gemini</b> keys: features run on your own keys, so nothing is stored but whether a key is set.</p>` },
+  'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
+    body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
+  'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
+    body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
+  'settings-invites': { title: 'Invites', tip: 'Bring people onto Daybook with a code.',
+    body: `<p>Create an invite and share the code or link; whoever uses it can set up their own Daybook. You can hold a few unused invites at a time.</p>` },
+  'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories, reminders and your Today lanes.',
+    body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, <b>Reviews &amp; reminders</b> (cadence and nudges), and <b>Time streams</b> (your Today lanes and targets).</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -1273,7 +1287,7 @@ function renderSettings() {
     <div class="pane-head home-head"><h1>Settings</h1></div>
     ${seg}
     <section class="home-sec">
-      <div class="home-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${subs[tab] || ''}</span></div>
+      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
       ${panes[tab] || ''}
     </section>
     ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : ''}`;
@@ -1919,6 +1933,7 @@ function renderHome() {
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
+      ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <div class="home-head">
         <h1>${greeting()}, <span class="hi-name">Robski</span></h1>
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
@@ -4317,7 +4332,7 @@ function renderMail(loading) {
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}
-    ${(!m.open && !m.composing && strayUnread && m.strayHidden !== strayUnread) ? `<div class="mail-stray"><span>${strayUnread} unread message${strayUnread > 1 ? 's' : ''} you can't see - older mail still flagged unread.</span><span class="mail-stray-act"><button class="ghost" data-mail-reconcile>Mark read</button><button class="ghost mail-stray-x" data-mail-stray-hide title="Hide">×</button></span></div>` : ''}
+    ${(!m.open && !m.composing && strayUnread && m.strayHidden !== strayUnread) ? `<div class="mail-stray"><span>${strayUnread} older unread email${strayUnread > 1 ? 's sit' : ' sits'} further down, below the newest ${m.limit || 40} shown here.</span><span class="mail-stray-act"><button class="ghost" data-mail-more title="Load older mail to reach them">Show</button><button class="ghost" data-mail-reconcile title="Flag those older ones as read">Mark read</button><button class="ghost mail-stray-x" data-mail-stray-hide title="Hide">×</button></span></div>` : ''}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     ${(m.selected && m.selected.size && !m.open && !m.composing) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
