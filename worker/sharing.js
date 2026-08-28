@@ -11,9 +11,10 @@
 
 import { areFriends } from './friends.js';
 
-// Blocks you're allowed to hand to a friend: your own notes and tasks. Sharing
-// a whole table or a life area is a later, bigger conversation.
-const SHAREABLE = new Set(['note', 'task']);
+// Blocks you're allowed to hand to a friend. A note or task is self-contained; a
+// table also brings its rows, and a life area brings whatever is tagged to it -
+// access to those children is derived in blockAccess()/listBlocks() in index.js.
+const SHAREABLE = new Set(['note', 'task', 'table', 'area']);
 
 async function ownsBlock(env, blockId) {
   const row = await env.DB.prepare('SELECT kind FROM blocks WHERE id = ? AND user_id = ?').bind(blockId, env.uid).first().catch(() => null);

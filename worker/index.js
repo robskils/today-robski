@@ -894,13 +894,29 @@ function parseBlock(row) {
 // A block is accessible if you own it (full edit), or a friend shared it with
 // you (edit iff can_edit). Returns { ownerId, canEdit, mine } or null. Block ids
 // are unguessable UUIDs, so the initial unscoped id lookup leaks nothing.
+function areaIdsFromProps(propsJson) {
+  try { const p = JSON.parse(propsJson || '{}'); const ids = Array.isArray(p.areas) ? p.areas.slice() : []; if (p.area) ids.push(p.area); return [...new Set(ids.filter(Boolean))]; } catch { return []; }
+}
 async function blockAccess(env, id) {
-  const own = await env.DB.prepare('SELECT user_id FROM blocks WHERE id = ?').bind(id).first().catch(() => null);
+  const own = await env.DB.prepare('SELECT user_id, parent_id, props FROM blocks WHERE id = ?').bind(id).first().catch(() => null);
   if (!own) return null;
   if (own.user_id === env.uid) return { ownerId: env.uid, canEdit: true, mine: true };
   const sh = await env.DB.prepare('SELECT can_edit FROM shares WHERE block_id = ? AND friend_id = ?').bind(id, env.uid).first().catch(() => null);
-  if (!sh) return null;
-  return { ownerId: own.user_id, canEdit: !!sh.can_edit, mine: false };
+  if (sh) return { ownerId: own.user_id, canEdit: !!sh.can_edit, mine: false };
+  // A table row (or any child) inherits access from a shared parent block.
+  if (own.parent_id) {
+    const psh = await env.DB.prepare('SELECT can_edit FROM shares WHERE block_id = ? AND friend_id = ?').bind(own.parent_id, env.uid).first().catch(() => null);
+    if (psh) return { ownerId: own.user_id, canEdit: !!psh.can_edit, mine: false };
+  }
+  // A block tagged to a life area that's shared with me is viewable (read-only):
+  // sharing an area shares everything filed under it.
+  const areas = areaIdsFromProps(own.props);
+  if (areas.length) {
+    const ph = areas.map(() => '?').join(',');
+    const ash = await env.DB.prepare(`SELECT 1 FROM shares WHERE friend_id = ? AND block_id IN (${ph})`).bind(env.uid, ...areas).first().catch(() => null);
+    if (ash) return { ownerId: own.user_id, canEdit: false, mine: false };
+  }
+  return null;
 }
 
 async function getBlock(env, id) {
@@ -992,9 +1008,36 @@ async function handleFavorites(request, env) {
 }
 
 async function listBlocks(request, env, url) {
+  const kind = url.searchParams.get('kind');
+  const wantArchived = url.searchParams.get('archived') === '1';
+  // Viewing the children of a block shared with me (a shared table's rows): list
+  // the OWNER's children, not my own empty set.
+  if (url.searchParams.has('parent_id') && url.searchParams.get('parent_id')) {
+    const pid = url.searchParams.get('parent_id');
+    const acc = await blockAccess(env, pid);
+    if (acc && !acc.mine) {
+      const cl = ['parent_id = ?', 'user_id = ?']; const ar = [pid, acc.ownerId];
+      if (kind) { cl.push('kind = ?'); ar.push(kind); }
+      if (!wantArchived) cl.push('archived = 0');
+      const { results } = await env.DB.prepare(`SELECT * FROM blocks WHERE ${cl.join(' AND ')} ORDER BY position, created_at`).bind(...ar).all();
+      return json(results.map(parseBlock), request);
+    }
+  }
+  // Viewing a life area shared with me: list the OWNER's blocks tagged to it.
+  if (url.searchParams.has('area')) {
+    const aid = url.searchParams.get('area');
+    const acc = await blockAccess(env, aid);
+    if (acc && !acc.mine) {
+      const cl = ['user_id = ?', "(json_extract(props,'$.area') = ? OR EXISTS (SELECT 1 FROM json_each(json_extract(props,'$.areas')) WHERE value = ?))"];
+      const ar = [acc.ownerId, aid, aid];
+      if (kind) { cl.push('kind = ?'); ar.push(kind); }
+      if (!wantArchived) cl.push('archived = 0');
+      const { results } = await env.DB.prepare(`SELECT * FROM blocks WHERE ${cl.join(' AND ')} ORDER BY position, created_at`).bind(...ar).all();
+      return json(results.map(parseBlock), request);
+    }
+  }
   const clauses = ['user_id = ?'];
   const args = [env.uid];
-  const kind = url.searchParams.get('kind');
   if (kind) { clauses.push('kind = ?'); args.push(kind); }
   if (url.searchParams.has('parent_id')) {
     clauses.push('parent_id IS ?'); args.push(url.searchParams.get('parent_id') || null);

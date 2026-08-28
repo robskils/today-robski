@@ -2535,10 +2535,11 @@ function renderArea() {
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
-        <button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
-      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename></h1>
+        ${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
+      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
-      <div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>
+      ${sharedBanner(area)}
+      ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
     </div>
     <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
     ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
@@ -4780,7 +4781,7 @@ function renderContacts() {
       ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : (d.incoming.length ? '' : '<div class="home-empty">No one yet - find people above, or invite a contact to Daybook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(d.suggestions && d.suggestions.length) ? `<div class="ppl-sub">Your contacts who are on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Connect</button>`)).join('')}` : ''}
-      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${s.kind === 'task' ? (s.done ? '☑' : '☐') : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.kind === 'task' ? 'Task' : 'Note'} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`).join('')}` : ''}
+      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life area' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>
 
     <section class="home-sec">
@@ -6463,11 +6464,13 @@ function renderTable() {
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
-    <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
+    <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>
       ${noteTypeToggle(t.id, 'table')}
       ${blockAreasControl('table', t)}
+      ${shareBtn(t, 'table')}
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
-      <button class="ghost" data-del-cur>Delete</button></div>
+      ${t.sharedBy ? '' : '<button class="ghost" data-del-cur>Delete</button>'}</div>
+    ${sharedBanner(t)}
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${nSort > 1 || vw.sorting ? 'on' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort > 1 ? ` · ${nSort}` : ''}</button>
