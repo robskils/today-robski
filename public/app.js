@@ -2369,13 +2369,7 @@ function areaSelect(cur, attr) {
 // A note can sit in several life areas. Each shows as a removable chip that also
 // links to its area; the dropdown lists the areas it isn't in yet, so picking one
 // adds it. With none chosen it's just the familiar "+ Life area" control.
-function noteAreasControl(n) {
-  const ids = blockAreas(n);
-  const chips = ids.map((id) => { const a = areaById(id); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${id}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-note-area-remove="${id}" title="Remove from this area">×</button></span>`; }).join('');
-  const remaining = state.areas.filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-note-area-add><option value="">${ids.length ? '+ Add area' : '+ Life area'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
-  return `<span class="note-areas">${chips}${add}</span>`;
-}
+function noteAreasControl(n) { return blockAreasControl('note', n); }
 function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
@@ -2462,6 +2456,41 @@ async function setNoteAreas(id, ids) {
 }
 function addNoteArea(id, areaId) { if (!areaId) return; const cur = blockAreas(state.note && state.note.current); setNoteAreas(id, [...cur, areaId]); toast('Added to life area'); }
 function removeNoteArea(id, areaId) { const cur = blockAreas(state.note && state.note.current); setNoteAreas(id, cur.filter((x) => x !== areaId)); }
+// ── Life areas on any block ──────────────────────────────────────────
+// Every card that carries a life area lets you attach more than one. The list
+// lives in props.areas; props.area mirrors the first so single-area readers - the
+// Today lane map, task filters, the ?area= listing, older code - keep working.
+// One control and one setter serve notes, tasks, contacts, tables, goals and
+// bucket items alike. Each host names where its live copies live and how to
+// repaint the open card once the areas change.
+const AREA_HOSTS = {
+  note:    { copies: () => [state.note && state.note.current, ...(state.noteTops || [])], render: () => { if (state.view.type === 'note') renderNote(); } },
+  task:    { copies: () => [state.task_open && state.task_open.task, ...(state.tasks || [])], render: () => { if (state.view.type === 'taskcard') renderTaskCard(); } },
+  contact: { copies: () => [state.contact_open && state.contact_open.contact, ...(state.contacts || [])], render: () => { if (state.view.type === 'contactcard') renderContactCard(); } },
+  table:   { copies: () => [state.tables_open, ...(state.tables || [])], render: () => { if (state.view.type === 'table') renderTable(); } },
+  goal:    { copies: () => [state.goal_open && state.goal_open.goal, ...(state.goals || [])], render: () => { if (state.view.type === 'goalcard') renderGoalCard(); } },
+  bucket:  { copies: () => [state.bucket_open && state.bucket_open.item, ...(state.bucket || [])], render: () => { if (state.view.type === 'bucketcard') renderBucketCard(); } },
+};
+const areaHostBlock = (kind, id) => { const h = AREA_HOSTS[kind]; return h ? (h.copies() || []).find((b) => b && b.id === id) || null : null; };
+async function setBlockAreas(kind, id, ids) {
+  ids = [...new Set(ids.filter(Boolean))];
+  const props = { areas: ids, area: ids[0] || null };
+  const h = AREA_HOSTS[kind];
+  if (h) { for (const b of (h.copies() || [])) { if (b && b.id === id) { b.props = b.props || {}; b.props.areas = ids; b.props.area = ids[0] || null; } } h.render(); }
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props }) }); } catch (e) { toast(e.message); }
+}
+function addBlockArea(kind, id, areaId) { if (!areaId) return; setBlockAreas(kind, id, [...blockAreas(areaHostBlock(kind, id)), areaId]); }
+function removeBlockArea(kind, id, areaId) { setBlockAreas(kind, id, blockAreas(areaHostBlock(kind, id)).filter((x) => x !== areaId)); }
+// The chip + picker. Each attached area is a chip that links through to its page
+// and carries an x to drop it; the dropdown offers the areas not yet attached.
+// With none chosen it reads as the familiar "+ Life area".
+function blockAreasControl(kind, b) {
+  const id = b.id; const ids = blockAreas(b);
+  const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
+  const remaining = state.areas.filter((a) => !ids.includes(a.id));
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add area' : '+ Life area'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  return `<span class="note-areas">${chips}${add}</span>`;
+}
 // From a life-area page: create a task/note already tagged to this area, then
 // open it for naming. It shows up in the Tasks/Notes lists too.
 async function areaAddTask() {
@@ -4666,7 +4695,7 @@ function renderContactCard() {
       ${contactEmailFields(p)}
       ${contactPhoneFields(p)}
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
-      <label class="tf-field"><span class="tf-label">Life area</span>${areaSelect(p.area, 'data-contact-area')}</label>
+      <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
       <div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-addr-row">${ADDR_FIELDS.map(([k, l]) => `<input class="sel contactcard-addr cc-addr-${k}" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" placeholder="${l}" autocomplete="off">`).join('')}</div></div>
     </div>
     ${contactGroupsSection(c)}
@@ -5568,7 +5597,7 @@ function renderGoalCard() {
     ${(() => { const m = focusMinsFor('goal', g.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this goal</div>` : ''; })()}
     <label class="tf-field goal-why"><span class="tf-label">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
     <div class="tf-meta">
-      <label class="tf-field"><span class="tf-label">Life area</span><select class="sel" id="goalcard-area">${areaOpts}</select></label>
+      <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('goal', g)}</div>
       <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype"><option value="" ${!p.gtype ? 'selected' : ''} disabled hidden>Choose…</option>${GTYPES.map(([v, l]) => `<option value="${v}" ${p.gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -5674,7 +5703,7 @@ function renderBucketCard() {
       <textarea class="note-title" id="bucketcard-title" rows="1" placeholder="Something to do before you die…">${esc(b.title || '')}</textarea>
     </div>
     <div class="tf-meta">
-      <label class="tf-field"><span class="tf-label">Life area</span><select class="sel" id="bucketcard-area">${areaOpts}</select></label>
+      <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('bucket', b)}</div>
       <label class="tf-field"><span class="tf-label">Stage</span><select class="sel" id="bucketcard-status">${BSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'someday') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Target year</span><input class="sel" id="bucketcard-year" value="${esc(p.targetYear || '')}" placeholder="e.g. 2030"></label>
     </div>
@@ -6253,7 +6282,7 @@ function renderTable() {
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename>
       ${noteTypeToggle(t.id, 'table')}
-      ${areaSelect(t.props && t.props.area, 'data-table-area')}
+      ${blockAreasControl('table', t)}
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
       <button class="ghost" data-del-cur>Delete</button></div>
     <div class="tbl-toolbar">
@@ -6719,6 +6748,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
+  { const ar = t.closest('[data-area-remove]'); if (ar) { const p = ar.dataset.areaRemove.split(':'); removeBlockArea(p[0], p[1], p[2]); return; } }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
@@ -7109,9 +7139,7 @@ document.addEventListener('change', (e) => {
     c._acct = e.target.value; renderMail(); return;
   }
   const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
-  if (e.target.matches('[data-note-area-add]') && state.note && state.note.current) { const v = e.target.value; e.target.value = ''; addNoteArea(state.note.current.id, v); }
-  if (e.target.matches('[data-contact-area]')) setBlockArea('contact', state.contact_open.contact.id, e.target.value);
-  if (e.target.matches('[data-table-area]')) setBlockArea('table', state.tables_open.id, e.target.value);
+  { const aa = e.target.closest('[data-area-add]'); if (aa) { const p = aa.dataset.areaAdd.split(':'); const v = e.target.value; e.target.value = ''; addBlockArea(p[0], p[1], v); return; } }
   { const tff = e.target.closest('[data-tf-field]'); if (tff) { loadTaskFilters(); const i = Number(tff.dataset.tfField); const c = state.taskFilters[i]; c.field = e.target.value; c.op = (TASK_FIELDS[c.field].ops || [])[0]; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
   { const tfo = e.target.closest('[data-tf-op]'); if (tfo) { loadTaskFilters(); const i = Number(tfo.dataset.tfOp); const c = state.taskFilters[i]; c.op = e.target.value; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
   { const tfv = e.target.closest('[data-tf-val]'); if (tfv) { loadTaskFilters(); const i = Number(tfv.dataset.tfVal); state.taskFilters[i].value = e.target.value; saveTaskFilters(); renderTasks(); return; } }
@@ -7439,6 +7467,9 @@ function taskCopies(id) {
 }
 async function patchTaskProps(id, patch) {
   const copies = taskCopies(id); if (!copies.length) return;
+  // Keep the area/areas mirror in step: a quick single-area set (the inline cell)
+  // replaces the whole list, so a task is never left with a stale props.areas.
+  if ('area' in patch && !('areas' in patch)) patch = { ...patch, areas: patch.area ? [patch.area] : [] };
   const prev = copies.map((b) => ({ ...b.props }));
   copies.forEach((b) => Object.assign(b.props, patch)); rerenderCurrent();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: patch }) }); }
@@ -7521,8 +7552,8 @@ function renderTaskCard() {
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Priority</span>
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Life area</span>
-        <select class="sel" data-area-task="${t.id}"><option value="">No area</option>${state.areas.map((x) => `<option value="${x.id}" ${t.props.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
+      <div class="tf-field"><span class="tf-label">Life areas</span>
+        ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Snooze until${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}</span>

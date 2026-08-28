@@ -1520,6 +1520,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .area-sel { padding:7px 12px; font-size:14.5px; background:var(--card); border:1px solid var(--line-2); border-radius:999px; color:var(--ink-2); max-width:200px; }
 .area-sel:hover { border-color:var(--accent); }
 .tbl-head .area-sel { margin-left:auto; }
+/* In the table header the whole life-areas group (chips + picker) sits right. */
+.tbl-head .note-areas { margin-left:auto; }
+.tbl-head .note-areas .area-sel { margin-left:0; }
 /* A note's life-area chips: one per area, each linking to its area and removable. */
 .note-areas { display:inline-flex; align-items:center; flex-wrap:wrap; gap:7px; }
 .area-chip-pick { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; font-size:13.5px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 42%,transparent); background:color-mix(in srgb,var(--c) 9%,transparent); border-radius:999px; overflow:hidden; }
