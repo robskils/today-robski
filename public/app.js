@@ -6396,7 +6396,7 @@ function renderTable() {
   // open - which needs real room, or the form spills out past the table.
   const colgroup = `<colgroup><col style="width:46px">${vc.map((col, i) => `<col data-cw="${col.id}" style="width:${colWidth(col, i === 0)}px">`).join('')}<col style="width:${vw.addingCol ? 340 : 46}px"></colgroup>`;
   const addCol = vw.addingCol
-    ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn" type="submit">Add</button></form></th>`
+    ? `<th class="th-add" style="text-align:left"><form class="colnew" id="colnew"><input id="cn-name" placeholder="Column" autocomplete="off"><select id="cn-type">${TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button class="add-btn wide" type="submit">Add</button></form></th>`
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortSpec = vw.sorts || [];
   const sortOf = (id) => { const i = sortSpec.findIndex((s) => s.colId === id); return i < 0 ? null : { dir: sortSpec[i].dir, badge: sortSpec.length > 1 ? i + 1 : '' }; };
@@ -7102,7 +7102,7 @@ document.addEventListener('click', (e) => {
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
-  if (t.closest('[data-task-add]')) { state.taskAdding = true; renderTasks(); $('#task-title')?.focus(); return; }
+  if (t.closest('[data-task-add]')) { state.taskAdding = true; renderTasks(); setTimeout(() => { const i = $('#task-title'); if (i) i.focus(); }, 0); return; }
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
@@ -7245,8 +7245,39 @@ document.addEventListener('contextmenu', (e) => {
     return;
   }
   const cc = e.target.closest('.contact-card[data-open-contact]');
-  if (cc && state.view.type === 'contacts') { e.preventDefault(); openContactMenu(cc.dataset.openContact, e.clientX, e.clientY); }
+  if (cc && state.view.type === 'contacts') { e.preventDefault(); openContactMenu(cc.dataset.openContact, e.clientX, e.clientY); return; }
+  // Right-click a link inside note/task prose: offer to open it in a new tab.
+  // Internal Daybook links (#rl-…) open in a fresh in-app tab; web links open in
+  // a new browser tab.
+  const alink = e.target.closest('a[href]');
+  if (alink && alink.closest('.prose, .note-body')) {
+    const href = alink.getAttribute('href') || '';
+    const rl = href.match(/#rl-(note|table|area)-([\w-]+)/i);
+    const view = rl ? { type: rl[1].toLowerCase(), id: rl[2] } : null;
+    if (view || /^https?:/i.test(href)) { e.preventDefault(); openLinkMenu(e.clientX, e.clientY, href, view); }
+  }
 });
+// A tiny context menu for a link in prose. `view` is set for internal links.
+function closeLinkMenu() { const el = document.getElementById('linkmenu'); if (el) el.remove(); document.removeEventListener('keydown', linkMenuKey, true); }
+function linkMenuKey(e) { if (e.key === 'Escape') { e.preventDefault(); closeLinkMenu(); } }
+function openLinkMenu(x, y, href, view) {
+  closeLinkMenu();
+  const items = view
+    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Daybook tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
+    : ['<button class="ctx-item" data-lm="browser">↗ Open in new browser tab</button>', '<button class="ctx-item" data-lm="copy">Copy link</button>'];
+  const mx = Math.min(x, window.innerWidth - 232), my = Math.min(y, window.innerHeight - 110);
+  const el = document.createElement('div'); el.id = 'linkmenu'; el.className = 'ctx-bg';
+  el.innerHTML = `<div class="ctx-menu" style="top:${my}px;left:${mx}px" role="menu">${items.join('')}</div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-lm]'); const act = b && b.dataset.lm; closeLinkMenu();
+    if (act === 'newtab') openInNewTab(view);
+    else if (act === 'here') Promise.resolve(openView(view)).catch((x) => toast(x.message));
+    else if (act === 'browser') window.open(href, '_blank', 'noopener,noreferrer');
+    else if (act === 'copy') { (navigator.clipboard ? navigator.clipboard.writeText(href) : Promise.reject()).then(() => toast('Link copied')).catch(() => toast('Could not copy')); }
+  });
+  document.addEventListener('keydown', linkMenuKey, true);
+}
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
@@ -7819,16 +7850,29 @@ async function shrinkImage(file) {
     return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
   } catch { return file; } finally { if (url) URL.revokeObjectURL(url); }
 }
+// Read the file's bytes into memory FIRST, then upload the buffer - never stream
+// the File straight to fetch. A photo picked from Photos is often a lazy handle
+// to a file macOS is still materialising; fetching it directly fails with the
+// opaque "Failed to fetch". Reading it up front turns that into a clear message
+// and lets us check the size before the round-trip.
+const MAX_UPLOAD = 25 * 1024 * 1024;
+async function postAttachment(url, file) {
+  let buf;
+  try { buf = await file.arrayBuffer(); }
+  catch { throw new Error('could not read that file. If it came from Photos, use Export / Save a copy first, then add it.'); }
+  if (!buf.byteLength) throw new Error('that file came through empty. Try exporting it from Photos first.');
+  if (buf.byteLength > MAX_UPLOAD) throw new Error(`that image is ${Math.round(buf.byteLength / 1048576)} MB - too big for a note. Export a smaller copy and try again.`);
+  const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': file.type || 'application/octet-stream' }, body: buf });
+  if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
+  return res.json();
+}
 async function uploadFiles(blockId, files) {
   const host = attHost(); if (!host || host.id !== blockId) return;
   let ok = 0;
   for (const f0 of Array.from(files)) {
-    const f = await shrinkImage(f0);
     try {
-      const res = await fetch(`/api/blocks/${blockId}/attachments?name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`,
-        { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: f });
-      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
-      const att = await res.json();
+      const f = await shrinkImage(f0);
+      const att = await postAttachment(`/api/blocks/${blockId}/attachments?name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`, f);
       host.props = host.props || {};
       host.props.attachments = [...(host.props.attachments || []), att];
       ok++;
@@ -7844,12 +7888,9 @@ async function uploadCellFiles(key, files) {
   row.props = row.props || {}; row.props.values = row.props.values || {};
   let ok = 0;
   for (const f0 of Array.from(files)) {
-    const f = await shrinkImage(f0);
     try {
-      const res = await fetch(`/api/blocks/${rowId}/attachments?col=${encodeURIComponent(colId)}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`,
-        { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: f });
-      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
-      const att = await res.json();
+      const f = await shrinkImage(f0);
+      const att = await postAttachment(`/api/blocks/${rowId}/attachments?col=${encodeURIComponent(colId)}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`, f);
       row.props.values[colId] = [...(Array.isArray(row.props.values[colId]) ? row.props.values[colId] : []), att];
       ok++;
     } catch (e) { toast('Upload failed: ' + e.message); }

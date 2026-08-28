@@ -746,7 +746,10 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .cm-addopt input { flex:1; min-width:0; padding:6px 8px; font-size:14px; border:1px solid var(--line-2); border-radius:8px; background:var(--paper); color:var(--ink); }
 .cm-addopt button { flex:none; padding:6px 11px; border-radius:8px; background:var(--accent); color:var(--accent-ink); font-size:14px; }
 .th-add, .row-del { width:52px; text-align:center; padding-left:0; padding-right:0; }
-.th-add button { display:inline-flex; align-items:center; justify-content:center; width:100%; color:var(--ink-3); font-size:20px; padding:8px 0; } .th-add button:hover { color:var(--accent); }
+/* Only the bare "+" (a direct child) fills the cell; the Add button inside the
+   add-column form keeps its own sizing, or it balloons and spills off the table. */
+.th-add > button { display:inline-flex; align-items:center; justify-content:center; width:100%; color:var(--ink-3); font-size:20px; padding:8px 0; } .th-add > button:hover { color:var(--accent); }
+.colnew .add-btn { flex:none; }
 .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; }
 
 table.recs td .cell { width:100%; border:0; background:transparent; font:inherit; color:var(--ink); padding:11px 12px; }
