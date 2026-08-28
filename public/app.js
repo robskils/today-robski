@@ -3369,13 +3369,15 @@ async function openMail(openKey) {
 // Map the D1 inbox-cache response into the keyed message shape the list uses.
 function applyCachedList(r) {
   state.mail.unseen = r.unseen || {};
+  state.mail._cacheSyncedAt = r.syncedAt || null;
   const nameOf = (id) => { const a = (state.mail.accounts || []).find((x) => x.id === id) || {}; return a.name || a.email || ''; };
   state.mail.messages = (r.messages || []).map((x) => { const mb = x.mailbox || 'INBOX'; return { ...x, _acct: x.account, _acctName: nameOf(x.account), _mailbox: mb, _key: `${x.account}:${mb}:${x.uid}` }; });
   state.mail.error = null; state.mail.acctErrors = []; state.mail.hasMore = false;
 }
-async function loadMessages(quiet) {
+async function loadMessages(quiet, force) {
   // quiet = a live search: refresh only the list, leaving the search box (and
-  // its focus/caret) alone. A generation counter drops stale slow responses.
+  // its focus/caret) alone. force = the user tapped Refresh, so always go live
+  // even when the cache is fresh. A generation counter drops stale slow responses.
   const gen = (state.mail._gen = (state.mail._gen || 0) + 1);
   state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; state.mail.hover = null;
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
@@ -3400,6 +3402,19 @@ async function loadMessages(quiet) {
       if (state.mail._gen !== gen) return;
       if (r && Array.isArray(r.messages) && r.messages.length) { applyCachedList(r); renderMail(); painted = true; prefetchTop(); }
     } catch {}
+  }
+  // If the warm cache (kept fresh by the cron) is recent, or we did a live
+  // refresh moments ago, skip the slow live IMAP round-trip for the plain inbox -
+  // Gmail especially is slow to answer from the cloud. Kick a background warm so
+  // the next open stays fresh, then stop here.
+  state.mail._liveAt = state.mail._liveAt || {};
+  const cacheFresh = state.mail._cacheSyncedAt && (Date.now() - Date.parse(state.mail._cacheSyncedAt) < 90000);
+  const recentlyLive = state.mail._liveAt[viewKey] && (Date.now() - state.mail._liveAt[viewKey] < 90000);
+  if (painted && isDefaultInbox && !quiet && !force && (cacheFresh || recentlyLive)) {
+    state.mail.hasMore = (state.mail.messages || []).length >= 200;
+    renderMailList(false); prefetchTop();
+    if (!cacheFresh) mailApi('/sync', { method: 'POST' }).catch(() => {});
+    return;
   }
   // 3) Nothing cached: a loader while the live fetch runs.
   if (!painted) { if (quiet) renderMailList(true); else renderMail(true); }
@@ -3438,6 +3453,7 @@ async function loadMessages(quiet) {
   }));
   if (state.mail._gen !== gen) return;   // a newer load superseded this one
   state.mail.listCache[viewKey] = state.mail.messages;   // freshen for next time
+  state.mail._liveAt[viewKey] = Date.now();              // note when we last hit live IMAP for this view
   state.mail.hasMore = more && !q && !f.flagged && !f.unseen;   // "Load older" only when browsing
   if (!q) persistMailCache();                             // instant cold open next time
   renderMailList(false);
@@ -7074,7 +7090,7 @@ document.addEventListener('click', (e) => {
   const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
   if (t.closest('[data-mail-empty]')) { mailEmptyFolder(); return; }
-  if (t.closest('[data-mail-refresh]')) { loadMessages(); return; }
+  if (t.closest('[data-mail-refresh]')) { loadMessages(false, true); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
   if (t.closest('[data-mail-thread-toggle]')) { state.mail.threaded = !state.mail.threaded; try { localStorage.setItem('life.mail.threaded', state.mail.threaded ? '1' : '0'); } catch {} renderMail(); return; }
   const mat = t.closest('[data-mail-arch-thread]'); if (mat) { e.preventDefault(); e.stopPropagation(); mailMoveTo(mat.dataset.mailArchThread, 'Archive', 'Archived'); return; }

@@ -652,9 +652,10 @@ async function readCachedInbox(env, accountIds) {
     inReplyTo: r.in_reply_to || '', references: (() => { try { return JSON.parse(r.refs || '[]'); } catch { return []; } })(),
     preview: r.preview || '', mailbox: 'INBOX', account: r.account,
   }));
-  const meta = await env.DB.prepare(`SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX' AND account IN (${ph})`).bind(...accountIds).all();
-  const unseen = {}; (meta.results || []).forEach((m) => { unseen[m.account] = m.unseen; });
-  return { messages, unseen };
+  const meta = await env.DB.prepare(`SELECT account, unseen, synced_at FROM mail_cache_meta WHERE mailbox='INBOX' AND account IN (${ph})`).bind(...accountIds).all();
+  const unseen = {}; let syncedAt = null;
+  (meta.results || []).forEach((m) => { unseen[m.account] = m.unseen; if (m.synced_at && (!syncedAt || m.synced_at > syncedAt)) syncedAt = m.synced_at; });
+  return { messages, unseen, syncedAt };
 }
 
 // ── routes ────────────────────────────────────────────────────────────
@@ -743,8 +744,17 @@ export async function handleMail(request, env, url, json, err) {
       const accParam = url.searchParams.get('account') || 'all';
       const accts = await listAccounts(env, env.uid);
       const ids = accParam === 'all' ? accts.map((a) => a.id) : [accParam];
-      const { messages, unseen } = await readCachedInbox(env, ids);
-      return json({ messages, unseen, cached: true }, request);
+      const { messages, unseen, syncedAt } = await readCachedInbox(env, ids);
+      return json({ messages, unseen, syncedAt, cached: true }, request);
+    }
+
+    // On-demand background warm: refresh the D1 inbox cache now (globally
+    // throttled to once every 2 min). The client fires this when it opened Mail
+    // straight from a fresh cache, so the next open stays warm without ever
+    // waiting on a live IMAP round-trip (Gmail is slow to answer from the cloud).
+    if (sub === 'sync' && method === 'POST') {
+      const r = await syncMailCache(env, { force: false }).catch(() => ({}));
+      return json({ ok: true, newUnread: r.newUnread || 0 }, request);
     }
 
     const acct = await getAcct(env, url.searchParams.get('account') || (await request.clone().json().catch(() => ({}))).account);
