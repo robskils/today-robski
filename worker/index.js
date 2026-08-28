@@ -524,7 +524,16 @@ async function journalInsights(request, env, json, err) {
       const f = s.match(/```(?:json)?\s*([\s\S]*?)```/i); if (f) s = f[1];
       const a = s.indexOf('{'), b = s.lastIndexOf('}'); if (a !== -1 && b > a) s = s.slice(a, b + 1);
       out = JSON.parse(s.trim());
-    } catch { out = { text: raw, points: [] }; }
+    } catch {
+      // Malformed JSON: never store the raw {"text": ...} blob as the text, or it
+      // shows through verbatim when read. Strip the scaffolding to plain prose.
+      const cleaned = raw.startsWith('{') && /"text"\s*:/.test(raw)
+        ? raw.replace(/^\{\s*"text"\s*:\s*"/, '').replace(/"\s*,\s*"points"\s*:\s*\[\s*"?/, '\n\n')
+            .replace(/"?\s*\]\s*\}\s*$/, '').replace(/"\s*\}\s*$/, '').replace(/"\s*,\s*"/g, '\n\n')
+            .replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/^["']+|["']+$/g, '').trim()
+        : raw;
+      out = { text: cleaned, points: [] };
+    }
     const payload = { text: String(out.text || '').trim(), points: Array.isArray(out.points) ? out.points.slice(0, 8) : [], from: entries.length, ts: new Date().toISOString() };
     try { await setSetting(env, 'kv_journal_insights', JSON.stringify(payload)); } catch {}
     return json(payload, request);

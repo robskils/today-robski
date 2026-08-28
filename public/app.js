@@ -1240,7 +1240,10 @@ function renderNav() {
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
-    <div class="nav-brand" data-view-home title="Home">${esc(BRAND.owner)}${MARK}<em>${esc(BRAND.app)}</em></div>
+    <div class="nav-topline">
+      <div class="nav-brand" data-view-home title="Home">${esc(BRAND.owner)}${MARK}<em>${esc(BRAND.app)}</em></div>
+      <button class="nav-util-toggle" data-util-toggle aria-label="Show tools" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
+    </div>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
@@ -1268,10 +1271,15 @@ function renderNav() {
       </div>
       ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> Admin</span></button>` : ''}
     </div>`;
+  document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
   queueNavH();
 }
+// The mobile tools bar (Information, Colour Scheme, Settings) is hidden until you
+// tap the ⋯ toggle on the fixed brand header. Re-measure so the breadcrumb below
+// pins at the header's new height whether the bar is open or shut.
+function toggleNavUtil() { state.navUtilOpen = !state.navUtilOpen; document.body.classList.toggle('util-open', state.navUtilOpen); const b = document.querySelector('[data-util-toggle]'); if (b) { b.textContent = state.navUtilOpen ? '✕' : '⋯'; b.setAttribute('aria-expanded', state.navUtilOpen ? 'true' : 'false'); } setNavH(); }
 // The mobile top bar (brand + full-width search box) is sticky and its height
 // varies as it wraps, so measure it into --navh; the breadcrumb pins just below
 // it (see .crumbbar in the mobile CSS). Desktop ignores --navh.
@@ -1494,9 +1502,9 @@ const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).p
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note; regular notes carry no icon
-const NOTE_ICO = '<span class="ico-note">▤</span>';  // the sidebar's note glyph, for note lists
-const KIND_IC = { note: '', table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
+const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
+const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
+const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
 const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
 
 async function openHome() {
@@ -2087,7 +2095,20 @@ function renderJournalList() {
     let text = (props && props.text) || '', points = (props && props.points) || [];
     const s = String(text).trim();
     if (s.startsWith('{') && /"text"\s*:/.test(s)) {
-      try { const o = JSON.parse(s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)); if (o && o.text != null) { text = String(o.text); if (Array.isArray(o.points) && !points.length) points = o.points; } } catch {}
+      try { const o = JSON.parse(s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)); if (o && o.text != null) { text = String(o.text); if (Array.isArray(o.points) && !points.length) points = o.points; return { text, points }; } } catch {}
+      // The stored text is a JSON blob the model mis-formatted so it wouldn't
+      // parse. Strip the scaffolding by hand so it reads as plain prose - no
+      // {"text": ..., "points": [...]} showing through.
+      text = String(s)
+        .replace(/^\{\s*"text"\s*:\s*"/, '')
+        .replace(/"\s*,\s*"points"\s*:\s*\[\s*"?/, '\n\n')
+        .replace(/"?\s*\]\s*\}\s*$/, '')
+        .replace(/"\s*\}\s*$/, '')
+        .replace(/"\s*,\s*"/g, '\n\n')
+        .replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\t/g, ' ')
+        .replace(/^["']+|["']+$/g, '')
+        .trim();
+      points = [];
     }
     return { text, points };
   };
@@ -2401,9 +2422,15 @@ function renderArea() {
   // the area off notes nested deeper than first level (they had inherited it on
   // import), so this stays a readable outline - and any note you now
   // associate with the area appears here, whatever its depth.
-  const notes = blocks.filter((b) => b.kind === 'note');
+  // Notes filed from an email are their own "Emails" section; the rest are notes.
+  const allNotes = blocks.filter((b) => b.kind === 'note');
+  const emails = allNotes.filter((n) => n.props && n.props.fromEmail);
+  const notes = allNotes.filter((n) => !(n.props && n.props.fromEmail));
   const goals = blocks.filter((b) => b.kind === 'goal');
   const bucket = blocks.filter((b) => b.kind === 'bucket');
+  const contacts = blocks.filter((b) => b.kind === 'contact');
+  const bookmarks = blocks.filter((b) => b.kind === 'bookmark');
+  const journals = blocks.filter((b) => b.kind === 'journal');
   const activeGoals = goals.filter((g) => (gp(g).status || 'active') === 'active');
   const h = hueOf(area);
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
@@ -2415,6 +2442,11 @@ function renderArea() {
   const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}${esc(n.title || 'Untitled')}</button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
+  // Everything else that can carry this area, each linking to its own tool.
+  const emailCards = emails.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span>${esc(n.title || 'Untitled')}</button>`).join('');
+  const contactCards = contacts.map((c) => `<button class="tbl-card" data-open-contact="${c.id}"><span class="tc-ic">👤</span>${esc(c.title || 'Unnamed')}</button>`).join('');
+  const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span>${esc(bm.title || u)}</a>` : `<button class="tbl-card"><span class="tc-ic">🔖</span>${esc(bm.title || 'Saved')}</button>`; }).join('');
+  const journalCards = journals.map((j) => `<button class="tbl-card" data-open-jentry="${j.id}"><span class="tc-ic">✎</span>${esc(j.title || 'Journal entry')}</button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
@@ -2429,7 +2461,11 @@ function renderArea() {
     ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
     ${sec('Starred notes', starredNotes.length, `<div class="tbl-cards">${starredNoteCards}</div>`)}
     ${sec('Notes', otherNotes.length, `<div class="tbl-cards">${noteCards}</div>`)}
+    ${sec('Emails', emails.length, `<div class="tbl-cards">${emailCards}</div>`)}
     ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
+    ${sec('Contacts', contacts.length, `<div class="tbl-cards">${contactCards}</div>`)}
+    ${sec('Saved links', bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`)}
+    ${sec('Reflections', journals.length, `<div class="tbl-cards">${journalCards}</div>`)}
     ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
 }
@@ -4536,10 +4572,31 @@ function contactEmailFields(p) {
   const rows = emails.map((em, i) => `<div class="cc-multi-row"><input class="sel cc-email-in" type="email" value="${esc(em)}" placeholder="name@example.com" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-email="${i}" title="Remove">×</button>`}</div>`).join('');
   return `<div class="tf-field"><span class="tf-label">Email</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-email>+ Add email</button></div></div>`;
 }
+// Country dial codes for the phone picker: type a country name (or a code) and
+// choose it clearly from the list; the field stores just the + code. One shared
+// datalist serves every phone row on the card.
+const COUNTRY_DIAL = [
+  ['Portugal', '+351'], ['United Kingdom', '+44'], ['Ireland', '+353'], ['Spain', '+34'], ['France', '+33'],
+  ['Germany', '+49'], ['Italy', '+39'], ['Netherlands', '+31'], ['Belgium', '+32'], ['Luxembourg', '+352'],
+  ['Switzerland', '+41'], ['Austria', '+43'], ['Denmark', '+45'], ['Sweden', '+46'], ['Norway', '+47'],
+  ['Finland', '+358'], ['Iceland', '+354'], ['Poland', '+48'], ['Czech Republic', '+420'], ['Slovakia', '+421'],
+  ['Hungary', '+36'], ['Romania', '+40'], ['Bulgaria', '+359'], ['Greece', '+30'], ['Croatia', '+385'],
+  ['Slovenia', '+386'], ['Serbia', '+381'], ['Estonia', '+372'], ['Latvia', '+371'], ['Lithuania', '+370'],
+  ['Ukraine', '+380'], ['Russia', '+7'], ['Turkey', '+90'], ['Cyprus', '+357'], ['Malta', '+356'],
+  ['United States', '+1'], ['Canada', '+1'], ['Mexico', '+52'], ['Brazil', '+55'], ['Argentina', '+54'],
+  ['Chile', '+56'], ['Colombia', '+57'], ['Peru', '+51'], ['Venezuela', '+58'], ['Uruguay', '+598'],
+  ['Australia', '+61'], ['New Zealand', '+64'], ['Japan', '+81'], ['China', '+86'], ['South Korea', '+82'],
+  ['India', '+91'], ['Pakistan', '+92'], ['Bangladesh', '+880'], ['Indonesia', '+62'], ['Malaysia', '+60'],
+  ['Singapore', '+65'], ['Thailand', '+66'], ['Vietnam', '+84'], ['Philippines', '+63'], ['Hong Kong', '+852'],
+  ['United Arab Emirates', '+971'], ['Saudi Arabia', '+966'], ['Israel', '+972'], ['Qatar', '+974'], ['Kuwait', '+965'],
+  ['South Africa', '+27'], ['Nigeria', '+234'], ['Kenya', '+254'], ['Egypt', '+20'], ['Morocco', '+212'],
+  ['Ghana', '+233'], ['Angola', '+244'], ['Mozambique', '+258'], ['Cape Verde', '+238'], ['Tunisia', '+216'],
+];
+const ccDatalist = () => `<datalist id="cc-dial-list">${COUNTRY_DIAL.map(([n, c]) => `<option value="${c}">${esc(n)} (${c})</option>`).join('')}</datalist>`;
 function contactPhoneFields(p) {
   const phones = contactPhones(p); if (!phones.length) phones.push({ cc: '', number: '' });
-  const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" value="${esc(ph.cc || '')}" placeholder="+351" title="Country code"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" placeholder="211 234 400" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
-  return `<div class="tf-field"><span class="tf-label">Phone</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-phone>+ Add phone</button></div></div>`;
+  const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" placeholder="211 234 400" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
+  return `<div class="tf-field"><span class="tf-label">Phone</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-phone>+ Add phone</button></div>${ccDatalist()}</div>`;
 }
 async function openContacts() {
   state.view = { type: 'contacts' };
@@ -6713,6 +6770,7 @@ document.addEventListener('click', (e) => {
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
   if (t.closest('[data-tab-new]')) { newTab(); return; }
+  if (t.closest('[data-util-toggle]')) { toggleNavUtil(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
