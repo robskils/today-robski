@@ -1314,6 +1314,45 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .pomo-on { font-size:13px; color:var(--ink-2); } .pomo-on b { color:var(--ink); }
 .pomo-tot { color:var(--accent); font-weight:500; }
 .pomo-today { width:100%; text-align:center; font-size:12.5px; color:var(--ink-3); margin-top:6px; padding-top:8px; border-top:1px solid var(--line); }
+/* ── Toolbox: a home strip of small tools (Focus, Timer, Tracker) ── */
+.home-toolbox { margin:0 0 26px; }
+.tbx-strip { display:flex; flex-wrap:wrap; gap:10px; }
+.tbx-tile { display:inline-flex; align-items:center; gap:9px; padding:11px 16px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink-2); font-size:15px; box-shadow:var(--shadow); transition:border-color .12s,color .12s,transform .08s; }
+.tbx-tile:hover { border-color:var(--accent); color:var(--ink); }
+.tbx-tile.on { border-color:var(--accent); color:var(--accent); background:var(--paper); font-weight:600; }
+.tbx-ic { font-size:18px; line-height:1; }
+.tbx-run { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:13px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; margin-left:2px; }
+.tbx-panel { margin-top:16px; padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); }
+.tbx-panel.tbx-focus, .tbx-panel.tbx-timer { max-width:340px; }
+.tbx-panel.tbx-tracker { max-width:680px; }
+/* plain Timer */
+.tmr { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.tmr-time { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:44px; font-weight:600; letter-spacing:.02em; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
+.tmr.running .tmr-time { color:var(--accent); }
+.tmr-label { width:100%; text-align:center; }
+.tmr-quick { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+.tmr-q { padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:13.5px; }
+.tmr-q:hover { border-color:var(--line-2); color:var(--ink); }
+.tmr-q.on { border-color:var(--accent); color:var(--accent); background:var(--paper); font-weight:600; }
+.tmr-ctrls { display:flex; gap:8px; width:100%; }
+.tmr-ctrls .add-btn { flex:1; }
+/* habit Tracker */
+.trk { display:flex; flex-direction:column; gap:8px; }
+.trk-hrow { display:flex; align-items:center; gap:12px; padding:8px 4px; border-bottom:1px solid var(--line); }
+.trk-hrow:last-of-type { border-bottom:0; }
+.trk-tick { flex:none; width:30px; height:30px; border-radius:9px; border:1.5px solid var(--line-2); color:transparent; font-size:16px; line-height:1; transition:all .12s; }
+.trk-tick.on { border-color:var(--accent); background:var(--accent); color:var(--accent-ink); }
+.trk-hname { flex:1; min-width:0; font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.trk-week { display:inline-flex; gap:4px; flex:none; }
+.trk-dot { width:19px; height:19px; border-radius:50%; border:1px solid var(--line-2); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.trk-dot i { font-size:9px; font-style:normal; color:var(--ink-3); }
+.trk-dot.on { background:color-mix(in srgb,var(--accent) 78%,#fff); border-color:var(--accent); } .trk-dot.on i { color:var(--accent-ink); }
+.trk-dot.today { box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
+.trk-streak { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+.trk-del { flex:none; color:var(--ink-3); font-size:18px; padding:0 4px; } .trk-del:hover { color:var(--danger,#c0392b); }
+.trk-add { display:flex; gap:8px; margin-top:10px; }
+.trk-add .sel { flex:1; }
+@media (max-width:640px){ .trk-week { display:none; } .tbx-panel.tbx-focus, .tbx-panel.tbx-timer { max-width:none; } }
 .focus-stat { font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 7%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:9px; padding:7px 12px; margin:2px 0 4px; display:inline-block; }
 /* Link from a task back to the note it was created from. */
 .task-source { margin:4px 0 6px; }

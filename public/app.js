@@ -13,7 +13,7 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -1717,6 +1717,125 @@ function pomoHtml() {
     </div>` : ''}
   </section>`;
 }
+// The Focus timer body, without its own section shell, for embedding in the Toolbox.
+function pomoPanel() {
+  const r = pomoRemaining();
+  const pt = state.pomoPickType || (pomo.target && pomo.target.kind) || '';
+  return `<div class="pomo ${pomo.running ? 'running' : ''}">
+      <div class="pomo-time js-pomo-time">${pomoFmt(r)}</div>
+      <div class="pomo-modes">
+        <button class="pomo-mode ${pomo.mode === 'focus' ? 'on' : ''}" data-pomo-mode="focus">Focus</button>
+        <button class="pomo-mode ${pomo.mode === 'break' ? 'on' : ''}" data-pomo-mode="break">Break</button>
+      </div>
+      <div class="pomo-ctrls">
+        <button class="add-btn wide" data-pomo-toggle>${pomo.running ? 'Pause' : (r < POMO_MIN[pomo.mode] * 60 ? 'Resume' : 'Start')}</button>
+        <button class="ghost pomo-reset" data-pomo-reset title="Reset">↺</button>
+      </div>
+      <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
+        <div class="pomo-cats">
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life areas</button>
+          <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
+          <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
+        </div>
+        ${pt ? `<select class="sel" data-pomo-target>${pomoTargetOptions(pt)}</select>` : ''}
+        ${pomo.target ? `<div class="pomo-on">Focusing on <b>${esc(pomo.target.label)}</b>${(() => { const m = focusMinsFor(pomo.target.kind, pomo.target.id); return m ? ` · <span class="pomo-tot">${fmtMins(m)} logged</span>` : ''; })()}</div>` : ''}
+      </div>
+      ${(() => { const m = focusMinsToday(); return `<div class="pomo-today">${m ? `🍅 ${fmtMins(m)} focused today` : 'Complete a focus block to log time'}</div>`; })()}
+    </div>`;
+}
+
+// ── Toolbox: Focus, a plain countdown Timer, and a habit Tracker ─────────
+// A collapsible home strip you click a tool into; each tool's state is local to
+// the device (like the Focus log), so it's instant and offline-friendly.
+function toolboxSel() { try { return localStorage.getItem('life.toolbox.sel') || 'focus'; } catch { return 'focus'; } }
+function setToolboxSel(k) { try { localStorage.setItem('life.toolbox.sel', k); } catch {} renderHome(); }
+function toolboxHtml() {
+  const open = secOpen('toolbox');
+  const sel = toolboxSel();
+  const badge = (k) => (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
+    : (k === 'timer' && timerState.running) ? `<span class="tbx-run js-timer-time">${timerFmt(timerRemaining())}</span>` : '';
+  const tile = (k, ic, label) => `<button class="tbx-tile ${sel === k ? 'on' : ''}" data-tbx="${k}"><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${badge(k)}</button>`;
+  return `<section class="home-sec home-toolbox" data-hsec="toolbox">
+    ${secH('toolbox', '🧰 Toolbox')}
+    ${open ? `<div class="tbx-strip">${tile('focus', '⏱', 'Focus')}${tile('timer', '⏲', 'Timer')}${tile('tracker', '✓', 'Tracker')}</div>
+      <div class="tbx-panel tbx-${sel}">${sel === 'focus' ? pomoPanel() : sel === 'timer' ? timerPanel() : trackerPanel()}</div>` : ''}
+  </section>`;
+}
+
+// ── plain countdown Timer ───────────────────────────────────────────────
+const TIMER_QUICK = [5, 10, 15, 25, 45];
+let timerState = (() => { try { const t = JSON.parse(localStorage.getItem('life.timer')); if (t && typeof t.dur === 'number') return t; } catch {} return { label: '', running: false, endAt: null, remaining: 600, dur: 600 }; })();
+function saveTimer() { try { localStorage.setItem('life.timer', JSON.stringify(timerState)); } catch {} }
+function timerRemaining() { return (timerState.running && timerState.endAt) ? Math.max(0, Math.round((timerState.endAt - Date.now()) / 1000)) : timerState.remaining; }
+const timerFmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+let timerTicker = null;
+function timerEnsureTicker() {
+  if (timerTicker) return;
+  timerTicker = setInterval(() => {
+    if (!timerState.running) return;
+    const r = timerRemaining();
+    document.querySelectorAll('.js-timer-time').forEach((el) => { el.textContent = timerFmt(r); });
+    if (r <= 0) {
+      timerState.running = false; timerState.endAt = null; timerState.remaining = timerState.dur; saveTimer();
+      timerChime(); const what = (timerState.label || '').trim();
+      toast(`⏲ Timer done${what ? ` - ${what}` : ''}`); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {}
+      if (state.view && state.view.type === 'home') renderHome();
+    }
+  }, 500);
+}
+function timerChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 880;
+    g.gain.setValueAtTime(0.001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+    o.start(); o.stop(ctx.currentTime + 0.95);
+  } catch {}
+}
+function timerPanel() {
+  const r = timerRemaining();
+  return `<div class="tmr ${timerState.running ? 'running' : ''}">
+      <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
+      <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
+      <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
+      <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
+    </div>`;
+}
+function timerToggle() {
+  if (timerState.running) { timerState.remaining = timerRemaining(); timerState.running = false; timerState.endAt = null; }
+  else { if (timerRemaining() <= 0) timerState.remaining = timerState.dur; timerState.endAt = Date.now() + timerRemaining() * 1000; timerState.running = true; timerEnsureTicker(); }
+  saveTimer(); renderHome();
+}
+function timerReset() { timerState.running = false; timerState.endAt = null; timerState.remaining = timerState.dur; saveTimer(); renderHome(); }
+function timerSet(min) { timerState.dur = min * 60; timerState.running = false; timerState.endAt = null; timerState.remaining = min * 60; saveTimer(); renderHome(); }
+if (timerState.running) timerEnsureTicker();
+
+// ── habit Tracker ───────────────────────────────────────────────────────
+let trackerState = (() => { try { const t = JSON.parse(localStorage.getItem('life.tracker')); if (t && Array.isArray(t.habits)) return t; } catch {} return { habits: [], marks: {} }; })();
+function saveTracker() { try { localStorage.setItem('life.tracker', JSON.stringify(trackerState)); } catch {} }
+const dayKey = (d) => d.toISOString().slice(0, 10);
+const trackerMarked = (hid, day) => !!trackerState.marks[`${hid}:${day}`];
+function trackerToggle(hid, day) { const k = `${hid}:${day}`; if (trackerState.marks[k]) delete trackerState.marks[k]; else trackerState.marks[k] = 1; saveTracker(); renderHome(); }
+function trackerStreak(hid) { let s = 0; const d = new Date(); for (;;) { if (trackerState.marks[`${hid}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
+function trackerAdd(name) { name = (name || '').trim(); if (!name) return; trackerState.habits.push({ id: uid(), name: name.slice(0, 60) }); saveTracker(); renderHome(); }
+function trackerRemove(hid) { trackerState.habits = trackerState.habits.filter((h) => h.id !== hid); Object.keys(trackerState.marks).forEach((k) => { if (k.startsWith(`${hid}:`)) delete trackerState.marks[k]; }); saveTracker(); renderHome(); }
+function trackerLast7() { const out = []; const d = new Date(); for (let i = 6; i >= 0; i--) { const x = new Date(d); x.setDate(d.getDate() - i); out.push(dayKey(x)); } return out; }
+function trackerPanel() {
+  const days = trackerLast7(); const today = dayKey(new Date());
+  const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const rows = trackerState.habits.map((h) => `<div class="trk-hrow">
+      <button class="trk-tick ${trackerMarked(h.id, today) ? 'on' : ''}" data-trk-tick="${h.id}" title="Mark done today">✓</button>
+      <span class="trk-hname">${esc(h.name)}</span>
+      <span class="trk-week">${days.map((d) => `<span class="trk-dot ${trackerMarked(h.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-trk-day="${h.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>
+      ${(() => { const s = trackerStreak(h.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}
+      <button class="trk-del" data-trk-del="${h.id}" title="Remove habit">×</button>
+    </div>`).join('');
+  return `<div class="trk">
+      ${rows || '<div class="home-empty" style="padding:6px 0">No habits yet. Add one below and tick it each day.</div>'}
+      <form class="trk-add" data-trk-add-form><input class="sel" id="trk-new" placeholder="New habit - e.g. Meditate, Read, Gym" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>
+    </div>`;
+}
 
 // Gentle Home notifications - today's birthdays and open P1 tasks. Each can be
 // dismissed for the day with the ×. Never overwhelming: only shows what's live.
@@ -1824,6 +1943,7 @@ function renderHome() {
         ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
         ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
       </nav>
+      ${modOn('timer') ? toolboxHtml() : ''}
       <div class="home-body">
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
@@ -1840,7 +1960,6 @@ function renderHome() {
           return order.map((k) => sec[k] || '').join('');
         })()}</div>
         <aside class="home-side">
-          ${modOn('timer') ? pomoHtml() : ''}
           <section class="home-sec home-sec-recent">
             ${secH('recent', 'Recently viewed')}
             ${secOpen('recent') ? recentHtml : ''}
@@ -6838,6 +6957,7 @@ document.addEventListener('input', (e) => {
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
+  if (e.target.matches('[data-timer-label]')) { timerState.label = e.target.value; saveTimer(); }
   // Live search: refresh only the list (quiet), so the box you're typing in is
   // never rebuilt and keeps focus. Debounced so it fires when you pause.
   if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages(true); }, 500); }
@@ -6967,6 +7087,14 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pomo-toggle]')) { pomoToggle(); return; }
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
+  // Toolbox: pick a tool, drive the plain timer, tick habits.
+  { const tb = t.closest('[data-tbx]'); if (tb) { setToolboxSel(tb.dataset.tbx); return; } }
+  if (t.closest('[data-timer-toggle]')) { timerToggle(); return; }
+  if (t.closest('[data-timer-reset]')) { timerReset(); return; }
+  { const ts = t.closest('[data-timer-set]'); if (ts) { timerSet(Number(ts.dataset.timerSet)); return; } }
+  { const tk = t.closest('[data-trk-tick]'); if (tk) { trackerToggle(tk.dataset.trkTick, dayKey(new Date())); return; } }
+  { const td = t.closest('[data-trk-day]'); if (td) { const [hid, day] = td.dataset.trkDay.split(':'); trackerToggle(hid, day); return; } }
+  { const tx = t.closest('[data-trk-del]'); if (tx) { trackerRemove(tx.dataset.trkDel); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; if (c[k]) delete c[k]; else c[k] = true; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
@@ -7496,6 +7624,7 @@ function caretToProseStart(prose) {
 }
 document.addEventListener('submit', (e) => {
   e.preventDefault();
+  if (e.target.matches && e.target.matches('[data-trk-add-form]')) { const i = $('#trk-new'); trackerAdd(i && i.value); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
