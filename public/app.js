@@ -576,7 +576,13 @@ function renderTabs() {
     + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`
     + helpIconHtml();   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
 }
-function newTab() { const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome(); }
+function newTab() {
+  const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome();
+  // A fresh tab opens on Home with the search palette up, ready to jump straight
+  // to wherever you meant to go. Desktop only - tabs (and the palette) aren't the
+  // mobile flow.
+  if (!window.matchMedia('(max-width:820px)').matches) openPalette();
+}
 // Open a view in a fresh tab, leaving every existing tab untouched. Used when
 // something external (a notification) wants to show a page without hijacking the
 // tab the user is on.
@@ -809,6 +815,13 @@ function renderAdmin() {
         <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
       </div>
     </section>
+    <section class="home-sec"><div class="home-sec-h">Default life areas<span class="muted">seeded on signup</span></div>
+      <div class="set-card">
+        <p class="home-empty" style="margin:0 0 14px">Every new account starts with these life areas. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
+        <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no life areas.</span>'}</div>
+        <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a life area…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
+      </div>
+    </section>
     <section class="home-sec"><div class="home-sec-h">Members<span class="muted">${users.length}</span></div>
       <div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>
     </section>
@@ -847,6 +860,18 @@ async function toggleAdminSignup(on) {
   try { state.admin.settings = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ publicSignup: on }) }); toast(on ? 'Open registration is ON' : 'Invite-only'); }
   catch (e) { toast(e.message); }
 }
+// Read the default-life-area names straight from the inputs on the admin page,
+// so an inline rename, an add and a delete all funnel through one save.
+const adminAreaListFromDom = () => [...document.querySelectorAll('.adm-area-in')].map((i) => i.value.trim()).filter(Boolean);
+async function saveDefaultAreas(list) {
+  try { state.admin.settings = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ defaultLifeAreas: list }) }); renderAdmin(); }
+  catch (e) { toast(e.message); }
+}
+function adminAreaAdd() {
+  const inp = $('#adm-area-new'); const v = (inp && inp.value.trim()) || ''; if (!v) return;
+  saveDefaultAreas([...adminAreaListFromDom(), v]);
+}
+function adminAreaDel(i) { const list = adminAreaListFromDom(); list.splice(Number(i), 1); saveDefaultAreas(list); }
 async function setUserPlan(id, plan) {
   try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ plan }) })).users; toast('Plan updated'); }
   catch (e) { toast(e.message); }
@@ -4498,6 +4523,7 @@ function renderTasks() {
         <label class="atf"><span>Snooze until</span>${dateFieldHtml('task-snooze', '')}</label>
         <label class="atf"><span>Repeat</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       </div>
+      <label class="atf atf-full"><span>Notes</span><textarea id="task-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
       <div class="atf-actions">
         <button class="add-btn wide" type="submit">Add task</button>
         <button type="button" class="ghost" data-task-add-close>Done</button>
@@ -5005,15 +5031,19 @@ async function loadSpending() {
   const f = state.financial;
   renderFinancial();
   try {
-    const [txns, catsRes, areas] = await Promise.all([
+    const [txns, catsRes, incRes, expRes, areas] = await Promise.all([
       api('/api/blocks?kind=txn'),
       api('/api/kv/spend_categories').catch(() => ({ value: null })),
+      api('/api/kv/spend_cat_income').catch(() => ({ value: null })),
+      api('/api/kv/spend_cat_expense').catch(() => ({ value: null })),
       (state.areas && state.areas.length) ? Promise.resolve(state.areas) : api('/api/blocks?kind=area').catch(() => []),
     ]);
     f.txns = txns;
     if ((!state.areas || !state.areas.length) && Array.isArray(areas)) state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    try { const arr = catsRes && catsRes.value ? JSON.parse(catsRes.value) : null; f.spendExtras = Array.isArray(arr) ? arr : []; }
-    catch { f.spendExtras = []; }
+    const parseArr = (r) => { try { const a = r && r.value ? JSON.parse(r.value) : null; return Array.isArray(a) ? a : []; } catch { return []; } };
+    f.spendExtras = parseArr(catsRes);
+    f.spendAlsoIncome = parseArr(incRes);   // non-income categories the user also counts as income
+    f.spendAlsoExpense = parseArr(expRes);  // income categories the user also counts as an expense
   } catch (e) { toast(e.message); f.txns = f.txns || []; }
   renderFinancial();
 }
@@ -5275,6 +5305,29 @@ const spendExtras = () => state.financial.spendExtras || [];
 const spendIsArea = (c) => spendAreaNames().includes(c);
 const spendCats = () => [...new Set([...spendAreaNames(), ...spendExtras(), ...SPEND_SPECIAL].filter(Boolean))];
 const INCOME_CATS = new Set(['Salary', 'Other income']);
+// A category can be an expense, an income, or both. Salary and Other income are
+// income by default; everything else is an expense. The user can also mark any
+// category for the other column - a category like Lisbon Sintra Tours can be
+// both - and those overrides live in two settings lists.
+const spendAlsoIncome = () => new Set(state.financial.spendAlsoIncome || []);
+const spendAlsoExpense = () => new Set(state.financial.spendAlsoExpense || []);
+const catIsIncome = (c) => INCOME_CATS.has(c) || spendAlsoIncome().has(c);
+const catIsExpense = (c) => (!INCOME_CATS.has(c)) || spendAlsoExpense().has(c);
+const expenseCatList = () => spendCats().filter(catIsExpense);
+const incomeCatList = () => spendCats().filter(catIsIncome);
+async function saveSpendCatType(kind, arr) {
+  const key = kind === 'income' ? 'spendAlsoIncome' : 'spendAlsoExpense';
+  const kvKey = kind === 'income' ? 'spend_cat_income' : 'spend_cat_expense';
+  state.financial[key] = arr; renderFinancial();
+  try { await api(`/api/kv/${kvKey}`, { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(arr) }) }); } catch (e) { toast(e.message); }
+}
+// Toggle whether a category also belongs to the other column. For a normal
+// (expense) category that's the income list; for a built-in income category
+// that's the expense list.
+function spendCatToggleType(cat, col) {
+  if (col === 'income') { const s = spendAlsoIncome(); s.has(cat) ? s.delete(cat) : s.add(cat); saveSpendCatType('income', [...s]); }
+  else { const s = spendAlsoExpense(); s.has(cat) ? s.delete(cat) : s.add(cat); saveSpendCatType('expense', [...s]); }
+}
 const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
 const eurSigned = (n) => (n < 0 ? '-' : '') + '€' + Math.abs(Math.round(n)).toLocaleString('en-IE');
 function txnList() { return (state.financial.txns || []).map((t) => ({ id: t.id, ...(t.props || {}) })).filter((t) => t.date); }
@@ -5283,15 +5336,26 @@ function spendingBody() {
   const f = state.financial;
   if (f.spendImport) return spendImportView();
   if (f.txns == null) return '<div class="fin-load">Loading…</div>';
-  const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV or PDF)<input type="file" id="sp-file" accept=".csv,.pdf,text/csv,application/pdf" hidden></label><button class="ghost" data-sp-cat-manage title="Add, rename or delete your spending categories">⚙ Categories</button>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
+  const importBar = `<div class="sp-actions"><label class="add-btn wide sp-import-btn">Import statement (CSV or PDF)<input type="file" id="sp-file" accept=".csv,.pdf,text/csv,application/pdf" hidden></label><button class="ghost ${f.spendCatsOpen ? 'on' : ''}" data-sp-cat-manage title="Add, rename or delete your spending categories">⚙ Categories</button>${(f.txns || []).length ? '<button class="ghost" data-sp-clear>Clear all</button>' : ''}</div>`;
+  // A chip carries its rename/delete (extras only) plus a cross-toggle to also
+  // count it in the other column. Salary/Other income are income by nature and
+  // toggle onto expenses; every other category is an expense and toggles onto
+  // income - so Lisbon Sintra Tours can sit in both.
   const catChip = (c) => {
-    if (spendIsArea(c)) return `<span class="trk-cat-chip sp-cat-area" title="From your Life Areas">${esc(c)}<span class="sp-cat-tag">area</span></span>`;
-    if (SPEND_SPECIAL.includes(c)) return `<span class="trk-cat-chip">${esc(c)}</span>`;
-    return `<span class="trk-cat-chip">${esc(c)}<button class="trk-cat-btn" data-sp-cat-rename="${esc(c)}" title="Rename">✎</button><button class="trk-cat-btn trk-cat-del" data-sp-cat-del="${esc(c)}" title="Delete">×</button></span>`;
+    const area = spendIsArea(c), special = SPEND_SPECIAL.includes(c), builtinIncome = INCOME_CATS.has(c);
+    const tag = area ? '<span class="sp-cat-tag">area</span>' : '';
+    const on = builtinIncome ? catIsExpense(c) : catIsIncome(c);
+    const other = builtinIncome ? 'expense' : 'income', lbl = builtinIncome ? 'exp' : 'inc';
+    const cross = `<button class="trk-cat-btn sp-cat-cross ${on ? 'on' : ''}" data-sp-cat-type="${esc(c)}:${other}" title="${on ? `Also counted as ${other} - tap to remove` : `Also count as ${other}`}">${on ? '✓' : '＋'} ${lbl}</button>`;
+    const edit = (!area && !special) ? `<button class="trk-cat-btn" data-sp-cat-rename="${esc(c)}" title="Rename">✎</button><button class="trk-cat-btn trk-cat-del" data-sp-cat-del="${esc(c)}" title="Delete">×</button>` : '';
+    return `<span class="trk-cat-chip ${area ? 'sp-cat-area' : ''}">${esc(c)}${tag}${cross}${edit}</span>`;
   };
   const catManage = f.spendCatsOpen ? `<div class="sp-catmanage"><div class="fin-sec-h"><span>Categories</span><button class="ghost" data-sp-cat-add>+ Extra category</button></div>
-    <p class="sp-cat-note">Your <b>Life Areas</b> are your spending categories - add a Life Area and it shows up here automatically. Add an extra below for spending that doesn't fit an area.</p>
-    <div class="trk-cats">${spendCats().map(catChip).join('')}</div></div>` : '';
+    <p class="sp-cat-note">Your <b>Life Areas</b> are your spending categories. A category can be an <b>expense</b>, <b>income</b>, or both - use <b>＋inc</b> / <b>＋exp</b> to add one to the other column.</p>
+    <div class="sp-cat-cols">
+      <div class="sp-cat-col sp-cat-col-exp"><div class="sp-cat-col-h">Expense categories</div><div class="trk-cats">${expenseCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
+      <div class="sp-cat-col sp-cat-col-inc"><div class="sp-cat-col-h">Income categories</div><div class="trk-cats">${incomeCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
+    </div></div>` : '';
   if (!(f.txns || []).length) return `${importBar}${catManage}<div class="fin-soon"><div class="fin-soon-ic">🧾</div><h2>Spending</h2><p>Import a bank statement - CSV (Wise: Statement → Download → CSV) or a PDF statement - to categorise your spending and see income vs outgoings over time.</p><p class="fin-soon-note">PDFs are read by Gemini to pull out the transactions; nothing is sent to a bank.</p></div>`;
   const months = spendMonths();
   if (!f.spendMonth || !months.includes(f.spendMonth)) f.spendMonth = months[0];
@@ -6014,10 +6078,11 @@ function noteTasksHtml(noteId) {
 }
 function renderNoteTasks() { const el = document.querySelector('.note-tasks'); if (el && state.note) el.outerHTML = noteTasksHtml(state.note.current.id); }
 async function linkTaskToNote(taskId, noteId) {
-  const t = (state.allTasks || []).find((x) => x.id === taskId); if (t) { t.props = t.props || {}; t.props.note = noteId; }
+  const noteTitle = (state.note && state.note.current && state.note.current.title) || '';
+  const t = (state.allTasks || []).find((x) => x.id === taskId); if (t) { t.props = t.props || {}; t.props.note = noteId; t.props.noteTitle = noteTitle; }
   if (state.note) state.note.taskQuery = '';
   renderNoteTasks();
-  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { note: noteId } }) }); toast('Task linked'); } catch (e) { toast(e.message); }
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { note: noteId, noteTitle } }) }); toast('Task linked'); } catch (e) { toast(e.message); }
 }
 async function unlinkTaskFromNote(taskId) {
   const t = (state.allTasks || []).find((x) => x.id === taskId); if (t && t.props) t.props.note = null;
@@ -6026,9 +6091,11 @@ async function unlinkTaskFromNote(taskId) {
 }
 async function newNoteTask(noteId) {
   const title = await uiPrompt('New task for this note:', { placeholder: 'e.g. Follow up on…' }); if (!title) return;
-  const area = (state.note && state.note.current && state.note.current.props && state.note.current.props.area) || null;
+  const note = state.note && state.note.current;
+  const area = (note && note.props && note.props.area) || null;
+  const noteTitle = (note && note.title) || '';
   try {
-    const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area, priority: null, done: false, note: noteId } }) });
+    const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area, priority: null, done: false, note: noteId, noteTitle } }) });
     state.allTasks = state.allTasks || []; state.allTasks.push(t); renderNoteTasks();
   } catch (e) { toast(e.message); }
 }
@@ -6498,6 +6565,7 @@ document.addEventListener('keydown', (e) => {
   if (state.contactMenu && e.key === 'Escape') { e.preventDefault(); state.contactMenu = null; renderContacts(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
+  if (e.key === 'Enter' && e.target.id === 'adm-area-new') { e.preventDefault(); adminAreaAdd(); return; }
   // Tab in the rich prose editor indents rather than leaving the field. In a
   // bullet/numbered list it nests the item (up to ~7 levels); Shift+Tab pulls it
   // back out; in plain free-writing it inserts an indent at the caret.
@@ -6855,6 +6923,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-sp-import-cancel]')) { state.financial.spendImport = null; renderFinancial(); return; }
   if (t.closest('[data-sp-clear]')) { spendClear(); return; }
   if (t.closest('[data-sp-cat-manage]')) { state.financial.spendCatsOpen = !state.financial.spendCatsOpen; renderFinancial(); return; }
+  { const sct = t.closest('[data-sp-cat-type]'); if (sct) { const ds = sct.dataset.spCatType; const i = ds.lastIndexOf(':'); spendCatToggleType(ds.slice(0, i), ds.slice(i + 1)); return; } }
   if (t.closest('[data-sp-cat-add]')) { spendCatAdd(); return; }
   const scr = t.closest('[data-sp-cat-rename]'); if (scr) { spendCatRename(scr.dataset.spCatRename); return; }
   const scx = t.closest('[data-sp-cat-del]'); if (scx) { spendCatDel(scx.dataset.spCatDel); return; }
@@ -7050,6 +7119,8 @@ document.addEventListener('click', (e) => {
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
   if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }
   if (t.closest('[data-open-admin]')) { openAdmin(); return; }
+  if (t.closest('[data-adm-area-add]')) { adminAreaAdd(); return; }
+  { const ax = t.closest('[data-adm-area-del]'); if (ax) { adminAreaDel(ax.dataset.admAreaDel); return; } }
   if (t.closest('[data-open-friends]')) { openFriends(); return; }
   if (t.closest('[data-invite-daybook]')) { inviteToDaybook(); return; }
   { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToDaybook(email); return; } }
@@ -7181,6 +7252,7 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
+  if (e.target.matches('[data-adm-area]')) { saveDefaultAreas(adminAreaListFromDom()); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
@@ -7315,7 +7387,7 @@ function caretToProseStart(prose) {
 }
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value }); }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
@@ -7504,12 +7576,21 @@ document.addEventListener('pointerup', () => {
 });
 
 // ── task/note/table helpers ──────────────────────────
+// Plain typed text -> prose HTML (one paragraph per line), for bodies seeded from
+// a simple textarea. Returns '' for empty input so callers can omit the body.
+function textToProse(text) {
+  const t = String(text || '').trim(); if (!t) return '';
+  return t.split(/\n+/).map((line) => line.trim()).filter(Boolean).map((line) => `<p>${esc(line)}</p>`).join('');
+}
 async function addTask(o) {
   const props = { area: o.area || null, priority: o.priority || null, done: false };
   if (o.duration) props.duration = Number(o.duration);
   if (o.snooze) props.snooze = o.snooze;
   if (o.repeat) props.repeat = o.repeat;
-  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props }) });
+  // Free-form notes typed on the add form become the task's prose body, so they
+  // show straight away in the card's Notes section.
+  const body = textToProse(o.notes);
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props, ...(body ? { body } : {}) }) });
   state.tasks.push(b); renderTasks();
   // Keep the form open for adding several in a row.
   if (state.taskAdding) { const i = $('#task-title'); if (i) i.focus(); }
@@ -7607,6 +7688,7 @@ function renderTaskCard() {
       <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task" ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>${esc(t.title || '')}</textarea>
     </div>
     ${(() => { const m = focusMinsFor('task', t.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this task</div>` : ''; })()}
+    ${t.props.note ? `<div class="task-source"><button class="task-source-link" data-open-note="${t.props.note}" title="Open the note this task came from">${NOTE_ICO}<span>From note: ${esc(t.props.noteTitle || 'View note')}</span></button></div>` : ''}
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Priority</span>
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
@@ -7714,9 +7796,14 @@ async function openAttachment(blockId, attId) {
 // isn't a decodable raster photo - a PDF, an animated GIF, an SVG, or a format
 // the browser can't read such as HEIC - passes straight through untouched, so
 // this never breaks an upload that would otherwise have worked.
-const IMG_MAX_EDGE = 1600;
+// This is a place for small photos, not raw camera files. Cap the longest edge
+// hard and re-encode as JPEG, so a 12-megapixel phone photo lands as a couple of
+// hundred KB. Only an already-small file (under 180 KB, i.e. nothing to gain) is
+// left alone; anything the browser can't decode (PDF, GIF, SVG, HEIC) passes
+// through untouched so this never breaks an upload that would otherwise work.
+const IMG_MAX_EDGE = 1280;
 async function shrinkImage(file) {
-  if (!isImgType(file.type) || /gif|svg/i.test(file.type) || file.size <= 500 * 1024) return file;
+  if (!isImgType(file.type) || /gif|svg/i.test(file.type) || file.size <= 180 * 1024) return file;
   let url;
   try {
     let bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
@@ -7727,7 +7814,7 @@ async function shrinkImage(file) {
     const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
     cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh);
     if (bmp.close) bmp.close();
-    const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.82));
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.78));
     if (!blob || blob.size >= file.size) return file;   // no real saving - keep the original
     return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
   } catch { return file; } finally { if (url) URL.revokeObjectURL(url); }

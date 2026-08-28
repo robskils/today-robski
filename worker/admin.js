@@ -19,13 +19,26 @@ export async function isPublicSignup(env) {
   if (row && row.value != null) return row.value === '1';
   return env.PUBLIC_SIGNUP === '1';
 }
+// The default life areas a new account is seeded with. Stored as a JSON array of
+// names in the owner's settings; the empty/absent case falls back in accounts.js.
+async function getDefaultLifeAreas(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = 1 AND key = 'default_life_areas'").first().catch(() => null);
+  if (row && row.value) { try { const a = JSON.parse(row.value); if (Array.isArray(a)) return a.map((s) => String(s)); } catch {} }
+  return ['Body / Health', 'Family', 'Hobbies', 'Money', 'People', 'Personal', 'Reflect', 'Work'];
+}
 export async function getAdminSettings(env) {
-  return { publicSignup: await isPublicSignup(env) };
+  return { publicSignup: await isPublicSignup(env), defaultLifeAreas: await getDefaultLifeAreas(env) };
 }
 export async function setAdminSettings(env, body) {
   if (typeof body.publicSignup === 'boolean') {
     await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (1, 'admin_public_signup', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value")
       .bind(body.publicSignup ? '1' : '0').run();
+  }
+  if (Array.isArray(body.defaultLifeAreas)) {
+    // De-dupe, trim, drop blanks, cap length - this feeds every future signup.
+    const clean = [...new Set(body.defaultLifeAreas.map((s) => String(s || '').slice(0, 60).trim()).filter(Boolean))].slice(0, 30);
+    await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (1, 'default_life_areas', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value")
+      .bind(JSON.stringify(clean)).run();
   }
   return getAdminSettings(env);
 }

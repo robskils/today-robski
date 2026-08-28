@@ -106,6 +106,17 @@ const STARTER_AREA_LANE = {
   'Body / Health': 'body', Family: 'family', Hobbies: 'hobbies', Money: 'personal',
   People: 'family', Personal: 'personal', Reflect: 'reflect', Work: 'work',
 };
+// The life areas every new account is seeded with. The owner can override this
+// list from the Admin dashboard (settings key 'default_life_areas'); this is the
+// fallback when they haven't.
+const DEFAULT_STARTERS = ['Body / Health', 'Family', 'Hobbies', 'Money', 'People', 'Personal', 'Reflect', 'Work'];
+export async function defaultLifeAreas(env) {
+  try {
+    const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = 1 AND key = 'default_life_areas'").first();
+    if (row && row.value) { const a = JSON.parse(row.value); if (Array.isArray(a) && a.length) return a.map((s) => String(s).slice(0, 60).trim()).filter(Boolean); }
+  } catch {}
+  return DEFAULT_STARTERS;
+}
 
 // First-run defaults so the app is usable immediately: the day window, a starter
 // set of Today lanes with their targets, and a starter set of life areas mapped
@@ -119,7 +130,7 @@ async function seedNewUser(env, uid) {
   // goals and spending categories all have somewhere to land. Ordinary blocks:
   // rename, recolour or delete any. Hues walk the wheel from a blue base so each
   // reads distinct. Keep their ids to map each area onto its Today lane.
-  const STARTERS = ['Body / Health', 'Family', 'Hobbies', 'Money', 'People', 'Personal', 'Reflect', 'Work'];
+  const STARTERS = await defaultLifeAreas(env);
   const areaMap = {};
   const areaStmts = STARTERS.map((title, i) => {
     const id = crypto.randomUUID();
