@@ -19,23 +19,13 @@ export async function isPublicSignup(env) {
   if (row && row.value != null) return row.value === '1';
   return env.PUBLIC_SIGNUP === '1';
 }
-// Quote mode: 'random' (default) shows a fresh quote each time a quote area is
-// opened; 'daily' pins one to the date. Stored on user 1's settings.
-export async function getQuoteMode(env) {
-  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = 1 AND key = 'quote_mode'").first().catch(() => null);
-  return row && row.value === 'daily' ? 'daily' : 'random';
-}
 export async function getAdminSettings(env) {
-  return { publicSignup: await isPublicSignup(env), quoteMode: await getQuoteMode(env) };
+  return { publicSignup: await isPublicSignup(env) };
 }
 export async function setAdminSettings(env, body) {
   if (typeof body.publicSignup === 'boolean') {
     await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (1, 'admin_public_signup', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value")
       .bind(body.publicSignup ? '1' : '0').run();
-  }
-  if (body.quoteMode === 'random' || body.quoteMode === 'daily') {
-    await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (1, 'quote_mode', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value")
-      .bind(body.quoteMode).run();
   }
   return getAdminSettings(env);
 }
@@ -59,7 +49,6 @@ export async function adminOverview(env) {
     invites: { total: invTotal, unused: invUnused },
     ai: { byProvider: ai, totalCost: aiCost, calls: aiCalls, month: monthStart().slice(0, 7) },
     publicSignup: await isPublicSignup(env),
-    quoteMode: await getQuoteMode(env),
   };
 }
 

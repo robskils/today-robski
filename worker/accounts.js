@@ -190,11 +190,13 @@ export async function getAccount(env) {
   const ph = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'phone'").bind(env.uid).first().catch(() => null);
   const sms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'sms_block_alerts'").bind(env.uid).first().catch(() => null);
   const brief = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'brief_enabled'").bind(env.uid).first().catch(() => null);
+  const qOff = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'quote_off'").bind(env.uid).first().catch(() => null);
   return {
     name: (u && u.name) || '', email: (u && u.email) || '', subdomain: (u && u.subdomain) || '',
     plan: (u && u.plan) || 'free', status: (u && u.status) || 'active',
     phone: ph ? ph.value : '', smsAlerts: !sms || sms.value !== '0',
     briefEmail: !brief || brief.value !== '0',
+    dailyQuote: !(qOff && qOff.value === '1'),
     aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),
     // Never return the keys themselves - only whether one is stored.
     aiAnthropicSet: !!(u && u.ai_anthropic_enc), aiGeminiSet: !!(u && u.ai_gemini_enc),
@@ -205,6 +207,7 @@ export async function patchAccount(env, body) {
   if (body.name !== undefined) await env.DB.prepare('UPDATE users SET name = ? WHERE id = ?').bind(String(body.name).slice(0, 60), env.uid).run();
   if (body.phone !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'phone', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(body.phone).slice(0, 40)).run();
   if (body.briefEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'brief_enabled', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.briefEmail ? '1' : '0').run();
+  if (body.dailyQuote !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'quote_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.dailyQuote ? '0' : '1').run();
   return getAccount(env);
 }
 // Adding an alias no longer trusts the owner on its own: the address is stored

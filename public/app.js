@@ -13,7 +13,7 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad'], ['quote', 'Quote']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad']];
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -791,7 +791,6 @@ function renderAdmin() {
   const inv = ov.invites || {};
   const plans = ov.plans || {};
   const pub = a.settings ? a.settings.publicSignup : ov.publicSignup;
-  const quoteMode = (a.settings ? a.settings.quoteMode : ov.quoteMode) || 'random';
   const card = (label, value, sub) => `<div class="adm-card"><div class="adm-card-v">${value}</div><div class="adm-card-l">${label}</div>${sub ? `<div class="adm-card-s">${sub}</div>` : ''}</div>`;
   const planChips = Object.entries(plans).map(([p, n]) => `<span class="adm-plan-chip">${esc(p)} · ${n}</span>`).join('');
   $('#pane').innerHTML = `
@@ -808,11 +807,6 @@ function renderAdmin() {
     <section class="home-sec"><div class="home-sec-h">Signup</div>
       <div class="set-card">
         <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
-      </div>
-    </section>
-    <section class="home-sec"><div class="home-sec-h">Quotes</div>
-      <div class="set-card">
-        <label class="set-mod adm-signup"><span><b>Random quotes</b><br><span class="scope">On: a fresh quote each time a quote area opens (home, Today, the morning email). Off: one quote pinned to the day.</span></span><input type="checkbox" data-admin-quotemode ${quoteMode !== 'daily' ? 'checked' : ''}></label>
       </div>
     </section>
     <section class="home-sec"><div class="home-sec-h">Members<span class="muted">${users.length}</span></div>
@@ -851,10 +845,6 @@ async function delQuote(id) {
 }
 async function toggleAdminSignup(on) {
   try { state.admin.settings = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ publicSignup: on }) }); toast(on ? 'Open registration is ON' : 'Invite-only'); }
-  catch (e) { toast(e.message); }
-}
-async function toggleAdminQuoteMode(random) {
-  try { state.admin.settings = await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ quoteMode: random ? 'random' : 'daily' }) }); toast(random ? 'Quotes are random' : 'One quote a day'); }
   catch (e) { toast(e.message); }
 }
 async function setUserPlan(id, plan) {
@@ -1159,6 +1149,7 @@ function renderSettings() {
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
+        ${state.account ? `<label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>` : ''}
       </div>`;
 
   const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>`;
@@ -1645,20 +1636,20 @@ function alertsHtml() {
 // The day's teaching, moved here from Today. Dismissible - once you've read it,
 // the × hides it for the rest of the day (per-device).
 function homeQuoteHtml() {
+  // The server already gates the quote (off / dismissed today), so if it sent one,
+  // show it. Closing it dismisses the day's quote everywhere (see the × handler).
   const q = state.home && state.home.quote; if (!q) return '';
-  const daily = (state.home.quoteMode || 'random') === 'daily';
-  const today = new Date().toISOString().slice(0, 10);
-  // Daily mode: closing hides the day's quote until tomorrow. Random mode: each
-  // Home visit fetches a fresh quote, so the × just dismisses this one for the
-  // current view (state, not stored) and the next visit brings another.
-  if (daily && localStorage.getItem('life.home.quoteHidden') === today) return '';
-  if (!daily && state.home.quoteDismissed) return '';
-  return `<figure class="home-quote"><button class="home-quote-x" data-home-quote-x title="${daily ? 'Hide for today' : 'Dismiss'}">×</button><blockquote>“${esc(q.text)}”</blockquote>${q.author ? `<figcaption>— ${esc(q.author)}</figcaption>` : ''}</figure>`;
+  return `<figure class="home-quote"><button class="home-quote-x" data-home-quote-x title="Hide today's quote (everywhere)">×</button><blockquote>“${esc(q.text)}”</blockquote>${q.author ? `<figcaption>— ${esc(q.author)}</figcaption>` : ''}</figure>`;
 }
 // Every Home section can be collapsed; the set of collapsed keys persists.
 function homeCollapsed() { try { return JSON.parse(localStorage.getItem('life.home.collapsed')) || {}; } catch { return {}; } }
 function secOpen(key) { return !homeCollapsed()[key]; }
-function secH(key, title, extra, drag) { return `<div class="home-sec-h home-sec-toggle${drag ? ' home-drag-h' : ''}" data-sec-collapse="${key}" ${drag ? `draggable="true" data-hsec-grip="${key}"` : ''}>${drag ? '<span class="home-grip" title="Drag to reposition">⠿</span>' : ''}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`; }
+// Reposition-by-drag is a desktop affordance; on a phone the grip only misaligns
+// the header and can swallow the tap, so mobile headers are plain tap-to-collapse.
+function secH(key, title, extra, drag) {
+  const canDrag = drag && !matchMedia('(max-width:820px)').matches;
+  return `<div class="home-sec-h home-sec-toggle${canDrag ? ' home-drag-h' : ''}" data-sec-collapse="${key}" ${canDrag ? `draggable="true" data-hsec-grip="${key}"` : ''}>${canDrag ? '<span class="home-grip" title="Drag to reposition">⠿</span>' : ''}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`;
+}
 // The Priority Tasks list, in whatever order you've dragged it into. A custom
 // order persists in localStorage; anything not yet ordered (a freshly-flagged
 // task) falls to the end until you place it.
@@ -1717,7 +1708,7 @@ function renderHome() {
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
       ${alertsHtml()}
-      ${modOn('quote') ? homeQuoteHtml() : ''}
+      ${homeQuoteHtml()}
       ${modOn('reflect') ? spiritPinnedHtml() : ''}
       <div id="qt-wrap"></div>
       <!-- Mobile-only launcher. On desktop the sidebar already lists every
@@ -1994,7 +1985,12 @@ function drawSpiritCard() {
   if (card.classList.contains('drawn')) { card.classList.remove('drawn'); setTimeout(() => { setFront(); card.classList.add('drawn'); }, 300); }
   else { setFront(); card.classList.add('drawn'); }
 }
-function closeSpirit() { const el = document.getElementById('spirit'); if (el) el.remove(); state.spirit = null; }
+function closeSpirit() {
+  const el = document.getElementById('spirit'); if (el) el.remove(); state.spirit = null;
+  // Refresh the page beneath so a card just drawn shows up pinned right away.
+  const v = state.view && state.view.type;
+  if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList();
+}
 
 async function openJournal() {
   state.view = { type: 'journal' };
@@ -2683,19 +2679,26 @@ function showCalForm(ev) {
   const c = state.cal;
   const title = ev ? ev.title : '';
   const allDay = ev ? !!ev.allDay : false;
-  const time = ev && !ev.allDay ? minToLabel(ev.start_min) : '09:00';
   const dur = ev && !ev.allDay ? Math.max(15, (ev.end_min ?? ev.start_min + 60) - ev.start_min) : 60;
   const loc = ev ? (ev.location || '') : '';
+  const startDate = ev ? ev.date : (c.selected || todayISO());
+  const startTime = ev && !ev.allDay ? minToLabel(ev.start_min) : '09:00';
   // Existing all-day events store an exclusive end (day after the last), so show
-  // the inclusive last day in the picker.
-  const endDisplay = ev ? (ev.allDay && ev.end_date ? new Date(Date.parse(ev.end_date) - 86400000).toISOString().slice(0, 10) : ev.date) : (c.selected || todayISO());
-  $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event" data-ev="${ev ? ev.id : ''}">
+  // the inclusive last day. Timed events derive the end from start + duration -
+  // rolling to the next day when they cross midnight.
+  const endDisplay = ev ? (ev.allDay && ev.end_date ? new Date(Date.parse(ev.end_date) - 86400000).toISOString().slice(0, 10) : ev.date) : startDate;
+  let endDate, endTime;
+  if (allDay) { endDate = endDisplay; endTime = '10:00'; }
+  else { const sMin = ev && !ev.allDay ? ev.start_min : isoToMin(startTime); const eMin = sMin + dur; endDate = addDayISO(startDate, Math.floor(eMin / 1440)); endTime = minToLabel(eMin % 1440); }
+  // Start and End each get their own row of date + time. The end defaults to the
+  // same day (and an hour on); change it only when you mean to.
+  $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event${allDay ? ' allday-on' : ''}" data-ev="${ev ? ev.id : ''}">
     <input id="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-    <div class="ce-dates"><span class="ce-datewrap"><span class="ce-datelbl">Start</span>${dateFieldHtml('ce-date', ev ? ev.date : (c.selected || todayISO()))}</span><span class="ce-datewrap"><span class="ce-datelbl">End</span>${dateFieldHtml('ce-enddate', endDisplay)}</span></div>
-    <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day (a conference or trip can span several days)</label>
-    <span id="ce-timerow" class="ce-timerow" ${allDay ? 'hidden' : ''}>
-      <input id="ce-time" type="time" class="sel" value="${time}">
-      <select id="ce-dur" class="sel">${durationOptions(dur)}</select></span>
+    <div class="ce-when">
+      <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span></div>
+      <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
+    </div>
+    <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day (a trip can span several days)</label>
     <input id="ce-loc" class="sel" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
     ${ev ? (ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : '') : `<select id="ce-repeat" class="sel" title="Repeat">
       <option value="none">Does not repeat</option>
@@ -2708,21 +2711,33 @@ function showCalForm(ev) {
     ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}</form>`;
   $('#ce-title').focus();
 }
-async function calSaveEvent(id, title, day, time, duration, location, allDay, repeat, endDay) {
-  day = day || state.cal.selected;
+const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat) {
+  startDate = startDate || state.cal.selected;
+  endDate = endDate || startDate;
   const rep = !id && repeat && repeat !== 'none' ? { repeat } : {};
-  // A multi-day all-day event (e.g. a week's conference) carries an end date.
-  const multi = allDay && endDay && endDay > day ? { end_date: endDay } : {};
-  const body = JSON.stringify(allDay
-    ? { title, day, allDay: true, location: location || undefined, ...multi, ...rep }
-    : { title, day, start_min: isoToMin(time), duration: Number(duration), location: location || undefined, ...rep });
+  let body;
+  if (allDay) {
+    // Stored end is exclusive (the day after the last), so a multi-day trip pushes
+    // the inclusive end date on by one.
+    const multi = endDate && endDate > startDate ? { end_date: addDayISO(endDate, 1) } : {};
+    body = JSON.stringify({ title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep });
+  } else {
+    // Duration = the gap between the two date+times (spanning days if it crosses
+    // midnight). A non-positive or missing end falls back to an hour.
+    const sMin = isoToMin(startTime);
+    let duration = Math.max(0, daysBetween(startDate, endDate)) * 1440 + isoToMin(endTime) - sMin;
+    if (!(duration > 0)) duration = 60;
+    duration = Math.max(15, duration);
+    body = JSON.stringify({ title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep });
+  }
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
     else await api('/api/events', { method: 'POST', body });
     toast(id ? 'Event updated' : 'Added to your calendar');
     state.cal.adding = false; state.cal.editing = null;
     // Jump the view to the event's day so it's visible even if it moved months.
-    state.cal.selected = day; const [yy, mm] = day.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; }
+    state.cal.selected = startDate; const [yy, mm] = startDate.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; }
     await loadCalendar();
   } catch (e) { toast(e.message); }
 }
@@ -6534,6 +6549,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-phone]')) { clearTimeout(window.__acctPT); const v = e.target.value; window.__acctPT = setTimeout(() => saveAccount({ phone: v }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
+  if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
@@ -6656,7 +6672,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
-  if (t.closest('[data-home-quote-x]')) { if ((state.home.quoteMode || 'random') === 'daily') localStorage.setItem('life.home.quoteHidden', new Date().toISOString().slice(0, 10)); else state.home.quoteDismissed = true; renderHome(); return; }
+  if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
   { const ax = t.closest('[data-alert-x]'); if (ax) { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, new Date().toISOString().slice(0, 10)); renderHome(); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
@@ -7020,7 +7036,6 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
-  if (e.target.matches('[data-admin-quotemode]')) { toggleAdminQuoteMode(e.target.checked); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
@@ -7086,7 +7101,7 @@ document.addEventListener('change', (e) => {
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
-  if (e.target.id === 'ce-allday') { const r = $('#ce-timerow'); if (r) r.hidden = e.target.checked; }
+  if (e.target.id === 'ce-allday') { const f = $('#cal-ev-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
   // An event can't end before it starts. Pushing the start date past the end (or
   // setting an end earlier than the start) snaps the end to the start day; a later
   // end is kept, so a multi-day trip still works.
@@ -7162,7 +7177,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
   if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', $('#ce-time').value, $('#ce-dur').value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', ed ? ed.value : ''); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';

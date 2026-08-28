@@ -1204,7 +1204,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       // it for anyone else would put Robin's diary in their brief, so only the
       // owner's brief carries a calendar; others get tasks + the day's quote.
       owner ? calendarEvents(env, now.date) : Promise.resolve({ events: [] }),
-      quoteForDay(env, now.date),
+      quoteForDay(env, now.date, uid),
       // Every open P1, from native task blocks. Oldest first: a P1 that has sat
       // for a month deserves reading.
       env.DB.prepare(
@@ -1301,19 +1301,19 @@ function dayHash(s) {
   return h >>> 0;
 }
 
-// Which quote to show. The admin `quote_mode` switch (user 1's setting) chooses:
-// 'daily' pins one quote to the date (same on every device, all day, via dayHash);
-// anything else - the default - picks a fresh random one each time a quote area is
-// opened, so the home card, the Today page and each morning email vary.
-async function quoteForDay(env, day) {
+// The Quote of the Day: one quote pinned to the date (same on every device and
+// every surface - home, Today, the morning email - via dayHash). Per user it can
+// be switched off (`quote_off`) or dismissed for the day (`quote_dismissed` = the
+// date), and once dismissed anywhere it's gone everywhere until tomorrow's quote.
+async function quoteForDay(env, day, uid = env.uid) {
+  if (await getSetting(env, 'quote_off', uid) === '1') return null;
+  // Dismiss is written from the client via /api/kv/quote_dismissed, which the kv
+  // route stores under the kv_ prefix - so read it back with that same key.
+  if (await getSetting(env, 'kv_quote_dismissed', uid) === day) return null;
   const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM quotes').first();
   if (!row?.n) return null;
-  const mode = await getSetting(env, 'quote_mode', 1);
-  if (mode === 'daily') {
-    return env.DB.prepare('SELECT text, author FROM quotes ORDER BY id LIMIT 1 OFFSET ?')
-      .bind(dayHash(day) % row.n).first();
-  }
-  return env.DB.prepare('SELECT text, author FROM quotes ORDER BY RANDOM() LIMIT 1').first();
+  return env.DB.prepare('SELECT text, author FROM quotes ORDER BY id LIMIT 1 OFFSET ?')
+    .bind(dayHash(day) % row.n).first();
 }
 
 async function getSettings(env, uid = env.uid) {
@@ -1470,7 +1470,7 @@ async function handleDay(request, env, url) {
     settings,
     lanes: cfg.lanes,
     quote,
-    quoteMode: await getSetting(env, 'quote_mode', 1) === 'daily' ? 'daily' : 'random',
+    quoteOff: await getSetting(env, 'quote_off', env.uid) === '1',
     activities: actsRes.results,
     last_sync: null,
   }, request);

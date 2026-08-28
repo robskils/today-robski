@@ -964,6 +964,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-dates { display:flex; gap:12px; flex-wrap:wrap; }
 .ce-datewrap { display:flex; flex-direction:column; gap:4px; flex:1; min-width:130px; }
 .ce-datelbl { font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+/* Start / End, each a row of date + time. The label sits to the left; the fields
+   share the row and wrap gracefully when the width is tight. */
+.ce-when { display:flex; flex-direction:column; gap:10px; }
+.ce-when-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ce-when-lbl { flex:none; width:52px; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+.ce-when-fields { display:flex; align-items:center; gap:8px; flex:1; min-width:0; flex-wrap:wrap; }
+.ce-when-fields .date-field { flex:1; min-width:130px; }
+.ce-timefield { flex:none; width:auto; }
+.add-event.allday-on .ce-timefield { display:none; }
 /* Friends chat panel - slides in from the right. */
 #chat .chat-bg { position:fixed; inset:0; z-index:230; background:color-mix(in srgb,var(--ink) 30%,transparent); }
 .chat-panel { position:fixed; z-index:231; top:0; right:0; bottom:0; width:min(420px,100%); display:flex; flex-direction:column; background:var(--paper); border-left:1px solid var(--line); box-shadow:-20px 0 60px -30px rgba(0,0,0,.5); }
@@ -1413,6 +1422,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .home-body { display:flex; flex-direction:column; gap:26px; grid-template-columns:none; align-items:stretch; }
   .home-main, .home-side { display:contents; position:static; }
   .home-body .home-sec { margin:0; }
+  /* Tap the whole header to collapse - a generous target, and no drag grip, so
+     every section title lines up flush left whichever column it came from. */
+  .home-sec-toggle { padding:6px 0; margin-bottom:8px; }
+  .home-grip { display:none; }
   .home-sec-today { order:1; } .home-sec-notepad { order:2; } .home-sec-recent { order:3; }
   .home-sec-focus { order:4; } .home-sec-favs { order:5; }
   /* Everything stacks on mobile - never a sideways scroll. Goal cards go one per
