@@ -995,6 +995,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fr-rescan:hover { color:var(--accent); border-color:var(--line-2); }
 .fr-scan-note { font-size:13.5px; color:var(--ink-2); margin:2px 0 10px; }
 .fr-results:not(:empty) { margin:-8px 0 20px; }
+/* Sub-groups inside "Contacts on Daybook" (Requests, Pending, Suggestions…). */
+.ppl-sub { display:flex; align-items:center; gap:8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin:18px 0 9px; }
+.ppl-sub .fr-rescan { margin-left:2px; padding:2px 7px; font-size:13px; }
+/* The "find someone on Daybook" box: full width, and visible on mobile (it isn't
+   a per-page .list-search, so the mobile hide-rule leaves it alone). */
+.list-head .fr-connect { flex:1; width:auto; min-width:0; margin:0; }
 /* Webinars (Friends). */
 .wb-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
 .wb-head .add-btn.wide { flex:none; }

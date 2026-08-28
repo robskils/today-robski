@@ -13,7 +13,7 @@ const BRAND = { owner: 'Robski', app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['friends', 'Friends'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad'], ['quote', 'Quote']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Financial'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Focus timer'], ['notepad', 'Notepad'], ['quote', 'Quote']];
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -501,7 +501,7 @@ function openView(v) {
     case 'financial': return openFinancial(v.tab);
     case 'settings': return openSettings();
     case 'admin': return openAdmin();
-    case 'friends': return openFriends();
+    case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
@@ -867,13 +867,8 @@ async function setUserStatus(id, status) {
   catch (e) { toast(e.message); }
 }
 // ── Friends on Daybook ────────────────────────────────────────────────
-async function openFriends() {
-  state.view = { type: 'friends' }; renderNav(); renderFriends();
-  try { state.friends = await api('/api/friends'); } catch (e) { toast(e.message); state.friends = { friends: [], incoming: [], outgoing: [], suggestions: [] }; }
-  try { state.sharedWithMe = (await api('/api/shared')).items || []; } catch { state.sharedWithMe = []; }
-  try { state.webinars = (await api('/api/webinars')).webinars || []; } catch { state.webinars = []; }
-  renderFriends();
-}
+// Friends merged into Contacts: keep the entry point but land on the unified page.
+async function openFriends() { return openContacts(); }
 // Webinars: host-managed scheduled group calls with a public join link.
 function toLocalInput(iso) { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
 function webinarForm() {
@@ -928,23 +923,9 @@ async function copyWebinarLink(id) {
 function friendRow(f, action) {
   return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
 }
-function renderFriends() {
-  const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
-  $('#pane').innerHTML = `${pageCrumb('Friends')}
-    <div class="pane-head home-head"><h1>Friends</h1></div>
-    <div class="list-head"><input class="list-search sel" id="friend-email" placeholder="Add a friend by name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Add</button></div>
-    <div id="friend-results" class="fr-results"></div>
-    ${d.incoming.length ? `<section class="home-sec"><div class="home-sec-h">Friend requests<span class="muted">${d.incoming.length}</span></div>${d.incoming.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}</section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">Your friends<span class="muted">${d.friends.length}</span></div>${d.friends.length ? d.friends.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}">💬 Chat</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Start a video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove friend">×</button></span>`)).join('') : '<div class="home-empty">No friends yet - add someone by email, or from the suggestions below.</div>'}</section>
-    ${d.outgoing.length ? `<section class="home-sec"><div class="home-sec-h">Pending</div>${d.outgoing.map((f) => friendRow(f, '<span class="fr-pending">requested</span>')).join('')}</section>` : ''}
-    ${(state.sharedWithMe && state.sharedWithMe.length) ? `<section class="home-sec"><div class="home-sec-h">Shared with you<span class="muted">${state.sharedWithMe.length}</span></div>${state.sharedWithMe.map((s) => `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${s.kind === 'task' ? (s.done ? '☑' : '☐') : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.kind === 'task' ? 'Task' : 'Note'} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`).join('')}</section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">Contacts on Daybook${d.suggestions && d.suggestions.length ? `<span class="muted">${d.suggestions.length}</span>` : ''}<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻ Rescan</button></div>
-      ${d.suggestions && d.suggestions.length
-        ? `<div class="fr-scan-note">${d.suggestions.length} of your contacts ${d.suggestions.length === 1 ? 'is' : 'are'} on Daybook - add them as friends:</div>${d.suggestions.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
-        : `<div class="home-empty">${(d.scanned || 0) ? `Checked ${d.scanned} of your contacts by email - none are on Daybook yet. When they join, they'll appear here.` : 'Add contacts with email addresses and Daybook will tell you which of them are here.'}</div>`}
-    </section>
-    ${webinarsSecHtml()}`;
-}
+// Friends now live inside Contacts; anything that used to re-render the Friends
+// page re-renders the unified Contacts view.
+function renderFriends() { renderContacts(); }
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
 async function friendAddEmail() {
   const el = $('#friend-email'); const v = (el && el.value || '').trim(); if (!v) return;
@@ -970,6 +951,19 @@ async function peopleSearch() {
 }
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Friends now'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
+// Invite someone to Daybook by email - a contact or anyone. Creates an invite
+// and copies its join link to send them; on the free plan it's a free-tier code.
+async function inviteToDaybook(prefill) {
+  const email = ((await uiPrompt('Invite to Daybook - their email address:', { title: 'Invite to Daybook', okLabel: 'Create invite', placeholder: 'name@example.com', value: prefill || '' })) || '').trim();
+  if (!email) return;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('That does not look like an email address.'); return; }
+  try {
+    const r = await api('/api/invites', { method: 'POST', body: JSON.stringify({ email }) });
+    const link = `https://daybook.fyi/join/${r.code}`;
+    try { await navigator.clipboard.writeText(link); toast(`Invite link copied - send it to ${email}`); }
+    catch { await uiPrompt(`Send ${email} this invite link:`, { title: 'Invite created', value: link, okLabel: 'Done' }); }
+  } catch (e) { toast(e.message); }
+}
 function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
 // Chat with a friend: a slide-in panel that polls for new messages while open.
 let chatPoll = null;
@@ -1268,7 +1262,6 @@ function renderNav() {
     ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span>🎯</span><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
     ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Financial</span></button>` : ''}
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span>🔖</span><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
-    ${modOn('friends') ? `<button class="nav-item ${v.type === 'friends' ? 'on' : ''}" data-open-friends><span>👥</span><span class="nav-lbl">Friends</span></button>` : ''}
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
@@ -1742,7 +1735,6 @@ function renderHome() {
         ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>` : ''}
         ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
         ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
-        ${modOn('friends') ? `<button class="hl-btn" data-open-friends><span class="hl-ic">👥</span><span class="hl-t">Friends</span></button>` : ''}
       </nav>
       <div class="home-body">
         <div class="home-main">${(() => {
@@ -4456,8 +4448,15 @@ function cleanAddress(a) { const out = {}; let any = false; for (const [k] of AD
 function readCardAddress() { const a = {}; for (const [k] of ADDR_FIELDS) { const el = $('#contactcard-' + k); if (el) a[k] = el.value; } return cleanAddress(a); }
 async function openContacts() {
   state.view = { type: 'contacts' };
-  await Promise.all([loadContacts(true), loadContactGroups(true)]);
-  renderNav(); renderContacts();
+  renderNav();
+  const [, , friends, shared, webinars] = await Promise.all([
+    loadContacts(true), loadContactGroups(true),
+    api('/api/friends').catch(() => ({ friends: [], incoming: [], outgoing: [], suggestions: [] })),
+    api('/api/shared').then((r) => r.items || []).catch(() => []),
+    api('/api/webinars').then((r) => r.webinars || []).catch(() => []),
+  ]);
+  state.friends = friends; state.sharedWithMe = shared; state.webinars = webinars;
+  renderContacts();
 }
 function contactCardHtml(c) {
   const p = c.props || {};
@@ -4493,6 +4492,7 @@ function contactMenuHtml() {
     ${addable.length ? `<div class="ctx-lbl">Add to group</div>${addable.map((g) => `<button class="ctx-item" data-ctx-add="${g.id}">${esc(g.title)}</button>`).join('')}` : ''}
     <button class="ctx-item ctx-new" data-ctx-newgroup>+ New group…</button>
     ${current.length ? `<div class="ctx-sep"></div>${current.map((g) => `<button class="ctx-item" data-ctx-remove="${g.id}">Remove from ${esc(g.title)}</button>`).join('')}` : ''}
+    ${(c.props && c.props.email) ? `<div class="ctx-sep"></div><button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Daybook</button>` : ''}
     <div class="ctx-sep"></div>
     <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
   </div></div>`;
@@ -4521,19 +4521,40 @@ function renderContacts() {
   const emptyMsg = q ? 'No contacts match.'
     : grp ? `No contacts in ${esc(grp.title)} yet. Drag a contact onto the group chip, or open a contact and add it here.`
     : 'No contacts yet. Add one, or import your Apple Contacts .vcf.';
+  // Friends are Daybook contacts, so they lead the page. d holds the social data.
+  const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
+  const fr = (f, action) => friendRow(f, action);
   $('#pane').innerHTML = `
     ${pageCrumb('Contacts')}
     <div class="pane-head"><h1>Contacts</h1></div>
     <div class="list-head">
-      <input class="list-search sel" data-contacts-q placeholder="Search contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
+      <input class="list-search sel" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
+      <button class="add-btn wide" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button>
       ${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add contact</button>`}
       <button class="ghost" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button>
       <input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden>
     </div>
-    ${groupBarHtml()}
-    ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
-    ${state.contactAdding ? contactAddForm() : ''}
-    <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
+
+    <section class="home-sec">
+      <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length}</span></div>
+      <div class="list-head"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Connect</button></div>
+      <div id="friend-results" class="fr-results"></div>
+      ${d.incoming.length ? `<div class="ppl-sub">Requests · ${d.incoming.length}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
+      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : (d.incoming.length ? '' : '<div class="home-empty">No one yet - find people above, or invite a contact to Daybook.</div>')}
+      ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
+      ${(d.suggestions && d.suggestions.length) ? `<div class="ppl-sub">Your contacts who are on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Connect</button>`)).join('')}` : ''}
+      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${s.kind === 'task' ? (s.done ? '☑' : '☐') : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.kind === 'task' ? 'Task' : 'Note'} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`).join('')}` : ''}
+    </section>
+
+    <section class="home-sec">
+      <div class="home-sec-h">Contacts<span class="muted">${(state.contacts || []).length}</span></div>
+      ${groupBarHtml()}
+      ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
+      ${state.contactAdding ? contactAddForm() : ''}
+      <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
+    </section>
+
+    ${webinarsSecHtml()}
     ${contactMenuHtml()}`;
 }
 function contactAddForm() {
@@ -6870,6 +6891,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }
   if (t.closest('[data-open-admin]')) { openAdmin(); return; }
   if (t.closest('[data-open-friends]')) { openFriends(); return; }
+  if (t.closest('[data-invite-daybook]')) { inviteToDaybook(); return; }
+  { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToDaybook(email); return; } }
   if (t.closest('[data-friend-add-email]')) { friendAddEmail(); return; }
   { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }
   { const fac = t.closest('[data-friend-accept]'); if (fac) { friendAccept(fac.dataset.friendAccept); return; } }
