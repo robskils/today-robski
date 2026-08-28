@@ -23,8 +23,19 @@ export async function decryptSecret(env, b64) {
   return new TextDecoder().decode(pt);
 }
 
-// The key to use for this user + provider, or null if they must add their own.
+// A per-user master switch. When on, every AI feature is disabled for that
+// tenant - this reads the same 'ai_off' setting the Settings → AI toggle writes.
+export async function aiIsOff(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'ai_off'").bind(env.uid).first().catch(() => null);
+  return !!(row && row.value === '1');
+}
+
+// The key to use for this user + provider, or null if they must add their own
+// (or if they've switched AI off entirely). Returning null routes every caller
+// through its existing "no AI available" path, so the switch needs gating in
+// exactly one place.
 export async function aiKey(env, provider) {
+  if (await aiIsOff(env)) return null;
   const col = provider === 'gemini' ? 'ai_gemini_enc' : 'ai_anthropic_enc';
   const enc = env.user && env.user[col];
   if (enc) { try { return await decryptSecret(env, enc); } catch {} }
@@ -32,7 +43,7 @@ export async function aiKey(env, provider) {
   if (env.uid === 1) return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
   return null;
 }
-export const aiNeedsKey = (provider) => `Add your own ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} API key in Settings → AI to use this.`;
+export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → AI.`;
 
 // One ledger row per call. Best-effort: logging must never break the feature.
 export async function logAiUsage(env, provider, feature, model, inTok, outTok) {

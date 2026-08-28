@@ -103,8 +103,8 @@ const DEFAULT_LANES = [
 // A starter life area maps onto the lane it most naturally feeds, so tasks tagged
 // to that area land in the right Today lane. Titles must match STARTERS below.
 const STARTER_AREA_LANE = {
-  Work: 'work', Health: 'body', Relationships: 'family', Money: 'personal',
-  Home: 'personal', 'Personal growth': 'reflect', Fun: 'hobbies',
+  'Body / Health': 'body', Family: 'family', Hobbies: 'hobbies', Money: 'personal',
+  People: 'family', Personal: 'personal', Reflect: 'reflect', Work: 'work',
 };
 
 // First-run defaults so the app is usable immediately: the day window, a starter
@@ -119,7 +119,7 @@ async function seedNewUser(env, uid) {
   // goals and spending categories all have somewhere to land. Ordinary blocks:
   // rename, recolour or delete any. Hues walk the wheel from a blue base so each
   // reads distinct. Keep their ids to map each area onto its Today lane.
-  const STARTERS = ['Work', 'Health', 'Relationships', 'Money', 'Home', 'Personal growth', 'Fun'];
+  const STARTERS = ['Body / Health', 'Family', 'Hobbies', 'Money', 'People', 'Personal', 'Reflect', 'Work'];
   const areaMap = {};
   const areaStmts = STARTERS.map((title, i) => {
     const id = crypto.randomUUID();
@@ -191,12 +191,14 @@ export async function getAccount(env) {
   const sms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'sms_block_alerts'").bind(env.uid).first().catch(() => null);
   const brief = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'brief_enabled'").bind(env.uid).first().catch(() => null);
   const qOff = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'quote_off'").bind(env.uid).first().catch(() => null);
+  const aiOff = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'ai_off'").bind(env.uid).first().catch(() => null);
   return {
     name: (u && u.name) || '', email: (u && u.email) || '', subdomain: (u && u.subdomain) || '',
     plan: (u && u.plan) || 'free', status: (u && u.status) || 'active',
     phone: ph ? ph.value : '', smsAlerts: !sms || sms.value !== '0',
     briefEmail: !brief || brief.value !== '0',
     dailyQuote: !(qOff && qOff.value === '1'),
+    aiOff: !!(aiOff && aiOff.value === '1'),
     aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),
     // Never return the keys themselves - only whether one is stored.
     aiAnthropicSet: !!(u && u.ai_anthropic_enc), aiGeminiSet: !!(u && u.ai_gemini_enc),
@@ -208,6 +210,7 @@ export async function patchAccount(env, body) {
   if (body.phone !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'phone', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(body.phone).slice(0, 40)).run();
   if (body.briefEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'brief_enabled', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.briefEmail ? '1' : '0').run();
   if (body.dailyQuote !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'quote_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.dailyQuote ? '0' : '1').run();
+  if (body.aiOff !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'ai_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.aiOff ? '1' : '0').run();
   return getAccount(env);
 }
 // Adding an alias no longer trusts the owner on its own: the address is stored

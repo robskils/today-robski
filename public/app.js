@@ -406,7 +406,7 @@ const HELP = {
       <li>Blocks can float (no fixed time) until the day decides where they land.</li>
       <li>Edit, rename, recolour, add or remove your lanes in <b>Settings › Time streams</b>.</li></ul>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which sections show, invites, and the tools that manage your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone, plan and AI keys, plus the morning-brief and text-alert switches. <b>Appearance</b> sets the theme and accent colour. <b>Sections</b> turns tools on or off. <b>Invites</b> lets you bring people in. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> lets you bring people in. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -1113,6 +1113,7 @@ function renderSettings() {
   const TABS = [
     ['account', 'Account'],
     ['appearance', 'Appearance'],
+    ['ai', 'AI'],
     ['notifications', 'Notifications'],
     ['sections', 'Tools'],
     ['invites', 'Invites'],
@@ -1135,11 +1136,6 @@ function renderSettings() {
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
         <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
-        <div class="set-field ai-keys"><span>AI keys</span>
-          <p class="ai-hint">${state.account.isOwner ? 'You use the built-in keys; add your own below to override them.' : "AI features (Reflect, Claudius, Advice, statement import) run on your own keys. Get an Anthropic key at console.anthropic.com and a Gemini key at aistudio.google.com."}</p>
-          ${aiKeyRow('anthropic', 'Anthropic (Claude)', state.account.aiAnthropicSet, 'sk-ant-…')}
-          ${aiKeyRow('gemini', 'Google Gemini', state.account.aiGeminiSet, 'AIza…')}
-        </div>
         <div class="acct-actions"><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
@@ -1151,6 +1147,15 @@ function renderSettings() {
         </div>
         ${state.account ? `<label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>` : ''}
       </div>`;
+
+  const aiPane = state.account ? `<div class="set-card">
+        <label class="set-mod"><span>Use AI features<small>Reflect coaching, Claudius replies, advice and statement import. Switch off to disable every AI feature across Daybook.</small></span><input type="checkbox" data-account-ai ${state.account.aiOff ? '' : 'checked'}></label>
+        <div class="set-field ai-keys ${state.account.aiOff ? 'ai-disabled' : ''}"><span>AI keys</span>
+          <p class="ai-hint">${state.account.isOwner ? 'You use the built-in keys; add your own below to override them.' : 'AI features run on your own keys. Get an Anthropic key at console.anthropic.com and a Gemini key at aistudio.google.com.'}</p>
+          ${aiKeyRow('anthropic', 'Anthropic (Claude)', state.account.aiAnthropicSet, 'sk-ant-…')}
+          ${aiKeyRow('gemini', 'Google Gemini', state.account.aiGeminiSet, 'AIza…')}
+        </div>
+      </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>`;
 
@@ -1176,8 +1181,8 @@ function renderSettings() {
 
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
-  const panes = { account: accountPane, appearance: appearancePane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: 'Your details, sign-in addresses & AI keys', appearance: 'Theme & accent colour', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: (state.me && state.me.id === 1) ? 'Invite people to Daybook' : 'Share a code so someone can join', manage: 'Life areas, mail, categories & more' };
+  const panes = { account: accountPane, appearance: appearancePane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', ai: 'AI keys & switch', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: (state.me && state.me.id === 1) ? 'Invite people to Daybook' : 'Share a code so someone can join', manage: 'Life areas, mail, categories & more' };
 
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
@@ -3978,7 +3983,7 @@ function renderMail(loading) {
       <input type="file" id="mc-file" multiple hidden></form>`;
   } else if (m.open) {
     const o = m.open;
-    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">◈</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button>`;
+    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">◈</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -4461,6 +4466,39 @@ function formatAddress(a) { if (!a) return ''; if (typeof a === 'string') return
 const addrField = (a, k) => (!a ? '' : typeof a === 'string' ? (k === 'street' ? a : '') : (a[k] || ''));
 function cleanAddress(a) { const out = {}; let any = false; for (const [k] of ADDR_FIELDS) { const v = (a[k] || '').trim(); if (v) { out[k] = v; any = true; } } return any ? out : null; }
 function readCardAddress() { const a = {}; for (const [k] of ADDR_FIELDS) { const el = $('#contactcard-' + k); if (el) a[k] = el.value; } return cleanAddress(a); }
+// A contact may hold several emails and several phones, but starts with just one
+// of each. The canonical store is props.emails / props.phones (arrays); props.email
+// and props.phone mirror the first entry so every older reader - invite, mailto,
+// datalist, dedupe - keeps working unchanged. A phone keeps its country code in
+// its own field: { cc:'+351', number:'211 234 400' }.
+function contactEmails(p) { return (Array.isArray(p.emails) ? p.emails : (p.email ? [p.email] : [])).filter((e) => e != null && String(e).trim()); }
+function splitPhone(s) { const m = String(s || '').trim().match(/^(\+\d{1,4})[\s-]*(.*)$/); return m ? { cc: m[1], number: m[2].trim() } : { cc: '', number: String(s || '').trim() }; }
+function contactPhones(p) {
+  if (Array.isArray(p.phones)) return p.phones.map((x) => (typeof x === 'string' ? splitPhone(x) : { cc: String(x.cc || '').trim(), number: String(x.number || '').trim() }));
+  return p.phone ? [splitPhone(p.phone)] : [];
+}
+const joinPhone = (ph) => `${String(ph.cc || '').trim()} ${String(ph.number || '').trim()}`.trim();
+// Gather every email/phone row from the open card into normalised arrays plus the
+// mirrored primaries, ready to save in one patch.
+function readCardContacts() {
+  const emails = [...document.querySelectorAll('.cc-email-in')].map((i) => i.value.trim()).filter(Boolean);
+  const phones = [...document.querySelectorAll('.cc-phone-row')]
+    .map((r) => ({ cc: (r.querySelector('.cc-phone-cc').value || '').trim(), number: (r.querySelector('.cc-phone-num').value || '').trim() }))
+    .filter((p) => p.number || p.cc);
+  return { emails, email: emails[0] || null, phones, phone: phones.length ? joinPhone(phones[0]) : null };
+}
+// The email/phone field blocks on the contact card: one row each to start, with
+// a + to add more and an × to drop any but the first.
+function contactEmailFields(p) {
+  const emails = contactEmails(p); if (!emails.length) emails.push('');
+  const rows = emails.map((em, i) => `<div class="cc-multi-row"><input class="sel cc-email-in" type="email" value="${esc(em)}" placeholder="name@example.com" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-email="${i}" title="Remove">×</button>`}</div>`).join('');
+  return `<div class="tf-field"><span class="tf-label">Email</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-email>+ Add email</button></div></div>`;
+}
+function contactPhoneFields(p) {
+  const phones = contactPhones(p); if (!phones.length) phones.push({ cc: '', number: '' });
+  const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" value="${esc(ph.cc || '')}" placeholder="+351" title="Country code"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" placeholder="211 234 400" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
+  return `<div class="tf-field"><span class="tf-label">Phone</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-phone>+ Add phone</button></div></div>`;
+}
 async function openContacts() {
   state.view = { type: 'contacts' };
   renderNav();
@@ -4612,8 +4650,8 @@ function renderContactCard() {
       <textarea class="note-title" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
     </div>
     <div class="tf-meta">
-      <label class="tf-field"><span class="tf-label">Email</span><input class="sel" id="contactcard-email" type="email" value="${esc(p.email || '')}" placeholder="name@example.com"></label>
-      <label class="tf-field"><span class="tf-label">Phone</span><input class="sel" id="contactcard-phone" type="tel" value="${esc(p.phone || '')}" placeholder="+351…"></label>
+      ${contactEmailFields(p)}
+      ${contactPhoneFields(p)}
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
       <label class="tf-field"><span class="tf-label">Life area</span>${areaSelect(p.area, 'data-contact-area')}</label>
       ${ADDR_FIELDS.map(([k, l]) => `<label class="tf-field"><span class="tf-label">${l}</span><input class="sel contactcard-addr" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" autocomplete="off"></label>`).join('')}
@@ -6550,6 +6588,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
+  if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
@@ -6756,6 +6795,10 @@ document.addEventListener('click', (e) => {
   const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
   const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
   const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
+  if (t.closest('[data-cc-add-email]')) { const btn = t.closest('[data-cc-add-email]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row"><input class="sel cc-email-in" type="email" placeholder="name@example.com" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-email title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-email-in')?.focus(); return; }
+  if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="+351" title="Country code"><input class="sel cc-phone-num" type="tel" placeholder="211 234 400" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
+  const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
+  const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const cgc = t.closest('[data-contact-group]'); if (cgc) { state.contactsGroup = cgc.dataset.contactGroup || null; renderContacts(); return; }
   if (t.closest('[data-new-contact-group]')) { newContactGroup(); return; }
   const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
@@ -7071,8 +7114,7 @@ document.addEventListener('change', (e) => {
   if (state.contact_open) {
     const cid = state.contact_open.contact.id;
     if (e.target.id === 'contactcard-name') { const v = e.target.value.trim(); if (v) patchContact(cid, { title: v }, false); }
-    if (e.target.id === 'contactcard-email') patchContact(cid, { email: e.target.value.trim() || null }, true);
-    if (e.target.id === 'contactcard-phone') patchContact(cid, { phone: e.target.value.trim() || null }, true);
+    if (e.target.classList.contains('cc-email-in') || e.target.classList.contains('cc-phone-cc') || e.target.classList.contains('cc-phone-num')) patchContact(cid, readCardContacts(), true);
     if (e.target.classList.contains('contactcard-addr')) patchContact(cid, { address: readCardAddress() }, true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
   }
@@ -7563,10 +7605,35 @@ async function openAttachment(blockId, attId) {
     window.open(await attUrl(blockId, att || { id: attId }), '_blank', 'noopener');
   } catch (e) { toast('Could not open: ' + e.message); }
 }
+// Before an image goes to storage, shrink it: a note wants a legible picture,
+// not a 12-megapixel original. We cap the longest edge and re-encode as JPEG,
+// which turns a multi-megabyte phone photo into a few hundred KB. Anything that
+// isn't a decodable raster photo - a PDF, an animated GIF, an SVG, or a format
+// the browser can't read such as HEIC - passes straight through untouched, so
+// this never breaks an upload that would otherwise have worked.
+const IMG_MAX_EDGE = 1600;
+async function shrinkImage(file) {
+  if (!isImgType(file.type) || /gif|svg/i.test(file.type) || file.size <= 500 * 1024) return file;
+  let url;
+  try {
+    let bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) { url = URL.createObjectURL(file); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = url; }); }
+    const w = bmp.width, h = bmp.height; if (!w || !h) return file;
+    const scale = Math.min(1, IMG_MAX_EDGE / Math.max(w, h));
+    const dw = Math.max(1, Math.round(w * scale)), dh = Math.max(1, Math.round(h * scale));
+    const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
+    cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh);
+    if (bmp.close) bmp.close();
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.82));
+    if (!blob || blob.size >= file.size) return file;   // no real saving - keep the original
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch { return file; } finally { if (url) URL.revokeObjectURL(url); }
+}
 async function uploadFiles(blockId, files) {
   const host = attHost(); if (!host || host.id !== blockId) return;
   let ok = 0;
-  for (const f of Array.from(files)) {
+  for (const f0 of Array.from(files)) {
+    const f = await shrinkImage(f0);
     try {
       const res = await fetch(`/api/blocks/${blockId}/attachments?name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`,
         { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: f });
@@ -7586,7 +7653,8 @@ async function uploadCellFiles(key, files) {
   const row = state.tables_rows.find((r) => r.id === rowId); if (!row) return;
   row.props = row.props || {}; row.props.values = row.props.values || {};
   let ok = 0;
-  for (const f of Array.from(files)) {
+  for (const f0 of Array.from(files)) {
+    const f = await shrinkImage(f0);
     try {
       const res = await fetch(`/api/blocks/${rowId}/attachments?col=${encodeURIComponent(colId)}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`,
         { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: f });

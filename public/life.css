@@ -1364,6 +1364,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .inv-hint { font-size:13px; color:var(--ink-3); margin:10px 0 0; }
 .ai-keys { gap:4px; }
 .ai-hint { font-size:12.5px; color:var(--ink-3); line-height:1.5; margin:2px 0 8px; }
+/* When AI is switched off, the keys are still editable but visibly stood down. */
+.ai-keys.ai-disabled { opacity:.5; }
 .ai-key-row { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
 .ai-key-l { font-size:13px; font-weight:500; color:var(--ink-2); }
 .ai-set { color:#3f9e5f; font-weight:600; font-size:12px; }
@@ -2506,6 +2508,15 @@ table.ttable tr:last-child td { border-bottom:0; }
 .tf-meta { display:flex; flex-wrap:wrap; gap:26px; padding:18px 0 6px; margin-bottom:10px; border-bottom:1px solid var(--line); }
 .tf-field { display:flex; flex-direction:column; gap:6px; }
 .tf-label { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; }
+/* Multi-value contact fields: several emails / phones, one row each, add & drop. */
+.cc-multi { display:flex; flex-direction:column; gap:6px; }
+.cc-multi-row { display:flex; align-items:center; gap:6px; }
+.cc-multi-row .cc-email-in, .cc-multi-row .cc-phone-num { flex:1 1 auto; min-width:0; }
+.cc-phone-cc { flex:0 0 76px; width:76px; text-align:center; }
+.cc-multi-x { flex:0 0 auto; width:30px; height:30px; border:none; background:none; color:var(--ink-3); font-size:20px; line-height:1; cursor:pointer; border-radius:8px; }
+.cc-multi-x:hover { background:var(--surface-2); color:var(--danger,#c4412e); }
+.cc-multi-add { align-self:flex-start; border:none; background:none; color:var(--accent); font-size:13.5px; font-weight:600; cursor:pointer; padding:2px 0; }
+.cc-multi-add:hover { text-decoration:underline; }
 .focus-notes { margin-top:26px; }
 .fn-h { font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin-bottom:10px; }
 
