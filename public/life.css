@@ -1161,6 +1161,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .set-field { display:flex; flex-direction:column; gap:6px; }
 .set-field > span { font-size:12px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); }
 .set-field input:disabled { opacity:.6; }
+/* Username field: input + fixed .daybook.fyi suffix, with a live URL note. */
+.su-username-row { display:flex; align-items:stretch; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; background:var(--card); }
+.su-username-row:focus-within { border-color:var(--accent); }
+.su-username-in.sel { border:0; border-radius:0; flex:1; min-width:0; }
+.su-username-suffix { display:flex; align-items:center; padding:0 13px; background:var(--paper-2); color:var(--ink-3); font-size:15px; white-space:nowrap; border-left:1px solid var(--line); }
+.su-username-note { font-size:13px; color:var(--ink-3); } .su-username-note b { color:var(--ink-2); font-weight:600; }
 .alias-list { display:flex; flex-wrap:wrap; gap:6px; }
 .alias-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 5px 5px 12px; background:var(--paper); border:1px solid var(--line); border-radius:999px; font-size:14px; }
 .alias-x { border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; padding:0 4px; border-radius:50%; }

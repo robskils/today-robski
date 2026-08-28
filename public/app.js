@@ -471,7 +471,7 @@ const HELP = {
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
   'settings-ai': { title: 'AI', tip: 'Your AI keys, and a switch to turn all AI off.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflect coaching, Claudius replies, advice, statement import) is disabled across Daybook. Below it, your <b>Anthropic</b> and <b>Google Gemini</b> keys: features run on your own keys, so nothing is stored but whether a key is set.</p>` },
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflect coaching, Email Scribe replies, advice, statement import) is disabled across Daybook. Below it, your <b>Anthropic</b> and <b>Google Gemini</b> keys: features run on your own keys, so nothing is stored but whether a key is set.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
     body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
@@ -1224,7 +1224,11 @@ function renderSettings() {
   const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
   const accountPane = state.account ? `<div class="set-card set-account">
-        <label class="set-field"><span>Name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your name"></label>
+        <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
+        <label class="set-field"><span>Username</span>
+          <div class="su-username-row"><input class="sel su-username-in" data-account-username value="${esc(state.account.subdomain || '')}" placeholder="username" autocomplete="off" spellcheck="false"><span class="su-username-suffix">.daybook.fyi</span></div>
+          <div class="su-username-note">Your Daybook lives at <b><span class="js-username-preview">${esc(state.account.subdomain || 'username')}</span>.daybook.fyi</b></div>
+        </label>
         <label class="set-field"><span>Primary email</span><input class="sel" value="${esc(state.account.email || '')}" disabled></label>
         <div class="set-field"><span>Also sign in with these addresses</span>
           <div class="alias-list">${(state.account.aliases || []).map((a) => {
@@ -1249,7 +1253,7 @@ function renderSettings() {
       </div>`;
 
   const aiPane = state.account ? `<div class="set-card">
-        <label class="set-mod"><span>Use AI features<small>Reflect coaching, Claudius replies, advice and statement import. Switch off to disable every AI feature across Daybook.</small></span><input type="checkbox" data-account-ai ${state.account.aiOff ? '' : 'checked'}></label>
+        <label class="set-mod"><span>Use AI features<small>Reflect coaching, Email Scribe replies, advice and statement import. Switch off to disable every AI feature across Daybook.</small></span><input type="checkbox" data-account-ai ${state.account.aiOff ? '' : 'checked'}></label>
         <div class="set-field ai-keys ${state.account.aiOff ? 'ai-disabled' : ''}"><span>AI keys</span>
           <p class="ai-hint">${state.account.isOwner ? 'You use the built-in keys; add your own below to override them.' : 'AI features run on your own keys. Get an Anthropic key at console.anthropic.com and a Gemini key at aistudio.google.com.'}</p>
           ${aiKeyRow('anthropic', 'Anthropic (Claude)', state.account.aiAnthropicSet, 'sk-ant-…')}
@@ -3912,7 +3916,7 @@ async function mailSaveAttachment(idx, name) {
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   } catch (e) { toast(e.message); }
 }
-// Claudius drafts a reply, then drops it into a normal reply compose above the
+// Email Scribe drafts a reply, then drops it into a normal reply compose above the
 // quoted original. It never sends - Robin reviews and edits like any draft.
 async function mailClaudius() {
   const o = state.mail.open; if (!o) return;
@@ -3929,7 +3933,7 @@ async function mailClaudius() {
       renderMail();
       setTimeout(() => { const el = $('#mc-body'); if (el) { el.focus(); el.scrollTop = 0; } }, 0);
     }
-    toast('Claudius drafted a reply - review it before sending');
+    toast('Email Scribe drafted a reply - review it before sending');
   } catch (e) {
     toast(e.message);
     if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
@@ -4341,7 +4345,7 @@ function renderMail(loading) {
       <input type="file" id="mc-file" multiple hidden></form>`;
   } else if (m.open) {
     const o = m.open;
-    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">◈</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Claudius">${MAIL_ICO.sparkle}</button>`;
+    const msgActs = `<button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">◈</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -7008,6 +7012,15 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { BRAND.owner = state.account.name; renderNav(); } }), 700); }
+  if (e.target.matches('[data-account-username]')) {
+    const pos = e.target.selectionStart; const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (e.target.value !== v) { e.target.value = v; try { e.target.setSelectionRange(pos - 1, pos - 1); } catch {} }
+    const prev = document.querySelector('.js-username-preview'); if (prev) prev.textContent = v || 'username';
+    clearTimeout(window.__acctUN); window.__acctUN = setTimeout(async () => {
+      if (!v || v === state.account.subdomain) return;
+      try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ subdomain: v }) }); if (state.me) state.me.subdomain = v; toast(`Username updated - your address is now ${v}.daybook.fyi`); }
+      catch (x) { toast(x.message); }
+    }, 800); }
   if (e.target.matches('[data-account-phone]')) { clearTimeout(window.__acctPT); const v = e.target.value; window.__acctPT = setTimeout(() => saveAccount({ phone: v }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }

@@ -218,6 +218,13 @@ export async function getAccount(env) {
 }
 export async function patchAccount(env, body) {
   if (body.name !== undefined) await env.DB.prepare('UPDATE users SET name = ? WHERE id = ?').bind(String(body.name).slice(0, 60), env.uid).run();
+  if (body.subdomain !== undefined) {
+    const sub = normSubdomain(body.subdomain);
+    if (!sub) throw new Error('That username has invalid characters or is reserved. Use a-z, 0-9 and hyphens.');
+    const taken = await env.DB.prepare('SELECT id FROM users WHERE subdomain = ? AND id <> ?').bind(sub, env.uid).first().catch(() => null);
+    if (taken) throw new Error(`"${sub}.daybook.fyi" is taken - try another.`);
+    await env.DB.prepare('UPDATE users SET subdomain = ? WHERE id = ?').bind(sub, env.uid).run();
+  }
   if (body.phone !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'phone', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(body.phone).slice(0, 40)).run();
   if (body.briefEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'brief_enabled', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.briefEmail ? '1' : '0').run();
   if (body.dailyQuote !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'quote_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.dailyQuote ? '0' : '1').run();

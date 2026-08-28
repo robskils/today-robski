@@ -2290,7 +2290,10 @@ export default {
       // Account: name, email aliases, phone, plan.
       if (path === '/api/account') {
         if (request.method === 'GET') return json(await getAccount(env), request);
-        if (request.method === 'PATCH') return json(await patchAccount(env, await request.json().catch(() => ({}))), request);
+        if (request.method === 'PATCH') {
+          try { return json(await patchAccount(env, await request.json().catch(() => ({}))), request); }
+          catch (e) { return err(e.message, request, 400); }
+        }
       }
       if (path === '/api/account/alias') {
         const b = await request.json().catch(() => ({}));
