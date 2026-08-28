@@ -2366,6 +2366,16 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Collapsible headings: a subtle chevron before each heading folds its content. */
 .fold-toggle { display:inline-block; width:.85em; margin-right:.12em; color:var(--ink-3); cursor:pointer; user-select:none; font-size:.6em; vertical-align:middle; transition:color .12s; }
 .fold-toggle:hover { color:var(--accent); }
+/* Drag grip to reorder a heading's whole section. Faint until you hover the
+   heading, so it doesn't clutter the note. */
+.head-grip { display:inline-block; width:.7em; margin-right:.1em; color:var(--ink-3); cursor:grab; user-select:none; font-size:.62em; vertical-align:middle; opacity:0; transition:opacity .12s, color .12s; }
+.prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.6; }
+.head-grip:hover { opacity:1 !important; color:var(--accent); }
+.head-grip:active { cursor:grabbing; }
+@media (hover:none){ .head-grip { opacity:.5; } }
+.prose h1.head-dragging, .prose h2.head-dragging, .prose h3.head-dragging { opacity:.4; }
+/* Drop indicator: a line above the heading the section will land in front of. */
+.prose h1.head-drop, .prose h2.head-drop, .prose h3.head-drop { box-shadow:0 -2px 0 var(--accent); }
 .prose > .folded { opacity:.85; }
 .folded-hidden { display:none !important; }
 .prose h1 { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:600; margin:20px 0 8px; }

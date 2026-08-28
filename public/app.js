@@ -271,12 +271,71 @@ function setupFolds() {
     heads.forEach((h, i) => {
       let toggle = h.querySelector(':scope > .fold-toggle');
       if (!toggle) { toggle = document.createElement('span'); toggle.className = 'fold-toggle'; toggle.contentEditable = 'false'; toggle.setAttribute('title', 'Fold / unfold'); h.insertBefore(toggle, h.firstChild); }
+      // A grip to drag the whole section (this heading + everything under it, up
+      // to the next same-or-higher heading) up or down. Live-DOM only, stripped
+      // on save like the fold chevron.
+      let grip = h.querySelector(':scope > .head-grip');
+      if (!grip) { grip = document.createElement('span'); grip.className = 'head-grip'; grip.contentEditable = 'false'; grip.setAttribute('draggable', 'true'); grip.setAttribute('title', 'Drag to reorder this section'); grip.textContent = '⠿'; }
+      h.insertBefore(grip, h.firstChild);   // grip first, then the fold chevron
       const isFolded = folded.includes(i);
       toggle.textContent = isFolded ? '▸' : '▾';
       applyFold(h, isFolded);
     });
   });
 }
+// Drag a heading's grip to reorder its section within the note. The section is
+// the heading plus every following block up to the next same-or-higher heading,
+// so the content travels with its title. Drop lands the section above whichever
+// heading you're hovering, or at the end past the last one.
+let headDrag = null;
+function cleanupHeadDrag() {
+  if (headDrag && headDrag.head) headDrag.head.classList.remove('head-dragging');
+  document.querySelectorAll('.head-drop').forEach((h) => h.classList.remove('head-drop'));
+  headDrag = null;
+}
+document.addEventListener('dragstart', (e) => {
+  const grip = e.target.closest && e.target.closest('.head-grip'); if (!grip) return;
+  const head = grip.closest('h1,h2,h3'); const prose = head && head.closest('.prose[data-block-id]');
+  if (!head || !prose) return;
+  headDrag = { prose, head };
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', ''); } catch {}   // Firefox needs data set
+  setTimeout(() => head.classList.add('head-dragging'), 0);
+});
+document.addEventListener('dragover', (e) => {
+  if (!headDrag) return;
+  const prose = e.target.closest && e.target.closest('.prose[data-block-id]');
+  if (prose !== headDrag.prose) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')];
+  prose.querySelectorAll('.head-drop').forEach((h) => h.classList.remove('head-drop'));
+  let target = null;
+  for (const h of heads) { const r = h.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { target = h; break; } }
+  prose.dataset.headDrop = target ? String(heads.indexOf(target)) : '-1';
+  if (target && target !== headDrag.head) target.classList.add('head-drop');
+});
+document.addEventListener('drop', (e) => {
+  if (!headDrag) return;
+  const prose = headDrag.prose;
+  const over = e.target.closest && e.target.closest('.prose[data-block-id]');
+  if (over !== prose) { cleanupHeadDrag(); return; }
+  e.preventDefault();
+  const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')];
+  const idx = parseInt(prose.dataset.headDrop || '-1', 10);
+  const target = (idx >= 0 && idx < heads.length) ? heads[idx] : null;
+  const section = [headDrag.head, ...proseSiblingsUnder(headDrag.head)];
+  cleanupHeadDrag(); delete prose.dataset.headDrop;
+  if (target && section.includes(target)) return;   // dropping onto its own section: no-op
+  const frag = document.createDocumentFragment();
+  section.forEach((n) => frag.appendChild(n));       // detaches each node, then re-inserts as a unit
+  if (target) prose.insertBefore(frag, target); else prose.appendChild(frag);
+  // Fold state is keyed by heading position, which just changed - clear it for
+  // this note so no heading shows wrongly folded after the move.
+  try { const all = proseFolds(); delete all[prose.dataset.blockId]; localStorage.setItem('life.prose.folds', JSON.stringify(all)); } catch {}
+  saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
+  setupFolds();
+});
+document.addEventListener('dragend', () => { if (headDrag) cleanupHeadDrag(); });
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
 // tidiness (stray pasted styles) more than security.
@@ -286,7 +345,7 @@ function sanitizeProse(html) {
   // Fold chevrons are live-DOM only (injected on render): remove them so their
   // glyph never gets saved into a heading. Folded content is just hidden, so it
   // stays in the body and is preserved.
-  doc.querySelectorAll('.fold-toggle').forEach((el) => el.remove());
+  doc.querySelectorAll('.fold-toggle, .head-grip').forEach((el) => el.remove());
   // Inline link cards are display-only: store them back as a plain URL paragraph
   // so the body stays clean text, and decorateProse re-inflates the card on render.
   doc.querySelectorAll('[data-linkcard]').forEach((c) => {
@@ -8318,7 +8377,8 @@ async function delTable() { const t = state.tables_open; if (!(await uiConfirm(`
 function ensureBubble() {
   let b = document.getElementById('bubble'); if (b) return b;
   b = document.createElement('div'); b.id = 'bubble'; b.className = 'bubble'; b.hidden = true;
-  b.innerHTML = `<button data-fmt="bold" title="Bold  ⌘B"><b>B</b></button>
+  b.innerHTML = `<button data-fmt="normal" title="Normal text - clear formatting" class="bub-h bub-normal">¶</button>
+    <button data-fmt="bold" title="Bold  ⌘B"><b>B</b></button>
     <button data-fmt="italic" title="Italic  ⌘I"><i>I</i></button>
     <span class="bub-sep"></span>
     <button data-fmt="h1" title="Heading 1" class="bub-h">H1</button>
@@ -8431,7 +8491,26 @@ function applyFmt(cmd) {
   const prose = activeProse(); if (!prose) return; prose.focus();
   // Emit <b>/<i> tags (sanitised to <strong>/<em>) rather than inline styles.
   try { document.execCommand('styleWithCSS', false, false); } catch {}
-  if (cmd === 'bold') document.execCommand('bold');
+  if (cmd === 'normal') {
+    // Back to plain body text: strip inline styling, drop any link, and turn a
+    // heading or quote back into a paragraph.
+    document.execCommand('removeFormat');
+    document.execCommand('unlink');
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      let bl = sel.getRangeAt(0).startContainer; bl = bl.nodeType === 1 ? bl : bl.parentElement;
+      bl = bl && bl.closest && bl.closest('h1,h2,h3,blockquote');
+      // Swap the element directly - formatBlock is unreliable when the heading
+      // carries our non-editable grip/chevron spans. Strip those first so they
+      // don't survive into the new paragraph.
+      if (bl && prose.contains(bl)) {
+        bl.querySelectorAll('.head-grip, .fold-toggle').forEach((x) => x.remove());
+        const p = document.createElement('p'); p.innerHTML = bl.innerHTML; bl.replaceWith(p);
+      }
+    }
+    normalizeProseLists(prose);
+  }
+  else if (cmd === 'bold') document.execCommand('bold');
   else if (cmd === 'italic') document.execCommand('italic');
   else if (cmd === 'h1' || cmd === 'h2' || cmd === 'h3') { const tag = cmd.toUpperCase(); document.execCommand('formatBlock', false, currentBlockTag() === tag ? '<p>' : `<${cmd}>`); }
   else if (cmd === 'quote') document.execCommand('formatBlock', false, currentBlockTag() === 'BLOCKQUOTE' ? '<p>' : '<blockquote>');
