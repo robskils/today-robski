@@ -1335,7 +1335,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tbx-tt { flex:1; }
 .tbx-run { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:13px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; }
 .tbx-tool-body { padding:4px 16px 18px; }
-.tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:360px; }
+.tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:360px; margin-left:auto; margin-right:auto; }
 /* plain Timer */
 .tmr { display:flex; flex-direction:column; align-items:center; gap:12px; }
 .tmr-time { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:44px; font-weight:600; letter-spacing:.02em; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
