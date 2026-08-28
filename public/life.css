@@ -1345,6 +1345,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tmr-q { padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:13.5px; }
 .tmr-q:hover { border-color:var(--line-2); color:var(--ink); }
 .tmr-q.on { border-color:var(--accent); color:var(--accent); background:var(--paper); font-weight:600; }
+/* Custom exact length: minutes : seconds + Set. */
+.tmr-custom { display:flex; align-items:center; gap:6px; }
+.tmr-custom-l { font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); margin-right:2px; }
+.tmr-cnum { width:56px; text-align:center; -moz-appearance:textfield; appearance:textfield; }
+.tmr-cnum::-webkit-outer-spin-button, .tmr-cnum::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.tmr-colon { color:var(--ink-3); font-weight:600; }
+.tmr-set { padding:6px 14px; border:1px solid var(--line-2); border-radius:9px; font-size:14px; }
+.tmr-set:hover { border-color:var(--accent); color:var(--accent); }
 .tmr-ctrls { display:flex; gap:8px; width:100%; }
 .tmr-ctrls .add-btn { flex:1; }
 /* habit Tracker */

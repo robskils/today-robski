@@ -1819,6 +1819,7 @@ function timerPanel() {
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
       <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
+      <div class="tmr-custom"><span class="tmr-custom-l">Custom</span><input class="sel tmr-cnum" id="timer-min" type="number" min="0" max="1440" inputmode="numeric" value="${Math.floor(timerState.dur / 60)}" title="Minutes"><span class="tmr-colon">:</span><input class="sel tmr-cnum" id="timer-sec" type="number" min="0" max="59" inputmode="numeric" value="${String(timerState.dur % 60).padStart(2, '0')}" title="Seconds"><button class="ghost tmr-set" data-timer-custom>Set</button></div>
       <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
     </div>`;
 }
@@ -1829,6 +1830,14 @@ function timerToggle() {
 }
 function timerReset() { timerState.running = false; timerState.endAt = null; timerState.remaining = timerState.dur; saveTimer(); renderHome(); }
 function timerSet(min) { timerState.dur = min * 60; timerState.running = false; timerState.endAt = null; timerState.remaining = min * 60; saveTimer(); renderHome(); }
+// Any exact length: minutes + seconds from the custom inputs.
+function timerSetCustom() {
+  const mi = document.getElementById('timer-min'), se = document.getElementById('timer-sec');
+  const m = Math.max(0, Math.min(1440, Math.floor(Number(mi && mi.value) || 0)));
+  const s = Math.max(0, Math.min(59, Math.floor(Number(se && se.value) || 0)));
+  const total = m * 60 + s; if (total < 1) { toast('Set at least one second'); return; }
+  timerState.dur = total; timerState.running = false; timerState.endAt = null; timerState.remaining = total; saveTimer(); renderHome();
+}
 if (timerState.running) timerEnsureTicker();
 
 // ── Daily Practices (shared with the Today tool via `activities`) ─────────
@@ -6827,6 +6836,7 @@ document.addEventListener('keydown', (e) => {
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
   if (e.key === 'Enter' && e.target.id === 'adm-area-new') { e.preventDefault(); adminAreaAdd(); return; }
+  if (e.key === 'Enter' && (e.target.id === 'timer-min' || e.target.id === 'timer-sec')) { e.preventDefault(); timerSetCustom(); return; }
   // Tab in the rich prose editor indents rather than leaving the field. In a
   // bullet/numbered list it nests the item (up to ~7 levels); Shift+Tab pulls it
   // back out; in plain free-writing it inserts an indent at the caret.
@@ -7165,6 +7175,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-timer-toggle]')) { timerToggle(); return; }
   if (t.closest('[data-timer-reset]')) { timerReset(); return; }
   { const ts = t.closest('[data-timer-set]'); if (ts) { timerSet(Number(ts.dataset.timerSet)); return; } }
+  if (t.closest('[data-timer-custom]')) { timerSetCustom(); return; }
   { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
   { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
