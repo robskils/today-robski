@@ -2506,12 +2506,14 @@ async function openReadwatch() {
   renderReadwatch();
 }
 function renderReadwatch() {
-  const rw = state.rw || { items: [], filter: 'todo' };
+  const rw = state.rw || { items: [] };
   const items = rw.items || [];
-  const count = (f) => items.filter((b) => rwMatch(b, f)).length;
-  const tabs = RW_TABS.map(([k, l]) => `<button class="rw-tab ${rw.filter === k ? 'on' : ''}" data-rw-filter="${k}">${l}<span class="rw-tab-n">${count(k)}</span></button>`).join('');
-  const shown = rwSortList(items.filter((b) => rwMatch(b, rw.filter)), rw.sort || 'added-desc');
-  const cards = shown.map((b) => {
+  const sort = rw.sort || 'added-desc';
+  // One list, split by state: unread on top, read below. Ticking the box moves an
+  // item between the two. The box IS the read/unread toggle - empty = unread.
+  const unread = rwSortList(items.filter((b) => (b.props || {}).status !== 'done'), sort);
+  const read = rwSortList(items.filter((b) => (b.props || {}).status === 'done'), sort);
+  const card = (b) => {
     const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video'; const book = p.media === 'book'; const film = p.media === 'film';
     // A book/film with no stored link falls back to a web search, so tapping it
     // always leads somewhere (find it, buy it, watch it).
@@ -2519,25 +2521,25 @@ function renderReadwatch() {
       : film ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' film')}` : '#');
     const icon = vid ? '▶' : book ? '📖' : film ? '🎬' : '▤';
     return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''}">
+      <button class="rw-tick ${done ? 'on' : ''}" data-rw-done="${b.id}" role="checkbox" aria-checked="${done}" title="${done ? 'Read - tap to mark unread' : 'Tap when you\'ve read/watched it'}">${done ? '✓' : ''}</button>
       <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
       <div class="rw-body">
         <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
         <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : book ? '📖 Book' : film ? '🎬 Film' : '▤ Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
       </div>
-      <div class="rw-actions">
-        <button class="rw-done ${done ? 'on' : ''}" data-rw-done="${b.id}" title="${done ? 'Mark unread' : 'Mark done'}">✓</button>
-        <button class="rw-del" data-rw-del="${b.id}" title="Remove">×</button>
-      </div>
+      <button class="rw-del" data-rw-del="${b.id}" title="Remove">×</button>
     </div>`;
-  }).join('');
+  };
+  const section = (label, list, empty) => `<section class="rw-sec"><div class="home-sec-h rw-sec-h">${label}<span class="muted">${list.length}</span></div><div class="rw-list">${list.map(card).join('') || (empty ? `<div class="empty">${empty}</div>` : '')}</div></section>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Read & Watch')}
     <div class="pane-head home-head"><h1>Read &amp; Watch</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
     <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
     <div class="rw-type" title="For a title (not a link): look it up as a book or a film">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${(rw.addType || 'book') === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
-    <div class="rw-tabs"><div class="rw-tabs-scroll">${tabs}</div><select class="rw-sort sel" data-rw-sort title="Order">${RW_SORTS.map(([k, l]) => `<option value="${k}" ${(rw.sort || 'added-desc') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-    <div class="rw-list">${cards || `<div class="empty">${rw.filter === 'done' ? 'Nothing finished yet.' : 'Nothing here yet. Paste a link above, or set up one-tap saving.'}</div>`}</div>`;
+    ${items.length ? `<div class="rw-sortbar"><select class="rw-sort sel" data-rw-sort title="Order">${RW_SORTS.map(([k, l]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    ${section('Unread', unread, 'All caught up - nothing unread.')}${read.length ? section('Read', read, '') : ''}`
+      : '<div class="empty">Nothing here yet. Paste a link above, or set up one-tap saving.</div>'}`;
 }
 function rwSetupHtml() {
   const s = state.rw && state.rw.setup;
