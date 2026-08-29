@@ -10,6 +10,8 @@
 
 import { sendCodeMail } from './auth.js';
 import { isPublicSignup } from './admin.js';
+import { smtpSend, buildMessage } from './mail.js';
+import { inviteEmail } from './invite-email.js';
 
 // Names we keep for infrastructure / the product itself, never handed to a user.
 const RESERVED_SUBDOMAINS = new Set([
@@ -45,35 +47,63 @@ async function subdomainTaken(env, sub) {
   return !!(await env.DB.prepare('SELECT id FROM users WHERE subdomain = ?').bind(sub).first().catch(() => null));
 }
 
+// The invitation waiting for this address: created for them by name and not yet
+// redeemed. This is what lets someone accept an invitation without ever seeing a
+// code - they click the link in the email, sign in, and we find their invite.
+async function pendingInvite(env, email) {
+  return env.DB.prepare(
+    'SELECT code, email, plan, free, created_by, used_by FROM invites WHERE email = ? AND used_by IS NULL ORDER BY created_at DESC LIMIT 1',
+  ).bind(String(email || '').toLowerCase()).first().catch(() => null);
+}
+export async function hasPendingInvite(env, email) {
+  return !!(await pendingInvite(env, email));
+}
+
+// Which invite is this signup running on? A typed code wins (someone was given
+// one by hand); otherwise we look for the invitation emailed to this address.
+// Returns the row, null (none), or a reason string the caller turns into an error.
+//
+// A code pinned to an email is a *hint for finding it*, not a lock: an invitation
+// sent to a work address that someone then signs in with their personal one used
+// to be a dead end, and the code itself - 8 characters, emailed to one person -
+// is the credential.
+async function resolveInvite(env, typed, email) {
+  const code = String(typed || '').trim().toUpperCase();
+  if (!code) return (await pendingInvite(env, email)) || null;
+  const inv = await env.DB.prepare('SELECT code, email, plan, free, created_by, used_by FROM invites WHERE code = ?')
+    .bind(code).first().catch(() => null);
+  if (!inv) return 'unknown';
+  if (inv.used_by) return 'used';
+  return inv;
+}
+
 // Claim an account for a signed-in, allow-listed email.
 export async function handleSignup(request, env, email, json, err) {
   const existing = await getUserByEmail(env, email);
   if (existing) return json({ user: existing, already: true }, request);
 
   const b = await request.json().catch(() => ({}));
+
+  // The invitation comes first: if there isn't one, nothing else on the form
+  // matters, and "pick a username" is noise in front of "you need an invite".
+  // Invite-gated for now, but fully public-ready: set env.PUBLIC_SIGNUP='1' to
+  // drop the requirement and let anyone sign up (free plan).
+  const publicSignup = await isPublicSignup(env);
+  const inv = await resolveInvite(env, b.invite, email);
+  if (inv === 'unknown') return err('That invite code is not valid.', request, 400);
+  if (inv === 'used') return err('That invitation has already been used. Ask whoever invited you to send a fresh one.', request, 400);
+  if (!inv && !publicSignup) return err('Daybook is invite-only for now - you need an invitation from a member.', request, 403);
+
   const name = String(b.name || '').trim().slice(0, 40) || email.split('@')[0];
   const sub = normSubdomain(b.subdomain);
-  if (!sub) return err('Choose a web address: 2-30 letters, numbers or hyphens, e.g. tara', request, 400);
-  if (await subdomainTaken(env, sub)) return err(`"${sub}.daybook.fyi" is taken - try another`, request, 409);
+  if (!sub) return err('Pick a username: 2-30 letters, numbers or hyphens, e.g. tara', request, 400);
+  if (await subdomainTaken(env, sub)) return err(`"${sub}" is taken - try another`, request, 409);
 
-  // Invite-gated for now, but fully public-ready: set env.PUBLIC_SIGNUP='1' to
-  // drop the invite requirement and let anyone sign up (free plan). Until then a
-  // valid invite - from any member, or Robin - is required. A code can also carry
-  // a different plan / a pre-assigned email / the BYO-key "free" flag.
-  const publicSignup = await isPublicSignup(env);
-  const code = String(b.invite || '').trim();
-  if (!code && !publicSignup) return err('Daybook is invite-only for now - you need an invite from a member.', request, 403);
-  let plan = 'free', free = 0, invitedBy = null;
-  if (code) {
-    const inv = await env.DB.prepare('SELECT code, email, plan, free, created_by, used_by FROM invites WHERE code = ?')
-      .bind(code).first().catch(() => null);
-    if (!inv) return err('That invite code is not valid.', request, 400);
-    if (inv.used_by) return err('That invite has already been used.', request, 400);
-    if (inv.email && inv.email.toLowerCase() !== email.toLowerCase()) return err('That invite is for a different email address.', request, 400);
-    plan = inv.plan || 'standard';
-    free = inv.free ? 1 : 0;
-    invitedBy = inv.created_by || null;
-  }
+  // A code can carry a different plan and the BYO-key "free" flag.
+  const code = inv ? inv.code : null;
+  const plan = inv ? (inv.plan || 'standard') : 'free';
+  const free = inv && inv.free ? 1 : 0;
+  const invitedBy = inv ? (inv.created_by || null) : null;
   const now = new Date().toISOString();
   const res = await env.DB.prepare(
     'INSERT INTO users (email, name, subdomain, plan, status, invited_by, voucher, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -173,24 +203,94 @@ function randomCode() {
   return s;
 }
 const MEMBER_INVITE_CAP = 5;   // unused invites a non-admin member may hold at once
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+export const joinLink = (code) => `https://daybook.fyi/join/${code}`;
+
+// Create an invite and, when it names an address, *send it*. The inviter types
+// their friend's email and a note and the invitation lands in their inbox with a
+// one-click link - nobody copies a code between two apps. Leaving the email blank
+// still just mints a code to share by hand.
 export async function createInvite(env, input) {
   const admin = env.uid === 1;
-  if (!admin) {
+  // Anyone may address an invite to a person - that is how it gets sent. Only the
+  // owner may set a plan or the free (BYO-key) flag; a member's invite always
+  // grants the default free plan.
+  const email = (String(input.email || '').trim().toLowerCase()) || null;
+  if (email && !EMAIL_RE.test(email)) throw new Error('That does not look like an email address.');
+  if (email && await getUserByEmail(env, email)) throw new Error(`${email} is already on Daybook.`);
+
+  // Inviting the same person twice re-sends their standing invitation rather than
+  // leaving two live codes with one name on them. That also means a re-send never
+  // trips the cap: it costs no new invite. Its plan and free flag stay as first
+  // set - changing them is what a fresh code is for.
+  const existing = email ? await pendingInvite(env, email) : null;
+  if (!admin && !existing) {
     const c = await env.DB.prepare('SELECT COUNT(*) AS n FROM invites WHERE created_by = ? AND used_by IS NULL').bind(env.uid).first().catch(() => ({ n: 0 }));
-    if ((c.n || 0) >= MEMBER_INVITE_CAP) throw new Error(`You already have ${MEMBER_INVITE_CAP} unused invites out. Wait for one to be used before making more.`);
+    if ((c.n || 0) >= MEMBER_INVITE_CAP) throw new Error(`You already have ${MEMBER_INVITE_CAP} invitations open. Wait for one to be accepted before sending more.`);
   }
-  const code = (String(input.code || '').trim() || randomCode()).toUpperCase().slice(0, 24);
-  const now = new Date().toISOString();
-  // Only the owner may set a plan / the free (BYO-key) flag / pre-assign an email.
-  // A member's invite always grants the default free plan.
-  const plan = admin ? (input.plan || 'standard') : 'free';
-  const free = admin && input.free ? 1 : 0;
-  const email = admin ? ((input.email || '').trim().toLowerCase() || null) : null;
-  const note = admin ? (input.note || null) : null;
-  await env.DB.prepare(
-    'INSERT INTO invites (code, email, plan, free, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  ).bind(code, email, plan, free, note, env.uid, now).run();
-  return { code };
+
+  const code = existing ? existing.code
+    : (String(input.code || '').trim() || randomCode()).toUpperCase().slice(0, 24);
+  if (!existing) {
+    const plan = admin ? (input.plan || 'standard') : 'free';
+    const free = admin && input.free ? 1 : 0;
+    const note = admin ? (input.note || null) : null;
+    await env.DB.prepare(
+      'INSERT INTO invites (code, email, plan, free, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).bind(code, email, plan, free, note, env.uid, new Date().toISOString()).run();
+  }
+
+  let sent = false, sendError = null;
+  if (email && input.send !== false) {
+    try { await sendInviteMail(env, { to: email, code, message: input.message }); sent = true; }
+    catch (e) { sendError = e.message || 'Could not send the email.'; }
+  }
+  return { code, email, link: joinLink(code), sent, sendError, reused: !!existing };
+}
+
+// Send (or re-send) one unused invitation. The inviter can nudge someone whose
+// invite got lost without minting a second code.
+export async function resendInvite(env, code) {
+  const c = String(code || '').trim().toUpperCase();
+  const inv = await env.DB.prepare('SELECT code, email, created_by, used_by FROM invites WHERE code = ?').bind(c).first().catch(() => null);
+  if (!inv) throw new Error('No such invite.');
+  if (env.uid !== 1 && inv.created_by !== env.uid) throw new Error('That is not your invite.');
+  if (inv.used_by) throw new Error('That invitation has already been used.');
+  if (!inv.email) throw new Error('That invite has no email address on it - share its link instead.');
+  await sendInviteMail(env, { to: inv.email, code: inv.code });
+  return { code: inv.code, email: inv.email, sent: true };
+}
+
+// ── The invitation email ──────────────────────────────────────────────
+// From Daybook, but *about* the person who sent it: "Robin has invited you to
+// join Daybook". Replies go to the inviter, so a "what is this?" reaches a human.
+async function sendInviteMail(env, { to, code, message }) {
+  // The name goes into a Subject header, so strip anything that could start a
+  // header line of its own.
+  const from = String((env.user && env.user.name) || 'Someone').replace(/[\r\n]+/g, ' ').trim().slice(0, 40) || 'Someone';
+  const subject = `${from} has invited you to join Daybook`;
+  const link = joinLink(code);
+  const html = inviteEmail({ from, message, link });
+  const text = `${from} has invited you to join Daybook.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nDaybook is a calm home for your day - your calendar, tasks, notes and mail in one place.`;
+  const replyTo = (env.user && env.user.email) || null;
+
+  if (env.BRIEF_SMTP_PASS) {
+    // Same sender as the morning brief: a real Purelymail mailbox, so SPF/DKIM
+    // pass natively with no Resend domain to verify (see CLAUDE.md).
+    const acct = {
+      email: env.BRIEF_FROM || 'today@robski.uk', name: 'Daybook',
+      username: env.BRIEF_SMTP_USER || 'today@robski.uk',
+      smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
+    };
+    await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text, replyTo }) });
+    return;
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
+  });
+  if (!res.ok) throw new Error(`Could not send the invitation (${res.status}).`);
 }
 
 // ── Account ───────────────────────────────────────────────────────────

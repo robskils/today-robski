@@ -465,7 +465,7 @@ const HELP = {
       <li>Blocks can float (no fixed time) until the day decides where they land.</li>
       <li>Edit, rename, recolour, add or remove your lanes in <b>Settings › Time streams</b>.</li></ul>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which sections show, invites, and the tools that manage your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> lets you bring people in. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
   'settings-account': { title: 'Account', tip: 'Your name, the addresses you sign in with, your phone and your plan.',
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on. <b>Download your data</b> exports everything; <b>Close account</b> removes it.</p>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
@@ -476,8 +476,8 @@ const HELP = {
     body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
-  'settings-invites': { title: 'Invites', tip: 'Bring people onto Daybook with a code.',
-    body: `<p>Create an invite and share the code or link; whoever uses it can set up their own Daybook. You can hold a few unused invites at a time.</p>` },
+  'settings-invites': { title: 'Invites', tip: 'Bring people onto Daybook.',
+    body: `<p>Put in someone's email and a note, and Daybook emails them the invitation. They click one link, sign in and their own Daybook is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
   'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories, reminders and your Today lanes.',
     body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, <b>Reviews &amp; reminders</b> (cadence and nudges), and <b>Time streams</b> (your Today lanes and targets).</p>` },
 };
@@ -842,7 +842,7 @@ async function openAdmin() {
       api('/api/admin/overview'), api('/api/admin/users'), api('/api/admin/ai-usage'),
       api('/api/admin/settings'), api('/api/admin/quotes'),
     ]);
-    state.admin = { overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [] };
+    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [] };
   } catch (e) { toast(e.message); }
   if (!state.invites) loadInvites();
   renderAdmin();
@@ -863,7 +863,7 @@ function adminUserRow(u) {
   </div>`;
 }
 function renderAdmin() {
-  const a = state.admin || {};
+  const a = state.admin = state.admin || {};
   const ov = a.overview || {};
   const users = a.users || [];
   const uOv = ov.users || {};
@@ -873,51 +873,65 @@ function renderAdmin() {
   const pub = a.settings ? a.settings.publicSignup : ov.publicSignup;
   const card = (label, value, sub) => `<div class="adm-card"><div class="adm-card-v">${value}</div><div class="adm-card-l">${label}</div>${sub ? `<div class="adm-card-s">${sub}</div>` : ''}</div>`;
   const planChips = Object.entries(plans).map(([p, n]) => `<span class="adm-plan-chip">${esc(p)} · ${n}</span>`).join('');
-  $('#pane').innerHTML = `
-    ${pageCrumb('Admin')}
-    <div class="pane-head home-head"><h1>Admin</h1></div>
-    <p class="home-empty" style="margin:-6px 0 18px">Running Daybook - your members, usage and the switches that steer the business.</p>
+
+  // Admin is five unrelated jobs stacked in one scroll, which on a phone means
+  // thumbing past the whole business to reach the quotes. One tab at a time,
+  // exactly as Settings does it.
+  const TABS = [['overview', 'Overview'], ['members', 'Members'], ['invites', 'Invites'], ['setup', 'Setup'], ['quotes', 'Quotes']];
+  if (!TABS.some(([k]) => k === a.tab)) a.tab = 'overview';
+  const tab = a.tab;
+  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}</button>`).join('')}</div>`;
+
+  const overviewPane = `
     <div class="adm-cards">
       ${card('Members', admN(uOv.total), `${uOv.active7 || 0} active this week`)}
       ${card('New members', admN(uOv.new7), `${admN(uOv.new30)} in the last 30 days`)}
       ${card('AI cost this month', admUSD(ai.totalCost), `${admN(ai.calls)} calls${ai.month ? ' · ' + ai.month : ''}`)}
-      ${card('Invites', admN(inv.total), `${inv.unused || 0} unused`)}
+      ${card('Invitations', admN(inv.total), `${inv.unused || 0} still open`)}
     </div>
     ${planChips ? `<div class="adm-plans">${planChips}</div>` : ''}
-    <section class="home-sec"><div class="home-sec-h">Signup</div>
-      <div class="set-card">
-        <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
-      </div>
-    </section>
-    <section class="home-sec"><div class="home-sec-h">Default life areas<span class="muted">seeded on signup</span></div>
-      <div class="set-card">
-        <p class="home-empty" style="margin:0 0 14px">Every new account starts with these life areas. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
-        <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no life areas.</span>'}</div>
-        <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a life area…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
-      </div>
-    </section>
-    <section class="home-sec"><div class="home-sec-h">Members<span class="muted">${users.length}</span></div>
-      <div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>
-    </section>
-    ${(a.aiUsage || []).length ? `<section class="home-sec"><div class="home-sec-h">AI usage · this month</div>
-      <div class="admin-list">${a.aiUsage.map((r) => `<div class="admin-row"><span class="au-sub">${esc(r.subdomain || ('user ' + r.userId))}</span><span class="au-email">${admTok(r.inTokens)} in · ${admTok(r.outTokens)} out · ${admN(r.calls)} calls</span><span class="au-plan">${admUSD(r.cost)}</span></div>`).join('')}</div>
-    </section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">Invites</div>
-      <div class="set-card">
-        <div class="inv-new">
-          <select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
-          <label class="inv-free"><input type="checkbox" id="inv-freetoggle"> Free (100% off)</label>
-          <input class="sel" id="inv-email" placeholder="Pre-assign to an email (optional)" autocomplete="off">
-          <button class="add-btn wide" data-create-invite>Create invite</button>
-        </div>
-        <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet.</div>'}</div>
-      </div>
-    </section>
-    <section class="home-sec"><div class="home-sec-h">Daily quotes<span class="muted">${(a.quotes || []).length}</span></div>
-      <div class="set-card">
-        <div class="inv-new"><input class="sel" id="q-text" placeholder="A quote…" autocomplete="off"><input class="sel" id="q-author" placeholder="Author (optional)" autocomplete="off" style="max-width:190px"><button class="add-btn wide" data-quote-add>Add</button></div>
-        <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
-      </div>
+    ${(a.aiUsage || []).length ? `<div class="home-sec-h" style="margin-top:8px">AI usage · this month</div>
+      <div class="admin-list">${a.aiUsage.map((r) => `<div class="admin-row"><span class="au-sub">${esc(r.subdomain || ('user ' + r.userId))}</span><span class="au-email">${admTok(r.inTokens)} in · ${admTok(r.outTokens)} out · ${admN(r.calls)} calls</span><span class="au-plan">${admUSD(r.cost)}</span></div>`).join('')}</div>` : ''}`;
+
+  const membersPane = `<div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>`;
+
+  const invitesPane = `<div class="set-card">
+      <div class="inv-new"><button class="add-btn wide" data-create-invite>✦ Invite someone</button></div>
+      <p class="inv-hint">Put in their email and Daybook sends the invitation - one link, no code for them to type.</p>
+      <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">Nobody invited yet.</div>'}</div>
+    </div>`;
+
+  const setupPane = `<div class="set-card">
+      <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
+    </div>
+    <div class="set-card" style="margin-top:14px">
+      <div class="set-row-t">Default life areas</div>
+      <p class="home-empty" style="margin:6px 0 14px">Every new account starts with these. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
+      <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no life areas.</span>'}</div>
+      <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a life area…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
+    </div>`;
+
+  const quotesPane = `<div class="set-card">
+      <div class="inv-new"><input class="sel" id="q-text" placeholder="A quote…" autocomplete="off"><input class="sel" id="q-author" placeholder="Author (optional)" autocomplete="off" style="max-width:190px"><button class="add-btn wide" data-quote-add>Add</button></div>
+      <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
+    </div>`;
+
+  const panes = { overview: overviewPane, members: membersPane, invites: invitesPane, setup: setupPane, quotes: quotesPane };
+  const subs = {
+    overview: 'Members, usage and what AI is costing',
+    members: `${users.length} on Daybook`,
+    invites: `${inv.unused || 0} still open`,
+    setup: 'Registration & what new accounts start with',
+    quotes: `${(a.quotes || []).length} in the pool`,
+  };
+
+  $('#pane').innerHTML = `
+    ${pageCrumb('Admin')}
+    <div class="pane-head home-head"><h1>Admin</h1></div>
+    ${seg}
+    <section class="home-sec">
+      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${esc(subs[tab] || '')}</span></div>
+      ${panes[tab] || ''}
     </section>`;
 }
 async function addQuote() {
@@ -1040,18 +1054,68 @@ async function peopleSearch() {
 }
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Friends now'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
-// Invite someone to Daybook by email - a contact or anyone. Creates an invite
-// and copies its join link to send them; on the free plan it's a free-tier code.
-async function inviteToDaybook(prefill) {
-  const email = ((await uiPrompt('Invite to Daybook - their email address:', { title: 'Invite to Daybook', okLabel: 'Create invite', placeholder: 'name@example.com', value: prefill || '' })) || '').trim();
-  if (!email) return;
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('That does not look like an email address.'); return; }
-  try {
-    const r = await api('/api/invites', { method: 'POST', body: JSON.stringify({ email }) });
-    const link = `https://daybook.fyi/join/${r.code}`;
-    try { await navigator.clipboard.writeText(link); toast(`Invite link copied - send it to ${email}`); }
-    catch { await uiPrompt(`Send ${email} this invite link:`, { title: 'Invite created', value: link, okLabel: 'Done' }); }
-  } catch (e) { toast(e.message); }
+// Invite someone to Daybook: their email, a note in your own words, Send. The
+// worker emails the invitation with a one-click link - the invitee never copies a
+// code anywhere. Leave the email blank and it just mints a code to share by hand.
+// One dialog behind every entry point (Contacts, Settings, Admin) so there is a
+// single way to do this.
+function inviteToDaybook(prefill) {
+  const owner = !!(state.me && state.me.id === 1);
+  const el = uiDialogHost();
+  el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box inv-dialog">
+    <div class="recur-h">Invite someone to Daybook</div>
+    <p class="recur-p">They get an email with a one-click link. No code to type, nothing to set up first.</p>
+    <label class="inv-f"><span>Their email</span>
+      <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
+    <label class="inv-f"><span>A note from you <em>optional</em></span>
+      <textarea class="ui-dialog-input inv-d-msg" id="inv-d-msg" rows="3" placeholder="Thought you'd like this - it's how I run my day."></textarea></label>
+    ${owner ? `<div class="inv-d-owner">
+      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option><option value="free">Free</option></select></label>
+      <label class="inv-free"><input type="checkbox" id="inv-d-free"> Free (100% off)</label></div>` : ''}
+    <p class="inv-d-hint">No email? Leave it blank and we'll just make you a code to pass on.</p>
+    <p class="gate2-err inv-d-err" id="inv-d-err" hidden></p>
+    <div class="ui-dialog-btns">
+      <button class="ui-btn cancel" data-ud="0">Cancel</button>
+      <button class="ui-btn primary" data-ud="1" id="inv-d-ok">Send invitation</button>
+    </div></div></div>`;
+  const emailIn = el.querySelector('#inv-d-email');
+  const errEl = el.querySelector('#inv-d-err');
+  const ok = el.querySelector('#inv-d-ok');
+  const close = () => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  const syncBtn = () => { ok.textContent = emailIn.value.trim() ? 'Send invitation' : 'Create a code'; };
+  const fail = (m) => { errEl.textContent = m; errEl.hidden = false; ok.disabled = false; };
+  async function send() {
+    const email = emailIn.value.trim();
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('That does not look like an email address.');
+    errEl.hidden = true; ok.disabled = true;
+    const body = { email, message: (el.querySelector('#inv-d-msg').value || '').trim().slice(0, 600) };
+    if (owner) { body.plan = el.querySelector('#inv-d-plan').value; body.free = el.querySelector('#inv-d-free').checked ? 1 : 0; }
+    try {
+      const r = await api('/api/invites', { method: 'POST', body: JSON.stringify(body) });
+      close();
+      await loadInvites();
+      if (r.sent) toast(`Invitation sent to ${r.email}`);
+      // The invite exists even when the send failed, so hand its link over
+      // rather than losing it to an error toast.
+      else if (r.email) copyJoinLink(r.link, `Invite made, but the email didn't send (${r.sendError || 'unknown error'}). Its link is copied - send it yourself.`);
+      else copyJoinLink(r.link, 'Invite link copied - share it with anyone');
+    } catch (e) { fail(e.message); }
+  }
+  document.addEventListener('keydown', onKey, true);
+  emailIn.addEventListener('input', syncBtn);
+  el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(); });
+  el.querySelectorAll('[data-ud]').forEach((b) => b.addEventListener('click', () => (b.dataset.ud === '1' ? send() : close())));
+  syncBtn();
+  setTimeout(() => { emailIn.focus(); emailIn.select(); }, 20);
+}
+async function copyJoinLink(link, msg) {
+  try { await navigator.clipboard.writeText(link); toast(msg); }
+  catch { await uiPrompt('Send them this link:', { title: 'Invitation link', value: link, okLabel: 'Done' }); }
+}
+async function resendInvitation(code) {
+  try { const r = await api('/api/invites/resend', { method: 'POST', body: JSON.stringify({ code }) }); toast(`Invitation re-sent to ${r.email}`); }
+  catch (e) { toast(e.message); }
 }
 function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
 // Chat with a friend: a slide-in panel that polls for new messages while open.
@@ -1184,14 +1248,11 @@ async function sharedToggleDone(id, done) {
     else if (state.view && state.view.type === 'tasks') renderTasks();
   } catch (e) { toast(e.message); }
 }
-async function createInvite() {
-  const plan = ($('#inv-plan') || {}).value || 'standard';
-  const free = ($('#inv-freetoggle') || {}).checked ? 1 : 0;
-  const email = (($('#inv-email') || {}).value || '').trim();
-  try { const r = await api('/api/invites', { method: 'POST', body: JSON.stringify({ plan, free, email }) }); await loadInvites(); toast(`Invite created: ${r.code}`); }
-  catch (e) { toast(e.message); }
-}
-const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}"><code class="inv-code">${esc(i.code)}</code><span class="inv-meta">${i.free ? 'free · ' : ''}${esc(i.plan || '')}${i.email ? ' · ' + esc(i.email) : ''}${i.used_by ? ' · used' : ''}</span>${i.used_by ? '' : `<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Copy link</button>`}</div>`;
+// Who it went to leads, not the code: an invitation is a person you're waiting on.
+const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
+  <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)}${i.free ? ' · free' : ''}${i.plan ? ' · ' + esc(i.plan) : ''} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
+  ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button></span>`}
+</div>`;
 function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
@@ -1207,7 +1268,7 @@ function renderSettings() {
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
   ];
-  if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Users, invites &amp; quotes', 'data-open-admin=""']);
+  if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
   // collapsing scroll, so the settings you reach for most are one tap in.
   const TABS = [
@@ -1273,20 +1334,15 @@ function renderSettings() {
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const invitesPane = `<div class="set-card">
-        <div class="inv-new">
-          ${(state.me && state.me.id === 1) ? `<select class="sel" id="inv-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select>
-          <label class="inv-free"><input type="checkbox" id="inv-freetoggle"> Free (100% off)</label>
-          <input class="sel" id="inv-email" placeholder="Pre-assign to an email (optional)" autocomplete="off">` : ''}
-          <button class="add-btn wide" data-create-invite>Create invite</button>
-        </div>
-        ${(state.me && state.me.id === 1) ? '' : '<p class="inv-hint">Give a code to someone and they can create their own Daybook. Up to 5 unused at a time.</p>'}
-        <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">No invites yet - create one to share.</div>'}</div>
+        <div class="inv-new"><button class="add-btn wide" data-create-invite>✦ Invite someone</button></div>
+        <p class="inv-hint">Put in their email and we'll send the invitation for you - they click one link and they're in. ${(state.me && state.me.id === 1) ? '' : 'Up to 5 outstanding at a time.'}</p>
+        <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">Nobody invited yet.</div>'}</div>
       </div>`;
 
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
   const panes = { account: accountPane, appearance: appearancePane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', ai: 'AI keys & switch', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: (state.me && state.me.id === 1) ? 'Invite people to Daybook' : 'Share a code so someone can join', manage: 'Life areas, mail, categories & more' };
+  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', ai: 'AI keys & switch', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
 
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
@@ -7233,7 +7289,9 @@ document.addEventListener('click', (e) => {
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
   if (t.closest('[data-account-export]')) { downloadExport(); return; }
   if (t.closest('[data-account-close]')) { closeMyAccount(); return; }
-  if (t.closest('[data-create-invite]')) { createInvite(); return; }
+  if (t.closest('[data-create-invite]')) { inviteToDaybook(); return; }
+  { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
+  { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://daybook.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
@@ -8865,10 +8923,16 @@ document.addEventListener('keydown', (e) => {
 
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
 let gateStep = 'email', gateEmail = '';
-function showGate(sub) {
+// daybook.fyi itself belongs to nobody: an invitee landing there is not signing
+// in to Robin's Daybook, so the wordmark drops the owner's name and reads just
+// "Daybook". On a tenant subdomain it stays whose it is.
+const onApex = () => location.hostname === 'daybook.fyi' || location.hostname === 'www.daybook.fyi';
+function showGate(sub, invited) {
+  const plain = invited || onApex();
+  const mark = `${plain ? '' : esc(BRAND.owner) + ' '}<span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span>`;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark">${esc(BRAND.owner)} <span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span></div>
+      <div class="gate2-mark">${mark}</div>
       <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
@@ -8882,36 +8946,63 @@ function showGate(sub) {
 // (name + subdomain + invite). Only reached on the multi-tenant build, where
 // /api/me returns needsSignup; on the single-tenant app /api/me 404s and this
 // never shows.
-function showSignup(email, inviteRequired) {
-  // Prefill the web address from the subdomain they arrived on (name.daybook.fyi),
-  // so if they picked it on the homepage they don't retype it.
+const storedInvite = () => { try { return localStorage.getItem('life.invite') || ''; } catch { return ''; } };
+function showSignup(email, inviteRequired, invited) {
+  // Prefill the username from the subdomain they arrived on (name.daybook.fyi),
+  // else from their email, so most people only have to agree with it.
   let presub = '';
   try { const h = location.hostname; if (h.endsWith('.daybook.fyi')) { const f = h.split('.')[0]; if (f && f !== 'www') presub = f; } } catch {}
-  const inviteLabel = inviteRequired ? 'Invite code' : 'Invite code <span class="su-opt">(optional)</span>';
-  let preInvite = ''; try { preInvite = localStorage.getItem('life.invite') || ''; } catch {}
+  if (!presub) presub = (email.split('@')[0] || '').toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '').slice(0, 30);
+  const preInvite = storedInvite();
+  // Only ask for a code when we haven't already got one. An invitation addressed
+  // to this email (invited) or a code carried in by the /join link covers almost
+  // everyone - and being asked for a code they had no way to produce is exactly
+  // where the first invitations died.
+  const needCode = inviteRequired && !invited && !preInvite;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><em>${esc(BRAND.app)}</em></div>
-      <p class="gate2-sub">Welcome - let's set up your space.</p>
+      <p class="gate2-sub">${invited || preInvite ? 'Your invitation is accepted - now make it yours.' : "Welcome - let's set up your Daybook."}</p>
       <label class="signup-l">Your name<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
-      <label class="signup-l">Your web address<span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" value="${esc(presub)}" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span></label>
-      <label class="signup-l">${inviteLabel}<input class="gate2-input" id="su-invite" value="${esc(preInvite)}" placeholder="${inviteRequired ? 'From a member who invited you' : "Leave blank if you don't have one"}" autocomplete="off" spellcheck="false" ${inviteRequired ? 'required' : ''}></label>
+      <label class="signup-l">Choose a username
+        <span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" value="${esc(presub)}" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span>
+        <span class="su-username-note">Your Daybook will live at <b><span id="su-preview">${esc(presub || 'username')}</span>.daybook.fyi</b></span>
+      </label>
+      ${needCode ? `<label class="signup-l">Invite code<input class="gate2-input" id="su-invite" placeholder="From your invitation" autocomplete="off" spellcheck="false" required>
+        <span class="su-username-note">The code in the email that invited you.</span></label>` : ''}
       <button class="gate2-btn" id="su-btn" type="submit">Create my Daybook</button>
       <p class="gate2-err" id="su-err" hidden></p>
       <p class="gate2-alt su-foot">Signed in as ${esc(email)} · <button type="button" class="su-signout" id="su-signout">sign out</button></p>
     </form></div>`);
   $('#signup-form').addEventListener('submit', signupSubmit);
   $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); });
-  $('#su-sub').addEventListener('input', (e) => { e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
+  $('#su-sub').addEventListener('input', (e) => {
+    e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const pv = $('#su-preview'); if (pv) pv.textContent = e.target.value || 'username';
+  });
   $('#su-name').focus();
+}
+// Their Daybook lives on its own subdomain - a different origin, with its own
+// empty localStorage. Carry the session over in the fragment (never sent to a
+// server, never logged) so the new origin is signed in on arrival. Reloading the
+// apex instead used to land the newcomer back on the marketing page, which is
+// what made a completed signup look like a failed one.
+function goToMyDaybook(sub) {
+  const host = sub ? `${sub}.daybook.fyi` : '';
+  if (!host || location.hostname === host) { location.reload(); return; }
+  location.replace(`https://${host}/#t=${encodeURIComponent(token())}`);
 }
 async function signupSubmit(e) {
   e.preventDefault();
-  const err = $('#su-err'), btn = $('#su-btn');
+  const err = $('#su-err'), btn = $('#su-btn'), inv = $('#su-invite');
   err.hidden = true; btn.disabled = true;
   try {
-    const d = await api('/api/signup', { method: 'POST', body: JSON.stringify({ name: $('#su-name').value.trim(), subdomain: $('#su-sub').value.trim(), invite: $('#su-invite').value.trim() }) });
-    if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} location.reload(); return; }
+    const d = await api('/api/signup', { method: 'POST', body: JSON.stringify({
+      name: $('#su-name').value.trim(),
+      subdomain: $('#su-sub').value.trim(),
+      invite: inv ? inv.value.trim() : storedInvite(),
+    }) });
+    if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} goToMyDaybook(d.user.subdomain); return; }
     throw new Error('Could not create your account.');
   } catch (e2) { err.textContent = e2.message || 'Could not create your account.'; err.hidden = false; btn.disabled = false; }
 }
@@ -8972,19 +9063,33 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
 
 (async function boot() {
   initTheme();
-  // Invite link: /join/CODE (or ?invite=CODE) stashes the code so the signup form
-  // prefills it, then tidies the URL.
+  // Session hand-off from the apex (see goToMyDaybook): #t=<jwt> signs this
+  // origin in on arrival, then the fragment is wiped from the URL.
+  try {
+    const h = location.hash.match(/^#t=([A-Za-z0-9._~%-]+)$/);
+    if (h) { localStorage.setItem(KEY, decodeURIComponent(h[1])); history.replaceState(null, '', location.pathname + location.search); }
+  } catch {}
+  // Invite link: /join/CODE (or ?invite=CODE) stashes the code so the signup
+  // never has to ask for it, then tidies the URL.
+  let invited = false;
   try {
     const m = location.pathname.match(/^\/join\/([A-Za-z0-9-]{4,24})$/);
     const code = (m && m[1]) || new URLSearchParams(location.search).get('invite');
-    if (code) { localStorage.setItem('life.invite', code.toUpperCase()); history.replaceState(null, '', '/'); }
+    // Tidy the code out of the URL but stay on /join: that path still serves the
+    // app shell, so refreshing mid-signup doesn't dump them on the marketing page.
+    if (code) { localStorage.setItem('life.invite', code.toUpperCase()); history.replaceState(null, '', '/join'); }
+    invited = !!storedInvite();
   } catch {}
-  if (!token()) { showGate(); return; }
+  if (!token()) { showGate(invited ? "You've been invited to Daybook. Sign in with your email to accept." : null, invited); return; }
   // Multi-tenant only: a signed-in email with no account yet must claim one
   // first. On the single-tenant app /api/me 404s, so this is a no-op.
   try {
     const me = await api('/api/me');
-    if (me && me.needsSignup) { showSignup(me.email, me.inviteRequired); return; }
+    if (me && me.needsSignup) { showSignup(me.email, me.inviteRequired, invited || me.invited); return; }
+    // daybook.fyi is the marketing site, not anybody's Daybook. Someone who
+    // arrived on a join link and already has an account belongs on their own
+    // subdomain, signed in - not staring at "Request an invite".
+    if (me && me.user && onApex() && me.user.subdomain) { goToMyDaybook(me.user.subdomain); return; }
     if (me && me.user) { state.me = me.user; if (me.user.name) BRAND.owner = me.user.name; }
   } catch {}
   try {

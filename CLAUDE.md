@@ -19,6 +19,33 @@ Read README.md first: it explains the architecture and how the pieces fit.
   matches the domain exactly - never loosen it to endsWith, that would let
   `robski.uk.evil.com` in. `npm test` covers it.
 
+## Invitations
+
+You put in someone's email and a note; the worker emails them the invitation
+(`sendInviteMail` in accounts.js, template in the pure `worker/invite-email.js`).
+**Nobody is ever asked to type a code.** Three things make that true, and each
+was a way the first invitations died:
+
+- **The signup form only asks for a code when it hasn't already got one.**
+  `/join/<CODE>` stashes it, and failing that `resolveInvite` finds the unused
+  invite addressed to the signed-in email. A pinned email is how we *find* an
+  invitation, not a lock on it: blocking a mismatch stranded anyone who read the
+  mail at work and signed in with a personal address. The code is the credential.
+- **A signup finishes on the new account's own subdomain.** Signing up happens on
+  `daybook.fyi`, but `tara.daybook.fyi` is a different origin with its own empty
+  localStorage. `goToMyDaybook` carries the session over in the URL fragment
+  (never sent to a server, never logged). Reloading the apex instead landed the
+  newcomer on the marketing page and asked for a second sign-in code, which read
+  as "signup failed" - while the invite was already marked used, so trying again
+  was a dead end.
+- **`/join` with no code still serves the app shell**, because the app tidies the
+  code out of the URL and a mid-signup refresh must not drop them on marketing.
+
+Inviting the same person twice re-sends their standing invitation rather than
+minting a second live code, so a re-send never costs a member one of their five.
+The email escaping is tested: an invitation carries two pieces of somebody's
+typed text (the inviter's name, their note) into a stranger's inbox.
+
 ## How tasks work
 
 Tasks are **native blocks** in D1: `kind='task'`, with a `props` JSON holding
@@ -98,6 +125,8 @@ or the other and would deliver half a brief, which is what the old one did.
 shared/lanes.js     LANES + AREA_TO_LANE. Imported across the worker.
 worker/index.js     API. Router at the bottom.
 worker/brief.js     The 08:45 email. Pure: renders, sends nothing.
+worker/accounts.js  Signup, invitations, account settings.
+worker/invite-email.js  The invitation email. Pure, like brief.js.
 worker/schema.sql   blocks, slots, slot_tasks, settings, activities, etc.
 public/             index.html, today.css, today.js, favicon.svg
 sync/google-auth.js one-off refresh-token helper (Robin runs it)

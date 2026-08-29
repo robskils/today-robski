@@ -1484,11 +1484,29 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ai-key-in .sel { flex:1; min-width:180px; margin:0; }
 .ai-key-in .add-btn.wide, .ai-key-in .ghost { flex:none; }
 .inv-list { display:flex; flex-direction:column; gap:7px; margin-top:16px; }
-.inv-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); }
+.inv-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); flex-wrap:wrap; }
 .inv-row.used { opacity:.55; }
 .inv-code { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:15px; font-weight:600; letter-spacing:.06em; color:var(--ink); flex:none; }
-.inv-meta { flex:1; min-width:0; font-size:13px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* An invitation is a person you're waiting on, so their address leads and the
+   code drops to the meta line under it. */
+.inv-who { flex:1; min-width:150px; display:flex; flex-direction:column; gap:2px; overflow:hidden; }
+.inv-who b { font-size:14.5px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.inv-meta { min-width:0; font-size:12.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.inv-acts { flex:none; display:flex; gap:7px; }
 .inv-copy { flex:none; padding:5px 12px; }
+
+/* Invite dialog: their email, a note in your words, send. */
+.inv-dialog { width:min(460px,94vw); max-height:82vh; overflow:auto; }
+.inv-f { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--ink-2); }
+.inv-f em { font-style:normal; font-weight:400; color:var(--ink-3); }
+.inv-f .ui-dialog-input { margin-bottom:14px; }
+.inv-f .sel { margin:0 0 14px; }
+.inv-d-msg { font-family:inherit; line-height:1.5; resize:vertical; min-height:76px; }
+.inv-d-owner { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+.inv-d-owner .inv-f { flex:1; min-width:170px; }
+.inv-d-owner .inv-free { padding-bottom:14px; }
+.inv-d-hint { font-size:12.5px; color:var(--ink-3); margin:0 0 14px; line-height:1.5; }
+.inv-d-err { margin:0 0 12px; text-align:left; }
 /* Drag-to-reorder feedback: the dragged item dims and the drop target shows an
    accent insertion line so it's obvious where it will land. */
 .nav-sec, [data-fav-id] { position:relative; }
@@ -1833,6 +1851,20 @@ table.ttable tr:last-child td { border-bottom:0; }
 .tab-new { flex:none; width:30px; height:30px; border-radius:8px; color:var(--ink-3); font-size:20px; line-height:1; }
 .tab-new:hover { background:var(--paper-2); color:var(--accent); }
 @media (max-width:820px){ .tabstrip { display:none; } }
+/* Admin on a phone. The member row stops squeezing a plan select and a suspend
+   button into a side column and gives them a row of their own; the stat cards go
+   two-up rather than one long column. */
+@media (max-width:620px){
+  .adm-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .adm-card { padding:13px 14px; }
+  .adm-card-v { font-size:22px; }
+  .adm-user { grid-template-columns:minmax(0,1fr); }
+  .adm-user-main { flex-direction:column; gap:1px; }
+  .adm-user-main .au-email { font-size:13px; overflow:hidden; text-overflow:ellipsis; }
+  .adm-user-acts { grid-row:auto; grid-column:1; margin-top:8px; }
+  .adm-user-acts .au-plan-sel { flex:1; }
+  .adm-area-add { flex-direction:column; }
+}
 
 /* The real day planner, embedded edge-to-edge in the Life pane. */
 .pane:has(.today-frame) { padding:0; max-width:none; display:flex; flex-direction:column; height:calc(100vh - 44px); }

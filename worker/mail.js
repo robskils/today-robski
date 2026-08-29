@@ -402,6 +402,7 @@ export function buildMessage(acct, msg) {
     `From: ${acct.name ? `${mimeWord(acct.name)} ` : ''}<${acct.email}>`,
     `To: ${msg.to}`,
     msg.cc ? `Cc: ${msg.cc}` : null,
+    msg.replyTo ? `Reply-To: ${String(msg.replyTo).replace(/[\r\n]/g, '')}` : null,
     `Subject: ${subj}`,
     `Date: ${new Date().toUTCString()}`,
     `Message-ID: <${crypto.randomUUID()}@${acct.email.split('@')[1]}>`,

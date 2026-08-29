@@ -1,6 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
-import { handleSignup, getUserByEmail, listInvites, createInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
+import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
@@ -2159,8 +2159,10 @@ export default {
         return withHsts(new Response(webinarPage(w, wm[1]), { status: w ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } }));
       }
       // Invite links: /join/<CODE> boots the app (on any host) so the signup form
-      // can pick the code out of the URL and prefill it.
-      if (/^\/join\/[A-Za-z0-9-]{4,24}$/.test(path)) {
+      // can pick the code out of the URL and prefill it. Bare /join is the same
+      // shell: the app tidies the code out of the URL once it has stashed it, and
+      // a refresh mid-signup must not drop the newcomer on the marketing page.
+      if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path)) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }
       // Only the marketing apex may be indexed; the private apps and per-user
@@ -2244,7 +2246,10 @@ export default {
       if (path === '/api/me' && request.method === 'GET') {
         if (!authedEmail) return err('unauthorized', request, 401);
         const user = await getUserByEmail(env, authedEmail);
-        return json({ email: authedEmail, user: user || null, needsSignup: !user, inviteRequired: !(await isPublicSignup(env)) }, request);
+        // `invited`: an unused invitation already names this address, so the
+        // signup form can skip asking for a code entirely.
+        const invited = user ? false : await hasPendingInvite(env, authedEmail);
+        return json({ email: authedEmail, user: user || null, needsSignup: !user, invited, inviteRequired: !(await isPublicSignup(env)) }, request);
       }
       if (path === '/api/signup' && request.method === 'POST') {
         if (!authedEmail) return err('unauthorized', request, 401);
@@ -2266,6 +2271,11 @@ export default {
           if (request.method === 'GET') return json({ invites: await listInvites(env), admin: env.uid === 1 }, request);
           if (request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await createInvite(env, b), request, 201); }
         } catch (e) { return err(e.message, request, 400); }
+      }
+      // Nudge someone whose invitation got lost, without minting a second code.
+      if (path === '/api/invites/resend' && request.method === 'POST') {
+        try { const b = await request.json().catch(() => ({})); return json(await resendInvite(env, b.code), request); }
+        catch (e) { return err(e.message, request, 400); }
       }
       // Admin dashboard (owner only): users list + global daily quotes.
       if (path.startsWith('/api/admin/')) {
