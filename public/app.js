@@ -1606,6 +1606,12 @@ const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).p
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
+// "Saturday 29th August" - weekday, ordinal day, month.
+function homeDate() {
+  const d = new Date();
+  const ord = (n) => { const v = n % 100; return n + (['th', 'st', 'nd', 'rd'][(v - 20) % 10] || ['th', 'st', 'nd', 'rd'][v] || 'th'); };
+  return `${d.toLocaleDateString('en-GB', { weekday: 'long' })} ${ord(d.getDate())} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
+}
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
 const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
@@ -1991,7 +1997,7 @@ function renderHome() {
     <div class="home">
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <div class="home-head">
-        <h1>${greeting()}, <span class="hi-name">Robski</span></h1>
+        <div class="home-hi"><h1>${greeting()}, <span class="hi-name">Robski</span></h1><div class="home-date">${homeDate()}</div></div>
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
       ${alertsHtml()}

@@ -1509,6 +1509,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .home-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
 .home-head h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(30px,4.5vw,42px); font-weight:500; }
 .home-head h1 .hi-name { color:var(--accent); font-style:italic; }
+.home-hi { min-width:0; }
+.home-date { margin-top:4px; font-size:16px; color:var(--ink-3); letter-spacing:.01em; }
 .home-actions { display:flex; gap:10px; }
 .home-sec { margin:26px 0; }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
