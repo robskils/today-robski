@@ -1541,8 +1541,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
      every section title lines up flush left whichever column it came from. */
   .home-sec-toggle { padding:6px 0; margin-bottom:8px; }
   .home-grip { display:none; }
-  .home-sec-today { order:1; } .home-sec-notepad { order:2; } .home-sec-recent { order:3; }
-  .home-sec-focus { order:4; } .home-sec-favs { order:5; }
+  /* Today right under the tool buttons; the Toolbox last. */
+  .home-sec-today { order:1; } .home-sec-p1 { order:2; } .home-sec-focus { order:3; }
+  .home-sec-favareas { order:4; } .home-sec-favs { order:5; } .home-sec-recent { order:6; }
+  .home-sec-notepad { order:7; } .home-toolbox { order:20; }
   /* Everything stacks on mobile - never a sideways scroll. Goal cards go one per
      row (no 280px min to spill into two columns), the home columns can't be
      pushed past the screen, and the home clips any stray horizontal overflow. */

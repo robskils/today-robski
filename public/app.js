@@ -1935,7 +1935,15 @@ function homeQuoteHtml() {
 }
 // Every Home section can be collapsed; the set of collapsed keys persists.
 function homeCollapsed() { try { return JSON.parse(localStorage.getItem('life.home.collapsed')) || {}; } catch { return {}; } }
-function secOpen(key) { return !homeCollapsed()[key]; }
+const isMobileHome = () => window.matchMedia('(max-width:820px)').matches;
+// A section is open unless you've collapsed it. With no explicit choice yet, the
+// default differs by device: on mobile only Today starts open (the rest closed,
+// so the phone home is a short scroll); on desktop everything starts open.
+function secOpen(key) {
+  const c = homeCollapsed();
+  if (key in c) return c[key] !== true;   // your explicit choice always wins
+  return !isMobileHome() || key === 'today';
+}
 // Reposition-by-drag is a desktop affordance; on a phone the grip only misaligns
 // the header and can swallow the tap, so mobile headers are plain tap-to-collapse.
 function secH(key, title, extra, drag) {
@@ -7211,7 +7219,7 @@ document.addEventListener('click', (e) => {
   { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
   { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
-  { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; if (c[k]) delete c[k]; else c[k] = true; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
+  { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
