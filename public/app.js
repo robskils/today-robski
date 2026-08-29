@@ -1445,7 +1445,7 @@ function closeShortcuts() { const el = document.getElementById('sc-overlay'); if
 // Sidebar quick-add: jump to the tool and open its "new" affordance directly.
 async function quickAdd(kind) {
   try {
-    if (kind === 'task') { await openTasks(); state.taskAdding = true; renderTasks(); setTimeout(() => { const i = $('#task-title'); if (i) i.focus(); }, 0); }
+    if (kind === 'task') { state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
     else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
@@ -4827,6 +4827,14 @@ function renderTasks() {
     ${taskTableHtml(open, (conds.length || tq) ? 'No tasks match these filters.' : 'No open tasks here.')}
     ${snoozedSection}
     ${completedSection}`;
+  // Put the cursor in the new-task title whenever the add form is freshly opened -
+  // and keep it there. openTasks re-renders again when assigned tasks load, which
+  // would otherwise steal the focus; the short arming window re-focuses on every
+  // render until you start typing.
+  if (state.taskAdding && state.taskFocusArm && Date.now() - state.taskFocusArm < 4000) {
+    const focusIt = () => { const i = $('#task-title'); if (i && document.activeElement !== i && !i.value) i.focus(); };
+    focusIt(); requestAnimationFrame(focusIt);
+  }
 }
 
 // ── contacts ─────────────────────────────────────────
@@ -7417,7 +7425,7 @@ document.addEventListener('click', (e) => {
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
-  if (t.closest('[data-task-add]')) { state.taskAdding = true; renderTasks(); setTimeout(() => { const i = $('#task-title'); if (i) i.focus(); }, 0); return; }
+  if (t.closest('[data-task-add]')) { state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); return; }
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
