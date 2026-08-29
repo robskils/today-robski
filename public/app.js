@@ -1619,7 +1619,7 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day, pad, rec, goals, alerts, spirit] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts, spirit, order] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
@@ -1627,8 +1627,12 @@ async function openHome() {
     api('/api/blocks?kind=goal').catch(() => state.goals || []),
     api('/api/home/alerts').catch(() => null),
     api('/api/kv/spirit_card').catch(() => null),
+    api('/api/kv/home_order').catch(() => null),
   ]);
   state.goals = goals || [];
+  // The desktop section arrangement follows your account: seed this device's copy
+  // from the server so a rearrangement made on one desktop shows on the next.
+  if (order && order.value) { try { if (Array.isArray(JSON.parse(order.value))) localStorage.setItem('life.home.mainOrder', order.value); } catch {} }
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
   // The pinned spirit card follows the account: take the server's if we have one.
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
@@ -7778,7 +7782,10 @@ function reorderHomeSec(dragged, before, cur) {
   const arr = cur.filter((k) => k !== dragged);
   let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
   arr.splice(i, 0, dragged);
-  try { localStorage.setItem('life.home.mainOrder', JSON.stringify(arr)); } catch {}
+  const val = JSON.stringify(arr);
+  try { localStorage.setItem('life.home.mainOrder', val); } catch {}
+  // Persist to the account too, so the arrangement follows you to other desktops.
+  api('/api/kv/home_order', { method: 'PUT', body: JSON.stringify({ value: val }) }).catch(() => {});
   renderHome();
 }
 function clearDropMarks() {
