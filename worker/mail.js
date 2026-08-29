@@ -482,6 +482,7 @@ function parseIcs(text) {
     start: s.allDay ? null : s.iso, startDate: s.allDay ? s.date : null,
     end: e && !e.allDay ? e.iso : null, endDate: e && e.allDay ? e.date : null,
     tz: s.allDay ? null : s.tz, url,
+    uid: (ev.UID && ev.UID.val) || '',
   };
 }
 const mimeWord = (s) => /[^\x00-\x7F]/.test(s) ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(s)))}?=` : s;

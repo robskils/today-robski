@@ -4272,23 +4272,41 @@ function inviteCardHtml(inv) {
     else { const s = new Date(inv.start), e = inv.end ? new Date(inv.end) : null; const opt = { hour: '2-digit', minute: '2-digit' };
       when = s.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + s.toLocaleTimeString(undefined, opt) + (e ? '–' + e.toLocaleTimeString(undefined, opt) : ''); }
   } catch {}
+  if (!state.calAdded && !state._calAddedReq) { state._calAddedReq = true; loadCalAdded().then(() => { if (state.view && state.view.type === 'mail') renderMail(); }); }
+  const added = calInviteAdded(inv);
   return `<div class="mail-invite">
     <div class="mail-invite-h">📅 Calendar invitation</div>
     <div class="mail-invite-title">${esc(inv.summary || '(no title)')}</div>
     <div class="mail-invite-when">${esc(when)}</div>
     ${inv.location ? `<div class="mail-invite-loc">📍 ${esc(inv.location)}</div>` : ''}
     ${inv.organizer ? `<div class="mail-invite-org">from ${esc(inv.organizer)}</div>` : ''}
-    <div class="mail-invite-act"><button class="add-btn wide" data-mail-invite-add>Add to Calendar</button>${inv.url ? `<button class="ghost" data-mail-join="${esc(inv.url)}">🎥 Join</button>` : ''}</div>
+    <div class="mail-invite-act">${added ? '<span class="mail-invite-added">✓ On your calendar</span>' : '<button class="add-btn wide" data-mail-invite-add>Add to Calendar</button>'}${inv.url ? `<button class="ghost" data-mail-join="${esc(inv.url)}">🎥 Join</button>` : ''}</div>
   </div>`;
+}
+// One invite = one calendar event. Track which we've added (by the .ics UID, or a
+// title+start fallback) in a kv setting, so a second tap - or reopening the same
+// email - shows it's already there instead of duplicating it.
+const inviteKey = (inv) => inv.uid || `${inv.summary || ''}|${inv.start || inv.startDate || ''}`;
+const calInviteAdded = (inv) => !!(state.calAdded && state.calAdded[inviteKey(inv)]);
+async function loadCalAdded() {
+  if (state.calAdded) return state.calAdded;
+  try { const r = await api('/api/kv/cal_added'); state.calAdded = (r && r.value && JSON.parse(r.value)) || {}; } catch { state.calAdded = {}; }
+  return state.calAdded;
 }
 async function mailInviteAdd() {
   const inv = state.mail.open && state.mail.open.invite; if (!inv) return;
+  await loadCalAdded();
+  if (calInviteAdded(inv)) { toast('Already on your calendar'); return; }
   let body;
   if (inv.allDay) body = { title: inv.summary, allDay: true, day: inv.startDate, location: inv.location || undefined };
   else { let end = inv.end; if (!end && inv.start) { try { end = new Date(new Date(inv.start).getTime() + 3600000).toISOString(); } catch {} }
     body = { title: inv.summary, start: inv.start, end, tz: inv.tz || undefined, location: inv.location || undefined }; }
-  try { await api('/api/events', { method: 'POST', body: JSON.stringify(body) }); toast('Added to your calendar'); }
-  catch (e) { toast(e.message); }
+  try {
+    await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
+    state.calAdded[inviteKey(inv)] = 1;
+    api('/api/kv/cal_added', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.calAdded) }) }).catch(() => {});
+    toast('Added to your calendar'); renderMail();
+  } catch (e) { toast(e.message); }
 }
 // The inner HTML of the .mail-list container (rows / loading / empty state).
 // Kept separate so a live search can refresh just the list without rebuilding
