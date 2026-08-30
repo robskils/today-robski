@@ -1406,6 +1406,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-bottom-row { display:flex; gap:8px; }
 .nav-bottom-row .nav-theme { flex:1; width:auto; min-width:0; }
 .nav-adminlink { width:100%; }
+.nav-signout { width:100%; }
+.nav-signout:hover { color:var(--danger,#c0392b); border-color:color-mix(in srgb,var(--danger,#c0392b) 45%,var(--line)); }
 .nav-theme { width:100%; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; border-radius:10px; color:var(--ink-2); font-size:14.5px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
 .nav-theme:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
 .nav-theme.on { border-color:var(--accent); color:var(--accent); }
@@ -2325,8 +2327,8 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* The information "i" keeps its circle in the tools bar. */
   .help-btn { display:none; }
   body.util-open .nav-bottom-row .help-btn { display:inline-flex; width:40px; height:40px; font-size:17px; border:1px solid var(--line-2); background:var(--card); }
-  .nav-settings .ns-lbl, .nav-adminlink .ns-lbl { display:inline; }
-  .nav-settings, .nav-adminlink { width:auto; font-size:15px; padding:8px 12px; border:1px solid var(--line); background:var(--card); border-radius:10px; }
+  .nav-settings .ns-lbl, .nav-adminlink .ns-lbl, .nav-signout .ns-lbl { display:inline; }
+  .nav-settings, .nav-adminlink, .nav-signout { width:auto; font-size:15px; padding:8px 12px; border:1px solid var(--line); background:var(--card); border-radius:10px; }
   /* A real, tappable search box (opens the universal palette), inside the tools bar. */
   .nav-k { display:none; }
   body.util-open .nav-k { display:flex; order:5; flex-basis:100%; margin:8px 0 0; font-size:16px; padding:12px 14px; }

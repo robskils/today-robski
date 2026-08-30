@@ -1466,6 +1466,7 @@ function renderNav() {
         <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings"><span class="ns-ic">⚙</span><span class="ns-lbl"> Settings</span></button>
       </div>
       ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> Admin</span></button>` : ''}
+      ${state.me ? '<button class="nav-theme nav-signout" data-account-signout title="Sign out of Daybook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> Sign out</span></button>' : ''}
     </div>`;
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);
