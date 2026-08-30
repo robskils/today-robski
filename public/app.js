@@ -1691,6 +1691,15 @@ const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).p
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
+// The name to be greeted by: the first word of your full name, and failing that
+// your username. "Good afternoon" is a person speaking, so it uses what you'd
+// actually be called - not "Robin Lumley-Savile", and certainly not "Robski",
+// which is what this was hard-coded to and what every other member was greeted
+// as. Falls back to a bare "Good afternoon" rather than a dangling comma.
+const firstName = () => {
+  const m = state.me || {};
+  return String(m.name || '').trim().split(/\s+/)[0] || String(m.subdomain || '').trim();
+};
 // "Saturday 29th August" - weekday, ordinal day, month.
 function homeDate() {
   const d = new Date();
@@ -2094,7 +2103,7 @@ function renderHome() {
     <div class="home">
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <div class="home-head">
-        <div class="home-hi"><h1>${greeting()}, <span class="hi-name">Robski</span></h1><div class="home-date">${homeDate()}</div></div>
+        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1><div class="home-date">${homeDate()}</div></div>
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
       </div>
       ${alertsHtml()}
@@ -7150,7 +7159,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
-  if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { BRAND.owner = state.account.name; renderNav(); } }), 700); }
+  if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { BRAND.owner = state.account.name; if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
   if (e.target.matches('[data-account-username]')) {
     const pos = e.target.selectionStart; const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (e.target.value !== v) { e.target.value = v; try { e.target.setSelectionRange(pos - 1, pos - 1); } catch {} }
