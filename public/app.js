@@ -1106,7 +1106,7 @@ function inviteToDaybook(prefill) {
     <label class="inv-f"><span>A note from you <em>optional</em></span>
       <textarea class="ui-dialog-input inv-d-msg" id="inv-d-msg" rows="3" placeholder="Thought you'd like this - it's how I run my day."></textarea></label>
     ${owner ? `<div class="inv-d-owner">
-      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option><option value="free">Free (BYO-AI)</option></select></label>
+      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select></label>
       <label class="inv-free"><input type="checkbox" id="inv-d-free"> Free of charge (100% off)</label>
       <label class="inv-f inv-d-period" id="inv-d-period-wrap" hidden><span>Free for</span><select class="sel" id="inv-d-period"><option value="">No limit</option><option value="3">3 months</option><option value="6">6 months</option><option value="12">1 year</option></select></label></div>` : ''}
     <p class="inv-d-hint">No email? Leave it blank and we'll just make you a code to pass on.</p>
