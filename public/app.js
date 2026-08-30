@@ -833,6 +833,35 @@ async function downloadExport() {
     toast('Your data is downloading');
   } catch (e) { toast(e.message); }
 }
+// Sign out of this device. Until now the only sign-out in the app was on the
+// signup form - available to someone who had no account yet, and to nobody else.
+//
+// The token is the session, but it is not all this browser is holding: the mail
+// cache, the open tabs (whose labels are note titles), recents, the pomodoro log
+// and the saved location are this person's content. On a borrowed or shared
+// computer, leaving those behind is the very thing a sign-out is for. So the
+// sweep takes everything under life.* plus the token, and keeps only what the
+// device chose about how things look - a key added later is cleared by the same
+// sweep rather than quietly surviving it.
+const SIGNOUT_KEEP = new Set(['life.theme.mode', 'life.accent', 'today.theme']);
+async function signOut() {
+  if (!(await uiConfirm('Sign out of Daybook on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
+  // Push goes first, while the token that authorises it still exists: a device
+  // left subscribed would carry on buzzing with this account's mail afterwards.
+  try {
+    if (pushSupported()) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg && await reg.pushManager.getSubscription();
+      if (sub) {
+        await api('/api/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+        await sub.unsubscribe().catch(() => {});
+      }
+    }
+  } catch {}
+  // Object.keys snapshots, so removing while iterating is safe.
+  try { for (const k of Object.keys(localStorage)) { if (k === KEY || (k.startsWith('life.') && !SIGNOUT_KEEP.has(k))) localStorage.removeItem(k); } } catch {}
+  location.replace('/');
+}
 async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; if (state.view && (state.view.type === 'settings' || state.view.type === 'admin')) (state.view.type === 'admin' ? renderAdmin : renderSettings)(); } catch {} }
 // ── Admin / business dashboard (owner only) ───────────────────────────
 async function openAdmin() {
@@ -1301,7 +1330,7 @@ function renderSettings() {
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
         <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
-        <div class="acct-actions"><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
+        <div class="acct-actions"><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
@@ -1352,7 +1381,7 @@ function renderSettings() {
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
       ${panes[tab] || ''}
     </section>
-    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')}</p>` : ''}`;
+    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
 }
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
 function ensureLoc() {
@@ -7289,6 +7318,7 @@ document.addEventListener('click', (e) => {
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
   if (t.closest('[data-account-export]')) { downloadExport(); return; }
   if (t.closest('[data-account-close]')) { closeMyAccount(); return; }
+  if (t.closest('[data-account-signout]')) { signOut(); return; }
   if (t.closest('[data-create-invite]')) { inviteToDaybook(); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
