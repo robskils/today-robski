@@ -2162,7 +2162,11 @@ export default {
       // can pick the code out of the URL and prefill it. Bare /join is the same
       // shell: the app tidies the code out of the URL once it has stashed it, and
       // a refresh mid-signup must not drop the newcomer on the marketing page.
-      if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path)) {
+      // /signin is the same shell for the way back in: the apex has no Daybook of
+      // its own, so it lends its sign-in gate and then hands you to your own
+      // subdomain (see goToMyDaybook). That is why nobody need remember a
+      // username to sign in - the token says who you are, the hostname never did.
+      if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path) || path === '/signin') {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }
       // Only the marketing apex may be indexed; the private apps and per-user

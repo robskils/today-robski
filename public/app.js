@@ -8937,7 +8937,8 @@ function showGate(sub, invited) {
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
       <button class="gate2-btn" id="gate-btn" type="submit">Email me a code</button>
-      <button class="gate2-alt" id="gate-sms" type="button">Text me the code instead</button>
+      <div class="gate2-or"><span>or</span></div>
+      <button class="gate2-btn gate2-btn-2" id="gate-sms" type="button">Text me the code instead</button>
       <p class="gate2-err" id="gate-err" hidden></p>
     </form></div>`);
   $('#gate-email').focus();
@@ -9020,6 +9021,7 @@ async function gateSend(channel) {
     gateStep = 'code';
     $('#gate-sub').textContent = d.channel === 'sms' ? 'Code texted to your phone.' : `Code sent to ${gateEmail}.`;
     $('#gate-email').hidden = true; if (sms) sms.hidden = true;
+    { const or = $('.gate2-or'); if (or) or.hidden = true; }
     $('#gate-code').hidden = false; $('#gate-code').focus();
     btn.textContent = 'Sign in';
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
@@ -9065,9 +9067,15 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
   initTheme();
   // Session hand-off from the apex (see goToMyDaybook): #t=<jwt> signs this
   // origin in on arrival, then the fragment is wiped from the URL.
+  let preEmail = '';
   try {
     const h = location.hash.match(/^#t=([A-Za-z0-9._~%-]+)$/);
     if (h) { localStorage.setItem(KEY, decodeURIComponent(h[1])); history.replaceState(null, '', location.pathname + location.search); }
+    // Arriving from the marketing page's sign-in box, which asks for an email and
+    // nothing else. Consumed once and wiped from the URL, so a reload lands on a
+    // plain gate rather than re-sending a code into the resend cooldown.
+    const e = location.hash.match(/^#e=(.+)$/);
+    if (e) { preEmail = decodeURIComponent(e[1]).trim(); history.replaceState(null, '', location.pathname + location.search); }
   } catch {}
   // Invite link: /join/CODE (or ?invite=CODE) stashes the code so the signup
   // never has to ask for it, then tidies the URL.
@@ -9080,7 +9088,13 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     if (code) { localStorage.setItem('life.invite', code.toUpperCase()); history.replaceState(null, '', '/join'); }
     invited = !!storedInvite();
   } catch {}
-  if (!token()) { showGate(invited ? "You've been invited to Daybook. Sign in with your email to accept." : null, invited); return; }
+  if (!token()) {
+    showGate(invited ? "You've been invited to Daybook. Sign in with your email to accept." : null, invited);
+    // They already typed it and pressed Continue; asking again would be a second
+    // click for the same intent.
+    if (preEmail) { const el = $('#gate-email'); if (el) { el.value = preEmail; gateSend('email'); } }
+    return;
+  }
   // Multi-tenant only: a signed-in email with no account yet must claim one
   // first. On the single-tenant app /api/me 404s, so this is a no-op.
   try {

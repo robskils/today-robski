@@ -286,7 +286,6 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 .signin-field { display: flex; align-items: stretch; border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; background: var(--paper); transition: border-color .15s; }
 .signin-field:focus-within { border-color: var(--rust); }
 .signin-input { flex: 1; min-width: 0; border: 0; background: none; padding: 13px 14px; font-family: inherit; font-size: 17px; color: var(--ink); outline: none; }
-.signin-suffix { display: flex; align-items: center; padding: 0 14px; font-size: 15.5px; color: var(--ink-3); background: color-mix(in srgb, var(--ink) 5%, transparent); border-left: 1px solid var(--line); }
 .signin-go { width: 100%; justify-content: center; margin-top: 16px; }
 .signin-err { margin-top: 10px; font-size: 14px; color: var(--rust); }
 .signin-foot { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); text-align: center; }
@@ -452,12 +451,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <button class="signin-close" data-signin-close aria-label="Close">&times;</button>
     <div class="eyebrow">Welcome back</div>
     <h3 class="signin-h">Sign in to your Daybook</h3>
-    <p class="signin-p">Enter your username and we'll take you to your Daybook, where a code confirms it's you.</p>
+    <p class="signin-p">Enter your email and we'll send you a code. We'll take you to your own Daybook from there.</p>
     <form id="signin-form">
-      <label class="signin-label" for="signin-name">Your username</label>
+      <label class="signin-label" for="signin-email">Your email</label>
       <div class="signin-field">
-        <input id="signin-name" class="signin-input" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="robski">
-        <span class="signin-suffix">.daybook.fyi</span>
+        <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com">
       </div>
       <button class="btn btn-primary signin-go" type="submit">Continue →</button>
       <p class="signin-err" id="signin-err" hidden></p>
@@ -468,12 +466,15 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
-  // Sign-in: enter your username -> go to your subdomain, where the email code
-  // sign-in lives. (Each Daybook is private to its own origin.) We ask for the
-  // username, not "your web address": people know what a username is, and that
-  // it doubles as a subdomain is our business, not theirs.
+  // Sign-in asks for an email, nothing else. The subdomain was never a
+  // credential - the API resolves you from your token and never looks at the
+  // hostname - so asking for it only gave people something to misremember, and
+  // typing it wrong silently dropped you on a stranger's address with no error.
+  // /signin serves the app shell, which owns the code flow and then hands you to
+  // your own Daybook. The email rides in the fragment: never sent to a server,
+  // never logged, and consumed once so a reload doesn't re-send a code.
   const sm = document.getElementById('signin-modal');
-  const openSignin = (e) => { if (e) e.preventDefault(); sm.hidden = false; setTimeout(() => document.getElementById('signin-name').focus(), 30); };
+  const openSignin = (e) => { if (e) e.preventDefault(); sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30); };
   const closeSignin = () => { sm.hidden = true; };
   document.querySelectorAll('[data-signin]').forEach((el) => el.addEventListener('click', openSignin));
   document.querySelectorAll('[data-signin-close]').forEach((el) => el.addEventListener('click', closeSignin));
@@ -481,10 +482,10 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
   document.getElementById('signin-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = document.getElementById('signin-name').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const email = document.getElementById('signin-email').value.trim();
     const err = document.getElementById('signin-err');
-    if (!name) { err.textContent = 'Enter your username.'; err.hidden = false; return; }
-    location.href = 'https://' + name + '.daybook.fyi';
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter your email address.'; err.hidden = false; return; }
+    location.href = '/signin#e=' + encodeURIComponent(email);
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
