@@ -452,11 +452,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <button class="signin-close" data-signin-close aria-label="Close">&times;</button>
     <div class="eyebrow">Welcome back</div>
     <h3 class="signin-h">Sign in to your Daybook</h3>
-    <p class="signin-p">Head to your own Daybook and confirm with the code we email you.</p>
+    <p class="signin-p">Enter your username and we'll take you to your Daybook, where a code confirms it's you.</p>
     <form id="signin-form">
-      <label class="signin-label" for="signin-name">Your Daybook name</label>
+      <label class="signin-label" for="signin-name">Your username</label>
       <div class="signin-field">
-        <input id="signin-name" class="signin-input" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="robski">
+        <input id="signin-name" class="signin-input" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="robski">
         <span class="signin-suffix">.daybook.fyi</span>
       </div>
       <button class="btn btn-primary signin-go" type="submit">Continue →</button>
@@ -468,8 +468,10 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
-  // Sign-in: enter your Daybook name -> go to your subdomain, where the email
-  // code sign-in lives. (Each Daybook is private to its own address.)
+  // Sign-in: enter your username -> go to your subdomain, where the email code
+  // sign-in lives. (Each Daybook is private to its own origin.) We ask for the
+  // username, not "your web address": people know what a username is, and that
+  // it doubles as a subdomain is our business, not theirs.
   const sm = document.getElementById('signin-modal');
   const openSignin = (e) => { if (e) e.preventDefault(); sm.hidden = false; setTimeout(() => document.getElementById('signin-name').focus(), 30); };
   const closeSignin = () => { sm.hidden = true; };
@@ -481,7 +483,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     e.preventDefault();
     const name = document.getElementById('signin-name').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
     const err = document.getElementById('signin-err');
-    if (!name) { err.textContent = 'Enter your Daybook name.'; err.hidden = false; return; }
+    if (!name) { err.textContent = 'Enter your username.'; err.hidden = false; return; }
     location.href = 'https://' + name + '.daybook.fyi';
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.

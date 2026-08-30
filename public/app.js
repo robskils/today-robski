@@ -7128,7 +7128,7 @@ document.addEventListener('input', (e) => {
     const prev = document.querySelector('.js-username-preview'); if (prev) prev.textContent = v || 'username';
     clearTimeout(window.__acctUN); window.__acctUN = setTimeout(async () => {
       if (!v || v === state.account.subdomain) return;
-      try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ subdomain: v }) }); if (state.me) state.me.subdomain = v; toast(`Username updated - your address is now ${v}.daybook.fyi`); }
+      try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ subdomain: v }) }); if (state.me) state.me.subdomain = v; toast(`Username updated - you're now at ${v}.daybook.fyi`); }
       catch (x) { toast(x.message); }
     }, 800); }
   if (e.target.matches('[data-account-phone]')) { clearTimeout(window.__acctPT); const v = e.target.value; window.__acctPT = setTimeout(() => saveAccount({ phone: v }), 700); }
