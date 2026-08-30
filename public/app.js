@@ -3657,6 +3657,12 @@ async function openMail(openKey) {
   // open (from the tab's remembered view, or the still-open one in memory).
   if (!openKey && state.mail.open && !state.mail.composing) openKey = state.mail.open._key;
   state.view = openKey ? { type: 'mail', open: openKey } : { type: 'mail' };
+  // Opening the Mail list (not resuming an open message or a compose): if there's
+  // unread waiting, land straight on the Unread tab.
+  if (!openKey && !state.mail.composing) {
+    const unread = state.mailUnreadTotal || Object.values(state.mail.unseen || {}).reduce((a, b) => a + b, 0);
+    if (unread > 0) state.mail.folder = 'unread';
+  }
   if (!state.mailTrust) {
     state.mailTrust = new Set();
     api('/api/kv/mail_trusted').then((r) => { try { (JSON.parse(r.value || '[]') || []).forEach((a) => state.mailTrust.add(String(a).toLowerCase())); } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
