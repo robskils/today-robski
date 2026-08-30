@@ -920,7 +920,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   position:sticky; top:0; height:100vh; overflow-y:auto;
   padding:16px 12px 28px; display:flex; flex-direction:column; gap:4px;
 }
-.nav-brand { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; padding:6px 10px 12px; cursor:pointer; border-radius:8px; transition:background .12s,opacity .12s; }
+.nav-brand { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; padding:6px 10px 12px; cursor:pointer; border-radius:8px; transition:background .12s,opacity .12s;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* The ⋯ tools toggle is a mobile-only affordance; desktop shows the full sidebar. */
 .nav-util-toggle { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }

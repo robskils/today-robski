@@ -3,10 +3,10 @@
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';
-// The wordmark: <owner> Daybook. Owner is the account holder's name — hard-coded
-// to Robski while single-tenant; becomes the signed-in account's name once each
-// user has their own tara.daybook.fyi.
-const BRAND = { owner: 'Robski', app: 'Daybook' };
+// The wordmark: <first name> Daybook. The name comes from the signed-in account
+// (see firstName), never from a constant - a hard-coded owner is how every member
+// ended up looking at somebody else's name on their own Daybook.
+const BRAND = { app: 'Daybook' };
 // The Daybook mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
 // name and "Daybook" in the wordmark.
@@ -1430,7 +1430,7 @@ function renderNav() {
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
     <div class="nav-topline">
-      <div class="nav-brand" data-view-home title="Home">${esc(BRAND.owner)}${MARK}<em>${esc(BRAND.app)}</em></div>
+      <div class="nav-brand" data-view-home title="Home">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></div>
       <button class="nav-util-toggle" data-util-toggle aria-label="Show tools" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
     </div>
     <div class="nav-foot">
@@ -7159,7 +7159,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
-  if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { BRAND.owner = state.account.name; if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
+  if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
   if (e.target.matches('[data-account-username]')) {
     const pos = e.target.selectionStart; const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (e.target.value !== v) { e.target.value = v; try { e.target.setSelectionRange(pos - 1, pos - 1); } catch {} }
@@ -8966,12 +8966,10 @@ let gateStep = 'email', gateEmail = '';
 // in to Robin's Daybook, so the wordmark drops the owner's name and reads just
 // "Daybook". On a tenant subdomain it stays whose it is.
 const onApex = () => location.hostname === 'daybook.fyi' || location.hostname === 'www.daybook.fyi';
-function showGate(sub, invited) {
-  const plain = invited || onApex();
-  const mark = `${plain ? '' : esc(BRAND.owner) + ' '}<span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span>`;
+function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark">${mark}</div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
@@ -9128,7 +9126,7 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     invited = !!storedInvite();
   } catch {}
   if (!token()) {
-    showGate(invited ? "You've been invited to Daybook. Sign in with your email to accept." : null, invited);
+    showGate(invited ? "You've been invited to Daybook. Sign in with your email to accept." : null);
     // They already typed it and pressed Continue; asking again would be a second
     // click for the same intent.
     if (preEmail) { const el = $('#gate-email'); if (el) { el.value = preEmail; gateSend('email'); } }
@@ -9143,7 +9141,7 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     // arrived on a join link and already has an account belongs on their own
     // subdomain, signed in - not staring at "Request an invite".
     if (me && me.user && onApex() && me.user.subdomain) { goToMyDaybook(me.user.subdomain); return; }
-    if (me && me.user) { state.me = me.user; if (me.user.name) BRAND.owner = me.user.name; }
+    if (me && me.user) state.me = me.user;
   } catch {}
   try {
     let modKv;
