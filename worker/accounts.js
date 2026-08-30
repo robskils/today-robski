@@ -52,7 +52,7 @@ async function subdomainTaken(env, sub) {
 // code - they click the link in the email, sign in, and we find their invite.
 async function pendingInvite(env, email) {
   return env.DB.prepare(
-    'SELECT code, email, plan, free, created_by, used_by FROM invites WHERE email = ? AND used_by IS NULL ORDER BY created_at DESC LIMIT 1',
+    'SELECT code, email, plan, free, free_months, created_by, used_by FROM invites WHERE email = ? AND used_by IS NULL ORDER BY created_at DESC LIMIT 1',
   ).bind(String(email || '').toLowerCase()).first().catch(() => null);
 }
 export async function hasPendingInvite(env, email) {
@@ -70,7 +70,7 @@ export async function hasPendingInvite(env, email) {
 async function resolveInvite(env, typed, email) {
   const code = String(typed || '').trim().toUpperCase();
   if (!code) return (await pendingInvite(env, email)) || null;
-  const inv = await env.DB.prepare('SELECT code, email, plan, free, created_by, used_by FROM invites WHERE code = ?')
+  const inv = await env.DB.prepare('SELECT code, email, plan, free, free_months, created_by, used_by FROM invites WHERE code = ?')
     .bind(code).first().catch(() => null);
   if (!inv) return 'unknown';
   if (inv.used_by) return 'used';
@@ -105,9 +105,13 @@ export async function handleSignup(request, env, email, json, err) {
   const free = inv && inv.free ? 1 : 0;
   const invitedBy = inv ? (inv.created_by || null) : null;
   const now = new Date().toISOString();
+  // A time-limited free invite stamps when the free run ends (billing, when it
+  // exists, reads this); no limit or a paid invite leaves it null.
+  let freeUntil = null;
+  if (inv && inv.free && inv.free_months) { const d = new Date(); d.setMonth(d.getMonth() + Number(inv.free_months)); freeUntil = d.toISOString(); }
   const res = await env.DB.prepare(
-    'INSERT INTO users (email, name, subdomain, plan, status, invited_by, voucher, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-  ).bind(email.toLowerCase(), name, sub, plan, 'active', invitedBy, code || null, now).run();
+    'INSERT INTO users (email, name, subdomain, plan, status, invited_by, voucher, free_until, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  ).bind(email.toLowerCase(), name, sub, plan, 'active', invitedBy, code || null, freeUntil, now).run();
   const uid = res.meta.last_row_id;
   if (code) await env.DB.prepare('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').bind(uid, now, code).run();
   await seedNewUser(env, uid);
@@ -190,8 +194,8 @@ async function seedNewUser(env, uid) {
 export async function listInvites(env) {
   const admin = env.uid === 1;
   const stmt = admin
-    ? env.DB.prepare('SELECT code, email, plan, free, note, used_by, used_at, created_at, created_by FROM invites ORDER BY created_at DESC')
-    : env.DB.prepare('SELECT code, email, plan, free, note, used_by, used_at, created_at, created_by FROM invites WHERE created_by = ? ORDER BY created_at DESC').bind(env.uid);
+    ? env.DB.prepare('SELECT code, email, plan, free, free_months, note, used_by, used_at, created_at, created_by FROM invites ORDER BY created_at DESC')
+    : env.DB.prepare('SELECT code, email, plan, free, free_months, note, used_by, used_at, created_at, created_by FROM invites WHERE created_by = ? ORDER BY created_at DESC').bind(env.uid);
   const { results } = await stmt.all();
   return results || [];
 }
@@ -234,10 +238,13 @@ export async function createInvite(env, input) {
   if (!existing) {
     const plan = admin ? (input.plan || 'standard') : 'free';
     const free = admin && input.free ? 1 : 0;
+    // A time-limited free run: 3, 6 or 12 months, or NULL for no limit. Only
+    // meaningful on a free invite.
+    const fm = free ? ([3, 6, 12].includes(Number(input.freeMonths)) ? Number(input.freeMonths) : null) : null;
     const note = admin ? (input.note || null) : null;
     await env.DB.prepare(
-      'INSERT INTO invites (code, email, plan, free, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    ).bind(code, email, plan, free, note, env.uid, new Date().toISOString()).run();
+      'INSERT INTO invites (code, email, plan, free, free_months, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).bind(code, email, plan, free, fm, note, env.uid, new Date().toISOString()).run();
   }
 
   let sent = false, sendError = null;

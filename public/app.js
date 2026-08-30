@@ -1106,8 +1106,9 @@ function inviteToDaybook(prefill) {
     <label class="inv-f"><span>A note from you <em>optional</em></span>
       <textarea class="ui-dialog-input inv-d-msg" id="inv-d-msg" rows="3" placeholder="Thought you'd like this - it's how I run my day."></textarea></label>
     ${owner ? `<div class="inv-d-owner">
-      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option><option value="free">Free</option></select></label>
-      <label class="inv-free"><input type="checkbox" id="inv-d-free"> Free (100% off)</label></div>` : ''}
+      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option><option value="free">Free (BYO-AI)</option></select></label>
+      <label class="inv-free"><input type="checkbox" id="inv-d-free"> Free of charge (100% off)</label>
+      <label class="inv-f inv-d-period" id="inv-d-period-wrap" hidden><span>Free for</span><select class="sel" id="inv-d-period"><option value="">No limit</option><option value="3">3 months</option><option value="6">6 months</option><option value="12">1 year</option></select></label></div>` : ''}
     <p class="inv-d-hint">No email? Leave it blank and we'll just make you a code to pass on.</p>
     <p class="gate2-err inv-d-err" id="inv-d-err" hidden></p>
     <div class="ui-dialog-btns">
@@ -1121,12 +1122,15 @@ function inviteToDaybook(prefill) {
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
   const syncBtn = () => { ok.textContent = emailIn.value.trim() ? 'Send invitation' : 'Create a code'; };
   const fail = (m) => { errEl.textContent = m; errEl.hidden = false; ok.disabled = false; };
+  // The free-period picker only makes sense on a free-of-charge invite.
+  const freeCb = el.querySelector('#inv-d-free'), periodWrap = el.querySelector('#inv-d-period-wrap');
+  if (freeCb && periodWrap) freeCb.addEventListener('change', () => { periodWrap.hidden = !freeCb.checked; });
   async function send() {
     const email = emailIn.value.trim();
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('That does not look like an email address.');
     errEl.hidden = true; ok.disabled = true;
     const body = { email, message: (el.querySelector('#inv-d-msg').value || '').trim().slice(0, 600) };
-    if (owner) { body.plan = el.querySelector('#inv-d-plan').value; body.free = el.querySelector('#inv-d-free').checked ? 1 : 0; }
+    if (owner) { body.plan = el.querySelector('#inv-d-plan').value; const free = el.querySelector('#inv-d-free').checked; body.free = free ? 1 : 0; if (free) { const m = Number(el.querySelector('#inv-d-period').value); if (m) body.freeMonths = m; } }
     try {
       const r = await api('/api/invites', { method: 'POST', body: JSON.stringify(body) });
       close();
@@ -1285,8 +1289,10 @@ async function sharedToggleDone(id, done) {
   } catch (e) { toast(e.message); }
 }
 // Who it went to leads, not the code: an invitation is a person you're waiting on.
+const freePeriodLabel = (m) => (Number(m) === 12 ? '1 year' : `${m} months`);
+const invitePlanLabel = (i) => (i.free ? `free ${esc(i.plan || 'standard')}${i.free_months ? ' for ' + freePeriodLabel(i.free_months) : ''}` : esc(i.plan || 'standard'));
 const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
-  <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)}${i.free ? ' · free' : ''}${i.plan ? ' · ' + esc(i.plan) : ''} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
+  <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)} · ${invitePlanLabel(i)} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
   ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
 </div>`;
 function renderSettings() {

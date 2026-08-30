@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
   ai_gemini_enc    TEXT,                        -- BYO Gemini key, same encryption
   invited_by   INTEGER,                         -- users.id of the inviter
   voucher      TEXT,                            -- redeemed invite/discount code, if any
+  free_until   TEXT,                            -- ISO date the free period ends (NULL = not time-limited)
   created_at   TEXT NOT NULL
 );
 
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS invites (
   email       TEXT,                             -- optional: pre-assigned to one address
   plan        TEXT NOT NULL DEFAULT 'standard', -- plan the code grants
   free        INTEGER NOT NULL DEFAULT 0,       -- 1 = 100% off (BYO-key required)
+  free_months INTEGER,                          -- length of the free period (NULL = no limit / forever)
   note        TEXT,
   created_by  INTEGER,
   created_at  TEXT NOT NULL,
