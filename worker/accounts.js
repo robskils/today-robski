@@ -261,6 +261,18 @@ export async function resendInvite(env, code) {
   return { code: inv.code, email: inv.email, sent: true };
 }
 
+// Cancel (delete) an unused invitation you sent, freeing the slot. A used one is
+// left alone - it's now an account, not an invite. Owner (1) can cancel any.
+export async function cancelInvite(env, code) {
+  const c = String(code || '').trim().toUpperCase();
+  const inv = await env.DB.prepare('SELECT code, created_by, used_by FROM invites WHERE code = ?').bind(c).first().catch(() => null);
+  if (!inv) throw new Error('No such invite.');
+  if (env.uid !== 1 && inv.created_by !== env.uid) throw new Error('That is not your invite.');
+  if (inv.used_by) throw new Error("That invitation has already been used - it can't be cancelled.");
+  await env.DB.prepare('DELETE FROM invites WHERE code = ?').bind(c).run();
+  return { code: c, cancelled: true };
+}
+
 // ── The invitation email ──────────────────────────────────────────────
 // From Daybook, but *about* the person who sent it: "Robin has invited you to
 // join Daybook". Replies go to the inviter, so a "what is this?" reaches a human.

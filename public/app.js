@@ -863,6 +863,13 @@ async function signOut() {
   location.replace('/');
 }
 async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; if (state.view && (state.view.type === 'settings' || state.view.type === 'admin')) (state.view.type === 'admin' ? renderAdmin : renderSettings)(); } catch {} }
+async function cancelInviteAction(code) {
+  const inv = (state.invites || []).find((i) => i.code === code);
+  const who = inv && inv.email ? inv.email : 'this shareable code';
+  if (!(await uiConfirm(`Cancel the invitation for ${who}? Its link and code will stop working.`, { danger: true, okLabel: 'Cancel invite' }))) return;
+  try { await api('/api/invites/cancel', { method: 'POST', body: JSON.stringify({ code }) }); state.invites = (state.invites || []).filter((i) => i.code !== code); toast('Invitation cancelled'); (state.view.type === 'admin' ? renderAdmin : renderSettings)(); }
+  catch (e) { toast(e.message); }
+}
 // ── Admin / business dashboard (owner only) ───────────────────────────
 async function openAdmin() {
   state.view = { type: 'admin' }; renderNav(); state.admin = state.admin || {}; renderAdmin();
@@ -1280,7 +1287,7 @@ async function sharedToggleDone(id, done) {
 // Who it went to leads, not the code: an invitation is a person you're waiting on.
 const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
   <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)}${i.free ? ' · free' : ''}${i.plan ? ' · ' + esc(i.plan) : ''} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
-  ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button></span>`}
+  ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
 </div>`;
 function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
@@ -7333,6 +7340,7 @@ document.addEventListener('click', (e) => {
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://daybook.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
+  { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }

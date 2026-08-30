@@ -1,6 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
-import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
+import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
@@ -2279,6 +2279,11 @@ export default {
       // Nudge someone whose invitation got lost, without minting a second code.
       if (path === '/api/invites/resend' && request.method === 'POST') {
         try { const b = await request.json().catch(() => ({})); return json(await resendInvite(env, b.code), request); }
+        catch (e) { return err(e.message, request, 400); }
+      }
+      // Cancel an unused invitation, freeing the slot.
+      if (path === '/api/invites/cancel' && request.method === 'POST') {
+        try { const b = await request.json().catch(() => ({})); return json(await cancelInvite(env, b.code), request); }
         catch (e) { return err(e.message, request, 400); }
       }
       // Admin dashboard (owner only): users list + global daily quotes.
