@@ -2920,6 +2920,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-ag-time { flex:none; width:112px; color:var(--ink-3); font-size:15px; font-variant-numeric:tabular-nums; }
 .cal-ag-t { flex:1; color:var(--ink); font-size:17px; }
 .cal-ag-loc { color:var(--ink-3); font-size:14.5px; }
+.cal-ag-join { margin-left:7px; font-size:13px; vertical-align:baseline; }
+/* Join-the-meeting link on an event's detail form. */
+.ce-join { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:9px 15px; border-radius:11px; background:var(--accent); color:var(--accent-ink); font-size:15px; font-weight:600; text-decoration:none; box-shadow:var(--shadow); }
+.ce-join:hover { filter:brightness(1.05); }
 .cal-del { color:var(--ink-3); } .cal-del:hover { color:var(--accent); }
 #cal-form:not(:empty) { margin-bottom:14px; }
 /* Month / Week toggle */

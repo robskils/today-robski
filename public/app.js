@@ -3286,7 +3286,7 @@ function renderCalendar() {
     : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}-${minToLabel(e.end_min)}` : minToLabel(e.start_min));
   const agendaRows = dayEvents.length ? dayEvents.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}">
       <span class="cal-ag-time">${agTime(e)}</span>
-      <span class="cal-ag-t">${esc(e.title)}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
+      <span class="cal-ag-t">${esc(e.title)}${e.url ? '<span class="cal-ag-join" title="Has a video meeting link">🎥</span>' : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
     : '<div class="home-empty">Nothing on this day.</div>';
   const cq = (state.calQuery || '').trim().toLowerCase();
   const matches = cq ? state.cal.events
@@ -3336,6 +3336,7 @@ function showCalForm(ev) {
   // same day (and an hour on); change it only when you mean to.
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event${allDay ? ' allday-on' : ''}" data-ev="${ev ? ev.id : ''}" data-evgap="${allDay ? 60 : dur}">
     <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
+    ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
     <div class="ce-when">
       <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span></div>
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
@@ -4605,10 +4606,13 @@ async function mailInviteAdd() {
   const inv = state.mail.open && state.mail.open.invite; if (!inv) return;
   await loadCalAdded();
   if (calInviteAdded(inv)) { toast('Already on your calendar'); return; }
+  // Carry any webinar/meeting link (from the .ics, or found in the email body)
+  // onto the event, so the calendar entry can offer a Join link.
+  const link = inv.url || mailMeetingLink(state.mail.open) || undefined;
   let body;
-  if (inv.allDay) body = { title: inv.summary, allDay: true, day: inv.startDate, location: inv.location || undefined };
+  if (inv.allDay) body = { title: inv.summary, allDay: true, day: inv.startDate, location: inv.location || undefined, url: link };
   else { let end = inv.end; if (!end && inv.start) { try { end = new Date(new Date(inv.start).getTime() + 3600000).toISOString(); } catch {} }
-    body = { title: inv.summary, start: inv.start, end, tz: inv.tz || undefined, location: inv.location || undefined }; }
+    body = { title: inv.summary, start: inv.start, end, tz: inv.tz || undefined, location: inv.location || undefined, url: link }; }
   try {
     await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
     state.calAdded[inviteKey(inv)] = 1;

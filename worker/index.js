@@ -169,6 +169,17 @@ async function googleAccessToken(env) {
   return data.access_token;
 }
 
+// A video-meeting / webinar link on an event, so the calendar can offer "Join".
+// Checks Google's own conference fields first, then any recognised link in the
+// location or description (which is where we stash a link carried in from mail).
+const MEETING_URL_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
+function eventMeetingUrl(e) {
+  if (e.hangoutLink) return e.hangoutLink;
+  const eps = e.conferenceData && e.conferenceData.entryPoints;
+  if (Array.isArray(eps)) { const v = eps.find((p) => p && p.uri && (p.entryPointType === 'video' || /^https?:/i.test(p.uri))); if (v) return v.uri; }
+  const m = `${e.location || ''}\n${e.description || ''}`.match(MEETING_URL_RE);
+  return m ? m[0].replace(/["'&<>]+$/, '') : '';
+}
 async function calendarEvents(env, day) {
   if (!env.GOOGLE_REFRESH_TOKEN) return { events: [], error: 'not_configured' };
 
@@ -212,6 +223,7 @@ async function calendarEvents(env, day) {
           id: e.id,
           title: e.summary || '(no title)',
           location: e.location || null,
+          url: eventMeetingUrl(e) || null,
           allDay,
           start_min: startMin,
           duration,
@@ -243,12 +255,13 @@ async function calendarRange(env, from, to) {
     if (!res.ok) return { events: [], error: `google_${res.status}` };
     const data = await res.json();
     const events = (data.items || []).filter((e) => e.status !== 'cancelled').map((e) => {
+      const url = eventMeetingUrl(e) || null;
       if (e.start?.date) {
-        return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: true, date: e.start.date, end_date: e.end?.date || null, recurringId: e.recurringEventId || null };
+        return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, allDay: true, date: e.start.date, end_date: e.end?.date || null, recurringId: e.recurringEventId || null };
       }
       const s = new Date(e.start.dateTime), en = new Date(e.end.dateTime);
       const sp = localParts(s, TZ), ep = localParts(en, TZ);
-      return { id: e.id, title: e.summary || '(no title)', location: e.location || null, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min, recurringId: e.recurringEventId || null };
+      return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min, recurringId: e.recurringEventId || null };
     });
     return { events, error: null };
   } catch (e) {
@@ -332,6 +345,9 @@ async function createEvent(request, env) {
         body: JSON.stringify({
           summary: title,
           location: String(b.location || '').trim() || undefined,
+          // A meeting/webinar link carried in from an email lives in the
+          // description, where eventMeetingUrl() reads it back out as the Join link.
+          description: String(b.url || '').trim() || undefined,
           start, end,
           recurrence: rruleFor(b.repeat) || undefined,
         }),
@@ -943,10 +959,10 @@ function occurrencesInRange(p, from, to) {
 // A native event block -> the single-day shape calendarEvents returns (for the
 // day view and Home's Today). Clipped to `day`.
 function nativeDayShape(id, title, p, day) {
-  if (p.allDay) return { id, title, location: p.location || null, allDay: true, start_min: 0, duration: 1440 };
+  if (p.allDay) return { id, title, location: p.location || null, url: p.url || null, allDay: true, start_min: 0, duration: 1440 };
   const startMin = Math.max(0, Math.min(1440, Number(p.start_min) || 0));
   const duration = Math.max(15, Math.min(1440 - startMin, Number(p.duration) || 60));
-  return { id, title, location: p.location || null, allDay: false, start_min: startMin, duration };
+  return { id, title, location: p.location || null, url: p.url || null, allDay: false, start_min: startMin, duration };
 }
 // A native event occurrence -> the range shape calendarRange returns (month/week
 // grid). occDate is this occurrence's start day.
@@ -956,12 +972,12 @@ function nativeRangeShape(blockId, title, p, occDate) {
   const recurringId = recurring ? blockId : null;
   if (p.allDay) {
     const span = (p.end_date && p.end_date > p.date) ? Math.round((Date.parse(`${p.end_date}T00:00:00Z`) - Date.parse(`${p.date}T00:00:00Z`)) / 86400000) : 1;
-    return { id, title, location: p.location || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId };
+    return { id, title, location: p.location || null, url: p.url || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId };
   }
   const startMin = Math.max(0, Number(p.start_min) || 0);
   const duration = Math.max(15, Number(p.duration) || 60);
   const total = startMin + duration;
-  return { id, title, location: p.location || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId };
+  return { id, title, location: p.location || null, url: p.url || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId };
 }
 async function nativeEventBlocks(env) {
   const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(env.uid).all();
@@ -983,6 +999,7 @@ async function nativeRangeEvents(env, from, to) {
 // into an event block's props. Returns null on a bad payload.
 function eventPropsFromBody(b) {
   const p = { location: String(b.location || '').trim() || null };
+  const url = String(b.url || '').trim(); if (url) p.url = url;   // a webinar/meeting link carried in from mail
   // ISO path (mail calendar invites): resolve to local date + minutes.
   if (b.start) {
     const s = new Date(b.start);
