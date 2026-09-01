@@ -2281,7 +2281,7 @@ function p1Html() {
   const total = (state.home && state.home.alerts && state.home.alerts.p1) || all.length;
   const shown = all.slice(0, 10);
   const more = total - shown.length;
-  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span></button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
+  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
 }
 function renderHome() {
   const favs = state.favs || [];
@@ -8306,7 +8306,7 @@ document.addEventListener('dragstart', (e) => {
 document.addEventListener('dragover', (e) => {
   if (dragFav && (e.target.closest('#favs') || e.target.closest('.home-sec-favs'))) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
-  if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'v'); return; }
+  if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'h'); return; }
   if (dragHomeSec && (e.target.closest('.home-main') || e.target.closest('.home-side'))) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
