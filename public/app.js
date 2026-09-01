@@ -1158,6 +1158,43 @@ async function resendInvitation(code) {
   catch (e) { toast(e.message); }
 }
 function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
+// People status: pending connect requests + unread chat drive the Contacts badge;
+// the online list feeds Home's "People" section. Polled like the mail unread count.
+const friendPending = () => { const s = state.friendStatus || {}; return (s.incoming || 0) + (s.unread || 0); };
+async function refreshFriendStatus() {
+  try {
+    const r = await api('/api/friends/status');
+    const sig = JSON.stringify([r.incoming || 0, r.unread || 0, (r.online || []).map((o) => o.id).sort()]);
+    const changed = sig !== state.__friendSig; state.__friendSig = sig;
+    state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, friends: r.friends || 0 };
+    renderNav();
+    // Refresh Home's People section on a real change - but never while the user is
+    // typing (e.g. in the notepad), which a full re-render would interrupt.
+    const ae = document.activeElement; const editing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+    if (changed && state.view && state.view.type === 'home' && !editing) renderHome();
+  } catch {}
+}
+function startFriendStatusPoll() {
+  if (window.__friendStatusT) return;
+  refreshFriendStatus();
+  window.__friendStatusT = setInterval(() => { if (!document.hidden) refreshFriendStatus(); }, 90000);
+}
+// Home "People" section: whether it shows, and its contents (who's online + a
+// nudge when someone wants to connect). Toggle lives in Settings → Appearance.
+const peopleOn = () => { try { return localStorage.getItem('life.home.people') !== '0'; } catch { return true; } };
+function peopleHtml() {
+  const st = state.friendStatus;
+  if (!st) { refreshFriendStatus(); return '<div class="home-empty" style="padding:6px 0">Loading…</div>'; }
+  const online = st.online || []; const pending = st.incoming || 0;
+  let html = '';
+  if (pending) html += `<button class="people-nudge" data-open-contacts>👋 ${pending} ${pending === 1 ? 'person wants' : 'people want'} to connect</button>`;
+  if (online.length) {
+    html += `<div class="people-list">${online.map((f) => `<button class="people-row" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Message ${esc(f.name)}"><span class="fr-av online">${esc(initial(f.name || '?'))}</span><span class="people-name">${esc(f.name)}</span><span class="people-msg">💬</span></button>`).join('')}</div>`;
+  } else if (!pending) {
+    html += '<div class="home-empty">No one online right now. <button class="people-link" data-open-contacts>Open Contacts</button></div>';
+  }
+  return html;
+}
 // Chat with a friend: a slide-in panel that polls for new messages while open.
 let chatPoll = null;
 async function openChat(id, name) { state.chat = { with: Number(id), name, messages: [] }; renderChat(); await loadChat(); if (chatPoll) clearInterval(chatPoll); chatPoll = setInterval(() => { if (state.chat) loadChat(); else { clearInterval(chatPoll); chatPoll = null; } }, 4000); }
@@ -1325,6 +1362,7 @@ const MOBILE_SECTIONS = [
   ['favs', 'home-sec-favs', 'Starred Notes & Tables'],
   ['favareas', 'home-sec-favareas', 'Life areas'],
   ['recent', 'home-sec-recent', 'Recently viewed'],
+  ['people', 'home-sec-people', 'People online'],
   ['toolbox', 'home-toolbox', 'Toolbox'],
 ];
 const MOBILE_KEYS = MOBILE_SECTIONS.map((s) => s[0]);
@@ -1424,6 +1462,7 @@ function renderSettings() {
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
         ${state.account ? `<label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>` : ''}
+        ${modOn('contacts') ? `<label class="set-mod"><span>People on Home<small>Show who's online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
       </div>`;
 
   const aiPane = state.account ? `<div class="set-card">
@@ -1533,7 +1572,7 @@ function renderNav() {
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span>⌂</span><span class="nav-lbl">Home</span></button>
     ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span>☀</span><span class="nav-lbl">Today</span></button>` : ''}
     ${modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span>✉</span><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : ''}
-    ${modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : ''}
+    ${modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span>👤</span><span class="nav-lbl">Contacts</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : ''}
     ${modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : ''}
     ${modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : ''}
     ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
@@ -2231,7 +2270,7 @@ function renderHome() {
           ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>` : ''}
           ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
           ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
-          ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>` : ''}
+          ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span>${friendPending() ? `<span class="hl-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>` : ''}
           ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
           ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
         </nav>
@@ -2258,6 +2297,10 @@ function renderHome() {
           ${modOn('notepad') ? `<section class="home-sec home-sec-notepad">
             ${secH('notepad', 'Notepad')}
             ${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}
+          </section>` : ''}
+          ${(modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-people" data-hsec="people">
+            ${secH('people', 'People')}
+            ${secOpen('people') ? peopleHtml() : ''}
           </section>` : ''}
         </aside>
       </div>
@@ -7345,6 +7388,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
   if (e.target.matches('[data-msec-show]')) { const key = e.target.dataset.msecShow; const cfg = mobileHomeCfg(); const set = new Set(cfg.hidden); if (e.target.checked) set.delete(key); else set.add(key); cfg.hidden = [...set]; saveMobileHomeCfg(cfg); toast(e.target.checked ? 'Shown on mobile' : 'Hidden on mobile'); }
+  if (e.target.matches('[data-people-toggle]')) { const on = e.target.checked; try { localStorage.setItem('life.home.people', on ? '1' : '0'); } catch {} api('/api/kv/home_people', { method: 'PUT', body: JSON.stringify({ value: on ? '1' : '0' }) }).catch(() => {}); toast(on ? 'People shown on Home' : 'People hidden from Home'); if (state.view && state.view.type === 'home') renderHome(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
@@ -9514,6 +9558,9 @@ async function onbConnectGmail() {
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     startPresence();         // heartbeat so friends can see you're online
+    startFriendStatusPoll(); // Contacts badge + Home "People" section
+    // The "People on Home" preference follows the account across devices.
+    api('/api/kv/home_people').then((r) => { if (r && (r.value === '0' || r.value === '1')) { try { localStorage.setItem('life.home.people', r.value); } catch {} if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
     initPush();              // register the SW; refresh the push subscription if already granted
     registerMailHandler();   // offer Robski Life as the browser's mailto: handler
     syncAccentFromServer();  // pick up a custom accent colour saved on another device

@@ -99,6 +99,22 @@ export async function unreadCounts(env) {
   return { total, byFriend };
 }
 
+// Lean status for polling: pending connect requests, who's online, unread chat.
+// Deliberately skips the contact-scan that getFriends does (that's the heavy bit)
+// so it's cheap to hit every 90s from the nav badge + Home "People" section.
+export async function friendStatus(env) {
+  const rows = (await env.DB.prepare(
+    `SELECT f.friend_id AS id, f.status, u.name, u.subdomain, u.last_seen
+       FROM friends f JOIN users u ON u.id = f.friend_id
+      WHERE f.user_id = ? AND f.status IN ('accepted','in') ORDER BY u.name`,
+  ).bind(env.uid).all()).results || [];
+  const incoming = rows.filter((r) => r.status === 'in').length;
+  const accepted = rows.filter((r) => r.status === 'accepted');
+  const online = accepted.filter((r) => isOnline(r.last_seen)).map((r) => ({ id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain }));
+  const unread = (await unreadCounts(env)).total;
+  return { incoming, online, unread, friends: accepted.length };
+}
+
 export async function removeFriend(env, id) {
   id = Number(id);
   await env.DB.batch([

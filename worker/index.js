@@ -1,7 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
-import { touchPresence, getFriends, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople } from './friends.js';
+import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { openMeeting } from './meetings.js';
@@ -2554,6 +2554,7 @@ export default {
       // Friends on Daybook: presence + connections.
       if (path === '/api/presence' && request.method === 'POST') return json(await touchPresence(env), request);
       if (path === '/api/friends' && request.method === 'GET') return json(await getFriends(env), request);
+      if (path === '/api/friends/status' && request.method === 'GET') return json(await friendStatus(env), request);
       if (path === '/api/friends/search' && request.method === 'GET') return json(await searchPeople(env, url.searchParams.get('q')), request);
       if (path === '/api/friends' && request.method === 'POST') {
         const b = await request.json().catch(() => ({}));

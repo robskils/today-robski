@@ -1035,6 +1035,19 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .friend-row { display:flex; align-items:center; gap:13px; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:8px; }
 .fr-av { flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:var(--paper-2,var(--paper)); color:var(--ink-2); font-weight:600; font-size:16px; position:relative; }
 .fr-av.online::after { content:''; position:absolute; right:-1px; bottom:-1px; width:12px; height:12px; border-radius:50%; background:#3fae5a; border:2px solid var(--card); }
+/* Home "People" section: a connect nudge + a compact online list. */
+.people-nudge { display:block; width:100%; text-align:left; padding:10px 13px; margin-bottom:9px; border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line)); border-radius:11px; background:color-mix(in srgb,var(--accent) 8%,transparent); color:var(--ink); font-size:14px; }
+.people-nudge:hover { border-color:var(--accent); }
+.people-list { display:flex; flex-direction:column; gap:3px; }
+.people-row { display:flex; align-items:center; gap:11px; width:100%; padding:7px 9px; border-radius:10px; color:var(--ink); text-align:left; transition:background .12s; }
+.people-row:hover { background:var(--paper-2); }
+.people-row .fr-av { width:32px; height:32px; font-size:14px; }
+.people-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:15px; }
+.people-msg { flex:none; opacity:0; font-size:14px; }
+.people-row:hover .people-msg { opacity:.7; }
+@media (hover:none){ .people-msg { opacity:.55; } }
+.people-link { color:var(--accent); font-size:inherit; }
+.people-link:hover { text-decoration:underline; }
 .fr-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
 .fr-name { font-weight:600; color:var(--ink); display:flex; align-items:center; gap:8px; }
 .fr-on { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:#3fae5a; }
