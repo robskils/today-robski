@@ -2372,25 +2372,15 @@ export default {
     }
     const path = url.pathname;
 
-    // Both old robski.uk apps are retired and 301 to Robin's Daybook. Life
-    // preserves the path (it's the same app); the standalone Today app drops it
-    // (its old paths don't map onto Daybook), so old links land on the home.
-    if (url.hostname === 'life.robski.uk') {
-      return new Response(null, { status: 301, headers: { Location: 'https://robski.daybook.fyi' + path + url.search, 'Strict-Transport-Security': HSTS } });
-    }
-    if (url.hostname === 'today.robski.uk') {
-      return new Response(null, { status: 301, headers: { Location: 'https://robski.daybook.fyi', 'Strict-Transport-Security': HSTS } });
-    }
-
-    // Static assets (the Worker runs first). The root serves a different app
-    // per hostname: life.robski.uk is the Life app; everywhere else is Today.
-    // Everything non-API/auth falls through to the assets binding untouched.
+    // Static assets (the Worker runs first). The root serves a different app per
+    // hostname: the daybook.fyi apex is the marketing site, a per-user subdomain
+    // is the app. Everything non-API/auth falls through to the assets binding.
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
       const host = url.hostname;
       // daybook.fyi apex (+ www) is the public marketing site; a per-user
-      // subdomain like tara.daybook.fyi is the app itself, same as life.robski.uk.
+      // subdomain like tara.daybook.fyi is the app itself.
       const isApex = host === 'daybook.fyi' || host === 'www.daybook.fyi';
-      const isLife = host === 'life.robski.uk' || (host.endsWith('.daybook.fyi') && !isApex);
+      const isLife = host.endsWith('.daybook.fyi') && !isApex;
       // Public webinar join page: /w/<id>, no account needed, on any host.
       const wm = path.match(/^\/w\/([\w-]{4,40})$/);
       if (wm) {
@@ -2423,8 +2413,8 @@ export default {
       if (isApex && path === '/') {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request)));
       }
-      // life.robski.uk/today IS the real day planner (index.html) - the exact
-      // same app as today.robski.uk, sharing the Life login (same origin/token).
+      // <subdomain>.daybook.fyi/today IS the real day planner (index.html),
+      // sharing the app login (same origin/token).
       if (isLife && /^\/today(\/|$)/.test(path)) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin), request)));
       }

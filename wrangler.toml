@@ -15,19 +15,8 @@ run_worker_first = true
 # -> / (clean URLs), which loops when the Worker fetches it for the root.
 html_handling = "none"
 
-[[routes]]
-pattern = "today.robski.uk"
-custom_domain = true
-
-# The Robski Life app's own front door. Same worker + D1; the root redirects
-# this hostname to /app.html (see the inline script in index.html).
-[[routes]]
-pattern = "life.robski.uk"
-custom_domain = true
-
 # Daybook's public marketing site. Same worker serves /home.html at the apex
-# (see the hostname switch in worker/index.js). The app itself still lives at
-# life.robski.uk until the multi-tenant cutover; this is the front door only.
+# (see the hostname switch in worker/index.js).
 #
 # A zone route (not custom_domain) because daybook.fyi already had DNS records:
 # this attaches the worker to the existing PROXIED record rather than creating a
@@ -101,8 +90,8 @@ name = "daybook-staging"
 workers_dev = true
 # CRITICAL: named envs inherit the top-level [[routes]] and [triggers] unless
 # they set their own. Without these two overrides, `deploy --env staging` would
-# reattach today.robski.uk / life.robski.uk to the STAGING worker (pointing the
-# live domains at the empty staging DB) and try to claim a cron. Keep them empty:
+# reattach the live daybook.fyi routes to the STAGING worker (pointing the live
+# domains at the empty staging DB) and try to claim a cron. Keep them empty:
 # staging lives ONLY at daybook-staging.<subdomain>.workers.dev, with no cron.
 routes = []
 
