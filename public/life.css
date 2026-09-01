@@ -1031,6 +1031,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fr-rescan:hover { color:var(--accent); border-color:var(--line-2); }
 .fr-scan-note { font-size:13.5px; color:var(--ink-2); margin:2px 0 10px; }
 .fr-results:not(:empty) { margin:-8px 0 20px; }
+/* Invite button lives in the section header now, pushed to the right. */
+.home-sec-h .sec-h-btn { margin-left:auto; align-self:center; flex:none; }
+/* Auto-surfaced: your contacts already on Daybook, given a soft-tinted card so
+   they stand out as the easy first connections. */
+.fr-suggest { margin:2px 0 18px; padding:4px 14px 12px; border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line)); border-radius:14px; background:color-mix(in srgb,var(--accent) 5%,transparent); }
+.fr-suggest .ppl-sub { margin-top:12px; color:var(--accent); }
+.fr-suggest .friend-row { background:var(--card); }
 /* Sub-groups inside "Contacts on Daybook" (Requests, Pending, Suggestions…). */
 .ppl-sub { display:flex; align-items:center; gap:8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin:18px 0 9px; }
 .ppl-sub .fr-rescan { margin-left:2px; padding:2px 7px; font-size:13px; }

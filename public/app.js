@@ -5201,20 +5201,19 @@ function renderContacts() {
     <div class="pane-head"><h1>Contacts</h1></div>
     <div class="list-head">
       <input class="list-search sel" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
-      <button class="add-btn wide" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button>
       ${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add contact</button>`}
       <button class="ghost" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button>
       <input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden>
     </div>
 
     <section class="home-sec">
-      <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length}</span></div>
-      <div class="list-head"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Connect</button></div>
+      <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length}</span><button class="add-btn wide sec-h-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
+      ${(d.suggestions && d.suggestions.length) ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
+      <div class="list-head"><input class="sel fr-connect" id="friend-email" placeholder="Find someone else on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-friend-add-email>Connect</button></div>
       <div id="friend-results" class="fr-results"></div>
       ${d.incoming.length ? `<div class="ppl-sub">Requests · ${d.incoming.length}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
-      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : (d.incoming.length ? '' : '<div class="home-empty">No one yet - find people above, or invite a contact to Daybook.</div>')}
+      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Daybook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
-      ${(d.suggestions && d.suggestions.length) ? `<div class="ppl-sub">Your contacts who are on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Connect</button>`)).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life area' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>
 

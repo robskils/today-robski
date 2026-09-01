@@ -190,6 +190,12 @@ Measured July 2026 across roughly 278 open tasks:
 - `.gate` and `.sheet-bg` set `display`, which outranks the UA `[hidden]` rule.
   `[hidden] { display: none !important }` in today.css keeps `hidden` working.
   Don't remove it.
+- **D1 caps bound parameters at ~100 per statement.** A `WHERE x IN (?,?,…)`
+  built from a user-sized list (Robin has 400+ distinct contact emails) blows the
+  limit and the statement throws - and if it's wrapped in `.catch(() => [])` the
+  whole feature silently returns nothing. This is exactly what hid every
+  "contacts already on Daybook" suggestion. Batch such lookups in chunks of ≤90
+  (see `getFriends` in worker/friends.js). Watch for this in any IN-list query.
 - Mobile grid must be `minmax(0, 1fr)`. A bare `1fr` floors at min-content and a
   long task title stretches the page.
 - **The mobile shell (`.app-shell`) must be `display:block`, not grid.** In WebKit

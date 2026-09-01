@@ -33,16 +33,21 @@ export async function getFriends(env) {
   for (const c of cts) { let p = {}; try { p = JSON.parse(c.props || '{}'); } catch {} if (p.email) emails.push([String(p.email).toLowerCase(), c.title]); }
   const suggestions = [];
   const uniq = [...new Set(emails.map((e) => e[0]))];
-  if (uniq.length) {
-    const ph = uniq.map(() => '?').join(',');
-    const byEmail = {};
-    const us = await env.DB.prepare(`SELECT id, name, subdomain, lower(email) AS em FROM users WHERE lower(email) IN (${ph})`).bind(...uniq).all().catch(() => ({ results: [] }));
+  const byEmail = {};
+  // D1 caps bound parameters at ~100 per statement, so a big address book (Robin
+  // has 400+ distinct emails) would blow the limit and the whole match would
+  // silently fail - which is why nobody's contacts were surfacing. Batch it.
+  const CHUNK = 90;
+  for (let i = 0; i < uniq.length; i += CHUNK) {
+    const batch = uniq.slice(i, i + CHUNK);
+    const ph = batch.map(() => '?').join(',');
+    const us = await env.DB.prepare(`SELECT id, name, subdomain, lower(email) AS em FROM users WHERE lower(email) IN (${ph})`).bind(...batch).all().catch(() => ({ results: [] }));
     for (const r of us.results || []) byEmail[r.em] = r;
-    const al = await env.DB.prepare(`SELECT lower(ue.email) AS em, u.id, u.name, u.subdomain FROM user_emails ue JOIN users u ON u.id = ue.user_id WHERE ue.verified = 1 AND lower(ue.email) IN (${ph})`).bind(...uniq).all().catch(() => ({ results: [] }));
+    const al = await env.DB.prepare(`SELECT lower(ue.email) AS em, u.id, u.name, u.subdomain FROM user_emails ue JOIN users u ON u.id = ue.user_id WHERE ue.verified = 1 AND lower(ue.email) IN (${ph})`).bind(...batch).all().catch(() => ({ results: [] }));
     for (const r of al.results || []) byEmail[r.em] = { id: r.id, name: r.name, subdomain: r.subdomain };
-    const seen = new Set();
-    for (const [em, title] of emails) { const u = byEmail[em]; if (u && !connected.has(u.id) && !seen.has(u.id)) { seen.add(u.id); suggestions.push({ id: u.id, name: u.name || u.subdomain, subdomain: u.subdomain, contactName: title }); } }
   }
+  const seen = new Set();
+  for (const [em, title] of emails) { const u = byEmail[em]; if (u && !connected.has(u.id) && !seen.has(u.id)) { seen.add(u.id); suggestions.push({ id: u.id, name: u.name || u.subdomain, subdomain: u.subdomain, contactName: title }); } }
   // scanned = how many distinct contact emails we checked against Daybook, so the
   // UI can say "checked N of your contacts" even when nothing matched.
   return { friends, incoming, outgoing, suggestions, scanned: uniq.length, contacts: cts.length };
