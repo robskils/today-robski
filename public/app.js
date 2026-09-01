@@ -2109,6 +2109,14 @@ function renderHome() {
         return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`; })()
     // (end time stacked under start; duration tag after the title)
     : `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
+  // Tasks that have surfaced from snooze sit in Today too, each tickable in place
+  // (a tick completes it and it drops out; snoozing it again hides it).
+  const surfacedRows = ((state.home.alerts && state.home.alerts.surfaced) || []).map((t) => {
+    const a = areaById(t.area); const hue = a ? hueOf(a) : 220;
+    return `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0" title="Open this task">
+      <span class="ev-time"><button class="ev-check" data-home-task-tick="${t.id}" title="Mark done" aria-label="Mark done">✓</button></span>
+      <span class="ev-t"><span class="ev-dot" style="--h:${hue}"></span>${esc(t.title)}</span><span class="ev-loc ev-surfaced">back from snooze</span></div>`;
+  }).join('');
   const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind)).slice(0, 8);
   const recentHtml = recents.length
     ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
@@ -2116,6 +2124,7 @@ function renderHome() {
   $('#pane').innerHTML = `
     <div class="home">
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
+      <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="home-head">
         <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1><div class="home-date">${homeDate()}</div></div>
         <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
@@ -2124,29 +2133,30 @@ function renderHome() {
       ${homeQuoteHtml()}
       ${modOn('reflect') ? spiritPinnedHtml() : ''}
       <div id="qt-wrap"></div>
-      <!-- Mobile-only launcher. On desktop the sidebar already lists every
-           section, so this is hidden (see .home-launch in life.css). On mobile
-           the sidebar is gone, so home is where you reach the sections the
-           bottom tab bar doesn't hold. -->
-      <nav class="home-launch">
-        ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
-        ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
-        ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
-        ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
-        ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>` : ''}
-        ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
-        ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
-        ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>` : ''}
-        ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
-        ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
-      </nav>
       <div class="home-body">
+        <!-- Mobile-only launcher. On desktop the sidebar already lists every
+             section, so this is hidden (see .home-launch in life.css). On mobile
+             the sidebar is gone, so this is how you reach the sections the bottom
+             tab bar doesn't hold. It lives inside home-body so the mobile flex
+             order can sit it just below Today. -->
+        <nav class="home-launch">
+          ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
+          ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
+          ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
+          ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
+          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>` : ''}
+          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
+          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
+          ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span></button>` : ''}
+          ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
+          ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
+        </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
           const fg = focusGoals();
           const sec = {
             favareas: favAreas.length ? `<section class="home-sec home-sec-favareas" data-hsec="favareas">${secH('favareas', 'Life areas', '', true)}${secOpen('favareas') ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : ''}</section>` : '',
-            today: `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', 'Today', '', true)}${secOpen('today') ? `<div class="today-cal">${evRows || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}</section>`,
+            today: `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', 'Today', '', true)}${secOpen('today') ? `<div class="today-cal">${(evRows + surfacedRows) || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}</section>`,
             priority: p1Html(),
             focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
             toolbox: modOn('timer') ? toolboxHtml() : '',
@@ -7641,6 +7651,7 @@ document.addEventListener('click', (e) => {
   const et = t.closest('[data-edit-task]'); if (et) { editTaskTitle(et); return; }
   const ep = t.closest('[data-edit-prio]'); if (ep) { editPrio(ep); return; }
   const ea = t.closest('[data-edit-area]'); if (ea) { editArea(ea); return; }
+  const htt = t.closest('[data-home-task-tick]'); if (htt) { e.stopPropagation(); homeTaskTick(htt.dataset.homeTaskTick); return; }
   const ota = t.closest('[data-open-task]'); if (ota) { openTaskCard(ota.dataset.openTask).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-task-cur]')) { delTaskCard().catch((x) => toast(x.message)); return; }
   // Click anywhere on a task row that isn't an editable field / control -> open it.
@@ -8118,6 +8129,18 @@ function toggleTask(id) {
     return;
   }
   patchTaskProps(id, { done: !t.props.done });
+}
+// Tick a surfaced task straight from Home's Today section. state.tasks isn't
+// loaded on Home, so this talks to the task endpoint directly (the same door as
+// every other tick: /api/tasks/:id routes through setTaskDone) and drops the
+// task from the surfaced list optimistically.
+async function homeTaskTick(id) {
+  const arr = (state.home.alerts && state.home.alerts.surfaced) || [];
+  const idx = arr.findIndex((t) => t.id === id); if (idx < 0) return;
+  const [removed] = arr.splice(idx, 1);
+  renderHome();
+  try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast('Done ✓'); }
+  catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }
 }
 async function delTask(id) {
   state.tasks = state.tasks.filter((t) => t.id !== id);

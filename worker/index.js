@@ -1452,9 +1452,19 @@ async function homeAlerts(request, env, json) {
   ]);
   const birthdays = [];
   for (const r of cts.results || []) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} if (p.birthday && String(p.birthday).slice(5, 10) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' }); }
-  let p1 = 0; const p1list = [];
-  for (const r of tks.results || []) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} if (p.priority === 'P1' && !p.done) { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null }); } }
-  return json({ birthdays, p1, p1list }, request);
+  const today = localParts(new Date(), TZ).date;   // YYYY-MM-DD in Lisbon
+  let p1 = 0; const p1list = []; const surfaced = [];
+  for (const r of tks.results || []) {
+    let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
+    if (p.done) continue;
+    if (p.priority === 'P1') { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null }); }
+    // A task that was snoozed and whose snooze date has now arrived or passed has
+    // "surfaced" - it's back in the open list. Robin wants those in Today, and
+    // they stay until ticked (p.done) or hidden again (snooze pushed forward).
+    if (p.snooze && String(p.snooze) <= today) surfaced.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null, snooze: p.snooze });
+  }
+  surfaced.sort((a, b) => String(a.snooze).localeCompare(String(b.snooze)));
+  return json({ birthdays, p1, p1list, surfaced: surfaced.slice(0, 50) }, request);
 }
 
 async function handleDay(request, env, url) {

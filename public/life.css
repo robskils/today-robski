@@ -1563,10 +1563,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
      every section title lines up flush left whichever column it came from. */
   .home-sec-toggle { padding:6px 0; margin-bottom:8px; }
   .home-grip { display:none; }
-  /* Today right under the tool buttons; the Toolbox last. */
-  .home-sec-today { order:1; } .home-sec-p1 { order:2; } .home-sec-focus { order:3; }
-  .home-sec-favareas { order:4; } .home-sec-favs { order:5; } .home-sec-recent { order:6; }
-  .home-sec-notepad { order:7; } .home-toolbox { order:20; }
+  /* Today first, then the tool buttons, then the rest; the Toolbox last. */
+  .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }
+  .home-sec-focus { order:4; } .home-sec-favareas { order:5; } .home-sec-favs { order:6; }
+  .home-sec-recent { order:7; } .home-sec-notepad { order:8; } .home-toolbox { order:20; }
   /* Everything stacks on mobile - never a sideways scroll. Goal cards go one per
      row (no 280px min to spill into two columns), the home columns can't be
      pushed past the screen, and the home clips any stray horizontal overflow. */
@@ -1619,11 +1619,22 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ev-loc { grid-column:2; min-width:0; color:var(--ink-3); font-size:14px; overflow-wrap:anywhere; }
 .ev-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:9px; vertical-align:middle; background:hsl(var(--h,220) var(--lane-s) var(--lane-l)); flex:none; }
 .ev-slot.done .ev-t { color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--line-2); }
+/* A surfaced task in Today: a tick box in the time column, a quiet "back from
+   snooze" tag where a location would sit. */
+.ev-task { align-items:center; }
+.ev-check { width:26px; height:26px; flex:none; border-radius:8px; border:1.5px solid var(--line-2); background:var(--card); color:transparent; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; transition:border-color .12s,color .12s,background .12s; }
+.ev-check:hover { border-color:var(--accent); color:var(--accent); }
+.ev-check:active { background:var(--paper-2); }
+.ev-surfaced { font-size:12px; color:var(--accent); opacity:.9; }
 
 /* Quick-launch row above Favourites: go to each index, or + to create. */
 /* Home launcher: hidden on desktop (the sidebar lists every section), shown as
    a tap-grid on mobile where the sidebar is gone. See the mobile rules below. */
 .home-launch { display:none; }
+/* Mobile-only search pill at the very top of Home. It sits in the normal page
+   flow (not the sticky header), so it scrolls away with the greeting. Desktop
+   uses the sidebar's search instead. */
+.home-search { display:none; }
 .home-link { padding:9px 16px; border-radius:999px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; }
 .home-link:hover { border-color:var(--accent); color:var(--accent); }
 /* a link and its + share one pill outline, split by a hairline */
@@ -2297,8 +2308,17 @@ table.ttable tr:last-child td { border-bottom:0; }
      section, Today included (the planner is now responsive). Big targets and
      big labels, comfortable for thumbs and eyes. */
   .home-launch {
-    display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:8px 0 30px;
+    display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:0;
   }
+  /* The scrolling search pill: shown on mobile, at the top of the page flow. */
+  .home-search {
+    display:flex; align-items:center; gap:11px; width:100%; margin:0 0 20px;
+    padding:14px 16px; font-size:16px; color:var(--ink-3); text-align:left;
+    background:var(--card); border:1px solid var(--line-2); border-radius:14px;
+    box-shadow:var(--shadow);
+  }
+  .home-search .hs-ic { font-size:20px; line-height:1; color:var(--accent); }
+  .home-search:active { transform:scale(.99); }
   .hl-btn {
     position:relative; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:9px; min-height:96px; padding:20px 12px;
@@ -2332,6 +2352,9 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* A real, tappable search box (opens the universal palette), inside the tools bar. */
   .nav-k { display:none; }
   body.util-open .nav-k { display:flex; order:5; flex-basis:100%; margin:8px 0 0; font-size:16px; padding:12px 14px; }
+  /* On Home the search lives at the top of the page instead (.home-search), so
+     it's dropped from the ⋯ tools menu to avoid two search boxes. */
+  body[data-view="home"].util-open .nav-k { display:none; }
   .pane { padding:20px 18px 96px; }
   /* The breadcrumb pins just below the fixed brand header (--navh tracks the
      header's height, so it sits correctly whether the tools bar is open or shut).
