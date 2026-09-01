@@ -26,7 +26,18 @@ const token = () => localStorage.getItem(KEY) || '';
 async function api(path, opts = {}) {
   const res = await fetch(path, { ...opts, headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json', ...opts.headers } });
   if (res.status === 401) { localStorage.removeItem(KEY); if (!$('#gate2')) showGate('Your session expired. Sign in again.'); throw new Error('unauthorized'); }
-  if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    let msg = b.error || `HTTP ${res.status}`;
+    // Never surface raw database plumbing (or a "upgrade your plan" nag meant for
+    // us, not the member) - show something calm and human instead.
+    if (/D1_ERROR|row write limit|SQLITE|no such (table|column)/i.test(msg)) {
+      msg = /write limit/i.test(msg)
+        ? "Couldn't save just now - Daybook is briefly at capacity. Please try again in a little while."
+        : "Couldn't save that just now. Please try again.";
+    }
+    throw new Error(msg);
+  }
   return res.status === 204 ? null : res.json();
 }
 let toastT;
