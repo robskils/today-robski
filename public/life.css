@@ -1366,7 +1366,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .sp-x { position:absolute; bottom:10px; right:12px; width:26px; height:26px; border:none; background:none; color:var(--ink-3); font-size:18px; line-height:1; border-radius:8px; cursor:pointer; z-index:2; }
 .sp-x:hover { background:var(--surface-2); color:var(--ink); }
 /* Collapsible section header (chevron toggles hide/show). */
-.home-sec-toggle { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
+.home-sec-toggle { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .home-sec-toggle .hs-chev { color:var(--ink-3); font-size:12px; }
 .home-sec-toggle:hover .hs-chev { color:var(--accent); }
 /* Pomodoro focus timer - quiet by default, comes alive when running. */
@@ -1699,8 +1699,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .home-main, .home-side { display:contents; position:static; }
   .home-body .home-sec { margin:0; }
   /* Tap the whole header to collapse - a generous target, and no drag grip, so
-     every section title lines up flush left whichever column it came from. */
-  .home-sec-toggle { padding:6px 0; margin-bottom:8px; }
+     every section title lines up flush left whichever column it came from. The
+     bigger vertical padding (a ~44px touch target) is what makes the tap land
+     every time instead of only sometimes on a thin header. */
+  .home-sec-toggle { padding:13px 2px; margin-bottom:3px; min-height:22px; }
   .home-grip { display:none; }
   /* Default order (Today + tool buttons pinned first). Settings → Mobile can
      override the sections below via inline `order`, and hide any with .mob-hide. */

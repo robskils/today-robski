@@ -3976,7 +3976,7 @@ async function loadMessages(quiet, force) {
   // Gmail especially is slow to answer from the cloud. Kick a background warm so
   // the next open stays fresh, then stop here.
   state.mail._liveAt = state.mail._liveAt || {};
-  const cacheFresh = state.mail._cacheSyncedAt && (Date.now() - Date.parse(state.mail._cacheSyncedAt) < 90000);
+  const cacheFresh = state.mail._cacheSyncedAt && (Date.now() - Date.parse(state.mail._cacheSyncedAt) < 120000);
   const recentlyLive = state.mail._liveAt[viewKey] && (Date.now() - state.mail._liveAt[viewKey] < 90000);
   if (painted && isDefaultInbox && !quiet && !force && (cacheFresh || recentlyLive)) {
     state.mail.hasMore = (state.mail.messages || []).length >= 200;
@@ -5416,7 +5416,7 @@ function renderContacts() {
     </div>
 
     <section class="home-sec">
-      <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length}</span></div>
+      <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       ${(d.suggestions && d.suggestions.length) ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
       <div id="friend-results" class="fr-results"></div>

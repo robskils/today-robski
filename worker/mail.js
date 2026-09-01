@@ -601,8 +601,12 @@ export async function syncMailCache(env, { force = false } = {}) {
   if (!force) {
     // Global cron throttle (warms every account), so it lives on the system row
     // user_id=1 rather than per-tenant. settings PK is (user_id, key).
+    // Once a minute: the warm cache then stays inside the client's freshness
+    // window, so opening Mail paints from cache instead of doing the slow live
+    // fetch across every account. A once-a-minute IMAP poll is standard, and on
+    // the paid plan the extra cache writes are a non-issue.
     const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id=1 AND key='mail_sync_at'").first();
-    if (row && now - Number(row.value || 0) < 120000) return { newUnread: 0 };   // at most once every 2 min
+    if (row && now - Number(row.value || 0) < 55000) return { newUnread: 0 };   // at most once a minute
   }
   await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,'mail_sync_at',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
   const accts = await listAccounts(env);
