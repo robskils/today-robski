@@ -1322,7 +1322,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* Wrapping layout, so the drop marker is a vertical bar to the left/right. */
 .p1-list .drop-before::before, .p1-list .drop-after::after { content:''; position:absolute; top:4px; bottom:4px; width:3px; border-radius:2px; background:var(--accent); z-index:3; }
 .p1-list .drop-before::before { left:-5px; } .p1-list .drop-after::after { right:-5px; }
-.p1-t { min-width:0; max-width:230px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Show the title in full; only ellipsis if a single task would run past one line
+   (the row is capped at the column width, so a very long one truncates there). */
+.p1-t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* The task's life area, named in its own colour (same chip the notes use). */
 .p1-area { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); flex:none; display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 40%,transparent); padding:2px 9px; border-radius:999px; }
 .p1-area .cd { width:8px; height:8px; border-radius:50%; background:var(--c); flex:none; }
