@@ -171,6 +171,12 @@ Measured July 2026 across roughly 278 open tasks:
   Don't remove it.
 - Mobile grid must be `minmax(0, 1fr)`. A bare `1fr` floors at min-content and a
   long task title stretches the page.
+- **The mobile shell (`.app-shell`) must be `display:block`, not grid.** In WebKit
+  (iOS Safari, and every iOS browser including the Brave PWA) a `position:sticky`
+  grid item is clamped to its own grid cell, so scrolling past the header's row
+  unsticks it and the sticky breadcrumb (`top:var(--navh)`) floats over an empty
+  gap. Chromium clamps to the whole grid and hides the bug in dev. Block flow
+  makes both sticky bars clamp to the tall shell. Don't restore the mobile grid.
 - `compatibility_date` must not exceed what the installed wrangler runtime
   supports, or `wrangler dev` refuses to boot.
 - **`CREATE TABLE IF NOT EXISTS` never adds a column to an existing table.** A
