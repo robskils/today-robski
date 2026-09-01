@@ -470,8 +470,8 @@ const HELP = {
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on. <b>Download your data</b> exports everything; <b>Close account</b> removes it.</p>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
-  'settings-ai': { title: 'AI', tip: 'Your AI keys, and a switch to turn all AI off.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflect coaching, Email Scribe replies, advice, statement import) is disabled across Daybook. Below it, your <b>Anthropic</b> and <b>Google Gemini</b> keys: features run on your own keys, so nothing is stored but whether a key is set.</p>` },
+  'settings-ai': { title: 'Premium', tip: 'How the AI runs: bring your own keys, or Full Fat where we handle it.',
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflect coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (free / standard): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Full Fat</b> (premium): we run the AI for you, no keys to manage.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
     body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
@@ -1425,7 +1425,7 @@ function renderSettings() {
     ['account', 'Account'],
     ['appearance', 'Appearance'],
     ['mobile', 'Mobile'],
-    ['ai', 'AI'],
+    ['ai', 'Premium'],
     ['notifications', 'Notifications'],
     ['sections', 'Tools'],
     ['invites', 'Invites'],
@@ -1451,7 +1451,7 @@ function renderSettings() {
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
-        <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
+        <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" data-set-tab="ai">View plans →</button></div></div>
         <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
@@ -1465,22 +1465,39 @@ function renderSettings() {
         ${modOn('contacts') ? `<label class="set-mod"><span>People on Home<small>Show who's online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
       </div>`;
 
-  const aiPane = state.account ? `<div class="set-card">
-        <label class="set-mod"><span>Use AI features<small>Turn every AI feature on or off across Daybook.</small></span><input type="checkbox" data-account-ai ${state.account.aiOff ? '' : 'checked'}></label>
-        <div class="set-block ai-keys ${state.account.aiOff ? 'ai-disabled' : ''}">
-          <div class="set-row-t">Where AI is used, and why</div>
-          <div class="set-row-s">Each helper below runs only when you use it. Nothing is sent anywhere unless you ask for it.</div>
-          ${aiUsesHtml()}
-          <p class="ai-hint">${state.account.isOwner
-            ? 'You use the built-in keys; add your own below to override them.'
-            : 'Bring your own key so you stay in control of the cost. <b>Gemini</b> has a genuinely free tier - a free Google account is fine. <b>Claude</b> is pay-as-you-go (usually a few pennies; there is no free tier, so you add a little credit first).'}</p>
-          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflect &amp; Email Scribe', state.account.aiAnthropicSet, 'sk-ant-…')}
+  const aiPane = state.account ? (() => {
+    const a = state.account;
+    const plan = (a.plan || 'free').toLowerCase();
+    // "Full Fat" = the managed plan: the owner and anyone on premium/power run on
+    // our built-in keys. Everyone else is on Bring-your-own-keys.
+    const managed = a.isOwner || plan === 'premium' || plan === 'power';
+    const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
+    return `<div class="set-card">
+        <label class="set-mod"><span>Use AI features<small>Turn every AI feature on or off across Daybook.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
+        <div class="set-row-t" style="margin-top:16px">What the AI powers</div>
+        ${aiUsesHtml()}
+      </div>
+      <div class="set-row-t" style="margin:22px 0 4px">Two ways to run it</div>
+      <div class="plan-cards ${a.aiOff ? 'ai-disabled' : ''}">
+        <div class="plan-card ${managed ? '' : 'on'}">
+          <div class="plan-h"><b>Bring your own keys</b>${badge(!managed)}</div>
+          <div class="plan-price">Free &amp; Standard</div>
+          <p class="plan-desc">Plug in your own keys and you control the cost. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> is pay-as-you-go, usually a few pennies.</p>
+          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflect &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
           <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a Claude key at console.anthropic.com ↗</a>
-          ${aiKeyRow('gemini', 'Gemini (Google) &middot; money advice &amp; statement import', state.account.aiGeminiSet, 'AIza…')}
+          ${aiKeyRow('gemini', 'Gemini (Google) &middot; money advice &amp; statement import', a.aiGeminiSet, 'AIza…')}
           <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini key at aistudio.google.com ↗</a>
-          <div class="ai-managed">Prefer not to manage keys at all? The <b>managed plan</b> (coming soon) includes AI - we look after it for you, nothing to set up.</div>
         </div>
-      </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
+        <div class="plan-card plan-full ${managed ? 'on' : ''}">
+          <div class="plan-h"><b>Full Fat</b>${badge(managed)}</div>
+          <div class="plan-price">Premium &middot; €13/mo</div>
+          <p class="plan-desc">We run the AI for you - no keys, nothing to set up, it just works across every tool. The hands-off option.</p>
+          ${managed
+            ? '<div class="plan-active">✓ Active - the AI is handled for you, no keys needed.</div>'
+            : '<a class="add-btn wide" href="mailto:robin@lumley-savile.com?subject=Daybook%20Full%20Fat%20plan">Switch to Full Fat →</a>'}
+        </div>
+      </div>`;
+  })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>`;
 
@@ -1502,7 +1519,7 @@ function renderSettings() {
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
   const panes = { account: accountPane, appearance: appearancePane, mobile: mobileSettingsHtml(), ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', mobile: 'Arrange your Home on the phone', ai: 'AI keys & switch', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
+  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', mobile: 'Arrange your Home on the phone', ai: 'Your plan, and how the AI runs', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
 
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
@@ -9433,7 +9450,7 @@ function onbAi() {
       ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflect coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
       ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
     </div>
-    <div class="ai-managed">Prefer not to deal with keys? The <b>managed plan</b> (coming soon) includes AI - we look after it for you.</div>`;
+    <div class="ai-managed">Prefer not to deal with keys? The <b>Full Fat</b> plan runs the AI for you - no keys, nothing to set up. See Settings → Premium.</div>`;
 }
 function onbEmail() {
   if (state.onb.mailDone) return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>

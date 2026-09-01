@@ -39,11 +39,14 @@ export async function aiKey(env, provider) {
   const col = provider === 'gemini' ? 'ai_gemini_enc' : 'ai_anthropic_enc';
   const enc = env.user && env.user[col];
   if (enc) { try { return await decryptSecret(env, enc); } catch {} }
-  // Only the owner may use the shared env key; every other tenant brings their own.
-  if (env.uid === 1) return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
+  // The shared env key is the "Full Fat" managed plan: the owner, and any member
+  // on the premium/power plan, run on it (we handle the AI for them). Everyone
+  // else brings their own key.
+  const plan = (env.user && env.user.plan) || 'free';
+  if (env.uid === 1 || plan === 'premium' || plan === 'power') return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
   return null;
 }
-export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → AI.`;
+export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → Premium.`;
 
 // One ledger row per call. Best-effort: logging must never break the feature.
 export async function logAiUsage(env, provider, feature, model, inTok, outTok) {
