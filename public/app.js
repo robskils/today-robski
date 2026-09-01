@@ -1314,6 +1314,57 @@ const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your norm
     <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Daybook</b>, and press Create.</li>
     <li>Copy the 16-character code Google shows and paste it as the password below (spaces don't matter).</li>
   </ol>`;
+// ── Mobile Home layout ────────────────────────────────────────────────
+// Everything after the tool buttons on mobile Home can be reordered and hidden
+// from Settings → Mobile. Today and the tool buttons stay pinned at the top.
+// key -> [section class, display name]. Order here is the default arrangement.
+const MOBILE_SECTIONS = [
+  ['priority', 'home-sec-p1', 'Priority Tasks'],
+  ['focus', 'home-sec-focus', "This quarter's focus"],
+  ['notepad', 'home-sec-notepad', 'Notepad'],
+  ['favs', 'home-sec-favs', 'Starred Notes & Tables'],
+  ['favareas', 'home-sec-favareas', 'Life areas'],
+  ['recent', 'home-sec-recent', 'Recently viewed'],
+  ['toolbox', 'home-toolbox', 'Toolbox'],
+];
+const MOBILE_KEYS = MOBILE_SECTIONS.map((s) => s[0]);
+const MSEC_CLASS = Object.fromEntries(MOBILE_SECTIONS.map((s) => [s[0], s[1]]));
+const MSEC_NAME = Object.fromEntries(MOBILE_SECTIONS.map((s) => [s[0], s[2]]));
+function mobileHomeCfg() {
+  let cfg = {};
+  try { cfg = JSON.parse(localStorage.getItem('life.home.mobile') || '{}') || {}; } catch {}
+  let order = Array.isArray(cfg.order) ? cfg.order.filter((k) => MOBILE_KEYS.includes(k)) : [];
+  // Append any keys not yet in the saved order (e.g. a new section shipped later).
+  order = [...order, ...MOBILE_KEYS.filter((k) => !order.includes(k))];
+  const hidden = Array.isArray(cfg.hidden) ? cfg.hidden.filter((k) => MOBILE_KEYS.includes(k)) : [];
+  return { order, hidden };
+}
+function saveMobileHomeCfg(cfg) {
+  const val = JSON.stringify({ order: cfg.order, hidden: cfg.hidden });
+  try { localStorage.setItem('life.home.mobile', val); } catch {}
+  api('/api/kv/home_mobile', { method: 'PUT', body: JSON.stringify({ value: val }) }).catch(() => {});
+}
+// Apply the saved arrangement to the live Home DOM. Inline `order` only bites on
+// mobile (where the sections are flex children); on desktop they're block flow in
+// their column, so it's ignored. `mob-hide` hides on mobile only (see the CSS).
+function applyMobileHomeOrder() {
+  const cfg = mobileHomeCfg(); const hidden = new Set(cfg.hidden);
+  cfg.order.forEach((key, i) => { const el = document.querySelector('.' + MSEC_CLASS[key]); if (el) el.style.order = String(3 + i); });
+  MOBILE_SECTIONS.forEach(([key, cls]) => { const el = document.querySelector('.' + cls); if (el) el.classList.toggle('mob-hide', hidden.has(key)); });
+}
+function mobileSettingsHtml() {
+  const cfg = mobileHomeCfg(); const hidden = new Set(cfg.hidden);
+  const rows = cfg.order.map((key) => `<div class="msec-row" data-msec="${key}">
+    <button type="button" class="msec-grip" data-msec-grip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</button>
+    <span class="msec-name">${esc(MSEC_NAME[key])}</span>
+    <label class="switch msec-switch" title="Show on mobile Home"><input type="checkbox" data-msec-show="${key}" ${hidden.has(key) ? '' : 'checked'}><span class="switch-sl"></span></label>
+  </div>`).join('');
+  return `<div class="set-card">
+    <div class="set-row-t">Your mobile Home</div>
+    <div class="set-row-s"><b>Today</b> and the <b>tool buttons</b> stay pinned at the top. Everything below can be dragged into the order you like, and switched off if you'd rather not see it on your phone.</div>
+    <div class="msec-list" id="msec-list">${rows}</div>
+  </div>`;
+}
 function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
@@ -1335,6 +1386,7 @@ function renderSettings() {
   const TABS = [
     ['account', 'Account'],
     ['appearance', 'Appearance'],
+    ['mobile', 'Mobile'],
     ['ai', 'AI'],
     ['notifications', 'Notifications'],
     ['sections', 'Tools'],
@@ -1410,8 +1462,8 @@ function renderSettings() {
 
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
-  const panes = { account: accountPane, appearance: appearancePane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', ai: 'AI keys & switch', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
+  const panes = { account: accountPane, appearance: appearancePane, mobile: mobileSettingsHtml(), ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', mobile: 'Arrange your Home on the phone', ai: 'AI keys & switch', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
 
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
@@ -1754,7 +1806,7 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day, pad, rec, goals, alerts, spirit, order] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts, spirit, order, mob] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
@@ -1763,7 +1815,11 @@ async function openHome() {
     api('/api/home/alerts').catch(() => null),
     api('/api/kv/spirit_card').catch(() => null),
     api('/api/kv/home_order').catch(() => null),
+    api('/api/kv/home_mobile').catch(() => null),
   ]);
+  // The mobile Home arrangement follows the account too, so a change made on the
+  // desktop settings shows up on the phone.
+  if (mob && mob.value) { try { const m = JSON.parse(mob.value); if (m && (Array.isArray(m.order) || Array.isArray(m.hidden))) localStorage.setItem('life.home.mobile', mob.value); } catch {} }
   state.goals = goals || [];
   // The desktop section arrangement follows your account: seed this device's copy
   // from the server so a rearrangement made on one desktop shows on the next.
@@ -2207,6 +2263,7 @@ function renderHome() {
       </div>
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
     </div>`;
+  applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
 }
 function openTablesList() {
   state.view = { type: 'tables' };
@@ -7287,6 +7344,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
+  if (e.target.matches('[data-msec-show]')) { const key = e.target.dataset.msecShow; const cfg = mobileHomeCfg(); const set = new Set(cfg.hidden); if (e.target.checked) set.delete(key); else set.add(key); cfg.hidden = [...set]; saveMobileHomeCfg(cfg); toast(e.target.checked ? 'Shown on mobile' : 'Hidden on mobile'); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
@@ -8007,6 +8065,35 @@ document.addEventListener('submit', (e) => {
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
 let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null;
+// Pointer-based drag reorder for the Settings → Mobile section list. Pointer
+// events (not HTML5 drag) so it works with touch on the phone as well as a mouse.
+let msecDrag = null;
+document.addEventListener('pointerdown', (e) => {
+  const grip = e.target.closest && e.target.closest('[data-msec-grip]');
+  if (!grip) return;
+  const row = grip.closest('.msec-row'); const list = grip.closest('#msec-list'); if (!row || !list) return;
+  e.preventDefault();
+  msecDrag = { row, list, id: e.pointerId };
+  row.classList.add('msec-dragging');
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  if (!msecDrag || e.pointerId !== msecDrag.id) return;
+  const { row, list } = msecDrag;
+  const others = [...list.querySelectorAll('.msec-row:not(.msec-dragging)')];
+  let placed = false;
+  for (const sib of others) { const r = sib.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { list.insertBefore(row, sib); placed = true; break; } }
+  if (!placed) list.appendChild(row);
+});
+function msecDragEnd(e) {
+  if (!msecDrag || (e && e.pointerId !== msecDrag.id)) return;
+  const { row, list } = msecDrag; row.classList.remove('msec-dragging');
+  const order = [...list.querySelectorAll('.msec-row')].map((el) => el.dataset.msec);
+  const cfg = mobileHomeCfg(); cfg.order = order; saveMobileHomeCfg(cfg);
+  msecDrag = null;
+}
+document.addEventListener('pointerup', msecDragEnd);
+document.addEventListener('pointercancel', msecDragEnd);
 function reorderHomeSec(dragged, before, cur) {
   const arr = cur.filter((k) => k !== dragged);
   let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
