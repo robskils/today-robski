@@ -1295,6 +1295,25 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
   <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)} · ${invitePlanLabel(i)} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
   ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
 </div>`;
+// Where AI actually gets used across Daybook, and which model powers each - so
+// the AI settings and the onboarding guide can say plainly what a key is for.
+const AI_USES = [
+  ['Reflect', 'gentle coaching and a "Dig deeper" question while you journal', 'Claude'],
+  ['Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
+  ['Money advice', 'sums up what the channels you follow are saying', 'Gemini'],
+  ['Statement import', 'turns a pasted bank statement into tidy transactions', 'Gemini'],
+];
+const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([f, why, prov]) =>
+  `<li><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span></li>`).join('')}</ul>`;
+// Reusable Gmail app-password guidance. A normal Google password won't work over
+// IMAP - this is the single biggest thing that trips people up, so spell it out
+// with the exact links.
+const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your normal password:
+  <ol class="gpw-steps">
+    <li>Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a> (required before app passwords appear).</li>
+    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Daybook</b>, and press Create.</li>
+    <li>Copy the 16-character code Google shows and paste it as the password below (spaces don't matter).</li>
+  </ol>`;
 function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
@@ -1343,7 +1362,7 @@ function renderSettings() {
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
         <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" disabled>Manage subscription (soon)</button></div></div>
-        <div class="acct-actions"><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
+        <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
@@ -1356,11 +1375,19 @@ function renderSettings() {
       </div>`;
 
   const aiPane = state.account ? `<div class="set-card">
-        <label class="set-mod"><span>Use AI features<small>Reflect coaching, Email Scribe replies, advice and statement import. Switch off to disable every AI feature across Daybook.</small></span><input type="checkbox" data-account-ai ${state.account.aiOff ? '' : 'checked'}></label>
-        <div class="set-field ai-keys ${state.account.aiOff ? 'ai-disabled' : ''}"><span>AI keys</span>
-          <p class="ai-hint">${state.account.isOwner ? 'You use the built-in keys; add your own below to override them.' : 'AI features run on your own keys. Get an Anthropic key at console.anthropic.com and a Gemini key at aistudio.google.com.'}</p>
-          ${aiKeyRow('anthropic', 'Anthropic (Claude)', state.account.aiAnthropicSet, 'sk-ant-…')}
-          ${aiKeyRow('gemini', 'Google Gemini', state.account.aiGeminiSet, 'AIza…')}
+        <label class="set-mod"><span>Use AI features<small>Turn every AI feature on or off across Daybook.</small></span><input type="checkbox" data-account-ai ${state.account.aiOff ? '' : 'checked'}></label>
+        <div class="set-block ai-keys ${state.account.aiOff ? 'ai-disabled' : ''}">
+          <div class="set-row-t">Where AI is used, and why</div>
+          <div class="set-row-s">Each helper below runs only when you use it. Nothing is sent anywhere unless you ask for it.</div>
+          ${aiUsesHtml()}
+          <p class="ai-hint">${state.account.isOwner
+            ? 'You use the built-in keys; add your own below to override them.'
+            : 'Bring your own key so you stay in control of the cost. <b>Gemini</b> has a genuinely free tier - a free Google account is fine. <b>Claude</b> is pay-as-you-go (usually a few pennies; there is no free tier, so you add a little credit first).'}</p>
+          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflect &amp; Email Scribe', state.account.aiAnthropicSet, 'sk-ant-…')}
+          <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a Claude key at console.anthropic.com ↗</a>
+          ${aiKeyRow('gemini', 'Gemini (Google) &middot; money advice &amp; statement import', state.account.aiGeminiSet, 'AIza…')}
+          <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini key at aistudio.google.com ↗</a>
+          <div class="ai-managed">Prefer not to manage keys at all? The <b>managed plan</b> (coming soon) includes AI - we look after it for you, nothing to set up.</div>
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
@@ -4195,7 +4222,7 @@ const composeHtml = (text) => `<div style="font-family:-apple-system,Segoe UI,In
 // Provider presets fill the IMAP/SMTP host+port so you don't have to look them up.
 const MAIL_PRESETS = {
   purelymail: { label: 'Purelymail', imap: 'imap.purelymail.com', imapPort: 993, smtp: 'smtp.purelymail.com', smtpPort: 465 },
-  google: { label: 'Google / Workspace', imap: 'imap.gmail.com', imapPort: 993, smtp: 'smtp.gmail.com', smtpPort: 465, note: 'Google needs an <b>App Password</b> (not your normal password): turn on 2-Step Verification, then Google Account → Security → App passwords. Your Workspace admin must also allow IMAP.' },
+  google: { label: 'Google / Workspace', imap: 'imap.gmail.com', imapPort: 993, smtp: 'smtp.gmail.com', smtpPort: 465, note: GMAIL_APP_PW + ' <span class="gpw-admin">On a Workspace account, your admin must also allow IMAP.</span>' },
   icloud: { label: 'iCloud', imap: 'imap.mail.me.com', imapPort: 993, smtp: 'smtp.mail.me.com', smtpPort: 587, note: 'iCloud needs an app-specific password from appleid.apple.com.' },
   outlook: { label: 'Outlook / 365', imap: 'outlook.office365.com', imapPort: 993, smtp: 'smtp.office365.com', smtpPort: 587 },
 };
@@ -7383,6 +7410,13 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
+  // First-run onboarding guide.
+  if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }
+  if (t.closest('[data-onb-back]')) { onbGo((state.onb ? state.onb.step : 0) - 1); return; }
+  if (t.closest('[data-onb-next]')) { if (state.onb && state.onb.step >= ONB_STEPS.length - 1) finishOnboarding(); else onbGo((state.onb ? state.onb.step : 0) + 1); return; }
+  { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
+  if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
+  if (t.closest('[data-onb-replay]')) { showOnboarding(0); return; }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
@@ -9197,6 +9231,109 @@ async function openMailCompose(c) {
 // browser then asks the user to allow it, and to make it the default.
 function registerMailHandler() { try { if (navigator.registerProtocolHandler) navigator.registerProtocolHandler('mailto', location.origin + '/?mailto=%s'); } catch {} }
 
+// ── First-run onboarding ──────────────────────────────────────────────
+// A gentle, skippable guide shown once when a new account first opens: orient
+// them, offer AI (optional), offer email (optional). Persisted per-user via
+// /api/kv/onboarded so it shows exactly once and never nags an existing member.
+const ONB_STEPS = ['Welcome', 'Add AI', 'Connect email', 'Done'];
+async function maybeOnboard() {
+  if (!state.me || !state.me.subdomain) return;   // multi-tenant own account only
+  let seen = true;
+  try { const r = await api('/api/kv/onboarded'); seen = !!(r && r.value); } catch { return; }
+  if (!seen) showOnboarding(0);
+}
+async function finishOnboarding() {
+  try { await api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }); } catch {}
+  const el = document.getElementById('onb'); if (el) el.remove();
+  state.onb = null;
+}
+function showOnboarding(step) {
+  state.onb = { step: step || 0, account: state.account || null, mailDone: false };
+  if (!document.getElementById('onb')) { const d = document.createElement('div'); d.id = 'onb'; document.body.appendChild(d); }
+  // Pull current key state so the AI step can show what's already added.
+  if (!state.onb.account) api('/api/account').then((a) => { if (state.onb) { state.onb.account = a; renderOnboarding(); } }).catch(() => {});
+  renderOnboarding();
+}
+function onbGo(n) { if (!state.onb) return; state.onb.step = Math.max(0, Math.min(ONB_STEPS.length - 1, n)); renderOnboarding(); }
+function onbWelcome() {
+  const name = (state.me && state.me.name) ? esc(state.me.name.split(' ')[0]) : '';
+  const sub = esc((state.me && state.me.subdomain) || 'you');
+  return `<h2 class="onb-h">Welcome to Daybook${name ? `, ${name}` : ''}</h2>
+    <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, and a place to reflect - all on one screen.</p>
+    <p class="onb-p">It lives at <b>${sub}.daybook.fyi</b>. You can change your username anytime in <b>Settings → Account</b>.</p>
+    <p class="onb-p onb-muted">The next two steps are optional - skip them and set anything up later.</p>`;
+}
+function onbAiProv(provider, name, why, host, url, ph, isSet) {
+  return `<div class="onb-prov">
+    <div class="onb-prov-h"><b>${name}</b>${isSet ? '<span class="ai-set">✓ added</span>' : ''}</div>
+    <div class="onb-prov-why">${why}</div>
+    <div class="onb-prov-in"><input class="sel" type="password" data-onb-ai="${provider}" placeholder="${isSet ? '•••••• — paste a new key to replace' : ph}" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-onb-ai-save="${provider}">Save</button></div>
+    <a class="ai-get" href="${url}" target="_blank" rel="noopener">Get a key at ${host} ↗</a></div>`;
+}
+function onbAi() {
+  const a = state.onb.account || {};
+  return `<h2 class="onb-h">Add AI <span class="onb-opt">optional</span></h2>
+    <p class="onb-p">Daybook has a few AI helpers. Bring your own key and you stay in control of the cost - or skip and add one later in Settings.</p>
+    ${aiUsesHtml()}
+    <div class="onb-provs">
+      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflect coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
+      ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
+    </div>
+    <div class="ai-managed">Prefer not to deal with keys? The <b>managed plan</b> (coming soon) includes AI - we look after it for you.</div>`;
+}
+function onbEmail() {
+  if (state.onb.mailDone) return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>
+    <div class="onb-ok">✓ Mailbox connected. Add more anytime in <b>Settings → Mail accounts</b>.</div>`;
+  return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>
+    <p class="onb-p">Read and send your email inside Daybook. Most people use Gmail.</p>
+    <div class="onb-gpw">${GMAIL_APP_PW}</div>
+    <div class="onb-mailform">
+      <input id="onb-mail-email" class="sel" type="email" placeholder="you@gmail.com" autocomplete="off" spellcheck="false">
+      <input id="onb-mail-pass" class="sel" type="password" placeholder="16-character app password" autocomplete="off" spellcheck="false">
+      <button class="add-btn wide" data-onb-mail-connect>Connect Gmail</button>
+    </div>
+    <p class="onb-p onb-muted">Not Gmail? You can set up Outlook, iCloud, Purelymail and others in <b>Settings → Mail accounts</b>.</p>`;
+}
+function onbDone() {
+  return `<h2 class="onb-h">You're all set 🎉</h2>
+    <p class="onb-p">A few ways to start:</p>
+    <ul class="onb-tips">
+      <li><b>+ Task</b>, <b>+ Note</b> and <b>+ Event</b> on Home capture things fast.</li>
+      <li>Press <b>⌘K</b> or the search box to jump anywhere.</li>
+      <li>Change anything later in <b>Settings</b> - AI, mail, appearance and more.</li>
+    </ul>
+    <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
+}
+function renderOnboarding() {
+  const s = state.onb; if (!s) return;
+  const last = ONB_STEPS.length - 1;
+  const dots = ONB_STEPS.map((_, i) => `<span class="onb-dot ${i === s.step ? 'on' : ''} ${i < s.step ? 'done' : ''}"></span>`).join('');
+  const content = s.step === 0 ? onbWelcome() : s.step === 1 ? onbAi() : s.step === 2 ? onbEmail() : onbDone();
+  document.getElementById('onb').innerHTML = `<div class="onb-bg"><div class="onb-card" role="dialog" aria-modal="true" aria-label="Welcome to Daybook">
+    <button class="onb-skip" data-onb-finish>${s.step === last ? '' : 'Skip setup'}</button>
+    <div class="onb-dots">${dots}</div>
+    <div class="onb-body">${content}</div>
+    <div class="onb-foot">${s.step > 0 ? '<button class="ghost" data-onb-back>← Back</button>' : '<span></span>'}<button class="add-btn wide" data-onb-next>${s.step === last ? 'Open Daybook' : 'Next →'}</button></div>
+  </div></div>`;
+  const f = document.getElementById('onb-mail-email'); if (f) f.focus();
+}
+async function onbSaveAi(provider) {
+  const el = document.querySelector(`[data-onb-ai="${provider}"]`); const value = (el && el.value || '').trim();
+  if (!value) { toast('Paste a key first'); return; }
+  try { state.onb.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ provider, value }) }); toast('Key saved'); renderOnboarding(); }
+  catch (e) { toast(e.message); }
+}
+async function onbConnectGmail() {
+  const email = (document.getElementById('onb-mail-email') || {}).value; const pass = (document.getElementById('onb-mail-pass') || {}).value;
+  if (!email || !email.trim() || !pass) { toast('Enter your Gmail address and app password'); return; }
+  const p = MAIL_PRESETS.google;
+  const btn = document.querySelector('[data-onb-mail-connect]'); if (btn) { btn.disabled = true; btn.textContent = 'Connecting…'; }
+  try {
+    await mailApi('/accounts', { method: 'POST', body: JSON.stringify({ email: email.trim(), username: email.trim(), imapHost: p.imap, imapPort: p.imapPort, smtpHost: p.smtp, smtpPort: p.smtpPort, pass }) });
+    state.onb.mailDone = true; toast('Mailbox connected'); renderOnboarding();
+  } catch (e) { toast(e.message); if (btn) { btn.disabled = false; btn.textContent = 'Connect Gmail'; } }
+}
+
 (async function boot() {
   initTheme();
   // Session hand-off from the apex (see goToMyDaybook): #t=<jwt> signs this
@@ -9269,5 +9406,6 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
     initPush();              // register the SW; refresh the push subscription if already granted
     registerMailHandler();   // offer Robski Life as the browser's mailto: handler
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
+    maybeOnboard();          // first-run welcome guide, once per new account
   } catch (e) { toast(e.message); renderNav(); }
 })();

@@ -1486,6 +1486,55 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ai-key-in { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .ai-key-in .sel { flex:1; min-width:180px; margin:0; }
 .ai-key-in .add-btn.wide, .ai-key-in .ghost { flex:none; }
+/* Where-AI-is-used list (settings + onboarding): feature, why, and which model. */
+.ai-uses { list-style:none; margin:10px 0 12px; padding:0; display:flex; flex-direction:column; gap:7px; }
+.ai-uses li { display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; font-size:13.5px; line-height:1.4; }
+.ai-use-f { font-weight:600; color:var(--ink); flex:none; }
+.ai-use-why { color:var(--ink-2); flex:1; min-width:140px; }
+.ai-use-prov { flex:none; font-size:11px; font-weight:600; letter-spacing:.03em; padding:2px 8px; border-radius:999px; }
+.ai-use-claude { color:#a5502f; background:color-mix(in srgb,#c4712e 16%,transparent); }
+.ai-use-gemini { color:#3367b8; background:color-mix(in srgb,#4285f4 15%,transparent); }
+.ai-get { display:inline-block; font-size:12.5px; color:var(--accent); margin:-4px 0 14px; text-decoration:none; }
+.ai-get:hover { text-decoration:underline; }
+.ai-managed { margin-top:6px; padding:11px 13px; border:1px dashed var(--line-2); border-radius:11px; font-size:13px; color:var(--ink-2); line-height:1.5; }
+/* Gmail app-password step list, shared by the mail form note and onboarding. */
+.gpw-steps { margin:8px 0 0; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:1.5; color:var(--ink-2); }
+.gpw-steps a { color:var(--accent); font-weight:500; }
+.gpw-admin { display:block; margin-top:8px; font-size:12px; color:var(--ink-3); }
+
+/* ── First-run onboarding overlay ─────────────────────────────────────── */
+#onb .onb-bg { position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:20px;
+  background:color-mix(in srgb,var(--ink) 40%,transparent); backdrop-filter:blur(6px); }
+.onb-card { position:relative; width:100%; max-width:520px; max-height:90vh; overflow-y:auto;
+  background:var(--card); border:1px solid var(--line-2); border-radius:20px; padding:26px 26px 20px;
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.5); display:flex; flex-direction:column; gap:14px; }
+.onb-skip { position:absolute; top:16px; right:18px; background:none; border:0; color:var(--ink-3); font-size:13px; cursor:pointer; padding:4px 6px; border-radius:7px; }
+.onb-skip:hover { color:var(--ink); background:var(--paper-2); }
+.onb-dots { display:flex; gap:7px; }
+.onb-dot { width:26px; height:5px; border-radius:3px; background:var(--line-2); transition:background .2s; }
+.onb-dot.on { background:var(--accent); }
+.onb-dot.done { background:color-mix(in srgb,var(--accent) 45%,var(--line-2)); }
+.onb-body { display:flex; flex-direction:column; }
+.onb-h { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:500; margin:2px 0 10px; }
+.onb-opt { font-family:inherit; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); vertical-align:middle; margin-left:8px; }
+.onb-p { font-size:15px; line-height:1.6; color:var(--ink-2); margin:0 0 10px; }
+.onb-muted { color:var(--ink-3); font-size:14px; }
+.onb-provs { display:flex; flex-direction:column; gap:14px; margin:4px 0 4px; }
+.onb-prov { border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--paper); }
+.onb-prov-h { display:flex; align-items:center; gap:9px; font-size:15px; }
+.onb-prov-why { font-size:13px; color:var(--ink-2); line-height:1.5; margin:6px 0 10px; }
+.onb-prov-in { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.onb-prov-in .sel { flex:1; min-width:180px; margin:0; }
+.onb-prov-in .add-btn.wide { flex:none; }
+.onb-prov .ai-get { margin:8px 0 0; }
+.onb-gpw { font-size:14px; line-height:1.55; color:var(--ink-2); background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:4px 0 12px; }
+.onb-mailform { display:flex; flex-direction:column; gap:9px; }
+.onb-mailform .add-btn.wide { align-self:flex-start; }
+.onb-ok { font-size:15px; color:#3f9e5f; background:color-mix(in srgb,#3f9e5f 10%,transparent); border:1px solid color-mix(in srgb,#3f9e5f 30%,transparent); border-radius:12px; padding:14px 16px; line-height:1.5; }
+.onb-tips { margin:4px 0 10px; padding-left:20px; display:flex; flex-direction:column; gap:8px; font-size:14.5px; line-height:1.5; color:var(--ink-2); }
+.onb-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
+.onb-foot .add-btn.wide { flex:none; min-width:150px; }
+@media (max-width:560px){ .onb-card { padding:22px 18px 16px; border-radius:16px; } .onb-h { font-size:26px; } .onb-foot .add-btn.wide { min-width:130px; } }
 .inv-list { display:flex; flex-direction:column; gap:7px; margin-top:16px; }
 .inv-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); flex-wrap:wrap; }
 .inv-row.used { opacity:.55; }
