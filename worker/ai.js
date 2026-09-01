@@ -46,7 +46,7 @@ export async function aiKey(env, provider) {
   if (env.uid === 1 || plan === 'premium' || plan === 'power') return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
   return null;
 }
-export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → Premium.`;
+export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → Plan.`;
 
 // One ledger row per call. Best-effort: logging must never break the feature.
 export async function logAiUsage(env, provider, feature, model, inTok, outTok) {

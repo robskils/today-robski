@@ -470,7 +470,7 @@ const HELP = {
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on. <b>Download your data</b> exports everything; <b>Close account</b> removes it.</p>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
-  'settings-ai': { title: 'Premium', tip: 'How the AI runs: bring your own keys, or Full Fat where we handle it.',
+  'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Full Fat where we handle it.',
     body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (free / standard): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Full Fat</b> (premium): we run the AI for you, no keys to manage.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
     body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
@@ -1450,9 +1450,9 @@ function renderSettings() {
   // collapsing scroll, so the settings you reach for most are one tap in.
   const TABS = [
     ['account', 'Account'],
+    ['ai', 'Plan'],
     ['appearance', 'Appearance'],
     ['mobile', 'Mobile'],
-    ['ai', 'Premium'],
     ['notifications', 'Notifications'],
     ['sections', 'Tools'],
     ['invites', 'Invites'],
@@ -1478,8 +1478,7 @@ function renderSettings() {
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
-        <div class="set-field"><span>Plan</span><div class="acct-plan"><b>${esc(state.account.plan || 'free')}</b><button class="ghost" data-set-tab="ai">View plans →</button></div></div>
-        <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
+        <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
@@ -1706,7 +1705,7 @@ function closeShortcuts() { const el = document.getElementById('sc-overlay'); if
 // Sidebar quick-add: jump to the tool and open its "new" affordance directly.
 async function quickAdd(kind) {
   try {
-    if (kind === 'task') { state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
+    if (kind === 'task') { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
     else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
@@ -3123,10 +3122,12 @@ function blockAreasControl(kind, b) {
 // open it for naming. It shows up in the Tasks/Notes lists too.
 async function areaAddTask() {
   const area = state.area_open && state.area_open.area; if (!area) return;
-  try {
-    const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: '', props: { area: area.id, area_name: area.title, priority: 'P3', done: false } }) });
-    await openTaskCard(t.id); setTimeout(() => $('#taskcard-title') && $('#taskcard-title').focus(), 30);
-  } catch (e) { toast(e.message); }
+  // Open the Tasks add form pre-tagged to this area, rather than pre-creating an
+  // empty placeholder task and hoping the naming step lands - that left orphaned,
+  // title-less tasks whenever the name never saved (e.g. a write failed).
+  state.taskAddArea = area.id;
+  state.taskAdding = true; state.taskFocusArm = Date.now();
+  await openTasks(); renderTasks();
 }
 async function areaAddNote() {
   const area = state.area_open && state.area_open.area; if (!area) return;
@@ -5013,6 +5014,7 @@ function sortTasks(ts) {
 // Display only - inline edit reads the stored full title, so nothing is lost.
 function taskTitleHtml(title) {
   const s = String(title || '');
+  if (!s.trim()) return '<span class="t-untitled">(Untitled)</span>';   // never an invisible, un-findable row
   if (!/https?:\/\//i.test(s)) return esc(s);
   const re = /https?:\/\/\S+/g; let out = ''; let last = 0; let m;
   while ((m = re.exec(s))) {
@@ -5152,7 +5154,8 @@ function renderTasks() {
       <div class="tf-panel-acts"><button class="add-btn wide" data-tf-add>+ Add filter</button>${conds.length ? '<button class="ghost" data-tf-clear>Clear all</button>' : ''}</div>
     </div>` : ''}
   </div>`;
-  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
+  const preArea = state.taskAddArea || '';   // set when + Task is used from a Life Area page
+  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
   const inFilter = (t) => taskMatchesFilters(t);
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
@@ -7840,8 +7843,8 @@ document.addEventListener('click', (e) => {
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
-  if (t.closest('[data-task-add]')) { state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); return; }
-  if (t.closest('[data-task-add-close]')) { state.taskAdding = false; renderTasks(); return; }
+  if (t.closest('[data-task-add]')) { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); return; }
+  if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
   if (t.closest('[data-home-cal]')) { openCalendar(todayISO()).catch((x) => toast(x.message)); return; }
@@ -9552,7 +9555,7 @@ function onbAi() {
       ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflection coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
       ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
     </div>
-    <div class="ai-managed">Prefer not to deal with keys? The <b>Full Fat</b> plan runs the AI for you - no keys, nothing to set up. See Settings → Premium.</div>`;
+    <div class="ai-managed">Prefer not to deal with keys? The <b>Full Fat</b> plan runs the AI for you - no keys, nothing to set up. See Settings → Plan.</div>`;
 }
 function onbEmail() {
   if (state.onb.mailDone) return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>

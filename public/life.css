@@ -1204,7 +1204,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .set-field > span { font-size:12px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); }
 .set-field input:disabled { opacity:.6; }
 /* Username field: input + fixed .daybook.fyi suffix, with a live URL note. */
-.su-username-row { display:flex; align-items:stretch; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; background:var(--card); }
+.su-username-row { display:flex; align-items:stretch; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; background:var(--card); max-width:420px; }
 .su-username-row:focus-within { border-color:var(--accent); }
 .su-username-in.sel { border:0; border-radius:0; flex:1; min-width:0; }
 .su-username-suffix { display:flex; align-items:center; padding:0 13px; background:var(--paper-2); color:var(--ink-3); font-size:15px; white-space:nowrap; border-left:1px solid var(--line); }
@@ -1910,6 +1910,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .tc-done { width:34px; text-align:center; }
 .tc-title { width:auto; } .tc-title .t { cursor:text; }
 .tc-title .t-url { color:var(--ink-2); text-decoration:underline; text-decoration-color:var(--line-2); text-underline-offset:2px; }
+.t-untitled { color:var(--ink-3); font-style:italic; }
 .tc-date { color:var(--ink-3); font-variant-numeric:tabular-nums; white-space:nowrap; width:80px; }
 .tc-act { width:70px; text-align:right; white-space:nowrap; }
 .row-chev { display:none; }   /* mobile-only open affordance (see the tasks card block) */
