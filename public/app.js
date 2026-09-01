@@ -138,7 +138,13 @@ function bodyToHtml(body) {
   // Only the rich editor's own output (block-wrapped) is treated as HTML.
   // Imported bodies are Markdown that may contain an inline <a>, so keying on
   // block tags avoids mis-rendering a whole note as raw HTML.
-  const html = /<(p|h[1-3]|blockquote|div|ul|ol|details)[\s>]/i.test(s) ? s : mdToHtml(body);
+  const isHtml = /<(p|h[1-3]|blockquote|div|ul|ol|details)[\s>]/i.test(s);
+  // A non-block body is Markdown. Heal any stray inline formatting tags that a
+  // rich paste once dropped in (strong/em/b/i/u/span/font, &nbsp;): left in, the
+  // Markdown pass escapes them and they show as literal "<strong>"/"&nbsp;" text.
+  // Links (<a>) are left untouched.
+  const src = isHtml ? s : body.replace(/&nbsp;/gi, ' ').replace(/<\/?(?:strong|em|b|i|u|span|font)(?:\s[^>]*)?>/gi, '');
+  const html = isHtml ? s : mdToHtml(src);
   return linkifyHtml(html);
 }
 // YouTube links in a body → embedded players (rendered below the editor, not
@@ -475,6 +481,15 @@ const HELP = {
       <ul><li>Each lane has a gentle daily target (a ring), never a debt - there’s no overdue, no streak, no red.</li>
       <li>Blocks can float (no fixed time) until the day decides where they land.</li>
       <li>Edit, rename, recolour, add or remove your lanes in <b>Settings › Time streams</b>.</li></ul>` },
+  tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
+    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Daybook - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
+      <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
+      <li><b>A working tab</b> (not pinned) is reused as you move around: click Tasks, then Notes, and the same tab just changes. That’s what stops you drowning in tabs.</li>
+      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and Daybook opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
+      <li><b>Unpin</b> by tapping the <b>📌</b> again; it becomes an ordinary working tab.</li>
+      <li><b>Close</b> a working tab with its <b>×</b> (it shows once you have more than one). Pinned tabs have no ×, so you can’t lose one by accident - unpin it first if you really want it gone.</li>
+      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Daybook.</li></ul>
+      <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which sections show, invites, and the tools that manage your setup.',
     body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
   'settings-account': { title: 'Account', tip: 'Your name, the addresses you sign in with, your phone and your plan.',
@@ -530,7 +545,7 @@ function showHelpPop(btn) {
 function hideHelpPop() { const el = document.getElementById('help-pop'); if (el) el.style.display = 'none'; }
 function openHelp(key) { state.view = { type: 'help', tool: key }; renderNav(); renderHelp(key); return Promise.resolve(); }
 // The tools listed on the Guide home page, in a sensible reading order.
-const GUIDE_TOPICS = ['home', 'today', 'tasks', 'calendar', 'mail', 'notes', 'reflect', 'financial', 'goals', 'areas', 'contacts', 'saved', 'friends', 'settings'];
+const GUIDE_TOPICS = ['home', 'tabs', 'today', 'tasks', 'calendar', 'mail', 'notes', 'reflect', 'financial', 'goals', 'areas', 'contacts', 'saved', 'friends', 'settings'];
 function renderHelp(key) {
   if (key === 'index' || !HELP[key]) return renderGuideIndex();
   const h = HELP[key];
@@ -7440,14 +7455,17 @@ document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!prose) return;
   const cd = e.clipboardData; if (!cd) return;
-  // If the plain text is Markdown, convert it - even when a text/html copy is
-  // present (apps attach a trivial plain-text-as-HTML wrapper, which would
-  // otherwise paste the raw '#'/'**' as literal text). Non-markdown falls
-  // through to the browser's default paste, keeping genuinely rich content.
+  // Paste is always driven off the plain-text copy. Markdown is converted to
+  // rich HTML; anything else is inserted as plain text. We deliberately do NOT
+  // fall through to the browser's default rich paste: that drops inline tags
+  // like <strong>/&nbsp; into the body with no block wrapper, and bodyToHtml
+  // (which only treats block-wrapped HTML as HTML) then re-renders them as
+  // literal, escaped tag text on the next load. Plain text keeps the note clean.
   const text = cd.getData('text/plain');
-  if (!text || !looksMarkdown(text)) return;
+  if (!text) return;
   e.preventDefault();
-  document.execCommand('insertHTML', false, mdPasteHtml(text));
+  if (looksMarkdown(text)) document.execCommand('insertHTML', false, mdPasteHtml(text));
+  else document.execCommand('insertText', false, text);
   prose.dispatchEvent(new Event('input', { bubbles: true }));   // trigger the debounced save
 });
 document.addEventListener('input', (e) => {
