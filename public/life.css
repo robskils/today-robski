@@ -1692,6 +1692,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .recent-ic { flex:none; width:18px; text-align:center; color:var(--accent); font-size:14px; }
 .recent-item:hover .recent-ic { color:var(--accent); }
 .recent-item.has-area .recent-ic { color:hsl(var(--h,4) 55% 55%); }
+/* The note/table glyphs carry their own colour; in this list they follow the
+   tint instead, so a note reads in its life-area colour like everything else. */
+.recent-ic .ico-note, .recent-ic .ico-tbl { color:inherit; }
 .recent-t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 @media (max-width:820px){
   /* One column on mobile, but interleave both desktop columns into a chosen

@@ -2361,7 +2361,17 @@ function renderHome() {
   const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind)).slice(0, 8);
   // Tint each icon in its life area's colour (an area item is its own area);
   // with no area it falls back to the accent (terracotta by default) via CSS.
-  const recentHue = (r) => { const aid = r.kind === 'area' ? r.id : r.area; const a = aid && areaById(aid); return a ? hueOf(a) : null; };
+  const recentHue = (r) => {
+    let aid = r.kind === 'area' ? r.id : r.area;
+    // Older entries predate the stored area; recover it from whatever's loaded
+    // (favourites carry props, areas/tables/notes are in state) so they colour too.
+    if (!aid && r.kind !== 'area') {
+      const b = (state.favs || []).find((x) => x.id === r.id) || (state.tables || []).find((x) => x.id === r.id) || (state.noteTops || []).find((x) => x.id === r.id);
+      if (b) aid = blockAreas(b)[0];
+    }
+    const a = aid && areaById(aid);
+    return a ? hueOf(a) : null;
+  };
   const recentHtml = recents.length
     ? `<div class="recent-list">${recents.map((r) => { const hue = recentHue(r); return `<button class="recent-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`; }).join('')}</div>`
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
