@@ -266,14 +266,16 @@ export function codeEmail(code, kind) {
     : `Your sign-in code. It expires in <strong style="color:#211c17">10 minutes</strong>.`;
   const pre = alias ? `${code} confirms this email for your Daybook account.` : `${code} is your Daybook sign-in code. It expires in 10 minutes.`;
   return `<!doctype html>
-<html><head><meta charset="utf-8"><meta name="color-scheme" content="light only"></head>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
   <!-- Preheader: what the inbox shows before you open it. -->
   <div style="display:none;max-height:0;overflow:hidden;opacity:0">${pre}</div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#efeae0;padding:40px 0">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#efeae0;padding:40px 16px">
     <tr><td align="center">
-      <table role="presentation" width="440" cellpadding="0" cellspacing="0" style="width:440px;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
+      <!-- Fluid card: width:100% up to a 440px cap, so it shrinks to fit a phone
+           instead of a fixed 440px that runs off a narrow screen. -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
 
         <!-- Wordmark: a rust sunrise dot + Daybook in a warm serif. -->
         <tr><td style="padding:34px 38px 0" align="center">
