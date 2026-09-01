@@ -2433,7 +2433,7 @@ function openTablesList() {
   state.view = { type: 'tables' };
   renderNav();
   const favTables = state.tables.filter((t) => t.props && t.props.fav);
-  const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
+  const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
     ${pageCrumb('Tables')}
     <div class="pane-head home-head"><h1>Tables</h1><button class="add-btn wide" data-new-table>+ New table</button></div>
@@ -2471,7 +2471,7 @@ const NOTE_TYPES = [['all', 'All'], ['note', 'Notes'], ['table', 'Tables']];
 function noteCard(n) {
   const t = isTableNote(n);
   // No bullet on a regular note; a table keeps its grid icon so it stands out.
-  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}">${t ? '<span class="tc-ic ico-tbl">▦</span>' : ''}${esc(n.title || 'Untitled')}${areaTag(n)}</button>`;
+  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}">${t ? '<span class="tc-ic ico-tbl">▦</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${areaTag(n)}</button>`;
 }
 // The Note · Table type switch shown in a note/table header.
 function noteTypeToggle(id, current) {
@@ -3096,18 +3096,18 @@ function renderArea() {
   const h = hueOf(area);
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
   const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
-  const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span>${esc(t.title || 'Untitled')}</button>`).join('');
+  const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
   const isFav = (n) => !!(n.props && n.props.fav);
   const starredNotes = notes.filter(isFav);
   const otherNotes = notes.filter((n) => !isFav(n));
-  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}${esc(n.title || 'Untitled')}</button>`;
+  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
   // Everything else that can carry this area, each linking to its own tool.
-  const emailCards = emails.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span>${esc(n.title || 'Untitled')}</button>`).join('');
-  const contactCards = contacts.map((c) => `<button class="tbl-card" data-open-contact="${c.id}"><span class="tc-ic">👤</span>${esc(c.title || 'Unnamed')}</button>`).join('');
-  const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span>${esc(bm.title || u)}</a>` : `<button class="tbl-card"><span class="tc-ic">🔖</span>${esc(bm.title || 'Saved')}</button>`; }).join('');
-  const journalCards = journals.map((j) => `<button class="tbl-card" data-open-jentry="${j.id}"><span class="tc-ic">✎</span>${esc(j.title || 'Journal entry')}</button>`).join('');
+  const emailCards = emails.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
+  const contactCards = contacts.map((c) => `<button class="tbl-card" data-open-contact="${c.id}"><span class="tc-ic">👤</span><span class="tc-t">${esc(c.title || 'Unnamed')}</span></button>`).join('');
+  const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span></a>` : `<button class="tbl-card"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span></button>`; }).join('');
+  const journalCards = journals.map((j) => `<button class="tbl-card" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span></button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
