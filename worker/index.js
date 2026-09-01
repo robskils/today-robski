@@ -2372,10 +2372,14 @@ export default {
     }
     const path = url.pathname;
 
-    // Robski Life retired: life.robski.uk now 301s to Robin's Daybook, path and
-    // query preserved, so old bookmarks and links follow to the new home.
+    // Both old robski.uk apps are retired and 301 to Robin's Daybook. Life
+    // preserves the path (it's the same app); the standalone Today app drops it
+    // (its old paths don't map onto Daybook), so old links land on the home.
     if (url.hostname === 'life.robski.uk') {
       return new Response(null, { status: 301, headers: { Location: 'https://robski.daybook.fyi' + path + url.search, 'Strict-Transport-Security': HSTS } });
+    }
+    if (url.hostname === 'today.robski.uk') {
+      return new Response(null, { status: 301, headers: { Location: 'https://robski.daybook.fyi', 'Strict-Transport-Security': HSTS } });
     }
 
     // Static assets (the Worker runs first). The root serves a different app
