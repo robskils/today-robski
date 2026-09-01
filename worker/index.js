@@ -1513,12 +1513,12 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     const subject = briefSubject(payload);
     const html = briefEmail(payload);
     if (env.BRIEF_SMTP_PASS) {
-      // Send as today@robski.uk through Purelymail SMTP. robski.uk's mail lives
-      // on Purelymail, so a real mailbox there passes SPF/DKIM natively - no
-      // Resend domain to verify, no SPF record to edit (see CLAUDE.md).
+      // Send as contact@daybook.fyi through Purelymail SMTP. daybook.fyi's mail
+      // lives on Purelymail (SPF+DKIM+DMARC aligned), so a real mailbox there
+      // passes natively - no Resend domain to verify, and nothing off robski.uk.
       const acct = {
-        email: env.BRIEF_FROM || 'today@robski.uk', name: 'Daybook',
-        username: env.BRIEF_SMTP_USER || 'today@robski.uk',
+        email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Daybook',
+        username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
         smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
       };
       const text = `Your morning brief for ${now.date}.\n\nOpen ${home} for the full day.`;

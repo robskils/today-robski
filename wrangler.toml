@@ -60,6 +60,16 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 # account's own address, and codes go to robin@lumley-savile.com.
 FROM_EMAIL = "Daybook <today@incremento.co>"
 
+# Daybook sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
+# from contact@daybook.fyi through Purelymail SMTP: a real mailbox on a fully
+# SPF/DKIM/DMARC-aligned domain, so nothing depends on a Resend-verified domain
+# and nothing sends from robski.uk any more. BRIEF_SMTP_PASS (secret) is that
+# mailbox's app password; these two set the SMTP login and the From address (the
+# "Daybook" display name is in code). FROM_EMAIL above is only the Resend
+# fallback used if BRIEF_SMTP_PASS is ever unset.
+BRIEF_FROM = "contact@daybook.fyi"
+BRIEF_SMTP_USER = "contact@daybook.fyi"
+
 # Where the 08:45 morning brief lands. One address, not the ADMIN_EMAILS list:
 # that list is who may sign in, which is a different question from who gets
 # post every morning.

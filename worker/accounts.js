@@ -297,8 +297,8 @@ async function sendInviteMail(env, { to, code, message }) {
     // Same sender as the morning brief: a real Purelymail mailbox, so SPF/DKIM
     // pass natively with no Resend domain to verify (see CLAUDE.md).
     const acct = {
-      email: env.BRIEF_FROM || 'today@robski.uk', name: 'Daybook',
-      username: env.BRIEF_SMTP_USER || 'today@robski.uk',
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Daybook',
+      username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
     await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text, replyTo }) });

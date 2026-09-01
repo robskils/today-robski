@@ -19,6 +19,9 @@
 //     needs your Cloudflare login rather than a shared secret.
 
 import { sendSms } from './sms.js';
+// smtpSend/buildMessage are used only inside sendCodeMail (call time), so the
+// auth.js <-> mail.js cycle (mail.js imports signJWT) resolves fine.
+import { smtpSend, buildMessage } from './mail.js';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -227,23 +230,42 @@ export async function verifyCode(request, env, json, err) {
   return json({ token, email });
 }
 
-// Deliver a 6-digit code by Resend, worded for either sign-in or confirming a
-// newly added alias. Returns the fetch Response so the caller can react to a
-// non-ok send. ASCII subjects only: a non-ASCII subject needs RFC 2047 encoding.
+// Deliver a 6-digit code, worded for either sign-in or confirming a newly added
+// alias. Returns something with `.ok` and `.text()` so the caller reacts to a
+// non-ok send the same way whichever transport ran. ASCII subjects only: a
+// non-ASCII subject needs RFC 2047 encoding.
 export async function sendCodeMail(env, email, code, kind) {
   const alias = kind === 'alias';
+  const subject = alias ? `${code} - confirm your email for Daybook` : `${code} - your Daybook sign-in code`;
+  const html = codeEmail(code, kind);
+  const text = alias
+    ? `Enter ${code} in Daybook to add this address to your account. It expires in 10 minutes.`
+    : `Your Daybook sign-in code is ${code}. It expires in 10 minutes.`;
+
+  // Primary path: Purelymail SMTP as contact@daybook.fyi - a real mailbox on a
+  // fully-aligned domain (SPF+DKIM+DMARC), so the code lands in the inbox and
+  // carries the Daybook address. Same transport and secret as the invite and the
+  // morning brief. Falls back to Resend only if no SMTP secret is set.
+  if (env.BRIEF_SMTP_PASS) {
+    const acct = {
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Daybook',
+      username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
+      smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
+    };
+    try {
+      await smtpSend(env, acct, { rcpts: [email], raw: buildMessage(acct, { to: email, subject, html, text }) });
+      return { ok: true };
+    } catch (e) {
+      // Don't strand the sign-in on an SMTP hiccup: log and fall through to
+      // Resend so the code still goes out (from the fallback address).
+      console.error('smtp code send failed, falling back to Resend:', String((e && e.message) || e));
+    }
+  }
+
   return fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: env.FROM_EMAIL,
-      to: [email],
-      subject: alias ? `${code} - confirm your email for Daybook` : `${code} - your Daybook sign-in code`,
-      html: codeEmail(code, kind),
-      text: alias
-        ? `Enter ${code} in Daybook to add this address to your account. It expires in 10 minutes.`
-        : `Your Daybook sign-in code is ${code}. It expires in 10 minutes.`,
-    }),
+    body: JSON.stringify({ from: env.FROM_EMAIL, to: [email], subject, html, text }),
   });
 }
 

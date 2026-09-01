@@ -365,8 +365,9 @@ function parseFetch(lines) {
 // ── SMTP ──────────────────────────────────────────────────────────────
 export async function smtpSend(env, acct, msg) {
   // A stored mailbox carries an encrypted pass_enc; a caller (the morning brief)
-  // may instead pass a plaintext `pass` straight from a Worker secret.
-  const pass = acct.pass != null ? acct.pass : await decryptPass(env, acct.pass_enc);
+  // may instead pass a plaintext `pass` straight from a Worker secret. Trim it:
+  // a secret pasted with a trailing newline/space is a classic 535 auth failure.
+  const pass = acct.pass != null ? String(acct.pass).trim() : await decryptPass(env, acct.pass_enc);
   const implicitTls = Number(acct.smtp_port) === 465;
   let socket = connect({ hostname: acct.smtp_host, port: Number(acct.smtp_port) }, implicitTls ? { secureTransport: 'on' } : { secureTransport: 'starttls' });
   let reader = new Reader(socket.readable);
