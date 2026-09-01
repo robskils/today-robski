@@ -1531,7 +1531,7 @@ function renderSettings() {
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up, it just works across every tool. The hands-off option.</p>
           ${managed
             ? '<div class="plan-active">✓ Active - the AI is handled for you, no keys needed.</div>'
-            : '<a class="add-btn wide" href="mailto:robin@lumley-savile.com?subject=Daybook%20Full%20Fat%20plan">Switch to Full Fat →</a>'}
+            : '<a class="add-btn wide" href="mailto:contact@daybook.fyi?subject=Daybook%20Full%20Fat%20plan">Switch to Full Fat →</a>'}
         </div>
       </div>`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
