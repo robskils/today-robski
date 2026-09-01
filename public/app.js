@@ -1804,7 +1804,7 @@ async function openNote(id) {
   if (!state.allTasks) state.allTasks = await api('/api/blocks?kind=task').catch(() => []);
   state.note = { current: note, path, children, taskQuery: '' };
   state.view = { type: 'note', id };
-  recordRecent('note', id, note.title);
+  recordRecent('note', id, note.title, blockAreas(note)[0]);
   renderNav(); renderNote();
   // A shared note (given to me, or one I've shared out) syncs live while open.
   if (note.sharedBy || note.sharedWith) startNotePoll(id);
@@ -1815,17 +1815,21 @@ async function openTable(id) {
   state.tables_open = table; state.tables_rows = rows; state.tables_view = { openRow: null, addingCol: false, sorts: (table.props && table.props.sorts) || [], sorting: false };
   state.view = { type: 'table', id };
   bumpTableRecent(id);
-  recordRecent('table', id, table.title);
+  recordRecent('table', id, table.title, blockAreas(table)[0]);
   renderNav(); renderTable();
 }
 // Recently viewed items, newest first, for the home list. Client-side only:
 // {kind,id,title} in localStorage, deduped by kind+id, capped.
 function recentItems() { try { const a = JSON.parse(localStorage.getItem('life.recent') || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } }
 const RECENT_KINDS = new Set(['note', 'table', 'journal', 'area', 'task']);   // never emails
-function recordRecent(kind, id, title) {
+function recordRecent(kind, id, title, area) {
   if (!kind || !id || !RECENT_KINDS.has(kind)) return;
   const list = recentItems().filter((x) => x && !(x.kind === kind && x.id === id));
-  list.unshift({ kind, id, title: (title || '').trim() || 'Untitled', ts: Date.now() });
+  // `area` (a life-area id) lets the Home list tint the icon in that area's
+  // colour. An area item needs none - its own id is the area.
+  const entry = { kind, id, title: (title || '').trim() || 'Untitled', ts: Date.now() };
+  if (area) entry.area = area;
+  list.unshift(entry);
   const capped = list.slice(0, 15);
   try { localStorage.setItem('life.recent', JSON.stringify(capped)); } catch {}
   // Mirror to the server so the list follows you to your phone and back. Fire-
@@ -2355,8 +2359,11 @@ function renderHome() {
       <button class="ev-x" data-home-task-dismiss="${t.id}" title="Remove from Today (keeps the task; doesn't complete it)" aria-label="Remove from Today">×</button></div>`;
   }).join('');
   const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind)).slice(0, 8);
+  // Tint each icon in its life area's colour (an area item is its own area);
+  // with no area it falls back to the accent (terracotta by default) via CSS.
+  const recentHue = (r) => { const aid = r.kind === 'area' ? r.id : r.area; const a = aid && areaById(aid); return a ? hueOf(a) : null; };
   const recentHtml = recents.length
-    ? `<div class="recent-list">${recents.map((r) => `<button class="recent-item" data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`).join('')}</div>`
+    ? `<div class="recent-list">${recents.map((r) => { const hue = recentHue(r); return `<button class="recent-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`; }).join('')}</div>`
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
@@ -2836,7 +2843,7 @@ async function openJournalEntry(id) {
   state.journal = state.journal || { entries: [] };
   state.journal.current = entry;
   state.view = { type: 'journalentry', id };
-  recordRecent('journal', id, entry.title || 'Reflection entry');
+  recordRecent('journal', id, entry.title || 'Reflection entry', blockAreas(entry)[0]);
   renderNav(); renderJournalEntry();
 }
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
@@ -8626,7 +8633,7 @@ async function openTaskCard(id) {
   const task = await api(`/api/blocks/${id}`);
   state.task_open = { task };
   state.view = { type: 'taskcard', id };
-  recordRecent('task', id, task.title);
+  recordRecent('task', id, task.title, blockAreas(task)[0]);
   renderNav(); renderTaskCard();
 }
 // Duration presets (minutes) for the task card. Free-form isn't needed - these
