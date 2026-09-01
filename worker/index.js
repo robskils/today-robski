@@ -258,9 +258,12 @@ async function calendarRange(env, from, to) {
 async function handleCalendar(request, env, url) {
   const from = url.searchParams.get('from'), to = url.searchParams.get('to');
   if (!from || !to) return err('from and to required', request);
-  // Owner-only: the single Google token is Robin's, so a member's range is empty.
-  if (env.uid !== 1) return json({ events: [] }, request);
-  return json(await calendarRange(env, from, to), request);
+  // Native events (everyone) + Google events (owner only). The single Google
+  // token is Robin's, so a member's range is native-only.
+  const native = await nativeRangeEvents(env, from, to).catch(() => []);
+  if (env.uid !== 1) return json({ events: native }, request);
+  const g = await calendarRange(env, from, to);
+  return json({ events: [...(g.events || []), ...native], error: g.error || null }, request);
 }
 
 // Create a real event on the Google calendar. Needs the calendar.events scope:
@@ -280,9 +283,15 @@ function rruleFor(repeat) {
   }
 }
 async function createEvent(request, env) {
-  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
-
   const b = await request.json().catch(() => ({}));
+  // No external calendar in charge for this user -> store it natively in D1.
+  // (Owner + Google connected keeps writing through to Google, unchanged.)
+  if (!(env.uid === 1 && env.GOOGLE_REFRESH_TOKEN)) {
+    const r = await createNativeEvent(env, b);
+    if (r.error) return err(r.error, request);
+    return json({ ok: true, id: r.id }, request, 201);
+  }
+
   const title = String(b.title || '').trim();
   if (!title) return err('title required', request);
 
@@ -349,8 +358,23 @@ async function createEvent(request, env) {
 // Edit an existing calendar event: title, time (day + start_min + duration),
 // and/or location. Only the fields supplied are touched (events.patch).
 async function updateEvent(request, env, id) {
-  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
   const b = await request.json().catch(() => ({}));
+  // Native event? Recompute its props from the (full) body the editor sends,
+  // preserving the recurrence fields the edit form doesn't resend.
+  const native = await nativeEventRow(env, id);
+  if (native) {
+    const title = b.title !== undefined ? String(b.title).trim() : native.title;
+    if (!title) return err('title required', request);
+    const p = eventPropsFromBody({ ...b, title });
+    if (!p) return err('bad event', request);
+    if (native.p.repeat) p.repeat = native.p.repeat;
+    if (native.p.until) p.until = native.p.until;
+    if (native.p.exdates) p.exdates = native.p.exdates;
+    await env.DB.prepare("UPDATE blocks SET title=?, props=?, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
+      .bind(title, JSON.stringify(p), new Date().toISOString(), native.id, env.uid).run();
+    return json({ ok: true, id: native.id }, request);
+  }
+  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
   const patch = {};
   if (b.title !== undefined) { const t = String(b.title).trim(); if (!t) return err('title required', request); patch.summary = t; }
   if (b.location !== undefined) patch.location = String(b.location || '').trim();
@@ -775,8 +799,30 @@ async function lookupMedia(request, env, url, json, err) {
 // undoable at their end. Still the only destructive reach this app has outside
 // its own D1, hence the confirm step in the UI.
 async function deleteEvent(request, env, id) {
-  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
   const scope = new URL(request.url).searchParams.get('scope') || 'single';
+
+  // Native event? A recurring occurrence can be dropped on its own (exdate) or
+  // the series trimmed from here on (until); a plain event just gets archived.
+  const native = await nativeEventRow(env, id);
+  if (native) {
+    const occ = nativeOccDate(id);
+    const recurring = !!(native.p.repeat && native.p.repeat !== 'none');
+    if (recurring && occ && scope === 'future') {
+      native.p.until = addDaysStr(occ, -1);
+      await env.DB.prepare("UPDATE blocks SET props=?, updated_at=? WHERE id=? AND user_id=?")
+        .bind(JSON.stringify(native.p), new Date().toISOString(), native.id, env.uid).run();
+    } else if (recurring && occ) {
+      native.p.exdates = [...new Set([...(native.p.exdates || []), occ])];
+      await env.DB.prepare("UPDATE blocks SET props=?, updated_at=? WHERE id=? AND user_id=?")
+        .bind(JSON.stringify(native.p), new Date().toISOString(), native.id, env.uid).run();
+    } else {
+      await env.DB.prepare("UPDATE blocks SET archived=1, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
+        .bind(new Date().toISOString(), native.id, env.uid).run();
+    }
+    return json({ ok: true }, request);
+  }
+
+  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
 
   try {
     const token = await googleAccessToken(env);
@@ -834,6 +880,159 @@ async function deleteEvent(request, env, id) {
     console.error('deleteEvent:', e.message);
     return err(e.message.startsWith('Calendar sign-in') ? e.message : 'Could not reach Google Calendar.', request, 502);
   }
+}
+
+// ── native calendar events ────────────────────────────────────────────
+// Daybook's own calendar, stored in D1 as kind='event' blocks (one per user).
+// This is what makes the calendar work with no Google (or any) account at all -
+// the base layer. When a user has an external calendar connected (today only
+// the owner's Google) that stays the source of truth for them and rides the
+// Google paths above; these functions serve everyone else, and the owner too if
+// Google is ever disconnected.
+//
+// props on an event block:
+//   { date, allDay, start_min, duration, end_date, location, repeat, until, exdates }
+//   date      YYYY-MM-DD local start day
+//   allDay    bool
+//   start_min minutes past local midnight (timed only)
+//   duration  minutes (timed only; may cross midnight)
+//   end_date  all-day only: exclusive end (day after the last), matching Google
+//   repeat    daily | weekdays | weekly | monthly | yearly | null
+//   until     YYYY-MM-DD inclusive last occurrence (from a "this and following"
+//             delete); null = runs forever
+//   exdates   [YYYY-MM-DD] occurrences dropped individually
+const NATIVE_SEP = '::';   // occurrence id = `${blockId}::${YYYY-MM-DD}`; UUIDs never contain '::'
+
+// Does a recurring master with `repeat` land on `d` (both YYYY-MM-DD, d >= base)?
+function repeatHits(repeat, base, d) {
+  if (d === base) return true;
+  const bt = Date.parse(`${base}T00:00:00Z`), dt = Date.parse(`${d}T00:00:00Z`);
+  if (dt < bt) return false;
+  const days = Math.round((dt - bt) / 86400000);
+  const [by, bm, bd] = base.split('-').map(Number);
+  const [dy, dm, dd] = d.split('-').map(Number);
+  switch (repeat) {
+    case 'daily': return true;
+    case 'weekdays': { const dow = new Date(`${d}T00:00:00Z`).getUTCDay(); return dow >= 1 && dow <= 5; }
+    case 'weekly': return days % 7 === 0;
+    case 'monthly': return dd === bd;               // same day-of-month
+    case 'yearly': return dm === bm && dd === bd;   // same month + day
+    default: return false;
+  }
+}
+// Occurrence start-dates of one event block within [from, to] (inclusive),
+// honouring repeat / until / exdates. A non-repeating event yields at most its
+// own date.
+function occurrencesInRange(p, from, to) {
+  const base = p.date;
+  if (!base) return [];
+  const rep = p.repeat && p.repeat !== 'none' ? p.repeat : null;
+  const ex = new Set(p.exdates || []);
+  const cap = p.until && p.until < to ? p.until : to;
+  if (!rep) return (base >= from && base <= to && !ex.has(base)) ? [base] : [];
+  const out = [];
+  // Walk day by day from max(base, from) to cap. Personal-scale ranges (a month
+  // or a week) keep this cheap; a hard limit guards against a runaway.
+  let d = base > from ? base : from;
+  for (let i = 0; i < 800 && d <= cap; i++, d = addDaysStr(d, 1)) {
+    if (d < base) continue;
+    if (!ex.has(d) && repeatHits(rep, base, d)) out.push(d);
+  }
+  return out;
+}
+// A native event block -> the single-day shape calendarEvents returns (for the
+// day view and Home's Today). Clipped to `day`.
+function nativeDayShape(id, title, p, day) {
+  if (p.allDay) return { id, title, location: p.location || null, allDay: true, start_min: 0, duration: 1440 };
+  const startMin = Math.max(0, Math.min(1440, Number(p.start_min) || 0));
+  const duration = Math.max(15, Math.min(1440 - startMin, Number(p.duration) || 60));
+  return { id, title, location: p.location || null, allDay: false, start_min: startMin, duration };
+}
+// A native event occurrence -> the range shape calendarRange returns (month/week
+// grid). occDate is this occurrence's start day.
+function nativeRangeShape(blockId, title, p, occDate) {
+  const recurring = !!(p.repeat && p.repeat !== 'none');
+  const id = recurring ? `${blockId}${NATIVE_SEP}${occDate}` : blockId;
+  const recurringId = recurring ? blockId : null;
+  if (p.allDay) {
+    const span = (p.end_date && p.end_date > p.date) ? Math.round((Date.parse(`${p.end_date}T00:00:00Z`) - Date.parse(`${p.date}T00:00:00Z`)) / 86400000) : 1;
+    return { id, title, location: p.location || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId };
+  }
+  const startMin = Math.max(0, Number(p.start_min) || 0);
+  const duration = Math.max(15, Number(p.duration) || 60);
+  const total = startMin + duration;
+  return { id, title, location: p.location || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId };
+}
+async function nativeEventBlocks(env) {
+  const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(env.uid).all();
+  return (r.results || []).map((b) => { let p = {}; try { p = JSON.parse(b.props || '{}'); } catch {} return { id: b.id, title: b.title || '(no title)', p }; });
+}
+async function nativeDayEvents(env, day) {
+  const blocks = await nativeEventBlocks(env);
+  const out = [];
+  for (const b of blocks) if (occurrencesInRange(b.p, day, day).length) out.push(nativeDayShape(b.id, b.title, b.p, day));
+  return out;
+}
+async function nativeRangeEvents(env, from, to) {
+  const blocks = await nativeEventBlocks(env);
+  const out = [];
+  for (const b of blocks) for (const d of occurrencesInRange(b.p, from, to)) out.push(nativeRangeShape(b.id, b.title, b.p, d));
+  return out;
+}
+// Turn an incoming event body (the same shape createEvent/updateEvent accept)
+// into an event block's props. Returns null on a bad payload.
+function eventPropsFromBody(b) {
+  const p = { location: String(b.location || '').trim() || null };
+  // ISO path (mail calendar invites): resolve to local date + minutes.
+  if (b.start) {
+    const s = new Date(b.start);
+    if (isNaN(s)) return null;
+    const sp = localParts(s, TZ);
+    const e = b.end ? new Date(b.end) : new Date(s.getTime() + 3600000);
+    const ep = localParts(isNaN(e) ? new Date(s.getTime() + 3600000) : e, TZ);
+    p.allDay = false; p.date = sp.date; p.start_min = sp.min;
+    p.duration = Math.max(15, Math.round((e.getTime() - s.getTime()) / 60000) || 60);
+    return p;
+  }
+  const day = b.day || todayStr(TZ);
+  if (!isValidDay(day)) return null;
+  p.date = day;
+  if (b.allDay) {
+    p.allDay = true;
+    p.end_date = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(day, 1);
+  } else {
+    const startMin = Number(b.start_min), duration = Number(b.duration);
+    if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return null;
+    if (!Number.isFinite(duration) || duration < 5 || duration > 2880) return null;
+    p.allDay = false; p.start_min = startMin; p.duration = duration;
+  }
+  const rep = String(b.repeat || '').toLowerCase();
+  if (['daily', 'weekdays', 'weekly', 'monthly', 'yearly'].includes(rep)) p.repeat = rep;
+  return p;
+}
+async function createNativeEvent(env, b) {
+  const title = String(b.title || '').trim();
+  if (!title) return { error: 'title required' };
+  const p = eventPropsFromBody(b);
+  if (!p) return { error: 'bad event' };
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
+     VALUES (?, 'event', NULL, 0, ?, '', ?, ?, ?, 0, ?)`,
+  ).bind(id, title, JSON.stringify(p), now, now, env.uid).run();
+  return { id };
+}
+// The block id behind an event id the client sent us. Recurring occurrences
+// arrive as `${blockId}::${date}`; everything else is the bare id.
+function nativeMasterId(id) { const i = String(id).indexOf(NATIVE_SEP); return i < 0 ? String(id) : String(id).slice(0, i); }
+function nativeOccDate(id) { const i = String(id).indexOf(NATIVE_SEP); return i < 0 ? null : String(id).slice(i + NATIVE_SEP.length); }
+async function nativeEventRow(env, id) {
+  const masterId = nativeMasterId(id);
+  const row = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE id=? AND kind='event' AND archived=0 AND user_id=?").bind(masterId, env.uid).first();
+  if (!row) return null;
+  let p = {}; try { p = JSON.parse(row.props || '{}'); } catch {}
+  return { id: masterId, title: row.title, p };
 }
 
 // ── backup / export ───────────────────────────────────────────────────
@@ -1479,8 +1678,9 @@ async function handleDay(request, env, url) {
     ).bind(day, env.uid).all(),
     getSettings(env),
     // The Google connection is the owner's alone (one refresh token), so only
-    // the owner's day carries a calendar - a member never sees Robin's diary.
-    env.uid === 1 ? calendarEvents(env, day) : Promise.resolve({ events: [] }),
+    // the owner's day carries Google events - a member never sees Robin's diary.
+    // Native events (below) are added for everyone.
+    env.uid === 1 ? calendarEvents(env, day) : Promise.resolve({ events: [], error: null }),
     quoteForDay(env, day),
     env.DB.prepare('SELECT * FROM activities WHERE user_id = ? ORDER BY lane, position, id').bind(env.uid).all(),
     // The tasks inside each of today's blocks, now Life task blocks (slot_tasks.
@@ -1497,6 +1697,9 @@ async function handleDay(request, env, url) {
   ]);
 
   const slots = slotsRes.results;
+  // Daybook's own events for this day, merged with any Google events above.
+  const nativeDay = await nativeDayEvents(env, day).catch(() => []);
+  cal.events = [...(cal.events || []), ...nativeDay];
 
   const byslot = new Map();
   for (const r of linksRes.results) {
@@ -2594,7 +2797,9 @@ export default {
       if (taskMatch && request.method === 'PATCH') return updateTask(request, env, taskMatch[1]);
 
       // Google event ids are base32hex-ish, plus '_' on recurring instances.
-      const evMatch = path.match(/^\/api\/events\/([\w-]+)$/);
+      // Google ids are word chars + hyphen; a native recurring occurrence adds a
+      // `::YYYY-MM-DD` suffix, so ':' must be allowed too.
+      const evMatch = path.match(/^\/api\/events\/([\w:-]+)$/);
       if (evMatch && request.method === 'PATCH') return updateEvent(request, env, evMatch[1]);
       if (evMatch && request.method === 'DELETE') return deleteEvent(request, env, evMatch[1]);
 

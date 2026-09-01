@@ -3244,7 +3244,7 @@ async function calDeleteEvent(id) {
     const choice = await recurDeleteChoice();
     if (!choice) return;
     scope = choice;
-  } else if (!(await uiConfirm('Delete this event from your Google calendar?', { title: 'Delete event', okLabel: 'Delete', danger: true }))) return;
+  } else if (!(await uiConfirm('Delete this event?', { title: 'Delete event', okLabel: 'Delete', danger: true }))) return;
   try {
     await api(`/api/events/${id}${scope === 'future' ? '?scope=future' : ''}`, { method: 'DELETE' });
     toast(scope === 'future' ? 'This and following events deleted' : 'Event deleted');
