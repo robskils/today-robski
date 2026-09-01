@@ -2115,7 +2115,8 @@ function renderHome() {
     const a = areaById(t.area); const hue = a ? hueOf(a) : 220;
     return `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0" title="Open this task">
       <span class="ev-time"><button class="ev-check" data-home-task-tick="${t.id}" title="Mark done" aria-label="Mark done">✓</button></span>
-      <span class="ev-t"><span class="ev-dot" style="--h:${hue}"></span>${esc(t.title)}</span><span class="ev-loc ev-surfaced">back from snooze</span></div>`;
+      <span class="ev-t"><span class="ev-dot" style="--h:${hue}"></span>${esc(t.title)}</span><span class="ev-loc ev-surfaced">back from snooze</span>
+      <button class="ev-x" data-home-task-dismiss="${t.id}" title="Remove from Today (keeps the task; doesn't complete it)" aria-label="Remove from Today">×</button></div>`;
   }).join('');
   const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind)).slice(0, 8);
   const recentHtml = recents.length
@@ -3208,25 +3209,29 @@ function showCalForm(ev) {
   $('#ce-title').focus();
 }
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
-async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat) {
-  startDate = startDate || state.cal.selected;
+// The POST/PATCH body for an event, from the fields both the calendar form and
+// Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, isNew, fallbackDate }) {
+  startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
-  const rep = !id && repeat && repeat !== 'none' ? { repeat } : {};
-  let body;
+  const rep = isNew && repeat && repeat !== 'none' ? { repeat } : {};
   if (allDay) {
     // Stored end is exclusive (the day after the last), so a multi-day trip pushes
     // the inclusive end date on by one.
     const multi = endDate && endDate > startDate ? { end_date: addDayISO(endDate, 1) } : {};
-    body = JSON.stringify({ title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep });
-  } else {
-    // Duration = the gap between the two date+times (spanning days if it crosses
-    // midnight). A non-positive or missing end falls back to an hour.
-    const sMin = isoToMin(startTime);
-    let duration = Math.max(0, daysBetween(startDate, endDate)) * 1440 + isoToMin(endTime) - sMin;
-    if (!(duration > 0)) duration = 60;
-    duration = Math.max(15, duration);
-    body = JSON.stringify({ title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep });
+    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep };
   }
+  // Duration = the gap between the two date+times (spanning days if it crosses
+  // midnight). A non-positive or missing end falls back to an hour.
+  const sMin = isoToMin(startTime);
+  let duration = Math.max(0, daysBetween(startDate, endDate)) * 1440 + isoToMin(endTime) - sMin;
+  if (!(duration > 0)) duration = 60;
+  duration = Math.max(15, duration);
+  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep };
+}
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat) {
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, isNew: !id, fallbackDate: state.cal.selected }));
+  startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
     else await api('/api/events', { method: 'POST', body });
@@ -4577,12 +4582,20 @@ function renderMail(loading) {
 }
 
 function showQuickTask() {
-  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
-  $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task" style="margin-bottom:22px">
+  const opts = `<option value="">No area</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
+  // The full task options, matching the Tasks board's add form: area, priority,
+  // duration, snooze (hide until), repeat and notes.
+  $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
-    <select id="qt-area" class="sel">${opts}</select>
-    <select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select>
-    <button class="add-btn wide" type="submit">Add</button></form>`;
+    <div class="atf-grid">
+      <label class="atf"><span>Life area</span><select id="qt-area" class="sel">${opts}</select></label>
+      <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
+      <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+      <label class="atf"><span>Snooze until</span>${dateFieldHtml('qt-snooze', '')}</label>
+      <label class="atf"><span>Repeat</span><select id="qt-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+    </div>
+    <label class="atf atf-full"><span>Notes</span><textarea id="qt-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
+    <button class="add-btn wide" type="submit">Add task</button></form>`;
   $('#qt-title').focus();
 }
 // Turn the open email into a Robski Life task: subject becomes the title, and
@@ -4630,8 +4643,13 @@ function mailTaskMenuHtml() {
     <div class="mtask-actions"><button class="ghost" data-mail-task-close>Cancel</button><button class="add-btn wide" data-mail-task-add>Add task</button></div>
   </div></div>`;
 }
-async function homeAddTask(title, area, priority) {
-  try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: area || null, priority: priority || null, done: false } }) }); toast('Task added'); }
+async function homeAddTask(o) {
+  const props = { area: o.area || null, priority: o.priority || null, done: false };
+  if (o.duration) props.duration = Number(o.duration);
+  if (o.snooze) props.snooze = o.snooze;
+  if (o.repeat) props.repeat = o.repeat;
+  const body = textToProse(o.notes);
+  try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props, ...(body ? { body } : {}) }) }); toast('Task added'); }
   catch (e) { toast(e.message); }
 }
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -4642,25 +4660,38 @@ const durationOptions = (sel) => DURATIONS.map((n) => `<option value="${n}" ${n 
 function showQuickEvent() {
   const d = new Date();
   const today = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  // Default to the next quarter-hour, a sensible starting point.
+  // Default to the next quarter-hour, an hour long - same as the calendar form.
   const mins = Math.ceil((d.getHours() * 60 + d.getMinutes() + 5) / 15) * 15;
   const start = `${pad2(Math.floor(mins / 60) % 24)}:${pad2(mins % 60)}`;
+  const endMin = mins + 60;
+  const endDate = addDayISO(today, Math.floor(endMin / 1440));
+  const endTime = `${pad2(Math.floor((endMin % 1440) / 60))}:${pad2(endMin % 60)}`;
+  // Full event options, matching the calendar's own form: start/end date+time,
+  // all-day, location and repeat.
   $('#qt-wrap').innerHTML = `<form id="qe-form" class="add-task add-event" style="margin-bottom:22px">
     <input id="qe-title" placeholder="Event title…" autocomplete="off" required>
-    ${dateFieldHtml('qe-date', today)}
-    <input id="qe-time" type="time" class="sel" value="${start}" required>
-    <select id="qe-dur" class="sel">${durationOptions(60)}</select>
+    <div class="ce-when">
+      <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('qe-date', today)}<input id="qe-time" type="time" class="sel ce-timefield" value="${start}"></span></div>
+      <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
+    </div>
+    <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day (a trip can span several days)</label>
     <input id="qe-loc" class="sel" placeholder="Location (optional)" autocomplete="off">
+    <select id="qe-repeat" class="sel" title="Repeat">
+      <option value="none">Does not repeat</option>
+      <option value="daily">Daily</option>
+      <option value="weekdays">Every weekday (Mon-Fri)</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option></select>
     <button class="add-btn wide" type="submit">Add to calendar</button></form>`;
   $('#qe-title').focus();
 }
-async function homeAddEvent(title, day, time, duration, location) {
-  const [h, m] = time.split(':').map(Number);
+async function homeAddEvent(body) {
   try {
-    await api('/api/events', { method: 'POST', body: JSON.stringify({ title, day, start_min: h * 60 + m, duration: Number(duration), location: location || undefined }) });
-    toast('Added to your Google calendar');
+    await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
+    toast('Added to your calendar');
     $('#qt-wrap').innerHTML = '';
-    // If it's for today, pull it straight into the Today panel.
+    // Pull it straight into the Today panel if it lands today.
     const dres = await api('/api/day').catch(() => null);
     if (dres && state.view.type === 'home') { state.home.events = dres.events || []; renderHome(); }
   } catch (e) { toast(e.message); }
@@ -7652,6 +7683,7 @@ document.addEventListener('click', (e) => {
   const ep = t.closest('[data-edit-prio]'); if (ep) { editPrio(ep); return; }
   const ea = t.closest('[data-edit-area]'); if (ea) { editArea(ea); return; }
   const htt = t.closest('[data-home-task-tick]'); if (htt) { e.stopPropagation(); homeTaskTick(htt.dataset.homeTaskTick); return; }
+  const htd = t.closest('[data-home-task-dismiss]'); if (htd) { e.stopPropagation(); homeTaskDismiss(htd.dataset.homeTaskDismiss); return; }
   const ota = t.closest('[data-open-task]'); if (ota) { openTaskCard(ota.dataset.openTask).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-del-task-cur]')) { delTaskCard().catch((x) => toast(x.message)); return; }
   // Click anywhere on a task row that isn't an editable field / control -> open it.
@@ -7811,6 +7843,7 @@ document.addEventListener('change', (e) => {
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const f = $('#cal-ev-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
+  if (e.target.id === 'qe-allday') { const f = $('#qe-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
   // An event can't end before it starts. Pushing the start date past the end (or
   // setting an end earlier than the start) snaps the end to the start day; a later
   // end is kept, so a multi-day trip still works.
@@ -7885,8 +7918,18 @@ document.addEventListener('submit', (e) => {
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const lane = $('#prc-lane'), i = $('#prc-new'); practiceAdd(lane && lane.value, i && i.value); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
-  if (e.target.id === 'qt-form') { const i = $('#qt-title'); const v = i.value.trim(); if (v) { homeAddTask(v, $('#qt-area').value, $('#qt-prio').value); i.value = ''; i.focus(); } }
-  if (e.target.id === 'qe-form') { const v = $('#qe-title').value.trim(); if (v) homeAddEvent(v, $('#qe-date').value, $('#qe-time').value, $('#qe-dur').value, $('#qe-loc').value.trim()); }
+  if (e.target.id === 'qt-form') {
+    const i = $('#qt-title'); const v = i.value.trim();
+    if (v) {
+      homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, notes: ($('#qt-notes') || {}).value });
+      // Keep the form open for a run of tasks; clear only the per-task fields.
+      i.value = ''; const n = $('#qt-notes'); if (n) n.value = ''; const s = $('#qt-snooze'); if (s) s.value = ''; i.focus();
+    }
+  }
+  if (e.target.id === 'qe-form') {
+    const v = $('#qe-title').value.trim();
+    if (v) homeAddEvent(buildEventBody({ title: v, startDate: $('#qe-date').value, startTime: ($('#qe-time') || {}).value, endDate: ($('#qe-enddate') || {}).value, endTime: ($('#qe-endtime') || {}).value, location: $('#qe-loc').value.trim(), allDay: $('#qe-allday').checked, repeat: ($('#qe-repeat') || {}).value, isNew: true }));
+  }
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none'); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
@@ -8140,6 +8183,16 @@ async function homeTaskTick(id) {
   const [removed] = arr.splice(idx, 1);
   renderHome();
   try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast('Done ✓'); }
+  catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }
+}
+// Remove a surfaced task from Today WITHOUT completing it: clear its snooze so
+// it stops surfacing. The task stays open on the Tasks board.
+async function homeTaskDismiss(id) {
+  const arr = (state.home.alerts && state.home.alerts.surfaced) || [];
+  const idx = arr.findIndex((t) => t.id === id); if (idx < 0) return;
+  const [removed] = arr.splice(idx, 1);
+  renderHome();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { snooze: null } }) }); toast('Removed from Today'); }
   catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }
 }
 async function delTask(id) {

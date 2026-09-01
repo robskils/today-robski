@@ -926,7 +926,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-util-toggle { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:italic; color:var(--accent); }
-.brand-mark { width:.82em; height:.82em; color:var(--accent); vertical-align:-.06em; margin:0 .22em; }
+.brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
 .nav-brand .brand-mark { margin:0 .16em 0 .2em; }
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
@@ -1626,6 +1626,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ev-check:hover { border-color:var(--accent); color:var(--accent); }
 .ev-check:active { background:var(--paper-2); }
 .ev-surfaced { font-size:12px; color:var(--accent); opacity:.9; }
+/* Remove-from-Today ✕ on a surfaced task (doesn't complete it). Sits at the row
+   end, out of the way of the tap-to-open target. */
+.ev-task { position:relative; }
+.ev-task .ev-t, .ev-task .ev-surfaced { padding-right:30px; }
+.ev-x { position:absolute; top:50%; right:2px; transform:translateY(-50%); width:26px; height:26px; flex:none; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; font-size:18px; line-height:1; color:var(--ink-3); background:transparent; transition:color .12s, background .12s; }
+.ev-x:hover { color:var(--danger,#c0392b); background:var(--paper-2); }
+@media (hover:none){ .ev-x { color:var(--ink-2); } }
 
 /* Quick-launch row above Favourites: go to each index, or + to create. */
 /* Home launcher: hidden on desktop (the sidebar lists every section), shown as

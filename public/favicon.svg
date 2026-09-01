@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Daybook mark: a sun rising over two page-lines - a book of days, and the
-       dawn the app themes itself by. Replaces the old ensō. -->
-  <path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="#c4412e"/>
-  <path d="M4.5 19.5h23" fill="none" stroke="#c4412e" stroke-width="2.6" stroke-linecap="round"/>
-  <path d="M7.8 24.6h16.4" fill="none" stroke="#c4412e" stroke-width="2.6" stroke-linecap="round" opacity="0.5"/>
+  <!-- Daybook mark: a sun rising over two page-lines. Enlarged a touch. -->
+  <g transform="translate(16,16) scale(1.18) translate(-16,-19.45)">
+    <path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="#c4412e"/>
+    <path d="M4.5 19.5h23" fill="none" stroke="#c4412e" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M7.8 24.6h16.4" fill="none" stroke="#c4412e" stroke-width="2.6" stroke-linecap="round" opacity="0.5"/>
+  </g>
 </svg>
