@@ -75,6 +75,27 @@ with, no queue and no delay - a tick takes effect at once. So:
   worker/index.js, so it is usable instantly. No placeholder id, no swap-in
   step: the row exists the moment you type it.
 
+## Calendar
+
+Two layers. **Native events** are the base: `kind='event'` blocks in D1, per
+user, so the calendar works for everyone with no external account at all (this
+is what let members like Carolina finally add events). Props hold
+`{date, allDay, start_min, duration, end_date, location, repeat, until, exdates}`;
+recurrence is expanded server-side in `nativeDayEvents` / `nativeRangeEvents`,
+and a recurring occurrence's id is `<blockId>::<YYYY-MM-DD>` (the events route
+regex allows the `:`). Delete "this and following" sets `until`; "just this
+one" appends to `exdates`; a plain delete archives the block.
+
+**Google** is an optional overlay, still the owner's single shared refresh
+token. `createEvent`/`updateEvent`/`deleteEvent` route to Google **only** when
+`env.uid === 1 && env.GOOGLE_REFRESH_TOKEN`; otherwise (any member, or the owner
+if Google ever disconnects) they fall to native storage. Reads (`/api/day`,
+`/api/calendar`) merge native events for everyone with the owner's Google
+events. Two-way per-user sync (each user connecting their own Google) is not
+built: it needs the OAuth client switched from Internal to External + Google
+verification (calendar is a sensitive scope) - an outside `@gmail.com` cannot
+authorise an Internal app. Other providers (iCloud/CalDAV, Outlook) are unbuilt.
+
 ## The morning brief
 
 `worker/brief.js` renders one email a day, sent at 08:45 Europe/Lisbon off the
