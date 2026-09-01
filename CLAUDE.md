@@ -10,11 +10,16 @@ Read README.md first: it explains the architecture and how the pieces fit.
 - **Worker + static assets:** one `wrangler deploy` serves `public/` and `/api/*`
   from `today.robski.uk`. There is no Pages project.
 - **D1** `today-robski`. Schema in `worker/schema.sql`.
-- **Auth:** email OTP -> 7-day HS256 JWT signed with `AUTH_SECRET`. Codes go
-  via Resend from `Today <today@incremento.co>` - the one domain verified on
-  the free tier. Sender domain is incidental; the Robski branding is in the
-  body. Don't "fix" it to robski.uk: that's $20/mo, and the Cloudflare
-  alternative means editing the SPF record Purelymail depends on.
+- **Auth:** email OTP -> 7-day HS256 JWT signed with `AUTH_SECRET`. Codes,
+  invites and the morning brief all send from **contact@daybook.fyi via
+  Purelymail SMTP** (`smtp.purelymail.com:465`, `BRIEF_SMTP_PASS` is that
+  mailbox's Purelymail **Shared Password** - the mailbox login password 535s
+  under 2FA; `BRIEF_FROM`/`BRIEF_SMTP_USER` set the address). daybook.fyi is
+  fully SPF/DKIM/DMARC-aligned on Purelymail, so deliverability is native.
+  Resend (`FROM_EMAIL = Today <today@incremento.co>`) is only the fallback if
+  `BRIEF_SMTP_PASS` is unset or SMTP fails - `sendCodeMail` catches an SMTP
+  error and retries via Resend so a bad cred can't lock people out. Nothing
+  sends from robski.uk any more.
 - `ADMIN_EMAILS` takes whole addresses or `*@domain`. `isAllowed` in auth.js
   matches the domain exactly - never loosen it to endsWith, that would let
   `robski.uk.evil.com` in. `npm test` covers it.
@@ -133,12 +138,13 @@ or the other and would deliver half a brief, which is what the old one did.
 - `longDate` composes weekday and date from two formatters rather than asking
   en-GB for both: Node renders that without the comma and workerd need not
   agree, so the header would differ between the test and the inbox.
-- **Sender:** if the `BRIEF_SMTP_PASS` secret is set, the brief sends as
-  `today@robski.uk` through Purelymail SMTP (`smtp.purelymail.com:465`, via
-  `smtpSend`/`buildMessage` in mail.js). A real Purelymail mailbox passes
-  SPF/DKIM natively, so this needs no Resend domain and no SPF edit - the very
-  cost the Auth note warns about. With no secret it falls back to Resend from
-  `today@incremento.co`. `BRIEF_FROM` / `BRIEF_SMTP_USER` override the address.
+- **Sender:** the brief sends as `contact@daybook.fyi` through Purelymail SMTP
+  (`smtp.purelymail.com:465`, via `smtpSend`/`buildMessage` in mail.js) when
+  `BRIEF_SMTP_PASS` (that mailbox's Purelymail Shared Password) is set - the
+  same transport codes and invites now use. A real, fully-aligned Purelymail
+  mailbox passes SPF/DKIM/DMARC natively. With no secret it falls back to Resend
+  from `today@incremento.co`. `BRIEF_FROM` / `BRIEF_SMTP_USER` set the address
+  (both are `contact@daybook.fyi` in wrangler.toml). No longer robski.uk.
 
 ## Layout
 
