@@ -1938,19 +1938,35 @@ async function openHome() {
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
   // The pinned spirit card follows the account: take the server's if we have one.
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
-  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 } };
+  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 }, today: day.today || dayKey(new Date()), dayOffset: 0, dayData: null };
   renderNav(); renderHome();
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
 // practices and task-bearing slots), merged and sorted by time. A slot that
 // carries Life tasks lists them; a bare practice shows the block on its own.
 // This is the "bits added to Today but not the calendar" Robin wanted surfaced.
+// Date maths on the plain YYYY-MM-DD string, in UTC, so adding days never trips
+// on a DST change or the device's own timezone.
+function addDaysStr(ds, n) { const [y, m, d] = String(ds).split('-').map(Number); const dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1)); dt.setUTCDate(dt.getUTCDate() + n); return dt.toISOString().slice(0, 10); }
+// The day the Today section is currently showing, and a friendly label for it.
+function homeViewDay() { return addDaysStr(state.home.today || dayKey(new Date()), state.home.dayOffset || 0); }
+function homeDayLabel(off) {
+  if (!off) return 'Today';
+  if (off === 1) return 'Tomorrow';
+  const ds = addDaysStr(state.home.today || dayKey(new Date()), off);
+  const [y, m, d] = ds.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
 function homeTodayItems() {
+  const off = state.home.dayOffset || 0;
+  // Today reads live state; another day reads the fetched day-view. Birthdays and
+  // snoozed-task surfacing are a today-only signal, so they don't ride along.
+  const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
-  const items = (state.home.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url }));
+  const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url }));
   // Birthdays (from Contacts) whose day is today lead the list, all-day style.
-  ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => items.push({ kind: 'birthday', id: b.id, sort: -2, title: b.name }));
-  for (const s of state.home.slots || []) {
+  if (off === 0) ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => items.push({ kind: 'birthday', id: b.id, sort: -2, title: b.name }));
+  for (const s of src.slots || []) {
     const hue = hues[s.lane] ?? 0;
     const tasks = (s.tasks || []).filter((t) => t && t.title);
     if (!s.practice && tasks.length) {
@@ -1961,6 +1977,24 @@ function homeTodayItems() {
     }
   }
   return items.sort((a, b) => a.sort - b.sort);
+}
+// Step the Today section to another day (0 = today). Today's data is already in
+// state.home; any other day is fetched once into dayData and cached until you
+// move again, so stepping back and forth doesn't refetch the same day.
+async function homeDaySet(off) {
+  off = Math.max(0, off | 0);
+  state.home.dayOffset = off;
+  if (off === 0) { state.home.dayData = null; state.home.dayLoading = false; renderHome(); return; }
+  const ds = homeViewDay();
+  if (state.home.dayData && state.home.dayData.date === ds) { renderHome(); return; }
+  state.home.dayLoading = true; state.home.dayData = null; renderHome();
+  try {
+    const r = await api(`/api/day?date=${ds}`);
+    if ((state.home.dayOffset || 0) !== off) return;   // moved again while loading
+    state.home.dayData = { date: ds, events: r.events || [], slots: r.slots || [] };
+  } catch { if ((state.home.dayOffset || 0) === off) state.home.dayData = { date: ds, events: [], slots: [] }; }
+  state.home.dayLoading = false;
+  renderHome();
 }
 // ── Pomodoro focus timer (Home) ───────────────────────────────────────
 // Subtle, opt-in: sits quietly in the Home sidebar. Runs off a wall-clock end
@@ -2357,7 +2391,16 @@ function renderHome() {
           const fg = focusGoals();
           const sec = {
             favareas: favAreas.length ? `<section class="home-sec home-sec-favareas" data-hsec="favareas">${secH('favareas', 'Life areas', '', true)}${secOpen('favareas') ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : ''}</section>` : '',
-            today: `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', 'Today', '', true)}${secOpen('today') ? `<div class="today-cal">${(evRows + surfacedRows) || '<div class="home-empty">Nothing planned today. Open Today to add practices and tasks.</div>'}</div>` : ''}</section>`,
+            today: (() => {
+              const off = state.home.dayOffset || 0;
+              // Nav sits in the header: › steps forward a day, ‹ steps back, and a
+              // Today pill jumps straight home (the day you want most of the time).
+              const nav = `<span class="today-nav">${off > 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button><button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button>` : ''}<button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
+              const rows = evRows + (off === 0 ? surfacedRows : '');
+              const body = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
+                : (rows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`);
+              return `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', homeDayLabel(off), nav, true)}${secOpen('today') ? `<div class="today-cal">${body}</div>` : ''}</section>`;
+            })(),
             priority: p1Html(),
             focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
             toolbox: modOn('timer') ? toolboxHtml() : '',
@@ -7647,6 +7690,11 @@ document.addEventListener('click', (e) => {
   { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
   { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
+  // Today section day-stepper. These live inside the collapse header, so they must
+  // be handled (and return) before the sec-collapse toggle below, or a tap on an
+  // arrow would also collapse the section.
+  { const ds = t.closest('[data-home-day-set]'); if (ds) { homeDaySet(Number(ds.dataset.homeDaySet)); return; } }
+  { const dd = t.closest('[data-home-day]'); if (dd) { homeDaySet((state.home.dayOffset || 0) + Number(dd.dataset.homeDay)); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }

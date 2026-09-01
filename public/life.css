@@ -1748,6 +1748,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fav-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fav-x { flex:none; color:var(--ink-3); font-size:18px; padding:0 14px; } .fav-x:hover { color:var(--accent); }
 
+/* Day-stepper in the Today header: arrows to look ahead, a pill to come home. */
+.today-nav { margin-left:auto; align-self:center; display:inline-flex; align-items:center; gap:4px; }
+.today-nav-arw, .today-nav-btn { flex:none; border:1px solid var(--line); background:var(--card); color:var(--ink-2); border-radius:8px; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; transition:border-color .12s, color .12s, background .12s; }
+.today-nav-arw { width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; font-size:16px; line-height:1; }
+.today-nav-btn { height:26px; padding:0 10px; font-size:12px; font-weight:600; letter-spacing:.02em; text-transform:none; color:var(--accent); border-color:color-mix(in srgb,var(--accent) 35%,var(--line)); }
+.today-nav-arw:hover, .today-nav-btn:hover { border-color:var(--accent); color:var(--accent); }
 .today-cal { display:flex; flex-direction:column; gap:1px; }
 /* Time in its own column; title and location stack in the second column so a
    long title or address never collides with the other. */
