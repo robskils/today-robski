@@ -3072,7 +3072,8 @@ function dpStep(delta) {
 const addDayISO = (iso, n = 1) => { const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d + n); return ymd(dt.getFullYear(), dt.getMonth(), dt.getDate()); };
 const isoToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const minToLabel = (m) => `${p2(Math.floor(m / 60))}:${p2(m % 60)}`;
-const prettyDate = (iso) => { const [y, mo, d] = iso.split('-').map(Number); const dt = new Date(y, mo - 1, d); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dt.getDay()]} ${d} ${MONTHS_LONG[mo - 1]}`; };
+const WEEKDAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const prettyDate = (iso) => { const [y, mo, d] = iso.split('-').map(Number); const dt = new Date(y, mo - 1, d); return `${WEEKDAYS_LONG[dt.getDay()]} ${d} ${MONTHS_LONG[mo - 1]}`; };
 
 function monthWeeks(y, m) {
   const startDow = (new Date(y, m, 1).getDay() + 6) % 7; // Monday = 0
@@ -3191,7 +3192,7 @@ function renderCalendar() {
     <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
     ${cq ? searchBlock : `<section class="cal-agenda cal-agenda-top">
-      <div class="cal-ag-head"><h2>${prettyDate(c.selected)}</h2><button class="add-btn wide" data-cal-add>+ Event</button></div>
+      <div class="cal-ag-head"><h2>${c.selected === todayISO() ? 'Today: ' : ''}${prettyDate(c.selected)}</h2><button class="add-btn wide" data-cal-add>+ Event</button></div>
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
@@ -3216,24 +3217,46 @@ function showCalForm(ev) {
   else { const sMin = ev && !ev.allDay ? ev.start_min : isoToMin(startTime); const eMin = sMin + dur; endDate = addDayISO(startDate, Math.floor(eMin / 1440)); endTime = minToLabel(eMin % 1440); }
   // Start and End each get their own row of date + time. The end defaults to the
   // same day (and an hour on); change it only when you mean to.
-  $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event${allDay ? ' allday-on' : ''}" data-ev="${ev ? ev.id : ''}">
-    <input id="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
+  $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event${allDay ? ' allday-on' : ''}" data-ev="${ev ? ev.id : ''}" data-evgap="${allDay ? 60 : dur}">
+    <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
     <div class="ce-when">
       <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span></div>
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
-    <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day (a trip can span several days)</label>
-    <input id="ce-loc" class="sel" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
-    ${ev ? (ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : '') : `<select id="ce-repeat" class="sel" title="Repeat">
-      <option value="none">Does not repeat</option>
-      <option value="daily">Daily</option>
-      <option value="weekdays">Every weekday (Mon-Fri)</option>
-      <option value="weekly">Weekly</option>
-      <option value="monthly">Monthly</option>
-      <option value="yearly">Yearly</option></select>`}
-    <button class="add-btn wide" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
-    ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}</form>`;
+    <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
+    <div class="ce-foot">
+      <input id="ce-loc" class="sel ce-loc" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
+      ${ev ? (ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : '') : `<select id="ce-repeat" class="sel ce-repeat" title="Repeat">
+        <option value="none">Does not repeat</option>
+        <option value="daily">Daily</option>
+        <option value="weekdays">Every weekday (Mon-Fri)</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option></select>`}
+      <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
+      ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}
+    </div></form>`;
   $('#ce-title').focus();
+}
+// Keep an event's end sensibly after its start. The event's length lives on the
+// form as data-evgap (minutes); moving the start date/time slides the end along
+// by that length, so the end is never left sitting before the start. Editing the
+// end just updates the stored length. Shared by the calendar (ce) and Home (qe)
+// event forms via the id prefix.
+const evAbsMs = (dateId, timeId) => { const d = (document.getElementById(dateId) || {}).value; if (!d) return null; const t = (document.getElementById(timeId) || {}).value || '00:00'; return Date.parse(`${d}T${t}:00`); };
+const evFormOf = (prefix) => { const el = document.getElementById(`${prefix}-time`) || document.getElementById(`${prefix}-title`); return el ? el.closest('form') : null; };
+function syncEventEnd(prefix) {
+  const startMs = evAbsMs(`${prefix}-date`, `${prefix}-time`); if (startMs == null) return;
+  const form = evFormOf(prefix); let gap = form ? Number(form.dataset.evgap) : 60; if (!(gap > 0)) gap = 60;
+  const d = new Date(startMs + gap * 60000);
+  setDateField(`${prefix}-enddate`, `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`);
+  const et = document.getElementById(`${prefix}-endtime`); if (et) et.value = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function onEventEndEdit(prefix) {
+  const startMs = evAbsMs(`${prefix}-date`, `${prefix}-time`), endMs = evAbsMs(`${prefix}-enddate`, `${prefix}-endtime`);
+  if (startMs == null || endMs == null) return;
+  if (endMs <= startMs) { syncEventEnd(prefix); return; }   // an end at or before the start snaps back to start + length
+  const form = evFormOf(prefix); if (form) form.dataset.evgap = String(Math.max(15, Math.round((endMs - startMs) / 60000)));
 }
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
@@ -4695,22 +4718,24 @@ function showQuickEvent() {
   const endTime = `${pad2(Math.floor((endMin % 1440) / 60))}:${pad2(endMin % 60)}`;
   // Full event options, matching the calendar's own form: start/end date+time,
   // all-day, location and repeat.
-  $('#qt-wrap').innerHTML = `<form id="qe-form" class="add-task add-event" style="margin-bottom:22px">
-    <input id="qe-title" placeholder="Event title…" autocomplete="off" required>
+  $('#qt-wrap').innerHTML = `<form id="qe-form" class="add-task add-event" data-evgap="60" style="margin-bottom:22px">
+    <input id="qe-title" class="ce-title" placeholder="Event title…" autocomplete="off" required>
     <div class="ce-when">
       <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('qe-date', today)}<input id="qe-time" type="time" class="sel ce-timefield" value="${start}"></span></div>
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
-    <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day (a trip can span several days)</label>
-    <input id="qe-loc" class="sel" placeholder="Location (optional)" autocomplete="off">
-    <select id="qe-repeat" class="sel" title="Repeat">
-      <option value="none">Does not repeat</option>
-      <option value="daily">Daily</option>
-      <option value="weekdays">Every weekday (Mon-Fri)</option>
-      <option value="weekly">Weekly</option>
-      <option value="monthly">Monthly</option>
-      <option value="yearly">Yearly</option></select>
-    <button class="add-btn wide" type="submit">Add to calendar</button></form>`;
+    <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
+    <div class="ce-foot">
+      <input id="qe-loc" class="sel ce-loc" placeholder="Location (optional)" autocomplete="off">
+      <select id="qe-repeat" class="sel ce-repeat" title="Repeat">
+        <option value="none">Does not repeat</option>
+        <option value="daily">Daily</option>
+        <option value="weekdays">Every weekday (Mon-Fri)</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option></select>
+      <button class="add-btn wide ce-submit" type="submit">Add to calendar</button>
+    </div></form>`;
   $('#qe-title').focus();
 }
 async function homeAddEvent(body) {
@@ -7877,13 +7902,12 @@ document.addEventListener('change', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const f = $('#cal-ev-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
   if (e.target.id === 'qe-allday') { const f = $('#qe-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
-  // An event can't end before it starts. Pushing the start date past the end (or
-  // setting an end earlier than the start) snaps the end to the start day; a later
-  // end is kept, so a multi-day trip still works.
-  if (e.target.id === 'ce-date' || e.target.id === 'ce-enddate') {
-    const s = $('#ce-date'), en = $('#ce-enddate');
-    if (s && en && s.value && (!en.value || en.value < s.value)) setDateField('ce-enddate', s.value);
-  }
+  // An event's end follows its start. Changing the start date/time slides the end
+  // along, preserving the length; editing the end sets a new length. So the end is
+  // never left before the start (which looked silly), and a multi-day trip still
+  // works. Handles both the calendar (ce) and Home quick-event (qe) forms.
+  { const m = e.target.id && e.target.id.match(/^(ce|qe)-(date|time|enddate|endtime)$/);
+    if (m) { if (m[2] === 'date' || m[2] === 'time') syncEventEnd(m[1]); else onEventEndEdit(m[1]); } }
   // Table filters
   const scol = e.target.closest('[data-sortl-col]'); if (scol) { const i = +scol.dataset.sortlCol; if (state.tables_view.sorts[i]) { state.tables_view.sorts[i].colId = scol.value; setSorts(state.tables_view.sorts); } return; }
   const sdir = e.target.closest('[data-sortl-dir]'); if (sdir) { const i = +sdir.dataset.sortlDir; if (state.tables_view.sorts[i]) { state.tables_view.sorts[i].dir = sdir.value; setSorts(state.tables_view.sorts); } return; }
