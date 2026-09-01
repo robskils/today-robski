@@ -2614,6 +2614,18 @@ const SPIRIT_CARDS = [
   ['Faith', '🌅', "The sun doesn't ask permission to rise. Neither should you."],
   ['Solitude', '🏔', "Time alone isn't lonely. It's where you meet yourself."],
   ['Flow', '💧', 'Stop forcing the river. Let it carry you a while.'],
+  ['Curiosity', '🐚', 'Ask a better question and the wall becomes a door.'],
+  ['Acceptance', '⚓', "You can't move from a place you refuse to stand. Arrive first."],
+  ['Compassion', '🫧', 'Everyone is carrying something unseen. Go gently, yourself included.'],
+  ['Roots', '🌳', 'Grow down before you grow up - depth is what holds the height.'],
+  ['Ease', '🌤', "It doesn't have to be hard to be worth it."],
+  ['Devotion', '🕯', 'Small and often is how everything that lasts gets built.'],
+  ['Humility', '🌒', "Not knowing isn't a gap to fill. It's where the room is."],
+  ['Hope', '🌷', 'Plant it anyway. The planting is the hope.'],
+  ['Attention', '🔭', 'Where your attention goes, your life follows. Aim it kindly.'],
+  ['Return', '🧭', "You haven't lost the way. You're being called back to it."],
+  ['Warmth', '🍵', 'Be a warm room to come in from the cold - starting with yourself.'],
+  ['Mystery', '🌌', "You don't need the whole map to love the walk."],
 ];
 const scFront = (c) => `<span class="sc-sym">${c[1]}</span><h3 class="sc-name">${esc(c[0])}</h3><p class="sc-msg">${esc(c[2])}</p>`;
 function renderSpirit() {
