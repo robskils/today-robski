@@ -13,7 +13,7 @@ const BRAND = { app: 'Daybook' };
 const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>';
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflect'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -448,8 +448,8 @@ const HELP = {
       <li>An area page shows its starred notes, all its notes and tables, and its open tasks.</li>
       <li>Feed a <b>Today lane</b> from an area, so time spent there counts toward it.</li></ul>
       <p>Rename, recolour or add areas any time - the whole app follows.</p>` },
-  reflect: { title: 'Reflect', tip: 'A journal with prompts, and a “dig deeper” question when you want to go further.',
-    body: `<p>Reflect is for journalling. Pick a prompt or write free; each entry is dated and yours to return to.</p>
+  reflect: { title: 'Reflection', tip: 'A journal with prompts, and a “dig deeper” question when you want to go further.',
+    body: `<p>Reflection is for journalling. Pick a prompt or write free; each entry is dated and yours to return to.</p>
       <p><b>Dig deeper</b> asks you one thoughtful follow-up question about what you’ve written, to take a thought further.</p>` },
   saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
     body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
@@ -471,7 +471,7 @@ const HELP = {
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
   'settings-ai': { title: 'Premium', tip: 'How the AI runs: bring your own keys, or Full Fat where we handle it.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflect coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (free / standard): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Full Fat</b> (premium): we run the AI for you, no keys to manage.</p>` },
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (free / standard): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Full Fat</b> (premium): we run the AI for you, no keys to manage.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
     body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
@@ -546,7 +546,7 @@ function labelForView(v) {
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
-    case 'journal': return 'Reflect'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Reflect';
+    case 'journal': return 'Reflection'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Reflection';
     case 'readwatch': return 'Read & Watch';
     case 'settings': return 'Settings';
     case 'admin': return 'Admin';
@@ -1335,7 +1335,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
 // Where AI actually gets used across Daybook, and which model powers each - so
 // the AI settings and the onboarding guide can say plainly what a key is for.
 const AI_USES = [
-  ['Reflect', 'gentle coaching and a "Dig deeper" question while you journal', 'Claude'],
+  ['Reflection', 'gentle coaching and a "Dig deeper" question while you journal', 'Claude'],
   ['Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
   ['Money advice', 'sums up what the channels you follow are saying', 'Gemini'],
   ['Statement import', 'turns a pasted bank statement into tidy transactions', 'Gemini'],
@@ -1483,7 +1483,7 @@ function renderSettings() {
           <div class="plan-h"><b>Bring your own keys</b>${badge(!managed)}</div>
           <div class="plan-price">Free &amp; Standard</div>
           <p class="plan-desc">Plug in your own keys and you control the cost. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> is pay-as-you-go, usually a few pennies.</p>
-          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflect &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
+          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflection &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
           <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a Claude key at console.anthropic.com ↗</a>
           ${aiKeyRow('gemini', 'Gemini (Google) &middot; money advice &amp; statement import', a.aiGeminiSet, 'AIza…')}
           <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini key at aistudio.google.com ↗</a>
@@ -1593,7 +1593,7 @@ function renderNav() {
     ${modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span>✓</span><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : ''}
     ${modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span>◑</span><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : ''}
     ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span>▤</span><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
-    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Reflect</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
+    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span>✎</span><span class="nav-lbl">Reflection</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
     ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span>◈</span><span class="nav-lbl">Life areas</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span>🎯</span><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
     ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span>💰</span><span class="nav-lbl">Money</span></button>` : ''}
@@ -1862,7 +1862,7 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
-  const [favs, day, pad, rec, goals, alerts, spirit, order, mob] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
@@ -1872,10 +1872,13 @@ async function openHome() {
     api('/api/kv/spirit_card').catch(() => null),
     api('/api/kv/home_order').catch(() => null),
     api('/api/kv/home_mobile').catch(() => null),
+    api('/api/kv/home_side_order').catch(() => null),
   ]);
   // The mobile Home arrangement follows the account too, so a change made on the
   // desktop settings shows up on the phone.
   if (mob && mob.value) { try { const m = JSON.parse(mob.value); if (m && (Array.isArray(m.order) || Array.isArray(m.hidden))) localStorage.setItem('life.home.mobile', mob.value); } catch {} }
+  // The right-column (side) arrangement follows the account, like the main one.
+  if (sideOrd && sideOrd.value) { try { if (Array.isArray(JSON.parse(sideOrd.value))) localStorage.setItem('life.home.sideOrder', sideOrd.value); } catch {} }
   state.goals = goals || [];
   // The desktop section arrangement follows your account: seed this device's copy
   // from the server so a rearrangement made on one desktop shows on the next.
@@ -1892,7 +1895,9 @@ async function openHome() {
 // This is the "bits added to Today but not the calendar" Robin wanted surfaced.
 function homeTodayItems() {
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
-  const items = (state.home.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location }));
+  const items = (state.home.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url }));
+  // Birthdays (from Contacts) whose day is today lead the list, all-day style.
+  ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => items.push({ kind: 'birthday', id: b.id, sort: -2, title: b.name }));
   for (const s of state.home.slots || []) {
     const hue = hues[s.lane] ?? 0;
     const tasks = (s.tasks || []).filter((t) => t && t.title);
@@ -2167,13 +2172,11 @@ function trackerPanel() {
 // Gentle Home notifications - today's birthdays and open P1 tasks. Each can be
 // dismissed for the day with the ×. Never overwhelming: only shows what's live.
 function alertsHtml() {
-  const a = (state.home && state.home.alerts) || {};
-  const today = new Date().toISOString().slice(0, 10);
-  const gone = (key) => localStorage.getItem('life.home.alert.' + key) === today;
   const cards = [];
-  (a.birthdays || []).forEach((b) => { const key = 'bday:' + b.id; if (gone(key)) return; cards.push(`<div class="home-alert"><span class="ha-ic">🎂</span><span class="ha-t">It's <b>${esc(b.name)}</b>'s birthday today</span><button class="ha-x" data-alert-x="${esc(key)}" title="Dismiss">×</button></div>`); });
-  // The priority-task count lived here, but the Priority Tasks section below
-  // already lists them on Home, so the banner was just noise.
+  // Birthdays now appear in the Today section (see homeTodayItems), so they're no
+  // longer duplicated as a banner here. The priority-task count lived here too,
+  // but the Priority Tasks section already lists them - so the banner is empty
+  // for now, kept as the home for any future gentle alerts.
   return cards.length ? `<div class="home-alerts">${cards.join('')}</div>` : '';
 }
 // The day's teaching, moved here from Today. Dismissible - once you've read it,
@@ -2243,11 +2246,17 @@ function renderHome() {
     favGroup('Tasks', favs.filter((f) => f.kind === 'task')),
     favDocs.length ? `<div class="fav-group"><div class="fav-cards">${favDocs.map(favCard).join('')}</div></div>` : '',
   ].join('');
-  const evRows = todayItems.map((it) => it.kind === 'event'
-    ? (() => { const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
-        return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`; })()
+  const evRows = todayItems.map((it) => {
+    if (it.kind === 'birthday') {
+      return `<div class="ev-row ev-bday ev-click" data-open-contact="${it.id}" role="button" tabindex="0" title="Open this contact"><span class="ev-time">🎂</span><span class="ev-t">${esc(it.title)}'s birthday</span></div>`;
+    }
+    if (it.kind === 'event') {
+      const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
+      return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${it.url ? '<span class="cal-ag-join" title="Has a video meeting link">🎥</span>' : ''}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`;
+    }
     // (end time stacked under start; duration tag after the title)
-    : `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`).join('');
+    return `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`;
+  }).join('');
   // Tasks that have surfaced from snooze sit in Today too, each tickable in place
   // (a tick completes it and it drops out; snoozing it again hides it).
   const surfacedRows = ((state.home.alerts && state.home.alerts.surfaced) || []).map((t) => {
@@ -2284,7 +2293,7 @@ function renderHome() {
           ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
           ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
           ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
-          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflect</span></button>` : ''}
+          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflection</span></button>` : ''}
           ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
           ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
           ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span>${friendPending() ? `<span class="hl-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>` : ''}
@@ -2306,20 +2315,18 @@ function renderHome() {
           let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
           return order.map((k) => sec[k] || '').join('');
         })()}</div>
-        <aside class="home-side">
-          <section class="home-sec home-sec-recent">
-            ${secH('recent', 'Recently viewed')}
-            ${secOpen('recent') ? recentHtml : ''}
-          </section>
-          ${modOn('notepad') ? `<section class="home-sec home-sec-notepad">
-            ${secH('notepad', 'Notepad')}
-            ${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}
-          </section>` : ''}
-          ${(modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-people" data-hsec="people">
-            ${secH('people', 'People')}
-            ${secOpen('people') ? peopleHtml() : ''}
-          </section>` : ''}
-        </aside>
+        <aside class="home-side">${(() => {
+          // The right column is drag-reorderable too (grips on desktop), each
+          // section carrying data-hsec so the drop logic can read the order.
+          const sideSec = {
+            recent: `<section class="home-sec home-sec-recent" data-hsec="recent">${secH('recent', 'Recently viewed', '', true)}${secOpen('recent') ? recentHtml : ''}</section>`,
+            notepad: modOn('notepad') ? `<section class="home-sec home-sec-notepad" data-hsec="notepad">${secH('notepad', 'Notepad', '', true)}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
+            people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-people" data-hsec="people">${secH('people', 'People', '', true)}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
+          };
+          const sdef = ['recent', 'notepad', 'people'];
+          let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
+          return sorder.map((k) => sideSec[k] || '').join('');
+        })()}</aside>
       </div>
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
     </div>`;
@@ -2694,8 +2701,8 @@ function renderJournalList() {
       </div>
     </div>`;
   $('#pane').innerHTML = `
-    ${pageCrumb('Reflect')}
-    <div class="pane-head home-head"><h1>Reflect</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-spirit-open title="Draw a card for a moment's reflection">🃏 Spirit Cards</button><button class="add-btn wide" data-journal-start>📓 Journal</button></div></div>`}</div>
+    ${pageCrumb('Reflection')}
+    <div class="pane-head home-head"><h1>Reflection</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-start>📓 Journal</button><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-spirit-open title="Draw a card for a moment's reflection">🃏 Spirit Cards</button></div></div>`}</div>
     ${j.picking ? '' : spiritPinnedHtml()}
     ${picker}
     ${insightsCard}
@@ -2720,7 +2727,7 @@ async function openJournalEntry(id) {
   state.journal = state.journal || { entries: [] };
   state.journal.current = entry;
   state.view = { type: 'journalentry', id };
-  recordRecent('journal', id, entry.title || 'Reflect entry');
+  recordRecent('journal', id, entry.title || 'Reflection entry');
   renderNav(); renderJournalEntry();
 }
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
@@ -2731,7 +2738,7 @@ function renderJournalEntry() {
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Reflect</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Reflection</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ((n.props && n.props.mode) === 'coaching' ? '<span class="j-card-mode">🧭 Coaching session</span>' : '')}</div>
@@ -7118,7 +7125,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Keyboard shortcuts', run: () => openShortcuts() },
   { kind: 'action', title: 'New note', run: () => newNote(null) },
   { kind: 'action', title: 'New reflection', run: () => quickAdd('journal') },
-  { kind: 'action', title: 'Go to Reflect', run: () => openJournal() },
+  { kind: 'action', title: 'Go to Reflection', run: () => openJournal() },
   { kind: 'action', title: 'Settings', run: () => openSettings() },
   { kind: 'action', title: 'Change accent colour', run: () => openSettings() },
   { kind: 'action', title: 'Save a link', run: () => quickAdd('save') },
@@ -8169,6 +8176,16 @@ function reorderHomeSec(dragged, before, cur) {
   api('/api/kv/home_order', { method: 'PUT', body: JSON.stringify({ value: val }) }).catch(() => {});
   renderHome();
 }
+const HOME_SIDE_KEYS = new Set(['recent', 'notepad', 'people']);
+function reorderHomeSide(dragged, before, cur) {
+  const arr = cur.filter((k) => k !== dragged);
+  let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
+  arr.splice(i, 0, dragged);
+  const val = JSON.stringify(arr);
+  try { localStorage.setItem('life.home.sideOrder', val); } catch {}
+  api('/api/kv/home_side_order', { method: 'PUT', body: JSON.stringify({ value: val }) }).catch(() => {});
+  renderHome();
+}
 function clearDropMarks() {
   document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
 }
@@ -8201,7 +8218,7 @@ document.addEventListener('dragover', (e) => {
   if (dragFav && (e.target.closest('#favs') || e.target.closest('.home-sec-favs'))) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
   if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'v'); return; }
-  if (dragHomeSec && e.target.closest('.home-main')) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
+  if (dragHomeSec && (e.target.closest('.home-main') || e.target.closest('.home-side'))) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
   if (dragContact) { const gd = e.target.closest('[data-group-drop]'); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); if (gd) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; gd.classList.add('cg-over'); } return; }
@@ -8234,10 +8251,17 @@ document.addEventListener('drop', (e) => {
     clearDropMarks(); reorderP1(dragP1, before); dragP1 = null; return;
   }
   if (dragHomeSec) {
-    e.preventDefault(); const over = e.target.closest('[data-hsec]');
-    const cur = [...document.querySelectorAll('.home-main [data-hsec]')].map((el) => el.dataset.hsec);
-    const before = over && over.dataset.hsec !== dragHomeSec ? dropBefore(over, cur, (el) => el.dataset.hsec) : null;
-    clearDropMarks(); reorderHomeSec(dragHomeSec, before, cur); dragHomeSec = null; return;
+    e.preventDefault();
+    const side = HOME_SIDE_KEYS.has(dragHomeSec);
+    const cur = [...document.querySelectorAll(`${side ? '.home-side' : '.home-main'} [data-hsec]`)].map((el) => el.dataset.hsec);
+    const over = e.target.closest('[data-hsec]');
+    const overKey = over && over.dataset.hsec;
+    clearDropMarks();
+    // Ignore a drop over the other column - each column reorders on its own.
+    if (overKey && !cur.includes(overKey)) { dragHomeSec = null; return; }
+    const before = (overKey && overKey !== dragHomeSec) ? dropBefore(over, cur, (el) => el.dataset.hsec) : null;
+    (side ? reorderHomeSide : reorderHomeSec)(dragHomeSec, before, cur);
+    dragHomeSec = null; return;
   }
   if (dragSec) {
     e.preventDefault(); const over = e.target.closest('[data-nav-sec]');
@@ -9451,7 +9475,7 @@ function onbAi() {
     <p class="onb-p">Daybook has a few AI helpers. Bring your own key and you stay in control of the cost - or skip and add one later in Settings.</p>
     ${aiUsesHtml()}
     <div class="onb-provs">
-      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflect coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
+      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflection coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
       ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
     </div>
     <div class="ai-managed">Prefer not to deal with keys? The <b>Full Fat</b> plan runs the AI for you - no keys, nothing to set up. See Settings → Premium.</div>`;
