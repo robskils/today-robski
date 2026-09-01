@@ -1507,7 +1507,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     const to = owner ? (env.BRIEF_EMAIL || (user && user.email) || (env.user && env.user.email))
                      : (user ? user.email : (env.user && env.user.email));
     if (!to) return { sent: false, reason: 'no recipient' };
-    const home = owner ? 'https://today.robski.uk' : `https://${(user && user.subdomain) || 'app'}.daybook.fyi`;
+    const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
 
     const payload = { day: now.date, events: cal.events, tasks, quote };
     const subject = briefSubject(payload);
