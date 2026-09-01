@@ -20,13 +20,17 @@ self.addEventListener('push', (event) => {
     } catch {}
 
     // iOS requires every push to show a notification, or it revokes permission.
-    await self.registration.showNotification(data.title || 'Robski Life', {
+    // Where a tap should land: the payload's own target/url wins; mail keeps its
+    // legacy default. (Connect requests send target:'contacts'.)
+    const target = data.target || (data.type === 'mail' ? 'mail' : 'home');
+    const url = data.url || (data.type === 'mail' ? '/mail' : '/');
+    await self.registration.showNotification(data.title || 'Daybook', {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       tag: data.type === 'mail' ? 'robski-mail' : undefined,   // collapse repeats
       renotify: data.type === 'mail',
-      data: { url: data.type === 'mail' ? '/mail' : '/', target: data.type === 'mail' ? 'mail' : 'home' },
+      data: { url, target },
     });
   })());
 });

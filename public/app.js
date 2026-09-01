@@ -3817,7 +3817,7 @@ async function initPush() {
     // NEW tab, so the tab the user was on is left exactly as they had it.
     navigator.serviceWorker.addEventListener('message', (ev) => {
       const d = ev.data || {};
-      if (d.type === 'notification-open') openInNewTab({ type: d.target === 'mail' ? 'mail' : 'home' });
+      if (d.type === 'notification-open') openInNewTab({ type: d.target === 'mail' ? 'mail' : d.target === 'contacts' ? 'contacts' : 'home' });
     });
     if (Notification.permission === 'granted') await subscribePush(reg);
   } catch (e) { /* SW unsupported/blocked - fine, app still works */ }

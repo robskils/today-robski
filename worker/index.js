@@ -2251,6 +2251,11 @@ async function pushAll(env, payload, uid = env.uid) {
   return { sent, total: (results || []).length };
 }
 
+// A push about a connection (request received, or request accepted). Tapping it
+// opens Contacts, where the Accept button (or the new friend) is waiting.
+async function pushConnect(env, toUid, title, body) {
+  return pushAll(env, { type: 'connect', target: 'contacts', url: '/', title, body }, Number(toUid));
+}
 // Called after each inbox sync with its result. Pushes when a genuinely new
 // message arrived unread (message-id based, so it fires even if another client
 // read something in the same window). The badge shows the current unread total.
@@ -2350,7 +2355,7 @@ export default {
     ctx.waitUntil(maybeReviewReminders(env).catch((e) => console.error('reviewReminders:', e.message)));
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     // Force HTTPS. An http:// visit (an old bookmark, or typing the bare
@@ -2577,9 +2582,26 @@ export default {
         const b = await request.json().catch(() => ({}));
         let id = b.id;
         if (!id && b.email) { const u = await getUserByEmail(env, b.email); if (!u) return err('No Daybook account uses that email.', request, 404); id = u.id; }
-        try { return json(await requestFriend(env, id), request, 201); } catch (e) { return err(e.message, request, 400); }
+        try {
+          // If they'd already requested me, this call accepts; otherwise it's a
+          // fresh request. Push the other person accordingly.
+          const recip = id ? await env.DB.prepare("SELECT status FROM friends WHERE user_id=? AND friend_id=?").bind(env.uid, id).first().catch(() => null) : null;
+          const isAccept = !!(recip && recip.status === 'in');
+          const r = await requestFriend(env, id);
+          const me = (env.user && (env.user.name || env.user.subdomain)) || 'Someone';
+          ctx.waitUntil(pushConnect(env, id,
+            isAccept ? 'Connection accepted' : 'New connection request',
+            isAccept ? `${me} accepted your request` : `${me} wants to connect on Daybook`).catch(() => {}));
+          return json(r, request, 201);
+        } catch (e) { return err(e.message, request, 400); }
       }
-      if (path === '/api/friends/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await acceptFriend(env, b.id), request); }
+      if (path === '/api/friends/accept' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const r = await acceptFriend(env, b.id);
+        const me = (env.user && (env.user.name || env.user.subdomain)) || 'Someone';
+        ctx.waitUntil(pushConnect(env, b.id, 'Connection accepted', `${me} accepted your connect request`).catch(() => {}));
+        return json(r, request);
+      }
       if (path === '/api/friends/remove' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await removeFriend(env, b.id), request); }
       if (path === '/api/messages' && request.method === 'GET') { try { return json(await getMessages(env, url.searchParams.get('with')), request); } catch (e) { return err(e.message, request, 403); } }
       if (path === '/api/messages' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await sendMessage(env, b.to, b.body), request, 201); } catch (e) { return err(e.message, request, 403); } }
