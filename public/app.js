@@ -518,12 +518,39 @@ function showHelpPop(btn) {
 }
 function hideHelpPop() { const el = document.getElementById('help-pop'); if (el) el.style.display = 'none'; }
 function openHelp(key) { state.view = { type: 'help', tool: key }; renderNav(); renderHelp(key); return Promise.resolve(); }
+// The tools listed on the Guide home page, in a sensible reading order.
+const GUIDE_TOPICS = ['home', 'today', 'tasks', 'calendar', 'mail', 'notes', 'reflect', 'financial', 'goals', 'areas', 'contacts', 'saved', 'friends', 'settings'];
 function renderHelp(key) {
-  const h = HELP[key] || HELP.home;
-  $('#pane').innerHTML = `${pageCrumb('Guide')}
+  if (key === 'index' || !HELP[key]) return renderGuideIndex();
+  const h = HELP[key];
+  $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Guide', attr: 'data-open-guide' }, { label: h.title }])}
     <div class="pane-head home-head"><h1>${esc(h.title)}</h1></div>
     <div class="help-doc"><p class="help-lede">${h.tip}</p>${h.body}
-      <p class="help-foot">Every tool has its own guide - look for the <span class="help-inline-i">i</span> beside the tabs.</p></div>`;
+      <p class="help-foot"><button class="help-back-link" data-open-guide>← All guides</button></p></div>`;
+}
+// The Guide home page: the joining checklist up top, then a card per tool guide.
+function renderGuideIndex() {
+  const cards = GUIDE_TOPICS.filter((k) => HELP[k]).map((k) => {
+    const h = HELP[k];
+    return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></button>`;
+  }).join('');
+  $('#pane').innerHTML = `${pageCrumb('Guide')}
+    <div class="pane-head home-head"><h1>Guide</h1></div>
+    <div class="help-doc">
+      <p class="help-lede">Everything you need to find your way around Daybook. Start with the welcome guide, or pick a tool.</p>
+      <div class="guide-start">
+        <div class="guide-start-h">✦ New here? The welcome guide</div>
+        <p class="guide-start-p">A quick set-up, any time you want to run through it:</p>
+        <ol class="guide-checklist">
+          <li><b>Choose your username</b> - your Daybook's own web address.</li>
+          <li><b>Add AI</b> - bring your own key, or go Full Fat and we handle it for you.</li>
+          <li><b>Connect your email</b> - Gmail (with a one-tap app-password guide) and the rest.</li>
+        </ol>
+        <button class="add-btn wide" data-onb-replay>Open the welcome guide</button>
+      </div>
+      <div class="guide-sec-h">All the guides</div>
+      <div class="guide-grid">${cards}</div>
+    </div>`;
 }
 // Click the i: pin this tool's guide in its own tab. If it's already open, just go there.
 function openHelpTab(key) {
@@ -540,7 +567,7 @@ function openHelpTab(key) {
 }
 function labelForView(v) {
   switch (v.type) {
-    case 'help': return `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
+    case 'help': return v.tool === 'index' ? 'Guide' : `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
     case 'tasks': return 'Tasks';
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
@@ -7494,6 +7521,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
+  if (t.closest('[data-open-guide]')) { openHelp('index'); return; }
   const hlp = t.closest('[data-help-open]'); if (hlp) { hideHelpPop(); if (window.matchMedia('(max-width:820px)').matches) openHelp(hlp.dataset.helpOpen); else openHelpTab(hlp.dataset.helpOpen); return; }
   const tpin = t.closest('[data-tab-pin]'); if (tpin) { togglePin(tpin.dataset.tabPin); return; }
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
@@ -7890,6 +7918,7 @@ document.addEventListener('click', (e) => {
   if (state.tables_view && state.tables_view.colMenu) {
     const cmId = state.tables_view.colMenu.colId;
     if (t.closest('[data-cm-rename]')) { state.tables_view.colMenu = null; renderTable(); editColName(cmId); return; }
+    const cmv = t.closest('[data-cm-move]'); if (cmv) { moveColumn(cmId, cmv.dataset.cmMove); return; }
     const ctp = t.closest('[data-cm-type]'); if (ctp) { setColType(cmId, ctp.dataset.cmType); return; }
     const rmo = t.closest('[data-cm-rmopt]'); if (rmo) { removeColOption(cmId, rmo.dataset.cmRmopt); return; }
     const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.colMenu = null; setSorts([{ colId: cmId, dir: cms.dataset.cmSort }]); return; }
@@ -9045,12 +9074,29 @@ async function removeColOption(id, opt) {
   const cols = tcols().map((c) => c.id === id ? { ...c, options: (c.options || []).filter((o) => o !== opt) } : c);
   await saveTableColumns(cols); renderTable();
 }
+// Shift a column one place left or right in the table's column order. The menu
+// stays open on the moved column, so you can nudge it several places in a row.
+async function moveColumn(colId, dir) {
+  const cols = tcols().slice();
+  const i = cols.findIndex((c) => c.id === colId); if (i < 0) return;
+  const j = dir === 'left' ? i - 1 : i + 1;
+  if (j < 0 || j >= cols.length) return;
+  [cols[i], cols[j]] = [cols[j], cols[i]];
+  await saveTableColumns(cols);
+  renderTable();
+}
 // A right-click menu on a column header: rename, change type (incl. Select and
 // its options), sort, delete.
 function colMenuHtml(cm) {
   const col = tcols().find((c) => c.id === cm.colId); if (!col) return '';
+  const cols = tcols(); const ci = cols.findIndex((c) => c.id === cm.colId);
+  const moveItems = [
+    ci > 0 ? '<button class="cm-item" data-cm-move="left">← Move left</button>' : '',
+    ci >= 0 && ci < cols.length - 1 ? '<button class="cm-item" data-cm-move="right">Move right →</button>' : '',
+  ].filter(Boolean).join('');
   return `<div class="colmenu" data-colmenu style="top:${cm.y}px;left:${cm.x}px">
     <button class="cm-item" data-cm-rename>Rename column</button>
+    ${moveItems ? `<div class="cm-sep"></div>${moveItems}` : ''}
     <div class="cm-sep"></div><div class="cm-label">Type</div>
     ${TYPES.map(([v, l]) => `<button class="cm-item cm-type ${col.type === v ? 'on' : ''}" data-cm-type="${v}">${l}${col.type === v ? ' ✓' : ''}</button>`).join('')}
     ${col.type === 'select' ? `<div class="cm-sep"></div><div class="cm-label">Options</div>

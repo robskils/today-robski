@@ -1486,6 +1486,22 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .help-doc b { font-weight:650; }
 .help-lede { font-size:18px; color:var(--ink-2); margin-bottom:20px; }
 .help-foot { margin-top:26px; padding-top:16px; border-top:1px solid var(--line); font-size:14px; color:var(--ink-3); }
+.help-back-link { color:var(--accent); font-size:14px; }
+.help-back-link:hover { text-decoration:underline; }
+/* Guide home page: the welcome-checklist card, then a grid of tool guides. */
+.guide-start { margin:6px 0 24px; padding:18px 20px; border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 6%,transparent); }
+.guide-start-h { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:500; margin-bottom:6px; }
+.guide-start-p { margin:0 0 10px; color:var(--ink-2); }
+.guide-checklist { margin:0 0 16px; padding-left:22px; display:flex; flex-direction:column; gap:8px; }
+.guide-checklist li { line-height:1.5; }
+.guide-start .add-btn.wide { display:inline-flex; }
+.guide-sec-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin:18px 0 12px; }
+.guide-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+.guide-card { display:flex; flex-direction:column; gap:5px; padding:15px 16px; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); transition:border-color .12s,transform .06s; }
+.guide-card:hover { border-color:var(--accent); }
+.guide-card:active { transform:scale(.99); }
+.guide-card-t { font-size:16px; font-weight:600; color:var(--ink); }
+.guide-card-s { font-size:13.5px; line-height:1.5; color:var(--ink-3); }
 .help-inline-i { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:1px solid var(--line-2); font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:12.5px; color:var(--ink-2); }
 /* Settings hub */
 .set-card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:20px; }
