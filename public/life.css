@@ -1612,10 +1612,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
      every section title lines up flush left whichever column it came from. */
   .home-sec-toggle { padding:6px 0; margin-bottom:8px; }
   .home-grip { display:none; }
-  /* Today first, then the tool buttons, then the rest; the Toolbox last. */
+  /* Today first, then the tool buttons; then Notepad above Starred, with Life
+     areas just below it; Recent, then the Toolbox last. */
   .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }
-  .home-sec-focus { order:4; } .home-sec-favareas { order:5; } .home-sec-favs { order:6; }
-  .home-sec-recent { order:7; } .home-sec-notepad { order:8; } .home-toolbox { order:20; }
+  .home-sec-focus { order:4; } .home-sec-notepad { order:5; } .home-sec-favs { order:6; }
+  .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* Everything stacks on mobile - never a sideways scroll. Goal cards go one per
      row (no 280px min to spill into two columns), the home columns can't be
      pushed past the screen, and the home clips any stray horizontal overflow. */
