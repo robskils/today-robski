@@ -9300,6 +9300,7 @@ function onbDone() {
     <ul class="onb-tips">
       <li><b>+ Task</b>, <b>+ Note</b> and <b>+ Event</b> on Home capture things fast.</li>
       <li>Press <b>⌘K</b> or the search box to jump anywhere.</li>
+      <li><b>Keyboard shortcuts</b>: press <b>⌘/</b>, or tap <b>⌨ Keyboard shortcuts</b> at the foot of Home, for the full list.</li>
       <li>Change anything later in <b>Settings</b> - AI, mail, appearance and more.</li>
     </ul>
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
