@@ -1061,7 +1061,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fr-scan-note { font-size:13.5px; color:var(--ink-2); margin:2px 0 10px; }
 .fr-results:not(:empty) { margin:-8px 0 20px; }
 /* Invite button lives in the section header now, pushed to the right. */
-.home-sec-h .sec-h-btn { margin-left:auto; align-self:center; flex:none; }
+/* The connect row: a wide "find someone on Daybook" box, then Connect + Invite. */
+.fr-connect-row { flex-wrap:wrap; }
+.list-head.fr-connect-row .fr-connect { flex:1 1 300px; min-width:240px; }
+.fr-connect-row .add-btn.wide { flex:none; }
 /* Auto-surfaced: your contacts already on Daybook, given a soft-tinted card so
    they stand out as the easy first connections. */
 .fr-suggest { margin:2px 0 18px; padding:4px 14px 12px; border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line)); border-radius:14px; background:color-mix(in srgb,var(--accent) 5%,transparent); }
@@ -2465,6 +2468,14 @@ table.ttable tr:last-child td { border-bottom:0; }
      on the Mail view we hide the universal box instead (see below). */
   .list-search:not(.mail-search) { display:none; }
   body[data-view="mail"] .nav-k { display:none; }
+  /* Contacts on mobile: searching your own contacts is the box that matters, so
+     keep it; the "find someone else on Daybook" box + Connect are dropped
+     (the surfaced "already on Daybook" suggestions cover connecting). Invite
+     stays, full width. */
+  body[data-view="contacts"] .list-head { flex-wrap:wrap; }
+  body[data-view="contacts"] .list-search[data-contacts-q] { display:block; flex:1 1 100%; }
+  .fr-connect, .fr-connect-btn { display:none; }
+  .fr-connect-row .fr-invite-btn { flex:1 1 100%; }
   /* The tools bar: Information, Colour Scheme, Settings (+ Admin) and a search
      box. Hidden until the ⋯ toggle opens it, then it drops in as rows below the
      wordmark. */
