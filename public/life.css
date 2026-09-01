@@ -1732,6 +1732,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .fav-cards { display:flex; flex-wrap:wrap; gap:8px; }
 .fav-card { display:inline-flex; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:11px; box-shadow:var(--shadow); max-width:100%; transition:border-color .12s; }
 .fav-card:hover { border-color:var(--line-2); }
+/* Left edge in the card's life-area colour (matches the Priority Task stripe). */
+.fav-card.has-area { border-left:3px solid hsl(var(--h,4) 60% 52%); }
+.fav-card.has-area:hover { border-left-color:hsl(var(--h,4) 60% 52%); }
 .fav-card-open { display:flex; align-items:center; gap:9px; min-width:0; padding:9px 4px 9px 13px; color:var(--ink); font-size:15.5px; }
 .fav-card-open:hover { color:var(--accent); }
 .fav-card .fav-ic { color:var(--ink-3); font-size:13px; flex:none; }

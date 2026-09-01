@@ -2325,7 +2325,9 @@ function renderHome() {
   // each with its own icon so you can tell them apart. Life areas are omitted -
   // faved areas have their own section at the top of Home.
   const favIc = (k) => (k === 'note' ? NOTE_ICO : (KIND_IC[k] || '•'));
-  const favCard = (f) => `<div class="fav-card" draggable="true" data-fav-id="${f.id}"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`;
+  // A starred note/table tagged to a life area gets a left edge in that area's
+  // colour, the same at-a-glance sorting the Priority Task cards carry.
+  const favCard = (f) => { const a = areaById(blockAreas(f)[0]); return `<div class="fav-card${a ? ' has-area' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} draggable="true" data-fav-id="${f.id}"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`; };
   const favGroup = (label, list) => list.length ? `<div class="fav-group"><div class="fav-group-h">${label}</div><div class="fav-cards">${list.map(favCard).join('')}</div></div>` : '';
   const favDocs = favs.filter((f) => f.kind === 'note' || f.kind === 'table');
   const favGroups = [
