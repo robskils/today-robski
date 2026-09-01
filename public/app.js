@@ -5326,6 +5326,16 @@ const liveGroupsOf = (c) => groupsOf(c).map(groupById).filter(Boolean).sort((a, 
 // Address is structured. Old contacts (and simple imports) may hold a plain
 // string; those read into the Street field and format as-is.
 const ADDR_FIELDS = [['street', 'Street'], ['city', 'City'], ['postcode', 'Postcode'], ['country', 'Country']];
+// One canonical list of country names, so every contact's country is spelled the
+// same way. Picked from a dropdown rather than typed free-hand.
+const COUNTRIES = ['Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cambodia', 'Cameroon', 'Canada', 'Cape Verde', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Congo (DRC)', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czechia', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hong Kong', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Ivory Coast', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kosovo', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'];
+// A country dropdown. Any existing value not on the list is kept as its own
+// selected option, so a legacy or imported spelling is never silently dropped.
+function countrySelect(id, current, cls) {
+  const cur = (current || '').trim();
+  const extra = cur && !COUNTRIES.includes(cur) ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : '';
+  return `<select class="${cls}" id="${id}"><option value="">Country…</option>${extra}${COUNTRIES.map((c) => `<option value="${esc(c)}"${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`;
+}
 function formatAddress(a) { if (!a) return ''; if (typeof a === 'string') return a; return ADDR_FIELDS.map(([k]) => a[k]).filter(Boolean).join(', '); }
 const addrField = (a, k) => (!a ? '' : typeof a === 'string' ? (k === 'street' ? a : '') : (a[k] || ''));
 function cleanAddress(a) { const out = {}; let any = false; for (const [k] of ADDR_FIELDS) { const v = (a[k] || '').trim(); if (v) { out[k] = v; any = true; } } return any ? out : null; }
@@ -5534,7 +5544,7 @@ function contactAddForm() {
       <label class="atf"><span>Street</span><input id="ct-street" class="sel" autocomplete="off"></label>
       <label class="atf"><span>City</span><input id="ct-city" class="sel" autocomplete="off"></label>
       <label class="atf"><span>Postcode</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
-      <label class="atf"><span>Country</span><input id="ct-country" class="sel" autocomplete="off"></label>
+      <label class="atf"><span>Country</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
     <div class="atf-actions"><button class="add-btn wide" type="submit">Add contact</button><button type="button" class="ghost" data-contact-add-close>Done</button></div>
   </form>`;
@@ -5566,7 +5576,7 @@ function renderContactCard() {
       ${contactPhoneFields(p)}
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
       <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
-      <div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-addr-row">${ADDR_FIELDS.map(([k, l]) => `<input class="sel contactcard-addr cc-addr-${k}" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" placeholder="${l}" autocomplete="off">`).join('')}</div></div>
+      <div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-addr-row">${ADDR_FIELDS.map(([k, l]) => k === 'country' ? countrySelect('contactcard-' + k, addrField(p.address, k), 'sel contactcard-addr cc-addr-' + k) : `<input class="sel contactcard-addr cc-addr-${k}" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" placeholder="${l}" autocomplete="off">`).join('')}</div></div>
     </div>
     ${contactGroupsSection(c)}
     ${notesSection(c.body, 'contact', c.id)}
