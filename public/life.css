@@ -1075,6 +1075,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    they stand out as the easy first connections. */
 .fr-suggest { margin:2px 0 18px; padding:4px 14px 12px; border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line)); border-radius:14px; background:color-mix(in srgb,var(--accent) 5%,transparent); }
 .fr-suggest .ppl-sub { margin-top:12px; color:var(--accent); }
+.fr-intro { margin:2px 0 14px; font-size:14.5px; line-height:1.55; color:var(--ink-2); max-width:640px; }
 .fr-suggest .friend-row { background:var(--card); }
 /* Sub-groups inside "Contacts on Daybook" (Requests, Pending, Suggestions…). */
 .ppl-sub { display:flex; align-items:center; gap:8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin:18px 0 9px; }
@@ -1104,6 +1105,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .share-panel { z-index:231; }
 .share-note { padding:14px 18px 4px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
 .share-list { padding:12px 16px 20px; overflow-y:auto; }
+.share-empty { padding:8px 18px 8px; text-align:center; color:var(--ink-2); font-size:14.5px; line-height:1.55; }
+.share-empty p { margin:0 0 8px; }
+.share-empty .add-btn.wide { margin-top:6px; }
 .share-row { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); margin-bottom:8px; }
 .share-acts { display:flex; align-items:center; gap:6px; flex:none; }
 .share-mode { padding:5px 8px; font-size:13px; }

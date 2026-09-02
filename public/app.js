@@ -1370,9 +1370,14 @@ function renderShare() {
       return `<div class="share-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${mode
         ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
-    }).join('') : '<div class="home-empty">Add a friend first, then you can share with them here.</div>');
+    }).join('') : `<div class="share-empty">
+        <p>You're not connected with anyone on Daybook yet.</p>
+        <p class="onb-muted">Invite a friend, then you can share this with them - and anything else you like.</p>
+        <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
+      </div>`);
+  const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'life area' : 'note';
   el.innerHTML = `<div class="chat-bg" data-share-close></div><div class="chat-panel share-panel">
-    <div class="chat-head"><span class="chat-title">Share this ${s.kind === 'task' ? 'task' : 'note'}</span><button class="chat-x" data-share-close title="Close">×</button></div>
+    <div class="chat-head"><span class="chat-title">Share this ${kindLabel}</span><button class="chat-x" data-share-close title="Close">×</button></div>
     <div class="share-note">People you share with can open and edit it. Switch anyone to view-only, or stop sharing anytime.</div>
     <div class="share-list">${rows}</div>
   </div>`;
@@ -5775,6 +5780,7 @@ function renderContacts() {
 
     <section class="home-sec">
       <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
+      <p class="fr-intro">Invite your friends to Daybook so you can share with them - a whole Life Area, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
       ${(d.suggestions && d.suggestions.length) ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
       <div id="friend-results" class="fr-results"></div>
@@ -8303,6 +8309,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
   if (t.closest('[data-share-close]')) { closeShare(); return; }
+  if (t.closest('[data-share-invite]')) { closeShare(); openContacts().then(() => inviteToDaybook()).catch(() => {}); return; }
   { const son = t.closest('[data-share-on]'); if (son) { shareSet(Number(son.dataset.shareOn), true); return; } }
   { const sof = t.closest('[data-share-off]'); if (sof) { shareOff(Number(sof.dataset.shareOff)); return; } }
   { const ao = t.closest('[data-assign-open]'); if (ao) { openAssign(ao.dataset.assignOpen, ao.dataset.assignTitle || ''); return; } }
@@ -10071,7 +10078,7 @@ function onbDone() {
     <ul class="onb-tips">
       <li><b>+ Task</b>, <b>+ Note</b> and <b>+ Event</b> on Home capture things fast.</li>
       <li>Press <b>⌘K</b> or the search box to jump anywhere.</li>
-      <li><b>Keyboard shortcuts</b>: press <b>⌘/</b>, or tap <b>⌨ Keyboard shortcuts</b> at the foot of Home, for the full list.</li>
+      <li><b>Invite your friends</b> from <b>Contacts</b>, then share whatever you like - a Life Area, a note, a table, or a few tasks. Completely up to you.</li>
       <li>Change anything later in <b>Settings</b> - AI, mail, appearance and more.</li>
     </ul>
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;

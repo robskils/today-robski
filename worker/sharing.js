@@ -26,7 +26,7 @@ export async function shareBlock(env, blockId, friendId, canEdit) {
   friendId = Number(friendId);
   const kind = await ownsBlock(env, blockId);
   if (!kind) throw new Error('That is not yours to share.');
-  if (!SHAREABLE.has(kind)) throw new Error('Only notes and tasks can be shared right now.');
+  if (!SHAREABLE.has(kind)) throw new Error('Only notes, tables, life areas and tasks can be shared.');
   if (!friendId || friendId === env.uid) throw new Error('Pick a friend to share with.');
   if (!(await areFriends(env, friendId))) throw new Error('You can only share with people you are connected to.');
   const ce = canEdit === false || canEdit === 0 ? 0 : 1;
