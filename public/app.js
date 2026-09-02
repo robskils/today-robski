@@ -942,11 +942,19 @@ const admTok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1
 function adminUserRow(u) {
   const owner = u.id === 1;
   const plans = ['free', 'standard', 'premium', 'power'];
+  // The free period (free_until) is editable after signup: grant N months from
+  // today, or remove it. The select is an action, so it always sits on its
+  // placeholder; the current state reads in the meta line.
+  const fu = u.free_until ? new Date(u.free_until) : null;
+  const freeActive = fu && fu.getTime() > Date.now();
+  const freeOpts = [['1', '1 month'], ['3', '3 months'], ['6', '6 months'], ['12', '12 months'], ['24', '24 months']];
+  const freeCtl = owner ? '' : `<select class="sel au-free-sel" data-admin-free="${u.id}" title="Grant or change this member's free period"><option value="">Free period…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}${freeActive ? '<option value="0">Remove free period</option>' : ''}</select>`;
   return `<div class="adm-user ${u.status === 'suspended' ? 'susp' : ''}">
     <div class="adm-user-main"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span></div>
-    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDate(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDate(u.last_seen))}` : ''}</div>
+    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDate(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDate(u.last_seen))}` : ''}${freeActive ? ` · <span class="au-free-badge">free until ${esc(fmtDate(u.free_until))}</span>` : ''}</div>
     <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(u.plan)} · owner</span>`
       : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option ${u.plan === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
+        ${freeCtl}
         <button class="ghost ${u.status === 'suspended' ? '' : 'acct-danger'}" data-admin-status="${u.id}" data-status="${u.status === 'suspended' ? 'active' : 'suspended'}">${u.status === 'suspended' ? 'Reactivate' : 'Suspend'}</button>`}
     </div>
   </div>`;
@@ -1057,6 +1065,10 @@ async function setUserStatus(id, status) {
   if (status === 'suspended' && !(await uiConfirm('Suspend this member? They will be signed out and blocked until reactivated.', { danger: true, okLabel: 'Suspend' }))) return;
   try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })).users; renderAdmin(); toast(status === 'suspended' ? 'Member suspended' : 'Member reactivated'); }
   catch (e) { toast(e.message); }
+}
+async function setUserFree(id, months) {
+  try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ freeMonths: months }) })).users; renderAdmin(); toast(months > 0 ? `Free for ${months} month${months === 1 ? '' : 's'} from today` : 'Free period removed'); }
+  catch (e) { toast(e.message); renderAdmin(); }
 }
 // ── Friends on Daybook ────────────────────────────────────────────────
 // Friends merged into Contacts: keep the entry point but land on the unified page.
@@ -2423,7 +2435,7 @@ function renderHome() {
             priority: p1Html(),
             focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
             toolbox: modOn('timer') ? toolboxHtml() : '',
-            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? (favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>') : ''}</section>`,
+            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>` : ''}</section>`,
           };
           const def = ['favareas', 'today', 'priority', 'focus', 'toolbox', 'favs'];
           let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
@@ -8187,6 +8199,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
   if (e.target.matches('[data-adm-area]')) { saveDefaultAreas(adminAreaListFromDom()); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
+  { const af = e.target.closest('[data-admin-free]'); if (af) { if (e.target.value !== '') setUserFree(af.dataset.adminFree, Number(e.target.value)); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
   const spc = e.target.closest('[data-sp-cat]'); if (spc) { spendSetCat(spc.dataset.spCat, e.target.value); return; }

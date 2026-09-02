@@ -67,7 +67,7 @@ export async function adminOverview(env) {
 
 // Users with the fields the dashboard needs, plus this-month AI token totals.
 export async function adminUsers(env) {
-  const users = await many(env, 'SELECT id, email, name, subdomain, plan, status, created_at, last_seen, invited_by, voucher FROM users ORDER BY id');
+  const users = await many(env, 'SELECT id, email, name, subdomain, plan, status, created_at, last_seen, invited_by, voucher, free_until FROM users ORDER BY id');
   const usage = await many(env, 'SELECT user_id, SUM(in_tokens) AS inT, SUM(out_tokens) AS outT, COUNT(*) AS calls FROM ai_usage WHERE ts >= ? GROUP BY user_id', monthStart());
   const uMap = {}; for (const r of usage) uMap[r.user_id] = r;
   return users.map((u) => {
@@ -86,6 +86,16 @@ export async function updateUser(env, id, body) {
   const sets = [], binds = [];
   if (body.plan !== undefined) { if (!PLANS.has(body.plan)) throw new Error('Unknown plan.'); sets.push('plan = ?'); binds.push(body.plan); }
   if (body.status !== undefined) { if (!STATUSES.has(body.status)) throw new Error('Unknown status.'); sets.push('status = ?'); binds.push(body.status); }
+  // Grant or change a free period, counted in whole months from today. 0 clears
+  // it. This lets the owner adjust "free 3 months" to "free 12 months" long after
+  // signup - the invite is spent, but the user's free_until is still ours to move.
+  if (body.freeMonths !== undefined) {
+    const m = Number(body.freeMonths);
+    if (!Number.isFinite(m) || m < 0 || m > 120) throw new Error('Free period must be 0-120 months.');
+    let fu = null;
+    if (m > 0) { const d = new Date(); d.setMonth(d.getMonth() + m); fu = d.toISOString(); }
+    sets.push('free_until = ?'); binds.push(fu);
+  }
   if (!sets.length) throw new Error('Nothing to change.');
   binds.push(id);
   await env.DB.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`).bind(...binds).run();
