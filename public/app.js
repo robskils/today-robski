@@ -280,8 +280,29 @@ function applyFold(head, folded) {
   head.classList.toggle('folded', folded);
 }
 // Inject the chevrons and re-apply saved folds. Idempotent; safe to call each render.
+// Indent so content reads as belonging to its heading: the shallowest heading in
+// the note sits flush-left and every level below - and the text/bullets under it -
+// steps in. The prose is a flat list of siblings with no section wrappers, so the
+// depth is worked out live here and written as an inline margin the save sanitiser
+// strips (see sanitizeProse), so nothing is persisted into the body.
+const PROSE_INDENT_EM = 1.5;
+function applyProseIndent(prose) {
+  const kids = [...prose.children];
+  let base = 99;   // shallowest heading level present (a note of only H2s starts flush)
+  for (const k of kids) { const l = HLVL[k.tagName]; if (l && l < base) base = l; }
+  if (base === 99) { for (const k of kids) k.style.marginLeft = ''; return; }
+  let cur = 0;     // indent depth for the current section's content
+  for (const k of kids) {
+    const l = HLVL[k.tagName];
+    let depth;
+    if (l) { depth = l - base; cur = depth + 1; }   // a heading sits at its level; its content one deeper
+    else { depth = cur; }
+    k.style.marginLeft = depth > 0 ? `${(depth * PROSE_INDENT_EM).toFixed(2)}em` : '';
+  }
+}
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
+    applyProseIndent(prose);
     const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')];
     if (!heads.length) return;
     const folded = getFolds(prose.dataset.blockId);
@@ -7753,6 +7774,13 @@ document.addEventListener('input', (e) => {
   const par = n && n.parentElement;
   if (n && par && par.tagName === 'P' && par !== ed && par.childNodes.length === 1) par.replaceWith(n);
   ed.__autobullet = false;
+});
+// Keep the per-section indentation in step as headings and content are typed,
+// pasted or deleted. Cheap (a handful of elements) and caret-safe - it only sets
+// a left margin, never restructures the DOM.
+document.addEventListener('input', (e) => {
+  const ed = e.target && e.target.closest && e.target.closest('.prose[data-block-id][contenteditable="true"]');
+  if (ed) applyProseIndent(ed);
 });
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
