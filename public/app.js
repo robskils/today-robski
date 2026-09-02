@@ -1283,9 +1283,11 @@ async function resendInvitation(code) {
   catch (e) { toast(e.message); }
 }
 function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
-// People status: pending connect requests + unread chat drive the Contacts badge;
-// the online list feeds Home's "People" section. Polled like the mail unread count.
-const friendPending = () => { const s = state.friendStatus || {}; return (s.incoming || 0) + (s.unread || 0); };
+// The Contacts badge is a genuine notification: the number of people waiting for
+// you to accept their invitation to connect. It is NOT a running total of your
+// contacts (that just looked like an unread count sitting on the button). Unread
+// chat and the online list still feed Home's "People" section, not this badge.
+const friendPending = () => (state.friendStatus || {}).incoming || 0;
 async function refreshFriendStatus() {
   try {
     const r = await api('/api/friends/status');
