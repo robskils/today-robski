@@ -20,6 +20,14 @@ Read README.md first: it explains the architecture and how the pieces fit.
   `BRIEF_SMTP_PASS` is unset or SMTP fails - `sendCodeMail` catches an SMTP
   error and retries via Resend so a bad cred can't lock people out. Nothing
   sends from robski.uk any more.
+  **Login-by-text** (`channel:'sms'`) is the escape hatch for the Catch-22 where
+  a user's email lives *inside* Daybook: `requestCode` resolves the account by
+  email (`getUserByEmail`) and texts the code to THAT user's own `settings.phone`
+  (owner falls back to `env.ALERT_PHONE`) - never a single hardcoded number. No
+  phone on file returns `smsUnavailable` and emails instead. On the gate it's a
+  quiet self-selecting link ("Use Daybook for your email? Text me the code"), not
+  a co-equal button - a phone-shaped button read as a phone *signup* and confused
+  newcomers (email is the only identity; signup == signin).
 - `ADMIN_EMAILS` takes whole addresses or `*@domain`. `isAllowed` in auth.js
   matches the domain exactly - never loosen it to endsWith, that would let
   `robski.uk.evil.com` in. `npm test` covers it.
