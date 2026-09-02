@@ -3016,6 +3016,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .ce-join { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:9px 15px; border-radius:11px; background:var(--accent); color:var(--accent-ink); font-size:15px; font-weight:600; text-decoration:none; box-shadow:var(--shadow); }
 .ce-join:hover { filter:brightness(1.05); }
 .cal-del { color:var(--ink-3); } .cal-del:hover { color:var(--accent); }
+.ce-notes { width:100%; margin:0; resize:vertical; min-height:44px; line-height:1.5; font-family:inherit; }
+.ce-notelinks { display:flex; flex-wrap:wrap; gap:8px; margin:-2px 0 2px; }
+.ce-notelinks a { display:inline-flex; align-items:center; gap:5px; max-width:100%; padding:6px 11px; border-radius:10px; background:var(--card-2,var(--card)); border:1px solid var(--line); color:var(--accent); font-size:14px; font-weight:600; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ce-notelinks a:hover { border-color:var(--accent); }
 #cal-form:not(:empty) { margin-bottom:14px; }
 /* Month / Week toggle */
 .cal-modes { display:inline-flex; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; }

@@ -238,6 +238,7 @@ async function calendarEvents(env, day) {
           title: e.summary || '(no title)',
           location: e.location || null,
           url: eventMeetingUrl(e) || null,
+          notes: e.description || null,
           allDay,
           start_min: startMin,
           duration,
@@ -269,12 +270,13 @@ async function calendarRange(env, from, to) {
     const data = await res.json();
     const events = (data.items || []).filter((e) => e.status !== 'cancelled').map((e) => {
       const url = eventMeetingUrl(e) || null;
+      const notes = e.description || null;
       if (e.start?.date) {
-        return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, allDay: true, date: e.start.date, end_date: e.end?.date || null, recurringId: e.recurringEventId || null };
+        return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, notes, allDay: true, date: e.start.date, end_date: e.end?.date || null, recurringId: e.recurringEventId || null };
       }
       const s = new Date(e.start.dateTime), en = new Date(e.end.dateTime);
       const sp = localParts(s, TZ), ep = localParts(en, TZ);
-      return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min, recurringId: e.recurringEventId || null };
+      return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, notes, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min, recurringId: e.recurringEventId || null };
     });
     return { events, error: null };
   } catch (e) {
@@ -306,6 +308,17 @@ function rruleFor(repeat) {
     case 'yearly': return ['RRULE:FREQ=YEARLY'];
     default: return null;
   }
+}
+// Google events keep our notes in the event's native `description`. A carried-in
+// meeting link lives there too (so eventMeetingUrl can still offer a Join button);
+// it sits above the notes and is not duplicated if the notes already hold it.
+function eventDescription(url, notes) {
+  const parts = [];
+  const link = String(url || '').trim();
+  const body = String(notes || '').trim();
+  if (link && !body.includes(link)) parts.push(link);
+  if (body) parts.push(body);
+  return parts.join('\n\n');
 }
 async function createEvent(request, env) {
   const b = await request.json().catch(() => ({}));
@@ -357,9 +370,9 @@ async function createEvent(request, env) {
         body: JSON.stringify({
           summary: title,
           location: String(b.location || '').trim() || undefined,
-          // A meeting/webinar link carried in from an email lives in the
-          // description, where eventMeetingUrl() reads it back out as the Join link.
-          description: String(b.url || '').trim() || undefined,
+          // Notes (and a meeting/webinar link carried in from an email) live in
+          // the description; eventMeetingUrl() reads the Join link back out of it.
+          description: eventDescription(b.url, b.notes) || undefined,
           start, end,
           recurrence: rruleFor(b.repeat) || undefined,
         }),
@@ -398,6 +411,11 @@ async function updateEvent(request, env, id) {
     if (native.p.repeat) p.repeat = native.p.repeat;
     if (native.p.until) p.until = native.p.until;
     if (native.p.exdates) p.exdates = native.p.exdates;
+    // Notes and a carried-in meeting link aren't always resent (a drag-to-
+    // reschedule sends only timing). Keep what's stored unless the body carries
+    // the field at all - an empty string means the editor cleared it on purpose.
+    if (b.notes === undefined && native.p.notes) p.notes = native.p.notes;
+    if (b.url === undefined && native.p.url) p.url = native.p.url;
     await env.DB.prepare("UPDATE blocks SET title=?, props=?, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
       .bind(title, JSON.stringify(p), new Date().toISOString(), native.id, env.uid).run();
     return json({ ok: true, id: native.id }, request);
@@ -406,6 +424,9 @@ async function updateEvent(request, env, id) {
   const patch = {};
   if (b.title !== undefined) { const t = String(b.title).trim(); if (!t) return err('title required', request); patch.summary = t; }
   if (b.location !== undefined) patch.location = String(b.location || '').trim();
+  // Notes edited (or a link carried in) -> rewrite the description. A drag-to-
+  // reschedule sends neither, so the description is left untouched.
+  if (b.notes !== undefined || b.url !== undefined) patch.description = eventDescription(b.url, b.notes);
   if (b.day !== undefined) {
     if (!isValidDay(b.day)) return err('bad date', request);
     if (b.allDay) {
@@ -971,10 +992,10 @@ function occurrencesInRange(p, from, to) {
 // A native event block -> the single-day shape calendarEvents returns (for the
 // day view and Home's Today). Clipped to `day`.
 function nativeDayShape(id, title, p, day) {
-  if (p.allDay) return { id, title, location: p.location || null, url: p.url || null, allDay: true, start_min: 0, duration: 1440 };
+  if (p.allDay) return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, start_min: 0, duration: 1440 };
   const startMin = Math.max(0, Math.min(1440, Number(p.start_min) || 0));
   const duration = Math.max(15, Math.min(1440 - startMin, Number(p.duration) || 60));
-  return { id, title, location: p.location || null, url: p.url || null, allDay: false, start_min: startMin, duration };
+  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, start_min: startMin, duration };
 }
 // A native event occurrence -> the range shape calendarRange returns (month/week
 // grid). occDate is this occurrence's start day.
@@ -984,12 +1005,12 @@ function nativeRangeShape(blockId, title, p, occDate) {
   const recurringId = recurring ? blockId : null;
   if (p.allDay) {
     const span = (p.end_date && p.end_date > p.date) ? Math.round((Date.parse(`${p.end_date}T00:00:00Z`) - Date.parse(`${p.date}T00:00:00Z`)) / 86400000) : 1;
-    return { id, title, location: p.location || null, url: p.url || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId };
+    return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId };
   }
   const startMin = Math.max(0, Number(p.start_min) || 0);
   const duration = Math.max(15, Number(p.duration) || 60);
   const total = startMin + duration;
-  return { id, title, location: p.location || null, url: p.url || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId };
+  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId };
 }
 async function nativeEventBlocks(env) {
   const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(env.uid).all();
@@ -1012,6 +1033,7 @@ async function nativeRangeEvents(env, from, to) {
 function eventPropsFromBody(b) {
   const p = { location: String(b.location || '').trim() || null };
   const url = String(b.url || '').trim(); if (url) p.url = url;   // a webinar/meeting link carried in from mail
+  const notes = String(b.notes || '').trim(); if (notes) p.notes = notes;   // free text; links from an email invite land here
   // ISO path (mail calendar invites): resolve to local date + minutes.
   if (b.start) {
     const s = new Date(b.start);
