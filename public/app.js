@@ -4512,13 +4512,8 @@ async function mailClaudius() {
   }
 }
 
-// A tasteful default signature so a new account starts with something real to
-// edit rather than a blank box.
-function defaultSignature(a) {
-  const name = a.name && a.name !== a.email ? a.name : 'Robin Lumley-Savile';
-  const accent = a.color || '#c4412e';
-  return `<table cellpadding="0" cellspacing="0" style="font-family:-apple-system,Segoe UI,Inter,sans-serif"><tr><td style="border-left:3px solid ${accent};padding:2px 0 2px 12px"><div style="font-size:15px;font-weight:600;color:#1b1820">${esc(name)}</div><div style="font-size:13px;color:#8a8580;margin-top:2px"><a href="mailto:${esc(a.email)}" style="color:#8a8580;text-decoration:none">${esc(a.email)}</a></div></td></tr></table>`;
-}
+// No auto-signature: the editor starts blank, so nothing is ever appended to a
+// message unless you deliberately write and save a signature yourself.
 // Normalise any user hex to 6-digit lowercase (#abc → #aabbcc); null if invalid.
 function normHex(h) {
   h = String(h || '').trim(); if (h && h[0] !== '#') h = '#' + h;
@@ -4581,7 +4576,7 @@ function renderMailAccounts(note) {
       <label class="sig-color-row"><span class="sig-color-lbl">Bar colour</span>
         <input type="color" class="sig-color-sw" data-sig-color-sw="${a.id}" value="${sigBarColor(a)}" title="Pick a colour">
         <input type="text" class="sig-hex" data-sig-hex="${a.id}" value="${sigBarColor(a)}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Signature bar hex colour"></label>
-      <div class="mail-sig-ed prose" contenteditable="true" data-sig-acct="${a.id}" data-ph="Your signature…">${a.signature || defaultSignature(a)}</div>
+      <div class="mail-sig-ed prose" contenteditable="true" data-sig-acct="${a.id}" data-ph="Your signature…">${a.signature || ''}</div>
       <div class="mail-sig-act"><button class="add-btn" data-sig-save="${a.id}">Save signature</button><span class="sig-hint">Added to the bottom of messages you send from this address.</span></div>
     </div>
     ${(a.blocked && a.blocked.length) ? `<div class="mail-blocked"><span class="mail-blocked-h">Blocked senders · ${a.blocked.length}</span><div class="mail-blocked-chips">${a.blocked.map((addr) => `<span class="mail-blocked-chip">${esc(addr)}<button data-mail-unblock="${esc(addr)}" data-mail-unblock-acct="${a.id}" title="Unblock">×</button></span>`).join('')}</div></div>` : ''}
