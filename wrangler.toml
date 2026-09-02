@@ -70,6 +70,13 @@ FROM_EMAIL = "Daybook <today@incremento.co>"
 BRIEF_FROM = "contact@daybook.fyi"
 BRIEF_SMTP_USER = "contact@daybook.fyi"
 
+# Per-member Google Calendar connect (worker/gcal.js). This is the PUBLIC client
+# id of the SEPARATE OAuth client in the standalone "Daybook Calendar" Google
+# Cloud project (External / Production) - never the owner's Internal client. The
+# matching secret is GCAL_MEMBER_CLIENT_SECRET (wrangler secret). Redirect URI
+# registered in Google: https://daybook.fyi/api/gcal/callback.
+GCAL_MEMBER_CLIENT_ID = "238117536975-kcef30rm0s1jnk9oit00cnu0bh5van8k.apps.googleusercontent.com"
+
 # Where the 08:45 morning brief lands. One address, not the ADMIN_EMAILS list:
 # that list is who may sign in, which is a different question from who gets
 # post every morning.
