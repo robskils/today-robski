@@ -2963,6 +2963,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-btn:hover { border-color:var(--accent); color:var(--accent); }
 .cal-btn.ic { width:42px; padding:9px 0; font-size:20px; line-height:1; }
 .cal-warn { margin-bottom:12px; color:var(--accent); font-size:14.5px; }
+/* Member Google-calendar connect strip. */
+.gcal-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; padding:12px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow-sm); }
+.gcal-bar .gcal-t { flex:1; min-width:180px; font-size:14.5px; color:var(--ink-2); }
+.gcal-bar.connected { border-color:color-mix(in srgb,#3a9d5d 40%,var(--line)); }
+.gcal-dot { width:9px; height:9px; border-radius:50%; background:#3a9d5d; flex:none; }
+.gcal-x { font-size:13px; color:var(--ink-3); } .gcal-x:hover { color:var(--accent); }
 .cal-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
 .cal-dow { background:var(--paper-2); color:var(--ink-3); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; text-align:center; padding:9px 0; }
 .cal-cell { background:var(--card); min-height:104px; padding:6px 6px 8px; cursor:pointer; display:flex; flex-direction:column; gap:4px; transition:background .12s; overflow:hidden; }

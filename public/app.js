@@ -3441,6 +3441,12 @@ async function openCalendar(dateStr) {
   state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: localStorage.getItem('life.calMode') === 'week' ? 'week' : 'month', events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
+  // The connect flow bounces back to /calendar?gcal=... - surface the outcome once.
+  try {
+    const g = new URLSearchParams(location.search).get('gcal');
+    if (g) { history.replaceState(null, '', location.pathname); toast(g === 'connected' ? 'Google Calendar connected' : g === 'denied' ? 'Calendar connect cancelled' : 'Could not connect the calendar - try again'); }
+  } catch {}
+  api('/api/gcal/status').then((s) => { state.gcal = s; if (state.view.type === 'calendar') renderCalendar(); }).catch(() => {});
   await loadCalendar();
 }
 async function loadCalendar() {
@@ -3452,6 +3458,24 @@ async function loadCalendar() {
     state.cal.events = r.events || []; state.cal.error = r.error || null;
   } catch (e) { state.cal.error = e.message; }
   if (state.view.type === 'calendar') renderCalendar();
+}
+// The member Google-connect strip. Hidden for the owner (who reads the shared
+// Workspace calendar) and when the member calendar client isn't configured yet.
+function gcalBarHtml() {
+  const s = state.gcal;
+  if (!s || !s.available) return '';
+  if (state.me && state.me.id === 1) return '';
+  if (s.connected) return `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`;
+  return `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Daybook ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+}
+async function gcalConnect() {
+  try { const r = await api('/api/gcal/connect'); if (r && r.url) location.href = r.url; else toast('Calendar connect is not set up yet.'); }
+  catch (e) { toast(e.message); }
+}
+async function gcalDisconnect() {
+  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Daybook.', { okLabel: 'Disconnect', danger: true }))) return;
+  try { await api('/api/gcal/disconnect', { method: 'POST' }); state.gcal = { ...(state.gcal || {}), connected: false, email: null }; toast('Google Calendar disconnected'); if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); } }
+  catch (e) { toast(e.message); }
 }
 function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); }
 function stepCal(delta) {
@@ -3508,6 +3532,7 @@ function renderCalendar() {
         <button class="cal-btn ic" data-cal-next title="Next">›</button>
       </div>
     </div>
+    ${gcalBarHtml()}
     <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
     ${cq ? searchBlock : `<section class="cal-agenda cal-agenda-top">
@@ -8032,6 +8057,8 @@ document.addEventListener('click', (e) => {
   // A chip sits inside a day cell, so match the event before the day.
   const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; state.cal.editing = e; state.cal.adding = false; renderCalendar(); } return; }
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
+  if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
+  if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
   if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }

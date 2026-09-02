@@ -123,7 +123,7 @@ export async function resolveUser(request, env) {
   // Match the account's primary email, or any alias in user_emails, so all of a
   // person's addresses sign into the one account.
   const user = await env.DB.prepare(
-    `SELECT id, email, name, subdomain, plan, status, ai_anthropic_enc, ai_gemini_enc FROM users
+    `SELECT id, email, name, subdomain, plan, status, ai_anthropic_enc, ai_gemini_enc, gcal_refresh_enc, gcal_email FROM users
       WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ? AND verified = 1)`,
   ).bind(payload.sub, payload.sub).first().catch(() => null);
   if (!user || user.status === 'suspended') return null;

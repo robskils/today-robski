@@ -10,6 +10,7 @@ import { aiKey, aiNeedsKey, logAiUsage, setAiKey } from './ai.js';
 import { adminOverview, adminUsers, updateUser, adminAiUsage, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
+import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStatus, gcalAvailable } from './gcal.js';
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
@@ -169,6 +170,20 @@ async function googleAccessToken(env) {
   return data.access_token;
 }
 
+// Whose Google calendar to read/write for this request: a member who connected
+// their own account uses it (their primary calendar); the owner falls back to
+// the shared Workspace calendar. Null = no Google for this user (native only).
+async function googleCtx(env) {
+  if (env.user && env.user.gcal_refresh_enc && gcalAvailable(env)) {
+    const token = await gcalMemberToken(env);
+    if (token) return { token, calId: 'primary' };
+  }
+  if (env.uid === 1 && env.GOOGLE_REFRESH_TOKEN) {
+    return { token: await googleAccessToken(env), calId: env.GOOGLE_CALENDAR_ID || 'primary' };
+  }
+  return null;
+}
+
 // A video-meeting / webinar link on an event, so the calendar can offer "Join".
 // Checks Google's own conference fields first, then any recognised link in the
 // location or description (which is where we stash a link carried in from mail).
@@ -181,16 +196,16 @@ function eventMeetingUrl(e) {
   return m ? m[0].replace(/["'&<>]+$/, '') : '';
 }
 async function calendarEvents(env, day) {
-  if (!env.GOOGLE_REFRESH_TOKEN) return { events: [], error: 'not_configured' };
+  const g = await googleCtx(env);
+  if (!g) return { events: [], error: null };   // not connected = native only, no error
 
   const start = zonedDayStart(day, TZ);
   // Not start + 24h: a Lisbon DST day is 23 or 25 hours long, which would drop
   // a late event in October and pull in a small-hours one in March.
   const end = zonedDayStart(nextDayStr(day), TZ);
-  const calId = env.GOOGLE_CALENDAR_ID || 'primary';
 
   const url = new URL(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`,
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(g.calId)}/events`,
   );
   url.searchParams.set('timeMin', start.toISOString());
   url.searchParams.set('timeMax', end.toISOString());
@@ -199,8 +214,7 @@ async function calendarEvents(env, day) {
   url.searchParams.set('maxResults', '50');
 
   try {
-    const token = await googleAccessToken(env);
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${g.token}` } });
     if (!res.ok) return { events: [], error: `google_${res.status}` };
     const data = await res.json();
 
@@ -238,20 +252,19 @@ async function calendarEvents(env, day) {
 // Events across a date range, each carrying its real local start/end date - for
 // the calendar app's month/week grid (calendarEvents above clips to one day).
 async function calendarRange(env, from, to) {
-  if (!env.GOOGLE_REFRESH_TOKEN) return { events: [], error: 'not_configured' };
+  const g = await googleCtx(env);
+  if (!g) return { events: [], error: null };
   if (!isValidDay(from) || !isValidDay(to)) return { events: [], error: 'bad_range' };
   const start = zonedDayStart(from, TZ);
   const end = zonedDayStart(nextDayStr(to), TZ);
-  const calId = env.GOOGLE_CALENDAR_ID || 'primary';
-  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(g.calId)}/events`);
   url.searchParams.set('timeMin', start.toISOString());
   url.searchParams.set('timeMax', end.toISOString());
   url.searchParams.set('singleEvents', 'true');
   url.searchParams.set('orderBy', 'startTime');
   url.searchParams.set('maxResults', '2500');
   try {
-    const token = await googleAccessToken(env);
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${g.token}` } });
     if (!res.ok) return { events: [], error: `google_${res.status}` };
     const data = await res.json();
     const events = (data.items || []).filter((e) => e.status !== 'cancelled').map((e) => {
@@ -271,10 +284,9 @@ async function calendarRange(env, from, to) {
 async function handleCalendar(request, env, url) {
   const from = url.searchParams.get('from'), to = url.searchParams.get('to');
   if (!from || !to) return err('from and to required', request);
-  // Native events (everyone) + Google events (owner only). The single Google
-  // token is Robin's, so a member's range is native-only.
+  // Native events (everyone) merged with Google events - the owner's shared
+  // Workspace calendar, or a member's own connected calendar (googleCtx picks).
   const native = await nativeRangeEvents(env, from, to).catch(() => []);
-  if (env.uid !== 1) return json({ events: native }, request);
   const g = await calendarRange(env, from, to);
   return json({ events: [...(g.events || []), ...native], error: g.error || null }, request);
 }
@@ -1694,10 +1706,10 @@ async function handleDay(request, env, url) {
       'SELECT * FROM slots WHERE day = ? AND user_id = ? ORDER BY start_min IS NULL, start_min',
     ).bind(day, env.uid).all(),
     getSettings(env),
-    // The Google connection is the owner's alone (one refresh token), so only
-    // the owner's day carries Google events - a member never sees Robin's diary.
-    // Native events (below) are added for everyone.
-    env.uid === 1 ? calendarEvents(env, day) : Promise.resolve({ events: [], error: null }),
+    // Google events for this user: the owner's shared Workspace calendar, or a
+    // member's own connected calendar (googleCtx decides). A member never sees
+    // Robin's diary - only their own. Native events (below) are added for everyone.
+    calendarEvents(env, day),
     quoteForDay(env, day),
     env.DB.prepare('SELECT * FROM activities WHERE user_id = ? ORDER BY lane, position, id').bind(env.uid).all(),
     // The tasks inside each of today's blocks, now Life task blocks (slot_tasks.
@@ -2468,6 +2480,13 @@ export default {
         (d) => json(d, request), (m, s) => err(m, request, s));
     }
 
+    // Google Calendar OAuth callback: unauthenticated (Google redirects the
+    // member's browser here on the apex, with no Daybook session), so trust
+    // rides in the signed `state`, not a cookie. Handled before the auth gate.
+    if (path === '/api/gcal/callback' && request.method === 'GET') {
+      return gcalCallback(request, env, url);
+    }
+
     if (path.startsWith('/api/')) {
       // Onboarding endpoints run for any signed-in email - even one with no
       // account yet - so a newcomer who verified their email can claim their
@@ -2496,6 +2515,15 @@ export default {
       const currentUser = await resolveUser(request, env);
       if (!currentUser) return err('unauthorized', request, 401);
       env = { ...env, uid: currentUser.id, user: currentUser };
+
+      // Per-member Google Calendar connect.
+      if (path === '/api/gcal/status' && request.method === 'GET') return json(gcalStatus(env), request);
+      if (path === '/api/gcal/connect' && request.method === 'GET') {
+        try { return json({ url: await gcalConnectUrl(env) }, request); } catch (e) { return err(e.message, request, 503); }
+      }
+      if (path === '/api/gcal/disconnect' && request.method === 'POST') {
+        await gcalDisconnect(env); return json({ ok: true }, request);
+      }
 
       // Invites: any member can invite others; Robin (user 1) is admin and sees
       // all. A member sees only their own and can only grant the free plan.

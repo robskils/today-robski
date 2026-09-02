@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS users (
   invited_by   INTEGER,                         -- users.id of the inviter
   voucher      TEXT,                            -- redeemed invite/discount code, if any
   free_until   TEXT,                            -- ISO date the free period ends (NULL = not time-limited)
+  gcal_refresh_enc TEXT,                        -- member's own Google Calendar refresh token, AES-256-GCM
+  gcal_email   TEXT,                            -- the Google account they connected (shown in Settings)
   created_at   TEXT NOT NULL
 );
 
