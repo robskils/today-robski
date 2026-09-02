@@ -2516,7 +2516,12 @@ function renderHome() {
         </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
+          // All active goals on Home, starred ones first (and still drag-orderable),
+          // then the rest - not only the starred subset.
           const fg = focusGoals();
+          const fgIds = new Set(fg.map((g) => g.id));
+          const restGoals = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active' && !fgIds.has(g.id));
+          const homeGoals = [...fg, ...restGoals];
           const sec = {
             favareas: favAreas.length ? `<section class="home-sec home-sec-favareas" data-hsec="favareas">${secH('favareas', 'Life areas', '', true)}${secOpen('favareas') ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : ''}</section>` : '',
             today: (() => {
@@ -2530,7 +2535,7 @@ function renderHome() {
               return `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', homeDayLabel(off), nav, true)}${secOpen('today') ? `<div class="today-cal">${body}</div>` : ''}</section>`;
             })(),
             priority: p1Html(),
-            focus: fg.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', "🎯 This quarter's focus", '', true)}${secOpen('focus') ? `<div class="goal-grid">${fg.map((g) => goalCardMini(g, true)).join('')}</div>` : ''}</section>` : '',
+            focus: homeGoals.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', '🎯 Goals', '', true)}${secOpen('focus') ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : ''}</section>` : '',
             toolbox: modOn('timer') ? toolboxHtml() : '',
             favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>` : ''}</section>`,
           };
