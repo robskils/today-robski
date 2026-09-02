@@ -719,7 +719,7 @@ function openInNewTab(view) {
   state.activeTab = id;
   Promise.resolve(openView(view)).catch(() => openHome());
 }
-function switchTab(id) { if (id === state.activeTab) return; const tab = state.tabs.find((t) => t.id === id); if (!tab) return; state.activeTab = id; Promise.resolve(openView(tab.view)).catch(() => openHome()); }
+function switchTab(id) { if (id === state.activeTab) return; const tab = state.tabs.find((t) => t.id === id); if (!tab) return; commitTaskView(); state.activeTab = id; Promise.resolve(openView(tab.view)).catch(() => openHome()); }
 function closeTab(id) {
   if (state.tabs.length <= 1) return;
   const i = state.tabs.findIndex((t) => t.id === id); if (i < 0) return;
@@ -1777,7 +1777,22 @@ function reorderSecs(draggedKey, beforeKey) {
 
 // ── router ───────────────────────────────────────────
 async function openTasks(filter) {
-  state.view = { type: 'tasks' };
+  // Per-tab Tasks: filters/sort/search ride in this tab's own view, so two Tasks
+  // tabs can each hold a different filter. Switching to an existing Tasks tab
+  // hydrates its saved view; a fresh open (or a forced filter like "See all P1")
+  // falls back to the last-used defaults.
+  const cur = state.tabs && state.tabs.find((t) => t.id === state.activeTab);
+  const saved = !state._taskViewForce && cur && cur.view && cur.view.type === 'tasks' && Array.isArray(cur.view.filters) ? cur.view : null;
+  state._taskViewForce = false;
+  if (saved) {
+    state.taskFilters = JSON.parse(JSON.stringify(saved.filters));
+    if (saved.sort) state.taskSort = { ...saved.sort };
+    state.taskQuery = saved.q || '';
+    state.taskFiltersOpen = !!saved.filtersOpen;
+  } else {
+    loadTaskFilters();
+  }
+  state.view = { type: 'tasks', filters: state.taskFilters, sort: state.taskSort, q: state.taskQuery || '', filtersOpen: !!state.taskFiltersOpen };
   if (filter !== undefined) state.taskFilter = filter;
   // Always refetch tasks (they change); reuse cached areas.
   const [areas, tasks] = await Promise.all([
@@ -2320,10 +2335,11 @@ function reorderP1(dragged, before) {
   renderHome();
 }
 // Jump to the Tasks board showing every P1: set a priority filter, then open it.
+// _taskViewForce tells openTasks to use this filter rather than the tab's saved one.
 function openP1Tasks() {
   loadTaskFilters();
   state.taskFilters = [{ field: 'priority', op: 'is', value: 'P1' }];
-  state.taskFiltersOpen = false; saveTaskFilters(); openTasks();
+  state.taskFiltersOpen = false; saveTaskFilters(); state._taskViewForce = true; openTasks();
 }
 function p1Html() {
   const all = priorityTasks();
@@ -5292,8 +5308,21 @@ function defaultCondValue(field, op) {
   if (f.choices) return String(f.choices()[0][0]);
   return '';
 }
+// Write the live Tasks state (filters/sort/search) into the active tab's view,
+// so it's remembered per tab and survives a switch or reload. Called on every
+// renderTasks, i.e. after every filter/sort/search change.
+function commitTaskView() {
+  if (!state.view || state.view.type !== 'tasks') return;
+  state.view.filters = state.taskFilters || [];
+  state.view.sort = state.taskSort;
+  state.view.q = state.taskQuery || '';
+  state.view.filtersOpen = !!state.taskFiltersOpen;
+  const tab = state.tabs && state.tabs.find((t) => t.id === state.activeTab);
+  if (tab && tab.view && tab.view.type === 'tasks') { tab.view = { ...state.view }; saveTabs(); }
+}
 function renderTasks() {
   loadTaskFilters();
+  commitTaskView();
   const conds = state.taskFilters || [];
   const filterBar = `<div class="task-filters">
     <div class="tf-head">
