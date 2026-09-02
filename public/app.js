@@ -757,7 +757,7 @@ function renderTabs() {
   el.innerHTML = state.tabs.map((t) => `<button class="tab ${t.id === state.activeTab ? 'on' : ''}${t.pinned ? ' pinned' : ''}" data-tab="${t.id}">
     <span class="tab-pin ${t.pinned ? 'on' : ''}" data-tab-pin="${t.id}" title="${t.pinned ? 'Unpin' : 'Pin to keep this tab'}">📌</span>
     <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${!t.pinned && many ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
-    + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`
+    + `<button class="tab-new" data-tab-new title="New tab  ${PK('⌥⌘T')}">+</button>`
     + helpIconHtml()   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
     // Settings + Sign out, small round icons in keeping with the i, right of it.
     + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings" aria-label="Settings">⚙</button>`
@@ -1715,7 +1715,7 @@ function renderNav() {
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
-    <button class="nav-k" data-palette><span>Search or jump…</span><kbd>⌘K</kbd></button>
+    <button class="nav-k" data-palette><span>Search or jump…</span><kbd>${PK('⌘K')}</kbd></button>
     <div class="nav-grid">
     <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-lbl">Home</span></button>
     ${modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : ''}
@@ -1766,6 +1766,25 @@ function queueNavH() {
   window.addEventListener('resize', setNavH);
   window.addEventListener('orientationchange', () => setTimeout(setNavH, 120));
 }
+// The shortcut HANDLERS all accept metaKey OR ctrlKey, so every shortcut already
+// works on Windows/Linux. Only the on-screen LABELS were Mac-only - so PC users
+// couldn't tell "⌘K" meant Ctrl+K. PK() rewrites a Mac-style label to this
+// platform: on a Mac it's unchanged; elsewhere ⌘→Ctrl, ⌥→Alt, ⇧→Shift, ↵→Enter,
+// in Windows order (Ctrl+Alt+…).
+const IS_MAC = (() => {
+  try {
+    const p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+    if (/mac|iphone|ipad|ipod/i.test(p)) return true;
+    return /Mac/i.test(navigator.userAgent || '') && !/Windows/i.test(navigator.userAgent || '');
+  } catch { return true; }
+})();
+function PK(s) {
+  if (IS_MAC) return String(s);
+  return String(s)
+    .replace(/⌥⌘/g, 'Ctrl+Alt+').replace(/⌘/g, 'Ctrl+').replace(/⌥/g, 'Alt+').replace(/⇧/g, 'Shift+')
+    .replace(/↵/g, 'Enter').replace(/⌫/g, 'Backspace')
+    .replace(/\+\s+/g, '+');   // tidy "Ctrl+ Enter" -> "Ctrl+Enter"
+}
 // Keyboard shortcuts reference. Open with ⌘/, the palette, or the home link.
 const SHORTCUTS = [
   ['General', [
@@ -1802,9 +1821,10 @@ const SHORTCUTS = [
 function openShortcuts() {
   let el = document.getElementById('sc-overlay');
   if (!el) { el = document.createElement('div'); el.id = 'sc-overlay'; document.body.appendChild(el); }
-  const groups = SHORTCUTS.map(([title, rows]) => `<div class="sc-group"><div class="sc-group-h">${esc(title)}</div>${rows.map(([k, label]) =>
-    `<div class="sc-row"><span class="sc-desc">${esc(label)}</span><span class="sc-keys">${k.split(' / ').map((kk) => `<kbd class="kbd">${esc(kk)}</kbd>`).join('<span class="sc-or">or</span>')}</span></div>`).join('')}</div>`).join('');
-  el.innerHTML = `<div class="sc-bg" data-shortcuts-bg><div class="sc-panel" role="dialog" aria-label="Keyboard shortcuts"><div class="sc-head"><h2>Keyboard shortcuts</h2><button class="sc-x" data-close-shortcuts aria-label="Close">×</button></div><div class="sc-body">${groups}</div></div></div>`;
+  const groups = SHORTCUTS.map(([title, rows]) => `<div class="sc-group"><div class="sc-group-h">${esc(PK(title))}</div>${rows.map(([k, label]) =>
+    `<div class="sc-row"><span class="sc-desc">${esc(label)}</span><span class="sc-keys">${k.split(' / ').map((kk) => `<kbd class="kbd">${esc(PK(kk))}</kbd>`).join('<span class="sc-or">or</span>')}</span></div>`).join('')}</div>`).join('');
+  const hint = IS_MAC ? '' : '<p class="sc-hint">Shortcuts use <kbd class="kbd">Ctrl</kbd> and <kbd class="kbd">Alt</kbd> on Windows and Linux.</p>';
+  el.innerHTML = `<div class="sc-bg" data-shortcuts-bg><div class="sc-panel" role="dialog" aria-label="Keyboard shortcuts"><div class="sc-head"><h2>Keyboard shortcuts</h2><button class="sc-x" data-close-shortcuts aria-label="Close">×</button></div><div class="sc-body">${groups}${hint}</div></div></div>`;
   state.shortcutsOpen = true;
 }
 function closeShortcuts() { const el = document.getElementById('sc-overlay'); if (el) el.innerHTML = ''; state.shortcutsOpen = false; }
@@ -4861,7 +4881,7 @@ const MAIL_SHORTCUTS = [
 function shortcutsOverlayHtml() {
   return `<div class="mail-sc-bg" data-mail-sc-close><div class="mail-sc" role="dialog" aria-label="Keyboard shortcuts">
     <div class="mail-sc-h"><b>Keyboard shortcuts</b><button class="ghost" data-mail-sc-close title="Close">×</button></div>
-    <div class="mail-sc-grid">${MAIL_SHORTCUTS.map(([k, d]) => `<div class="mail-sc-row"><kbd>${esc(k)}</kbd><span>${esc(d)}</span></div>`).join('')}</div>
+    <div class="mail-sc-grid">${MAIL_SHORTCUTS.map(([k, d]) => `<div class="mail-sc-row"><kbd>${esc(PK(k))}</kbd><span>${esc(d)}</span></div>`).join('')}</div>
     <div class="mail-sc-note">Active while browsing or reading — not while typing in a field.</div>
   </div></div>`;
 }
@@ -5074,9 +5094,9 @@ function renderMail(loading) {
       ${contactsDatalist()}
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <div class="mail-rt-toolbar">
-        <button type="button" data-rt="bold" title="Bold  ·  ⌘B"><b>B</b></button>
-        <button type="button" data-rt="italic" title="Italic  ·  ⌘I"><i>I</i></button>
-        <button type="button" data-rt="underline" title="Underline  ·  ⌘U"><u>U</u></button>
+        <button type="button" data-rt="bold" title="Bold  ·  ${PK('⌘B')}"><b>B</b></button>
+        <button type="button" data-rt="italic" title="Italic  ·  ${PK('⌘I')}"><i>I</i></button>
+        <button type="button" data-rt="underline" title="Underline  ·  ${PK('⌘U')}"><u>U</u></button>
         <button type="button" data-rt="insertUnorderedList" title="Bullet list">•&nbsp;List</button>
         <button type="button" data-rt="link" title="Add link">🔗</button>
       </div>

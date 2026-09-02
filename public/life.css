@@ -1993,6 +1993,8 @@ table.ttable tr:last-child td { border-bottom:0; }
 .sc-x { border:none; background:none; color:var(--ink-3); font-size:26px; line-height:1; cursor:pointer; padding:0 4px; }
 .sc-x:hover { color:var(--accent); }
 .sc-body { padding:8px 22px 22px; max-height:70vh; overflow:auto; }
+.sc-hint { margin:18px 0 0; padding-top:14px; border-top:1px solid var(--line); font-size:13.5px; color:var(--ink-3); line-height:1.6; }
+.sc-hint .kbd { min-width:auto; padding:1px 6px; font-size:12px; }
 .sc-group { margin-top:18px; }
 .sc-group-h { font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; margin-bottom:8px; }
 .sc-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:7px 0; border-bottom:1px solid var(--line); }
