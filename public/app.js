@@ -576,6 +576,14 @@ function renderGuideIndex() {
       </div>
       <div class="guide-sec-h">All the guides</div>
       <div class="guide-grid">${cards}</div>
+      <div class="guide-sec-h">Privacy &amp; terms</div>
+      <p class="guide-start-p">How Daybook handles your data, and the terms of use. Daybook is private by design - your content is yours, never sold, and never used to train AI.</p>
+      <div class="guide-legal">
+        <a class="guide-legal-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
+        <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
+        <a class="guide-legal-link" href="mailto:contact@daybook.fyi">Contact us ✉</a>
+      </div>
+      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.<br>© ${new Date().getFullYear()} Daybook · daybook.fyi</p>
     </div>`;
 }
 // Click the i: pin this tool's guide in its own tab. If it's already open, just go there.
@@ -1672,6 +1680,7 @@ function renderNav() {
       </div>
       ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> Admin</span></button>` : ''}
       ${state.me ? '<button class="nav-theme nav-signout" data-account-signout title="Sign out of Daybook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> Sign out</span></button>' : ''}
+      <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Daybook</span></div>
     </div>`;
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);

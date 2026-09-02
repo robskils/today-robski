@@ -2425,9 +2425,12 @@ export default {
       if (isApex && path === '/') {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request)));
       }
-      // Public privacy policy (required by Google's OAuth consent screen).
+      // Public legal pages (privacy required by Google's OAuth consent screen).
       if (isApex && (path === '/privacy' || path === '/privacy/')) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/privacy.html', url.origin), request)));
+      }
+      if (isApex && (path === '/terms' || path === '/terms/')) {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/terms.html', url.origin), request)));
       }
       // <subdomain>.daybook.fyi/today IS the real day planner (index.html),
       // sharing the app login (same origin/token).
