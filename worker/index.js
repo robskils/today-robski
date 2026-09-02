@@ -1676,7 +1676,7 @@ async function homeAlerts(request, env, json) {
   const mmdd = localParts(new Date(), TZ).date.slice(5, 10);   // MM-DD in Lisbon
   const [cts, tks] = await Promise.all([
     env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?").bind(env.uid).all(),
-    env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='task' AND archived=0 AND user_id=?").bind(env.uid).all(),
+    env.DB.prepare("SELECT id, title, props, created_at FROM blocks WHERE kind='task' AND archived=0 AND user_id=? ORDER BY created_at DESC").bind(env.uid).all(),
   ]);
   const birthdays = [];
   for (const r of cts.results || []) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} if (p.birthday && String(p.birthday).slice(5, 10) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' }); }
@@ -1685,7 +1685,7 @@ async function homeAlerts(request, env, json) {
   for (const r of tks.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     if (p.done) continue;
-    if (p.priority === 'P1') { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null }); }
+    if (p.priority === 'P1') { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null, created_at: r.created_at }); }
     // A task that was snoozed and whose snooze date has now arrived or passed has
     // "surfaced" - it's back in the open list. Robin wants those in Today, and
     // they stay until ticked (p.done) or hidden again (snooze pushed forward).

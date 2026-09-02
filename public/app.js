@@ -2325,7 +2325,16 @@ function secH(key, title, extra, drag) {
 // order persists in localStorage; anything not yet ordered (a freshly-flagged
 // task) falls to the end until you place it.
 function p1OrderIds() { try { const o = JSON.parse(localStorage.getItem('life.home.p1Order')); return Array.isArray(o) ? o : []; } catch { return []; } }
-function sortP1(list) { const o = p1OrderIds(); return list.slice().sort((a, b) => { const ia = o.indexOf(a.id), ib = o.indexOf(b.id); return (ia < 0 ? 1e6 : ia) - (ib < 0 ? 1e6 : ib); }); }
+// Default order is most-recently-added first; a task you've explicitly dragged
+// keeps its manual position (that always wins over the date sort).
+function sortP1(list) {
+  const o = p1OrderIds();
+  return list.slice().sort((a, b) => {
+    const ia = o.indexOf(a.id), ib = o.indexOf(b.id);
+    if (ia >= 0 || ib >= 0) return (ia < 0 ? 1e6 : ia) - (ib < 0 ? 1e6 : ib);
+    return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+  });
+}
 function priorityTasks() { return sortP1((state.home && state.home.alerts && state.home.alerts.p1list) || []); }
 function reorderP1(dragged, before) {
   const ids = priorityTasks().map((t) => t.id).filter((id) => id !== dragged);
@@ -8168,7 +8177,18 @@ document.addEventListener('click', (e) => {
   if (cmb && state.tables_view) {
     const id = cmb.dataset.colMenu, open = state.tables_view.colMenu;
     if (open && open.colId === id) state.tables_view.colMenu = null;
-    else { const r = cmb.getBoundingClientRect(); state.tables_view.colMenu = { colId: id, x: Math.min(r.left, window.innerWidth - 232), y: r.bottom + 4 }; }
+    else {
+      const r = cmb.getBoundingClientRect();
+      const x = Math.min(r.left, window.innerWidth - 232);
+      // Open below by default, but flip above when the button sits low on the
+      // screen; either way cap the height to the space available and let it
+      // scroll, so a long menu never runs off the bottom.
+      const below = window.innerHeight - r.bottom - 10, above = r.top - 10;
+      const up = below < 300 && above > below;
+      state.tables_view.colMenu = up
+        ? { colId: id, x, bottom: window.innerHeight - r.top + 4, maxH: Math.max(180, above) }
+        : { colId: id, x, y: r.bottom + 4, maxH: Math.max(180, below) };
+    }
     renderTable(); return;
   }
   // table column menu (right-click) actions
@@ -9352,7 +9372,8 @@ function colMenuHtml(cm) {
     ci > 0 ? '<button class="cm-item" data-cm-move="left">← Move left</button>' : '',
     ci >= 0 && ci < cols.length - 1 ? '<button class="cm-item" data-cm-move="right">Move right →</button>' : '',
   ].filter(Boolean).join('');
-  return `<div class="colmenu" data-colmenu style="top:${cm.y}px;left:${cm.x}px">
+  const pos = cm.bottom != null ? `bottom:${cm.bottom}px` : `top:${cm.y}px`;
+  return `<div class="colmenu" data-colmenu style="${pos};left:${cm.x}px;max-height:${cm.maxH || 480}px">
     <button class="cm-item" data-cm-rename>Rename column</button>
     ${moveItems ? `<div class="cm-sep"></div>${moveItems}` : ''}
     <div class="cm-sep"></div><div class="cm-label">Type</div>
