@@ -362,6 +362,25 @@ async function createEvent(request, env) {
   try {
     const token = await googleAccessToken(env);
     const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+
+    // A mail invite carries the organiser's iCalUID. Gmail adds invitations to the
+    // calendar on its own, so blindly creating an event here made a second copy -
+    // and tidying up by deleting one of the pair is exactly how an invitation got
+    // declined. If this UID is already on the calendar, adopt it instead.
+    if (b.uid) {
+      try {
+        const q = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+        q.searchParams.set('iCalUID', b.uid);
+        q.searchParams.set('showDeleted', 'false');
+        q.searchParams.set('maxResults', '5');
+        const qRes = await fetch(q, { headers: { Authorization: `Bearer ${token}` } });
+        if (qRes.ok) {
+          const found = ((await qRes.json()).items || []).find((e) => e.status !== 'cancelled');
+          if (found) return json({ ok: true, id: found.id, existed: true }, request, 200);
+        }
+      } catch { /* lookup is best-effort; fall through and create */ }
+    }
+
     const res = await fetch(
       // sendUpdates=none: Daybook never emails organizers or attendees on Robin's
       // behalf. Without it, writing an event Robin was invited to (or that carries

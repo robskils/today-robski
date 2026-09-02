@@ -4896,15 +4896,18 @@ async function mailInviteAdd() {
   // Save any other links from the invitation email as the event's notes.
   const links = mailInviteLinks(state.mail.open, link);
   const notes = links.length ? `Links from the invitation email:\n${links.join('\n')}` : undefined;
+  // Carry the invite's iCalUID so the worker can spot an event Gmail already
+  // added to the calendar and adopt it, rather than creating a duplicate.
+  const uid = inv.uid || undefined;
   let body;
-  if (inv.allDay) body = { title: inv.summary, allDay: true, day: inv.startDate, location: inv.location || undefined, url: link, notes };
+  if (inv.allDay) body = { title: inv.summary, allDay: true, day: inv.startDate, location: inv.location || undefined, url: link, notes, uid };
   else { let end = inv.end; if (!end && inv.start) { try { end = new Date(new Date(inv.start).getTime() + 3600000).toISOString(); } catch {} }
-    body = { title: inv.summary, start: inv.start, end, tz: inv.tz || undefined, location: inv.location || undefined, url: link, notes }; }
+    body = { title: inv.summary, start: inv.start, end, tz: inv.tz || undefined, location: inv.location || undefined, url: link, notes, uid }; }
   try {
-    await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
+    const r = await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
     state.calAdded[inviteKey(inv)] = 1;
     api('/api/kv/cal_added', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.calAdded) }) }).catch(() => {});
-    toast('Added to your calendar'); renderMail();
+    toast(r && r.existed ? 'Already on your calendar' : 'Added to your calendar'); renderMail();
   } catch (e) { toast(e.message); }
 }
 // The inner HTML of the .mail-list container (rows / loading / empty state).
