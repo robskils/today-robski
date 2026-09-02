@@ -363,7 +363,10 @@ async function createEvent(request, env) {
     const token = await googleAccessToken(env);
     const calId = env.GOOGLE_CALENDAR_ID || 'primary';
     const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`,
+      // sendUpdates=none: Daybook never emails organizers or attendees on Robin's
+      // behalf. Without it, writing an event Robin was invited to (or that carries
+      // attendees) makes Google send an "accepted/declined/updated" mail.
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?sendUpdates=none`,
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -448,7 +451,8 @@ async function updateEvent(request, env, id) {
     const token = await googleAccessToken(env);
     const calId = env.GOOGLE_CALENDAR_ID || 'primary';
     const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(id)}`,
+      // sendUpdates=none: never notify attendees/organizer of a Daybook-side edit.
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(id)}?sendUpdates=none`,
       { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(patch) },
     );
     if (res.status === 401 || res.status === 403) return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
@@ -900,7 +904,7 @@ async function deleteEvent(request, env, id) {
             const rec = (master.recurrence || []).map((line) => /^RRULE/i.test(line)
               ? `${line.replace(/;(UNTIL|COUNT)=[^;]*/gi, '')};UNTIL=${until}` : line);
             if (rec.some((l) => /^RRULE/i.test(l))) {
-              const pRes = await fetch(evUrl(masterId), { method: 'PATCH', headers: { ...authH, 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrence: rec }) });
+              const pRes = await fetch(`${evUrl(masterId)}?sendUpdates=none`, { method: 'PATCH', headers: { ...authH, 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrence: rec }) });
               if (pRes.ok) return json({ ok: true }, request);
               console.error('google trim series:', pRes.status, await pRes.text());
               return err('Google would not update that series.', request, 502);
@@ -911,7 +915,10 @@ async function deleteEvent(request, env, id) {
       }
     }
 
-    const res = await fetch(evUrl(id), { method: 'DELETE', headers: authH });
+    // sendUpdates=none is the important one: deleting an event Robin was *invited
+    // to* removes his attendance, and without this Google emails the organizer
+    // that he declined. Daybook never RSVPs on his behalf.
+    const res = await fetch(`${evUrl(id)}?sendUpdates=none`, { method: 'DELETE', headers: authH });
 
     // 410 means it was already gone. That is the outcome the caller wanted, so
     // treat it as success rather than making them look at an error for it.
