@@ -7129,7 +7129,12 @@ async function moveNote(targetId) {
 }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Life area'], ['attach', 'Attachments']];
+const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Life area'], ['attach', 'Attachments']];
+// The currency symbols a Currency column can carry (blank = a plain number with
+// two decimals). Stored on the column as `col.currency`.
+const CURRENCIES = [['€', '€ Euro'], ['$', '$ Dollar'], ['£', '£ Pound'], ['', 'No symbol']];
+const curSym = (col) => (col && typeof col.currency === 'string') ? col.currency : '';
+const fmtMoney = (v) => (v === '' || v == null || isNaN(Number(v))) ? '' : Number(v).toFixed(2);
 const tcols = () => (state.tables_open.props.columns || []);
 function cellInput(r, col) {
   const v = ((r.props && r.props.values) || {})[col.id]; const k = `${r.id}:${col.id}`;
@@ -7140,6 +7145,9 @@ function cellInput(r, col) {
   }
   if (col.type === 'checkbox') return `<input type="checkbox" data-cell="${k}" ${v ? 'checked' : ''}>`;
   if (col.type === 'number') return `<input type="number" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
+  // Currency: a plain number shown to two decimals, with an optional symbol. The
+  // change handler parses what's typed back to a number and reformats on blur.
+  if (col.type === 'currency') { const sym = curSym(col); return `<span class="cell-cur">${sym ? `<span class="cur-sym">${esc(sym)}</span>` : ''}<input type="text" class="cell cur-in" data-cell="${k}" inputmode="decimal" value="${esc(fmtMoney(v))}"></span>`; }
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
   // Life area: a select whose options are the live Life Areas. Stores the area
@@ -7174,7 +7182,7 @@ function sortRows(rows) {
       const ea = empty(va), eb = empty(vb);
       if (ea && eb) return 0; if (ea) return 1; if (eb) return -1; // empties last, either direction
     }
-    const norm = (v) => col.type === 'number' ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'attach' ? (Array.isArray(v) ? v.length : 0) : col.type === 'date' ? String(v) : col.type === 'area' ? ((areaById(v) || {}).title || '').toLowerCase() : String(v).toLowerCase();
+    const norm = (v) => (col.type === 'number' || col.type === 'currency') ? Number(v) : col.type === 'checkbox' ? (v ? 1 : 0) : col.type === 'attach' ? (Array.isArray(v) ? v.length : 0) : col.type === 'date' ? String(v) : col.type === 'area' ? ((areaById(v) || {}).title || '').toLowerCase() : String(v).toLowerCase();
     const na = norm(va), nb = norm(vb);
     return na < nb ? -dir : na > nb ? dir : 0;
   };
@@ -7192,7 +7200,7 @@ function saveTableSort() {
   api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { sorts } }) }).catch((e) => toast(e.message));
 }
 function setSorts(sorts) { state.tables_view.sorts = sorts; state.tables_view.newRow = null; renderTable(); saveTableSort(); }
-const DIR_LABELS = (type) => type === 'number' ? ['1 → 9', '9 → 1'] : type === 'date' ? ['Old → New', 'New → Old'] : type === 'checkbox' ? ['Unticked first', 'Ticked first'] : ['A → Z', 'Z → A'];
+const DIR_LABELS = (type) => (type === 'number' || type === 'currency') ? ['1 → 9', '9 → 1'] : type === 'date' ? ['Old → New', 'New → Old'] : type === 'checkbox' ? ['Unticked first', 'Ticked first'] : ['A → Z', 'Z → A'];
 // Hidden columns: a list of column ids on the table's props. Hiding only affects
 // the grid; the data stays (still editable via the expanded row card) and the
 // column can be re-shown from any column's ▾ menu. Persisted like the sort spec.
@@ -7216,6 +7224,7 @@ const FILTER_OPS = {
   area: [['is', 'is'], ['isnot', 'is not'], ['empty', 'is empty'], ['nempty', 'is not empty']],
   checkbox: [['checked', 'is checked'], ['unchecked', 'is unchecked']],
 };
+FILTER_OPS.currency = FILTER_OPS.number;   // currency filters numerically
 const opsFor = (type) => FILTER_OPS[type] || FILTER_OPS.text;
 const noValueOp = (op) => op === 'empty' || op === 'nempty' || op === 'checked' || op === 'unchecked';
 function matchesFilter(r, f) {
@@ -7262,7 +7271,7 @@ function visibleRows() {
 }
 function tableBodyHtml() {
   const c = visibleCols();
-  const rows = visibleRows().map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : col.type === 'number' ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
+  const rows = visibleRows().map((r) => `<tr><td class="row-open" data-open-row="${r.id}" title="Open this row"><span class="ro-ic">⤢</span></td>${c.map((col) => `<td class="${col.type === 'checkbox' ? 'check' : (col.type === 'number' || col.type === 'currency') ? 'num' : ''}">${cellInput(r, col)}</td>`).join('')}<td class="row-del"><button data-del-row="${r.id}">×</button></td></tr>`).join('');
   const empty = (state.tables_view.query || (state.tables_view.filters || []).length) && !visibleRows().length
     ? `<tr class="tbl-noresult"><td colspan="${c.length + 2}">No rows match.</td></tr>` : '';
   // The add control lives in the toolbar (always visible); no duplicate at the foot.
@@ -7279,7 +7288,7 @@ function filterPanelHtml() {
     if (!noValueOp(f.op)) {
       if (col.type === 'select') val = `<select class="sel fv" data-filt-val="${i}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === f.value ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
       else if (col.type === 'area') val = `<select class="sel fv" data-filt-val="${i}"><option value=""></option>${state.areas.map((a) => `<option value="${esc(a.id)}" ${a.id === f.value ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
-      else val = `<input class="sel fv" data-filt-val="${i}" type="${col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'}" value="${esc(f.value || '')}" placeholder="value">`;
+      else val = `<input class="sel fv" data-filt-val="${i}" type="${(col.type === 'number' || col.type === 'currency') ? 'number' : col.type === 'date' ? 'date' : 'text'}" value="${esc(f.value || '')}" placeholder="value">`;
     }
     return `<div class="filt-row"><select class="sel" data-filt-col="${i}">${colOpts}</select><select class="sel" data-filt-op="${i}">${opOpts}</select>${val}<button class="filt-x" data-filt-del="${i}" title="Remove">×</button></div>`;
   }).join('');
@@ -7328,7 +7337,7 @@ function renderTable() {
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortSpec = vw.sorts || [];
   const sortOf = (id) => { const i = sortSpec.findIndex((s) => s.colId === id); return i < 0 ? null : { dir: sortSpec[i].dir, badge: sortSpec.length > 1 ? i + 1 : '' }; };
-  const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">life area</span>' : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">life area</span>' : col.type === 'currency' ? `<span class="th-type">${esc(curSym(col) || 'currency')}</span>` : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
@@ -8197,6 +8206,7 @@ document.addEventListener('click', (e) => {
     if (t.closest('[data-cm-rename]')) { state.tables_view.colMenu = null; renderTable(); editColName(cmId); return; }
     const cmv = t.closest('[data-cm-move]'); if (cmv) { moveColumn(cmId, cmv.dataset.cmMove); return; }
     const ctp = t.closest('[data-cm-type]'); if (ctp) { setColType(cmId, ctp.dataset.cmType); return; }
+    const ccu = t.closest('[data-cm-cur]'); if (ccu) { setColCurrency(cmId, ccu.dataset.cmCur); return; }
     const rmo = t.closest('[data-cm-rmopt]'); if (rmo) { removeColOption(cmId, rmo.dataset.cmRmopt); return; }
     const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.colMenu = null; setSorts([{ colId: cmId, dir: cms.dataset.cmSort }]); return; }
     if (t.closest('[data-cm-hide]')) { state.tables_view.colMenu = null; if (visibleCols().length <= 1) { toast('Keep at least one column visible'); renderTable(); return; } saveTableHidden([...hiddenCols(), cmId]); return; }
@@ -8290,7 +8300,17 @@ document.addEventListener('change', (e) => {
     if (g('mc-body')) c.body = g('mc-body').innerHTML;
     c._acct = e.target.value; renderMail(); return;
   }
-  const c = e.target.closest('[data-cell]'); if (c) { const [rid, cid] = c.dataset.cell.split(':'); setCell(rid, cid, e.target.type === 'checkbox' ? e.target.checked : e.target.value); }
+  const c = e.target.closest('[data-cell]'); if (c) {
+    const [rid, cid] = c.dataset.cell.split(':');
+    const col = tcols().find((x) => x.id === cid);
+    let val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    if (col && col.type === 'currency') {
+      const n = parseFloat(String(val).replace(/[^0-9.,-]/g, '').replace(',', '.'));
+      val = isNaN(n) ? '' : n;
+      e.target.value = fmtMoney(val);   // reformat to 00.00 on blur
+    }
+    setCell(rid, cid, val);
+  }
   { const aa = e.target.closest('[data-area-add]'); if (aa) { const p = aa.dataset.areaAdd.split(':'); const v = e.target.value; e.target.value = ''; addBlockArea(p[0], p[1], v); return; } }
   { const tff = e.target.closest('[data-tf-field]'); if (tff) { loadTaskFilters(); const i = Number(tff.dataset.tfField); const c = state.taskFilters[i]; c.field = e.target.value; c.op = (TASK_FIELDS[c.field].ops || [])[0]; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
   { const tfo = e.target.closest('[data-tf-op]'); if (tfo) { loadTaskFilters(); const i = Number(tfo.dataset.tfOp); const c = state.taskFilters[i]; c.op = e.target.value; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
@@ -9338,9 +9358,17 @@ async function setColType(id, type) {
         seed = { options: [...new Set((state.tables_rows || []).map((r) => ((r && r.props && r.props.values) || {})[id]).filter((x) => x != null && x !== '').map(String))] };
       } catch { seed = { options: [] }; }
     }
+  } else if (type === 'currency') {
+    const existing = tcols().find((c) => c.id === id);
+    if (!existing || typeof existing.currency !== 'string') seed = { currency: '€' };   // default to Euro; changeable in the menu
   }
   const cols = tcols().map((c) => c.id === id ? { ...c, type, ...seed } : c);
   try { await saveTableColumns(cols); } catch (e) { toast(`Couldn't change column type: ${e.message}`); }
+  renderTable();
+}
+async function setColCurrency(id, sym) {
+  const cols = tcols().map((c) => c.id === id ? { ...c, currency: sym } : c);
+  try { await saveTableColumns(cols); } catch (e) { toast(e.message); }
   renderTable();
 }
 async function addColOption(id, opt) {
@@ -9381,6 +9409,8 @@ function colMenuHtml(cm) {
     ${col.type === 'select' ? `<div class="cm-sep"></div><div class="cm-label">Options</div>
       ${(col.options || []).map((o) => `<div class="cm-opt"><span>${esc(o)}</span><button data-cm-rmopt="${esc(o)}" title="Remove">×</button></div>`).join('') || '<div class="cm-empty">None yet</div>'}
       <form class="cm-addopt" data-cm-addopt><input id="cm-opt-input" placeholder="Add option…" autocomplete="off"><button type="submit">Add</button></form>` : ''}
+    ${col.type === 'currency' ? `<div class="cm-sep"></div><div class="cm-label">Symbol</div>
+      ${CURRENCIES.map(([s, l]) => `<button class="cm-item cm-cur ${curSym(col) === s ? 'on' : ''}" data-cm-cur="${esc(s)}">${esc(l)}${curSym(col) === s ? ' ✓' : ''}</button>`).join('')}` : ''}
     <div class="cm-sep"></div>
     <button class="cm-item" data-cm-sort="asc">Sort A → Z</button>
     <button class="cm-item" data-cm-sort="desc">Sort Z → A</button>

@@ -764,7 +764,11 @@ table.recs td .cell { width:100%; border:0; background:transparent; font:inherit
 .tcell-att-add { flex:none; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px dashed var(--line-2); border-radius:8px; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; transition:border-color .12s, color .12s; }
 .tcell-att-add:hover { border-color:var(--accent); color:var(--accent); }
 table.recs td .cell:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; border-radius:4px; }
-table.recs td.num .cell { font-variant-numeric:tabular-nums; }
+table.recs td.num .cell { font-variant-numeric:tabular-nums; text-align:right; }
+/* Currency cell: an optional symbol sitting before a right-aligned number. */
+.cell-cur { display:flex; align-items:center; gap:4px; width:100%; }
+.cell-cur .cur-sym { flex:none; color:var(--ink-3); font-size:14.5px; padding-left:6px; }
+.cell-cur .cur-in { flex:1; min-width:0; text-align:right; font-variant-numeric:tabular-nums; }
 table.recs td.check { text-align:center; }
 table.recs td.check input { width:19px; height:19px; accent-color:var(--accent); }
 table.recs select.cell { appearance:none; cursor:pointer; }
