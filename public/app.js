@@ -2503,16 +2503,17 @@ function renderHome() {
              tab bar doesn't hold. It lives inside home-body so the mobile flex
              order can sit it just below Today. -->
         <nav class="home-launch">
-          ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
-          ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
           ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
-          ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
-          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflection</span></button>` : ''}
-          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
-          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
+          ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
           ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span>${friendPending() ? `<span class="hl-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>` : ''}
-          ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
+          ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
+          ${modOn('today') ? `<button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>` : ''}
+          ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
+          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
           ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
+          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
+          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflection</span></button>` : ''}
+          ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
         </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
@@ -8041,6 +8042,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-next]')) { if (state.onb && state.onb.step >= ONB_STEPS.length - 1) finishOnboarding(); else onbGo((state.onb ? state.onb.step : 0) + 1); return; }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
+  { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
   if (t.closest('[data-onb-replay]')) { showOnboarding(0); return; }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
@@ -8630,6 +8632,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'colnew') { const name = $('#cn-name').value.trim(); const type = $('#cn-type').value; addColumn(name, type); }
   if (e.target.id === 'rw-add-form') { const i = $('#rw-url'); if (i && i.value.trim()) rwSave(i.value); }
   if (e.target.matches('[data-cm-addopt]')) { const i = $('#cm-opt-input'); if (i && state.tables_view && state.tables_view.colMenu) addColOption(state.tables_view.colMenu.colId, i.value); }
+  if (e.target.matches('[data-onb-area-add]')) { const i = $('#onb-area-in'); if (i) { onbAddArea(i.value); i.value = ''; } }
 });
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
@@ -9508,7 +9511,24 @@ async function addRow() {
   state.tables_view.query = ''; state.tables_view.filters = []; state.tables_view.filtering = false;
   renderTable();
 }
-async function addColumn(name, type) { const col = { id: uid(), name: name || 'Column', type }; state.tables_view.addingCol = false; await saveTableColumns([...tcols(), col]); renderTable(); }
+// The extra fields a column of a given type needs: a default currency symbol, or
+// a Select's options seeded from the values already in that column. Shared by
+// addColumn and setColType so a type chosen when the column is CREATED behaves
+// exactly like one set later from the menu (a currency added via the + form used
+// to have no symbol - its header read "currency" and cells lost the € sign).
+function colTypeSeed(id, type) {
+  const existing = tcols().find((c) => c.id === id);
+  if (type === 'select') {
+    if (!existing || !existing.options || !existing.options.length) {
+      try { return { options: [...new Set((state.tables_rows || []).map((r) => ((r && r.props && r.props.values) || {})[id]).filter((x) => x != null && x !== '').map(String))] }; }
+      catch { return { options: [] }; }
+    }
+  } else if (type === 'currency') {
+    if (!existing || typeof existing.currency !== 'string') return { currency: '€' };   // default to Euro; changeable in the menu
+  }
+  return {};
+}
+async function addColumn(name, type) { const id = uid(); const col = { id, name: name || 'Column', type, ...colTypeSeed(id, type) }; state.tables_view.addingCol = false; await saveTableColumns([...tcols(), col]); renderTable(); }
 async function renameTable(v) { const t = state.tables_open; if (!t || v === t.title) return; t.title = v; const s = state.tables.find((x) => x.id === t.id); if (s) s.title = v; updateRecentTitle('table', t.id, v); try { await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }); renderNav(); } catch (e) { toast(e.message); } }
 async function renameArea(v) {
   const a = state.area_open && state.area_open.area; if (!a || !v || v === a.title) return;
@@ -9518,21 +9538,7 @@ async function renameArea(v) {
 }
 async function renameColumn(id, v) { const cols = tcols().map((c) => c.id === id ? { ...c, name: v } : c); await saveTableColumns(cols).catch((x) => toast(x.message)); }
 async function setColType(id, type) {
-  let seed = {};
-  if (type === 'select') {
-    const existing = tcols().find((c) => c.id === id);
-    if (existing && (!existing.options || !existing.options.length)) {
-      // Seed options from the column's existing distinct values so converting a
-      // free-form column to Select doesn't blank out the data already there.
-      // Wrapped: a legacy/blank row (null props) must never block the change.
-      try {
-        seed = { options: [...new Set((state.tables_rows || []).map((r) => ((r && r.props && r.props.values) || {})[id]).filter((x) => x != null && x !== '').map(String))] };
-      } catch { seed = { options: [] }; }
-    }
-  } else if (type === 'currency') {
-    const existing = tcols().find((c) => c.id === id);
-    if (!existing || typeof existing.currency !== 'string') seed = { currency: '€' };   // default to Euro; changeable in the menu
-  }
+  const seed = colTypeSeed(id, type);
   const cols = tcols().map((c) => c.id === id ? { ...c, type, ...seed } : c);
   try { await saveTableColumns(cols); } catch (e) { toast(`Couldn't change column type: ${e.message}`); }
   renderTable();
@@ -9960,7 +9966,7 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
 // A gentle, skippable guide shown once when a new account first opens: orient
 // them, offer AI (optional), offer email (optional). Persisted per-user via
 // /api/kv/onboarded so it shows exactly once and never nags an existing member.
-const ONB_STEPS = ['Welcome', 'Add AI', 'Connect email', 'Done'];
+const ONB_STEPS = ['Welcome', 'Life areas', 'Add AI', 'Connect email', 'Done'];
 async function maybeOnboard() {
   if (!state.me || !state.me.subdomain) return;   // multi-tenant own account only
   let seen = true;
@@ -9973,11 +9979,51 @@ async function finishOnboarding() {
   state.onb = null;
 }
 function showOnboarding(step) {
-  state.onb = { step: step || 0, account: state.account || null, mailDone: false };
+  state.onb = { step: step || 0, account: state.account || null, mailDone: false, areas: null };
   if (!document.getElementById('onb')) { const d = document.createElement('div'); d.id = 'onb'; document.body.appendChild(d); }
   // Pull current key state so the AI step can show what's already added.
   if (!state.onb.account) api('/api/account').then((a) => { if (state.onb) { state.onb.account = a; renderOnboarding(); } }).catch(() => {});
+  // Load the starter life areas so the Life areas step can list them.
+  api('/api/blocks?kind=area').then((areas) => {
+    if (!state.onb) return;
+    const sorted = (areas || []).sort((x, y) => (x.title || '').localeCompare(y.title || ''));
+    state.onb.areas = sorted; state.areas = sorted;
+    if (state.onb.step === 1) renderOnboarding();
+  }).catch(() => { if (state.onb) state.onb.areas = []; });
   renderOnboarding();
+}
+function onbAreas() {
+  const areas = state.onb.areas;
+  const chips = areas === null
+    ? '<p class="onb-p onb-muted">Loading your areas…</p>'
+    : areas.length
+      ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
+      : '<p class="onb-p onb-muted">No life areas yet - add a few below.</p>';
+  return `<h2 class="onb-h">Your life areas</h2>
+    <p class="onb-p">Life areas are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to an area, so each area gathers everything about that part of your life in one place.</p>
+    <p class="onb-p onb-muted">Here's a starter set. Remove any that don't fit you, and add your own - you can always change these later in Life areas.</p>
+    ${chips}
+    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a life area…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
+}
+async function onbDelArea(id) {
+  if (!state.onb) return;
+  state.onb.areas = (state.onb.areas || []).filter((a) => a.id !== id);
+  state.areas = (state.areas || []).filter((a) => a.id !== id);
+  renderOnboarding();
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { toast(e.message); }
+}
+async function onbAddArea(name) {
+  name = (name || '').trim(); if (!name || !state.onb) return;
+  // Golden-angle hues keep a new area visually distinct from its neighbours.
+  const hue = Math.round(((state.areas || []).length * 137.5) % 360);
+  try {
+    const a = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'area', title: name, props: { hue } }) });
+    const push = (arr) => { arr.push(a); arr.sort((x, y) => (x.title || '').localeCompare(y.title || '')); };
+    state.areas = state.areas || []; push(state.areas);
+    state.onb.areas = state.onb.areas || []; push(state.onb.areas);
+    renderOnboarding();
+    const i = document.getElementById('onb-area-in'); if (i) i.focus();
+  } catch (e) { toast(e.message); }
 }
 function onbGo(n) { if (!state.onb) return; state.onb.step = Math.max(0, Math.min(ONB_STEPS.length - 1, n)); renderOnboarding(); }
 function onbWelcome() {
@@ -10034,7 +10080,7 @@ function renderOnboarding() {
   const s = state.onb; if (!s) return;
   const last = ONB_STEPS.length - 1;
   const dots = ONB_STEPS.map((_, i) => `<span class="onb-dot ${i === s.step ? 'on' : ''} ${i < s.step ? 'done' : ''}"></span>`).join('');
-  const content = s.step === 0 ? onbWelcome() : s.step === 1 ? onbAi() : s.step === 2 ? onbEmail() : onbDone();
+  const content = s.step === 0 ? onbWelcome() : s.step === 1 ? onbAreas() : s.step === 2 ? onbAi() : s.step === 3 ? onbEmail() : onbDone();
   document.getElementById('onb').innerHTML = `<div class="onb-bg"><div class="onb-card" role="dialog" aria-modal="true" aria-label="Welcome to Daybook">
     <button class="onb-skip" data-onb-finish>${s.step === last ? '' : 'Skip setup'}</button>
     <div class="onb-dots">${dots}</div>

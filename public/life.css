@@ -1642,6 +1642,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .onb-mailform .add-btn.wide { align-self:flex-start; }
 .onb-ok { font-size:15px; color:#3f9e5f; background:color-mix(in srgb,#3f9e5f 10%,transparent); border:1px solid color-mix(in srgb,#3f9e5f 30%,transparent); border-radius:12px; padding:14px 16px; line-height:1.5; }
 .onb-tips { margin:4px 0 10px; padding-left:20px; display:flex; flex-direction:column; gap:8px; font-size:14.5px; line-height:1.5; color:var(--ink-2); }
+/* Onboarding life-area chips: a dot in the area's own hue, its name, and a quiet × */
+.onb-areas { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 12px; }
+.onb-area { display:inline-flex; align-items:center; gap:8px; padding:8px 10px 8px 12px; border:1px solid var(--line-2); border-radius:999px; background:var(--paper); font-size:14.5px; color:var(--ink); }
+.onb-area-dot { width:11px; height:11px; border-radius:50%; flex:none; background:hsl(var(--h,220) 55% 55%); }
+.onb-area-x { width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; font-size:16px; line-height:1; color:var(--ink-3); }
+.onb-area-x:hover { background:var(--paper-2); color:var(--accent); }
+.onb-area-add { display:flex; gap:9px; margin-top:2px; }
+.onb-area-add .sel { flex:1; min-width:0; }
+.onb-area-add .add-btn.wide { flex:none; }
 .onb-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
 .onb-foot .add-btn.wide { flex:none; min-width:150px; }
 @media (max-width:560px){ .onb-card { padding:22px 18px 16px; border-radius:16px; } .onb-h { font-size:26px; } .onb-foot .add-btn.wide { min-width:130px; } }
