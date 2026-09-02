@@ -2683,17 +2683,16 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* The button's depth comes from the shared .btn-accent treatment below; the
    gate one is simply full width and a touch taller. */
 .gate2-btn { width:100%; min-height:52px; font-size:17px; margin-top:2px; }
-/* The text route is the way in precisely when the mailbox you'd read the code
-   from is itself behind this gate, so it is a real choice rather than a
-   footnote: same size and shape as the primary, outlined instead of filled. */
-.gate2-or { display:flex; align-items:center; gap:12px; margin:2px 0; color:var(--ink-3); font-size:13.5px; }
-.gate2-or::before, .gate2-or::after { content:''; flex:1; height:1px; background:var(--line); }
-.gate2-btn-2 { color:var(--ink); background:var(--card); border:1px solid var(--line-2);
-  box-shadow:0 1px 2px rgba(0,0,0,.05); }
-.gate2-btn-2:hover { color:var(--ink); background:var(--card); border-color:var(--accent); filter:none;
-  box-shadow:0 2px 6px rgba(0,0,0,.08); }
-.gate2-btn-2:active { filter:none; box-shadow:inset 0 2px 5px color-mix(in srgb,#000 12%,transparent); }
-.gate2-btn-2:disabled { opacity:.5; cursor:default; }
+/* The text route is a quiet, self-selecting link under the primary button - not a
+   co-equal second button. Its own wording ("Use Daybook for your email?") means a
+   newcomer signing up with an outside address glides past it, while a returning
+   user whose mailbox now lives inside Daybook - and so can't open the emailed code
+   - spots their way in. It texts the code to THEIR own saved phone. */
+.gate2-smslink { display:block; width:100%; background:none; border:0; margin:-2px 0 0;
+  padding:8px 4px; font-size:14px; line-height:1.45; color:var(--ink-3); cursor:pointer; text-wrap:balance; }
+.gate2-smslink b { color:var(--ink-2); font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+.gate2-smslink:hover b { color:var(--accent); }
+.gate2-smslink:disabled { opacity:.5; cursor:default; }
 /* Secondary way in: a quiet text link under the main button, so the primary
    path stays obvious but the phone option is one tap away. */
 .gate2-alt { background:none; border:0; color:var(--ink-2); font-size:15.5px; padding:4px; margin-top:-6px;

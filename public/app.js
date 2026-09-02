@@ -9839,12 +9839,11 @@ function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
       <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span></div>
-      <p class="gate2-sub" id="gate-sub">${sub || 'Sign in with your email to continue.'}</p>
+      <p class="gate2-sub" id="gate-sub">${sub || "New here or coming back? Enter your email and we'll send you a sign-in code."}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
       <button class="gate2-btn" id="gate-btn" type="submit">Email me a code</button>
-      <div class="gate2-or"><span>or</span></div>
-      <button class="gate2-btn gate2-btn-2" id="gate-sms" type="button">Text me the code instead</button>
+      <button class="gate2-smslink" id="gate-sms" type="button" title="For when your email lives inside Daybook and you can't open it to read the code">Use Daybook for your email? <b>Text me the code instead</b></button>
       <p class="gate2-err" id="gate-err" hidden></p>
     </form></div>`);
   $('#gate-email').focus();
@@ -9925,7 +9924,9 @@ async function gateSend(channel) {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error('Could not send a code. Try again.');
     gateStep = 'code';
-    $('#gate-sub').textContent = d.channel === 'sms' ? 'Code texted to your phone.' : `Code sent to ${gateEmail}.`;
+    $('#gate-sub').textContent = d.channel === 'sms' ? 'Code texted to your phone.'
+      : (channel === 'sms' && d.smsUnavailable) ? `No phone saved on your account, so we've emailed your code to ${gateEmail}. Add a phone in Settings to get it by text next time.`
+      : `Code sent to ${gateEmail}.`;
     $('#gate-email').hidden = true; if (sms) sms.hidden = true;
     { const or = $('.gate2-or'); if (or) or.hidden = true; }
     $('#gate-code').hidden = false; $('#gate-code').focus();

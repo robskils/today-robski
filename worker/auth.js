@@ -19,6 +19,7 @@
 //     needs your Cloudflare login rather than a shared secret.
 
 import { sendSms } from './sms.js';
+import { getUserByEmail } from './accounts.js';
 // smtpSend/buildMessage are used only inside sendCodeMail (call time), so the
 // auth.js <-> mail.js cycle (mail.js imports signJWT) resolves fine.
 import { smtpSend, buildMessage } from './mail.js';
@@ -166,12 +167,32 @@ export async function requestCode(request, env, json, err) {
   ).bind(email, code, now + CODE_TTL, now).run();
 
   if (channel === 'sms') {
-    const sms = await sendSms(env, `${code} is your Daybook sign-in code. It expires in 10 minutes.`);
-    // Only report SMS if it actually left: a not-configured or rejected send
-    // silently falls through to email, so the user is never stranded without a
-    // code just because SMS credit ran out.
-    if (sms && sms.ok) return json({ ok: true, channel: 'sms' });
-    console.error('sms login send failed, falling back to email:', sms && (sms.skipped || sms.status));
+    // Text the code to THIS user's own saved phone - never the owner's hardcoded
+    // ALERT_PHONE. This is the escape hatch for someone whose email now lives
+    // inside Daybook: the emailed code would be locked behind this very sign-in,
+    // but a text to their phone still gets them in. Needs an existing account
+    // with a phone on file (Settings › Account); a brand-new signup has neither,
+    // so it simply falls through to email.
+    const acct = await getUserByEmail(env, email);
+    let toPhone = '';
+    if (acct) {
+      const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(acct.id).first().catch(() => null);
+      toPhone = (phRow && phRow.value) || (acct.id === 1 ? env.ALERT_PHONE : '');
+    }
+    if (toPhone) {
+      const sms = await sendSms(env, `${code} is your Daybook sign-in code. It expires in 10 minutes.`, toPhone);
+      // Only report SMS if it actually left: a not-configured or rejected send
+      // silently falls through to email, so the user is never stranded without a
+      // code just because SMS credit ran out.
+      if (sms && sms.ok) return json({ ok: true, channel: 'sms' });
+      console.error('sms login send failed, falling back to email:', sms && (sms.skipped || sms.status));
+    } else {
+      // No phone on file (or no account yet): tell the client so it can nudge the
+      // user to add one, and email the code as the safe default.
+      const res = await sendCodeMail(env, email, code, 'signin');
+      if (!res.ok) { console.error('resend:', res.status, await res.text()); return err('Could not send the code. Try again shortly.', 502); }
+      return json({ ok: true, channel: 'email', smsUnavailable: true });
+    }
   }
 
   const res = await sendCodeMail(env, email, code, 'signin');
