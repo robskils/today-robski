@@ -91,15 +91,33 @@ and a recurring occurrence's id is `<blockId>::<YYYY-MM-DD>` (the events route
 regex allows the `:`). Delete "this and following" sets `until`; "just this
 one" appends to `exdates`; a plain delete archives the block.
 
-**Google** is an optional overlay, still the owner's single shared refresh
-token. `createEvent`/`updateEvent`/`deleteEvent` route to Google **only** when
-`env.uid === 1 && env.GOOGLE_REFRESH_TOKEN`; otherwise (any member, or the owner
-if Google ever disconnects) they fall to native storage. Reads (`/api/day`,
-`/api/calendar`) merge native events for everyone with the owner's Google
-events. Two-way per-user sync (each user connecting their own Google) is not
-built: it needs the OAuth client switched from Internal to External + Google
-verification (calendar is a sensitive scope) - an outside `@gmail.com` cannot
-authorise an Internal app. Other providers (iCloud/CalDAV, Outlook) are unbuilt.
+**Google** is an optional overlay. **Reads are now per-member** (2026-09-02):
+`googleCtx(env)` returns whose calendar to use - a member who connected their own
+Google account reads their **primary** calendar; the owner reads the shared
+Workspace calendar (`GOOGLE_CALENDAR_ID`). `calendarEvents`/`calendarRange` and
+the `/api/day` + `/api/calendar` merges use it, so a member sees their own Google
+events + native, never Robin's diary. **Writes are still owner-only**:
+`createEvent`/`updateEvent`/`deleteEvent` route to Google only when
+`env.uid === 1 && env.GOOGLE_REFRESH_TOKEN`; a member's writes fall to native
+storage (two-way sync for members is the next phase).
+
+**Member connect flow** lives in `worker/gcal.js`, using a **SEPARATE OAuth
+client** (`GCAL_MEMBER_CLIENT_ID` var + `GCAL_MEMBER_CLIENT_SECRET` secret) in its
+**own** Google Cloud project, published **External / In production**. This keeps
+the owner's Internal client - and its non-expiring refresh token - untouched
+(never flip the owner's client to External: CLAUDE.md warns it opts the whole app
+into 7-day token expiry). Flow: `GET /api/gcal/connect` (authed) returns a consent
+URL with a signed `state`; Google redirects to the single fixed
+`GET /api/gcal/callback` (unauthenticated, on the apex - wildcard subdomains
+aren't allowed as redirect URIs), which exchanges the code, stores the member's
+refresh token AES-256-GCM-encrypted in `users.gcal_refresh_enc` (+ `gcal_email`),
+and bounces back to `https://<sub>.daybook.fyi/calendar?gcal=connected`.
+`gcalMemberToken` refreshes per-uid. The Calendar view shows a Connect/Disconnect
+strip to members (hidden for the owner and until the client is configured). The
+whole thing is **inert until both env values are set** (`gcalStatus.available`).
+Redirect URI to register in Google: `https://daybook.fyi/api/gcal/callback`;
+scopes: `calendar.events` + `userinfo.email` + `openid`. Other providers
+(iCloud/CalDAV, Outlook) are unbuilt.
 
 ## The morning brief
 
