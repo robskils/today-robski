@@ -1998,6 +1998,15 @@ table.ttable tr:last-child td { border-bottom:0; }
 .ui-btn.primary:hover { opacity:.9; }
 .ui-btn.danger { background:var(--danger,#c4412e); border-color:var(--danger,#c4412e); color:#fff; }
 .ui-btn.danger:hover { opacity:.9; }
+/* Life-area colour: the gear in the hero, and the picker it opens. */
+.area-gear { flex:none; color:var(--ink-3); font-size:16px; padding:0 5px; background:none; cursor:pointer; transition:color .12s; }
+.area-gear:hover { color:var(--accent); }
+.areacol-swatches { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin:0 0 16px; }
+.areacol-sw { height:30px; border-radius:8px; border:2px solid transparent; background:hsl(var(--h) 55% 55%); cursor:pointer; transition:transform .1s; }
+.areacol-sw:hover { transform:translateY(-1px); }
+.areacol-sw.on { box-shadow:0 0 0 2px var(--card), 0 0 0 4px hsl(var(--h) 55% 55%); }
+.areacol-fine { display:flex; align-items:center; gap:12px; font-size:14px; color:var(--ink-2); margin:0 0 18px; }
+.areacol-slider { flex:1; accent-color:hsl(var(--h,220) 55% 55%); }
 .pal input { width:100%; padding:20px 22px; font-size:19px; background:transparent; border:0; border-bottom:1px solid var(--line); color:var(--ink); }
 .pal input:focus-visible { outline:none; }
 .pal-list { max-height:52vh; overflow-y:auto; padding:8px; }

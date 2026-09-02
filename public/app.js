@@ -3141,7 +3141,7 @@ function renderArea() {
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
-        ${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
+        ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-gear" data-area-color title="Customise this area\'s colour">⚙</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${sharedBanner(area)}
@@ -3236,6 +3236,45 @@ async function areaAddNote() {
     state.noteTops.unshift(n);
     await openNote(n.id); setTimeout(() => $('#note-title') && $('#note-title').focus(), 30);
   } catch (e) { toast(e.message); }
+}
+// Customise a life area's colour. A hue is all an area stores (saturation and
+// lightness are fixed, so every area sits in the same tonal family); the picker
+// offers a spread of swatches plus a slider, previews live across the page, and
+// on Done saves props.hue - which the whole app then follows.
+const AREA_HUES = [0, 20, 40, 65, 90, 130, 160, 185, 210, 235, 265, 290, 320, 345];
+function openAreaColor() {
+  const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
+  const start = hueOf(area);
+  let hue = start;
+  const el = uiDialogHost();
+  el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box areacol-dialog" style="--h:${start}">
+    <div class="recur-h">Area colour</div>
+    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this area')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
+    <div class="areacol-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === start ? ' on' : ''}" style="--h:${hu}" data-areacol="${hu}" aria-label="Hue ${hu}"></button>`).join('')}</div>
+    <label class="areacol-fine">Fine tune<input type="range" min="0" max="359" value="${start}" class="areacol-slider" data-areacol-slider></label>
+    <div class="ui-dialog-btns"><button class="ui-btn cancel" data-areacol-cancel>Cancel</button><button class="ui-btn primary" data-areacol-done>Done</button></div>
+  </div></div>`;
+  const box = el.querySelector('.areacol-dialog');
+  const preview = (h) => { hue = h; document.querySelectorAll('.area-hero').forEach((x) => x.style.setProperty('--h', h)); box.style.setProperty('--h', h); el.querySelectorAll('.areacol-sw').forEach((sw) => sw.classList.toggle('on', +sw.dataset.areacol === h)); box.querySelector('.areacol-slider').value = h; };
+  const close = () => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
+  const cancel = () => { close(); renderArea(); };   // renderArea repaints from the stored (unchanged) hue
+  const commit = async () => {
+    close();
+    if (hue !== start) {
+      area.props = { ...(area.props || {}), hue };
+      const s = state.areas.find((x) => x.id === area.id); if (s) s.props = { ...(s.props || {}), hue };
+      api(`/api/blocks/${area.id}`, { method: 'PATCH', body: JSON.stringify({ props: { hue } }) }).catch((e) => toast(e.message));
+      renderNav();
+    }
+    renderArea();
+  };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); cancel(); } else if (e.key === 'Enter') { e.preventDefault(); commit(); } };
+  document.addEventListener('keydown', onKey, true);
+  el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) cancel(); });
+  el.querySelectorAll('[data-areacol]').forEach((b) => b.addEventListener('click', () => preview(+b.dataset.areacol)));
+  el.querySelector('[data-areacol-slider]').addEventListener('input', (e) => preview(+e.target.value));
+  el.querySelector('[data-areacol-cancel]').addEventListener('click', cancel);
+  el.querySelector('[data-areacol-done]').addEventListener('click', commit);
 }
 
 // ── view: calendar ───────────────────────────────────
@@ -7969,6 +8008,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-area-color]')) { openAreaColor(); return; }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
