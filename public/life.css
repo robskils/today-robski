@@ -2161,6 +2161,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-check.on { background:var(--accent); border-color:var(--accent); }
 .mail-row.mail-child .mail-check { left:56px; }
 .mail-row.picked { background:color-mix(in srgb,var(--accent) 8%,transparent); }
+/* A message being moved/deleted: dimmed and inert, with a quiet "working" pulse,
+   so it's clearly in progress rather than looking like nothing happened. */
+.mail-row.mail-pending { opacity:.45; pointer-events:none; animation:mailPending 1.1s ease-in-out infinite; }
+.mail-row.mail-pending .mail-star, .mail-row.mail-pending .mail-check { display:none; }
+@keyframes mailPending { 0%,100%{ opacity:.4; } 50%{ opacity:.62; } }
+@media (prefers-reduced-motion:reduce){ .mail-row.mail-pending { animation:none; } }
 /* Swipe-to-triage (mobile): tint + icon as a row passes the action threshold. */
 .mail-row[data-swipe="archive"] { background:color-mix(in srgb,#2e7d32 20%,transparent); }
 .mail-row[data-swipe="delete"] { background:color-mix(in srgb,#c0392b 22%,transparent); }

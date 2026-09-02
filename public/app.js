@@ -3886,6 +3886,9 @@ async function mailMoveTo(key, target, label) {
       if (!row.seen && /^inbox$/i.test(row._mailbox || '')) bumpUnread(row._acct, -1);
     }
     const gone = new Set(keys);
+    // Remember them as gone so a lagging Gmail refetch can't list them again for a
+    // moment. Undo clears the flag so a restored message can come back.
+    keys.forEach((k) => state.mail.gone.add(k));
     const openKey = state.mail.open && state.mail.open._key;
     const openIdx = openKey ? msgs.findIndex((m) => m._key === openKey) : -1;
     // Undo: move each message back from `target` to where it came from, found by
@@ -3893,6 +3896,7 @@ async function mailMoveTo(key, target, label) {
     const undoRows = rows.filter((r) => r.messageId).map((r) => ({ account: r._acct, from: target, messageId: r.messageId, to: r._mailbox || 'INBOX' }));
     const undo = undoRows.length ? async () => {
       toast('Restoring…');
+      keys.forEach((k) => state.mail.gone.delete(k));
       let ok = 0;
       for (const u of undoRows) { try { await mailApi('/move-by-msgid', { method: 'POST', body: JSON.stringify(u) }); ok++; } catch {} }
       toast(ok ? (ok > 1 ? `Restored ${ok} messages` : 'Restored') : 'Could not undo'); loadMessages();
@@ -4015,11 +4019,39 @@ async function mailToArea(areaId) {
 }
 async function mailMoveTargets(keys, target) {
   const list = [...keys]; state.mail.moveMenu = null;
-  for (const k of list) { const row = mailRow(k); if (!row) continue; try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) }); } catch (e) { toast(e.message); } }
-  state.mail.messages = (state.mail.messages || []).filter((m) => !list.includes(m._key));
-  list.forEach((k) => state.mail.selected.delete(k));
-  if (state.mail.open && list.includes(state.mail.open._key)) state.mail.open = null;
-  toast(`Moved ${list.length} to ${target === 'INBOX' ? 'Inbox' : target}`); renderMail();
+  // Group by account+mailbox so each group is ONE IMAP session (a separate
+  // login/select/move per message is what made deleting several Gmail messages
+  // crawl). Within a group the whole set moves in a single UID MOVE.
+  const groups = new Map();
+  for (const k of list) {
+    const row = mailRow(k); if (!row) continue;
+    const gid = `${row._acct} ${row._mailbox}`;
+    if (!groups.has(gid)) groups.set(gid, { account: row._acct, mailbox: row._mailbox, keys: [], uids: [] });
+    const g = groups.get(gid); g.keys.push(k); g.uids.push(row.uid);
+  }
+  if (!groups.size) return;
+  const label = target === 'INBOX' ? 'Inbox' : target;
+  // Keep the rows on screen but mark them pending, so it's clearly working and a
+  // background refresh can't make them flicker back. They're removed only once
+  // the server confirms the move - no more "looks like it didn't work".
+  list.forEach((k) => { state.mail.pending.add(k); state.mail.selected.delete(k); });
+  state.mail.selected = new Set(); renderMail();
+  const done = []; let failed = 0; let lastErr = '';
+  for (const g of groups.values()) {
+    try {
+      await mailApi('/move-bulk', { method: 'POST', body: JSON.stringify({ account: g.account, mailbox: g.mailbox, uids: g.uids, target }) });
+      done.push(...g.keys);
+    } catch (e) { failed += g.keys.length; lastErr = e.message; }
+  }
+  done.forEach((k) => { state.mail.pending.delete(k); state.mail.gone.add(k); });
+  // Failures stay in the list (un-pending) so they can be retried, with the real error.
+  groups.forEach((g) => g.keys.forEach((k) => { if (!done.includes(k)) state.mail.pending.delete(k); }));
+  state.mail.messages = (state.mail.messages || []).filter((m) => !state.mail.gone.has(m._key));
+  if (state.mail.open && done.includes(state.mail.open._key)) state.mail.open = null;
+  if (!failed) toast(done.length === 1 ? `Moved to ${label}` : `Moved ${done.length} to ${label}`);
+  else if (done.length) toast(`Moved ${done.length}; ${failed} could not be moved${lastErr ? ` (${lastErr})` : ''}`);
+  else toast(lastErr || `Could not move to ${label}`);
+  renderMail();
 }
 async function mailBulk(action) {
   if (action === 'clear') { state.mail.selected = new Set(); renderMail(); return; }
@@ -4154,7 +4186,7 @@ async function openMail(openKey) {
   loadContacts().then(() => { if (state.view.type === 'mail' && state.mail && (state.mail.open || state.mail.composing)) renderMail(); }).catch(() => {});
   if (!state.mail) {
     let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {}
-    state.mail = { account: seed.account || null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), mailboxes: [], moveMenu: null, accounts: Array.isArray(seed.accounts) && seed.accounts.length ? seed.accounts : undefined, listCache: seed.listCache || {} };
+    state.mail = { account: seed.account || null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), pending: new Set(), gone: new Set(), mailboxes: [], moveMenu: null, accounts: Array.isArray(seed.accounts) && seed.accounts.length ? seed.accounts : undefined, listCache: seed.listCache || {} };
   }
   // Come back to Mail and land where you left off: reopen the message that was
   // open (from the tab's remembered view, or the still-open one in memory).
@@ -4198,7 +4230,7 @@ function applyCachedList(r) {
   state.mail.unseen = r.unseen || {};
   state.mail._cacheSyncedAt = r.syncedAt || null;
   const nameOf = (id) => { const a = (state.mail.accounts || []).find((x) => x.id === id) || {}; return a.name || a.email || ''; };
-  state.mail.messages = (r.messages || []).map((x) => { const mb = x.mailbox || 'INBOX'; return { ...x, _acct: x.account, _acctName: nameOf(x.account), _mailbox: mb, _key: `${x.account}:${mb}:${x.uid}` }; });
+  state.mail.messages = (r.messages || []).map((x) => { const mb = x.mailbox || 'INBOX'; return { ...x, _acct: x.account, _acctName: nameOf(x.account), _mailbox: mb, _key: `${x.account}:${mb}:${x.uid}` }; }).filter((m) => !(state.mail.gone && state.mail.gone.has(m._key)));
   state.mail.error = null; state.mail.acctErrors = []; state.mail.hasMore = false;
 }
 async function loadMessages(quiet, force) {
@@ -4258,6 +4290,9 @@ async function loadMessages(quiet, force) {
   const rebuild = () => {
     let msgs = accts.flatMap((a) => bucket[a.id] || []);
     if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
+    // Drop anything we've just deleted/moved: Gmail is eventually consistent, so a
+    // live refetch can still list a message for a moment after it's gone.
+    if (state.mail.gone && state.mail.gone.size) msgs = msgs.filter((m) => !state.mail.gone.has(m._key));
     state.mail.messages = msgs;
     if (!state.mail.open) { const has = msgs.some((x) => x._key === state.mail.sel); if (!has) state.mail.sel = msgs[0] ? msgs[0]._key : null; }
     state.mail.error = null; state.mail.acctErrors = acctErrors;
@@ -4853,7 +4888,7 @@ const mailSearching = () => !!(state.mail && state.mail.query && state.mail.quer
 const folderChip = (x) => (mailSearching() && x._mailbox && !/^INBOX$/i.test(x._mailbox)) ? `<span class="mail-folder-chip">${esc(prettyMailbox(x._mailbox))}</span>` : '';
 // One message row. `count` (>1) shows a quiet conversation tally, Spark-style -
 // no chevrons or badges, the thread just reads as one row.
-const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
+const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.pending && state.mail.pending.has(x._key) ? 'mail-pending' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
     <span class="mail-check ${state.mail.selected && state.mail.selected.has(x._key) ? 'on' : ''}" data-mail-check="${esc(x._key)}" title="Select">${state.mail.selected && state.mail.selected.has(x._key) ? '✓' : ''}</span>
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>

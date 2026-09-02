@@ -257,7 +257,13 @@ async function imapOpen(env, acct) {
     async storeFlagged(uid, on) { await cmd(`UID STORE ${uid} ${on ? '+' : '-'}FLAGS (\\Flagged)`); },
     async move(uid, target) {
       const r = await cmd(`UID MOVE ${uid} ${imapStr(target)}`);
-      if (!r.ok) { await cmd(`UID COPY ${uid} ${imapStr(target)}`); await cmd(`UID STORE ${uid} +FLAGS (\\Deleted)`); await cmd('EXPUNGE'); }
+      if (r.ok) return;
+      // No UID MOVE (RFC 6851) support: copy, then delete + expunge the original.
+      // If the COPY itself fails the message went nowhere - surface that rather
+      // than deleting it and losing it, or reporting a success that didn't happen.
+      const c = await cmd(`UID COPY ${uid} ${imapStr(target)}`);
+      if (!c.ok) { const last = (c.lines || []).pop() || ''; throw new Error(last.replace(/^\S+\s+(NO|BAD)\b\s*/i, '').trim() || `Could not move message to ${target}`); }
+      await cmd(`UID STORE ${uid} +FLAGS (\\Deleted)`); await cmd('EXPUNGE');
     },
     cmd, reader, writer, enc,
   };
@@ -953,7 +959,7 @@ export async function handleMail(request, env, url, json, err) {
     if (sub === 'move' && method === 'POST') {
       const b = await request.json(); const im = await imapOpen(env, acct);
       try {
-        await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(b.uid, b.target || 'Trash');
+        await im.login(); await im.select(b.mailbox || 'INBOX'); await im.move(b.uid, await resolveMailbox(im, b.target || 'Trash'));
         // An unread message leaving the inbox drops the badge count now, not at
         // the next sync; drop it from the cache so it doesn't linger in the list.
         if (/^INBOX$/i.test(b.mailbox || 'INBOX')) {
@@ -962,6 +968,41 @@ export async function handleMail(request, env, url, json, err) {
           if (cur) await env.DB.prepare("DELETE FROM mail_cache WHERE account=? AND mailbox='INBOX' AND uid=?").bind(acct.id, b.uid).run();
         }
         return json({ ok: true }, request);
+      } finally { await im.logout(); }
+    }
+
+    // Move MANY messages from one mailbox in a SINGLE IMAP session. Deleting or
+    // filing several messages used to open one login/select/move/logout per
+    // message - painfully slow against Gmail from the edge. One UID MOVE over the
+    // whole set is one round trip.
+    if (sub === 'move-bulk' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const uids = [...new Set((Array.isArray(b.uids) ? b.uids : []).map(Number).filter((n) => Number.isFinite(n) && n > 0))];
+      if (!uids.length) return err('no messages', request, 400);
+      const box = b.mailbox || 'INBOX';
+      const im = await imapOpen(env, acct);
+      try {
+        await im.login(); await im.select(box);
+        const target = await resolveMailbox(im, b.target || 'Trash');
+        const set = uids.join(',');
+        const r = await im.cmd(`UID MOVE ${set} ${imapStr(target)}`);
+        if (!r.ok) {
+          const c = await im.cmd(`UID COPY ${set} ${imapStr(target)}`);
+          if (!c.ok) { const last = (c.lines || []).pop() || ''; throw new Error(last.replace(/^\S+\s+(NO|BAD)\b\s*/i, '').trim() || `Could not move to ${target}`); }
+          await im.cmd(`UID STORE ${set} +FLAGS (\\Deleted)`); await im.cmd('EXPUNGE');
+        }
+        // Cache upkeep for INBOX: drop the rows and correct the unread badge.
+        // Chunk the IN-lists - D1 caps bound parameters near 100 (see CLAUDE.md).
+        if (/^INBOX$/i.test(box)) {
+          for (let i = 0; i < uids.length; i += 90) {
+            const chunk = uids.slice(i, i + 90); const ph = chunk.map(() => '?').join(',');
+            const u = await env.DB.prepare(`SELECT COUNT(*) AS n FROM mail_cache WHERE account=? AND mailbox='INBOX' AND seen=0 AND uid IN (${ph})`).bind(acct.id, ...chunk).first();
+            const drop = (u && u.n) || 0;
+            if (drop) await env.DB.prepare("UPDATE mail_cache_meta SET unseen = MAX(0, unseen - ?) WHERE account=? AND mailbox='INBOX'").bind(drop, acct.id).run();
+            await env.DB.prepare(`DELETE FROM mail_cache WHERE account=? AND mailbox='INBOX' AND uid IN (${ph})`).bind(acct.id, ...chunk).run();
+          }
+        }
+        return json({ ok: true, moved: uids.length, target }, request);
       } finally { await im.logout(); }
     }
 
