@@ -211,6 +211,20 @@ Measured July 2026 across roughly 278 open tasks:
 
 ## Gotchas
 
+- **Any IMAP move MUST resolve the target through `resolveMailbox` - never pass a
+  literal 'Trash'/'Junk'/'Archive'.** Providers localize and brand their special
+  folders: Robin's Google Workspace bin is `[Google Mail]/Bin`, not `Trash` or
+  even `[Gmail]/Trash`. `resolveMailbox` finds it by the RFC 6154 special-use flag
+  (`\Trash`), which the hard-coded name list can't. A literal target silently
+  misses, forcing the slow COPY-fail -> `STORE \Deleted` -> `EXPUNGE` fallback (or
+  losing the move), which is what made deletes look broken. `im.move` throws on a
+  failed COPY so a miss surfaces instead of faking success.
+- **Bulk mail actions go through `/move-bulk` (one IMAP session for the whole
+  set), not a `/move` per message.** A login/select/move/logout per message is
+  brutally slow against Gmail from the edge. The UI keeps rows visible but
+  `mail-pending` (dimmed) until the server confirms, then drops them; a
+  `state.mail.gone` set stops an eventually-consistent Gmail refetch from
+  resurrecting a just-deleted message (Undo clears it).
 - `.gate` and `.sheet-bg` set `display`, which outranks the UA `[hidden]` rule.
   `[hidden] { display: none !important }` in today.css keeps `hidden` working.
   Don't remove it.
