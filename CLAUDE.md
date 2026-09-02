@@ -241,6 +241,14 @@ Measured July 2026 across roughly 278 open tasks:
   `calendar.readonly`; a refresh token carries the scopes it was granted with,
   so widening the scope means re-running `npm run google-auth`. `createEvent`
   turns a 401/403 into "connected read-only" rather than a bare failure.
+- **Every Google Calendar write carries `sendUpdates=none`.** Deleting an event
+  Robin was *invited to* removes his attendance, and without this param Google
+  emails the organizer that he declined - which is why people reported Robin
+  "rejected their invitations". create/update/delete/series-trim all pin
+  `sendUpdates=none` so Daybook never RSVPs or sends a change notice on his
+  behalf. Don't drop it. (Note: a delete still sets his responseStatus to
+  declined on the organizer's copy - it just doesn't email. Not calling
+  events.delete on non-organized events at all is a larger, unbuilt change.)
 - **Revoke first, then re-auth. Never the other way round.** Widening the scope
   needs the old grant revoked at myaccount.google.com/permissions, because
   Google otherwise silently reissues the previous scope set. But a revoke kills
