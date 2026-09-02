@@ -2769,12 +2769,19 @@ table.ttable tr:last-child td { border-bottom:0; }
 .j-head-act { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .j-head-btn { padding:11px 16px; font-size:15px; white-space:nowrap; }
 .j-head-primary { display:flex; gap:10px; }
+/* Journal / Coaching / Dreams / Spirit Cards: icon + label inline on desktop. */
+.j-mode-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.j-mode-btn .jm-ic { font-size:1.05em; line-height:1; }
 @media (max-width:820px){
   .j-head-act { width:100%; }
-  /* Four entry buttons (Coaching, Dreams, Spirit Cards, Journal) wrap to a 2x2
-     grid rather than overflowing the row. */
+  /* Four entry buttons wrap to a 2x2 grid. Each is one equal-height cell with the
+     icon stacked above a centred label, so a longer name like "Spirit Cards"
+     wraps tidily under its icon instead of cramming beside it and looking odd. */
   .j-head-primary { flex:1; flex-wrap:wrap; }
   .j-head-primary .add-btn.wide { flex:1 1 44%; }
+  .j-mode-btn { flex-direction:column; gap:5px; min-height:74px; padding:12px 8px;
+    white-space:normal; text-align:center; line-height:1.2; }
+  .j-mode-btn .jm-ic { font-size:22px; }
 }
 /* Journal insights card (scan of recent entries) */
 .j-insights { background:color-mix(in srgb,var(--accent) 6%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line)); border-radius:16px; padding:18px 20px; margin-bottom:18px; }

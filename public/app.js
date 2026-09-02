@@ -2948,7 +2948,7 @@ function renderJournalList() {
     </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Reflection')}
-    <div class="pane-head home-head"><h1>Reflection</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide" data-journal-start>📓 Journal</button><button class="add-btn wide" data-journal-coaching>🧭 Coaching</button><button class="add-btn wide" data-journal-dream title="Write a dream and get a gentle interpretation">💭 Dreams</button><button class="add-btn wide" data-spirit-open title="Draw a card for a moment's reflection">🃏 Spirit Cards</button></div></div>`}</div>
+    <div class="pane-head home-head"><h1>Reflection</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide j-mode-btn" data-journal-start><span class="jm-ic">📓</span><span class="jm-t">Journal</span></button><button class="add-btn wide j-mode-btn" data-journal-coaching><span class="jm-ic">🧭</span><span class="jm-t">Coaching</span></button><button class="add-btn wide j-mode-btn" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="jm-ic">💭</span><span class="jm-t">Dreams</span></button><button class="add-btn wide j-mode-btn" data-spirit-open title="Draw a card for a moment's reflection"><span class="jm-ic">🃏</span><span class="jm-t">Spirit Cards</span></button></div></div>`}</div>
     ${j.picking ? '' : spiritPinnedHtml()}
     ${picker}
     ${insightsCard}
@@ -8048,6 +8048,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-next]')) { if (state.onb && state.onb.step >= ONB_STEPS.length - 1) finishOnboarding(); else onbGo((state.onb ? state.onb.step : 0) + 1); return; }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
+  if (t.closest('[data-onb-phone-save]')) { onbSavePhone(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
   if (t.closest('[data-onb-replay]')) { showOnboarding(0); return; }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
@@ -9974,7 +9975,7 @@ function registerMailHandler() { try { if (navigator.registerProtocolHandler) na
 // A gentle, skippable guide shown once when a new account first opens: orient
 // them, offer AI (optional), offer email (optional). Persisted per-user via
 // /api/kv/onboarded so it shows exactly once and never nags an existing member.
-const ONB_STEPS = ['Welcome', 'Life areas', 'Add AI', 'Connect email', 'Done'];
+const ONB_STEPS = ['Welcome', 'Life areas', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
 async function maybeOnboard() {
   if (!state.me || !state.me.subdomain) return;   // multi-tenant own account only
   let seen = true;
@@ -10073,6 +10074,26 @@ function onbEmail() {
     </div>
     <p class="onb-p onb-muted">Not Gmail? You can set up Outlook, iCloud, Purelymail and others in <b>Settings → Mail accounts</b>.</p>`;
 }
+function onbPhone() {
+  const a = state.onb.account || {};
+  const saved = (a.phone || '').trim();
+  return `<h2 class="onb-h">A backup way in <span class="onb-opt">optional</span></h2>
+    <p class="onb-p">Daybook signs you in with a code sent to your email. But once Daybook <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
+    <p class="onb-p">Add your phone now and you'll always have a way in: if you ever can't reach your email, we can <b>text your sign-in code</b> instead. (It's also used for any reminders you switch on.)</p>
+    ${saved ? `<div class="onb-ok">✓ Phone saved. Change it anytime in <b>Settings → Account</b>.</div>` : ''}
+    <div class="onb-mailform">
+      <input id="onb-phone" class="sel" type="tel" inputmode="tel" placeholder="+351 912 345 678" value="${esc(saved)}" autocomplete="tel">
+      <button class="add-btn wide" data-onb-phone-save>${saved ? 'Update phone' : 'Save phone'}</button>
+    </div>
+    <p class="onb-p onb-muted">Only ever for sign-in codes and reminders you turn on - never marketing.</p>`;
+}
+async function onbSavePhone() {
+  const el = document.getElementById('onb-phone'); const v = (el && el.value || '').trim();
+  if (!v) { toast('Enter your phone number first'); return; }
+  const btn = document.querySelector('[data-onb-phone-save]'); if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try { state.onb.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ phone: v }) }); state.account = state.onb.account; toast('Phone saved - that\'s your backup way in'); renderOnboarding(); }
+  catch (e) { toast(e.message); if (btn) { btn.disabled = false; btn.textContent = 'Save phone'; } }
+}
 function onbDone() {
   return `<h2 class="onb-h">You're all set 🎉</h2>
     <p class="onb-p">A few ways to start:</p>
@@ -10088,7 +10109,7 @@ function renderOnboarding() {
   const s = state.onb; if (!s) return;
   const last = ONB_STEPS.length - 1;
   const dots = ONB_STEPS.map((_, i) => `<span class="onb-dot ${i === s.step ? 'on' : ''} ${i < s.step ? 'done' : ''}"></span>`).join('');
-  const content = s.step === 0 ? onbWelcome() : s.step === 1 ? onbAreas() : s.step === 2 ? onbAi() : s.step === 3 ? onbEmail() : onbDone();
+  const content = s.step === 0 ? onbWelcome() : s.step === 1 ? onbAreas() : s.step === 2 ? onbAi() : s.step === 3 ? onbEmail() : s.step === 4 ? onbPhone() : onbDone();
   document.getElementById('onb').innerHTML = `<div class="onb-bg"><div class="onb-card" role="dialog" aria-modal="true" aria-label="Welcome to Daybook">
     <button class="onb-skip" data-onb-finish>${s.step === last ? '' : 'Skip setup'}</button>
     <div class="onb-dots">${dots}</div>
