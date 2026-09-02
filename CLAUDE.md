@@ -249,6 +249,12 @@ Measured July 2026 across roughly 278 open tasks:
   behalf. Don't drop it. (Note: a delete still sets his responseStatus to
   declined on the organizer's copy - it just doesn't email. Not calling
   events.delete on non-organized events at all is a larger, unbuilt change.)
+  The other half of that same bug was duplicate creation: Gmail auto-adds an
+  invitation to the calendar, and `mailInviteAdd` created a *second* copy, so
+  Robin tidied up by deleting one - and hit the invited copy. `createEvent`
+  (owner path) now looks the invite's iCalUID up on Google first
+  (`events?iCalUID=`) and adopts the existing event (`existed:true`) instead of
+  duplicating. The invite UID rides in the POST body as `b.uid`.
 - **Revoke first, then re-auth. Never the other way round.** Widening the scope
   needs the old grant revoked at myaccount.google.com/permissions, because
   Google otherwise silently reissues the previous scope set. But a revoke kills
