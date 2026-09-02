@@ -6756,8 +6756,13 @@ async function newGoal(area) {
   // to track it (milestones or a number) - milestones is a kind of goal, not the
   // starting point, so we don't drop you straight into the milestone editor.
   const props = { area: area || null, why: '', horizon: 'quarter', gtype: '', status: 'active', focus: false, milestones: [] };
-  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'goal', title: 'New goal', props }) });
-  state.goals.push(b); openGoalCard(b.id);
+  // Start with no title so the "What do you want to achieve?" placeholder shows,
+  // then drop the cursor into it - you can type your goal straight away.
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'goal', title: '', props }) });
+  state.goals.push(b);
+  await openGoalCard(b.id);
+  const el = document.getElementById('goalcard-title');
+  if (el) { el.focus(); try { el.setSelectionRange(0, 0); } catch {} }
 }
 async function openGoalCard(id) {
   const g = await api(`/api/blocks/${id}`);
