@@ -599,10 +599,28 @@ function openHelpTab(key) {
   Promise.resolve(openView(view)).catch(() => openHome());
   saveTabs();
 }
+// A one-word-ish summary of a single filter condition, for the tab label -
+// "P1", a life-area name, "Snoozed", "no Repeat". Falls back to the field name.
+function condShort(c) {
+  const f = TASK_FIELDS[c.field]; if (!f) return '';
+  if (['isset', 'yes'].includes(c.op)) return f.label;
+  if (['notset', 'no'].includes(c.op)) return `no ${f.label}`;
+  let val = c.value;
+  if (f.choices) { const hit = f.choices().find(([vv]) => String(vv) === String(c.value)); if (hit) val = hit[1]; }
+  return String(val || f.label);
+}
+// The tab title for a Tasks view reflects its filter, so two Tasks tabs (P1 vs a
+// life area) read differently in the strip instead of both saying "Tasks".
+function taskTabLabel(v) {
+  const f = (v && v.filters) || [];
+  if (!f.length) return 'Tasks';
+  if (f.length === 1) { const s = condShort(f[0]); return s ? `Tasks · ${s}` : 'Tasks'; }
+  return `Tasks · ${f.length} filters`;
+}
 function labelForView(v) {
   switch (v.type) {
     case 'help': return v.tool === 'index' ? 'Guide' : `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
-    case 'tasks': return 'Tasks';
+    case 'tasks': return taskTabLabel(v);
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
     case 'mailaccounts': return 'Mail accounts';
@@ -682,6 +700,16 @@ function crumbNav(trail, areaId) {
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
 function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label, pinned: !!t.pinned })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); } catch {} }
+// A tab must own an INDEPENDENT copy of its view. A Tasks view carries mutable
+// filters/sort; a shallow copy leaves every Tasks tab pointing at one shared
+// array, so they all show identical content (the "two tabs, same content" bug).
+// Deep-copy those so each tab keeps its own P1 / life-area / etc. filter.
+function tabViewCopy(v) {
+  if (v && v.type === 'tasks') {
+    return { type: 'tasks', filters: JSON.parse(JSON.stringify(v.filters || [])), sort: { ...(v.sort || {}) }, q: v.q || '', filtersOpen: !!v.filtersOpen };
+  }
+  return { ...v };
+}
 function syncActiveTab() {
   let tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
   // A pinned tab is locked to its destination. Navigating elsewhere while it's
@@ -692,7 +720,7 @@ function syncActiveTab() {
     if (!work) { work = { id: uid(), view: { type: 'home' }, label: 'Home', pinned: false }; state.tabs.push(work); }
     state.activeTab = work.id; tab = work; renderTabs();
   }
-  tab.view = { ...state.view }; tab.label = labelForView(state.view); saveTabs();
+  tab.view = tabViewCopy(state.view); tab.label = labelForView(state.view); saveTabs();
 }
 function togglePin(id) {
   const tab = state.tabs.find((t) => t.id === id); if (!tab) return;
@@ -1794,16 +1822,25 @@ async function openTasks(filter) {
   // hydrates its saved view; a fresh open (or a forced filter like "See all P1")
   // falls back to the last-used defaults.
   const cur = state.tabs && state.tabs.find((t) => t.id === state.activeTab);
-  const saved = !state._taskViewForce && cur && cur.view && cur.view.type === 'tasks' && Array.isArray(cur.view.filters) ? cur.view : null;
-  state._taskViewForce = false;
+  const forced = !!state._taskViewForce; state._taskViewForce = false;
+  const saved = !forced && cur && cur.view && cur.view.type === 'tasks' && Array.isArray(cur.view.filters) ? cur.view : null;
   if (saved) {
+    // Returning to an existing Tasks tab: hydrate ITS saved filters (deep-copied
+    // so editing them doesn't reach back into the stored view).
     state.taskFilters = JSON.parse(JSON.stringify(saved.filters));
     if (saved.sort) state.taskSort = { ...saved.sort };
     state.taskQuery = saved.q || '';
     state.taskFiltersOpen = !!saved.filtersOpen;
-  } else {
-    loadTaskFilters();
+  } else if (!forced) {
+    // A fresh Tasks tab gets its OWN arrays, seeded from the last-used default -
+    // never the previous tab's live array, or the two would stay linked.
+    let def = []; try { def = JSON.parse(localStorage.getItem('life.tasks.filters')) || []; } catch { def = []; }
+    state.taskFilters = def;
+    state.taskQuery = '';
+    state.taskFiltersOpen = false;
   }
+  // forced (e.g. "See all P1" from Home): the caller has already set its own
+  // fresh state.taskFilters - leave it untouched.
   state.view = { type: 'tasks', filters: state.taskFilters, sort: state.taskSort, q: state.taskQuery || '', filtersOpen: !!state.taskFiltersOpen };
   if (filter !== undefined) state.taskFilter = filter;
   // Always refetch tasks (they change); reuse cached areas.
@@ -5407,7 +5444,11 @@ function commitTaskView() {
   state.view.q = state.taskQuery || '';
   state.view.filtersOpen = !!state.taskFiltersOpen;
   const tab = state.tabs && state.tabs.find((t) => t.id === state.activeTab);
-  if (tab && tab.view && tab.view.type === 'tasks') { tab.view = { ...state.view }; saveTabs(); }
+  if (tab && tab.view && tab.view.type === 'tasks') {
+    const label = labelForView(state.view); const labelChanged = tab.label !== label;
+    tab.view = tabViewCopy(state.view); tab.label = label; saveTabs();
+    if (labelChanged) renderTabs();   // keep the tab strip's title in step with the filter
+  }
 }
 function renderTasks() {
   loadTaskFilters();
