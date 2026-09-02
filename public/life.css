@@ -1493,6 +1493,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .help-btn:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
 .tabstrip .help-btn { margin-left:auto; width:30px; height:30px; font-size:15px; }
 .nav-bottom-row .help-btn { display:none; }   /* desktop: the tab-strip one is used instead */
+/* Settings + Sign out in the tab strip, styled to match the round i. */
+.tabstrip .tab-util { flex:none; width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13.5px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
+.tabstrip .tab-util:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
+.tabstrip .tab-util.on { color:var(--accent); border-color:var(--accent); }
 #help-pop.help-pop { position:fixed; z-index:60; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 36px -14px rgba(0,0,0,.42); padding:13px 15px; display:none; }
 .help-pop-t { font-size:14px; font-weight:650; color:var(--ink); margin-bottom:5px; }
 .help-pop-b { font-size:13.5px; line-height:1.5; color:var(--ink-2); }

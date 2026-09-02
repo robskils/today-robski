@@ -709,7 +709,10 @@ function renderTabs() {
     <span class="tab-pin ${t.pinned ? 'on' : ''}" data-tab-pin="${t.id}" title="${t.pinned ? 'Unpin' : 'Pin to keep this tab'}">📌</span>
     <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${!t.pinned && many ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
     + `<button class="tab-new" data-tab-new title="New tab  ⌥⌘T">+</button>`
-    + helpIconHtml();   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
+    + helpIconHtml()   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
+    // Settings + Sign out, small round icons in keeping with the i, right of it.
+    + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings" aria-label="Settings">⚙</button>`
+    + (state.me ? `<button class="tab-util" data-account-signout title="Sign out" aria-label="Sign out">↪</button>` : '');
 }
 function newTab() {
   const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome();
