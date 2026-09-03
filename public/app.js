@@ -5627,7 +5627,7 @@ function renderTasks() {
   const conds = state.taskFilters || [];
   const filterBar = `<div class="task-filters">
     <div class="tf-head">
-      <button class="tf-toggle" data-tf-toggle><span class="acw-chev">${state.taskFiltersOpen ? '▾' : '▸'}</span>⚲ Filters${conds.length ? `<span class="tf-count">${conds.length}</span>` : ''}</button>
+      <button class="tf-toggle" data-tf-toggle><span class="acw-chev">${state.taskFiltersOpen ? '▾' : '▸'}</span>Filters${conds.length ? `<span class="tf-count">${conds.length}</span>` : ''}</button>
       ${conds.length && !state.taskFiltersOpen ? `<div class="tf-chips">${conds.map((c, i) => condChip(c, i)).join('')}</div>` : ''}
     </div>
     ${state.taskFiltersOpen ? `<div class="tf-panel">
