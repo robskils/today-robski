@@ -1750,6 +1750,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
      every time instead of only sometimes on a thin header. */
   .home-sec-toggle { padding:13px 2px; margin-bottom:3px; min-height:22px; }
   .home-grip { display:none; }
+  /* Drag a section up or down in place. The grip is a real touch target; while
+     one section is lifted a coloured line marks where it will drop. */
+  .home-mgrip { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; margin:-8px 3px -8px -6px; flex:none; color:var(--ink-3); font-size:17px; line-height:1; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; }
+  .home-mgrip:active { cursor:grabbing; color:var(--accent); }
+  .home-sec.mdragging { position:relative; z-index:50; opacity:.97; }
+  .home-sec.mdragging .home-sec-h { border-radius:12px; background:var(--card); box-shadow:0 14px 34px -10px rgba(0,0,0,.5); }
+  .home-sec.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
+  .home-sec.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
   /* Default order (Today + tool buttons pinned first). Settings → Mobile can
      override the sections below via inline `order`, and hide any with .mob-hide. */
   .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }

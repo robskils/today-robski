@@ -2431,8 +2431,15 @@ function secOpen(key) {
 // Reposition-by-drag is a desktop affordance; on a phone the grip only misaligns
 // the header and can swallow the tap, so mobile headers are plain tap-to-collapse.
 function secH(key, title, extra, drag) {
-  const canDrag = drag && !matchMedia('(max-width:820px)').matches;
-  return `<div class="home-sec-h home-sec-toggle${canDrag ? ' home-drag-h' : ''}" data-sec-collapse="${key}" ${canDrag ? `draggable="true" data-hsec-grip="${key}"` : ''}>${canDrag ? '<span class="home-grip" title="Drag to reposition">⠿</span>' : ''}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`;
+  const mobile = matchMedia('(max-width:820px)').matches;
+  const deskDrag = drag && !mobile;
+  // On mobile the sections are draggable in place too, but only the ones the mobile
+  // arrangement actually orders (Today stays pinned). Touch drag uses pointer
+  // events (data-hsec-mgrip), not HTML5 drag, which doesn't fire on a phone.
+  const mobDrag = drag && mobile && MOBILE_KEYS.includes(key);
+  const grip = deskDrag ? '<span class="home-grip" title="Drag to reposition">⠿</span>'
+    : mobDrag ? `<span class="home-mgrip" data-hsec-mgrip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span>` : '';
+  return `<div class="home-sec-h home-sec-toggle${deskDrag ? ' home-drag-h' : ''}${mobDrag ? ' home-mdrag-h' : ''}" data-sec-collapse="${key}" ${deskDrag ? `draggable="true" data-hsec-grip="${key}"` : ''}>${grip}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`;
 }
 // The Priority Tasks list, in whatever order you've dragged it into. A custom
 // order persists in localStorage; anything not yet ordered (a freshly-flagged
@@ -2491,6 +2498,7 @@ function p1Html() {
   return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
 }
 function renderHome() {
+  if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
   const todayItems = homeTodayItems();
@@ -8280,7 +8288,7 @@ document.addEventListener('click', (e) => {
   // arrow would also collapse the section.
   { const ds = t.closest('[data-home-day-set]'); if (ds) { homeDaySet(Number(ds.dataset.homeDaySet)); return; } }
   { const dd = t.closest('[data-home-day]'); if (dd) { homeDaySet((state.home.dayOffset || 0) + Number(dd.dataset.homeDay)); return; } }
-  { const sc = t.closest('[data-sec-collapse]'); if (sc) { const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
+  { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
@@ -8926,6 +8934,61 @@ function msecDragEnd(e) {
 }
 document.addEventListener('pointerup', msecDragEnd);
 document.addEventListener('pointercancel', msecDragEnd);
+
+// Drag a section up or down IN PLACE on the mobile Home. Pointer events (touch +
+// mouse); reorders the same saved arrangement as Settings → Mobile, so the two
+// stay in lockstep. Only the dragged card moves - a coloured line shows where it
+// will land - and everything snaps to the new order on release.
+let homeSecDrag = null;
+let suppressSecClick = 0;
+const msecEl = (k) => document.querySelector('.' + MSEC_CLASS[k]);
+document.addEventListener('pointerdown', (e) => {
+  const grip = e.target.closest && e.target.closest('[data-hsec-mgrip]');
+  if (!grip) return;
+  const sec = grip.closest('[data-hsec]'); if (!sec) return;
+  e.preventDefault(); e.stopPropagation();
+  const cfg = mobileHomeCfg();
+  const order = cfg.order.filter((k) => !cfg.hidden.includes(k) && msecEl(k));
+  homeSecDrag = { key: grip.dataset.hsecMgrip, sec, grip, id: e.pointerId, startY: e.clientY, moved: false, order, newOrder: order.slice() };
+  sec.classList.add('mdragging');
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  const d = homeSecDrag; if (!d || e.pointerId !== d.id) return;
+  e.preventDefault();
+  const dy = e.clientY - d.startY;
+  if (Math.abs(dy) > 4) d.moved = true;
+  d.sec.style.transform = `translateY(${dy}px)`;
+  const others = d.order.filter((k) => k !== d.key);
+  let ins = others.length;
+  for (let i = 0; i < others.length; i++) { const el = msecEl(others[i]); if (!el) continue; const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { ins = i; break; } }
+  d.newOrder = [...others.slice(0, ins), d.key, ...others.slice(ins)];
+  d.order.forEach((k) => { const el = msecEl(k); if (el) el.classList.remove('mdrop-top', 'mdrop-bottom'); });
+  if (ins < others.length) { const el = msecEl(others[ins]); if (el) el.classList.add('mdrop-top'); }
+  else if (others.length) { const el = msecEl(others[others.length - 1]); if (el) el.classList.add('mdrop-bottom'); }
+  // Edge auto-scroll so you can reach far positions in a long Home.
+  const vh = window.innerHeight;
+  if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
+});
+function homeSecDragEnd(e) {
+  const d = homeSecDrag; if (!d || (e && e.pointerId !== d.id)) return;
+  homeSecDrag = null;
+  d.sec.style.transform = ''; d.sec.classList.remove('mdragging');
+  d.order.forEach((k) => { const el = msecEl(k); if (el) el.classList.remove('mdrop-top', 'mdrop-bottom'); });
+  suppressSecClick = Date.now();   // don't let the release toggle the header's collapse
+  if (d.moved && d.newOrder && d.newOrder.join() !== d.order.join()) {
+    const cfg = mobileHomeCfg();
+    // Refill only the visible-section slots of the saved order, leaving hidden
+    // sections where they sit, so a later un-hide reappears sensibly.
+    const visible = new Set(d.newOrder);
+    let vi = 0;
+    cfg.order = cfg.order.map((k) => visible.has(k) ? d.newOrder[vi++] : k);
+    saveMobileHomeCfg(cfg); applyMobileHomeOrder();
+    toast('Moved');
+  }
+}
+document.addEventListener('pointerup', homeSecDragEnd);
+document.addEventListener('pointercancel', homeSecDragEnd);
 function reorderHomeSec(dragged, before, cur) {
   const arr = cur.filter((k) => k !== dragged);
   let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
