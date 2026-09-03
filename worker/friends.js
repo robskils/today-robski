@@ -7,7 +7,7 @@
 // 'accepted'. Every query is scoped to env.uid.
 
 const ONLINE_MS = 3 * 60 * 1000;
-const isOnline = (lastSeen) => !!lastSeen && (Date.now() - new Date(lastSeen).getTime()) < ONLINE_MS;
+export const isOnline = (lastSeen) => !!lastSeen && (Date.now() - new Date(lastSeen).getTime()) < ONLINE_MS;
 
 export async function touchPresence(env) {
   await env.DB.prepare('UPDATE users SET last_seen = ? WHERE id = ?').bind(new Date().toISOString(), env.uid).run().catch(() => {});
@@ -111,8 +111,10 @@ export async function friendStatus(env) {
   const incoming = rows.filter((r) => r.status === 'in').length;
   const accepted = rows.filter((r) => r.status === 'accepted');
   const online = accepted.filter((r) => isOnline(r.last_seen)).map((r) => ({ id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain }));
-  const unread = (await unreadCounts(env)).total;
-  return { incoming, online, unread, friends: accepted.length };
+  // unreadBy lets each person's row carry its own count, so you can see WHO is
+  // waiting without opening every chat to find out.
+  const u = await unreadCounts(env);
+  return { incoming, online, unread: u.total, unreadBy: u.byFriend, friends: accepted.length };
 }
 
 export async function removeFriend(env, id) {

@@ -1,11 +1,10 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
-import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople } from './friends.js';
+import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople, isOnline } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { openMeeting } from './meetings.js';
-import { createWebinar, updateWebinar, listWebinars, deleteWebinar, getPublicWebinar, webinarPage } from './webinars.js';
 import { aiKey, aiNeedsKey, logAiUsage, setAiKey } from './ai.js';
 import { adminOverview, adminUsers, updateUser, adminAiUsage, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
 import { briefDue, briefEmail, briefSubject } from './brief.js';
@@ -2360,6 +2359,34 @@ async function pushAll(env, payload, uid = env.uid) {
   return { sent, total: (results || []).length };
 }
 
+// A push about a chat message. Two gates, and between them they're the whole
+// notification policy:
+//
+//   Is the recipient looking at Daybook right now? Then say nothing. The in-app
+//   badge already tells them, and a phone buzzing about a message you are
+//   watching arrive is the surest way to get notifications turned off for good.
+//
+//   Do they already have an unread message from this sender? Then they have
+//   already been told. So a burst of five messages rings once, not five times,
+//   and the next one rings again only after they've read what's waiting. No
+//   timer to tune and no state to keep - the unread rows ARE the state.
+async function maybePushMessage(env, toUid, fromName, body) {
+  try {
+    const u = await env.DB.prepare('SELECT last_seen FROM users WHERE id = ?').bind(toUid).first();
+    if (u && isOnline(u.last_seen)) return;
+    const r = await env.DB.prepare(
+      'SELECT COUNT(*) AS n FROM messages WHERE to_id = ? AND from_id = ? AND read_at IS NULL',
+    ).bind(toUid, env.uid).first();
+    if (((r && r.n) || 0) > 1) return;   // this one plus an older unread = already notified
+    // No `unread` field: that number is the mail badge on the app icon, and a
+    // chat message has no business rewriting it (see sw.js).
+    await pushAll(env, {
+      type: 'message', target: 'contacts', url: '/',
+      title: `${fromName} sent you a message`,
+      body: String(body || '').slice(0, 140),
+    }, toUid);
+  } catch (e) { console.error('message push:', e.message); }
+}
 // A push about a connection (request received, or request accepted). Tapping it
 // opens Contacts, where the Accept button (or the new friend) is waiting.
 async function pushConnect(env, toUid, title, body) {
@@ -2490,12 +2517,6 @@ export default {
       // subdomain like tara.daybook.fyi is the app itself.
       const isApex = host === 'daybook.fyi' || host === 'www.daybook.fyi';
       const isLife = host.endsWith('.daybook.fyi') && !isApex;
-      // Public webinar join page: /w/<id>, no account needed, on any host.
-      const wm = path.match(/^\/w\/([\w-]{4,40})$/);
-      if (wm) {
-        const w = await getPublicWebinar(env, wm[1]);
-        return withHsts(new Response(webinarPage(w, wm[1]), { status: w ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } }));
-      }
       // Invite links: /join/<CODE> boots the app (on any host) so the signup form
       // can pick the code out of the URL and prefill it. Bare /join is the same
       // shell: the app tidies the code out of the URL once it has stashed it, and
@@ -2730,7 +2751,17 @@ export default {
       }
       if (path === '/api/friends/remove' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await removeFriend(env, b.id), request); }
       if (path === '/api/messages' && request.method === 'GET') { try { return json(await getMessages(env, url.searchParams.get('with')), request); } catch (e) { return err(e.message, request, 403); } }
-      if (path === '/api/messages' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await sendMessage(env, b.to, b.body), request, 201); } catch (e) { return err(e.message, request, 403); } }
+      if (path === '/api/messages' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try {
+          const r = await sendMessage(env, b.to, b.body);
+          // After the insert, so the "already has one unread from me" count sees
+          // this message. Awaited rather than fired off: a push that fails should
+          // be logged, and the send is fast enough that it costs nothing.
+          await maybePushMessage(env, Number(b.to), (env.user && (env.user.name || env.user.subdomain)) || 'Someone', b.body);
+          return json(r, request, 201);
+        } catch (e) { return err(e.message, request, 403); }
+      }
       if (path === '/api/messages/unread' && request.method === 'GET') return json(await unreadCounts(env), request);
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
@@ -2850,16 +2881,6 @@ export default {
       if (path === '/api/shared' && request.method === 'GET') return json(await sharedWithMe(env), request);
       // Meeting notes: a shared note per friend pair (Friends phase 3c).
       if (path === '/api/meeting' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await openMeeting(env, b.friendId), request); } catch (e) { return err(e.message, request, 400); } }
-      // Webinars: host-managed scheduled group calls (Friends phase 3d).
-      if (path === '/api/webinars' && request.method === 'GET') return json(await listWebinars(env), request);
-      if (path === '/api/webinars' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await createWebinar(env, b), request, 201); } catch (e) { return err(e.message, request, 400); } }
-      const webMatch = path.match(/^\/api\/webinars\/([\w-]+)$/);
-      if (webMatch) {
-        try {
-          if (request.method === 'PATCH') return json(await updateWebinar(env, webMatch[1], await request.json().catch(() => ({}))), request);
-          if (request.method === 'DELETE') return json(await deleteWebinar(env, webMatch[1]), request);
-        } catch (e) { return err(e.message, request, 400); }
-      }
       // Assigning a task to a friend (Friends phase 3b).
       if (path === '/api/assignments' && request.method === 'GET') return json(await myAssignments(env), request);
       if (path === '/api/assignments/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await acceptAssignment(env, b.taskId), request); } catch (e) { return err(e.message, request, 400); } }

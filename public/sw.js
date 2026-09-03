@@ -9,12 +9,12 @@ self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     let data = {};
     try { data = event.data ? event.data.json() : {}; } catch {}
-    const unread = Number(data.unread) || 0;
-
-    // The number on the app icon.
+    // The number on the app icon. ONLY a push that actually carries a count may
+    // touch it: connect and message pushes don't send one, and treating a missing
+    // field as zero cleared the mail badge every time somebody said hello.
     try {
-      if (self.navigator && self.navigator.setAppBadge) {
-        if (unread > 0) await self.navigator.setAppBadge(unread);
+      if (typeof data.unread === 'number' && self.navigator && self.navigator.setAppBadge) {
+        if (data.unread > 0) await self.navigator.setAppBadge(data.unread);
         else if (self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
       }
     } catch {}

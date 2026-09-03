@@ -61,7 +61,6 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   taskFilters: null, taskFiltersOpen: false,
-  webinars: [], webinarAdding: false, webinarEdit: null,
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
   contactGroups: [], contactsGroup: null, contactMenu: null,
   financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null, tracker: null, trackerLoading: false },
@@ -499,7 +498,7 @@ const HELP = {
   saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
     body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
       <p>One-tap capture (a bookmarklet or an iOS Shortcut) saves a page straight to your list from any browser.</p>` },
-  friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and meet.',
+  friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and chat.',
     body: `<p>Some of your contacts are on Daybook too, and you can connect with them. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
       <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
       <li><b>Assign</b> a task to one of them.</li>
@@ -1140,59 +1139,9 @@ async function setUserFree(id, months) {
 // ── Friends on Daybook ────────────────────────────────────────────────
 // Friends merged into Contacts: keep the entry point but land on the unified page.
 async function openFriends() { return openContacts(); }
-// Webinars: host-managed scheduled group calls with a public join link.
-function toLocalInput(iso) { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
-function webinarForm() {
-  const w = state.webinarEdit || {};
-  return `<div class="wb-form">
-    <input class="sel" id="wb-title" placeholder="Webinar title" value="${esc(w.title || '')}" autocomplete="off">
-    <textarea class="sel" id="wb-desc" rows="2" placeholder="What's it about? (optional)">${esc(w.description || '')}</textarea>
-    <div class="wb-grid">
-      <label class="atf"><span>Date &amp; time</span><input class="sel" id="wb-when" type="datetime-local" value="${esc(toLocalInput(w.startsAt))}"></label>
-      <label class="atf"><span>External stream URL (optional)</span><input class="sel" id="wb-stream" placeholder="Blank = a Daybook group call" value="${esc(w.streamUrl || '')}" autocomplete="off"></label>
-    </div>
-    <div class="wb-actions"><button class="add-btn wide" data-webinar-save>${w.id ? 'Save changes' : 'Create webinar'}</button><button class="ghost" data-webinar-cancel>Cancel</button></div>
-  </div>`;
-}
-function webinarRow(w) {
-  const when = w.startsAt ? new Date(w.startsAt).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Anytime';
-  return `<div class="wb-row"><span class="wb-body"><span class="wb-t">${esc(w.title)}</span><span class="wb-meta">${esc(when)} · ${w.streamUrl ? 'external stream' : 'Daybook call'}</span></span><span class="wb-acts"><button class="ghost" data-webinar-copy="${w.id}" title="Copy the public link">🔗 Copy link</button><button class="ghost" data-webinar-open="${w.id}" title="Open the join page">Open</button><button class="ghost" data-webinar-edit="${w.id}" title="Edit">✎</button><button class="ghost" data-webinar-del="${w.id}" title="Delete">×</button></span></div>`;
-}
-function webinarsSecHtml() {
-  const ws = state.webinars || [];
-  return `<section class="home-sec"><div class="home-sec-h">Webinars<span class="muted">${ws.length}</span></div>
-    <div class="wb-head"><button class="add-btn wide" data-webinar-new>+ New webinar</button><span class="wb-hint">A scheduled group call anyone can join with a link - no account needed.</span></div>
-    ${state.webinarAdding ? webinarForm() : ''}
-    ${ws.length ? `<div class="wb-list">${ws.map(webinarRow).join('')}</div>` : (state.webinarAdding ? '' : '<div class="home-empty">No webinars yet.</div>')}
-  </section>`;
-}
-function webinarLink(id) { return `${location.origin}/w/${id}`; }
-async function saveWebinar() {
-  const title = (($('#wb-title') || {}).value || '').trim(); if (!title) { toast('Give your webinar a title'); return; }
-  const description = ($('#wb-desc') || {}).value || '';
-  const whenLocal = ($('#wb-when') || {}).value || '';
-  const startsAt = whenLocal ? new Date(whenLocal).toISOString() : null;
-  const streamUrl = (($('#wb-stream') || {}).value || '').trim();
-  try {
-    const edit = state.webinarEdit;
-    const r = edit && edit.id
-      ? await api(`/api/webinars/${edit.id}`, { method: 'PATCH', body: JSON.stringify({ title, description, startsAt, streamUrl }) })
-      : await api('/api/webinars', { method: 'POST', body: JSON.stringify({ title, description, startsAt, streamUrl }) });
-    state.webinars = r.webinars; state.webinarAdding = false; state.webinarEdit = null; renderFriends(); toast('Webinar saved');
-  } catch (e) { toast(e.message); }
-}
-async function delWebinar(id) {
-  const w = (state.webinars || []).find((x) => x.id === id);
-  if (!(await uiConfirm(`Delete “${(w && w.title) || 'this webinar'}”? The link stops working.`, { danger: true, okLabel: 'Delete' }))) return;
-  try { state.webinars = (await api(`/api/webinars/${id}`, { method: 'DELETE' })).webinars; renderFriends(); } catch (e) { toast(e.message); }
-}
-async function copyWebinarLink(id) {
-  const link = webinarLink(id);
-  try { await navigator.clipboard.writeText(link); toast('Link copied'); }
-  catch { await uiPrompt('Copy this link:', { title: 'Webinar link', value: link, okLabel: 'Done' }); }
-}
 function friendRow(f, action) {
-  return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
+  const n = unreadFrom(f.id);
+  return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
 // page re-renders the unified Contacts view.
@@ -1294,13 +1243,15 @@ function startPresence() { const beat = () => api('/api/presence', { method: 'PO
 // you to accept their invitation to connect. It is NOT a running total of your
 // contacts (that just looked like an unread count sitting on the button). Unread
 // chat and the online list still feed Home's "People" section, not this badge.
-const friendPending = () => (state.friendStatus || {}).incoming || 0;
+const friendPending = () => ((state.friendStatus || {}).incoming || 0) + ((state.friendStatus || {}).unread || 0);
+// Unread messages from one person, for the badge on their row.
+const unreadFrom = (id) => (((state.friendStatus || {}).unreadBy) || {})[id] || 0;
 async function refreshFriendStatus() {
   try {
     const r = await api('/api/friends/status');
-    const sig = JSON.stringify([r.incoming || 0, r.unread || 0, (r.online || []).map((o) => o.id).sort()]);
+    const sig = JSON.stringify([r.incoming || 0, r.unread || 0, r.unreadBy || {}, (r.online || []).map((o) => o.id).sort()]);
     const changed = sig !== state.__friendSig; state.__friendSig = sig;
-    state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, friends: r.friends || 0 };
+    state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, unreadBy: r.unreadBy || {}, friends: r.friends || 0 };
     renderNav();
     // Refresh Home's People section on a real change - but never while the user is
     // typing (e.g. in the notepad), which a full re-render would interrupt.
@@ -1346,6 +1297,13 @@ async function openChat(id, name) {
 async function loadChat() {
   if (!state.chat) return;
   const to = state.chat.with;
+  // getMessages marks them read on the server; mirror that locally so the badge
+  // drops the moment you open the chat, not at the next 90s status poll.
+  if (state.friendStatus && unreadFrom(to)) {
+    state.friendStatus.unread = Math.max(0, state.friendStatus.unread - unreadFrom(to));
+    delete state.friendStatus.unreadBy[to];
+    renderNav();
+  }
   try {
     const r = await api(`/api/messages?with=${to}`);
     if (!state.chat || state.chat.with !== to) return;   // switched chats mid-request
@@ -5832,13 +5790,12 @@ function contactPhoneFields(p) {
 async function openContacts() {
   state.view = { type: 'contacts' };
   renderNav();
-  const [, , friends, shared, webinars] = await Promise.all([
+  const [, , friends, shared] = await Promise.all([
     loadContacts(true), loadContactGroups(true),
     api('/api/friends').catch(() => ({ friends: [], incoming: [], outgoing: [], suggestions: [] })),
     api('/api/shared').then((r) => r.items || []).catch(() => []),
-    api('/api/webinars').then((r) => r.webinars || []).catch(() => []),
   ]);
-  state.friends = friends; state.sharedWithMe = shared; state.webinars = webinars;
+  state.friends = friends; state.sharedWithMe = shared;
   renderContacts();
 }
 function contactCardHtml(c) {
@@ -5924,7 +5881,7 @@ function renderContacts() {
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
       <div id="friend-results" class="fr-results"></div>
       ${d.incoming.length ? `<div class="ppl-sub">Requests · ${d.incoming.length}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
-      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-call="${f.id}" title="Video call">📞</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Daybook.</div>')}
+      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Daybook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life area' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>
@@ -5937,7 +5894,6 @@ function renderContacts() {
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>
 
-    ${webinarsSecHtml()}
     ${contactMenuHtml()}`;
   alignConnectRow();
 }
@@ -8574,20 +8530,12 @@ document.addEventListener('click', (e) => {
   { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }
   { const fac = t.closest('[data-friend-accept]'); if (fac) { friendAccept(fac.dataset.friendAccept); return; } }
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
-  { const fcl = t.closest('[data-friend-call]'); if (fcl) { const me = (state.me && state.me.id) || 0; const room = 'Daybook-' + [me, Number(fcl.dataset.friendCall)].sort((a, b) => a - b).join('-'); window.open('https://meet.jit.si/' + room, '_blank', 'noopener'); toast('Opening your call room - share the tab with your friend.'); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   if (t.closest('[data-related-toggle]')) { const o = localStorage.getItem('life.note.relatedOpen') === '1'; try { localStorage.setItem('life.note.relatedOpen', o ? '0' : '1'); } catch {} if (state.note) renderNote(); return; }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Daybook` : 'No contacts on Daybook yet'); }); return; }
-  if (t.closest('[data-webinar-new]')) { state.webinarEdit = null; state.webinarAdding = true; renderFriends(); return; }
-  if (t.closest('[data-webinar-cancel]')) { state.webinarAdding = false; state.webinarEdit = null; renderFriends(); return; }
-  if (t.closest('[data-webinar-save]')) { saveWebinar(); return; }
-  { const wc = t.closest('[data-webinar-copy]'); if (wc) { copyWebinarLink(wc.dataset.webinarCopy); return; } }
-  { const wo = t.closest('[data-webinar-open]'); if (wo) { window.open(webinarLink(wo.dataset.webinarOpen), '_blank', 'noopener'); return; } }
-  { const we = t.closest('[data-webinar-edit]'); if (we) { state.webinarEdit = (state.webinars || []).find((x) => x.id === we.dataset.webinarEdit) || null; state.webinarAdding = true; renderFriends(); return; } }
-  { const wd = t.closest('[data-webinar-del]'); if (wd) { delWebinar(wd.dataset.webinarDel); return; } }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
   if (t.closest('[data-share-close]')) { closeShare(); return; }
