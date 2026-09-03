@@ -290,7 +290,7 @@ async function sendInviteMail(env, { to, code, message }) {
   const subject = `${from} has invited you to join Daybook`;
   const link = joinLink(code);
   const html = inviteEmail({ from, message, link });
-  const text = `${from} has invited you to join Daybook.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nDaybook is a calm home for your day - your calendar, tasks, notes and mail in one place.`;
+  const text = `${from} has invited you to join Daybook.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nDaybook is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
   const replyTo = (env.user && env.user.email) || null;
 
   if (env.BRIEF_SMTP_PASS) {

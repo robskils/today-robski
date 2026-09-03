@@ -48,7 +48,7 @@ export function inviteEmail({ from, message, link }) {
         </td></tr>` : ''}
 
         <tr><td style="padding:22px 38px 0">
-          <p style="margin:0;font-size:15px;color:#574e44;line-height:1.6;text-align:center">Daybook is a calm home for your day - your calendar, tasks, notes and mail in one place. Your own is private to you.</p>
+          <p style="margin:0;font-size:15px;color:#574e44;line-height:1.6;text-align:center">Daybook is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.</p>
         </td></tr>
 
         <tr><td style="padding:26px 38px 0" align="center">
