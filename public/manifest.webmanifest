@@ -1,7 +1,7 @@
 {
   "name": "Robski Daybook",
   "short_name": "Daybook",
-  "description": "Robin's tasks, notes, tables and life areas.",
+  "description": "For a life well lived. Your calendar, tasks, notes, reflections and money in one calm, private place.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

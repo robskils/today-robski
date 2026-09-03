@@ -9859,7 +9859,7 @@ const onApex = () => location.hostname === 'daybook.fyi' || location.hostname ==
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span><span class="gate2-tag">For a life well lived</span></div>
       <p class="gate2-sub" id="gate-sub">${sub || "New here or coming back? Enter your email and we'll send you a sign-in code."}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
@@ -9888,7 +9888,7 @@ function showSignup(email, inviteRequired, invited) {
   const needCode = inviteRequired && !invited && !preInvite;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>${esc(BRAND.app)}</em></div>
+      <div class="gate2-mark"><em>${esc(BRAND.app)}</em><span class="gate2-tag">For a life well lived</span></div>
       <p class="gate2-sub">${invited || preInvite ? 'Your invitation is accepted - now make it yours.' : "Welcome - let's set up your Daybook."}</p>
       <label class="signup-l">Your name<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <label class="signup-l">Choose a username

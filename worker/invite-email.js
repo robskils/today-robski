@@ -24,8 +24,9 @@ export function inviteEmail({ from, message, link }) {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
 
         <tr><td style="padding:34px 38px 0" align="center">
-          <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#c4412e;vertical-align:middle"></span>
-          <span style="font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17;vertical-align:middle;padding-left:9px">Daybook</span>
+          <img src="https://daybook.fyi/email-mark.png" width="66" height="35" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Daybook</p>
+          <p style="margin:7px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:14.5px;letter-spacing:0.01em;color:#8b7f72">For a life well lived</p>
         </td></tr>
 
         <tr><td style="padding:22px 38px 0">
