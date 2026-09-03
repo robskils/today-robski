@@ -816,11 +816,49 @@ async function ytInfo(request, env, url, json, err) {
 // (poster + year), Open Library for books (cover + author + year) - which suits
 // a personal tool that should cost nothing to run. Any miss returns just the
 // typed title, so adding by name always works even when the lookup is blank.
+// How close a result's title is to what was typed. The discriminator for 'auto':
+// Open Library will answer almost any string with SOMETHING, and Wikipedia is
+// asked for "<q> film" so it nearly always finds a page too. Only a close title
+// match means the catalogue actually recognised what you meant.
+function titleCloseness(q, title) {
+  const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const a = norm(q), b = norm(title);
+  if (!a || !b) return 0;
+  if (a === b) return 3;
+  if (b.startsWith(a) || a.startsWith(b)) return 2;
+  if (b.includes(a) || a.includes(b)) return 1;
+  return 0;
+}
 async function lookupMedia(request, env, url, json, err) {
   const q = (url.searchParams.get('q') || '').trim();
-  const type = url.searchParams.get('type') === 'film' ? 'film' : 'book';
+  const asked = url.searchParams.get('type');
+  const type = asked === 'film' ? 'film' : asked === 'auto' ? 'auto' : 'book';
   if (!q) return err('q required', request, 400);
-  const base = { title: q, image: '', url: '', site: '', year: '', media: type };
+  const base = { title: q, image: '', url: '', site: '', year: '', media: type === 'auto' ? 'book' : type };
+  // 'auto' = no button pressed. Ask both catalogues at once and let the answers
+  // argue it out: Wikipedia saying "1994 film" in its description is decisive,
+  // and failing that the closer title match wins. A tie goes to the book, which
+  // is what most typed titles turn out to be.
+  if (type === 'auto') {
+    try {
+      const origin = new URL(request.url).origin;
+      const one = async (t) => {
+        const r = await lookupMedia(new Request(`${origin}/api/lookup?type=${t}&q=${encodeURIComponent(q)}`), env,
+          new URL(`${origin}/api/lookup?type=${t}&q=${encodeURIComponent(q)}`), (d) => d, () => null);
+        return r || null;
+      };
+      const [film, book] = await Promise.all([one('film').catch(() => null), one('book').catch(() => null)]);
+      // A miss returns the bare query as the title, which would otherwise score a
+      // perfect match against itself. A real hit is the one carrying a link or a
+      // cover back from the catalogue.
+      const found = (r) => !!(r && (r.url || r.image));
+      const filmScore = found(film) ? titleCloseness(q, film.title) + (/\b(film|movie|series|miniseries)\b/i.test(film.site || '') ? 2 : 0) : -1;
+      const bookScore = found(book) ? titleCloseness(q, book.title) + (book.image ? 1 : 0) : -1;
+      if (filmScore < 0 && bookScore < 0) return json(base, request);
+      const win = filmScore > bookScore ? film : book;
+      return json(win && win.title ? win : base, request);
+    } catch { return json(base, request); }
+  }
   try {
     if (type === 'film') {
       // Wikipedia, in two hops: find the film's page, then pull its summary

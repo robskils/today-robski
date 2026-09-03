@@ -3190,7 +3190,7 @@ function renderReadwatch() {
     ${pageCrumb('Read & Watch')}
     <div class="pane-head home-head"><h1>Read &amp; Watch</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
     <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
-    <div class="rw-type" title="For a title (not a link): save it as a book, a film or a video">${[['book', '📖 Book'], ['film', '🎬 Film'], ['video', '▶ Video']].map(([k, l]) => `<button class="rw-type-btn ${(rw.addType || 'book') === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
+    <div class="rw-type" title="Daybook works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
     ${items.length ? `<div class="rw-sortbar"><select class="rw-sort sel" data-rw-sort title="Order">${RW_SORTS.map(([k, l]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
     ${section('To read &amp; watch', unread, 'All caught up - nothing left.')}${read.length ? section('Finished', read, '') : ''}`
@@ -3222,7 +3222,7 @@ async function rwSave(input) {
   // A link (http… or a bare domain with no spaces) is fetched for its metadata;
   // anything else is treated as a book / title recommendation - stored as-is.
   const isLink = /^https?:\/\//i.test(input) || /^[^\s]+\.[a-z]{2,}(\/|\?|#|$)/i.test(input);
-  const type = ['film', 'video'].includes(state.rw.addType) ? state.rw.addType : 'book';
+  const type = ['film', 'book'].includes(state.rw.addType) ? state.rw.addType : 'auto';
   state.rw.saving = true; renderReadwatch();
   try {
     let bm;
@@ -3230,16 +3230,15 @@ async function rwSave(input) {
     else {
       // Look the title up (poster/cover + year + a link), then store it. The
       // lookup never fails hard: a blank result just gives the bare title.
-      let d = { title: input.slice(0, 300), url: '', image: '', site: '', year: '', media: type };
-      // Books and films have keyless catalogues behind /api/lookup; a video title
-      // has none, so it keeps the title you typed and a YouTube search to open.
-      if (type === 'video') d.url = `https://www.youtube.com/results?search_query=${encodeURIComponent(input)}`;
-      else { try { d = await api(`/api/lookup?type=${type}&q=${encodeURIComponent(input)}`); } catch {} }
-      const props = { title: (d.title || input).slice(0, 300), url: d.url || '', image: d.image || '', site: d.site || '', year: d.year || '', media: type, status: 'todo', added: new Date().toISOString() };
+      let d = { title: input.slice(0, 300), url: '', image: '', site: '', year: '', media: type === 'auto' ? 'book' : type };
+      try { d = await api(`/api/lookup?type=${type}&q=${encodeURIComponent(input)}`); } catch {}
+      // On 'auto' the server decides which it is, so the answer's media wins.
+      const media = d.media || (type === 'auto' ? 'book' : type);
+      const props = { title: (d.title || input).slice(0, 300), url: d.url || '', image: d.image || '', site: d.site || '', year: d.year || '', media, status: 'todo', added: new Date().toISOString() };
       bm = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: props.title, props }) });
     }
     state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch();
-    toast(isLink ? 'Saved' : type === 'film' ? '🎬 Film added' : type === 'video' ? '▶ Video added' : '📖 Book added');
+    toast(isLink ? 'Saved' : (bm.props || {}).media === 'film' ? '🎬 Film added' : '📖 Book added');
   } catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
 }
 async function rwSetDone(id, done) {
@@ -8255,7 +8254,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
-  const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { state.rw.addType = rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) i.focus(); } return; }
+  const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) i.focus(); } return; }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
   const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
