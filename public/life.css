@@ -2392,12 +2392,14 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* Reading a mail on mobile: hide the top brand/nav bar so the reader is
      full-screen (Back + bottom tabs are enough) and the toolbar pins at top:0. */
   body.mail-reading .nav { display:none; }
-  .mail-reader-head { position:sticky; top:0; z-index:31; gap:6px; flex-wrap:nowrap;
+  .mail-reader-head { position:sticky; top:0; z-index:31; gap:6px 4px; flex-wrap:wrap;
     margin:0 -18px; padding:9px 14px; background:var(--card); border-bottom:1px solid var(--line); }
-  .mail-reader-head .mail-msg-act { margin-left:4px; flex:1; min-width:0; flex-wrap:nowrap;
-    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:1px; }
-  .mail-reader-head .mail-msg-act::-webkit-scrollbar { display:none; }
-  .mail-reader-head .mail-msg-act > button { flex:none; white-space:nowrap; }
+  /* The action bar drops to its own full-width row and WRAPS, so every action
+     (reply, delete, file-in-a-life-area, make-task…) is visible - it used to
+     scroll sideways with a hidden scrollbar, so the later icons vanished. */
+  .mail-reader-head .mail-msg-act { margin-left:0; margin-top:0; flex-basis:100%; min-width:0;
+    display:grid; grid-template-columns:repeat(7, 1fr); gap:5px 2px; overflow:visible; }
+  .mail-reader-head .mail-msg-act > button { width:100%; min-width:0; }
 }
 .mail-acct-list { display:flex; flex-direction:column; gap:8px; max-width:520px; }
 .mail-acct { display:flex; align-items:center; gap:11px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
