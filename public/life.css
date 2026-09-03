@@ -3108,3 +3108,41 @@ table.ttable tr:last-child td { border-bottom:0; }
   .tbl-head input.rename { flex-basis:100%; min-width:0; font-size:26px; }
   .tbl-head .area-sel { margin-left:0; }
 }
+/* ── Keep in touch ────────────────────────────────────
+   The cadence block on a contact card, and the "who you owe a call" list on
+   Home. Both lean on existing tokens so they inherit the accent. */
+.cc-kit { border-top:1px solid var(--line); padding-top:16px; margin-top:4px; }
+.kit-tick { display:flex; align-items:center; gap:10px; cursor:pointer; }
+.kit-tick input { width:19px; height:19px; accent-color:var(--accent); flex:none; cursor:pointer; }
+.kit-tick-l { margin:0; cursor:pointer; }
+.kit-hint { margin:7px 0 0 29px; font-size:14px; line-height:1.5; color:var(--ink-3); max-width:56ch; }
+.kit-body { margin:14px 0 0 29px; display:flex; flex-direction:column; gap:12px; align-items:flex-start; }
+.kit-row { display:flex; align-items:center; gap:12px; }
+.kit-row .tf-label { margin:0; }
+.kit-every { max-width:220px; }
+.kit-custom { display:flex; align-items:center; gap:9px; font-size:15px; color:var(--ink-2); }
+.kit-n { width:82px; max-width:82px; text-align:center; }
+.kit-unit { max-width:130px; }
+.kit-status { display:flex; flex-wrap:wrap; gap:10px 28px; padding:12px 16px; background:var(--paper-2);
+  border:1px solid var(--line); border-radius:12px; }
+.kit-stat { display:flex; flex-direction:column; gap:3px; font-size:16px; color:var(--ink); }
+.kit-stat-l { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; }
+.kit-due { color:var(--accent); }
+.kit-touched { align-self:flex-start; }
+
+/* Home: the people you're overdue with. */
+.kit-hlist { display:flex; flex-direction:column; gap:2px; }
+.kit-hrow { display:flex; align-items:center; gap:6px; border-radius:11px; }
+.kit-hrow:hover { background:var(--paper-2); }
+.kit-hopen { flex:1; min-width:0; display:flex; align-items:center; gap:12px; padding:9px 10px; text-align:left; }
+.kit-hav { flex:none; }
+.kit-hnm { font-size:16.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.kit-hsub { margin-left:auto; padding-left:12px; flex:none; font-size:13.5px; color:var(--ink-3); }
+.kit-hdone { flex:none; width:38px; height:38px; margin-right:6px; border-radius:50%; font-size:16px;
+  color:var(--ink-3); border:1px solid var(--line); background:var(--card); }
+.kit-hdone:hover { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); }
+@media (max-width:560px){
+  .kit-hsub { margin-left:0; padding-left:0; flex-basis:100%; }
+  .kit-hopen { flex-wrap:wrap; }
+  .kit-body, .kit-hint { margin-left:0; }
+}

@@ -470,9 +470,13 @@ const HELP = {
       <li>The inbox stays warm in the background, so opening Mail is instant, and a new message can nudge you.</li>
       <li>Search runs across your accounts.</li></ul>
       <p>Sending, and anything that leaves your account, always waits for you to press the button.</p>` },
-  contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from life areas. See who’s on Daybook.',
+  contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from life areas - and a nudge when it has been too long.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a life area.</p>
-      <p>Contacts with an email are checked against Daybook, so you can see which of your people are here and add them as friends.</p>` },
+      <p>Contacts with an email are checked against Daybook, so you can see which of your people are here and connect with them.</p>
+      <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
+      <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Press <b>Got in touch today</b> (on their card, or the ✓ on Home) and it starts again from today.</li>
+      <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
+      <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
   financial: { title: 'Money', tip: 'Track spending against your life areas, import statements, and watch your portfolio.',
     body: `<p>Money is all your finances in one place. Your <b>life areas double as spending categories</b>, so where your money goes lines up with what your life is about.</p>
       <ul><li><b>Import</b> a statement and Daybook sorts transactions into categories.</li>
@@ -495,10 +499,10 @@ const HELP = {
   saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
     body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
       <p>One-tap capture (a bookmarklet or an iOS Shortcut) saves a page straight to your list from any browser.</p>` },
-  friends: { title: 'Friends', tip: 'Connect with people on Daybook to share notes, assign tasks, and meet.',
-    body: `<p>Friends are people you’re connected with on Daybook. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
-      <ul><li><b>Share</b> a note or task with a friend, view-only or to edit.</li>
-      <li><b>Assign</b> a task to a friend.</li>
+  friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and meet.',
+    body: `<p>Some of your contacts are on Daybook too, and you can connect with them. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
+      <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
+      <li><b>Assign</b> a task to one of them.</li>
       <li>Keep <b>shared meeting notes</b>, chat, and start a call.</li></ul>` },
   today: { title: 'Today', tip: 'Your day as flexible time blocks across your lanes - guidance, never a rigid timetable.',
     body: `<p>Today lays your day out as time blocks across your <b>lanes</b> - the few kinds of time you want to keep making progress in. It’s built for flexibility: stay in the zone on something and the day bends around you.</p>
@@ -653,7 +657,7 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'settings': return 'Settings';
     case 'admin': return 'Admin';
-    case 'friends': return 'Friends';
+    case 'friends': return 'Contacts on Daybook';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
     case 'financial': return 'Money';
@@ -1216,7 +1220,7 @@ async function peopleSearch() {
     ? `<div class="fr-scan-note">People on Daybook matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
     : `<div class="home-empty" style="padding:8px 2px">No one on Daybook matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
 }
-async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Friends now'); } catch (e) { toast(e.message); } }
+async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Connected'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
 // Invite someone to Daybook: their email, a note in your own words, Send. The
 // worker emails the invitation with a one-click link - the invitee never copies a
@@ -1375,7 +1379,7 @@ function renderShare() {
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
     }).join('') : `<div class="share-empty">
         <p>You're not connected with anyone on Daybook yet.</p>
-        <p class="onb-muted">Invite a friend, then you can share this with them - and anything else you like.</p>
+        <p class="onb-muted">Invite someone, then you can share this with them - and anything else you like.</p>
         <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
       </div>`);
   const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'life area' : 'note';
@@ -1497,6 +1501,7 @@ const MOBILE_SECTIONS = [
   ['favs', 'home-sec-favs', 'Starred Notes & Tables'],
   ['favareas', 'home-sec-favareas', 'Life areas'],
   ['recent', 'home-sec-recent', 'Recently viewed'],
+  ['keepintouch', 'home-sec-kit', 'Keep in touch'],
   ['people', 'home-sec-people', 'People online'],
   ['toolbox', 'home-toolbox', 'Toolbox'],
 ];
@@ -1900,7 +1905,7 @@ async function openTasks(filter) {
     api('/api/blocks?kind=task'),
   ]);
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  state.tasks = tasks;
+  state.tasks = notKit(tasks);
   renderNav(); renderTasks();
   // Tasks friends have assigned to me (loads quietly, then re-renders the section).
   if (modOn('friends')) api('/api/assignments').then((a) => { state.assignments = a; if (state.view && state.view.type === 'tasks') renderTasks(); }).catch(() => {});
@@ -1928,7 +1933,7 @@ async function openNote(id) {
   while (p.parent_id) { try { p = await api(`/api/blocks/${p.parent_id}`); path.unshift(p); } catch { break; } }
   // Both sub-notes and table notes nested inside this note.
   const children = (await api(`/api/blocks?parent_id=${id}`)).filter((b) => b.kind === 'note' || b.kind === 'table');
-  if (!state.allTasks) state.allTasks = await api('/api/blocks?kind=task').catch(() => []);
+  if (!state.allTasks) state.allTasks = notKit(await api('/api/blocks?kind=task').catch(() => []));
   state.note = { current: note, path, children, taskQuery: '' };
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title, blockAreas(note)[0]);
@@ -2450,6 +2455,25 @@ function openP1Tasks() {
   state.taskFilters = [{ field: 'priority', op: 'is', value: 'P1' }];
   state.taskFiltersOpen = false; saveTaskFilters(); state._taskViewForce = true; openTasks();
 }
+// The Home section: who you're overdue with, longest first. The nudge is a
+// person, not a chore, so the row opens their card - and the ✓ is there for the
+// common case where you rang them before Daybook got round to asking.
+function kitHomeHtml() {
+  const due = (state.home.alerts && state.home.alerts.keepInTouch) || [];
+  if (!due.length) return '';
+  const rows = due.map((k) => {
+    const a = areaById(k.area);
+    const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet';
+    return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}>
+      <button class="kit-hopen" data-open-contact="${k.id}">
+        <span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span>
+        <span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span>
+      </button>
+      <button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button>
+    </div>`;
+  }).join('');
+  return `<section class="home-sec home-sec-kit" data-hsec="keepintouch">${secH('keepintouch', 'Keep in touch', `<span class="muted">${due.length}</span>`, true)}${secOpen('keepintouch') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
+}
 function p1Html() {
   const all = priorityTasks();
   if (!all.length) return '';
@@ -2567,9 +2591,10 @@ function renderHome() {
             priority: p1Html(),
             focus: homeGoals.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', '🎯 Goals', '', true)}${secOpen('focus') ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : ''}</section>` : '',
             toolbox: modOn('timer') ? toolboxHtml() : '',
+            keepintouch: kitHomeHtml(),
             favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>` : ''}</section>`,
           };
-          const def = ['favareas', 'today', 'priority', 'focus', 'toolbox', 'favs'];
+          const def = ['favareas', 'today', 'priority', 'keepintouch', 'focus', 'toolbox', 'favs'];
           let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
           return order.map((k) => sec[k] || '').join('');
         })()}</div>
@@ -5412,16 +5437,42 @@ function taskTitleHtml(title) {
 }
 // Snooze + repeat. A snoozed task hides from the open list until its date; a
 // repeating task rolls that date forward each time it's ticked (see toggleTask).
-const REPEATS = [['', 'Does not repeat'], ['daily', 'Daily'], ['every3d', 'Every 3 days'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly']];
-const repeatShort = (r) => ({ daily: 'Daily', every3d: 'Every 3 days', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }[r] || '');
+const REPEATS = [['', 'Does not repeat'], ['daily', 'Daily'], ['every3d', 'Every 3 days'], ['weekly', 'Weekly'], ['fortnightly', 'Fortnightly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['halfyearly', 'Every 6 months'], ['yearly', 'Yearly']];
+// `every:<n>:<d|w|m>` is a custom cadence (the keep-in-touch picker writes these);
+// everything else is one of the named periods. Mirrors addPeriod in the worker -
+// the two must agree, or a task rolls to one date on the client and another on
+// the server.
+const CUSTOM_PERIOD = /^every:(\d{1,3}):([dwm])$/;
+const CUSTOM_UNIT = { d: ['day', 'days'], w: ['week', 'weeks'], m: ['month', 'months'] };
+function repeatShort(r) {
+  const c = CUSTOM_PERIOD.exec(r || '');
+  if (c) { const n = Math.max(1, Number(c[1])); return n === 1 ? `Every ${CUSTOM_UNIT[c[2]][0]}` : `Every ${n} ${CUSTOM_UNIT[c[2]][1]}`; }
+  return { daily: 'Daily', every3d: 'Every 3 days', weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly', quarterly: 'Every 3 months', halfyearly: 'Every 6 months', yearly: 'Yearly' }[r] || '';
+}
 const isSnoozed = (t) => !!(t.props && t.props.snooze && t.props.snooze > todayISO());
+function addMonthsUTC(dt, n, day) {
+  dt.setUTCDate(1);
+  dt.setUTCMonth(dt.getUTCMonth() + n);
+  const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
+  dt.setUTCDate(Math.min(day, dim));
+}
 function taskAddPeriod(iso, repeat) {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
-  if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
+  const cus = CUSTOM_PERIOD.exec(repeat || '');
+  if (cus) {
+    const n = Math.max(1, Number(cus[1]));
+    if (cus[2] === 'd') dt.setUTCDate(dt.getUTCDate() + n);
+    else if (cus[2] === 'w') dt.setUTCDate(dt.getUTCDate() + n * 7);
+    else addMonthsUTC(dt, n, d);
+  }
+  else if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
   else if (repeat === 'every3d') dt.setUTCDate(dt.getUTCDate() + 3);
   else if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
-  else if (repeat === 'monthly') { dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() + 1); const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate(); dt.setUTCDate(Math.min(d, dim)); }
+  else if (repeat === 'fortnightly') dt.setUTCDate(dt.getUTCDate() + 14);
+  else if (repeat === 'monthly') addMonthsUTC(dt, 1, d);
+  else if (repeat === 'quarterly') addMonthsUTC(dt, 3, d);
+  else if (repeat === 'halfyearly') addMonthsUTC(dt, 6, d);
   else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);
   else return iso;
   return dt.toISOString().slice(0, 10);
@@ -5879,9 +5930,124 @@ async function addContact(o) {
 }
 async function openContactCard(id) {
   const [c] = await Promise.all([api(`/api/blocks/${id}`), loadContacts(), loadContactGroups()]);
-  state.contact_open = { contact: c };
+  // The keep-in-touch task holds the dates (next nudge, last contact). A missing
+  // one just reads as "off": a contact whose task was deleted elsewhere shouldn't
+  // fail to open, it should offer to start again.
+  let kt = null;
+  if (c && c.props && c.props.kitTask) { try { kt = await api(`/api/blocks/${c.props.kitTask}`); } catch {} }
+  state.contact_open = { contact: c, kitTask: kt };
   state.view = { type: 'contactcard', id };
   renderNav(); renderContactCard();
+}
+// ── Keep in touch ─────────────────────────────────────────────────────
+// A cadence on a contact: "I'd like to speak to this person every few months."
+// The clock is an ordinary repeating task carrying props.kit, hidden behind its
+// snooze until the day it comes due, so every bit of the repeat machinery
+// already applies to it. The one difference lives in setTaskDone: it measures
+// from the day you actually got in touch, not from the day it fell due.
+//
+// The contact keeps a copy of the cadence in props.kitEvery so a list can show
+// the badge without loading tasks; the task is authoritative for the dates.
+const KIT_EVERY = [
+  ['weekly', 'Every week'], ['fortnightly', 'Every fortnight'], ['monthly', 'Every month'],
+  ['quarterly', 'Every 3 months'], ['halfyearly', 'Every 6 months'], ['yearly', 'Once a year'],
+];
+const KIT_UNITS = [['w', 'weeks'], ['m', 'months'], ['d', 'days']];
+const kitTitle = (name) => `Catch up with ${(name || '').trim() || 'them'}`;
+// A nudge is a task by construction, not by intent: it has no priority, it isn't
+// work you do at a desk, and it belongs to a person rather than to a board. So it
+// is filtered out where tasks load, and every list downstream stays honest
+// without having to know this feature exists.
+const notKit = (list) => (list || []).filter((t) => !(t.props && t.props.kit));
+const kitTaskOf = () => (state.contact_open && state.contact_open.kitTask) || null;
+// "3 weeks ago", "in 2 months", "today". Relative reads better than a date here:
+// the question is how long it's been, not which Tuesday it was.
+function kitWhen(iso) {
+  if (!iso) return '';
+  const n = daysBetween(todayISO(), iso);
+  const a = Math.abs(n);
+  if (n === 0) return 'today';
+  if (n === 1) return 'tomorrow';
+  if (n === -1) return 'yesterday';
+  const unit = a >= 60 ? [Math.round(a / 30), 'month'] : a >= 14 ? [Math.round(a / 7), 'week'] : [a, 'day'];
+  const span = `${unit[0]} ${unit[1]}${unit[0] === 1 ? '' : 's'}`;
+  return n > 0 ? `in ${span}` : `${span} ago`;
+}
+function keepInTouchSection(c) {
+  const every = (c.props || {}).kitEvery || '';
+  const tp = (kitTaskOf() || {}).props || {};
+  const cus = CUSTOM_PERIOD.exec(every);
+  const opts = KIT_EVERY.map(([v, l]) => `<option value="${v}" ${every === v ? 'selected' : ''}>${l}</option>`).join('')
+    + `<option value="custom" ${cus ? 'selected' : ''}>Custom…</option>`;
+  const customRow = cus ? `<div class="kit-custom">Every
+      <input class="sel kit-n" type="number" min="1" max="999" value="${Math.max(1, Number(cus[1]))}" data-kit-n>
+      <select class="sel kit-unit" data-kit-unit>${KIT_UNITS.map(([v, l]) => `<option value="${v}" ${cus[2] === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    </div>` : '';
+  const due = tp.snooze && tp.snooze <= todayISO();
+  const status = every ? `<div class="kit-status">
+      <span class="kit-stat"><span class="kit-stat-l">Last in touch</span><b>${tp.last ? esc(kitWhen(tp.last)) : 'not yet'}</b></span>
+      <span class="kit-stat"><span class="kit-stat-l">Next nudge</span><b class="${due ? 'kit-due' : ''}">${due ? 'due now' : esc(kitWhen(tp.snooze) || '—')}</b></span>
+    </div>
+    <button class="add-btn wide kit-touched" data-kit-touched>✓ Got in touch today</button>` : '';
+  return `<div class="tf-field cc-kit">
+    <label class="kit-tick"><input type="checkbox" data-kit-toggle ${every ? 'checked' : ''}><span class="tf-label kit-tick-l">Keep in touch</span></label>
+    <p class="kit-hint">A quiet nudge when it has been too long. The clock restarts the day you get in touch, so it never asks twice about a call you have just made.</p>
+    ${every ? `<div class="kit-body">
+      <label class="kit-row"><span class="tf-label">How often</span><select class="sel kit-every" data-kit-every>${opts}</select></label>
+      ${customRow}
+      ${status}
+    </div>` : ''}
+  </div>`;
+}
+// Turning it on mints the task; turning it off deletes it. There is nothing worth
+// keeping in a nudge you have switched off, and leaving it archived would have it
+// reappear the day somebody switched the cadence back on.
+async function kitToggle(on) {
+  const c = state.contact_open && state.contact_open.contact; if (!c) return;
+  if (!on) {
+    const t = kitTaskOf();
+    state.contact_open.kitTask = null;
+    await patchContact(c.id, { kitEvery: null, kitTask: null }, true);
+    if (t) { try { await api(`/api/blocks/${t.id}`, { method: 'DELETE' }); } catch (e) { toast(e.message); } }
+    renderContactCard();
+    return;
+  }
+  await kitSetEvery('quarterly');
+}
+// One door for "the cadence is now X": it makes the task if there isn't one, and
+// otherwise re-times the existing one. The next nudge is always one interval on
+// from the last real contact - or from today, if there hasn't been one yet.
+async function kitSetEvery(every) {
+  const c = state.contact_open && state.contact_open.contact; if (!c) return;
+  let t = kitTaskOf();
+  const anchor = (t && t.props && t.props.last) || todayISO();
+  const snooze = nextRepeat(every, anchor);
+  try {
+    if (!t) {
+      const areas = blockAreas(c);
+      const props = { kit: true, contact: c.id, repeat: every, snooze, done: false, area: areas[0] || null, areas: areas.slice(0, 1) };
+      t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: kitTitle(c.title), props }) });
+    } else {
+      await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { repeat: every, snooze } }) });
+      t.props = { ...t.props, repeat: every, snooze };
+    }
+    state.contact_open.kitTask = t;
+    await patchContact(c.id, { kitEvery: every, kitTask: t.id }, true);
+    renderContactCard();
+  } catch (e) { toast(e.message); }
+}
+// "Got in touch today" is the same door as ticking the task anywhere else, so the
+// server does the rolling forward and we read back what it decided rather than
+// keeping a second copy of that logic here.
+async function kitTouched() {
+  const t = kitTaskOf(); if (!t) return;
+  try {
+    await api(`/api/tasks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ done: true }) });
+    const fresh = await api(`/api/blocks/${t.id}`);
+    state.contact_open.kitTask = fresh;
+    renderContactCard();
+    toast(`Noted — next nudge ${kitWhen((fresh.props || {}).snooze)}`);
+  } catch (e) { toast(e.message); }
 }
 function renderContactCard() {
   const c = state.contact_open.contact; const p = c.props || {};
@@ -5899,6 +6065,7 @@ function renderContactCard() {
       <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
       <div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-addr-row">${ADDR_FIELDS.map(([k, l]) => k === 'country' ? countrySelect('contactcard-' + k, addrField(p.address, k), 'sel contactcard-addr cc-addr-' + k) : `<input class="sel contactcard-addr cc-addr-${k}" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" placeholder="${l}" autocomplete="off">`).join('')}</div></div>
     </div>
+    ${keepInTouchSection(c)}
     ${contactGroupsSection(c)}
     ${notesSection(c.body, 'contact', c.id)}
     ${p.email ? `<div class="contact-actions"><button class="add-btn wide" data-contact-mail="${esc(p.email)}">✉ Email ${esc(c.title || 'them')}</button></div>` : ''}`;
@@ -7046,7 +7213,7 @@ const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n
 async function startReview(rtype) {
   const { from, to } = reviewPeriod(rtype);
   const [tasks, mir] = await Promise.all([api('/api/blocks?kind=task'), api(`/api/review-mirror?from=${from}&to=${to}`).catch(() => ({ practices: [], total: 0 }))]);
-  state.tasks = tasks;
+  state.tasks = notKit(tasks);
   const s = reviewTaskStats(from);
   const snapshot = state.goals.filter((g) => (gp(g).status || 'active') === 'active').map((g) => ({ id: g.id, title: g.title, area: gp(g).area, measure: goalMeasure(g), progress: Math.round(goalProgress(g) * 100) }));
   const lastWheel = state.reviews.map((r) => r.props && r.props.wheel).reverse().find((w) => w && Object.keys(w).length) || {};
@@ -8149,6 +8316,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-contact-import]')) { $('#contact-file')?.click(); return; }
   const delc = t.closest('[data-del-contact]'); if (delc) { delContact(delc.dataset.delContact); return; }
   const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
+  if (t.closest('[data-kit-touched]')) { kitTouched(); return; }
+  const kitd = t.closest('[data-kit-done]'); if (kitd) { homeKitTouched(kitd.dataset.kitDone); return; }
   const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
   const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
   if (t.closest('[data-cc-add-email]')) { const btn = t.closest('[data-cc-add-email]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row"><input class="sel cc-email-in" type="email" placeholder="name@example.com" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-email title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-email-in')?.focus(); return; }
@@ -8485,6 +8654,20 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-kit-toggle]')) { kitToggle(e.target.checked); return; }
+  if (e.target.matches('[data-kit-every]')) {
+    // "Custom…" isn't a cadence, it's a request for the two extra fields - so it
+    // seeds a real one (every 3 months) that those fields then edit.
+    const v = e.target.value;
+    kitSetEvery(v === 'custom' ? 'every:3:m' : v);
+    return;
+  }
+  if (e.target.matches('[data-kit-n], [data-kit-unit]')) {
+    const n = Math.min(999, Math.max(1, Number(($('[data-kit-n]') || {}).value) || 1));
+    const u = (($('[data-kit-unit]') || {}).value) || 'm';
+    kitSetEvery(`every:${n}:${u}`);
+    return;
+  }
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
@@ -8932,8 +9115,8 @@ function toggleTask(id) {
   // Completing a repeating task doesn't finish it - it rolls forward to the next
   // occurrence and hides until then (mirrors setTaskDone on the server).
   if (!t.props.done && t.props.repeat) {
-    const next = nextRepeat(t.props.repeat, t.props.snooze || todayISO());
-    patchTaskProps(id, { snooze: next, done: false });
+    const next = nextRepeat(t.props.repeat, t.props.kit ? todayISO() : (t.props.snooze || todayISO()));
+    patchTaskProps(id, { snooze: next, done: false, ...(t.props.kit ? { last: todayISO() } : {}) });
     toast(`Repeats ${repeatShort(t.props.repeat).toLowerCase()} — back ${dpLabel(next)}`);
     return;
   }
@@ -8949,6 +9132,16 @@ async function homeTaskTick(id) {
   const [removed] = arr.splice(idx, 1);
   renderHome();
   try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast('Done ✓'); }
+  catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }
+}
+// Tick a keep-in-touch nudge from Home. Same door as everywhere else
+// (/api/tasks/:id -> setTaskDone), which rolls it forward from today.
+async function homeKitTouched(taskId) {
+  const arr = (state.home.alerts && state.home.alerts.keepInTouch) || [];
+  const idx = arr.findIndex((k) => k.taskId === taskId); if (idx < 0) return;
+  const [removed] = arr.splice(idx, 1);
+  renderHome();
+  try { await api(`/api/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast(`Noted — ${removed.name} is back on the list in due course`); }
   catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }
 }
 // Remove a surfaced task from Today WITHOUT completing it: clear its snooze so

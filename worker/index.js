@@ -1727,12 +1727,29 @@ async function homeAlerts(request, env, json) {
     env.DB.prepare("SELECT id, title, props, created_at FROM blocks WHERE kind='task' AND archived=0 AND user_id=? ORDER BY created_at DESC").bind(env.uid).all(),
   ]);
   const birthdays = [];
-  for (const r of cts.results || []) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} if (p.birthday && String(p.birthday).slice(5, 10) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' }); }
+  const contacts = new Map();
+  for (const r of cts.results || []) {
+    let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
+    contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null });
+    if (p.birthday && String(p.birthday).slice(5, 10) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' });
+  }
   const today = localParts(new Date(), TZ).date;   // YYYY-MM-DD in Lisbon
-  let p1 = 0; const p1list = []; const surfaced = [];
+  let p1 = 0; const p1list = []; const surfaced = []; const keepInTouch = [];
   for (const r of tks.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     if (p.done) continue;
+    // A keep-in-touch nudge has its own Home section, so it leaves the ordinary
+    // task paths here entirely: counted as a P1 it would reach the morning brief,
+    // and left in `surfaced` it would show in Today as well and read as two
+    // separate prompts about the same person. A nudge whose contact has since been
+    // deleted has nothing to name, so it simply stops appearing.
+    if (p.kit) {
+      const c = p.contact && contacts.get(p.contact);
+      if (c && String(p.snooze || today) <= today) {
+        keepInTouch.push({ id: p.contact, taskId: r.id, name: c.name, area: c.area, due: p.snooze || today, last: p.last || null, every: p.repeat || null });
+      }
+      continue;
+    }
     if (p.priority === 'P1') { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null, created_at: r.created_at }); }
     // A task that was snoozed and whose snooze date has now arrived or passed has
     // "surfaced" - it's back in the open list. Robin wants those in Today, and
@@ -1740,7 +1757,9 @@ async function homeAlerts(request, env, json) {
     if (p.snooze && String(p.snooze) <= today) surfaced.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null, snooze: p.snooze });
   }
   surfaced.sort((a, b) => String(a.snooze).localeCompare(String(b.snooze)));
-  return json({ birthdays, p1, p1list, surfaced: surfaced.slice(0, 50) }, request);
+  // Longest overdue first: the person you've left longest is the one to ring.
+  keepInTouch.sort((a, b) => String(a.due).localeCompare(String(b.due)));
+  return json({ birthdays, p1, p1list, surfaced: surfaced.slice(0, 50), keepInTouch: keepInTouch.slice(0, 50) }, request);
 }
 
 async function handleDay(request, env, url) {
@@ -2001,13 +2020,36 @@ async function updateSlot(request, env, id) {
 function todayLisbon() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Lisbon' }); }
 // Advance a 'YYYY-MM-DD' anchor by one repeat period (UTC math on the string,
 // so no clock/DST drift). Monthly preserves the day-of-month, clamped short.
+// Adding months has to clamp: the 31st plus a month is the 30th where there is
+// no 31st, and must not spill into the month after. Anchored on the original
+// day-of-month, so a run of monthly hops doesn't drift down to the 28th.
+function addMonthsUTC(dt, n, day) {
+  dt.setUTCDate(1);
+  dt.setUTCMonth(dt.getUTCMonth() + n);
+  const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
+  dt.setUTCDate(Math.min(day, dim));
+}
+// `every:<n>:<d|w|m>` is the custom cadence the keep-in-touch picker writes; the
+// named periods below are the fixed ones. Anything unrecognised returns the date
+// untouched, which reads as "does not repeat".
+const CUSTOM_PERIOD = /^every:(\d{1,3}):([dwm])$/;
 function addPeriod(iso, repeat) {
   const [y, m, d] = iso.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
-  if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
+  const cus = CUSTOM_PERIOD.exec(repeat || '');
+  if (cus) {
+    const n = Math.max(1, Number(cus[1]));
+    if (cus[2] === 'd') dt.setUTCDate(dt.getUTCDate() + n);
+    else if (cus[2] === 'w') dt.setUTCDate(dt.getUTCDate() + n * 7);
+    else addMonthsUTC(dt, n, d);
+  }
+  else if (repeat === 'daily') dt.setUTCDate(dt.getUTCDate() + 1);
   else if (repeat === 'every3d') dt.setUTCDate(dt.getUTCDate() + 3);
   else if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
-  else if (repeat === 'monthly') { dt.setUTCDate(1); dt.setUTCMonth(dt.getUTCMonth() + 1); const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate(); dt.setUTCDate(Math.min(d, dim)); }
+  else if (repeat === 'fortnightly') dt.setUTCDate(dt.getUTCDate() + 14);
+  else if (repeat === 'monthly') addMonthsUTC(dt, 1, d);
+  else if (repeat === 'quarterly') addMonthsUTC(dt, 3, d);
+  else if (repeat === 'halfyearly') addMonthsUTC(dt, 6, d);
   else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);
   else return iso;
   return dt.toISOString().slice(0, 10);
@@ -2028,7 +2070,14 @@ async function setTaskDone(env, id, done) {
     // A repeating task is never "finished": completing it rolls the snooze date
     // forward to the next occurrence and leaves it open, so it reappears then.
     const today = todayLisbon();
-    p.snooze = nextRepeatDate(p.repeat, p.snooze || today, today);
+    // A keep-in-touch nudge measures from the day you ACTUALLY got in touch, so
+    // it anchors on today rather than on the date it fell due. Ticking a monthly
+    // one three weeks late means the next is a month from now, not a week away -
+    // otherwise the nudges bunch up behind you and start reading as nagging. Every
+    // other repeating task keeps its calendar: water the plants is due on the day
+    // it's due whenever you got round to the last one.
+    p.snooze = nextRepeatDate(p.repeat, p.kit ? today : (p.snooze || today), today);
+    if (p.kit) p.last = today;
     p.done = false;
     slotDone = true;   // today's tick still counts toward the day's ring
   } else {
