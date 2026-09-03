@@ -1007,7 +1007,7 @@ const admUSD = (n) => '$' + (n || 0).toFixed(2);
 const admTok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n || 0));
 function adminUserRow(u) {
   const owner = u.id === 1;
-  const plans = ['free', 'standard', 'premium', 'power'];
+  const plans = ['free', 'standard', 'premium'];
   // The free period (free_until) is editable after signup: grant N months from
   // today, or remove it. The select is an action, so it always sits on its
   // placeholder; the current state reads in the meta line.
@@ -1615,9 +1615,9 @@ function renderSettings() {
   const aiPane = state.account ? (() => {
     const a = state.account;
     const plan = (a.plan || 'free').toLowerCase();
-    // "Full Fat" = the managed plan: the owner and anyone on premium/power run on
-    // our built-in keys. Everyone else is on Bring-your-own-keys.
-    const managed = a.isOwner || plan === 'premium' || plan === 'power';
+    // "Full Fat" = the managed plan: the owner and anyone on premium run on our
+    // built-in keys. Everyone else is on Bring-your-own-keys.
+    const managed = a.isOwner || plan === 'premium';
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
     return `<div class="set-card">
         <label class="set-mod"><span>Use AI features<small>Turn every AI feature on or off across Daybook.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>

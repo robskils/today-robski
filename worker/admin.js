@@ -77,7 +77,7 @@ export async function adminUsers(env) {
 }
 
 // Change a user's plan and/or status. The owner (1) can't be suspended or moved.
-const PLANS = new Set(['free', 'standard', 'premium', 'power']);
+const PLANS = new Set(['free', 'standard', 'premium']);
 const STATUSES = new Set(['active', 'suspended']);
 export async function updateUser(env, id, body) {
   id = Number(id);

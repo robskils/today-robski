@@ -40,10 +40,10 @@ export async function aiKey(env, provider) {
   const enc = env.user && env.user[col];
   if (enc) { try { return await decryptSecret(env, enc); } catch {} }
   // The shared env key is the "Full Fat" managed plan: the owner, and any member
-  // on the premium/power plan, run on it (we handle the AI for them). Everyone
-  // else brings their own key.
+  // on the premium plan, run on it (we handle the AI for them). Everyone else
+  // brings their own key.
   const plan = (env.user && env.user.plan) || 'free';
-  if (env.uid === 1 || plan === 'premium' || plan === 'power') return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
+  if (env.uid === 1 || plan === 'premium') return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
   return null;
 }
 export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → Plan.`;
