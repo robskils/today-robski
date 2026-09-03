@@ -4245,6 +4245,12 @@ function startMailUnreadPoll() {
 }
 async function openMail(openKey) {
   startMailUnreadPoll();
+  // Which tab asked for this. Fetching accounts and a message list takes real
+  // time, and anything after an await must check the answer is still wanted:
+  // openMessage below WRITES state.view and syncs it onto the active tab, so a
+  // late continuation would turn whatever tab you'd moved to into Mail.
+  const myTab = state.activeTab;
+  const mine = () => state.activeTab === myTab && state.view && state.view.type === 'mail';
   loadContacts().then(() => { if (state.view.type === 'mail' && state.mail && (state.mail.open || state.mail.composing)) renderMail(); }).catch(() => {});
   if (!state.mail) {
     let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {}
@@ -4271,6 +4277,7 @@ async function openMail(openKey) {
   if (haveCache) loadMessages(); else renderMail(true);
   try {
     const fresh = await mailApi('/accounts');
+    if (!mine()) return;
     const changed = JSON.stringify(fresh.map((a) => a.id)) !== JSON.stringify((state.mail.accounts || []).map((a) => a.id));
     state.mail.accounts = fresh;
     if (!fresh.length) { renderMailAccounts('Add a mailbox to get started.'); return; }
@@ -4280,12 +4287,14 @@ async function openMail(openKey) {
     mailApi(`/mailboxes?account=${primary}`).then((mb) => { state.mail.mailboxes = Array.isArray(mb) ? mb : []; }).catch(() => {});
     persistMailCache();
     if (!haveCache || changed) await loadMessages();   // already loading above unless nothing was cached / accounts changed
+    if (!mine()) return;
     // Restore the message that was open in this tab before you switched away.
     if (openKey && !state.mail.composing) {
       if (!(state.mail.messages || []).some((m) => m._key === openKey)) await loadMessages().catch(() => {});
+      if (!mine()) return;
       if ((state.mail.messages || []).some((m) => m._key === openKey)) openMessage(openKey);
     }
-  } catch (e) { state.mail.error = e.message; renderMail(); }
+  } catch (e) { if (!mine()) return; state.mail.error = e.message; renderMail(); }
 }
 // Map the D1 inbox-cache response into the keyed message shape the list uses.
 function applyCachedList(r) {
@@ -5089,6 +5098,11 @@ function renderMailList(loading) {
   else renderMail(loading);
 }
 function renderMail(loading) {
+  // Mail's loads are the slowest in the app (IMAP, over the network, sometimes
+  // seconds), so a response can land long after you've moved on. Painting it then
+  // drops the mail list on top of whatever you're actually looking at. Every mail
+  // render goes through here, so this one guard closes the whole class of it.
+  if (!state.view || (state.view.type !== 'mail' && state.view.type !== 'mailaccounts')) return;
   const m = state.mail;
   document.body.classList.toggle('mail-reading', !!(m && (m.open || m.composing)));   // mobile: full-screen reader
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
