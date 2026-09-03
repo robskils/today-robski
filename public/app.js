@@ -1192,7 +1192,7 @@ async function copyWebinarLink(id) {
   catch { await uiPrompt('Copy this link:', { title: 'Webinar link', value: link, okLabel: 'Done' }); }
 }
 function friendRow(f, action) {
-  return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
+  return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
 // page re-renders the unified Contacts view.
