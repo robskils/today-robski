@@ -3174,10 +3174,11 @@ function renderReadwatch() {
     const href = p.url || (book ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' book')}`
       : film ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' film')}`
       : vid ? `https://www.youtube.com/results?search_query=${encodeURIComponent(p.title || '')}` : '#');
+    const art = !vid && !book && !film;
     const icon = vid ? '▶' : book ? '📖' : film ? '🎬' : '▤';
     return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''}">
       <button class="rw-tick ${done ? 'on' : ''}" data-rw-done="${b.id}" role="checkbox" aria-checked="${done}" title="${done ? 'Read - tap to mark unread' : 'Tap when you\'ve read/watched it'}">${done ? '✓' : ''}</button>
-      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
+      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''} ${art ? 'article' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
       <div class="rw-body">
         <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
         <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : book ? '📖 Book' : film ? '🎬 Film' : '▤ Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
