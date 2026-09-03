@@ -207,6 +207,32 @@ flexibility to keep working on something if I am in the zone."* So:
   reintroduce a `prefers-color-scheme` block: there used to be four copies of
   every token and they drift.
 
+## Keep in touch
+
+A cadence on a contact ("speak to this person every 3 months"). The clock is an
+ordinary repeating task carrying `props.kit` + `props.contact`, hidden behind its
+snooze until due, so `repeat`/`snooze`/`setTaskDone` already do the work. The
+contact holds `props.kitEvery` (a denormalised copy, so a list can show the badge
+without loading tasks) and `props.kitTask`; the task is authoritative for dates.
+
+- **The anchor is the point of the feature.** `setTaskDone` rolls a kit task
+  forward from **today**, not from the date it fell due. It answers "how long
+  since we actually spoke", so ticking a monthly one three weeks late buys a
+  full month, not four days. Don't "unify" this with the ordinary repeat path:
+  every other repeating task keeps its calendar on purpose (the plants are due
+  when they're due). `toggleTask` in app.js mirrors it and must agree.
+- **Nudges are not board work.** `notKit` filters them where tasks load, so the
+  board, snoozed list, area pages, note-task picker and review stats never see
+  them; `homeAlerts` drops them from `surfaced` and the P1 count so they stay out
+  of Today and the morning brief. They live on the contact card and in Home's
+  Keep in touch section only.
+- `addPeriod` (worker) and `taskAddPeriod` (client) must stay identical, or a
+  task rolls to one date on the client and another on the server. Both handle
+  `quarterly`, `halfyearly`, `fortnightly` and custom `every:<n>:<d|w|m>`, and
+  both clamp month ends (31 Aug + 1 month = 30 Sep).
+- A nudge whose contact was deleted has nothing to name, so `homeAlerts` skips
+  it rather than showing a headless row.
+
 ## Data facts worth remembering
 
 Measured July 2026 across roughly 278 open tasks:
