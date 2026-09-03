@@ -1,0 +1,57 @@
+<!--
+  Source for public/og-image.png - the card Facebook, X, LinkedIn and WhatsApp
+  show when somebody shares daybook.fyi. Lives in sync/ rather than public/ so
+  it isn't served as an asset.
+
+  To remake it after a copy change, render at 2x and downsample (the halving is
+  what keeps the serif crisp):
+
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" --headless=new \
+      --disable-gpu --hide-scrollbars --force-device-scale-factor=2 \
+      --window-size=1200,630 --virtual-time-budget=6000 \
+      --screenshot=/tmp/og-2x.png "file://$PWD/sync/og-card.html"
+    python3 -c "from PIL import Image; Image.open('/tmp/og-2x.png').convert('RGB') \
+      .resize((1200,630), Image.LANCZOS).save('public/og-image.png', optimize=True)"
+
+  Then BUMP THE FILENAME (og-image.v3.png, and the two meta tags in home.html).
+  The scrapers cache by URL, so overwriting in place leaves every existing share
+  showing the old card for weeks. Write the new art to the old path too, so
+  those catch up when their cache does expire.
+-->
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@500;600&display=block" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--paper:#f4f1ea;--ink:#211c17;--ink-2:#574e44;--rust:#c4412e;
+        --dawn-1:rgba(196,65,46,.13);--dawn-2:rgba(217,138,91,.12)}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  body{background:var(--paper);position:relative;
+       display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .glow{position:absolute;inset:0 0 auto 0;height:520px;
+        background:radial-gradient(52% 78% at 50% -10%, var(--dawn-1), transparent 68%),
+                   radial-gradient(40% 60% at 74% -4%, var(--dawn-2), transparent 70%)}
+  .in{position:relative;text-align:center;padding-bottom:14px}
+  .mark{width:104px;height:55px;color:var(--rust);display:block;margin:0 auto}
+  .wm{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:132px;line-height:1;
+      letter-spacing:-.028em;color:var(--ink);margin-top:44px;font-variation-settings:'opsz' 72;font-optical-sizing:none}
+  .tag{font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:400;font-size:52px;
+       line-height:1.2;letter-spacing:-.01em;color:var(--ink-2);margin-top:30px;font-variation-settings:'opsz' 48;font-optical-sizing:none}
+  .url{font-family:'Hanken Grotesk',system-ui,sans-serif;font-weight:600;font-size:33px;
+       letter-spacing:.005em;color:var(--rust);margin-top:52px}
+</style></head>
+<body>
+  <div class="glow"></div>
+  <div class="in">
+    <svg class="mark" viewBox="3 12.6 26 13.6" aria-hidden="true">
+      <path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/>
+      <path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/>
+    </svg>
+    <div class="wm">Daybook</div>
+    <div class="tag">For a life well lived</div>
+    <div class="url">daybook.fyi</div>
+  </div>
+</body></html>
