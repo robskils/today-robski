@@ -5984,10 +5984,11 @@ function keepInTouchSection(c) {
       <select class="sel kit-unit" data-kit-unit>${KIT_UNITS.map(([v, l]) => `<option value="${v}" ${cus[2] === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
     </div>` : '';
   const due = tp.snooze && tp.snooze <= todayISO();
-  const status = every ? `<div class="kit-status">
-      <span class="kit-stat"><span class="kit-stat-l">Last in touch</span><b>${tp.last ? esc(kitWhen(tp.last)) : 'not yet'}</b></span>
-      <span class="kit-stat"><span class="kit-stat-l">Next nudge</span><b class="${due ? 'kit-due' : ''}">${due ? 'due now' : esc(kitWhen(tp.snooze) || '—')}</b></span>
-    </div>
+  // "Last in touch" is a date, not a button: you often remember a call days after
+  // making it, and the cadence is only honest if it can be told the real day.
+  // Today is one tap away inside the picker, so the common case stays quick.
+  const status = every ? `<label class="kit-row"><span class="tf-label">Last in touch</span>${dateFieldHtml('kit-last', tp.last || '')}${tp.last ? `<span class="kit-ago">${esc(kitWhen(tp.last))}</span>` : ''}</label>
+    <p class="kit-next">Next nudge <b class="${due ? 'kit-due' : ''}">${due ? 'due now' : esc(kitWhen(tp.snooze) || 'once you have spoken')}</b></p>
     <button class="add-btn wide kit-touched" data-kit-touched>✓ Got in touch today</button>` : '';
   return `<div class="tf-field cc-kit">
     <label class="kit-tick"><input type="checkbox" data-kit-toggle ${every ? 'checked' : ''}><span class="tf-label kit-tick-l">Keep in touch</span></label>
@@ -6017,11 +6018,18 @@ async function kitToggle(on) {
 // One door for "the cadence is now X": it makes the task if there isn't one, and
 // otherwise re-times the existing one. The next nudge is always one interval on
 // from the last real contact - or from today, if there hasn't been one yet.
+// One interval on from the last real contact - and deliberately NOT skipped
+// forward to the next future date. Somebody last spoken to a year ago on a
+// quarterly cadence is overdue now, and rolling the date into the future would
+// quietly forgive that. Only a tick (which anchors on today) lands ahead.
+// With nothing to measure from yet, the first nudge is one interval from today.
+function kitNextFrom(every, lastISO) {
+  return lastISO ? taskAddPeriod(lastISO, every) : nextRepeat(every, todayISO());
+}
 async function kitSetEvery(every) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
   let t = kitTaskOf();
-  const anchor = (t && t.props && t.props.last) || todayISO();
-  const snooze = nextRepeat(every, anchor);
+  const snooze = kitNextFrom(every, (t && t.props && t.props.last) || null);
   try {
     if (!t) {
       const areas = blockAreas(c);
@@ -6033,6 +6041,22 @@ async function kitSetEvery(every) {
     }
     state.contact_open.kitTask = t;
     await patchContact(c.id, { kitEvery: every, kitTask: t.id }, true);
+    renderContactCard();
+  } catch (e) { toast(e.message); }
+}
+// Recording when you last spoke, which re-times the next nudge from that day.
+// A future date is refused rather than silently accepted: you cannot have spoken
+// to somebody tomorrow, and taking it would push the next nudge a whole interval
+// past where it belongs.
+async function kitSetLast(iso) {
+  const t = kitTaskOf(); if (!t) return;
+  const every = (t.props && t.props.repeat) || 'quarterly';
+  let last = /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? iso : null;
+  if (last && last > todayISO()) { last = todayISO(); toast('That is in the future — recorded as today.'); }
+  const snooze = kitNextFrom(every, last);
+  try {
+    await api(`/api/blocks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ props: { last, snooze } }) });
+    t.props = { ...t.props, last, snooze };
     renderContactCard();
   } catch (e) { toast(e.message); }
 }
@@ -8654,6 +8678,7 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.id === 'kit-last') { kitSetLast(e.target.value); return; }
   if (e.target.matches('[data-kit-toggle]')) { kitToggle(e.target.checked); return; }
   if (e.target.matches('[data-kit-every]')) {
     // "Custom…" isn't a cadence, it's a request for the two extra fields - so it
