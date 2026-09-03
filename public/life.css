@@ -1270,13 +1270,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nt-row .ga-t { flex:1; min-width:0; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; }
 .nt-unlink { flex:none; padding:1px 8px; font-size:15px; opacity:0; }
 .nt-row:hover .nt-unlink { opacity:.6; } .nt-unlink:hover { opacity:1 !important; }
-.nt-search { margin:4px 0 6px; }
+/* Both of these run the full width of the rail, so their edges line up with
+   the "Notes inside" panel above rather than floating at their own widths.
+   .sel caps itself at 180px for the inline selects it was written for, so the
+   cap has to be lifted here. The 12px side padding is .sel's, not .ghost's, so
+   the button's "+" sits directly under the search placeholder. */
+.nt-search { margin:4px 0 6px; width:100%; max-width:none; }
 .nt-results { display:flex; flex-direction:column; gap:3px; margin-bottom:8px; }
 .nt-result { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:9px; text-align:left; background:var(--card); border:1px solid var(--line); }
 .nt-result:hover { border-color:var(--accent); }
 .nt-result .ga-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; color:var(--ink); }
 .nt-link-ic { flex:none; font-size:12.5px; color:var(--accent); font-weight:600; }
-.nt-new { font-size:13.5px; }
+.nt-new { font-size:13.5px; width:100%; text-align:left; padding-left:12px; padding-right:12px; }
 /* Tasks: priority filter chips. */
 /* Tasks: build-your-own filter bar. */
 .task-filters { margin:0 0 18px; }
