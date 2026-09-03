@@ -1331,8 +1331,30 @@ function peopleHtml() {
 }
 // Chat with a friend: a slide-in panel that polls for new messages while open.
 let chatPoll = null;
-async function openChat(id, name) { state.chat = { with: Number(id), name, messages: [] }; renderChat(); await loadChat(); if (chatPoll) clearInterval(chatPoll); chatPoll = setInterval(() => { if (state.chat) loadChat(); else { clearInterval(chatPoll); chatPoll = null; } }, 4000); }
-async function loadChat() { if (!state.chat) return; try { const r = await api(`/api/messages?with=${state.chat.with}`); if (r.messages.length !== state.chat.messages.length) { state.chat.messages = r.messages; renderChatMessages(); } } catch {} }
+async function openChat(id, name) {
+  state.chat = { with: Number(id), name, messages: [] };
+  renderChat(); await loadChat();
+  if (chatPoll) clearInterval(chatPoll);
+  // Paused while the tab is in the background: a 4s poll running behind a phone's
+  // lock screen is a battery cost for nothing. Reading the chat marks it read on
+  // the server, so the badge clears as the poll runs.
+  chatPoll = setInterval(() => {
+    if (!state.chat) { clearInterval(chatPoll); chatPoll = null; return; }
+    if (!document.hidden) loadChat();
+  }, 4000);
+}
+async function loadChat() {
+  if (!state.chat) return;
+  const to = state.chat.with;
+  try {
+    const r = await api(`/api/messages?with=${to}`);
+    if (!state.chat || state.chat.with !== to) return;   // switched chats mid-request
+    // Compare the content, not the count. A count misses a message that arrives in
+    // the same poll as one being removed, and it can't see a message change at all.
+    const sig = (list) => (list || []).map((m) => `${m.id || ''}:${m.body}`).join('\u0000');
+    if (sig(r.messages) !== sig(state.chat.messages)) { state.chat.messages = r.messages; renderChatMessages(); }
+  } catch {}
+}
 function renderChat() {
   let el = document.getElementById('chat'); if (!el) { el = document.createElement('div'); el.id = 'chat'; document.body.appendChild(el); }
   const c = state.chat;
@@ -1343,18 +1365,46 @@ function renderChat() {
   </div>`;
   renderChatMessages();
   const f = document.getElementById('chat-form'); if (f) f.addEventListener('submit', sendChat);
-  const inp = document.getElementById('chat-input'); if (inp) inp.focus();
+  // Focus the box on a desktop, but never on a phone: focusing raises the keyboard
+  // over the conversation before you've had a chance to read a word of it.
+  const inp = document.getElementById('chat-input');
+  if (inp && !window.matchMedia('(max-width:820px)').matches) inp.focus();
 }
 function renderChatMessages() {
   const box = document.getElementById('chat-msgs'); if (!box || !state.chat) return;
-  box.innerHTML = state.chat.messages.map((m) => `<div class="chat-msg ${m.mine ? 'mine' : ''}"><span class="cm-body">${esc(m.body)}</span></div>`).join('') || '<div class="chat-empty">Say hello 👋</div>';
-  box.scrollTop = box.scrollHeight;
+  // Whether we were already at the bottom BEFORE the repaint. Scroll down only if
+  // we were: someone reading back through the history shouldn't be dragged to the
+  // end every time the 4s poll finds a new message.
+  const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  box.innerHTML = state.chat.messages.map((m) => `<div class="chat-msg ${m.mine ? 'mine' : ''}${m.pending ? ' pending' : ''}"><span class="cm-body">${esc(m.body)}</span></div>`).join('') || '<div class="chat-empty">Say hello 👋</div>';
+  if (atEnd) box.scrollTop = box.scrollHeight;
 }
 async function sendChat(e) {
   if (e) e.preventDefault();
   const inp = document.getElementById('chat-input'); const body = (inp && inp.value || '').trim(); if (!body || !state.chat) return;
+  const to = state.chat.with;
   inp.value = '';
-  try { const r = await api('/api/messages', { method: 'POST', body: JSON.stringify({ to: state.chat.with, body }) }); state.chat.messages = r.messages; renderChatMessages(); } catch (err) { toast(err.message); }
+  // Show it immediately. A phone on a weak signal takes seconds to round-trip,
+  // and a message that vanishes on send reads as a broken app - people retype it
+  // and send twice. The pending copy is replaced by the server's list on success.
+  const pending = { body, mine: true, pending: true, id: 'pending-' + Date.now() };
+  state.chat.messages = [...state.chat.messages, pending];
+  renderChatMessages();
+  try {
+    const r = await api('/api/messages', { method: 'POST', body: JSON.stringify({ to, body }) });
+    if (!state.chat || state.chat.with !== to) return;   // they closed it, or opened someone else
+    state.chat.messages = r.messages; renderChatMessages();
+  } catch (err) {
+    // Put the text back in the box rather than losing it to a toast. Typing it
+    // out again is the last thing anyone wants after a failed send.
+    if (state.chat && state.chat.with === to) {
+      state.chat.messages = state.chat.messages.filter((m) => m !== pending);
+      renderChatMessages();
+      const box = document.getElementById('chat-input');
+      if (box && !box.value.trim()) { box.value = body; box.focus(); }
+    }
+    toast(err.message || 'Message not sent - it is back in the box.');
+  }
 }
 function closeChat() { if (chatPoll) { clearInterval(chatPoll); chatPoll = null; } const el = document.getElementById('chat'); if (el) el.remove(); state.chat = null; }
 // ── Sharing a note/task with friends (Friends phase 3a) ───────────────
