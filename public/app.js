@@ -5201,14 +5201,7 @@ function renderMail(loading) {
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
-    <div class="mail-tools">
-      <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
-      ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
-      <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
-    </div>`}
-    ${(!m.open && !m.composing && strayUnread && m.strayHidden !== strayUnread) ? `<div class="mail-stray"><span>${strayUnread} older unread email${strayUnread > 1 ? 's sit' : ' sits'} further down, below the newest ${m.limit || 40} shown here.</span><span class="mail-stray-act"><button class="ghost" data-mail-more title="Load older mail to reach them">Show</button><button class="ghost" data-mail-reconcile title="Flag those older ones as read">Mark read</button><button class="ghost mail-stray-x" data-mail-stray-hide title="Hide">×</button></span></div>` : ''}
-    ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
-    ${(m.selected && m.selected.size && !m.open && !m.composing) ? `<div class="mail-bulkbar">
+    ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
       <button class="ghost" data-mail-bulk="archive">Archive</button>
       <button class="ghost" data-mail-bulk="read">Mark read</button>
@@ -5217,7 +5210,13 @@ function renderMail(loading) {
       <button class="ghost" data-mail-bulk="move">Move…</button>
       <button class="ghost" data-mail-bulk="delete">Delete</button>
       <button class="ghost mail-bulk-x" data-mail-bulk="clear">Cancel</button>
-    </div>` : ''}
+    </div>` : `<div class="mail-tools">
+      <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
+      ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
+      <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
+    </div>`}`}
+    ${(!m.open && !m.composing && strayUnread && m.strayHidden !== strayUnread) ? `<div class="mail-stray"><span>${strayUnread} older unread email${strayUnread > 1 ? 's sit' : ' sits'} further down, below the newest ${m.limit || 40} shown here.</span><span class="mail-stray-act"><button class="ghost" data-mail-more title="Load older mail to reach them">Show</button><button class="ghost" data-mail-reconcile title="Flag those older ones as read">Mark read</button><button class="ghost mail-stray-x" data-mail-stray-hide title="Hide">×</button></span></div>` : ''}
+    ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     <div class="mail-layout ${m.open || m.composing ? 'reading' : ''} ${(m.selected && m.selected.size) ? 'selecting' : ''}">
       <div class="mail-list-col">${list}</div>
       <div class="mail-reader">${reader}</div>

@@ -2154,7 +2154,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-acct-scope { margin:0 0 14px; }
 .mail-acct-scope-sel { width:auto; max-width:100%; font-size:15px; padding:9px 34px 9px 14px; }
 .mail-unread-b { display:inline-block; margin-left:7px; min-width:19px; padding:0 5px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:700; line-height:19px; text-align:center; vertical-align:middle; }
+/* The bulk bar takes this row's place when you select messages (see renderMail),
+   so the list beneath doesn't jump. Both carry the same min-height for the swap
+   to be invisible. */
+/* One height for both rows, so neither is content-driven and the swap can't
+   drift apart if a button's label or the font changes. */
+.mail-tools, .mail-bulkbar { --mail-row-h:50px; min-height:var(--mail-row-h); }
 .mail-tools { display:flex; gap:8px; align-items:stretch; margin:0 0 14px; }
+.mail-tools .mail-search, .mail-tools .tbl-filter-btn { height:var(--mail-row-h); }
 .mail-tools .mail-search { flex:1; width:auto; margin:0; }
 .mail-refresh { flex:none; font-size:18px; line-height:1; padding:0 15px; }
 .mail-loadmore { display:block; width:100%; margin:10px 0 4px; padding:11px; border:1px solid var(--line); border-radius:11px; background:var(--card); color:var(--ink-2); font-size:14.5px; }
@@ -2203,7 +2210,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-row[data-swipe="delete"] { background:color-mix(in srgb,#c0392b 22%,transparent); }
 .mail-row[data-swipe="archive"]::after { content:'📥 Archive'; position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:14px; font-weight:600; color:#1b5e20; white-space:nowrap; }
 .mail-row[data-swipe="delete"]::after { content:'🗑 Delete'; position:absolute; left:16px; top:50%; transform:translateY(-50%); font-size:14px; font-weight:600; color:#7b241c; white-space:nowrap; }
-.mail-bulkbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 14px; padding:8px 10px 8px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); box-shadow:var(--shadow); }
+/* nowrap + scroll rather than wrap: seven buttons wrapping onto three lines on a
+   phone is both ugly and a moving target, and the height has to match .mail-tools
+   at every width for the swap to stay invisible. */
+.mail-bulkbar { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin:0 0 14px; padding:0 10px 0 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); box-shadow:var(--shadow); }
+.mail-bulkbar::-webkit-scrollbar { display:none; }
+.mail-bulkbar > * { flex:none; }
 .mail-bulk-n { font-weight:600; color:var(--ink); margin-right:6px; }
 .mail-bulkbar .ghost { padding:7px 13px; }
 .mail-bulk-x { margin-left:auto; }
