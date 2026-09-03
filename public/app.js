@@ -473,7 +473,7 @@ const HELP = {
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a life area.</p>
       <p>Contacts with an email are checked against Daybook, so you can see which of your people are here and connect with them.</p>
       <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
-      <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Press <b>Got in touch today</b> (on their card, or the ✓ on Home) and it starts again from today.</li>
+      <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
   financial: { title: 'Money', tip: 'Track spending against your life areas, import statements, and watch your portfolio.',
@@ -1598,7 +1598,7 @@ function renderSettings() {
           ${(state.account.aliases || []).filter((a) => typeof a === 'object' && !a.verified).map((a) => `<div class="alias-verify"><span class="av-note">Enter the code we emailed to <b>${esc(a.email)}</b>:</span><div class="alias-verify-row"><input class="sel" data-alias-code="${esc(a.email)}" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button class="add-btn wide" data-alias-verify="${esc(a.email)}">Confirm</button><button class="ghost" data-alias-resend="${esc(a.email)}">Resend</button></div></div>`).join('')}
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
-        <label class="set-field"><span>Phone</span><input class="sel" data-account-phone value="${esc(state.account.phone || '')}" placeholder="+351…"></label>
+        ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
         <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
@@ -5744,7 +5744,20 @@ function readCardAddress() { const a = {}; for (const [k] of ADDR_FIELDS) { cons
 // datalist, dedupe - keeps working unchanged. A phone keeps its country code in
 // its own field: { cc:'+351', number:'211 234 400' }.
 function contactEmails(p) { return (Array.isArray(p.emails) ? p.emails : (p.email ? [p.email] : [])).filter((e) => e != null && String(e).trim()); }
-function splitPhone(s) { const m = String(s || '').trim().match(/^(\+\d{1,4})[\s-]*(.*)$/); return m ? { cc: m[1], number: m[2].trim() } : { cc: '', number: String(s || '').trim() }; }
+function splitPhone(s) {
+  const t = String(s || '').trim();
+  if (!t) return { cc: '', number: '' };
+  // A separator settles it. Without one (e.g. "+351927494927") a greedy \d match
+  // would eat a digit of the number, so match the longest KNOWN dial code prefix.
+  const sep = t.match(/^(\+\d{1,4})[\s-]+(.*)$/);
+  if (sep) return { cc: sep[1], number: sep[2].trim() };
+  if (t[0] === '+') {
+    const digits = t.slice(1); let best = '';
+    for (const [, code] of COUNTRY_DIAL) { const d = String(code).replace(/^\+/, ''); if (digits.startsWith(d) && d.length > best.length) best = d; }
+    if (best) return { cc: '+' + best, number: digits.slice(best.length).trim() };
+  }
+  return { cc: '', number: t };
+}
 function contactPhones(p) {
   if (Array.isArray(p.phones)) return p.phones.map((x) => (typeof x === 'string' ? splitPhone(x) : { cc: String(x.cc || '').trim(), number: String(x.number || '').trim() }));
   return p.phone ? [splitPhone(p.phone)] : [];
@@ -6012,15 +6025,18 @@ function keepInTouchSection(c) {
   // "Last in touch" is a date, not a button: you often remember a call days after
   // making it, and the cadence is only honest if it can be told the real day.
   // Today is one tap away inside the picker, so the common case stays quick.
-  const status = every ? `<label class="kit-row"><span class="tf-label">Last in touch</span>${dateFieldHtml('kit-last', tp.last || '')}${tp.last ? `<span class="kit-ago">${esc(kitWhen(tp.last))}</span>` : ''}</label>
-    <p class="kit-next">Next nudge <b class="${due ? 'kit-due' : ''}">${due ? 'due now' : esc(kitWhen(tp.snooze) || 'once you have spoken')}</b></p>
-    <button class="add-btn wide kit-touched" data-kit-touched>✓ Got in touch today</button>` : '';
+  const status = every ? `<div class="kit-line kit-status">
+      <label class="kit-row"><span class="tf-label">Last in touch</span>${dateFieldHtml('kit-last', tp.last || '')}${tp.last ? `<span class="kit-ago">${esc(kitWhen(tp.last))}</span>` : ''}</label>
+      <p class="kit-next">Next nudge <b class="${due ? 'kit-due' : ''}">${due ? 'due now' : esc(kitWhen(tp.snooze) || 'once you have spoken')}</b></p>
+    </div>` : '';
   return `<div class="tf-field cc-kit">
     <label class="kit-tick"><input type="checkbox" data-kit-toggle ${every ? 'checked' : ''}><span class="tf-label kit-tick-l">Keep in touch</span></label>
     <p class="kit-hint">A quiet nudge when it has been too long. The clock restarts the day you get in touch, so it never asks twice about a call you have just made.</p>
     ${every ? `<div class="kit-body">
-      <label class="kit-row"><span class="tf-label">How often</span><select class="sel kit-every" data-kit-every>${opts}</select></label>
-      ${customRow}
+      <div class="kit-line">
+        <label class="kit-row"><span class="tf-label">How often</span><select class="sel kit-every" data-kit-every>${opts}</select></label>
+        ${customRow}
+      </div>
       ${status}
     </div>` : ''}
   </div>`;
@@ -6085,27 +6101,15 @@ async function kitSetLast(iso) {
     renderContactCard();
   } catch (e) { toast(e.message); }
 }
-// "Got in touch today" is the same door as ticking the task anywhere else, so the
-// server does the rolling forward and we read back what it decided rather than
-// keeping a second copy of that logic here.
-async function kitTouched() {
-  const t = kitTaskOf(); if (!t) return;
-  try {
-    await api(`/api/tasks/${t.id}`, { method: 'PATCH', body: JSON.stringify({ done: true }) });
-    const fresh = await api(`/api/blocks/${t.id}`);
-    state.contact_open.kitTask = fresh;
-    renderContactCard();
-    toast(`Noted — next nudge ${kitWhen((fresh.props || {}).snooze)}`);
-  } catch (e) { toast(e.message); }
-}
 function renderContactCard() {
   const c = state.contact_open.contact; const p = c.props || {};
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-contacts>Contacts</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(c.title || 'Unnamed')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-contact="${c.id}" title="Delete this contact">Delete</button></span></div>
-    <div class="task-focus">
+    <div class="task-focus cc-focus">
       <span class="contact-av big">${esc(initial(c.title || '?'))}</span>
       <textarea class="note-title" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
+      ${p.email ? `<button class="add-btn wide cc-email-btn" data-contact-mail="${esc(p.email)}" title="Email ${esc(p.email)}">✉ Email</button>` : ''}
     </div>
     <div class="tf-meta">
       ${contactEmailFields(p)}
@@ -6116,8 +6120,7 @@ function renderContactCard() {
     </div>
     ${keepInTouchSection(c)}
     ${contactGroupsSection(c)}
-    ${notesSection(c.body, 'contact', c.id)}
-    ${p.email ? `<div class="contact-actions"><button class="add-btn wide" data-contact-mail="${esc(p.email)}">✉ Email ${esc(c.title || 'them')}</button></div>` : ''}`;
+    ${notesSection(c.body, 'contact', c.id)}`;
   autoGrowSoon($('#contactcard-name'));
 }
 // Groups on the contact card: current groups as removable chips, plus a picker
@@ -8121,7 +8124,7 @@ document.addEventListener('input', (e) => {
       try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ subdomain: v }) }); if (state.me) state.me.subdomain = v; toast(`Username updated - you're now at ${v}.daybook.fyi`); }
       catch (x) { toast(x.message); }
     }, 800); }
-  if (e.target.matches('[data-account-phone]')) { clearTimeout(window.__acctPT); const v = e.target.value; window.__acctPT = setTimeout(() => saveAccount({ phone: v }), 700); }
+  if (e.target.matches('.acct-phone-cc, .acct-phone-num')) { clearTimeout(window.__acctPT); const cc = (document.querySelector('.acct-phone-cc') || {}).value; const number = (document.querySelector('.acct-phone-num') || {}).value; window.__acctPT = setTimeout(() => saveAccount({ phone: joinPhone({ cc, number }) }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
@@ -8365,7 +8368,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-contact-import]')) { $('#contact-file')?.click(); return; }
   const delc = t.closest('[data-del-contact]'); if (delc) { delContact(delc.dataset.delContact); return; }
   const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
-  if (t.closest('[data-kit-touched]')) { kitTouched(); return; }
   const kitd = t.closest('[data-kit-done]'); if (kitd) { homeKitTouched(kitd.dataset.kitDone); return; }
   const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
   const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
