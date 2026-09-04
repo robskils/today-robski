@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS slots (
   url        TEXT,              -- carried over when the slot came from an activity
   event_id   TEXT,              -- Google Calendar event this block was adopted from
   alerted_min INTEGER,          -- the start_min a 5-min SMS was sent for; NULL = none
+  activity_id INTEGER,          -- the practice (activities.id) this block came from; NULL for a task/ad-hoc block
   created_at TEXT NOT NULL
 );
 -- One block per calendar event, so clicking a sat Zazen twice can't count it

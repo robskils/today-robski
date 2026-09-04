@@ -3995,9 +3995,158 @@ function uiPrompt(message, opts = {}) {
 // The planner is the actual today app (index.html/today.js), embedded in a
 // same-origin iframe so it stays one codebase - no reimplementation, no drift -
 // while living inside the Life shell. ?embed hides its own header chrome.
-function openToday() { state.view = { type: 'today' }; renderNav(); renderToday(); return Promise.resolve(); }
+function openToday() { state.view = { type: 'today' }; if (!state.today) state.today = { day: todayISO() }; renderNav(); return loadToday(); }
+// ── Today: native timed day + practices + tasks + habits ───────────────
+const T2_START = 6, T2_END = 23, T2_PPM = 0.9;   // canvas spans 06:00–23:00
+const t2Top = (m) => Math.max(0, Math.round((Math.max(T2_START * 60, Math.min(T2_END * 60, m)) - T2_START * 60) * T2_PPM));
+const t2Height = (T2_END - T2_START) * 60 * T2_PPM;
+async function loadToday(day) {
+  const T = state.today; if (day) T.day = day;
+  renderToday();   // paints the shell + a loading day while we fetch
+  try {
+    const [dayData, tasks] = await Promise.all([
+      api('/api/day?date=' + T.day),
+      api('/api/tasks').then((r) => r.tasks || []).catch(() => []),
+    ]);
+    await loadPractices();               // activities + marks + areas
+    T.data = dayData; T.tasks = tasks;
+  } catch (e) { toast(e.message); }
+  renderToday();
+}
 function renderToday() {
-  $('#pane').innerHTML = `<div class="today-topbar">${pageCrumb('Today')}</div><iframe class="today-frame" src="/today?embed=1" title="Today - your day"></iframe>`;
+  const T = state.today; const data = T.data;
+  const isToday = T.day === todayISO();
+  const d = new Date(T.day + 'T00:00');
+  const label = isToday ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+  const nav = `<span class="t2-nav">${!isToday ? '<button class="t2-navbtn" data-t2-today>Today</button>' : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
+  $('#pane').innerHTML = `
+    ${pageCrumb('Today')}
+    <div class="pane-head t2-head"><h1>${esc(label)}</h1>${nav}</div>
+    ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>' : `
+    <div class="t2-grid">
+      <aside class="t2-col t2-practices">${t2PracticesHtml()}</aside>
+      <section class="t2-col t2-day">${t2DayHtml()}</section>
+      <aside class="t2-col t2-tasks">${t2TasksHtml()}</aside>
+    </div>
+    ${t2HabitsHtml()}`}`;
+}
+// The timed day canvas: hour grid, all-day + timed calendar events, placed slots
+// (each with a tick), and today's scheduled-but-unplaced practices as suggestions.
+function t2DayHtml() {
+  const T = state.today; const data = T.data; const isToday = T.day === todayISO();
+  const events = (data.events || []);
+  const allDay = events.filter((e) => e.allDay);
+  const timed = events.filter((e) => !e.allDay && e.start_min != null);
+  const slots = (data.slots || []).filter((s) => !s.event_id);   // adopted events draw as the event
+  const floating = slots.filter((s) => s.start_min == null);
+  const placed = slots.filter((s) => s.start_min != null);
+  // Practices scheduled for this weekday, with a time, not yet on the day.
+  const placedActs = new Set(slots.map((s) => s.activity_id).filter(Boolean).map(String));
+  const suggestions = isToday ? (state.practices.activities || []).filter((a) => a.timed && a.time_min != null && a.time_min !== '' && prcDueOn(a, new Date()) && !placedActs.has(String(a.id))) : [];
+  const hours = [];
+  for (let h = T2_START; h <= T2_END; h++) hours.push(`<div class="t2-hour" style="top:${t2Top(h * 60)}px"><span class="t2-hlab">${String(h).padStart(2, '0')}:00</span></div>`);
+  const nowTop = isToday ? (() => { const n = new Date(); return t2Top(n.getHours() * 60 + n.getMinutes()); })() : null;
+  const evBlocks = timed.map((e) => `<div class="t2-block t2-event" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round((e.duration || 30) * T2_PPM))}px">
+    <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}</div></div>`).join('');
+  const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
+  const sugBlocks = suggestions.map((a) => `<div class="t2-block t2-suggest" style="top:${t2Top(a.time_min)}px;height:${Math.max(26, Math.round((a.duration || 30) * T2_PPM))}px;--h:${hueOf(practiceArea(a)) ?? 220}" data-t2-place-prac="${a.id}" title="Tap to add to your day">
+    <div class="t2-brow"><span class="t2-tick ghost">＋</span><span class="t2-btime">${prcHHMM(a.time_min)}</span><span class="t2-btitle">${esc(a.title)}</span>${a.video ? '<span class="t2-vid">🎥</span>' : ''}</div></div>`).join('');
+  return `
+    ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
+    ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
+    <div class="t2-canvas" style="height:${t2Height}px">
+      ${hours.join('')}
+      ${nowTop != null ? `<div class="t2-now" style="top:${nowTop}px"><span class="t2-now-dot"></span></div>` : ''}
+      ${evBlocks}${sugBlocks}${slotBlocks}
+    </div>`;
+}
+function t2SlotBlock(s, floating) {
+  const act = s.activity_id ? (state.practices.activities || []).find((a) => String(a.id) === String(s.activity_id)) : null;
+  const hue = act ? (hueOf(practiceArea(act)) ?? 220) : 220;
+  const task = (s.tasks && s.tasks.length) ? s.tasks[0] : null;
+  const done = !!s.done || (task && task.done);
+  const pos = floating ? '' : `style="top:${t2Top(s.start_min)}px;height:${Math.max(26, Math.round((s.duration || 30) * T2_PPM))}px;--h:${hue}"`;
+  const vid = (act && act.video) ? '<span class="t2-vid" data-t2-open-slot="' + s.id + '">🎥</span>' : '';
+  return `<div class="t2-block t2-slot ${done ? 'done' : ''} ${floating ? 't2-float' : ''}" ${floating ? `style="--h:${hue}"` : pos} data-slot-id="${s.id}">
+    <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${s.id}" title="${done ? 'Done' : 'Mark done'}">✓</button>${floating ? '' : `<span class="t2-btime">${prcHHMM(s.start_min)}</span>`}<span class="t2-btitle">${esc(s.title || 'Block')}</span>${task && task.priority ? `<span class="p-tag p-${task.priority}">${task.priority}</span>` : ''}${vid}<button class="t2-x" data-t2-del-slot="${s.id}" title="Remove">×</button></div>
+  </div>`;
+}
+function t2PracticesHtml() {
+  const P = state.practices; const today = dayKey(new Date());
+  const acts = (P.activities || []);
+  if (!acts.length) return '<div class="t2-emptycol">No practices yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add practices</button></div>';
+  // Group by area (fallback lane label).
+  const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
+  const groups = new Map();
+  acts.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
+  const ordered = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const body = ordered.map((g) => `<div class="t2-pgroup"><div class="t2-pglabel" style="--h:${g.hue}"><span class="cd"></span>${esc(g.label)}</div>${g.items.map((a) => {
+    const marked = practiceMarked(a.id, today);
+    const streak = practiceStreak(a.id);
+    const sched = a.days ? `<span class="t2-psched">${esc(prcDaysLabel(a.days))}${a.time_min != null && a.time_min !== '' ? ` · ${prcHHMM(a.time_min)}` : ''}</span>` : '';
+    return `<div class="t2-prow" style="--h:${g.hue}">
+      <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
+      <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${sched}</span>
+      ${streak ? `<span class="t2-streak">🔥${streak}</span>` : ''}
+      ${a.timed ? `<button class="t2-add" data-t2-place-prac="${a.id}" title="Add to your day">＋</button>` : ''}
+    </div>`;
+  }).join('')}</div>`).join('');
+  return `<div class="t2-colh"><h2>Practices</h2><button class="t2-colnew" data-open-practices title="Manage practices">✎</button></div>${body}`;
+}
+function t2TasksHtml() {
+  const T = state.today; const tasks = T.tasks || [];
+  const areas = state.areas || [];
+  const f = T.taskArea || '';
+  const shown = tasks.filter((t) => !f || t.area === f).slice(0, 40);
+  const filter = `<select class="sel t2-tfilter" data-t2-taskfilter><option value="">All life areas</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
+  const rows = shown.map((t) => `<div class="t2-trow" style="--h:${t.area ? (hueOf((areas).find((a) => a.id === t.area)) ?? 220) : 220}">
+    <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${t.id}" title="Add to your day">＋</button>
+  </div>`).join('') || '<div class="t2-emptycol">Nothing to plan.</div>';
+  return `<div class="t2-colh"><h2>Tasks</h2></div>${filter}<div class="t2-tlist">${rows}</div>`;
+}
+function t2HabitsHtml() {
+  const P = state.practices; const today = dayKey(new Date());
+  const tracked = (P.activities || []).filter((a) => a.tracked);
+  if (!tracked.length) return '';
+  const toTick = tracked.filter((a) => !practiceMarked(a.id, today)).length;
+  const chips = tracked.map((a) => { const on = practiceMarked(a.id, today); const s = practiceStreak(a.id); return `<div class="t2-habit ${on ? 'done' : ''}">
+    <button class="t2-tick ${on ? 'on' : ''}" data-prc-tick="${a.id}" title="${on ? 'Done today' : 'Tick'}">✓</button>
+    <span class="t2-hname">${esc(a.title)}</span>${s ? `<span class="t2-streak">🔥${s}</span>` : ''}</div>`; }).join('');
+  return `<section class="t2-habits"><div class="t2-habh"><h2>Habits</h2>${toTick ? `<span class="t2-tocnt">${toTick} to tick</span>` : '<span class="t2-alldone">all ticked ✓</span>'}<span class="t2-habnote">tick as you go</span></div><div class="t2-habgrid">${chips}</div></section>`;
+}
+async function t2PlacePractice(activityId) {
+  const a = (state.practices.activities || []).find((x) => String(x.id) === String(activityId)); if (!a) return;
+  const start = (a.time_min != null && a.time_min !== '') ? a.time_min : 540;
+  try {
+    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: a.lane, title: a.title, start_min: start, duration: a.duration || 30, activity_id: a.id, url: a.video || undefined }) });
+    toast('Added to your day'); loadToday();
+  } catch (e) { toast(e.message === 'That event is already counted.' ? 'Already on your day' : e.message); }
+}
+async function t2PlaceTask(taskId) {
+  const t = (state.today.tasks || []).find((x) => x.id === taskId); if (!t) return;
+  try {
+    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: 540, duration: t.duration || 30, tana_id: t.id }) });
+    toast('Added to your day'); loadToday();
+  } catch (e) { toast(e.message); }
+}
+// Tick a placed block. A practice block also ticks its habit (one tick, counted
+// everywhere), per the agreed rule.
+async function t2SlotTick(slotId) {
+  const T = state.today; const s = (T.data.slots || []).find((x) => String(x.id) === String(slotId)); if (!s) return;
+  const now = !s.done;
+  s.done = now ? 1 : 0; renderToday();
+  try { await api('/api/slots/' + slotId, { method: 'PATCH', body: JSON.stringify({ done: now }) }); } catch (e) { toast(e.message); }
+  if (s.activity_id) {
+    const a = (state.practices.activities || []).find((x) => String(x.id) === String(s.activity_id));
+    if (a && a.tracked) {
+      const k = `${a.id}:${T.day}`;
+      if (now) state.practices.marks[k] = 1; else delete state.practices.marks[k];
+      savePracticeMarks(); renderToday();
+    }
+  }
+}
+async function t2DelSlot(slotId) {
+  try { await api('/api/slots/' + slotId, { method: 'DELETE' }); loadToday(); } catch (e) { toast(e.message); }
 }
 
 // ── view: mail ───────────────────────────────────────
@@ -8422,6 +8571,14 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
   { const pd = t.closest('[data-pe-day]'); if (pd) { const n = Number(pd.dataset.peDay); const s = state.practiceEdit && state.practiceEdit.days; if (s) { if (s.has(n)) s.delete(n); else s.add(n); pd.classList.toggle('on'); } return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
+  // Today (native) view
+  { const td = t.closest('[data-t2-day]'); if (td) { const dd = new Date(state.today.day + 'T00:00'); dd.setDate(dd.getDate() + Number(td.dataset.t2Day)); loadToday(dd.toISOString().slice(0, 10)); return; } }
+  if (t.closest('[data-t2-today]')) { loadToday(todayISO()); return; }
+  { const pp = t.closest('[data-t2-place-prac]'); if (pp) { t2PlacePractice(pp.dataset.t2PlacePrac); return; } }
+  { const pk = t.closest('[data-t2-place-task]'); if (pk) { t2PlaceTask(pk.dataset.t2PlaceTask); return; } }
+  { const st = t.closest('[data-t2-slot-tick]'); if (st) { t2SlotTick(st.dataset.t2SlotTick); return; } }
+  { const sd = t.closest('[data-t2-del-slot]'); if (sd) { e.stopPropagation(); t2DelSlot(sd.dataset.t2DelSlot); return; } }
+  { const ov = t.closest('[data-t2-open-slot]'); if (ov) { const s = (state.today.data.slots || []).find((x) => String(x.id) === String(ov.dataset.t2OpenSlot)); const a = s && (state.practices.activities || []).find((x) => String(x.id) === String(s.activity_id)); if (a && a.video) window.open(a.video, '_blank', 'noopener'); return; } }
   // Today section day-stepper. These live inside the collapse header, so they must
   // be handled (and return) before the sec-collapse toggle below, or a tap on an
   // arrow would also collapse the section.
@@ -8844,6 +9001,7 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
   if (e.target.id === 'kit-last') { kitSetLast(e.target.value); return; }
   if (e.target.matches('[data-kit-toggle]')) { kitToggle(e.target.checked); return; }
   if (e.target.matches('[data-kit-every]')) {

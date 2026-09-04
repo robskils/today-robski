@@ -1942,11 +1942,12 @@ async function createSlot(request, env) {
   let res;
   try {
     res = await env.DB.prepare(
-      `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, event_id, created_at, user_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, event_id, activity_id, created_at, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
     ).bind(
       day, b.lane, b.tana_id || null, b.title,
       startMin, Math.round(duration), b.note || null, safeUrl(b.url), eventId,
+      b.activity_id ? Number(b.activity_id) : null,
       new Date().toISOString(), env.uid,
     ).first();
   } catch (e) {
