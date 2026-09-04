@@ -4061,27 +4061,43 @@ async function loadToday(day) {
 }
 function renderToday() {
   const T = state.today; const data = T.data;
+  if (!T.tab) T.tab = 'today';
   const isToday = T.day === todayISO();
   const d = new Date(T.day + 'T00:00');
   const label = isToday ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
   const nav = `<span class="t2-nav">${!isToday ? '<button class="t2-navbtn" data-t2-today>Today</button>' : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
+  const toTick = (state.practices && (state.practices.activities || []).filter((a) => a.tracked && !practiceMarked(a.id, dayKey(new Date()))).length) || 0;
+  const tabs = `<div class="t2-tabs">
+    <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">Today</button>
+    <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">Tracker${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
+  </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Today')}
-    <div class="pane-head t2-head"><h1>${esc(label)}</h1>${nav}</div>
-    ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>' : `
-    <div class="t2-grid">
+    <div class="pane-head t2-head"><h1>${T.tab === 'tracker' ? 'Tracker' : esc(label)}</h1>${T.tab === 'today' ? nav : ''}</div>
+    ${tabs}
+    ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>'
+      : (T.tab === 'tracker' ? t2TrackerHtml() : `
+    <div class="t2-grid" style="--t2h:${t2Height}px">
       <aside class="t2-col t2-practices">${t2PracticesHtml()}</aside>
       <section class="t2-col t2-day">${t2DayHtml()}</section>
       <aside class="t2-col t2-tasks">${t2TasksHtml()}</aside>
-    </div>
-    ${t2HabitsHtml()}`}`;
+    </div>`)}`;
+}
+// The Tracker tab: every tracked practice, grouped by life area, with today's
+// tick, a 7-day dot row and its streak. The habit history lives here, off the day.
+function t2TrackerHtml() {
+  const P = state.practices;
+  const tracked = (P.activities || []).filter((a) => a.tracked);
+  if (!tracked.length) return '<div class="home-empty" style="padding:24px">No tracked habits yet. Add a practice and switch on <b>Track it</b>.</div>';
+  return `<p class="home-empty" style="margin:2px 0 16px">Tick what you've done. Every practice with <b>Track it</b> on shows here - grouped by life area, with its streak.</p><div class="prc t2-tracker">${practicesGroups(true)}</div>`;
 }
 // The timed day canvas: hour grid, all-day + timed calendar events, placed slots
 // (each with a tick), and today's scheduled-but-unplaced practices as suggestions.
 function t2DayHtml() {
   const T = state.today; const data = T.data; const isToday = T.day === todayISO();
   const events = (data.events || []);
-  const allDay = events.filter((e) => e.allDay);
+  // No birthdays on the planner - this is for planning the day, not a reminder feed.
+  const allDay = events.filter((e) => e.allDay && !/birthday/i.test(e.title || ''));
   const timed = events.filter((e) => !e.allDay && e.start_min != null);
   const slots = (data.slots || []).filter((s) => !s.event_id);   // adopted events draw as the event
   const floating = slots.filter((s) => s.start_min == null);
@@ -4137,18 +4153,24 @@ function t2PracticesHtml() {
       ${a.timed ? `<button class="t2-add" data-t2-place-prac="${a.id}" title="Add to your day">＋</button>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
-  return `<div class="t2-colh"><h2>Practices</h2><button class="t2-colnew" data-open-practices title="Manage practices">✎</button></div>${body}`;
+  return `<div class="t2-colh"><h2>Practices</h2><button class="t2-colnew" data-open-practices title="Manage practices">✎</button></div><div class="t2-scroll">${body}</div>`;
 }
 function t2TasksHtml() {
   const T = state.today; const tasks = T.tasks || [];
   const areas = state.areas || [];
   const f = T.taskArea || '';
-  const shown = tasks.filter((t) => !f || t.area === f).slice(0, 40);
-  const filter = `<select class="sel t2-tfilter" data-t2-taskfilter><option value="">All life areas</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
-  const rows = shown.map((t) => `<div class="t2-trow" style="--h:${t.area ? (hueOf((areas).find((a) => a.id === t.area)) ?? 220) : 220}">
-    <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${t.id}" title="Add to your day">＋</button>
-  </div>`).join('') || '<div class="t2-emptycol">Nothing to plan.</div>';
-  return `<div class="t2-colh"><h2>Tasks</h2></div>${filter}<div class="t2-tlist">${rows}</div>`;
+  const prios = T.taskPrios instanceof Set ? T.taskPrios : (T.taskPrios = new Set());
+  const areaHue = (id) => id ? (hueOf(areas.find((a) => a.id === id)) ?? 220) : 220;
+  // Area filter + a P1–P4 toggle row. No priority selected = show every priority.
+  const shown = tasks.filter((t) => (!f || t.area_id === f) && (!prios.size || prios.has(t.priority)));
+  const filter = `<div class="t2-tctl">
+    <select class="sel t2-tfilter" data-t2-taskfilter><option value="">All life areas</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
+    <div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" data-t2-prio="${p}">${p}</button>`).join('')}</div>
+  </div>`;
+  const rows = shown.map((t) => `<div class="t2-trow" style="--h:${areaHue(t.area_id)}">
+    <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${esc(t.tana_id)}" title="Add to your day">＋</button>
+  </div>`).join('') || `<div class="t2-emptycol">${tasks.length ? 'None match the filter.' : 'Nothing to plan.'}</div>`;
+  return `<div class="t2-colh"><h2>Tasks</h2><span class="t2-colcount">${shown.length}</span></div>${filter}<div class="t2-tlist t2-scroll">${rows}</div>`;
 }
 function t2HabitsHtml() {
   const P = state.practices; const today = dayKey(new Date());
@@ -4169,9 +4191,9 @@ async function t2PlacePractice(activityId) {
   } catch (e) { toast(e.message === 'That event is already counted.' ? 'Already on your day' : e.message); }
 }
 async function t2PlaceTask(taskId) {
-  const t = (state.today.tasks || []).find((x) => x.id === taskId); if (!t) return;
+  const t = (state.today.tasks || []).find((x) => String(x.tana_id) === String(taskId)); if (!t) return;
   try {
-    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: 540, duration: t.duration || 30, tana_id: t.id }) });
+    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: 540, duration: t.duration || 30, tana_id: t.tana_id }) });
     toast('Added to your day'); loadToday();
   } catch (e) { toast(e.message); }
 }
@@ -8631,6 +8653,8 @@ document.addEventListener('click', (e) => {
   { const pd = t.closest('[data-pe-day]'); if (pd) { const n = Number(pd.dataset.peDay); const s = state.practiceEdit && state.practiceEdit.days; if (s) { if (s.has(n)) s.delete(n); else s.add(n); pd.classList.toggle('on'); } return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
   // Today (native) view
+  { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }
+  { const pr = t.closest('[data-t2-prio]'); if (pr) { const s = state.today.taskPrios instanceof Set ? state.today.taskPrios : (state.today.taskPrios = new Set()); const p = pr.dataset.t2Prio; if (s.has(p)) s.delete(p); else s.add(p); renderToday(); return; } }
   { const td = t.closest('[data-t2-day]'); if (td) { const dd = new Date(state.today.day + 'T00:00'); dd.setDate(dd.getDate() + Number(td.dataset.t2Day)); loadToday(dd.toISOString().slice(0, 10)); return; } }
   if (t.closest('[data-t2-today]')) { loadToday(todayISO()); return; }
   { const pp = t.closest('[data-t2-place-prac]'); if (pp) { t2PlacePractice(pp.dataset.t2PlacePrac); return; } }
