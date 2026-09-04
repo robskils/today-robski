@@ -2414,6 +2414,27 @@ function cadenceStatus(daysDesc, cadence) {
   const status = weekCount >= cad.n ? 'ontrack' : (weekCount > 0 ? 'building' : 'slipping');
   return { status, label: `${weekCount} of ${cad.n} this week`, streak: weekCount };
 }
+// A life area's check-in status, said forwards: are you on track, and how many
+// days until you should do something in it next? ("3 days to do something", not
+// "3d ago"). daysDesc is the union of the area's practice ticks, newest first.
+function areaCheckin(daysDesc, cadence) {
+  const today = dayKey(new Date());
+  const cad = parseCadence(cadence);
+  if (!cad) return null;
+  const lastDone = daysDesc[0] || null;
+  if (cad.unit === 'd') {
+    if (!lastDone) return { status: 'due', label: 'do something to start' };
+    const remaining = cad.n - daysBetweenStr(lastDone, today);
+    if (remaining >= 2) return { status: 'ontrack', label: `${remaining} days to do something` };
+    if (remaining === 1) return { status: 'ontrack', label: '1 day to do something' };
+    if (remaining === 0) return { status: 'due', label: 'do something today' };
+    return { status: 'slipping', label: 'do something soon' };
+  }
+  // A "N times a week" area: count this week's, say how many are left.
+  const weekCount = daysDesc.filter((d) => daysBetweenStr(d, today) < 7).length;
+  if (weekCount >= cad.n) return { status: 'ontrack', label: `done ${weekCount}× this week` };
+  return { status: weekCount ? 'building' : 'slipping', label: `${cad.n - weekCount} more this week` };
+}
 function dailyStreak(daysDesc, today) {
   if (!daysDesc.length) return 0;
   if (daysBetweenStr(daysDesc[0], today) > 1) return 0;
@@ -4125,9 +4146,10 @@ function renderToday() {
 }
 // The Tracker tab: every tracked practice, grouped by life area, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
-// The Tracker: a keep-your-life-alive dashboard. Grouped by life area; each area
-// is "on track" if you did ANY of its practices within its keep-alive cadence, and
-// each practice shows its own status against its own aim.
+// Each life area can carry a check-in rhythm; the area then says, plainly and
+// forwards, how many days until you should do something in it next. An area
+// counts a day done if you did ANY of its practices. Each practice shows its own
+// run + status against its own aim.
 function t2TrackerHtml() {
   const P = state.practices;
   const tracked = (P.activities || []).filter((a) => a.tracked);
@@ -4139,12 +4161,11 @@ function t2TrackerHtml() {
   const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
   const days = trackerLast7();
   const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const dot = (st) => `<span class="trk-dot2 trk-${st}"></span>`;
-  const statBits = (s) => `${dot(s.status)}<span class="trk-lab">${esc(s.label)}</span>${s.streak ? `<span class="t2-streak">🔥${s.streak}</span>` : ''}`;
+  const areaCadOpts = [['', 'No check-in'], ['1d', 'every day'], ['2d', 'every other day'], ['3d', 'every 3 days'], ['2w', 'twice a week'], ['3w', '3× a week'], ['4w', '4× a week'], ['5w', '5× a week']];
   const body = ordered.map((g) => {
     const areaCad = g.area ? ((g.area.props || {}).cadence || '') : '';
-    const areaStat = g.areaId && parseCadence(areaCad) ? cadenceStatus(areaMarkedDays(g.areaId), areaCad) : null;
-    const cadSel = g.areaId ? `<select class="sel trk-cadsel" data-trk-area-cad="${g.areaId}" title="Keep this area alive…"><option value="">no area target</option>${PRC_CADENCES.slice(1).map(([v, l]) => `<option value="${v}" ${areaCad === v ? 'selected' : ''}>keep alive: ${l.toLowerCase()}</option>`).join('')}</select>` : '';
+    const areaStat = g.areaId ? areaCheckin(areaMarkedDays(g.areaId), areaCad) : null;
+    const cadSel = g.areaId ? `<select class="sel trk-cadsel" data-trk-area-cad="${g.areaId}" title="How often do you want to do something in this area?">${areaCadOpts.map(([v, l]) => `<option value="${v}" ${areaCad === v ? 'selected' : ''}>${v ? 'Check in ' + l : l}</option>`).join('')}</select>` : '';
     const rows = g.items.map((a) => {
       const s = cadenceStatus(prcMarkedDays(a.id), a.cadence);
       const marked = practiceMarked(a.id, today);
@@ -4159,11 +4180,12 @@ function t2TrackerHtml() {
       </div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
-      <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${areaStat ? `<span class="trk-area-stat">${statBits(areaStat)}</span>` : ''}${cadSel}</div>
+      <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
+      ${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       ${rows}
     </div>`;
   }).join('');
-  return `<p class="home-empty trk-intro"><b>Keep your life alive.</b> Tick as you go - each practice keeps its run of days. An area stays on track if you did <em>anything</em> in it within its keep-alive target.</p><div class="trk-dash">${body}</div>`;
+  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p><div class="trk-dash">${body}</div>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
@@ -4394,7 +4416,7 @@ async function t2SlotTick(slotId) {
 async function t2DelSlot(slotId) {
   try { await api('/api/slots/' + slotId, { method: 'DELETE' }); loadToday(); } catch (e) { toast(e.message); }
 }
-// Set a life area's keep-alive cadence (stored in the area block's props).
+// Set a life area's check-in rhythm (stored in the area block's props.cadence).
 async function setAreaCadence(areaId, cadence) {
   const a = (state.areas || []).find((x) => x.id === areaId); if (!a) return;
   a.props = a.props || {}; a.props.cadence = cadence || null;

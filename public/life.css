@@ -1592,6 +1592,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .trk-intro { margin:2px 0 16px; }
 .trk-dash { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:14px; }
 .trk-runend { display:inline-flex; align-items:center; gap:8px; flex:none; }
+/* The area's plain-English status: on track, and when to do something next. */
+.trk-area-status { display:flex; align-items:center; gap:8px; margin:0 0 10px; font-size:14.5px; }
+.trk-area-status b { font-weight:600; }
+.trk-s-ontrack b { color:#4f9673; }
+.trk-s-due b, .trk-s-building b { color:#c2872f; }
+.trk-s-slipping b { color:#bd7442; }
+.trk-s-none b { color:var(--ink-3); }
 .trk-prow .trk-week { flex:none; }
 .trk-prow .trk-dot { width:17px; height:17px; }
 .trk-area { background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); border-radius:14px; padding:13px 15px 8px; box-shadow:var(--shadow); }
