@@ -2569,7 +2569,7 @@ function practiceEditorHtml() {
         <label class="pe-f"><span>Aim to do it</span>${(() => {
           const cur = a.cadence || '';
           const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
-          return `<select class="sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Just log it</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
+          return `<select class="sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
         })()}</label>
         <label class="pe-f"><span>Follow-along video</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a video link (optional)" autocomplete="off"></label>
         <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
