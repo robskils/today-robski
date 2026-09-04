@@ -1601,12 +1601,12 @@ select.sel { appearance:none; -webkit-appearance:none; padding-right:34px;
 .t2-prio { flex:1; padding:6px 0; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink-3); font-size:12.5px; font-weight:700; letter-spacing:.02em; }
 .t2-prio.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .t2-prio:hover:not(.on) { border-color:var(--accent); color:var(--accent); }
-/* drag: handles, floating ghost, and the drop-time indicator on the canvas */
-.t2-grip { flex:none; width:15px; color:var(--ink-4,var(--ink-3)); font-size:12px; letter-spacing:-1px; cursor:grab; touch-action:none; user-select:none; opacity:.5; }
-.t2-grip:hover { opacity:1; color:var(--accent); }
-.t2-grip-off { cursor:default; opacity:0; pointer-events:none; }
-.t2-slot { cursor:grab; touch-action:none; }
-.t2-slot:active, .t2-grip:active { cursor:grabbing; }
+/* drag: the whole row/block is the handle. Rows use pan-y so a vertical touch
+   still scrolls the list; a drag toward the day arms on the first move. Slots use
+   touch-action:none because their reschedule gesture is vertical. */
+.t2-draggable { cursor:grab; touch-action:pan-y; -webkit-user-select:none; user-select:none; }
+.t2-slot { cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; }
+.t2-draggable:active, .t2-slot:active { cursor:grabbing; }
 .t2-dragsrc { opacity:.4; }
 .t2-dragghost { position:fixed; left:0; top:0; z-index:300; pointer-events:none; padding:7px 12px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font-size:13.5px; font-weight:600; box-shadow:0 12px 30px -8px rgba(0,0,0,.5); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .t2-dropind { position:absolute; left:52px; right:8px; height:0; border-top:2px dashed var(--accent); z-index:8; }

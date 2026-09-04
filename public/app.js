@@ -4150,12 +4150,10 @@ function t2PracticesHtml() {
     const marked = practiceMarked(a.id, today);
     const streak = practiceStreak(a.id);
     const sched = a.days ? `<span class="t2-psched">${esc(prcDaysLabel(a.days))}${a.time_min != null && a.time_min !== '' ? ` · ${prcHHMM(a.time_min)}` : ''}</span>` : '';
-    return `<div class="t2-prow" style="--h:${g.hue}">
-      ${a.timed ? `<span class="t2-grip" data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Drag onto your day">⠿</span>` : '<span class="t2-grip t2-grip-off"></span>'}
+    return `<div class="t2-prow ${a.timed ? 't2-draggable' : ''}" ${a.timed ? `data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Drag onto your day to plan it"` : ''} style="--h:${g.hue}">
       <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
       <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${sched}</span>
       ${streak ? `<span class="t2-streak">🔥${streak}</span>` : ''}
-      ${a.timed ? `<button class="t2-add" data-t2-place-prac="${a.id}" title="Add to today (no set time — drag onto the timeline to pin a time)">＋</button>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
   return `<div class="t2-colh"><h2>Practices</h2><button class="t2-colnew" data-open-practices title="Manage practices">✎</button></div><div class="t2-scroll">${body}</div><button class="t2-newrow" data-prc-new>＋ New practice</button>`;
@@ -4172,8 +4170,8 @@ function t2TasksHtml() {
     <select class="sel t2-tfilter" data-t2-taskfilter><option value="">All life areas</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
     <div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" data-t2-prio="${p}">${p}</button>`).join('')}</div>
   </div>`;
-  const rows = shown.map((t) => `<div class="t2-trow" style="--h:${areaHue(t.area_id)}">
-    <span class="t2-grip" data-t2-drag="task" data-t2-drag-id="${esc(t.tana_id)}" data-t2-drag-label="${esc(t.title || 'Task')}" title="Drag onto your day">⠿</span><span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${esc(t.tana_id)}" title="Add to today (no set time — drag onto the timeline to pin a time)">＋</button>
+  const rows = shown.map((t) => `<div class="t2-trow t2-draggable" data-t2-drag="task" data-t2-drag-id="${esc(t.tana_id)}" data-t2-drag-label="${esc(t.title || 'Task')}" title="Drag onto your day to plan it" style="--h:${areaHue(t.area_id)}">
+    <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}
   </div>`).join('') || `<div class="t2-emptycol">${tasks.length ? 'None match the filter.' : 'Nothing to plan.'}</div>`;
   return `<div class="t2-colh"><h2>Tasks</h2><span class="t2-colcount">${shown.length}</span></div>${filter}<div class="t2-tlist t2-scroll">${rows}</div>
     <form class="t2-newrow t2-taskadd" data-t2-taskadd><input id="t2-newtask" placeholder="＋ New task…" autocomplete="off"></form>`;
@@ -4224,18 +4222,23 @@ const t2SnapMin = (m) => Math.max(T2_START * 60, Math.min(T2_END * 60, Math.roun
 let t2Drag = null;
 document.addEventListener('pointerdown', (e) => {
   if (!state.view || state.view.type !== 'today') return;
-  if (e.target.closest('button, a, input, select, textarea')) return;   // let controls/scroll work
+  if (e.target.closest('button, a, input, select, textarea')) return;   // let controls work
   const src = e.target.closest('[data-t2-drag]'); if (!src) return;
   const canvas = document.querySelector('.t2-canvas'); if (!canvas) return;
-  e.preventDefault();
-  t2Drag = { type: src.dataset.t2Drag, id: src.dataset.t2DragId, label: (src.dataset.t2DragLabel || src.textContent || 'Move').trim().slice(0, 40), canvas, pid: e.pointerId, sx: e.clientX, sy: e.clientY, moved: false, dropMin: null, src };
-  try { src.setPointerCapture(e.pointerId); } catch {}
+  // NB: no preventDefault / capture here - a purely vertical touch must be free to
+  // scroll the list (touch-action:pan-y). The drag arms only once the pointer moves
+  // (see pointermove), which on touch is a horizontal-ish gesture toward the day.
+  t2Drag = { type: src.dataset.t2Drag, id: src.dataset.t2DragId, label: (src.dataset.t2DragLabel || src.textContent || 'Move').trim().slice(0, 40), canvas, pid: e.pointerId, sx: e.clientX, sy: e.clientY, active: false, dropMin: null, src };
 });
 document.addEventListener('pointermove', (e) => {
   const d = t2Drag; if (!d || e.pointerId !== d.pid) return;
-  if (!d.moved && Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) < 6) return;
-  d.moved = true; e.preventDefault();
-  if (!d.ghost) { d.ghost = document.createElement('div'); d.ghost.className = 't2-dragghost'; d.ghost.textContent = d.label; document.body.appendChild(d.ghost); d.src.classList.add('t2-dragsrc'); }
+  if (!d.active) {
+    if (Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) < 6) return;
+    d.active = true;
+    try { d.src.setPointerCapture(e.pointerId); } catch {}
+    d.ghost = document.createElement('div'); d.ghost.className = 't2-dragghost'; d.ghost.textContent = d.label; document.body.appendChild(d.ghost); d.src.classList.add('t2-dragsrc');
+  }
+  e.preventDefault();
   d.ghost.style.transform = `translate(${e.clientX + 12}px, ${e.clientY - 12}px)`;
   const r = d.canvas.getBoundingClientRect();
   const over = e.clientX >= r.left - 40 && e.clientX <= r.right + 40 && e.clientY >= r.top && e.clientY <= r.bottom;
@@ -4251,9 +4254,9 @@ document.addEventListener('pointermove', (e) => {
 });
 function t2DragEnd(e) {
   const d = t2Drag; if (!d || (e && e.pointerId !== d.pid)) return; t2Drag = null;
-  if (d.ghost) d.ghost.remove(); d.src.classList.remove('t2-dragsrc');
+  if (d.ghost) d.ghost.remove(); if (d.src) d.src.classList.remove('t2-dragsrc');
   const ind = d.canvas.querySelector('.t2-dropind'); if (ind) ind.remove();
-  if (!d.moved || d.dropMin == null) return;
+  if (!d.active || d.dropMin == null) return;
   if (d.type === 'prac') t2PlacePractice(d.id, d.dropMin);
   else if (d.type === 'task') t2PlaceTask(d.id, d.dropMin);
   else if (d.type === 'slot') { api('/api/slots/' + d.id, { method: 'PATCH', body: JSON.stringify({ start_min: d.dropMin }) }).then(() => loadToday()).catch((err) => toast(err.message)); }
