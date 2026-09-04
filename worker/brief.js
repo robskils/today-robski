@@ -84,13 +84,14 @@ function row(inner) {
   return `<tr><td style="padding:0 34px">${inner}</td></tr>`;
 }
 
-// A section heading: the Japanese, then the English underneath it. Small caps
-// spacing rather than a big bold word, so the page stays quiet.
-function heading(kanji, label) {
+// A section heading. Small-caps spacing and a short gold rule rather than a big
+// bold word, so the page stays quiet without leaning on an alphabet the reader
+// may not have.
+function heading(label) {
   return row(`
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:34px 0 14px">
             <tr>
-              <td style="font-family:${SERIF};font-size:19px;color:${GOLD};padding:0 10px 0 0;white-space:nowrap">${kanji}</td>
+              <td style="width:18px;padding:0 10px 0 0"><table role="presentation" width="18" cellpadding="0" cellspacing="0"><tr><td style="background:${GOLD};height:2px;line-height:2px;font-size:0">&nbsp;</td></tr></table></td>
               <td width="100%" style="font-family:${SANS};font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:${MIST}">${label}</td>
             </tr>
           </table>`);
@@ -115,8 +116,8 @@ function eventRow(e) {
 }
 
 function taskRow(t) {
-  const lane = t.lane_label
-    ? `<div style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:${MIST};margin:4px 0 0">${esc(t.lane_label)}</div>`
+  const lane = t.area_label
+    ? `<div style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:${MIST};margin:4px 0 0">${esc(t.area_label)}</div>`
     : '';
   return `
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -135,15 +136,20 @@ function empty(text) {
   return `<p style="margin:2px 0 0;font-family:${SERIF};font-size:19px;font-style:italic;color:${MIST};border-top:1px solid ${RULE};padding:14px 0 0">${text}</p>`;
 }
 
+const BRIEF_TASK_CAP = 7;
 export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl = 'https://robski.daybook.fyi' }) {
+  const shown = tasks.slice(0, BRIEF_TASK_CAP);
+  const moreCount = tasks.length - shown.length;
   const timed = [...events].sort((a, b) => (a.allDay ? -1 : b.allDay ? 1 : a.start_min - b.start_min));
 
   const calendar = timed.length
     ? timed.map(eventRow).join('')
     : empty('Nothing scheduled. The day is yours.');
 
-  const p1 = tasks.length
-    ? tasks.map(taskRow).join('')
+  const p1 = shown.length
+    ? shown.map(taskRow).join('') + (moreCount > 0
+      ? `<p style="margin:16px 0 0"><a href="${siteUrl}/tasks?p1=1" style="font-family:${SANS};font-size:15px;color:${GOLD};text-decoration:none">${moreCount} more &#8594;</a></p>`
+      : '')
     : empty('No P1s open. Nothing is on fire.');
 
   const teaching = quote
@@ -170,25 +176,32 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
            forcing a 560px card that overflows the screen. -->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
 
-        <!-- The ensō, as a character. A drawn circle would be an image to
-             load or an SVG to be stripped; this is neither. -->
+        <!-- The Daybook mark as a PNG: the favicon is an SVG and every major
+             client strips those. Same file the sign-in and invitation emails use. -->
         <tr><td align="center" style="padding:40px 34px 0">
-          <div style="font-family:${SERIF};font-size:46px;line-height:1;color:${GOLD}">&#9711;</div>
+          <img src="https://daybook.fyi/email-mark.png" width="72" height="38" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:22px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${esc(longDate(day))}</p>
           <p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">Good morning</p>
         </td></tr>
 
-        ${teaching ? heading('&#20170;&#26085;', 'Today&#39;s teaching') + row(teaching) : ''}
+        ${teaching ? heading('Today&#39;s teaching') + row(teaching) : ''}
 
-        ${heading('&#20104;&#23450;', 'Calendar')}
+        ${heading('Calendar')}
         ${row(calendar)}
 
-        ${heading('&#19968;&#30058;', 'First things')}
+        ${heading('First things')}
         ${row(p1)}
 
         <tr><td style="padding:38px 34px 34px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${RULE}">
             <tr><td align="center" style="padding:22px 0 0">
+              <p style="margin:0 0 18px;font-family:${SANS};font-size:15px;color:${MIST}">
+                <a href="${siteUrl}/journal" style="color:${INK};text-decoration:none">Journal</a>
+                <span style="color:${RULE}">&nbsp;·&nbsp;</span>
+                <a href="${siteUrl}/dreams" style="color:${INK};text-decoration:none">Dreams</a>
+                <span style="color:${RULE}">&nbsp;·&nbsp;</span>
+                <a href="${siteUrl}/goals" style="color:${INK};text-decoration:none">Goals</a>
+              </p>
               <a href="${siteUrl}" style="font-family:${SANS};font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:${GOLD};text-decoration:none">Open Daybook &#8594;</a>
               <p style="margin:16px 0 0;font-family:${SERIF};font-size:17px;font-style:italic;color:${MIST}">Sit first. The rest will keep.</p>
             </td></tr>

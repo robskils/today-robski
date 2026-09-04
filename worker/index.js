@@ -1564,21 +1564,25 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
 
   try {
     const cfg = await getLaneConfig(env, uid);
-    const [cal, quote, tasksRes] = await Promise.all([
+    const [cal, quote, areasRes, tasksRes] = await Promise.all([
       // The calendar rides a single Google refresh token - the owner's. Fetching
       // it for anyone else would put Robin's diary in their brief, so only the
       // owner's brief carries a calendar; others get tasks + the day's quote.
       owner ? calendarEvents(env, now.date) : Promise.resolve({ events: [] }),
       quoteForDay(env, now.date, uid),
+      // Every open P1's life area, so a task can be labelled with the part of life
+      // it belongs to rather than the practice lane it happens to map onto.
+      env.DB.prepare("SELECT id, title FROM blocks WHERE user_id = ? AND kind = 'area' AND archived = 0").bind(uid).all(),
       // Every open P1, from native task blocks. Oldest first: a P1 that has sat
-      // for a month deserves reading.
+      // for a month deserves reading. The email shows seven and links to the rest,
+      // so the limit is only here to stop a runaway list, not to shape the page.
       env.DB.prepare(
         `SELECT title, props, created_at FROM blocks
           WHERE user_id = ? AND kind = 'task' AND archived = 0
             AND json_extract(props, '$.priority') = 'P1'
             AND IFNULL(json_extract(props, '$.done'), 0) != 1
             AND (json_extract(props, '$.snooze') IS NULL OR json_extract(props, '$.snooze') <= ?)
-          ORDER BY created_at IS NULL, created_at LIMIT 25`,
+          ORDER BY created_at IS NULL, created_at LIMIT 100`,
       ).bind(uid, now.date).all(),
     ]);
 
@@ -1586,11 +1590,15 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     // reads as "nothing scheduled", so say so explicitly instead.
     if (cal.error) console.error('brief calendar:', cal.error);
 
-    const labels = Object.fromEntries(LANES.map((l) => [l.key, l.label]));
+    // The label under a task is its life area. It used to be the practice LANE,
+    // which only existed for the Today tool's streams: an area mapped to no lane,
+    // or to the catch-all, produced nothing - so some tasks carried a label and
+    // others didn't, for a reason invisible from the email.
+    const areaTitle = Object.fromEntries((areasRes.results || []).map((a) => [a.id, a.title]));
     const tasks = (tasksRes.results || []).map((t) => {
       let p = {}; try { p = JSON.parse(t.props || '{}'); } catch {}
-      const lane = laneForAreaId(cfg.areaMap, p.area);
-      return { title: t.title, lane_label: lane && lane !== 'other' ? (labels[lane] || null) : null };
+      const aid = p.area || (Array.isArray(p.areas) ? p.areas[0] : null);
+      return { title: t.title, area_label: (aid && areaTitle[aid]) || null };
     });
 
     // A member with no calendar and no P1s would get a quote-only email every
@@ -2178,23 +2186,54 @@ async function updateTask(request, env, id) {
 
 // ── activities ────────────────────────────────────────────────────────
 
+// Today redesign: a practice now hangs off a Life Area, may carry a note + a
+// follow-along video, repeats on chosen weekdays at a time, and is flagged timed
+// (goes on the day canvas) / tracked (feeds a habit streak). We still keep the
+// legacy `lane` column filled - derived from the area - so the old Today app that
+// groups by lane keeps working during the transition.
+async function practiceFields(env, b) {
+  const area = b.area ? String(b.area) : null;
+  let lane = null;
+  if (area) {
+    try { const cfg = await getLaneConfig(env); lane = laneForAreaId(cfg.areaMap, area) || (cfg.laneKeys && cfg.laneKeys[0]) || 'body'; } catch {}
+  }
+  const note = b.note != null ? String(b.note) : null;
+  const video = b.video ? safeUrl(String(b.video)) : null;
+  const timed = (b.timed === false || b.timed === 0) ? 0 : 1;
+  const tracked = (b.tracked === false || b.tracked === 0) ? 0 : 1;
+  let days = null;                       // CSV of getDay() 0=Sun..6=Sat; empty -> not scheduled
+  if (b.days != null) {
+    const arr = String(b.days).split(',').map((x) => Number(x)).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+    const uniq = [...new Set(arr)].sort((x, y) => x - y);
+    days = uniq.length ? uniq.join(',') : null;
+  }
+  let time_min = null;
+  if (b.time_min != null && b.time_min !== '') { const t = Number(b.time_min); if (Number.isFinite(t) && t >= 0 && t <= 1439) time_min = Math.round(t); }
+  return { area, lane, note, video, timed, tracked, days, time_min };
+}
 async function createActivity(request, env) {
   const b = await request.json().catch(() => ({}));
   const title = String(b.title || '').trim();
   if (!title) return err('title required', request);
-  if (!(await isValidLane(env, b.lane))) return err('bad lane', request);
 
   const duration = Number(b.duration);
   if (!Number.isFinite(duration) || duration < 5 || duration > 720) return err('bad duration', request);
 
+  // Fill `lane` from the area (legacy grouping); an explicit valid lane wins.
+  const p = await practiceFields(env, b);
+  let lane = b.lane;
+  if (!(await isValidLane(env, lane))) lane = p.lane;
+  if (!lane) return err('a life area or lane is required', request);
+
   const next = await env.DB.prepare(
     'SELECT COALESCE(MAX(position), -1) + 1 AS p FROM activities WHERE lane = ? AND user_id = ?',
-  ).bind(b.lane, env.uid).first();
+  ).bind(lane, env.uid).first();
 
   const row = await env.DB.prepare(
-    `INSERT INTO activities (lane, title, url, duration, position, user_id)
-     VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
-  ).bind(b.lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid).first();
+    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+  ).bind(lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid,
+    p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min).first();
 
   return json(row, request, 201);
 }
@@ -2210,16 +2249,28 @@ async function updateActivity(request, env, id) {
   }
   if (b.url !== undefined) b.url = safeUrl(b.url);
 
-  const fields = [];
-  const binds = [];
-  for (const k of ['lane', 'title', 'url', 'duration', 'position']) {
-    if (b[k] !== undefined) { fields.push(`${k} = ?`); binds.push(b[k]); }
-  }
-  if (!fields.length) return err('nothing to update', request);
+  const set = {};
+  for (const k of ['lane', 'title', 'url', 'duration', 'position']) if (b[k] !== undefined) set[k] = b[k];
 
+  // New practice fields. Changing the area re-derives the legacy lane too.
+  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min'];
+  if (newKeys.some((k) => b[k] !== undefined)) {
+    const p = await practiceFields(env, b);
+    if (b.area !== undefined) { set.area = p.area; if (p.lane && set.lane === undefined) set.lane = p.lane; }
+    if (b.note !== undefined) set.note = p.note;
+    if (b.video !== undefined) set.video = p.video;
+    if (b.timed !== undefined) set.timed = p.timed;
+    if (b.tracked !== undefined) set.tracked = p.tracked;
+    if (b.days !== undefined) set.days = p.days;
+    if (b.time_min !== undefined) set.time_min = p.time_min;
+  }
+
+  const keys = Object.keys(set);
+  if (!keys.length) return err('nothing to update', request);
+  const binds = keys.map((k) => set[k]);
   binds.push(id, env.uid);
   const row = await env.DB.prepare(
-    `UPDATE activities SET ${fields.join(', ')} WHERE id = ? AND user_id = ? RETURNING *`,
+    `UPDATE activities SET ${keys.map((k) => `${k} = ?`).join(', ')} WHERE id = ? AND user_id = ? RETURNING *`,
   ).bind(...binds).first();
   if (!row) return err('not found', request, 404);
   return json(row, request);

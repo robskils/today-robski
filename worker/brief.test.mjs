@@ -83,7 +83,7 @@ test('briefEmail renders times, all-day events and the quote', () => {
       { title: 'Timed sit', allDay: false, start_min: 420, duration: 60 },
       { title: 'Feriado', allDay: true, start_min: 0, duration: 1440 },
     ],
-    tasks: [{ title: 'File the recibo', lane_label: 'Work' }],
+    tasks: [{ title: 'File the recibo', area_label: 'Work' }],
     quote: { text: 'Wash your bowl.', author: 'Zhaozhou' },
   });
   assert.ok(html.includes('07:00'));
@@ -93,6 +93,38 @@ test('briefEmail renders times, all-day events and the quote', () => {
   assert.ok(html.includes('Work'));
   assert.ok(html.includes('Wash your bowl.'));
   assert.ok(html.includes('Zhaozhou'));
+});
+
+// Twenty-one P1s in an email is a wall you scroll past. Seven is a morning's
+// worth, and the rest are one tap away.
+test('briefEmail shows seven tasks and links to the remainder', () => {
+  const many = Array.from({ length: 21 }, (_, i) => ({ title: `Task ${i + 1}` }));
+  const html = briefEmail({ day: '2026-08-04', tasks: many, siteUrl: 'https://x.daybook.fyi' });
+  assert.ok(html.includes('Task 7'));
+  assert.ok(!html.includes('Task 8'));
+  assert.ok(html.includes('14 more'));
+  assert.ok(html.includes('https://x.daybook.fyi/tasks?p1=1'));
+});
+
+test('briefEmail does not offer more when there is no more', () => {
+  const html = briefEmail({ day: '2026-08-04', tasks: [{ title: 'Only one' }] });
+  assert.ok(html.includes('Only one'));
+  assert.ok(!html.includes('more &#8594;'));
+});
+
+// It goes to strangers now: no alphabet they may not read, and the product's own
+// mark rather than a circle only Robin would recognise.
+test('briefEmail carries the mark and no Japanese', () => {
+  const html = briefEmail({ day: '2026-08-04' });
+  assert.ok(html.includes('daybook.fyi/email-mark.png'));
+  assert.ok(!/[\u3000-\u9fff]/.test(html));
+  assert.ok(!html.includes('&#9711;'));
+  assert.ok(!html.includes('&#20170;'));
+});
+
+test('briefEmail offers the way back in', () => {
+  const html = briefEmail({ day: '2026-08-04', siteUrl: 'https://x.daybook.fyi' });
+  for (const p of ['/journal', '/dreams', '/goals']) assert.ok(html.includes(`https://x.daybook.fyi${p}`), p);
 });
 
 // Gmail strips <style> blocks and Outlook renders with Word, so the page has

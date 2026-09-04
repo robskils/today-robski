@@ -109,7 +109,17 @@ CREATE TABLE IF NOT EXISTS activities (
   title    TEXT NOT NULL,
   url      TEXT,
   duration INTEGER NOT NULL DEFAULT 30,   -- minutes
-  position INTEGER NOT NULL DEFAULT 0
+  position INTEGER NOT NULL DEFAULT 0,
+  -- Today redesign (2026-09): a practice hangs off a Life Area, can carry a note
+  -- (+ a follow-along video), repeats on chosen weekdays at a time, and is flagged
+  -- timed (goes on the day canvas) and/or tracked (feeds a habit streak).
+  area     TEXT,                              -- a kind='area' block id (nullable)
+  note     TEXT,                              -- rich HTML, like a Daybook note
+  video    TEXT,                              -- a follow-along video URL (nullable)
+  timed    INTEGER NOT NULL DEFAULT 1,        -- 1 = takes time, shows on the day
+  tracked  INTEGER NOT NULL DEFAULT 1,        -- 1 = feeds a habit streak
+  days     TEXT,                              -- repeat weekdays, CSV of getDay() 0=Sun..6=Sat; NULL = not scheduled
+  time_min INTEGER                            -- default schedule time, mins from midnight; NULL = none
 );
 CREATE INDEX IF NOT EXISTS idx_activities_lane ON activities(lane, position);
 

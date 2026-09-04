@@ -10557,6 +10557,12 @@ async function onbConnectGmail() {
     else if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
     else if (route === '/journal') await openJournal();
+    // The morning email links here. /dreams opens Reflection with the prompt
+    // picker up, where the dream prompts are waiting - it deliberately does NOT
+    // create an entry, because a link in an email must not write anything.
+    else if (route === '/dreams') { await openJournal(); if (state.journal) { state.journal.picking = true; renderJournalList(); } }
+    else if (route === '/goals') await openGoals();
+    else if (route === '/tasks') { if (new URLSearchParams(location.search).get('p1') === '1') openP1Tasks(); else await openTasks(); }
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
