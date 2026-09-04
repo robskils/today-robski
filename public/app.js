@@ -9601,7 +9601,9 @@ document.addEventListener('submit', (e) => {
     if (v) {
       homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, notes: ($('#qt-notes') || {}).value });
       if (matchMedia('(max-width:820px)').matches) {
-        // On mobile, close the form after adding - one task, done, out of the way.
+        // On mobile, act like "Done" too: drop focus so the keyboard dismisses,
+        // then close the form - one task, done, out of the way.
+        try { i.blur(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch {}
         $('#qt-wrap').innerHTML = '';
       } else {
         // On desktop, keep the form open for a run of tasks; clear only the per-task fields.
