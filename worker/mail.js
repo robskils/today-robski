@@ -130,7 +130,7 @@ async function imapOpen(env, acct) {
       if (line.startsWith('+')) return { cont: true, lines };
     }
   }
-  const cmd = (command) => { const t = 'A' + (++tag); return withTimeout((async () => { await writer.write(enc.encode(`${t} ${command}\r\n`)); return readResponse(t); })(), 20000, 'IMAP command'); };
+  const cmd = (command, ms = 20000) => { const t = 'A' + (++tag); return withTimeout((async () => { await writer.write(enc.encode(`${t} ${command}\r\n`)); return readResponse(t); })(), ms, 'IMAP command'); };
 
   return {
     async login() {
@@ -182,8 +182,11 @@ async function imapOpen(env, acct) {
     // Full-text search (headers + body). CHARSET UTF-8 first for accented terms,
     // falling back to a plain search if the server rejects the charset.
     async search(q, limit) {
-      let s = await cmd(`UID SEARCH CHARSET UTF-8 TEXT ${imapStr(q)}`);
-      if (!s.ok) s = await cmd(`UID SEARCH TEXT ${imapStr(q)}`);
+      // 45s, not the usual 20: searching Gmail's All Mail is the one command here
+      // that legitimately takes half a minute, and timing it out returns an empty
+      // folder rather than an error - which reads as "nothing found".
+      let s = await cmd(`UID SEARCH CHARSET UTF-8 TEXT ${imapStr(q)}`, 45000);
+      if (!s.ok) s = await cmd(`UID SEARCH TEXT ${imapStr(q)}`, 45000);
       const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
       const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
       if (!ids.length) return [];
@@ -828,9 +831,10 @@ export async function handleMail(request, env, url, json, err) {
           const ordered = boxes.filter((b) => !/\\Noselect/i.test(b.flags || '') && !skip(b)).sort((a, c) => rank(a) - rank(c));
           // Better a fast partial sweep than a request that dies at the edge and
           // leaves the box looking broken. searchedAll says which one this was.
-          const deadline = Date.now() + 15000;
+          const deadline = Date.now() + 60000;
           let searchedAll = true;
           const seen = new Set(); const out = [];
+          const failed = [];
           for (const b of ordered) {
             if (Date.now() > deadline) { searchedAll = false; break; }
             try {
@@ -842,10 +846,10 @@ export async function handleMail(request, env, url, json, err) {
                 if (seen.has(key)) continue; seen.add(key);
                 out.push({ ...m, mailbox: b.path });
               }
-            } catch {}
+            } catch { failed.push(b.path); searchedAll = false; }
           }
           out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
-          return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll }, request);
+          return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll, failed }, request);
         }
         const box = await resolveMailbox(im, mailbox);
         const total = await im.select(box);

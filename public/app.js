@@ -4328,6 +4328,7 @@ async function loadMessages(quiet, force) {
   // its focus/caret) alone. force = the user tapped Refresh, so always go live
   // even when the cache is fresh. A generation counter drops stale slow responses.
   const gen = (state.mail._gen = (state.mail._gen || 0) + 1);
+  state.mail.searching = null;
   state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; state.mail.hover = null;
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
   const all = state.mail.account === 'all';
@@ -4395,7 +4396,7 @@ async function loadMessages(quiet, force) {
     state.mail.error = null; state.mail.acctErrors = acctErrors;
     renderMailList(false);
   };
-  await Promise.all(accts.map(async (a) => {
+  const loadOne = async (a) => {
     try {
       const r = await mailApi(`/messages?account=${a.id}&mailbox=${encodeURIComponent(f.mailbox)}&limit=${limit}${f.flagged ? '&flagged=1' : ''}${f.unseen ? '&unseen=1' : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`);
       if (state.mail._gen !== gen) return;
@@ -4406,10 +4407,26 @@ async function loadMessages(quiet, force) {
       // A search sweeps every folder, so each hit carries its own mailbox; key by
       // it too, since UIDs are only unique within a mailbox.
       bucket[a.id] = (r.messages || []).map((x) => { const mb = x.mailbox || f.mailbox; return { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}` }; });
+      if ((r.failed || []).length) acctErrors.push({ name: a.name || a.email, msg: `could not search ${r.failed.length} folder${r.failed.length === 1 ? '' : 's'} (${r.failed.slice(0, 3).join(', ')})` });
       if (!r.searchedAll && (r.total || 0) > bucket[a.id].length) more = true;
     } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); if (bucket[a.id] === undefined) bucket[a.id] = []; }
     if (state.mail._gen === gen) rebuild();   // render as each mailbox lands
-  }));
+  };
+  // Browsing fans out: every account at once, each painting as it lands. SEARCHING
+  // goes one at a time. A search is many SELECTs and a UID SEARCH per folder, and
+  // firing that at several providers simultaneously is how Gmail decides you are
+  // being a nuisance and drops the connection - which came back as "No matches"
+  // for an account that had never actually been searched. Slower, and right.
+  if (q) {
+    for (const a of accts) {
+      state.mail.searching = a.name || a.email;
+      renderMailList(false);
+      await loadOne(a);
+      if (state.mail._gen !== gen) return;
+    }
+    state.mail.searching = null;
+    renderMailList(false);
+  } else await Promise.all(accts.map(loadOne));
   if (state.mail._gen !== gen) return;   // a newer load superseded this one
   state.mail.listCache[viewKey] = state.mail.messages;   // freshen for next time
   state.mail._liveAt[viewKey] = Date.now();              // note when we last hit live IMAP for this view
@@ -5115,8 +5132,15 @@ function mailListInner(loading) {
   const errBanner = (!loading && (m.acctErrors || []).length)
     ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
     : '';
-  const emptyMsg = m.query ? 'No matches.' : m.folder === 'unread' ? 'No unread messages. Inbox zero.' : 'No messages.';
-  return `${errBanner}${loading ? '<div class="home-empty">Searching…</div>' : (rows || `<div class="home-empty">${emptyMsg}</div>`)}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
+  const emptyMsg = m.query
+    ? ((m.acctErrors || []).length ? 'No matches in the accounts that answered - see above.' : 'No matches.')
+    : m.folder === 'unread' ? 'No unread messages. Inbox zero.' : 'No messages.';
+  // While a sweep is still running, an empty list means "not yet", not "nothing".
+  const busy = !loading && m.query && m.searching;
+  const body = loading ? '<div class="home-empty">Searching…</div>'
+    : (rows || (busy ? '' : `<div class="home-empty">${emptyMsg}</div>`));
+  const busyLine = busy ? `<div class="home-empty mail-searching">Searching ${esc(m.searching)}…</div>` : '';
+  return `${errBanner}${body}${busyLine}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
 }
 // Refresh only the message list in place, keeping the header/search box intact.
 function renderMailList(loading) {
