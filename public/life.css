@@ -1490,7 +1490,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .pe-body { padding:8px 20px 12px; display:flex; flex-direction:column; gap:14px; }
 .pe-f { display:flex; flex-direction:column; gap:6px; }
 .pe-f > span { font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); font-weight:600; }
-.pe-f .sel, .pe-note { width:100%; }
+.pe-f .sel, .pe-note { width:100%; max-width:none; }
 .pe-note { resize:vertical; min-height:64px; line-height:1.5; font-family:inherit; }
 .pe-tog { display:flex; align-items:center; gap:11px; cursor:pointer; font-size:15px; color:var(--ink-2); }
 .pe-tog input { width:20px; height:20px; accent-color:var(--accent); flex:none; cursor:pointer; }
