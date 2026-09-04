@@ -6796,6 +6796,7 @@ function renderContactCard() {
       <span class="contact-av big">${esc(initial(c.title || '?'))}</span>
       <textarea class="note-title" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
       ${p.email ? `<button class="add-btn wide cc-email-btn" data-contact-mail="${esc(p.email)}" title="Email ${esc(p.email)}">✉ Email</button>` : ''}
+      <button class="cc-invite-link" data-cc-invite="${esc(p.email || '')}" title="Invite ${esc(c.title || 'them')} to Daybook">✦ Invite to Daybook</button>
     </div>
     <div class="tf-meta">
       ${contactEmailFields(p)}
@@ -9248,6 +9249,7 @@ document.addEventListener('click', (e) => {
   { const ax = t.closest('[data-adm-area-del]'); if (ax) { adminAreaDel(ax.dataset.admAreaDel); return; } }
   if (t.closest('[data-open-friends]')) { openFriends(); return; }
   if (t.closest('[data-invite-daybook]')) { inviteToDaybook(); return; }
+  { const cvi = t.closest('[data-cc-invite]'); if (cvi) { inviteToDaybook(cvi.dataset.ccInvite || undefined); return; } }
   { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToDaybook(email); return; } }
   if (t.closest('[data-friend-add-email]')) { friendAddEmail(); return; }
   { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }

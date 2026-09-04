@@ -3230,7 +3230,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-focus { align-items:center; flex-wrap:wrap; }
 .cc-focus .note-title { flex:1 1 200px; }
 .cc-email-btn { flex:none; align-self:center; white-space:nowrap; }
-@media (max-width:560px){ .cc-email-btn { flex:1 1 100%; margin-left:55px; } }
+/* A subtle text link, not a button - a quiet way to invite this person to Daybook. */
+.cc-invite-link { flex:none; align-self:center; background:none; border:0; padding:4px 6px; font-size:13.5px; color:var(--ink-3); white-space:nowrap; cursor:pointer; }
+.cc-invite-link:hover { color:var(--accent); text-decoration:underline; }
+@media (max-width:560px){ .cc-email-btn { flex:1 1 100%; margin-left:55px; } .cc-invite-link { flex:1 1 100%; margin-left:55px; text-align:left; } }
 .tf-check { flex:none; width:30px; height:30px; margin-top:6px; border:2px solid var(--line-2); border-radius:9px; color:transparent; display:grid; place-items:center; font-size:16px; transition:.15s; }
 .tf-check:hover { border-color:var(--accent); }
 .tf-check.done { background:var(--done); border-color:var(--done); color:#fff; }
