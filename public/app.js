@@ -1741,9 +1741,9 @@ function renderNav() {
     ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-lbl">Today</span></button>` : ''}
     ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
     ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
-    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
-    ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
     ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Reflection</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
+    ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
+    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
@@ -2579,9 +2579,9 @@ function renderHome() {
           ${modOn('today') ? `<button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>` : ''}
           ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
           ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
-          ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
-          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
           ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflection</span></button>` : ''}
+          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
+          ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
           ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
         </nav>
         <div class="home-main">${(() => {
