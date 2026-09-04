@@ -11186,6 +11186,21 @@ async function onbConnectGmail() {
   } catch (e) { toast(e.message); if (btn) { btn.disabled = false; btn.textContent = 'Connect Gmail'; } }
 }
 
+// While a text field is focused the soft keyboard is up, and on iOS a
+// position:fixed bottom bar floats awkwardly above it. Hide the mobile tab bar
+// while typing (body.kb-open); restore it once focus leaves all text fields.
+(function () {
+  const isText = (el) => {
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    if (el.tagName === 'TEXTAREA') return true;
+    if (el.tagName === 'INPUT') return !['checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'range', 'color'].includes((el.type || 'text').toLowerCase());
+    return false;
+  };
+  document.addEventListener('focusin', (e) => { if (isText(e.target)) document.body.classList.add('kb-open'); });
+  document.addEventListener('focusout', () => { setTimeout(() => { if (!isText(document.activeElement)) document.body.classList.remove('kb-open'); }, 60); });
+})();
+
 (async function boot() {
   initTheme();
   // Session hand-off from the apex (see goToMyDaybook): #t=<jwt> signs this
