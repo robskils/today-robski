@@ -9759,6 +9759,26 @@ function dropBefore(over, list, idOf) {
   if (over.classList.contains('drop-after')) { const i = list.indexOf(key); return i >= 0 && i + 1 < list.length ? list[i + 1] : null; }
   return key;
 }
+// Favourites drop: snap to the NEAREST card by position and insert on whichever
+// side the cursor is on, so an imprecise drop (on a card, or in the gap) lands
+// where you meant - never dumped to the bottom. Marks the indicator as a side
+// effect and returns the id to insert before (null = end). The sidebar list is
+// vertical; the home strip flows horizontally, so pick the axis per container.
+function favDrop(container, x, y, draggedId) {
+  clearDropMarks();
+  const cards = [...container.querySelectorAll('[data-fav-id]')].filter((el) => el.dataset.favId !== draggedId);
+  if (!cards.length) return null;
+  const horizontal = container.classList.contains('home-sec-favs');
+  let best = null, bestD = Infinity;
+  for (const el of cards) { const r = el.getBoundingClientRect(); const d = (x - (r.left + r.width / 2)) ** 2 + (y - (r.top + r.height / 2)) ** 2; if (d < bestD) { bestD = d; best = el; } }
+  const r = best.getBoundingClientRect();
+  const after = horizontal ? x > r.left + r.width / 2 : y > r.top + r.height / 2;
+  best.classList.add(after ? 'drop-after' : 'drop-before');
+  const list = state.favs.map((f) => f.id);
+  if (!after) return best.dataset.favId;
+  for (let j = list.indexOf(best.dataset.favId) + 1; j < list.length; j++) if (list[j] !== draggedId) return list[j];
+  return null;
+}
 document.addEventListener('dragstart', (e) => {
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const fo = e.target.closest('[data-focus-id]'); if (fo) { dragFocus = fo.dataset.focusId; fo.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
@@ -9769,7 +9789,7 @@ document.addEventListener('dragstart', (e) => {
   const cc = e.target.closest('[data-contact-drag]'); if (cc) { dragContact = cc.dataset.contactDrag; cc.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', cc.dataset.contactDrag); } catch {} }
 });
 document.addEventListener('dragover', (e) => {
-  if (dragFav && (e.target.closest('#favs') || e.target.closest('.home-sec-favs'))) { e.preventDefault(); const o = e.target.closest('[data-fav-id]'); markDrop(o && o.dataset.favId !== dragFav ? o : null, e, 'v'); return; }
+  if (dragFav) { const c = e.target.closest('#favs') || e.target.closest('.home-sec-favs'); if (c) { e.preventDefault(); favDrop(c, e.clientX, e.clientY, dragFav); } return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
   if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'h'); return; }
   if (dragHomeSec && (e.target.closest('.home-main') || e.target.closest('.home-side'))) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
@@ -9788,9 +9808,10 @@ document.addEventListener('drop', (e) => {
     e.preventDefault(); z.classList.remove('att-drag'); uploadFiles(z.dataset.attZone, e.dataTransfer.files); return;
   }
   if (dragFav) {
-    e.preventDefault(); const over = e.target.closest('[data-fav-id]');
-    const before = over && over.dataset.favId !== dragFav ? dropBefore(over, state.favs.map((x) => x.id), (el) => el.dataset.favId) : null;
-    clearDropMarks(); reorderFavs(dragFav, before); dragFav = null; return;
+    e.preventDefault();
+    const c = e.target.closest('#favs') || e.target.closest('.home-sec-favs');
+    if (c) { const before = favDrop(c, e.clientX, e.clientY, dragFav); reorderFavs(dragFav, before); }
+    clearDropMarks(); dragFav = null; return;   // dropped off the list: leave it where it was
   }
   if (dragFocus) {
     e.preventDefault(); const over = e.target.closest('[data-focus-id]');
