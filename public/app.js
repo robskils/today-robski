@@ -518,10 +518,10 @@ const HELP = {
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
       <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
       <li><b>Click a task</b> to open it and edit its name, priority, life area or length.</li>
-      <li>A practice with a repeat schedule <b>lays itself onto the day automatically</b> at its time - no dragging. Don't want it today? Remove it and it stays gone for the day.</li>
+      <li><b>Practices are a palette, not a timetable.</b> They're your options, grouped by life area - the things you could do. Feel like something musical? Open Music, see your choices, and <b>drag</b> one onto the day or just <b>tick</b> what you did.</li>
       <li>Got a calendar event that <b>is</b> a practice (a gym class that's your workout)? It shows a one-tap <b>＋ chip</b> to count it - the event then carries the practice's colour and tick, and ticking it feeds the streak. No need to add the practice twice.</li>
-      <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Tick as you go - or on the day.</li>
-      <li><b>Practices</b> are the things you do again and again. Add one (or the <b>✎</b> to manage) to set a life area, a note or follow-along video, and a repeat schedule + time so it lays itself onto the right days.</li></ul>` },
+      <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
+      <li><b>Practices</b> are the things you do again and again. Add one (or the <b>✎</b> to manage) to set a life area, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
     body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Daybook - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
@@ -2371,22 +2371,9 @@ async function loadPractices(force) {
   return state.practices;
 }
 // ── practice scheduling helpers (Today redesign) ──────────────────────
-const PRC_DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const PRC_DOW1 = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const prcDays = (s) => String(s || '').split(',').map(Number).filter((n) => n >= 0 && n <= 6);
 const prcHHMM = (m) => (m == null || m === '') ? '' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-function prcDaysLabel(s) {
-  const d = prcDays(s); if (!d.length) return 'Not scheduled';
-  const set = new Set(d);
-  if (d.length === 7) return 'Every day';
-  if (d.length === 5 && [1, 2, 3, 4, 5].every((x) => set.has(x))) return 'Weekdays';
-  if (d.length === 2 && set.has(0) && set.has(6)) return 'Weekends';
-  return d.sort((a, b) => a - b).map((n) => PRC_DOW[n]).join(' ');
-}
 // A practice's life area (by its stored area id), or null.
 const practiceArea = (a) => a && a.area ? (state.areas || []).find((x) => x.id === a.area) : null;
-// Is a scheduled practice due on `day` (a Date)? True only when it has a weekday set.
-const prcDueOn = (a, date) => { const d = prcDays(a.days); return d.length ? d.includes(date.getDay()) : false; };
 // ── cadence + tracking (per practice AND per life area) ───────────────
 const PRC_CADENCES = [['', 'Just log it'], ['1d', 'Every day'], ['2d', 'Every other day'], ['3d', 'Every 3 days'], ['2w', 'Twice a week'], ['3w', '3× a week'], ['4w', '4× a week'], ['5w', '5× a week']];
 const parseCadence = (c) => { const m = String(c || '').match(/^(\d+)([dw])$/); return m ? { n: Number(m[1]), unit: m[2], raw: c } : null; };
@@ -2445,7 +2432,7 @@ function renderPractices() {
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Daily practices' }])}
     <div class="pane-head home-head"><h1>Daily practices</h1></div>
-    <p class="home-empty" style="margin:-6px 0 18px">The things you do again and again, grouped by life area. Give one a repeat schedule and a time and it lays itself onto your <b>Today</b> - add a note or a follow-along video too.</p>
+    <p class="home-empty" style="margin:-6px 0 18px">Your options for a well-lived day, grouped by life area - a palette to pick from when you feel like doing something. When the mood strikes, drag one onto your <b>Today</b> or just tick what you did - add a note or a follow-along video too.</p>
     <div class="prc prc-manage">${practicesGroups(false) || '<div class="empty" style="padding:0 0 14px">No practices yet - add your first.</div>'}
       <button class="add-btn wide prc-newbtn" data-prc-new>＋ New practice</button>
     </div>`;
@@ -2482,11 +2469,11 @@ function practicesGroups(withWeek) {
   const ordered = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
   return ordered.map((g) => {
     const rows = g.items.map((a) => {
-      const sched = a.days ? `<span class="prc-sched">${esc(prcDaysLabel(a.days))}${a.time_min != null && a.time_min !== '' ? ` · ${prcHHMM(a.time_min)}` : ''}</span>` : '';
+      const len = (a.timed && a.duration) ? `<span class="prc-sched">${a.duration} min</span>` : '';
       const badges = `${a.video ? '<span class="prc-badge">🎥</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
       return `<div class="prc-row">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
-        <span class="prc-name">${esc(a.title)}${badges}${withWeek ? '' : sched}</span>
+        <span class="prc-name">${esc(a.title)}${badges}${withWeek ? '' : len}</span>
         ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
@@ -2503,7 +2490,7 @@ function practiceAddForm() {
 // Daily Practices page.
 function openPracticeEditor(id) {
   const a = id ? (state.practices.activities || []).find((x) => String(x.id) === String(id)) : null;
-  state.practiceEdit = { id: a ? a.id : null, days: new Set(a ? prcDays(a.days) : []) };
+  state.practiceEdit = { id: a ? a.id : null };
   let host = document.getElementById('prac-editor-host');
   if (!host) { host = document.createElement('div'); host.id = 'prac-editor-host'; document.body.appendChild(host); }
   host.innerHTML = practiceEditorHtml();
@@ -2523,13 +2510,9 @@ function practiceEditorHtml() {
       <div class="pe-body">
         <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
         <label class="pe-f"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${a.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
-        <label class="pe-tog"><input type="checkbox" id="pe-timed" ${timed ? 'checked' : ''} data-pe-timed><span><b>Takes time</b> — put it on your day at a set time</span></label>
+        <label class="pe-tog"><input type="checkbox" id="pe-timed" ${timed ? 'checked' : ''} data-pe-timed><span><b>Takes time</b> — has a length, so you can drop it onto your day</span></label>
         <div class="pe-timing">
-          <div class="pe-f"><span>Repeats on</span><div class="pe-days">${PRC_DOW1.map((d, i) => `<button type="button" class="pe-day ${pe.days.has(i) ? 'on' : ''}" data-pe-day="${i}">${d}</button>`).join('')}</div></div>
-          <div class="pe-two">
-            <label class="pe-f pe-inline"><span>At</span><input class="sel" id="pe-time" type="time" value="${a.time_min != null && a.time_min !== '' ? prcHHMM(a.time_min) : ''}"></label>
-            <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></label>
-          </div>
+          <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></label>
         </div>
         <label class="pe-tog"><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}><span><b>Track it</b> — ticking it builds a streak</span></label>
         <label class="pe-f"><span>Aim to do it</span><select class="sel" id="pe-cadence">${PRC_CADENCES.map(([v, l]) => `<option value="${v}" ${(a.cadence || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -2542,16 +2525,14 @@ function practiceEditorHtml() {
 async function savePractice() {
   const pe = state.practiceEdit; if (!pe) return;
   const title = (($('#pe-title') || {}).value || '').trim(); if (!title) { toast('Give it a name'); return; }
-  const timeStr = ($('#pe-time') || {}).value || '';
-  const time_min = timeStr ? (Number(timeStr.slice(0, 2)) * 60 + Number(timeStr.slice(3, 5))) : '';
   const body = {
     title: title.slice(0, 80),
     area: ($('#pe-area') || {}).value || '',
     duration: Math.max(5, Math.min(720, Number(($('#pe-dur') || {}).value) || 30)),
     timed: $('#pe-timed') ? $('#pe-timed').checked : true,
     tracked: $('#pe-tracked') ? $('#pe-tracked').checked : true,
-    days: [...pe.days].sort((a, b) => a - b).join(','),
-    time_min,
+    days: '',        // practices are a palette of options, not a timetable
+    time_min: '',
     cadence: ($('#pe-cadence') || {}).value || '',
     video: (($('#pe-video') || {}).value || '').trim(),
     note: (($('#pe-note') || {}).value || '').trim(),
@@ -4115,32 +4096,8 @@ async function loadToday(day) {
     ]);
     await loadPractices();               // activities + marks + areas
     T.data = dayData; T.tasks = tasks;
-    if (T.day === todayISO()) await autoPlaceScheduled(dayData);   // lay today's routine on the day
   } catch (e) { toast(e.message); }
   renderToday();
-}
-// Auto-drop: a practice scheduled for today (its weekdays + a time) lands on the
-// day on its own - no tapping. Tracked per day in a kv so deleting one for the day
-// makes it stay gone rather than resurrecting on the next open.
-async function autoPlaceScheduled(dayData) {
-  const day = state.today.day;
-  let kv = {};
-  try { const r = await api('/api/kv/today_placed'); kv = (r && r.value && JSON.parse(r.value)) || {}; } catch {}
-  const handled = new Set((kv[day] || []).map(String));
-  const slotActs = new Set((dayData.slots || []).map((s) => s.activity_id).filter(Boolean).map(String));
-  const now = new Date();
-  const due = (state.practices.activities || []).filter((a) => a.timed && a.time_min != null && a.time_min !== '' && prcDueOn(a, now) && !slotActs.has(String(a.id)) && !handled.has(String(a.id)));
-  if (!due.length) return;
-  const done = [...(kv[day] || [])];
-  for (const a of due) {
-    try {
-      const slot = await api('/api/slots', { method: 'POST', body: JSON.stringify({ day, lane: a.lane, title: a.title, start_min: a.time_min, duration: a.duration || 30, activity_id: a.id, url: a.video || undefined }) });
-      dayData.slots.push(slot);
-    } catch {}
-    done.push(String(a.id));
-  }
-  const next = {}; next[day] = [...new Set(done)];   // keep only today's record
-  api('/api/kv/today_placed', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(next) }) }).catch(() => {});
 }
 function renderToday() {
   const T = state.today; const data = T.data;
@@ -4297,10 +4254,10 @@ function t2PracticesHtml() {
   const body = ordered.map((g) => `<div class="t2-pgroup"><div class="t2-pglabel" style="--h:${g.hue}"><span class="cd"></span>${esc(g.label)}</div>${g.items.map((a) => {
     const marked = practiceMarked(a.id, today);
     const streak = practiceStreak(a.id);
-    const sched = a.days ? `<span class="t2-psched">${esc(prcDaysLabel(a.days))}${a.time_min != null && a.time_min !== '' ? ` · ${prcHHMM(a.time_min)}` : ''}</span>` : '';
-    return `<div class="t2-prow ${a.timed ? 't2-draggable' : ''}" ${a.timed ? `data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Drag onto your day to plan it"` : ''} style="--h:${g.hue}">
+    const len = (a.timed && a.duration) ? `<span class="t2-psched">${a.duration} min</span>` : '';
+    return `<div class="t2-prow ${a.timed ? 't2-draggable' : ''}" ${a.timed ? `data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Fancy this? Drag it onto your day"` : ''} style="--h:${g.hue}">
       <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
-      <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${sched}</span>
+      <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${len}</span>
       ${streak ? `<span class="t2-streak">🔥${streak}</span>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
@@ -8915,7 +8872,6 @@ document.addEventListener('click', (e) => {
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
-  { const pd = t.closest('[data-pe-day]'); if (pd) { const n = Number(pd.dataset.peDay); const s = state.practiceEdit && state.practiceEdit.days; if (s) { if (s.has(n)) s.delete(n); else s.add(n); pd.classList.toggle('on'); } return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
   // Today (native) view
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }
