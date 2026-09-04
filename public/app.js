@@ -1575,7 +1575,7 @@ function renderSettings() {
   const tiles = [
     ['◈', 'Life areas', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
-    ['🧘', 'Daily practices', 'Your practices, shared with the Today tool', 'data-open-practices=""'],
+    ['🧘', 'Practices', 'Activities you want to repeat, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
@@ -2457,12 +2457,34 @@ async function openPractices() { state.view = { type: 'practices' }; renderNav()
 function renderPractices() {
   if (!state.practices) return;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Daily practices' }])}
-    <div class="pane-head home-head"><h1>Daily practices</h1></div>
-    <p class="home-empty" style="margin:-6px 0 18px">Your options for a well-lived day, grouped by life area - a palette to pick from when you feel like doing something. When the mood strikes, drag one onto your <b>Today</b> or just tick what you did - add a note or a follow-along video too.</p>
-    <div class="prc prc-manage">${practicesGroups(false) || '<div class="empty" style="padding:0 0 14px">No practices yet - add your first.</div>'}
-      <button class="add-btn wide prc-newbtn" data-prc-new>＋ New practice</button>
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Practices' }])}
+    <div class="pane-head home-head"><h1>Practices</h1></div>
+    <p class="t2-sub">Activities you want to repeat</p>
+    <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by life area. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it on the <b>Tracker</b>.</p>
+    ${practicesManageHtml()}`;
+}
+// The Practices page as clean area cards (matching the Tracker). Each row opens
+// the editor - no tick or dots here, that is the Tracker's job; this is for
+// shaping your practices. Delete lives inside the editor.
+function practicesManageHtml() {
+  const P = state.practices; const acts = (P.activities || []);
+  if (!acts.length) return '<div class="home-empty" style="padding:8px 0">No practices yet.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
+  const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
+  const groups = new Map();
+  acts.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
+  const ordered = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const body = ordered.map((g) => {
+    const rows = g.items.map((a) => {
+      const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
+      return `<button class="pm-row" data-prc-edit="${a.id}"><span class="pm-name">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<span class="pm-edit" title="Edit">✎</span></button>`;
+    }).join('');
+    return `<div class="trk-area" style="--h:${g.hue}">
+      <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
+      ${rows}
+      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}
     </div>`;
+  }).join('');
+  return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
 }
 function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
 function practiceStreak(id) { if (!state.practices) return 0; let s = 0; const d = new Date(); for (;;) { if (state.practices.marks[`${id}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
