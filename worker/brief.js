@@ -179,7 +179,7 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
         <!-- The Daybook mark as a PNG: the favicon is an SVG and every major
              client strips those. Same file the sign-in and invitation emails use. -->
         <tr><td align="center" style="padding:40px 34px 0">
-          <img src="https://daybook.fyi/email-mark.png" width="72" height="38" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <a href="${siteUrl}" style="text-decoration:none"><img src="https://daybook.fyi/email-mark.png" width="72" height="38" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
           <p style="margin:22px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${esc(longDate(day))}</p>
           <p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">Good morning</p>
         </td></tr>
@@ -202,8 +202,8 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
                 <span style="color:${RULE}">&nbsp;·&nbsp;</span>
                 <a href="${siteUrl}/goals" style="color:${INK};text-decoration:none">Goals</a>
               </p>
-              <a href="${siteUrl}" style="font-family:${SANS};font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:${GOLD};text-decoration:none">Open Daybook &#8594;</a>
-              <p style="margin:16px 0 0;font-family:${SERIF};font-size:17px;font-style:italic;color:${MIST}">Sit first. The rest will keep.</p>
+              <a href="${siteUrl}/today" style="font-family:${SANS};font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:${GOLD};text-decoration:none">Plan your day &#8594;</a>
+              <p style="margin:16px 0 0;font-family:${SERIF};font-size:17px;font-style:italic;color:${MIST}">For a life well lived.</p>
             </td></tr>
           </table>
         </td></tr>

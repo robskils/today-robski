@@ -10562,6 +10562,7 @@ async function onbConnectGmail() {
     // create an entry, because a link in an email must not write anything.
     else if (route === '/dreams') { await openJournal(); if (state.journal) { state.journal.picking = true; renderJournalList(); } }
     else if (route === '/goals') await openGoals();
+    else if (route === '/today') await openToday();
     else if (route === '/tasks') { if (new URLSearchParams(location.search).get('p1') === '1') openP1Tasks(); else await openTasks(); }
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
