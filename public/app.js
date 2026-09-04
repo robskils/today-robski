@@ -1027,7 +1027,7 @@ function adminUserRow(u) {
   const freeCtl = owner ? '' : `<select class="sel au-free-sel" data-admin-free="${u.id}" title="Grant or change this member's free period"><option value="">Free period…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}${freeActive ? '<option value="0">Remove free period</option>' : ''}</select>`;
   return `<div class="adm-user ${u.status === 'suspended' ? 'susp' : ''}">
     <div class="adm-user-main"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span></div>
-    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDate(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDate(u.last_seen))}` : ''}${freeActive ? ` · <span class="au-free-badge">free until ${esc(fmtDate(u.free_until))}</span>` : ''}</div>
+    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDateY(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDateY(u.last_seen))}` : ''}${freeActive ? ` · <span class="au-free-badge">free until ${esc(fmtDateY(u.free_until))}</span>` : ''}</div>
     <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(planLabel(u.plan))} · owner</span>`
       : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option value="${p}" ${normPlan(u.plan) === p ? 'selected' : ''}>${PLAN_LABEL[p]}</option>`).join('')}</select>
         ${freeCtl}
@@ -5772,7 +5772,12 @@ const areaById = (id) => state.areas.find((a) => a.id === id);
 function blockAreas(b) { const p = (b && b.props) || {}; if (Array.isArray(p.areas)) return p.areas.filter(Boolean); return p.area ? [p.area] : []; }
 function blockInArea(b, areaId) { return blockAreas(b).includes(areaId); }
 const PRIO_ORDER = { P1: 1, P2: 2, P3: 3, P4: 4, '': 5 };
-const fmtDate = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`; };
+const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const fmtDate = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${d.getDate()} ${MON3[d.getMonth()]}`; };
+// With the year. Admin needs it: "free until 4 Sep" could be this year or three
+// years away, and that difference is money. Day-to-day dates in the app stay
+// short - a saved article from "28 Aug" doesn't want a year cluttering it.
+const fmtDateY = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${d.getDate()} ${MON3[d.getMonth()]} ${d.getFullYear()}`; };
 function sortTasks(ts) {
   const { col, dir } = state.taskSort; const s = dir === 'asc' ? 1 : -1;
   const val = (t) => col === 'title' ? (t.title || '').toLowerCase()
