@@ -2219,11 +2219,12 @@ async function createActivity(request, env) {
   const duration = Number(b.duration);
   if (!Number.isFinite(duration) || duration < 5 || duration > 720) return err('bad duration', request);
 
-  // Fill `lane` from the area (legacy grouping); an explicit valid lane wins.
+  // Fill `lane` from the area (legacy grouping); an explicit valid lane wins; and
+  // a practice with no area at all still gets a catch-all lane so it's creatable.
   const p = await practiceFields(env, b);
   let lane = b.lane;
   if (!(await isValidLane(env, lane))) lane = p.lane;
-  if (!lane) return err('a life area or lane is required', request);
+  if (!lane) { try { const cfg = await getLaneConfig(env); lane = (cfg.laneKeys && cfg.laneKeys[0]) || 'body'; } catch { lane = 'body'; } }
 
   const next = await env.DB.prepare(
     'SELECT COALESCE(MAX(position), -1) + 1 AS p FROM activities WHERE lane = ? AND user_id = ?',

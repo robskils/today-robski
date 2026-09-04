@@ -1465,6 +1465,42 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .prc-add { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
 .prc-add .prc-lane-sel { flex:0 0 auto; max-width:150px; }
 .prc-add input { flex:1; min-width:120px; }
+/* Management rows: schedule summary, badges, edit button, and the New button. */
+.prc-name .prc-sched { display:block; font-size:12.5px; color:var(--ink-3); font-weight:400; margin-top:2px; }
+.prc-badge { display:inline-block; margin-left:7px; font-size:11px; vertical-align:middle; }
+.prc-badge.dim { color:var(--ink-3); background:var(--paper-2); border-radius:5px; padding:1px 6px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+.prc-edit { flex:none; width:30px; height:30px; border-radius:8px; color:var(--ink-3); font-size:15px; }
+.prc-edit:hover { color:var(--accent); background:var(--paper-2); }
+.prc-newbtn { margin-top:14px; }
+/* ── practice editor modal ── */
+.pe-bg { position:fixed; inset:0; z-index:240; background:rgba(0,0,0,.5); backdrop-filter:blur(2px); }
+.pe-panel { position:fixed; z-index:241; left:50%; top:50%; transform:translate(-50%,-50%); width:min(480px,94vw); max-height:90vh; overflow-y:auto;
+  background:var(--card); border:1px solid var(--line-2); border-radius:18px; box-shadow:0 30px 80px -24px rgba(0,0,0,.6); }
+.pe-head { display:flex; align-items:center; justify-content:space-between; padding:18px 20px 6px; }
+.pe-head h2 { font-size:21px; margin:0; }
+.pe-x { width:32px; height:32px; border-radius:50%; color:var(--ink-3); font-size:22px; line-height:1; }
+.pe-x:hover { background:var(--paper-2); color:var(--accent); }
+.pe-body { padding:8px 20px 12px; display:flex; flex-direction:column; gap:14px; }
+.pe-f { display:flex; flex-direction:column; gap:6px; }
+.pe-f > span { font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); font-weight:600; }
+.pe-f .sel, .pe-note { width:100%; }
+.pe-note { resize:vertical; min-height:64px; line-height:1.5; font-family:inherit; }
+.pe-tog { display:flex; align-items:center; gap:11px; cursor:pointer; font-size:15px; color:var(--ink-2); }
+.pe-tog input { width:20px; height:20px; accent-color:var(--accent); flex:none; cursor:pointer; }
+.pe-tog b { color:var(--ink); font-weight:600; }
+.pe-days { display:flex; gap:6px; flex-wrap:wrap; }
+.pe-day { width:38px; height:38px; border-radius:10px; border:1px solid var(--line-2); background:var(--bg-2,var(--paper-2)); color:var(--ink-2); font-weight:600; font-size:14px; cursor:pointer; }
+.pe-day.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.pe-two { display:flex; gap:14px; flex-wrap:wrap; }
+.pe-inline { flex:1; min-width:130px; }
+.pe-inline > span { }
+.pe-durwrap { display:flex; align-items:center; gap:7px; color:var(--ink-3); font-size:14px; }
+.pe-num { width:84px; }
+/* "Takes time" off hides the timing block. */
+.pe-panel:not(.timed-on) .pe-timing { display:none; }
+.pe-foot { display:flex; align-items:center; gap:10px; padding:6px 20px 20px; }
+.pe-foot .add-btn.wide { margin-left:auto; }
+.pe-del { color:var(--ink-3); } .pe-del:hover { color:var(--accent); }
 @media (max-width:640px){ .trk-week { display:none; } .tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:none; } }
 .focus-stat { font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 7%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:9px; padding:7px 12px; margin:2px 0 4px; display:inline-block; }
 /* Link from a task back to the note it was created from. */

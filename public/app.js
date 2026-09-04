@@ -2342,13 +2342,35 @@ let practicesLoaded = false;
 async function loadPractices(force) {
   if (practicesLoaded && !force && state.practices) return state.practices;
   try {
-    const [a, m] = await Promise.all([api('/api/activities'), api('/api/kv/practice_marks').catch(() => ({ value: null }))]);
+    const [a, m, areas] = await Promise.all([
+      api('/api/activities'),
+      api('/api/kv/practice_marks').catch(() => ({ value: null })),
+      (state.areas && state.areas.length) ? Promise.resolve(state.areas) : api('/api/blocks?kind=area').catch(() => []),
+    ]);
     let marks = {}; try { marks = m && m.value ? JSON.parse(m.value) : {}; } catch {}
+    state.areas = (areas || []).slice().sort((x, y) => (x.title || '').localeCompare(y.title || ''));
     state.practices = { activities: a.activities || [], lanes: a.lanes || [], marks };
     practicesLoaded = true;
   } catch { state.practices = state.practices || { activities: [], lanes: [], marks: {} }; }
   return state.practices;
 }
+// ── practice scheduling helpers (Today redesign) ──────────────────────
+const PRC_DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const PRC_DOW1 = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const prcDays = (s) => String(s || '').split(',').map(Number).filter((n) => n >= 0 && n <= 6);
+const prcHHMM = (m) => (m == null || m === '') ? '' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+function prcDaysLabel(s) {
+  const d = prcDays(s); if (!d.length) return 'Not scheduled';
+  const set = new Set(d);
+  if (d.length === 7) return 'Every day';
+  if (d.length === 5 && [1, 2, 3, 4, 5].every((x) => set.has(x))) return 'Weekdays';
+  if (d.length === 2 && set.has(0) && set.has(6)) return 'Weekends';
+  return d.sort((a, b) => a - b).map((n) => PRC_DOW[n]).join(' ');
+}
+// A practice's life area (by its stored area id), or null.
+const practiceArea = (a) => a && a.area ? (state.areas || []).find((x) => x.id === a.area) : null;
+// Is a scheduled practice due on `day` (a Date)? True only when it has a weekday set.
+const prcDueOn = (a, date) => { const d = prcDays(a.days); return d.length ? d.includes(date.getDay()) : false; };
 function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
 const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
 function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); }
@@ -2358,40 +2380,118 @@ function renderPractices() {
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Daily practices' }])}
     <div class="pane-head home-head"><h1>Daily practices</h1></div>
-    <p class="home-empty" style="margin:-6px 0 18px">The practices you tick each day on Home, grouped by their life-area lane. This is the same list the <b>Today</b> tool uses - add or remove one here and it shows in both.</p>
-    <div class="prc prc-manage">${practicesGroups(false) || '<div class="empty" style="padding:0 0 14px">No practices yet - add your first below.</div>'}${practiceAddForm()}</div>`;
+    <p class="home-empty" style="margin:-6px 0 18px">The things you do again and again, grouped by life area. Give one a repeat schedule and a time and it lays itself onto your <b>Today</b> - add a note or a follow-along video too.</p>
+    <div class="prc prc-manage">${practicesGroups(false) || '<div class="empty" style="padding:0 0 14px">No practices yet - add your first.</div>'}
+      <button class="add-btn wide prc-newbtn" data-prc-new>＋ New practice</button>
+    </div>
+    ${state.practiceEdit ? practiceEditorHtml() : ''}`;
 }
 function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
 function practiceStreak(id) { if (!state.practices) return 0; let s = 0; const d = new Date(); for (;;) { if (state.practices.marks[`${id}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
-async function practiceAdd(lane, title) {
-  title = (title || '').trim(); if (!title || !lane || !state.practices) return;
-  try { const a = await api('/api/activities', { method: 'POST', body: JSON.stringify({ lane, title: title.slice(0, 80), duration: 30 }) }); state.practices.activities.push(a); rerenderPractices(); }
+async function practiceAdd(area, title) {
+  title = (title || '').trim(); if (!title || !state.practices) return;
+  try { const a = await api('/api/activities', { method: 'POST', body: JSON.stringify({ area: area || undefined, title: title.slice(0, 80), duration: 30 }) }); state.practices.activities.push(a); rerenderPractices(); }
   catch (e) { toast(e.message); }
 }
 async function practiceDelete(id) {
-  try { await api('/api/activities/' + id, { method: 'DELETE' }); if (state.practices) state.practices.activities = state.practices.activities.filter((a) => String(a.id) !== String(id)); rerenderPractices(); }
-  catch (e) { toast(e.message); }
+  try {
+    await api('/api/activities/' + id, { method: 'DELETE' });
+    if (state.practices) state.practices.activities = state.practices.activities.filter((a) => String(a.id) !== String(id));
+    if (state.practiceEdit && String(state.practiceEdit.id) === String(id)) state.practiceEdit = null;
+    rerenderPractices();
+  } catch (e) { toast(e.message); }
 }
-// Practices grouped by lane; withWeek adds the 7-day dot row + streak (Home), off
-// for the plain management list (Settings).
+// Practices grouped by LIFE AREA (falling back to the legacy lane label for any
+// not yet filed under an area). withWeek adds the 7-day dot row + streak (Home);
+// the management list (withWeek=false) adds a schedule summary + an edit button.
 function practicesGroups(withWeek) {
   const P = state.practices; const today = dayKey(new Date()); const days = trackerLast7(); const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const laneOf = (k) => P.lanes.find((l) => l.key === k) || { label: k, hue: 0 };
-  const byLane = {}; (P.activities || []).forEach((a) => { (byLane[a.lane] = byLane[a.lane] || []).push(a); });
-  const keys = Object.keys(byLane).sort((a, b) => laneOf(a).label.localeCompare(laneOf(b).label));
-  return keys.map((lane) => {
-    const rows = byLane[lane].map((a) => `<div class="prc-row">
+  const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
+  // Group key: area id when set, else `lane:<lane>`. Carry a label + hue for each.
+  const groups = new Map();
+  (P.activities || []).forEach((a) => {
+    const ar = practiceArea(a);
+    const key = ar ? ar.id : `lane:${a.lane}`;
+    if (!groups.has(key)) groups.set(key, { label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] });
+    groups.get(key).items.push(a);
+  });
+  const ordered = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+  return ordered.map((g) => {
+    const rows = g.items.map((a) => {
+      const sched = a.days ? `<span class="prc-sched">${esc(prcDaysLabel(a.days))}${a.time_min != null && a.time_min !== '' ? ` · ${prcHHMM(a.time_min)}` : ''}</span>` : '';
+      const badges = `${a.video ? '<span class="prc-badge">🎥</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
+      return `<div class="prc-row">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
-        <span class="prc-name">${esc(a.title)}</span>
-        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}` : ''}
+        <span class="prc-name">${esc(a.title)}${badges}${withWeek ? '' : sched}</span>
+        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
-      </div>`).join('');
-    return `<div class="prc-group"><div class="prc-lane" style="--h:${laneOf(lane).hue}"><span class="prc-lane-dot"></span>${esc(laneOf(lane).label)}</div>${rows}</div>`;
+      </div>`;
+    }).join('');
+    return `<div class="prc-group"><div class="prc-lane" style="--h:${g.hue}"><span class="prc-lane-dot"></span>${esc(g.label)}</div>${rows}</div>`;
   }).join('');
 }
 function practiceAddForm() {
-  const lanes = (state.practices.lanes || []).filter((l) => !l.untracked);
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-lane">${lanes.map((l) => `<option value="${l.key}">${esc(l.label)}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New daily practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  const areas = state.areas || [];
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New daily practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+}
+// ── practice editor ───────────────────────────────────────────────────
+function openPracticeEditor(id) {
+  const a = id ? (state.practices.activities || []).find((x) => String(x.id) === String(id)) : null;
+  state.practiceEdit = { id: a ? a.id : null, days: new Set(a ? prcDays(a.days) : []) };
+  renderPractices();
+  setTimeout(() => { const t = document.getElementById('pe-title'); if (t) t.focus(); }, 30);
+}
+function closePracticeEditor() { state.practiceEdit = null; renderPractices(); }
+function practiceEditorHtml() {
+  const pe = state.practiceEdit;
+  const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
+  const areas = state.areas || [];
+  const timed = a.timed == null ? true : !!a.timed;
+  const tracked = a.tracked == null ? true : !!a.tracked;
+  const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
+  return `<div class="pe-bg" data-prc-close></div>
+    <div class="pe-panel ${timed ? 'timed-on' : ''}" role="dialog" aria-label="Practice">
+      <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
+      <div class="pe-body">
+        <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
+        <label class="pe-f"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${a.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-tog"><input type="checkbox" id="pe-timed" ${timed ? 'checked' : ''} data-pe-timed><span><b>Takes time</b> — put it on your day at a set time</span></label>
+        <div class="pe-timing">
+          <div class="pe-f"><span>Repeats on</span><div class="pe-days">${PRC_DOW1.map((d, i) => `<button type="button" class="pe-day ${pe.days.has(i) ? 'on' : ''}" data-pe-day="${i}">${d}</button>`).join('')}</div></div>
+          <div class="pe-two">
+            <label class="pe-f pe-inline"><span>At</span><input class="sel" id="pe-time" type="time" value="${a.time_min != null && a.time_min !== '' ? prcHHMM(a.time_min) : ''}"></label>
+            <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></label>
+          </div>
+        </div>
+        <label class="pe-tog"><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}><span><b>Track it</b> — ticking it builds a streak</span></label>
+        <label class="pe-f"><span>Follow-along video</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a video link (optional)" autocomplete="off"></label>
+        <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
+      </div>
+      <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add practice'}</button></div>
+    </div>`;
+}
+async function savePractice() {
+  const pe = state.practiceEdit; if (!pe) return;
+  const title = (($('#pe-title') || {}).value || '').trim(); if (!title) { toast('Give it a name'); return; }
+  const timeStr = ($('#pe-time') || {}).value || '';
+  const time_min = timeStr ? (Number(timeStr.slice(0, 2)) * 60 + Number(timeStr.slice(3, 5))) : '';
+  const body = {
+    title: title.slice(0, 80),
+    area: ($('#pe-area') || {}).value || '',
+    duration: Math.max(5, Math.min(720, Number(($('#pe-dur') || {}).value) || 30)),
+    timed: $('#pe-timed') ? $('#pe-timed').checked : true,
+    tracked: $('#pe-tracked') ? $('#pe-tracked').checked : true,
+    days: [...pe.days].sort((a, b) => a - b).join(','),
+    time_min,
+    video: (($('#pe-video') || {}).value || '').trim(),
+    note: (($('#pe-note') || {}).value || '').trim(),
+  };
+  try {
+    let a;
+    if (pe.id) { a = await api('/api/activities/' + pe.id, { method: 'PATCH', body: JSON.stringify(body) }); const i = state.practices.activities.findIndex((x) => String(x.id) === String(pe.id)); if (i >= 0) state.practices.activities[i] = a; }
+    else { a = await api('/api/activities', { method: 'POST', body: JSON.stringify(body) }); state.practices.activities.push(a); }
+    state.practiceEdit = null; toast(pe.id ? 'Saved' : 'Practice added'); rerenderPractices();
+  } catch (e) { toast(e.message); }
 }
 function trackerPanel() {
   if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHome(); }); return '<div class="home-empty" style="padding:6px 0">Loading practices…</div>'; }
@@ -8316,6 +8416,12 @@ document.addEventListener('click', (e) => {
   { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
   { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
+  if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
+  { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
+  if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
+  if (t.closest('[data-prc-save]')) { savePractice(); return; }
+  { const pd = t.closest('[data-pe-day]'); if (pd) { const n = Number(pd.dataset.peDay); const s = state.practiceEdit && state.practiceEdit.days; if (s) { if (s.has(n)) s.delete(n); else s.add(n); pd.classList.toggle('on'); } return; } }
+  { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
   // Today section day-stepper. These live inside the collapse header, so they must
   // be handled (and return) before the sec-collapse toggle below, or a tap on an
   // arrow would also collapse the section.
@@ -8902,7 +9008,7 @@ function caretToProseStart(prose) {
 }
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const lane = $('#prc-lane'), i = $('#prc-new'); practiceAdd(lane && lane.value, i && i.value); return; }
+  if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') {
