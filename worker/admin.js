@@ -1,3 +1,4 @@
+import { PLAN_KEYS } from './plans.js';
 // The business admin dashboard (owner = user 1 only). Everything you need to run
 // Daybook as a product: who's signed up, what they're on, how active they are,
 // what the AI is costing, the invite/referral picture, and the switches that
@@ -77,7 +78,7 @@ export async function adminUsers(env) {
 }
 
 // Change a user's plan and/or status. The owner (1) can't be suspended or moved.
-const PLANS = new Set(['free', 'standard', 'premium']);
+const PLANS = new Set(PLAN_KEYS);
 const STATUSES = new Set(['active', 'suspended']);
 export async function updateUser(env, id, body) {
   id = Number(id);

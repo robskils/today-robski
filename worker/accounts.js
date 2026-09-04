@@ -1,3 +1,4 @@
+import { normPlan } from './plans.js';
 /**
  * Onboarding for Daybook (multi-tenant). A signed-in email with no `users` row
  * yet is "unprovisioned" - it can reach only /api/me and /api/signup until it
@@ -101,7 +102,7 @@ export async function handleSignup(request, env, email, json, err) {
 
   // A code can carry a different plan and the BYO-key "free" flag.
   const code = inv ? inv.code : null;
-  const plan = inv ? (inv.plan || 'standard') : 'free';
+  const plan = inv ? normPlan(inv.plan || 'byok') : 'free';
   const free = inv && inv.free ? 1 : 0;
   const invitedBy = inv ? (inv.created_by || null) : null;
   const now = new Date().toISOString();
@@ -236,7 +237,7 @@ export async function createInvite(env, input) {
   const code = existing ? existing.code
     : (String(input.code || '').trim() || randomCode()).toUpperCase().slice(0, 24);
   if (!existing) {
-    const plan = admin ? (input.plan || 'standard') : 'free';
+    const plan = admin ? normPlan(input.plan || 'byok') : 'free';
     const free = admin && input.free ? 1 : 0;
     // A time-limited free run: 3, 6 or 12 months, or NULL for no limit. Only
     // meaningful on a free invite.

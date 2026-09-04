@@ -1,3 +1,4 @@
+import { isManaged } from './plans.js';
 // BYO AI keys + usage metering. A member stores their own Anthropic / Gemini key
 // (AES-256-GCM at rest, the same scheme mail passwords use). When set, it's used
 // for that member's AI calls; only the owner (user 1) falls back to the shared
@@ -39,11 +40,12 @@ export async function aiKey(env, provider) {
   const col = provider === 'gemini' ? 'ai_gemini_enc' : 'ai_anthropic_enc';
   const enc = env.user && env.user[col];
   if (enc) { try { return await decryptSecret(env, enc); } catch {} }
-  // The shared env key is the "Full Fat" managed plan: the owner, and any member
-  // on the premium plan, run on it (we handle the AI for them). Everyone else
-  // brings their own key.
-  const plan = (env.user && env.user.plan) || 'free';
-  if (env.uid === 1 || plan === 'premium') return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
+  // Our own key is the Premium Plus arrangement: the owner, and any member on the
+  // managed tier, run on it because we supply the AI for them. Everyone else
+  // brings their own. This MUST go through isManaged: 'premium' is now the label
+  // of the tier that does NOT get our keys, and a bare string test here would be
+  // us paying Anthropic for every customer on the cheaper plan.
+  if (env.uid === 1 || isManaged(env.user && env.user.plan)) return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
   return null;
 }
 export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → Plan.`;

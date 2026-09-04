@@ -7,6 +7,16 @@ const KEY = 'today.token';
 // (see firstName), never from a constant - a hard-coded owner is how every member
 // ended up looking at somebody else's name on their own Daybook.
 const BRAND = { app: 'Daybook' };
+// The tiers. Stored keys describe the arrangement, labels are the marketing name -
+// which has changed three times while the arrangement hasn't. Mirrors
+// worker/plans.js; change both together.
+//   free -> Free · byok -> Premium (your own AI keys) · managed -> Premium Plus (we supply the AI)
+const PLAN_KEYS = ['free', 'byok', 'managed'];
+const PLAN_LABEL = { free: 'Free', byok: 'Premium', managed: 'Premium Plus' };
+const PLAN_PRICE = { free: '', byok: '€6/mo', managed: '€13/mo' };
+const normPlan = (p) => { const k = String(p || '').toLowerCase(); return PLAN_KEYS.includes(k) ? k : ({ standard: 'byok', premium: 'managed' }[k] || 'free'); };
+const planLabel = (p) => PLAN_LABEL[normPlan(p)];
+const isManagedPlan = (p) => normPlan(p) === 'managed';
 // The Daybook mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
 // name and "Daybook" in the wordmark.
@@ -523,8 +533,8 @@ const HELP = {
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on. <b>Download your data</b> exports everything; <b>Close account</b> removes it.</p>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
-  'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Full Fat where we handle it.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (free / standard): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Full Fat</b> (premium): we run the AI for you, no keys to manage.</p>` },
+  'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Premium Plus where we handle it.',
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
     body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
@@ -596,7 +606,7 @@ function renderGuideIndex() {
         <p class="guide-start-p">A quick set-up, any time you want to run through it:</p>
         <ol class="guide-checklist">
           <li><b>Choose your username</b> - your Daybook's own web address.</li>
-          <li><b>Add AI</b> - bring your own key, or go Full Fat and we handle it for you.</li>
+          <li><b>Add AI</b> - bring your own key, or go Premium Plus and we handle it for you.</li>
           <li><b>Connect your email</b> - Gmail (with a one-tap app-password guide) and the rest.</li>
         </ol>
         <button class="add-btn wide" data-onb-replay>Open the welcome guide</button>
@@ -1007,7 +1017,7 @@ const admUSD = (n) => '$' + (n || 0).toFixed(2);
 const admTok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n || 0));
 function adminUserRow(u) {
   const owner = u.id === 1;
-  const plans = ['free', 'standard', 'premium'];
+  const plans = PLAN_KEYS;
   // The free period (free_until) is editable after signup: grant N months from
   // today, or remove it. The select is an action, so it always sits on its
   // placeholder; the current state reads in the meta line.
@@ -1018,8 +1028,8 @@ function adminUserRow(u) {
   return `<div class="adm-user ${u.status === 'suspended' ? 'susp' : ''}">
     <div class="adm-user-main"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span></div>
     <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDate(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDate(u.last_seen))}` : ''}${freeActive ? ` · <span class="au-free-badge">free until ${esc(fmtDate(u.free_until))}</span>` : ''}</div>
-    <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(u.plan)} · owner</span>`
-      : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option ${u.plan === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
+    <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(planLabel(u.plan))} · owner</span>`
+      : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option value="${p}" ${normPlan(u.plan) === p ? 'selected' : ''}>${PLAN_LABEL[p]}</option>`).join('')}</select>
         ${freeCtl}
         <button class="ghost ${u.status === 'suspended' ? '' : 'acct-danger'}" data-admin-status="${u.id}" data-status="${u.status === 'suspended' ? 'active' : 'suspended'}">${u.status === 'suspended' ? 'Reactivate' : 'Suspend'}</button>`}
     </div>
@@ -1187,7 +1197,7 @@ function inviteToDaybook(prefill) {
     <label class="inv-f"><span>A note from you <em>optional</em></span>
       <textarea class="ui-dialog-input inv-d-msg" id="inv-d-msg" rows="3" placeholder="Thought you'd like this - it's how I run my day."></textarea></label>
     ${owner ? `<div class="inv-d-owner">
-      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="standard">Standard · €6</option><option value="premium">Premium · €13</option></select></label>
+      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="byok">Premium · €6</option><option value="managed">Premium Plus · €13</option></select></label>
       <label class="inv-free"><input type="checkbox" id="inv-d-free"> Free of charge (100% off)</label>
       <label class="inv-f inv-d-period" id="inv-d-period-wrap" hidden><span>Free for</span><select class="sel" id="inv-d-period"><option value="">No limit</option><option value="3">3 months</option><option value="6">6 months</option><option value="12">1 year</option></select></label></div>` : ''}
     <p class="inv-d-hint">No email? Leave it blank and we'll just make you a code to pass on.</p>
@@ -1474,7 +1484,7 @@ async function sharedToggleDone(id, done) {
 }
 // Who it went to leads, not the code: an invitation is a person you're waiting on.
 const freePeriodLabel = (m) => (Number(m) === 12 ? '1 year' : `${m} months`);
-const invitePlanLabel = (i) => (i.free ? `free ${esc(i.plan || 'standard')}${i.free_months ? ' for ' + freePeriodLabel(i.free_months) : ''}` : esc(i.plan || 'standard'));
+const invitePlanLabel = (i) => (i.free ? `free ${esc(planLabel(i.plan || 'byok'))}${i.free_months ? ' for ' + freePeriodLabel(i.free_months) : ''}` : esc(planLabel(i.plan || 'byok')));
 const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
   <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)} · ${invitePlanLabel(i)} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
   ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
@@ -1615,9 +1625,9 @@ function renderSettings() {
   const aiPane = state.account ? (() => {
     const a = state.account;
     const plan = (a.plan || 'free').toLowerCase();
-    // "Full Fat" = the managed plan: the owner and anyone on premium run on our
-    // built-in keys. Everyone else is on Bring-your-own-keys.
-    const managed = a.isOwner || plan === 'premium';
+    // The managed tier (Premium Plus): the owner and anyone on it run on our
+    // built-in keys. Everyone else brings their own.
+    const managed = a.isOwner || isManagedPlan(plan);
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
     return `<div class="set-card">
         <label class="set-mod"><span>Use AI features<small>Turn every AI feature on or off across Daybook.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
@@ -1628,7 +1638,7 @@ function renderSettings() {
       <div class="plan-cards ${a.aiOff ? 'ai-disabled' : ''}">
         <div class="plan-card ${managed ? '' : 'on'}">
           <div class="plan-h"><b>Bring your own keys</b>${badge(!managed)}</div>
-          <div class="plan-price">Free &amp; Standard</div>
+          <div class="plan-price">Free &amp; Premium</div>
           <p class="plan-desc">Plug in your own keys and you control the cost. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> is pay-as-you-go, usually a few pennies.</p>
           ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflection &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
           <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a Claude key at console.anthropic.com ↗</a>
@@ -1636,12 +1646,12 @@ function renderSettings() {
           <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini key at aistudio.google.com ↗</a>
         </div>
         <div class="plan-card plan-full ${managed ? 'on' : ''}">
-          <div class="plan-h"><b>Full Fat</b>${badge(managed)}</div>
-          <div class="plan-price">Premium &middot; €13/mo</div>
+          <div class="plan-h"><b>Premium Plus</b>${badge(managed)}</div>
+          <div class="plan-price">€13/mo</div>
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up, it just works across every tool. The hands-off option.</p>
           ${managed
             ? '<div class="plan-active">✓ Active - the AI is handled for you, no keys needed.</div>'
-            : '<a class="add-btn wide" href="mailto:contact@daybook.fyi?subject=Daybook%20Full%20Fat%20plan">Switch to Full Fat →</a>'}
+            : '<a class="add-btn wide" href="mailto:contact@daybook.fyi?subject=Daybook%20Premium%20Plus%20plan">Switch to Premium Plus →</a>'}
         </div>
       </div>`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -1676,7 +1686,7 @@ function renderSettings() {
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
       ${panes[tab] || ''}
     </section>
-    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(state.me.plan || '')} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
+    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(planLabel(state.me.plan))} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
 }
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
 function ensureLoc() {
@@ -10734,7 +10744,7 @@ function onbAi() {
       ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflection coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
       ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
     </div>
-    <div class="ai-managed">Prefer not to deal with keys? The <b>Full Fat</b> plan runs the AI for you - no keys, nothing to set up. See Settings → Plan.</div>`;
+    <div class="ai-managed">Prefer not to deal with keys? <b>Premium Plus</b> runs the AI for you - no keys, nothing to set up. See Settings → Plan.</div>`;
 }
 function onbEmail() {
   if (state.onb.mailDone) return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>
