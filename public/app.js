@@ -4119,7 +4119,7 @@ function t2DayHtml() {
     <div class="t2-brow"><span class="t2-tick ghost">＋</span><span class="t2-btime">${prcHHMM(a.time_min)}</span><span class="t2-btitle">${esc(a.title)}</span>${a.video ? '<span class="t2-vid">🎥</span>' : ''}</div></div>`).join('');
   return `
     ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
-    ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
+    ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime today</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
     <div class="t2-canvas" style="height:${t2Height}px">
       ${hours.join('')}
       ${nowTop != null ? `<div class="t2-now" style="top:${nowTop}px"><span class="t2-now-dot"></span></div>` : ''}
@@ -4133,7 +4133,7 @@ function t2SlotBlock(s, floating) {
   const done = !!s.done || (task && task.done);
   const pos = floating ? '' : `style="top:${t2Top(s.start_min)}px;height:${Math.max(26, Math.round((s.duration || 30) * T2_PPM))}px;--h:${hue}"`;
   const vid = (act && act.video) ? '<span class="t2-vid" data-t2-open-slot="' + s.id + '">🎥</span>' : '';
-  return `<div class="t2-block t2-slot ${done ? 'done' : ''} ${floating ? 't2-float' : ''}" ${floating ? `style="--h:${hue}"` : pos} data-slot-id="${s.id}" ${floating ? '' : `data-t2-drag="slot" data-t2-drag-id="${s.id}" data-t2-drag-label="${esc(s.title || 'Block')}"`}>
+  return `<div class="t2-block t2-slot ${done ? 'done' : ''} ${floating ? 't2-float' : ''}" ${floating ? `style="--h:${hue}"` : pos} data-slot-id="${s.id}" data-t2-drag="slot" data-t2-drag-id="${s.id}" data-t2-drag-label="${esc(s.title || 'Block')}">
     <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${s.id}" title="${done ? 'Done' : 'Mark done'}">✓</button>${floating ? '' : `<span class="t2-btime">${prcHHMM(s.start_min)}</span>`}<span class="t2-btitle">${esc(s.title || 'Block')}</span>${task && task.priority ? `<span class="p-tag p-${task.priority}">${task.priority}</span>` : ''}${vid}<button class="t2-x" data-t2-del-slot="${s.id}" title="Remove">×</button></div>
   </div>`;
 }
@@ -4155,7 +4155,7 @@ function t2PracticesHtml() {
       <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
       <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${sched}</span>
       ${streak ? `<span class="t2-streak">🔥${streak}</span>` : ''}
-      ${a.timed ? `<button class="t2-add" data-t2-place-prac="${a.id}" title="Add to your day">＋</button>` : ''}
+      ${a.timed ? `<button class="t2-add" data-t2-place-prac="${a.id}" title="Add to today (no set time — drag onto the timeline to pin a time)">＋</button>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
   return `<div class="t2-colh"><h2>Practices</h2><button class="t2-colnew" data-open-practices title="Manage practices">✎</button></div><div class="t2-scroll">${body}</div><button class="t2-newrow" data-prc-new>＋ New practice</button>`;
@@ -4173,7 +4173,7 @@ function t2TasksHtml() {
     <div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" data-t2-prio="${p}">${p}</button>`).join('')}</div>
   </div>`;
   const rows = shown.map((t) => `<div class="t2-trow" style="--h:${areaHue(t.area_id)}">
-    <span class="t2-grip" data-t2-drag="task" data-t2-drag-id="${esc(t.tana_id)}" data-t2-drag-label="${esc(t.title || 'Task')}" title="Drag onto your day">⠿</span><span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${esc(t.tana_id)}" title="Add to your day">＋</button>
+    <span class="t2-grip" data-t2-drag="task" data-t2-drag-id="${esc(t.tana_id)}" data-t2-drag-label="${esc(t.title || 'Task')}" title="Drag onto your day">⠿</span><span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${esc(t.tana_id)}" title="Add to today (no set time — drag onto the timeline to pin a time)">＋</button>
   </div>`).join('') || `<div class="t2-emptycol">${tasks.length ? 'None match the filter.' : 'Nothing to plan.'}</div>`;
   return `<div class="t2-colh"><h2>Tasks</h2><span class="t2-colcount">${shown.length}</span></div>${filter}<div class="t2-tlist t2-scroll">${rows}</div>
     <form class="t2-newrow t2-taskadd" data-t2-taskadd><input id="t2-newtask" placeholder="＋ New task…" autocomplete="off"></form>`;
@@ -4203,19 +4203,20 @@ function t2HabitsHtml() {
     <span class="t2-hname">${esc(a.title)}</span>${s ? `<span class="t2-streak">🔥${s}</span>` : ''}</div>`; }).join('');
   return `<section class="t2-habits"><div class="t2-habh"><h2>Habits</h2>${toTick ? `<span class="t2-tocnt">${toTick} to tick</span>` : '<span class="t2-alldone">all ticked ✓</span>'}<span class="t2-habnote">tick as you go</span></div><div class="t2-habgrid">${chips}</div></section>`;
 }
+// startMin given (a drag drop) = pinned to that time. startMin omitted (the ＋
+// button) = floating, lands in the "Anytime" tray to schedule later.
 async function t2PlacePractice(activityId, startMin) {
   const a = (state.practices.activities || []).find((x) => String(x.id) === String(activityId)); if (!a) return;
-  const start = startMin != null ? startMin : ((a.time_min != null && a.time_min !== '') ? a.time_min : 540);
   try {
-    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: a.lane, title: a.title, start_min: start, duration: a.duration || 30, activity_id: a.id, url: a.video || undefined }) });
-    toast('Added to your day'); loadToday();
+    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: a.lane, title: a.title, start_min: startMin != null ? startMin : null, duration: a.duration || 30, activity_id: a.id, url: a.video || undefined }) });
+    toast(startMin != null ? 'Added to your day' : 'Added to today — in Anytime'); loadToday();
   } catch (e) { toast(e.message === 'That event is already counted.' ? 'Already on your day' : e.message); }
 }
 async function t2PlaceTask(taskId, startMin) {
   const t = (state.today.tasks || []).find((x) => String(x.tana_id) === String(taskId)); if (!t) return;
   try {
-    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: startMin != null ? startMin : 540, duration: t.duration || 30, tana_id: t.tana_id }) });
-    toast('Added to your day'); loadToday();
+    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: startMin != null ? startMin : null, duration: t.duration || 30, tana_id: t.tana_id }) });
+    toast(startMin != null ? 'Added to your day' : 'Added to today — in Anytime'); loadToday();
   } catch (e) { toast(e.message); }
 }
 // ── Today drag: place a practice/task at a time, or reschedule a slot ──
