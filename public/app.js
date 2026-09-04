@@ -2109,7 +2109,9 @@ function homeTodayItems() {
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
   const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url }));
   // Birthdays (from Contacts) whose day is today lead the list, all-day style.
-  if (off === 0) ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => items.push({ kind: 'birthday', id: b.id, sort: -2, title: b.name }));
+  if (off === 0) ((state.home.alerts && state.home.alerts.birthdays) || [])
+    .filter((b) => !alertDismissed('bday:' + b.id))
+    .forEach((b) => items.push({ kind: 'birthday', id: b.id, sort: -2, title: b.name }));
   for (const s of src.slots || []) {
     const hue = hues[s.lane] ?? 0;
     const tasks = (s.tasks || []).filter((t) => t && t.title);
@@ -2517,6 +2519,12 @@ function homeQuoteHtml() {
   const q = state.home && state.home.quote; if (!q) return '';
   return `<figure class="home-quote"><button class="home-quote-x" data-home-quote-x title="Hide today's quote (everywhere)">×</button><blockquote>“${esc(q.text)}”</blockquote>${q.author ? `<figcaption>— ${esc(q.author)}</figcaption>` : ''}</figure>`;
 }
+// A Home alert dismissed with its × stays gone for the rest of the day and comes
+// back tomorrow. Deliberately not permanent: you're waving away today's reminder,
+// not unsubscribing from someone's birthday for good.
+function alertDismissed(key) {
+  try { return localStorage.getItem('life.home.alert.' + key) === todayISO(); } catch { return false; }
+}
 // Every Home section can be collapsed; the set of collapsed keys persists.
 function homeCollapsed() { try { return JSON.parse(localStorage.getItem('life.home.collapsed')) || {}; } catch { return {}; } }
 const isMobileHome = () => window.matchMedia('(max-width:820px)').matches;
@@ -2617,7 +2625,7 @@ function renderHome() {
   ].join('');
   const evRows = todayItems.map((it) => {
     if (it.kind === 'birthday') {
-      return `<div class="ev-row ev-bday ev-click" data-open-contact="${it.id}" role="button" tabindex="0" title="Open this contact"><span class="ev-time">🎂</span><span class="ev-t">${esc(it.title)}'s birthday</span></div>`;
+      return `<div class="ev-row ev-bday ev-click" data-open-contact="${it.id}" role="button" tabindex="0" title="Open this contact"><span class="ev-time">🎂</span><span class="ev-t">${esc(it.title)}'s birthday</span><button class="ev-bday-x" data-alert-x="bday:${it.id}" title="Hide this for today" aria-label="Hide ${esc(it.title)}'s birthday for today">×</button></div>`;
     }
     if (it.kind === 'event') {
       const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
@@ -8584,7 +8592,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
-  { const ax = t.closest('[data-alert-x]'); if (ax) { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, new Date().toISOString().slice(0, 10)); renderHome(); return; } }
+  { const ax = t.closest('[data-alert-x]'); if (ax) { try { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, todayISO()); } catch {} renderHome(); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
     if (state.pomoPickType === 'task' && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).sort((a, b) => (PRIO_ORDER[(a.props && a.props.priority) || ''] || 5) - (PRIO_ORDER[(b.props && b.props.priority) || ''] || 5)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }

@@ -1934,6 +1934,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ev-row { display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:12px; row-gap:2px; align-items:baseline; padding:11px 2px; border-bottom:1px solid var(--line); }
 .ev-row:last-child { border-bottom:0; }
 /* A Today row is a shortcut into the calendar. */
+/* A third column just for the birthday row's ×. Every other .ev-row has two, and
+   its third child (a location) is meant to wrap onto the line below - which is
+   exactly what the × must not do. */
+.ev-bday { grid-template-columns:64px minmax(0,1fr) auto; }
+.ev-bday-x { align-self:center; flex:none; width:28px; height:28px; border-radius:8px; font-size:17px;
+  line-height:1; color:var(--ink-3); opacity:0; transition:opacity .12s, color .12s, background .12s; }
+.ev-bday:hover .ev-bday-x { opacity:.6; }
+.ev-bday-x:hover { opacity:1 !important; color:var(--accent); background:var(--paper-2); }
+/* No hover on a touch screen, so the × has to be visible from the start. */
+@media (hover:none){ .ev-bday-x { opacity:.5; } }
 .ev-click { cursor:pointer; border-radius:9px; padding-left:10px; padding-right:10px; transition:background .12s; }
 .ev-click:hover { background:var(--paper-2); }
 .ev-click:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
