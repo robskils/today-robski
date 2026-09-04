@@ -2831,6 +2831,7 @@ table.ttable tr:last-child td { border-bottom:0; }
      stays, full width. */
   body[data-view="contacts"] .list-head { flex-wrap:wrap; }
   body[data-view="contacts"] .list-search[data-contacts-q] { display:block; flex:1 1 100%; }
+  .contact-import-btn { display:none; }   /* mobile: vCard import isn't practical here */
   .fr-connect, .fr-connect-btn { display:none; }
   .fr-connect-row .fr-invite-btn { flex:1 1 100%; }
   /* The tools bar: Information, Colour Scheme, Settings (+ Admin) and a search

@@ -6549,16 +6549,22 @@ function renderContacts() {
   // Friends are Daybook contacts, so they lead the page. d holds the social data.
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
   const fr = (f, action) => friendRow(f, action);
+  // While searching, strip the page back to just the search box and the matching
+  // contacts - no Add/Import, no "Contacts on Daybook", no group bar. Just results.
+  const searching = !!q;
   $('#pane').innerHTML = `
     ${pageCrumb('Contacts')}
     <div class="pane-head"><h1>Contacts</h1></div>
     <div class="list-head">
       <input class="list-search sel" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
-      ${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add contact</button>`}
-      <button class="ghost" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button>
-      <input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden>
+      ${searching ? '' : `${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add contact</button>`}
+      <button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button>
+      <input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden>`}
     </div>
-
+    ${searching ? `
+    <section class="home-sec">
+      <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
+    </section>` : `
     <section class="home-sec">
       <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       <p class="fr-intro">Invite your friends to Daybook so you can share with them - a whole Life Area, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
@@ -6577,7 +6583,7 @@ function renderContacts() {
       ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
       ${state.contactAdding ? contactAddForm() : ''}
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
-    </section>
+    </section>`}
 
     ${contactMenuHtml()}`;
   alignConnectRow();
@@ -9578,8 +9584,13 @@ document.addEventListener('submit', (e) => {
     const i = $('#qt-title'); const v = i.value.trim();
     if (v) {
       homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, notes: ($('#qt-notes') || {}).value });
-      // Keep the form open for a run of tasks; clear only the per-task fields.
-      i.value = ''; const n = $('#qt-notes'); if (n) n.value = ''; const s = $('#qt-snooze'); if (s) s.value = ''; i.focus();
+      if (matchMedia('(max-width:820px)').matches) {
+        // On mobile, close the form after adding - one task, done, out of the way.
+        $('#qt-wrap').innerHTML = '';
+      } else {
+        // On desktop, keep the form open for a run of tasks; clear only the per-task fields.
+        i.value = ''; const n = $('#qt-notes'); if (n) n.value = ''; const s = $('#qt-snooze'); if (s) s.value = ''; i.focus();
+      }
     }
   }
   if (e.target.id === 'qe-form') {
