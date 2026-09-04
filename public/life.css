@@ -1601,6 +1601,22 @@ select.sel { appearance:none; -webkit-appearance:none; padding-right:34px;
 .t2-prio { flex:1; padding:6px 0; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink-3); font-size:12.5px; font-weight:700; letter-spacing:.02em; }
 .t2-prio.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .t2-prio:hover:not(.on) { border-color:var(--accent); color:var(--accent); }
+/* drag: handles, floating ghost, and the drop-time indicator on the canvas */
+.t2-grip { flex:none; width:15px; color:var(--ink-4,var(--ink-3)); font-size:12px; letter-spacing:-1px; cursor:grab; touch-action:none; user-select:none; opacity:.5; }
+.t2-grip:hover { opacity:1; color:var(--accent); }
+.t2-grip-off { cursor:default; opacity:0; pointer-events:none; }
+.t2-slot { cursor:grab; touch-action:none; }
+.t2-slot:active, .t2-grip:active { cursor:grabbing; }
+.t2-dragsrc { opacity:.4; }
+.t2-dragghost { position:fixed; left:0; top:0; z-index:300; pointer-events:none; padding:7px 12px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font-size:13.5px; font-weight:600; box-shadow:0 12px 30px -8px rgba(0,0,0,.5); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.t2-dropind { position:absolute; left:52px; right:8px; height:0; border-top:2px dashed var(--accent); z-index:8; }
+.t2-dropt { position:absolute; left:-46px; top:-9px; font-size:11px; font-weight:700; color:var(--accent); background:var(--card); padding:0 3px; font-variant-numeric:tabular-nums; }
+/* quick-add rows in the columns */
+button.t2-newrow { display:block; width:100%; margin-top:10px; padding:10px 12px; border-radius:10px; border:1px dashed var(--line-2); background:transparent; color:var(--ink-3); font-size:13.5px; text-align:center; }
+button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
+.t2-taskadd { display:block; margin-top:10px; }
+.t2-taskadd input { width:100%; padding:10px 12px; border-radius:10px; border:1px dashed var(--line-2); background:transparent; color:var(--ink); font-size:14px; font-family:inherit; }
+.t2-taskadd input:focus-visible { outline:none; border-style:solid; border-color:var(--accent); }
 @media (max-width:900px){
   .t2-grid { grid-template-columns:1fr; }
   .t2-day { order:-1; }

@@ -2385,7 +2385,7 @@ const practiceArea = (a) => a && a.area ? (state.areas || []).find((x) => x.id =
 const prcDueOn = (a, date) => { const d = prcDays(a.days); return d.length ? d.includes(date.getDay()) : false; };
 function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
 const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
-function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); }
+function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'today') renderToday(); }
 async function openPractices() { state.view = { type: 'practices' }; renderNav(); await loadPractices(true); renderPractices(); }
 function renderPractices() {
   if (!state.practices) return;
@@ -2395,8 +2395,7 @@ function renderPractices() {
     <p class="home-empty" style="margin:-6px 0 18px">The things you do again and again, grouped by life area. Give one a repeat schedule and a time and it lays itself onto your <b>Today</b> - add a note or a follow-along video too.</p>
     <div class="prc prc-manage">${practicesGroups(false) || '<div class="empty" style="padding:0 0 14px">No practices yet - add your first.</div>'}
       <button class="add-btn wide prc-newbtn" data-prc-new>＋ New practice</button>
-    </div>
-    ${state.practiceEdit ? practiceEditorHtml() : ''}`;
+    </div>`;
 }
 function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
 function practiceStreak(id) { if (!state.practices) return 0; let s = 0; const d = new Date(); for (;;) { if (state.practices.marks[`${id}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
@@ -2447,13 +2446,17 @@ function practiceAddForm() {
   return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New daily practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
+// A body-level overlay, so the editor opens from the Today page as well as the
+// Daily Practices page.
 function openPracticeEditor(id) {
   const a = id ? (state.practices.activities || []).find((x) => String(x.id) === String(id)) : null;
   state.practiceEdit = { id: a ? a.id : null, days: new Set(a ? prcDays(a.days) : []) };
-  renderPractices();
+  let host = document.getElementById('prac-editor-host');
+  if (!host) { host = document.createElement('div'); host.id = 'prac-editor-host'; document.body.appendChild(host); }
+  host.innerHTML = practiceEditorHtml();
   setTimeout(() => { const t = document.getElementById('pe-title'); if (t) t.focus(); }, 30);
 }
-function closePracticeEditor() { state.practiceEdit = null; renderPractices(); }
+function closePracticeEditor() { state.practiceEdit = null; const h = document.getElementById('prac-editor-host'); if (h) h.remove(); }
 function practiceEditorHtml() {
   const pe = state.practiceEdit;
   const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
@@ -2502,7 +2505,8 @@ async function savePractice() {
     let a;
     if (pe.id) { a = await api('/api/activities/' + pe.id, { method: 'PATCH', body: JSON.stringify(body) }); const i = state.practices.activities.findIndex((x) => String(x.id) === String(pe.id)); if (i >= 0) state.practices.activities[i] = a; }
     else { a = await api('/api/activities', { method: 'POST', body: JSON.stringify(body) }); state.practices.activities.push(a); }
-    state.practiceEdit = null; toast(pe.id ? 'Saved' : 'Practice added'); rerenderPractices();
+    closePracticeEditor(); toast(pe.id ? 'Saved' : 'Practice added');
+    if (state.view.type === 'today') renderToday(); else rerenderPractices();
   } catch (e) { toast(e.message); }
 }
 function trackerPanel() {
@@ -4041,7 +4045,7 @@ function uiPrompt(message, opts = {}) {
 // The planner is the actual today app (index.html/today.js), embedded in a
 // same-origin iframe so it stays one codebase - no reimplementation, no drift -
 // while living inside the Life shell. ?embed hides its own header chrome.
-function openToday() { state.view = { type: 'today' }; if (!state.today) state.today = { day: todayISO() }; renderNav(); return loadToday(); }
+function openToday() { state.view = { type: 'today' }; if (!state.today) state.today = { day: todayISO(), taskPrios: new Set(['P1']) }; renderNav(); return loadToday(); }
 // ── Today: native timed day + practices + tasks + habits ───────────────
 const T2_START = 6, T2_END = 23, T2_PPM = 0.9;   // canvas spans 06:00–23:00
 const t2Top = (m) => Math.max(0, Math.round((Math.max(T2_START * 60, Math.min(T2_END * 60, m)) - T2_START * 60) * T2_PPM));
@@ -4129,7 +4133,7 @@ function t2SlotBlock(s, floating) {
   const done = !!s.done || (task && task.done);
   const pos = floating ? '' : `style="top:${t2Top(s.start_min)}px;height:${Math.max(26, Math.round((s.duration || 30) * T2_PPM))}px;--h:${hue}"`;
   const vid = (act && act.video) ? '<span class="t2-vid" data-t2-open-slot="' + s.id + '">🎥</span>' : '';
-  return `<div class="t2-block t2-slot ${done ? 'done' : ''} ${floating ? 't2-float' : ''}" ${floating ? `style="--h:${hue}"` : pos} data-slot-id="${s.id}">
+  return `<div class="t2-block t2-slot ${done ? 'done' : ''} ${floating ? 't2-float' : ''}" ${floating ? `style="--h:${hue}"` : pos} data-slot-id="${s.id}" ${floating ? '' : `data-t2-drag="slot" data-t2-drag-id="${s.id}" data-t2-drag-label="${esc(s.title || 'Block')}"`}>
     <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${s.id}" title="${done ? 'Done' : 'Mark done'}">✓</button>${floating ? '' : `<span class="t2-btime">${prcHHMM(s.start_min)}</span>`}<span class="t2-btitle">${esc(s.title || 'Block')}</span>${task && task.priority ? `<span class="p-tag p-${task.priority}">${task.priority}</span>` : ''}${vid}<button class="t2-x" data-t2-del-slot="${s.id}" title="Remove">×</button></div>
   </div>`;
 }
@@ -4147,13 +4151,14 @@ function t2PracticesHtml() {
     const streak = practiceStreak(a.id);
     const sched = a.days ? `<span class="t2-psched">${esc(prcDaysLabel(a.days))}${a.time_min != null && a.time_min !== '' ? ` · ${prcHHMM(a.time_min)}` : ''}</span>` : '';
     return `<div class="t2-prow" style="--h:${g.hue}">
+      ${a.timed ? `<span class="t2-grip" data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Drag onto your day">⠿</span>` : '<span class="t2-grip t2-grip-off"></span>'}
       <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
       <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${sched}</span>
       ${streak ? `<span class="t2-streak">🔥${streak}</span>` : ''}
       ${a.timed ? `<button class="t2-add" data-t2-place-prac="${a.id}" title="Add to your day">＋</button>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
-  return `<div class="t2-colh"><h2>Practices</h2><button class="t2-colnew" data-open-practices title="Manage practices">✎</button></div><div class="t2-scroll">${body}</div>`;
+  return `<div class="t2-colh"><h2>Practices</h2><button class="t2-colnew" data-open-practices title="Manage practices">✎</button></div><div class="t2-scroll">${body}</div><button class="t2-newrow" data-prc-new>＋ New practice</button>`;
 }
 function t2TasksHtml() {
   const T = state.today; const tasks = T.tasks || [];
@@ -4168,9 +4173,25 @@ function t2TasksHtml() {
     <div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" data-t2-prio="${p}">${p}</button>`).join('')}</div>
   </div>`;
   const rows = shown.map((t) => `<div class="t2-trow" style="--h:${areaHue(t.area_id)}">
-    <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${esc(t.tana_id)}" title="Add to your day">＋</button>
+    <span class="t2-grip" data-t2-drag="task" data-t2-drag-id="${esc(t.tana_id)}" data-t2-drag-label="${esc(t.title || 'Task')}" title="Drag onto your day">⠿</span><span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}<button class="t2-add" data-t2-place-task="${esc(t.tana_id)}" title="Add to your day">＋</button>
   </div>`).join('') || `<div class="t2-emptycol">${tasks.length ? 'None match the filter.' : 'Nothing to plan.'}</div>`;
-  return `<div class="t2-colh"><h2>Tasks</h2><span class="t2-colcount">${shown.length}</span></div>${filter}<div class="t2-tlist t2-scroll">${rows}</div>`;
+  return `<div class="t2-colh"><h2>Tasks</h2><span class="t2-colcount">${shown.length}</span></div>${filter}<div class="t2-tlist t2-scroll">${rows}</div>
+    <form class="t2-newrow t2-taskadd" data-t2-taskadd><input id="t2-newtask" placeholder="＋ New task…" autocomplete="off"></form>`;
+}
+async function t2AddTask() {
+  const inp = document.getElementById('t2-newtask'); const title = (inp && inp.value || '').trim(); if (!title) return;
+  const T = state.today;
+  // Inherit the current filters: the area if one's picked, and P1 if that's the
+  // only priority shown (so a new task lands where you're looking).
+  const area = T.taskArea || undefined;
+  const prio = (T.taskPrios && T.taskPrios.size === 1) ? [...T.taskPrios][0] : 'P1';
+  try {
+    await api('/api/tasks', { method: 'POST', body: JSON.stringify({ title: title.slice(0, 200), area, priority: prio }) });
+    if (inp) inp.value = '';
+    T.tasks = await api('/api/tasks').then((r) => r.tasks || []).catch(() => T.tasks);
+    renderToday();
+    setTimeout(() => { const i = document.getElementById('t2-newtask'); if (i) i.focus(); }, 20);
+  } catch (e) { toast(e.message); }
 }
 function t2HabitsHtml() {
   const P = state.practices; const today = dayKey(new Date());
@@ -4182,21 +4203,62 @@ function t2HabitsHtml() {
     <span class="t2-hname">${esc(a.title)}</span>${s ? `<span class="t2-streak">🔥${s}</span>` : ''}</div>`; }).join('');
   return `<section class="t2-habits"><div class="t2-habh"><h2>Habits</h2>${toTick ? `<span class="t2-tocnt">${toTick} to tick</span>` : '<span class="t2-alldone">all ticked ✓</span>'}<span class="t2-habnote">tick as you go</span></div><div class="t2-habgrid">${chips}</div></section>`;
 }
-async function t2PlacePractice(activityId) {
+async function t2PlacePractice(activityId, startMin) {
   const a = (state.practices.activities || []).find((x) => String(x.id) === String(activityId)); if (!a) return;
-  const start = (a.time_min != null && a.time_min !== '') ? a.time_min : 540;
+  const start = startMin != null ? startMin : ((a.time_min != null && a.time_min !== '') ? a.time_min : 540);
   try {
     await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: a.lane, title: a.title, start_min: start, duration: a.duration || 30, activity_id: a.id, url: a.video || undefined }) });
     toast('Added to your day'); loadToday();
   } catch (e) { toast(e.message === 'That event is already counted.' ? 'Already on your day' : e.message); }
 }
-async function t2PlaceTask(taskId) {
+async function t2PlaceTask(taskId, startMin) {
   const t = (state.today.tasks || []).find((x) => String(x.tana_id) === String(taskId)); if (!t) return;
   try {
-    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: 540, duration: t.duration || 30, tana_id: t.tana_id }) });
+    await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: startMin != null ? startMin : 540, duration: t.duration || 30, tana_id: t.tana_id }) });
     toast('Added to your day'); loadToday();
   } catch (e) { toast(e.message); }
 }
+// ── Today drag: place a practice/task at a time, or reschedule a slot ──
+const t2SnapMin = (m) => Math.max(T2_START * 60, Math.min(T2_END * 60, Math.round(m / 5) * 5));
+let t2Drag = null;
+document.addEventListener('pointerdown', (e) => {
+  if (!state.view || state.view.type !== 'today') return;
+  if (e.target.closest('button, a, input, select, textarea')) return;   // let controls/scroll work
+  const src = e.target.closest('[data-t2-drag]'); if (!src) return;
+  const canvas = document.querySelector('.t2-canvas'); if (!canvas) return;
+  e.preventDefault();
+  t2Drag = { type: src.dataset.t2Drag, id: src.dataset.t2DragId, label: (src.dataset.t2DragLabel || src.textContent || 'Move').trim().slice(0, 40), canvas, pid: e.pointerId, sx: e.clientX, sy: e.clientY, moved: false, dropMin: null, src };
+  try { src.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  const d = t2Drag; if (!d || e.pointerId !== d.pid) return;
+  if (!d.moved && Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) < 6) return;
+  d.moved = true; e.preventDefault();
+  if (!d.ghost) { d.ghost = document.createElement('div'); d.ghost.className = 't2-dragghost'; d.ghost.textContent = d.label; document.body.appendChild(d.ghost); d.src.classList.add('t2-dragsrc'); }
+  d.ghost.style.transform = `translate(${e.clientX + 12}px, ${e.clientY - 12}px)`;
+  const r = d.canvas.getBoundingClientRect();
+  const over = e.clientX >= r.left - 40 && e.clientX <= r.right + 40 && e.clientY >= r.top && e.clientY <= r.bottom;
+  let ind = d.canvas.querySelector('.t2-dropind');
+  if (over) {
+    const min = t2SnapMin(T2_START * 60 + (e.clientY - r.top) / T2_PPM);
+    d.dropMin = min;
+    if (!ind) { ind = document.createElement('div'); ind.className = 't2-dropind'; d.canvas.appendChild(ind); }
+    ind.style.top = t2Top(min) + 'px'; ind.innerHTML = `<span class="t2-dropt">${prcHHMM(min)}</span>`;
+  } else { d.dropMin = null; if (ind) ind.remove(); }
+  // gentle edge auto-scroll for long days
+  if (e.clientY < 90) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - 90) window.scrollBy(0, 12);
+});
+function t2DragEnd(e) {
+  const d = t2Drag; if (!d || (e && e.pointerId !== d.pid)) return; t2Drag = null;
+  if (d.ghost) d.ghost.remove(); d.src.classList.remove('t2-dragsrc');
+  const ind = d.canvas.querySelector('.t2-dropind'); if (ind) ind.remove();
+  if (!d.moved || d.dropMin == null) return;
+  if (d.type === 'prac') t2PlacePractice(d.id, d.dropMin);
+  else if (d.type === 'task') t2PlaceTask(d.id, d.dropMin);
+  else if (d.type === 'slot') { api('/api/slots/' + d.id, { method: 'PATCH', body: JSON.stringify({ start_min: d.dropMin }) }).then(() => loadToday()).catch((err) => toast(err.message)); }
+}
+document.addEventListener('pointerup', t2DragEnd);
+document.addEventListener('pointercancel', t2DragEnd);
 // Tick a placed block. A practice block also ticks its habit (one tick, counted
 // everywhere), per the agreed rule.
 async function t2SlotTick(slotId) {
@@ -9260,6 +9322,7 @@ function caretToProseStart(prose) {
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
+  if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') {
