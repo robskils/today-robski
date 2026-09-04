@@ -3579,6 +3579,9 @@ const todayISO = () => { const d = new Date(); return ymd(d.getFullYear(), d.get
 // into a hidden input, so existing readers ($('#id').value) keep working.
 const DOW_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function dpLabel(iso) {
+  // A yearless birthday: no weekday either, since it isn't the same day each year.
+  const ny = /^--(\d{2})-(\d{2})$/.exec(iso || '');
+  if (ny) return `${Number(ny[2])} ${MONTHS_LONG[Number(ny[1]) - 1]}`;
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return 'Pick a date';
   const [y, m, d] = iso.split('-').map(Number);
   return `${DOW_ABBR[new Date(y, m - 1, d).getDay()]} ${d} ${MONTHS_LONG[m - 1]} ${y}`;
@@ -3588,13 +3591,32 @@ function dateFieldHtml(id, iso) {
 }
 function openDatePicker(id) {
   const inp = document.getElementById(id); if (!inp) return;
-  const iso = /^\d{4}-\d{2}-\d{2}$/.test(inp.value || '') ? inp.value : todayISO();
+  // Only a birthday may go without a year; a due date or an event without one
+  // would be meaningless.
+  const optionalYear = /-bday$/.test(id);
+  const cur = inp.value || '';
+  const noYear = optionalYear && /^--\d{2}-\d{2}$/.test(cur);
+  // With no year, lay the grid out on this year - it only decides which weekday
+  // each date falls on, and none of that is stored.
+  const iso = noYear ? `${new Date().getFullYear()}-${cur.slice(2)}`
+    : (/^\d{4}-\d{2}-\d{2}$/.test(cur) ? cur : todayISO());
   const [y, m] = iso.split('-').map(Number);
   // An event's end can't fall before its start, so the end picker greys out any
   // day earlier than the chosen start.
   const min = id === 'ce-enddate' ? ((document.getElementById('ce-date') || {}).value || null) : null;
-  state.dp = { id, y, m: m - 1, min };
+  state.dp = { id, y, m: m - 1, min, optionalYear, noYear };
   renderDatePicker();
+}
+// Newest first, so this year and the next few sit at the top where a due date or
+// a snooze wants them. A birthday scrolls to its decade, which beats stepping the
+// month arrow six hundred times.
+function dpYears(selected) {
+  const now = new Date().getFullYear();
+  const hi = Math.max(now + 10, selected || 0);
+  const lo = Math.min(now - 120, selected || now);
+  const out = [];
+  for (let y = hi; y >= lo; y--) out.push(y);
+  return out;
 }
 function renderDatePicker() {
   const dp = state.dp; if (!dp) return;
@@ -3618,7 +3640,10 @@ function renderDatePicker() {
   }
   el.innerHTML = `<div class="dp-bg" data-dp-close><div class="dp-cal" role="dialog" aria-label="Pick a date">
     <div class="dp-head"><button type="button" class="dp-nav" data-dp-step="-1" aria-label="Previous month">‹</button>
-      <span class="dp-title">${MONTHS_LONG[dp.m]} ${dp.y}</span>
+      <span class="dp-title">
+        <select class="dp-pick" data-dp-month aria-label="Month">${MONTHS_LONG.map((mn, i) => `<option value="${i}" ${i === dp.m ? 'selected' : ''}>${mn}</option>`).join('')}</select>
+        <select class="dp-pick dp-year" data-dp-year aria-label="Year">${dp.optionalYear ? `<option value="" ${dp.noYear ? 'selected' : ''}>Year</option>` : ''}${dpYears(dp.y).map((y) => `<option value="${y}" ${!dp.noYear && y === dp.y ? 'selected' : ''}>${y}</option>`).join('')}</select>
+      </span>
       <button type="button" class="dp-nav" data-dp-step="1" aria-label="Next month">›</button></div>
     <div class="dp-dows">${WEEKDAYS.map((w) => `<span>${w[0]}</span>`).join('')}</div>
     <div class="dp-grid">${cells}</div>
@@ -3637,7 +3662,10 @@ function datePick(iso) {
   const dp = state.dp; if (!dp) return;
   const inp = document.getElementById(dp.id);
   if (inp) {
-    setDateField(dp.id, iso);
+    // A birthday with the year left off keeps only the day and month, in vCard's
+    // --MM-DD form. Which is what most birthdays actually are: you know it's the
+    // 3rd of September, and the year is either private or not the point.
+    setDateField(dp.id, dp.noYear ? `--${iso.slice(5)}` : iso);
     inp.dispatchEvent(new Event('change', { bubbles: true }));
   }
   closeDatePicker();
@@ -6564,7 +6592,15 @@ async function emailContact(email) {
 }
 // vCard (.vcf) parsing - Apple exports one file for all contacts.
 function decodeVValue(v) { return String(v || '').replace(/\\n/gi, ', ').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\').trim(); }
-function normBday(v) { const m = String(v || '').match(/(\d{4})-?(\d{2})-?(\d{2})/); return m ? `${m[1]}-${m[2]}-${m[3]}` : ''; }
+function normBday(v) {
+  const s = String(v || '');
+  const full = s.match(/(\d{4})-?(\d{2})-?(\d{2})/);
+  if (full) return `${full[1]}-${full[2]}-${full[3]}`;
+  // vCard writes a yearless birthday as --MMDD or --MM-DD. Apple Contacts uses it
+  // whenever you leave the year off, so this is a real import case, not a corner.
+  const ny = s.match(/^--(\d{2})-?(\d{2})$/);
+  return ny ? `--${ny[1]}-${ny[2]}` : '';
+}
 function parseVcards(text) {
   const cards = [];
   const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '').split('\n');   // unfold continuation lines
@@ -9003,6 +9039,16 @@ function openLinkMenu(x, y, href, view) {
 document.addEventListener('change', (e) => {
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
   if (e.target.id === 'kit-last') { kitSetLast(e.target.value); return; }
+  if (e.target.matches('[data-dp-month]')) { if (state.dp) { state.dp.m = Number(e.target.value); renderDatePicker(); } return; }
+  if (e.target.matches('[data-dp-year]')) {
+    if (state.dp) {
+      const v = e.target.value;
+      state.dp.noYear = v === '';          // "" is the No year option, birthdays only
+      if (v !== '') state.dp.y = Number(v);
+      renderDatePicker();
+    }
+    return;
+  }
   if (e.target.matches('[data-kit-toggle]')) { kitToggle(e.target.checked); return; }
   if (e.target.matches('[data-kit-every]')) {
     // "Custom…" isn't a cadence, it's a request for the two extra fields - so it

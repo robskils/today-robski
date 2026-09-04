@@ -603,7 +603,14 @@ button { cursor:pointer; background:none; border:0; }
 .dp-bg { position:fixed; inset:0; z-index:70; background:rgba(20,16,24,.34); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; padding:20px; }
 .dp-cal { width:min(346px,94vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); padding:16px; }
 .dp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-.dp-title { font-size:17px; font-weight:600; color:var(--ink); }
+.dp-title { display:flex; align-items:center; gap:6px; font-size:17px; font-weight:600; color:var(--ink); }
+/* Month and year as selects rather than a label: a birthday is sixty years back,
+   and the arrows step one month at a time. */
+/* NOT .dp-sel - that already means the selected day in the grid below. */
+.dp-pick { font: inherit; font-size:16px; font-weight:600; color:var(--ink); background:var(--card);
+  border:1px solid var(--line); border-radius:9px; padding:6px 8px; max-width:none; cursor:pointer; }
+.dp-pick:hover { border-color:var(--accent); }
+.dp-year { min-width:96px; }
 .dp-nav { width:40px; height:40px; border-radius:10px; font-size:24px; color:var(--ink-2); display:flex; align-items:center; justify-content:center; }
 .dp-nav:hover { background:var(--paper-2); color:var(--accent); }
 .dp-dows { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px; }

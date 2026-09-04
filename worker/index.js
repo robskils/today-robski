@@ -1776,7 +1776,8 @@ async function homeAlerts(request, env, json) {
   for (const r of cts.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null });
-    if (p.birthday && String(p.birthday).slice(5, 10) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' });
+    // slice(-5) takes MM-DD from a full date and from a yearless --MM-DD alike.
+    if (p.birthday && String(p.birthday).slice(-5) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' });
   }
   const today = localParts(new Date(), TZ).date;   // YYYY-MM-DD in Lisbon
   let p1 = 0; const p1list = []; const surfaced = []; const keepInTouch = [];

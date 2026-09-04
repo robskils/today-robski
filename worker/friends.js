@@ -30,7 +30,16 @@ export async function getFriends(env) {
   const connected = new Set(rows.map((r) => r.id)); connected.add(env.uid);
   const cts = (await env.DB.prepare("SELECT title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?").bind(env.uid).all()).results || [];
   const emails = [];
-  for (const c of cts) { let p = {}; try { p = JSON.parse(c.props || '{}'); } catch {} if (p.email) emails.push([String(p.email).toLowerCase(), c.title]); }
+  // EVERY address on a contact, not just the first. props.emails is the canonical
+  // list (the card lets you add as many as you like); props.email is the legacy
+  // single field, still written as a mirror of the first. Reading only that one
+  // meant a contact whose Daybook account uses their second or third address was
+  // never matched, and they simply didn't appear as someone you could connect to.
+  for (const c of cts) {
+    let p = {}; try { p = JSON.parse(c.props || '{}'); } catch {}
+    const list = [...(Array.isArray(p.emails) ? p.emails : []), p.email];
+    for (const e of list) { const em = String(e || '').trim().toLowerCase(); if (em) emails.push([em, c.title]); }
+  }
   const suggestions = [];
   const uniq = [...new Set(emails.map((e) => e[0]))];
   const byEmail = {};
