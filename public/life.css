@@ -1617,7 +1617,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .t2-taskadd { display:block; margin-top:10px; }
 .t2-taskadd input { width:100%; padding:10px 12px; border-radius:10px; border:1px dashed var(--line-2); background:transparent; color:var(--ink); font-size:14px; font-family:inherit; }
 .t2-taskadd input:focus-visible { outline:none; border-style:solid; border-color:var(--accent); }
-@media (max-width:900px){
+@media (max-width:1040px){
   .t2-grid { grid-template-columns:1fr; }
   .t2-day { order:-1; }
   .t2-scroll { max-height:none; }
