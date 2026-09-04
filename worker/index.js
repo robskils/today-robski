@@ -2211,7 +2211,10 @@ async function practiceFields(env, b) {
   }
   let time_min = null;
   if (b.time_min != null && b.time_min !== '') { const t = Number(b.time_min); if (Number.isFinite(t) && t >= 0 && t <= 1439) time_min = Math.round(t); }
-  return { area, lane, note, video, timed, tracked, days, time_min };
+  // cadence: "<n>d" (every n days) or "<n>w" (n times a week); null = just log it.
+  let cadence = null;
+  if (b.cadence) { const m = String(b.cadence).trim().match(/^(\d{1,2})([dw])$/); if (m && Number(m[1]) >= 1) cadence = `${Number(m[1])}${m[2]}`; }
+  return { area, lane, note, video, timed, tracked, days, time_min, cadence };
 }
 async function createActivity(request, env) {
   const b = await request.json().catch(() => ({}));
@@ -2233,10 +2236,10 @@ async function createActivity(request, env) {
   ).bind(lane, env.uid).first();
 
   const row = await env.DB.prepare(
-    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
   ).bind(lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid,
-    p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min).first();
+    p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min, p.cadence).first();
 
   return json(row, request, 201);
 }
@@ -2256,7 +2259,7 @@ async function updateActivity(request, env, id) {
   for (const k of ['lane', 'title', 'url', 'duration', 'position']) if (b[k] !== undefined) set[k] = b[k];
 
   // New practice fields. Changing the area re-derives the legacy lane too.
-  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min'];
+  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence'];
   if (newKeys.some((k) => b[k] !== undefined)) {
     const p = await practiceFields(env, b);
     if (b.area !== undefined) { set.area = p.area; if (p.lane && set.lane === undefined) set.lane = p.lane; }
@@ -2266,6 +2269,7 @@ async function updateActivity(request, env, id) {
     if (b.tracked !== undefined) set.tracked = p.tracked;
     if (b.days !== undefined) set.days = p.days;
     if (b.time_min !== undefined) set.time_min = p.time_min;
+    if (b.cadence !== undefined) set.cadence = p.cadence;
   }
 
   const keys = Object.keys(set);

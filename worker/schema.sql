@@ -120,7 +120,8 @@ CREATE TABLE IF NOT EXISTS activities (
   timed    INTEGER NOT NULL DEFAULT 1,        -- 1 = takes time, shows on the day
   tracked  INTEGER NOT NULL DEFAULT 1,        -- 1 = feeds a habit streak
   days     TEXT,                              -- repeat weekdays, CSV of getDay() 0=Sun..6=Sat; NULL = not scheduled
-  time_min INTEGER                            -- default schedule time, mins from midnight; NULL = none
+  time_min INTEGER,                           -- default schedule time, mins from midnight; NULL = none
+  cadence  TEXT                               -- tracking target: "<n>d" every n days, "<n>w" n times/week; NULL = just log it
 );
 CREATE INDEX IF NOT EXISTS idx_activities_lane ON activities(lane, position);
 

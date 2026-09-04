@@ -2385,6 +2385,55 @@ function prcDaysLabel(s) {
 const practiceArea = (a) => a && a.area ? (state.areas || []).find((x) => x.id === a.area) : null;
 // Is a scheduled practice due on `day` (a Date)? True only when it has a weekday set.
 const prcDueOn = (a, date) => { const d = prcDays(a.days); return d.length ? d.includes(date.getDay()) : false; };
+// ── cadence + tracking (per practice AND per life area) ───────────────
+const PRC_CADENCES = [['', 'Just log it'], ['1d', 'Every day'], ['2d', 'Every other day'], ['3d', 'Every 3 days'], ['2w', 'Twice a week'], ['3w', '3× a week'], ['4w', '4× a week'], ['5w', '5× a week']];
+const parseCadence = (c) => { const m = String(c || '').match(/^(\d+)([dw])$/); return m ? { n: Number(m[1]), unit: m[2], raw: c } : null; };
+function cadenceLabel(c) { const p = parseCadence(c); if (!p) return ''; if (p.unit === 'w') return p.n === 1 ? 'Once a week' : `${p.n}× a week`; return p.n === 1 ? 'Every day' : p.n === 2 ? 'Every other day' : `Every ${p.n} days`; }
+const daysBetweenStr = (a, b) => Math.round((Date.parse(b + 'T00:00') - Date.parse(a + 'T00:00')) / 86400000);
+// The days (YYYY-MM-DD) a practice was ticked, most-recent first.
+function prcMarkedDays(id) {
+  if (!state.practices) return [];
+  const pre = `${id}:`; const out = [];
+  for (const k in state.practices.marks) if (k.indexOf(pre) === 0 && state.practices.marks[k]) out.push(k.slice(pre.length));
+  return out.sort().reverse();
+}
+// A life area counts as "kept alive" on any day ANY of its tracked practices was
+// ticked - so the union of its practices' marked days.
+function areaMarkedDays(areaId) {
+  const set = new Set();
+  (state.practices.activities || []).filter((a) => a.area === areaId && a.tracked).forEach((a) => prcMarkedDays(a.id).forEach((d) => set.add(d)));
+  return [...set].sort().reverse();
+}
+// On-track status for a set of marked days against a cadence. Robin dislikes red,
+// so "slipping" is a gentle amber, never a scold.
+function cadenceStatus(daysDesc, cadence) {
+  const today = dayKey(new Date());
+  const cad = parseCadence(cadence);
+  const lastDone = daysDesc[0] || null;
+  const doneToday = lastDone === today;
+  const daysSince = lastDone ? daysBetweenStr(lastDone, today) : Infinity;
+  if (!cad) return { status: doneToday ? 'ontrack' : 'none', label: lastDone ? (doneToday ? 'done today' : `${daysSince}d ago`) : 'not yet', streak: dailyStreak(daysDesc, today) };
+  if (cad.unit === 'd') {
+    let status, label;
+    if (doneToday) { status = 'ontrack'; label = 'done today'; }
+    else if (daysSince <= cad.n - 1) { status = 'ontrack'; label = `done ${daysSince}d ago`; }
+    else if (daysSince === cad.n) { status = 'due'; label = 'due today'; }
+    else { status = 'slipping'; label = lastDone ? `${daysSince}d ago` : 'not yet'; }
+    return { status, label, streak: cadenceStreak(daysDesc, cad, today) };
+  }
+  const weekCount = daysDesc.filter((d) => daysBetweenStr(d, today) < 7).length;
+  const status = weekCount >= cad.n ? 'ontrack' : (weekCount > 0 ? 'building' : 'slipping');
+  return { status, label: `${weekCount} of ${cad.n} this week`, streak: weekCount };
+}
+function dailyStreak(daysDesc, today) {
+  if (!daysDesc.length) return 0;
+  if (daysBetweenStr(daysDesc[0], today) > 1) return 0;
+  let s = 1; for (let i = 1; i < daysDesc.length; i++) { if (daysBetweenStr(daysDesc[i], daysDesc[i - 1]) === 1) s++; else break; } return s;
+}
+function cadenceStreak(daysDesc, cad, today) {
+  if (!daysDesc.length || daysBetweenStr(daysDesc[0], today) > cad.n) return 0;
+  let s = 1; for (let i = 1; i < daysDesc.length; i++) { if (daysBetweenStr(daysDesc[i], daysDesc[i - 1]) <= cad.n) s++; else break; } return s;
+}
 function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
 const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
 function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'today') renderToday(); }
@@ -2481,6 +2530,7 @@ function practiceEditorHtml() {
           </div>
         </div>
         <label class="pe-tog"><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}><span><b>Track it</b> — ticking it builds a streak</span></label>
+        <label class="pe-f"><span>Aim to do it</span><select class="sel" id="pe-cadence">${PRC_CADENCES.map(([v, l]) => `<option value="${v}" ${(a.cadence || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="pe-f"><span>Follow-along video</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a video link (optional)" autocomplete="off"></label>
         <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
       </div>
@@ -2500,6 +2550,7 @@ async function savePractice() {
     tracked: $('#pe-tracked') ? $('#pe-tracked').checked : true,
     days: [...pe.days].sort((a, b) => a - b).join(','),
     time_min,
+    cadence: ($('#pe-cadence') || {}).value || '',
     video: (($('#pe-video') || {}).value || '').trim(),
     note: (($('#pe-note') || {}).value || '').trim(),
   };
@@ -4091,11 +4142,39 @@ function renderToday() {
 }
 // The Tracker tab: every tracked practice, grouped by life area, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
+// The Tracker: a keep-your-life-alive dashboard. Grouped by life area; each area
+// is "on track" if you did ANY of its practices within its keep-alive cadence, and
+// each practice shows its own status against its own aim.
 function t2TrackerHtml() {
   const P = state.practices;
   const tracked = (P.activities || []).filter((a) => a.tracked);
-  if (!tracked.length) return '<div class="home-empty" style="padding:24px">No tracked habits yet. Add a practice and switch on <b>Track it</b>.</div>';
-  return `<p class="home-empty" style="margin:2px 0 16px">Tick what you've done. Every practice with <b>Track it</b> on shows here - grouped by life area, with its streak.</p><div class="prc t2-tracker">${practicesGroups(true)}</div>`;
+  if (!tracked.length) return '<div class="home-empty" style="padding:24px">No tracked habits yet. Add a practice on the Today tab and switch on <b>Track it</b>.</div>';
+  const today = dayKey(new Date());
+  const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
+  const groups = new Map();
+  tracked.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, area: ar, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
+  const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
+  const dot = (st) => `<span class="trk-dot2 trk-${st}"></span>`;
+  const statBits = (s) => `${dot(s.status)}<span class="trk-lab">${esc(s.label)}</span>${s.streak ? `<span class="t2-streak">🔥${s.streak}</span>` : ''}`;
+  const body = ordered.map((g) => {
+    const areaCad = g.area ? ((g.area.props || {}).cadence || '') : '';
+    const areaStat = g.areaId && parseCadence(areaCad) ? cadenceStatus(areaMarkedDays(g.areaId), areaCad) : null;
+    const cadSel = g.areaId ? `<select class="sel trk-cadsel" data-trk-area-cad="${g.areaId}" title="Keep this area alive…"><option value="">no area target</option>${PRC_CADENCES.slice(1).map(([v, l]) => `<option value="${v}" ${areaCad === v ? 'selected' : ''}>keep alive: ${l.toLowerCase()}</option>`).join('')}</select>` : '';
+    const rows = g.items.map((a) => {
+      const s = cadenceStatus(prcMarkedDays(a.id), a.cadence);
+      const marked = practiceMarked(a.id, today);
+      return `<div class="trk-prow">
+        <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
+        <span class="trk-pname">${esc(a.title)}${a.cadence ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
+        <span class="trk-status">${statBits(s)}</span>
+      </div>`;
+    }).join('');
+    return `<div class="trk-area" style="--h:${g.hue}">
+      <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${areaStat ? `<span class="trk-area-stat">${statBits(areaStat)}</span>` : ''}${cadSel}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+  return `<p class="home-empty" style="margin:2px 0 16px"><b>Keep your life alive.</b> An area is on track if you did <em>anything</em> in it within its target - set a keep-alive cadence per area, and a specific aim per practice.</p><div class="trk-dash">${body}</div>`;
 }
 // The timed day canvas: hour grid, all-day + timed calendar events, placed slots
 // (each with a tick), and today's scheduled-but-unplaced practices as suggestions.
@@ -4284,6 +4363,13 @@ async function t2SlotTick(slotId) {
 }
 async function t2DelSlot(slotId) {
   try { await api('/api/slots/' + slotId, { method: 'DELETE' }); loadToday(); } catch (e) { toast(e.message); }
+}
+// Set a life area's keep-alive cadence (stored in the area block's props).
+async function setAreaCadence(areaId, cadence) {
+  const a = (state.areas || []).find((x) => x.id === areaId); if (!a) return;
+  a.props = a.props || {}; a.props.cadence = cadence || null;
+  renderToday();
+  try { await api('/api/blocks/' + areaId, { method: 'PATCH', body: JSON.stringify({ props: { cadence: cadence || null } }) }); } catch (e) { toast(e.message); }
 }
 // Click a task on Today to open its details in a popover (name, priority, area,
 // length, done) - a body-level overlay like the practice editor.
@@ -9201,6 +9287,7 @@ function openLinkMenu(x, y, href, view) {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
+  if (e.target.matches('[data-trk-area-cad]')) { setAreaCadence(e.target.dataset.trkAreaCad, e.target.value || ''); return; }
   if (e.target.id === 'kit-last') { kitSetLast(e.target.value); return; }
   if (e.target.matches('[data-dp-month]')) { if (state.dp) { state.dp.m = Number(e.target.value); renderDatePicker(); } return; }
   if (e.target.matches('[data-dp-year]')) {
