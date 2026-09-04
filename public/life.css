@@ -1589,7 +1589,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-hname { flex:1; min-width:0; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .t2-habit.done .t2-hname { color:var(--ink-3); }
 /* ── Tracker dashboard (keep your life alive, by area) ── */
-.trk-dash { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; }
+.trk-intro { margin:2px 0 16px; }
+.trk-dash { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:14px; }
+.trk-runend { display:inline-flex; align-items:center; gap:8px; flex:none; }
+.trk-prow .trk-week { flex:none; }
+.trk-prow .trk-dot { width:17px; height:17px; }
 .trk-area { background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); border-radius:14px; padding:13px 15px 8px; box-shadow:var(--shadow); }
 .trk-area-h { display:flex; align-items:center; gap:9px; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
 .trk-area-h .cd { width:11px; height:11px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
@@ -1651,7 +1655,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .t2-day { order:-1; }
   .t2-scroll { max-height:none; }
 }
-@media (max-width:640px){ .trk-week { display:none; } .tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:none; } }
+@media (max-width:640px){ .trk-week { display:none; } .trk-prow .trk-week { display:inline-flex; } .tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:none; } }
 .focus-stat { font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 7%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:9px; padding:7px 12px; margin:2px 0 4px; display:inline-block; }
 /* Link from a task back to the note it was created from. */
 .task-source { margin:4px 0 6px; }

@@ -4137,6 +4137,8 @@ function t2TrackerHtml() {
   const groups = new Map();
   tracked.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, area: ar, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
   const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
+  const days = trackerLast7();
+  const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const dot = (st) => `<span class="trk-dot2 trk-${st}"></span>`;
   const statBits = (s) => `${dot(s.status)}<span class="trk-lab">${esc(s.label)}</span>${s.streak ? `<span class="t2-streak">🔥${s.streak}</span>` : ''}`;
   const body = ordered.map((g) => {
@@ -4146,10 +4148,14 @@ function t2TrackerHtml() {
     const rows = g.items.map((a) => {
       const s = cadenceStatus(prcMarkedDays(a.id), a.cadence);
       const marked = practiceMarked(a.id, today);
+      const streak = practiceStreak(a.id);
+      // The run of recent days - tap any dot to log it, the chain you don't want to break.
+      const week = days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('');
       return `<div class="trk-prow">
         <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
         <span class="trk-pname">${esc(a.title)}${a.cadence ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
-        <span class="trk-status">${statBits(s)}</span>
+        <span class="trk-week">${week}</span>
+        <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}</span>` : ''}<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span></span>
       </div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
@@ -4157,7 +4163,7 @@ function t2TrackerHtml() {
       ${rows}
     </div>`;
   }).join('');
-  return `<p class="home-empty" style="margin:2px 0 16px"><b>Keep your life alive.</b> An area is on track if you did <em>anything</em> in it within its target - set a keep-alive cadence per area, and a specific aim per practice.</p><div class="trk-dash">${body}</div>`;
+  return `<p class="home-empty trk-intro"><b>Keep your life alive.</b> Tick as you go - each practice keeps its run of days. An area stays on track if you did <em>anything</em> in it within its keep-alive target.</p><div class="trk-dash">${body}</div>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
