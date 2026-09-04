@@ -2435,6 +2435,12 @@ function areaCheckin(daysDesc, cadence) {
   if (weekCount >= cad.n) return { status: 'ontrack', label: `done ${weekCount}× this week` };
   return { status: weekCount ? 'building' : 'slipping', label: `${cad.n - weekCount} more this week` };
 }
+// A cadence said as a plain phrase, for any value (presets or a custom one).
+function areaCadLabel(v) {
+  const c = parseCadence(v); if (!c) return v || '';
+  if (c.unit === 'd') { if (c.n === 1) return 'every day'; if (c.n === 2) return 'every other day'; if (c.n % 7 === 0) { const w = c.n / 7; return w === 1 ? 'every week' : `every ${w} weeks`; } return `every ${c.n} days`; }
+  return c.n === 1 ? 'once a week' : c.n === 2 ? 'twice a week' : `${c.n}× a week`;
+}
 function dailyStreak(daysDesc, today) {
   if (!daysDesc.length) return 0;
   if (daysBetweenStr(daysDesc[0], today) > 1) return 0;
@@ -4161,11 +4167,17 @@ function t2TrackerHtml() {
   const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
   const days = trackerLast7();
   const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const areaCadOpts = [['', 'No check-in'], ['1d', 'every day'], ['2d', 'every other day'], ['3d', 'every 3 days'], ['2w', 'twice a week'], ['3w', '3× a week'], ['4w', '4× a week'], ['5w', '5× a week']];
+  // A short, plain list - just the cadence, no "check in" prefix.
+  const presetCads = [['1d', 'every day'], ['2d', 'every other day'], ['3d', 'every 3 days'], ['2w', 'twice a week'], ['1w', 'once a week'], ['14d', 'every 2 weeks']];
   const body = ordered.map((g) => {
     const areaCad = g.area ? ((g.area.props || {}).cadence || '') : '';
     const areaStat = g.areaId ? areaCheckin(areaMarkedDays(g.areaId), areaCad) : null;
-    const cadSel = g.areaId ? `<select class="sel trk-cadsel" data-trk-area-cad="${g.areaId}" title="How often do you want to do something in this area?">${areaCadOpts.map(([v, l]) => `<option value="${v}" ${areaCad === v ? 'selected' : ''}>${v ? 'Check in ' + l : l}</option>`).join('')}</select>` : '';
+    // A custom value (say every 5 days) shows itself at the top; "Custom…" opens a prompt.
+    const cadOpts = (areaCad && !presetCads.some(([v]) => v === areaCad)) ? [[areaCad, areaCadLabel(areaCad)], ...presetCads] : presetCads;
+    const cadSel = g.areaId ? `<select class="sel trk-cadsel" data-trk-area-cad="${g.areaId}" title="How often do you want to do something in this area?">
+      <option value="" ${!areaCad ? 'selected' : ''}>No check-in</option>
+      ${cadOpts.map(([v, l]) => `<option value="${v}" ${areaCad === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}
+      <option value="__custom">Custom…</option></select>` : '';
     const rows = g.items.map((a) => {
       const s = cadenceStatus(prcMarkedDays(a.id), a.cadence);
       const marked = practiceMarked(a.id, today);
@@ -4422,6 +4434,23 @@ async function setAreaCadence(areaId, cadence) {
   a.props = a.props || {}; a.props.cadence = cadence || null;
   renderToday();
   try { await api('/api/blocks/' + areaId, { method: 'PATCH', body: JSON.stringify({ props: { cadence: cadence || null } }) }); } catch (e) { toast(e.message); }
+}
+// "Custom…" check-in: ask for any rhythm in plain words. "5" or "every 5 days"
+// -> 5d; "3 a week" -> 3w; "every 2 weeks" -> 14d.
+function parseCustomCadence(s) {
+  s = String(s || '').toLowerCase().trim();
+  const m = s.match(/\d+/); if (!m) return null;
+  const n = Math.max(1, Math.min(60, Number(m[0])));
+  if (/(a|per|times|×|x)\s*week|weekly/.test(s)) return `${Math.min(7, n)}w`;   // "3 a week"
+  if (/week/.test(s)) return `${Math.min(84, n * 7)}d`;                          // "every 2 weeks"
+  return `${Math.min(90, n)}d`;                                                  // "every 5 days"
+}
+async function promptAreaCadence(areaId) {
+  const raw = await uiPrompt('Do something in this area how often?', { title: 'Custom check-in', placeholder: "e.g. 5 (every 5 days), 3 a week, every 2 weeks" });
+  if (raw == null) { renderToday(); return; }                    // cancelled - restore the select
+  const cad = parseCustomCadence(raw);
+  if (!cad) { toast("Try a number, e.g. 5 or '3 a week'"); renderToday(); return; }
+  setAreaCadence(areaId, cad);
 }
 // Click a task on Today to open its details in a popover (name, priority, area,
 // length, done) - a body-level overlay like the practice editor.
@@ -9340,7 +9369,7 @@ function openLinkMenu(x, y, href, view) {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
-  if (e.target.matches('[data-trk-area-cad]')) { setAreaCadence(e.target.dataset.trkAreaCad, e.target.value || ''); return; }
+  if (e.target.matches('[data-trk-area-cad]')) { const v = e.target.value; if (v === '__custom') { promptAreaCadence(e.target.dataset.trkAreaCad); } else { setAreaCadence(e.target.dataset.trkAreaCad, v || ''); } return; }
   if (e.target.id === 'kit-last') { kitSetLast(e.target.value); return; }
   if (e.target.matches('[data-dp-month]')) { if (state.dp) { state.dp.m = Number(e.target.value); renderDatePicker(); } return; }
   if (e.target.matches('[data-dp-year]')) {

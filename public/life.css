@@ -1590,7 +1590,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-habit.done .t2-hname { color:var(--ink-3); }
 /* ── Tracker dashboard (keep your life alive, by area) ── */
 .trk-intro { margin:2px 0 16px; }
-.trk-dash { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:14px; }
+/* Columns, not a stretch-grid, so each area card is only as tall as its own
+   practices - a one-line area doesn't sit in a big empty square. */
+.trk-dash { column-width:360px; column-gap:14px; }
 .trk-runend { display:inline-flex; align-items:center; gap:8px; flex:none; }
 /* The area's plain-English status: on track, and when to do something next. */
 .trk-area-status { display:flex; align-items:center; gap:8px; margin:0 0 10px; font-size:14.5px; }
@@ -1601,7 +1603,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .trk-s-none b { color:var(--ink-3); }
 .trk-prow .trk-week { flex:none; }
 .trk-prow .trk-dot { width:17px; height:17px; }
-.trk-area { background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); border-radius:14px; padding:13px 15px 8px; box-shadow:var(--shadow); }
+.trk-area { background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); border-radius:14px; padding:13px 15px 8px; box-shadow:var(--shadow); display:inline-block; width:100%; margin:0 0 14px; break-inside:avoid; -webkit-column-break-inside:avoid; page-break-inside:avoid; }
 .trk-area-h { display:flex; align-items:center; gap:9px; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
 .trk-area-h .cd { width:11px; height:11px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
 .trk-area-name { font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:600; color:var(--ink); }
@@ -1619,7 +1621,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .trk-building { background:#e0a54e; color:#e0a54e; }
 .trk-slipping { background:#cf8a5a; color:#cf8a5a; }
 .trk-none { background:var(--line-2); color:var(--line-2); }
-@media (max-width:560px){ .trk-dash { grid-template-columns:1fr; } .trk-cadsel { margin-left:0; flex-basis:100%; max-width:none; } }
+@media (max-width:560px){ .trk-dash { column-width:auto; column-count:1; } .trk-cadsel { margin-left:0; flex-basis:100%; max-width:none; } }
 /* Padded dropdowns everywhere: a custom chevron that never sits flush to the edge. */
 select.sel { appearance:none; -webkit-appearance:none; padding-right:34px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23948a7a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
