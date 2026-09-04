@@ -2375,7 +2375,8 @@ const prcHHMM = (m) => (m == null || m === '') ? '' : `${String(Math.floor(m / 6
 // A practice's life area (by its stored area id), or null.
 const practiceArea = (a) => a && a.area ? (state.areas || []).find((x) => x.id === a.area) : null;
 // ── cadence + tracking (per practice AND per life area) ───────────────
-const PRC_CADENCES = [['', 'Just log it'], ['1d', 'Every day'], ['2d', 'Every other day'], ['3d', 'Every 3 days'], ['2w', 'Twice a week'], ['3w', '3× a week'], ['4w', '4× a week'], ['5w', '5× a week']];
+// The one cadence list, shared by the area check-in and each practice's aim.
+const PRESET_CADS = [['1d', 'every day'], ['2d', 'every other day'], ['3d', 'every 3 days'], ['2w', 'twice a week'], ['1w', 'once a week'], ['14d', 'every 2 weeks']];
 const parseCadence = (c) => { const m = String(c || '').match(/^(\d+)([dw])$/); return m ? { n: Number(m[1]), unit: m[2], raw: c } : null; };
 function cadenceLabel(c) { const p = parseCadence(c); if (!p) return ''; if (p.unit === 'w') return p.n === 1 ? 'Once a week' : `${p.n}× a week`; return p.n === 1 ? 'Every day' : p.n === 2 ? 'Every other day' : `Every ${p.n} days`; }
 const daysBetweenStr = (a, b) => Math.round((Date.parse(b + 'T00:00') - Date.parse(a + 'T00:00')) / 86400000);
@@ -2565,7 +2566,11 @@ function practiceEditorHtml() {
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></label>
         </div>
         <label class="pe-tog"><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}><span><b>Track it</b> — ticking it builds a streak</span></label>
-        <label class="pe-f"><span>Aim to do it</span><select class="sel" id="pe-cadence">${PRC_CADENCES.map(([v, l]) => `<option value="${v}" ${(a.cadence || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Aim to do it</span>${(() => {
+          const cur = a.cadence || '';
+          const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
+          return `<select class="sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Just log it</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
+        })()}</label>
         <label class="pe-f"><span>Follow-along video</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a video link (optional)" autocomplete="off"></label>
         <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
       </div>
@@ -4192,12 +4197,11 @@ function t2TrackerHtml() {
   const days = trackerLast7();
   const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   // A short, plain list - just the cadence, no "check in" prefix.
-  const presetCads = [['1d', 'every day'], ['2d', 'every other day'], ['3d', 'every 3 days'], ['2w', 'twice a week'], ['1w', 'once a week'], ['14d', 'every 2 weeks']];
   const body = ordered.map((g) => {
     const areaCad = g.area ? ((g.area.props || {}).cadence || '') : '';
     const areaStat = g.areaId ? areaCheckin(areaMarkedDays(g.areaId), areaCad) : null;
     // A custom value (say every 5 days) shows itself at the top; "Custom…" opens a prompt.
-    const cadOpts = (areaCad && !presetCads.some(([v]) => v === areaCad)) ? [[areaCad, areaCadLabel(areaCad)], ...presetCads] : presetCads;
+    const cadOpts = (areaCad && !PRESET_CADS.some(([v]) => v === areaCad)) ? [[areaCad, areaCadLabel(areaCad)], ...PRESET_CADS] : PRESET_CADS;
     const cadSel = g.areaId ? `<select class="sel trk-cadsel" data-trk-area-cad="${g.areaId}" title="How often do you want to do something in this area?">
       <option value="" ${!areaCad ? 'selected' : ''}>No check-in</option>
       ${cadOpts.map(([v, l]) => `<option value="${v}" ${areaCad === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}
@@ -4476,6 +4480,15 @@ async function promptAreaCadence(areaId) {
   const cad = parseCustomCadence(raw);
   if (!cad) { toast("Try a number, e.g. 5 or '3 a week'"); renderToday(); return; }
   setAreaCadence(areaId, cad);
+}
+// Custom aim inside the practice editor. Unlike the area (which saves at once),
+// here we just add and select the option; savePractice reads it on Save.
+async function promptPracticeCadence(sel) {
+  const raw = await uiPrompt('Do this how often?', { title: 'Custom aim', placeholder: "e.g. 5 (every 5 days), 3 a week, every 2 weeks" });
+  const cad = raw == null ? null : parseCustomCadence(raw);
+  if (!cad) { sel.value = sel.dataset.prev || ''; if (raw != null) toast("Try a number, e.g. 5 or '3 a week'"); return; }
+  if (![...sel.options].some((o) => o.value === cad)) { const o = document.createElement('option'); o.value = cad; o.textContent = areaCadLabel(cad); sel.insertBefore(o, sel.options[sel.options.length - 1]); }
+  sel.value = cad; sel.dataset.prev = cad;
 }
 // Click a task on Today to open its details in a popover (name, priority, area,
 // length, done) - a body-level overlay like the practice editor.
@@ -9402,6 +9415,7 @@ function openLinkMenu(x, y, href, view) {
 document.addEventListener('change', (e) => {
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
   if (e.target.matches('[data-trk-area-cad]')) { const v = e.target.value; if (v === '__custom') { promptAreaCadence(e.target.dataset.trkAreaCad); } else { setAreaCadence(e.target.dataset.trkAreaCad, v || ''); } return; }
+  if (e.target.id === 'pe-cadence') { const sel = e.target; if (sel.value === '__custom') { promptPracticeCadence(sel); } else { sel.dataset.prev = sel.value; } return; }
   if (e.target.id === 'kit-last') { kitSetLast(e.target.value); return; }
   if (e.target.matches('[data-dp-month]')) { if (state.dp) { state.dp.m = Number(e.target.value); renderDatePicker(); } return; }
   if (e.target.matches('[data-dp-year]')) {
