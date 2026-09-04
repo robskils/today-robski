@@ -25,31 +25,48 @@
     :root { --paper:#1a1712; --paper-2:#221e18; --card:#232019; --ink:#f0e9dd; --ink-2:#c9bfae; --ink-3:#95897a; --line:#332d24; --rust:#e0715c; }
   }
 </style>
-<!-- VisitorTracking -->
-<script async defer src='https://app.visitortracking.com/assets/js/tracer.js'></script>
+<!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
+<style>
+.dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card); border-top:1px solid var(--line); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink); }
+.dbk-consent p { margin:0; max-width:620px; font-size:15.5px; line-height:1.5; }
+.dbk-consent a { color:var(--rust); font-weight:600; text-decoration:none; }
+.dbk-consent .dbk-btns { display:flex; gap:10px; flex:none; }
+.dbk-consent button { font:inherit; font-size:15px; font-weight:600; padding:10px 22px; border-radius:10px; cursor:pointer; border:1px solid var(--line-2); }
+.dbk-consent .dbk-accept { background:var(--rust); color:var(--rust-ink); border-color:var(--rust); }
+.dbk-consent .dbk-decline { background:transparent; color:var(--ink-2); }
+@media (max-width:560px){ .dbk-consent .dbk-btns { flex:1 1 100%; } .dbk-consent button { flex:1; } }
+</style>
 <script>
-function init_tracer() {
-   var tracer = new Tracer({
-   websiteId : "68808b2d-ab7c-4b73-a3ef-05d92fd19b46",
-   async : true,
-   debug : false });
- }
-</script>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-2QJM3NGDX7"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-2QJM3NGDX7');
+(function () {
+  var KEY = 'daybook.consent';
+  function loadTrackers() {
+    try {
+      window.init_tracer = function () { try { new Tracer({ websiteId: "68808b2d-ab7c-4b73-a3ef-05d92fd19b46", async: true, debug: false }); } catch (e) {} };
+      var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', 'G-2QJM3NGDX7');
+      var ga = document.createElement('script'); ga.async = true; ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-2QJM3NGDX7'; document.head.appendChild(ga);
+    } catch (e) {}
+  }
+  function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function banner() {
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
+    b.innerHTML = '<p>Daybook uses analytics cookies to understand how the site is used - nothing personal, and never any of your Daybook content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
+    b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
+    document.body.appendChild(b);
+  }
+  var d = get();
+  if (d === 'granted') { loadTrackers(); }
+  else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
+})();
 </script>
 </head>
 <body>
 <div class="wrap">
   <div class="brand"><span class="dot"></span><b>Daybook</b></div>
   <h1>Privacy Policy</h1>
-  <p class="updated">Last updated 2 September 2026</p>
+  <p class="updated">Last updated 4 September 2026</p>
 
   <p>Daybook (<a href="https://daybook.fyi">daybook.fyi</a>) is a private, calm home for your day - your calendar, tasks, notes, mail and more, in one place. This policy explains what we collect, how we use it, and the control you have. Daybook is operated by Robin Lumley-Savile. Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.</p>
 
@@ -72,6 +89,9 @@ function init_tracer() {
 
   <h2>How your data is used</h2>
   <p>We use your data solely to run Daybook for you - to store your content, sign you in, show your calendar and mail, and deliver features you turn on (such as the morning brief). We do not sell your data, and we do not use it for advertising.</p>
+
+  <h2>Cookies and analytics</h2>
+  <p>The public pages of this site (home, privacy and terms) can use two analytics services - Google Analytics and VisitorTracking - to understand how the site is used so we can improve it. These set cookies and collect usage data such as pages viewed and approximate location. They load <b>only if you accept</b> in the cookie banner shown on your first visit; choose Decline and neither one runs. Your choice is remembered on your device, and you can change it any time by clearing this site's cookies. These analytics run on the marketing pages only - <b>never inside your signed-in Daybook</b> - and they never see your Daybook content.</p>
 
   <h2>Storage and security</h2>
   <p>Your data is stored on Cloudflare's infrastructure. Sensitive credentials - such as connected-account tokens and mailbox passwords - are encrypted at rest (AES-256-GCM). Access is scoped to your account.</p>
