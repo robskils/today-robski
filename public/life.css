@@ -1589,7 +1589,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-hname { flex:1; min-width:0; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .t2-habit.done .t2-hname { color:var(--ink-3); }
 /* ── Tracker dashboard (keep your life alive, by area) ── */
+.t2-sub { margin:-2px 0 14px; font-size:15.5px; color:var(--ink-3); }
 .trk-intro { margin:2px 0 16px; }
+.trk-newbtn { margin-top:16px; }
+/* A quiet "add a practice" row at the foot of each area card. */
+.trk-addp { width:100%; margin-top:6px; padding:8px; border:1px dashed var(--line-2); border-radius:10px; background:transparent; color:var(--ink-3); font-size:13.5px; font-weight:600; cursor:pointer; }
+.trk-addp:hover { border-color:var(--accent); color:var(--accent); }
 /* Columns, not a stretch-grid, so each area card is only as tall as its own
    practices - a one-line area doesn't sit in a big empty square. */
 .trk-dash { column-width:360px; column-gap:14px; }

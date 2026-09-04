@@ -2515,9 +2515,9 @@ function practiceAddForm() {
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
 // Daily Practices page.
-function openPracticeEditor(id) {
+function openPracticeEditor(id, presetArea) {
   const a = id ? (state.practices.activities || []).find((x) => String(x.id) === String(id)) : null;
-  state.practiceEdit = { id: a ? a.id : null };
+  state.practiceEdit = { id: a ? a.id : null, area: presetArea || '' };
   let host = document.getElementById('prac-editor-host');
   if (!host) { host = document.createElement('div'); host.id = 'prac-editor-host'; document.body.appendChild(host); }
   host.innerHTML = practiceEditorHtml();
@@ -2531,12 +2531,13 @@ function practiceEditorHtml() {
   const timed = a.timed == null ? true : !!a.timed;
   const tracked = a.tracked == null ? true : !!a.tracked;
   const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
+  const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
   return `<div class="pe-bg" data-prc-close></div>
     <div class="pe-panel ${timed ? 'timed-on' : ''}" role="dialog" aria-label="Practice">
       <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">
         <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
-        <label class="pe-f"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${a.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="pe-timed" ${timed ? 'checked' : ''} data-pe-timed><span><b>Takes time</b> — has a length, so you can drop it onto your day</span></label>
         <div class="pe-timing">
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></label>
@@ -4141,6 +4142,7 @@ function renderToday() {
   $('#pane').innerHTML = `
     ${pageCrumb('Today')}
     <div class="pane-head t2-head"><h1>${T.tab === 'tracker' ? 'Tracker' : esc(label)}</h1>${T.tab === 'today' ? nav : ''}</div>
+    <p class="t2-sub">Plan your day, track your day</p>
     ${tabs}
     ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>'
       : (T.tab === 'tracker' ? t2TrackerHtml() : `
@@ -4159,7 +4161,7 @@ function renderToday() {
 function t2TrackerHtml() {
   const P = state.practices;
   const tracked = (P.activities || []).filter((a) => a.tracked);
-  if (!tracked.length) return '<div class="home-empty" style="padding:24px">No tracked habits yet. Add a practice on the Today tab and switch on <b>Track it</b>.</div>';
+  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a practice with <b>Track it</b> on and its run of days appears here.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
   const today = dayKey(new Date());
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
@@ -4195,9 +4197,10 @@ function t2TrackerHtml() {
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
       ${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       ${rows}
+      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}
     </div>`;
   }).join('');
-  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p><div class="trk-dash">${body}</div>`;
+  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p><div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
@@ -8925,6 +8928,7 @@ document.addEventListener('click', (e) => {
   { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
   { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
+  { const na = t.closest('[data-prc-new-area]'); if (na) { openPracticeEditor(null, na.dataset.prcNewArea); return; } }
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
