@@ -326,12 +326,14 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
   function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
   function banner() {
+    if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
     b.innerHTML = '<p>Daybook uses analytics cookies to understand how the site is used - nothing personal, and never any of your Daybook content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
   }
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-cookie-settings]'); if (t) { e.preventDefault(); banner(); } });
   var d = get();
   if (d === 'granted') { loadTrackers(); }
   else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
@@ -493,6 +495,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <li><a href="#invite">Request an invite</a></li>
       <li><a href="/privacy">Privacy</a></li>
       <li><a href="/terms">Terms</a></li>
+      <li><a href="#" data-cookie-settings>Cookie settings</a></li>
       <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
     </ul>
     <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · Made with care in Lisbon · © <span id="yr">2026</span> Daybook</div>

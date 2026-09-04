@@ -49,12 +49,14 @@
   function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
   function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
   function banner() {
+    if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
     b.innerHTML = '<p>Daybook uses analytics cookies to understand how the site is used - nothing personal, and never any of your Daybook content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
   }
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-cookie-settings]'); if (t) { e.preventDefault(); banner(); } });
   var d = get();
   if (d === 'granted') { loadTrackers(); }
   else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
@@ -100,7 +102,7 @@
   <p>Questions about these terms? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.</p>
 
   <footer>
-    © 2026 Daybook · <a href="https://daybook.fyi">daybook.fyi</a> · <a href="https://daybook.fyi/privacy">Privacy</a>
+    © 2026 Daybook · <a href="https://daybook.fyi">daybook.fyi</a> · <a href="https://daybook.fyi/privacy">Privacy</a> · <a href="#" data-cookie-settings>Cookie settings</a>
   </footer>
 </div>
 </body></html>
