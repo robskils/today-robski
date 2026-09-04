@@ -4200,8 +4200,41 @@ function t2TrackerHtml() {
   }).join('');
   return `<p class="home-empty" style="margin:2px 0 16px"><b>Keep your life alive.</b> An area is on track if you did <em>anything</em> in it within its target - set a keep-alive cadence per area, and a specific aim per practice.</p><div class="trk-dash">${body}</div>`;
 }
-// The timed day canvas: hour grid, all-day + timed calendar events, placed slots
-// (each with a tick), and today's scheduled-but-unplaced practices as suggestions.
+// Does a calendar event name a practice? Accents off, case off, whole words only
+// ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
+// This is what lets a gym event count as the "Work out" practice without retyping.
+const evFold = (s) => String(s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+function evNames(title, word) {
+  const n = evFold(word); if (!n) return false;
+  const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${esc}([^\\p{L}\\p{N}]|$)`, 'u').test(title);
+}
+function practiceForEvent(title) {
+  const t = evFold(title); if (!t) return null;
+  return (state.practices.activities || []).find((a) => evNames(t, a.title)) || null;
+}
+// Count a matched event as its practice: a slot carrying the event links the two.
+// The slot draws as the event (it's filtered out of the block list), ticks the
+// habit when done, and suppresses the auto-dropped duplicate. Any planned block
+// already down for that practice today is folded into the event so it isn't twinned.
+async function t2CountEvent(eventId) {
+  const T = state.today; const ev = (T.data.events || []).find((e) => String(e.id) === String(eventId)); if (!ev) return;
+  const act = practiceForEvent(ev.title); if (!act) return;
+  // Drop a planned (non-event) slot for the same practice - the event supersedes it.
+  const dup = (T.data.slots || []).find((s) => !s.event_id && String(s.activity_id) === String(act.id));
+  if (dup) { try { await api('/api/slots/' + dup.id, { method: 'DELETE' }); } catch {} }
+  try { await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: T.day, lane: act.lane, title: act.title, start_min: ev.start_min, duration: ev.duration || 30, activity_id: act.id, event_id: String(ev.id) }) }); } catch (e) { toast(e.message); }
+  await loadToday();
+}
+// Stop counting an event as a practice: drop the link slot and any habit tick.
+async function t2UncountEvent(slotId) {
+  const T = state.today; const s = (T.data.slots || []).find((x) => String(x.id) === String(slotId)); if (!s) return;
+  if (s.done && s.activity_id) { const k = `${s.activity_id}:${T.day}`; delete state.practices.marks[k]; savePracticeMarks(); }
+  try { await api('/api/slots/' + slotId, { method: 'DELETE' }); } catch (e) { toast(e.message); }
+  await loadToday();
+}
+// The timed day canvas: hour grid, all-day + timed calendar events (a matched one
+// can be counted as its practice), and placed slots (each with a tick).
 function t2DayHtml() {
   const T = state.today; const data = T.data; const isToday = T.day === todayISO();
   const events = (data.events || []);
@@ -4214,8 +4247,21 @@ function t2DayHtml() {
   const hours = [];
   for (let h = T2_START; h <= T2_END; h++) hours.push(`<div class="t2-hour" style="top:${t2Top(h * 60)}px"><span class="t2-hlab">${String(h).padStart(2, '0')}:00</span></div>`);
   const nowTop = isToday ? (() => { const n = new Date(); return t2Top(n.getHours() * 60 + n.getMinutes()); })() : null;
-  const evBlocks = timed.map((e) => `<div class="t2-block t2-event" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round((e.duration || 30) * T2_PPM))}px">
-    <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}</div></div>`).join('');
+  // Events already counted as a practice (a slot carries the event id).
+  const evSlots = {}; (data.slots || []).forEach((s) => { if (s.event_id) evSlots[String(s.event_id)] = s; });
+  const evBlocks = timed.map((e) => {
+    const link = evSlots[String(e.id)];
+    const act = link && link.activity_id ? (state.practices.activities || []).find((a) => String(a.id) === String(link.activity_id)) : null;
+    if (link) {
+      const done = !!link.done; const hue = act ? (hueOf(practiceArea(act)) ?? 220) : 220;
+      return `<div class="t2-block t2-event t2-evlink ${done ? 'done' : ''}" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round((e.duration || 30) * T2_PPM))}px;--h:${hue}">
+        <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${link.id}" title="${done ? 'Done' : 'Mark done'}">✓</button><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}<button class="t2-x" data-t2-uncount="${link.id}" title="Don't count as ${esc(act ? act.title : 'practice')}">×</button></div>
+        <div class="t2-evtag">counts as ${esc(act ? act.title : 'a practice')}</div></div>`;
+    }
+    const match = isToday ? practiceForEvent(e.title) : null;
+    return `<div class="t2-block t2-event" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round((e.duration || 30) * T2_PPM))}px">
+    <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}${match ? `<button class="t2-countbtn" data-t2-count-ev="${e.id}" title="Count this as your ${esc(match.title)} practice">＋ ${esc(match.title)}</button>` : ''}</div></div>`;
+  }).join('');
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
   return `
     ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
@@ -8878,6 +8924,8 @@ document.addEventListener('click', (e) => {
   { const pk = t.closest('[data-t2-place-task]'); if (pk) { t2PlaceTask(pk.dataset.t2PlaceTask); return; } }
   { const st = t.closest('[data-t2-slot-tick]'); if (st) { t2SlotTick(st.dataset.t2SlotTick); return; } }
   { const sd = t.closest('[data-t2-del-slot]'); if (sd) { e.stopPropagation(); t2DelSlot(sd.dataset.t2DelSlot); return; } }
+  { const ce = t.closest('[data-t2-count-ev]'); if (ce) { e.stopPropagation(); t2CountEvent(ce.dataset.t2CountEv); return; } }
+  { const uc = t.closest('[data-t2-uncount]'); if (uc) { e.stopPropagation(); t2UncountEvent(uc.dataset.t2Uncount); return; } }
   { const ov = t.closest('[data-t2-open-slot]'); if (ov) { const s = (state.today.data.slots || []).find((x) => String(x.id) === String(ov.dataset.t2OpenSlot)); const a = s && (state.practices.activities || []).find((x) => String(x.id) === String(s.activity_id)); if (a && a.video) window.open(a.video, '_blank', 'noopener'); return; } }
   if (t.closest('[data-task-close]')) { closeTaskPopover(); return; }
   if (t.closest('[data-task-save]')) { saveTaskPopover(); return; }

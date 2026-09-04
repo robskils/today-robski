@@ -1564,6 +1564,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-x:hover { opacity:1; color:var(--accent); }
 .t2-vid { flex:none; cursor:pointer; font-size:13px; }
 .t2-join { flex:none; text-decoration:none; }
+/* An event that names a practice: a one-tap chip to count it, no retyping. */
+.t2-countbtn { flex:none; border:1px solid hsl(var(--h,220) 55% 55% / .5); background:color-mix(in srgb,var(--accent) 10%,transparent); color:var(--accent); border-radius:999px; font-size:11.5px; font-weight:600; padding:2px 9px; line-height:1.4; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.t2-countbtn:hover { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+/* Once counted, the event wears its practice's colour and gains a tick. */
+.t2-evlink { background:color-mix(in srgb,hsl(var(--h,220) 60% 55%) 8%,var(--card)); border-left-color:hsl(var(--h,220) 60% 58%); }
+.t2-evlink.done { opacity:.72; }
+.t2-evlink.done .t2-btitle { color:var(--ink-3); }
+.t2-evtag { font-size:10.5px; font-weight:600; letter-spacing:.02em; color:hsl(var(--h,220) 45% 52%); margin:1px 0 0 32px; text-transform:uppercase; }
 /* tasks column */
 .t2-tfilter { width:100%; margin-bottom:9px; font-size:13.5px; }
 .t2-tlist { display:flex; flex-direction:column; gap:6px; }
