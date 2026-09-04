@@ -472,7 +472,7 @@ const HELP = {
       <ul><li><b>Add</b> an event with a title, a start date and time (or All day), and a length. All-day events can span several days.</li>
       <li>Set a start date and the end follows to the same day - an event can never end before it begins.</li>
       <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
-      <li>An event whose title matches one of your Today lanes can be <b>counted as practice</b> on your schedule.</li></ul>` },
+      <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>` },
   mail: { title: 'Mail', tip: 'All your inboxes in one place. Read, reply, and search across every account.',
     body: `<p>Mail merges your real mailboxes (IMAP/SMTP) into one inbox. Add an account in <b>Settings › Mail accounts</b>.</p>
       <ul><li>Read, reply, forward and compose, choosing which account you send from.</li>
@@ -500,7 +500,7 @@ const HELP = {
     body: `<p>Life areas are the few domains that matter to you (Work, Health, Family…). They’re the backbone of Daybook: tasks, notes, goals and spending all attach to an area, so any area page gathers everything about that part of your life.</p>
       <ul><li>Give each area a colour so it reads at a glance across the app.</li>
       <li>An area page shows its starred notes, all its notes and tables, and its open tasks.</li>
-      <li>Feed a <b>Today lane</b> from an area, so time spent there counts toward it.</li></ul>
+      <li>Your <b>practices</b> group by area on the Today page, and a task or practice reads in its area's colour.</li></ul>
       <p>Rename, recolour or add areas any time - the whole app follows.</p>` },
   reflect: { title: 'Reflection', tip: 'A journal with prompts, and a “dig deeper” question when you want to go further.',
     body: `<p>Reflection is for journalling. Pick a prompt or write free; each entry is dated and yours to return to.</p>
@@ -513,11 +513,13 @@ const HELP = {
       <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
       <li><b>Assign</b> a task to one of them.</li>
       <li>Keep <b>shared meeting notes</b>, chat, and start a call.</li></ul>` },
-  today: { title: 'Today', tip: 'Your day as flexible time blocks across your lanes - guidance, never a rigid timetable.',
-    body: `<p>Today lays your day out as time blocks across your <b>lanes</b> - the few kinds of time you want to keep making progress in. It’s built for flexibility: stay in the zone on something and the day bends around you.</p>
-      <ul><li>Each lane has a gentle daily target (a ring), never a debt - there’s no overdue, no streak, no red.</li>
-      <li>Blocks can float (no fixed time) until the day decides where they land.</li>
-      <li>Edit, rename, recolour, add or remove your lanes in <b>Settings › Time streams</b>.</li></ul>` },
+  today: { title: 'Today', tip: 'The hub for planning and tracking your day - drag practices and tasks onto a timed day, tick them off, keep your streaks.',
+    body: `<p><b>Today</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by life area and priority.</p>
+      <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
+      <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
+      <li><b>Click a task</b> to open it and edit its name, priority, life area or length.</li>
+      <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Tick as you go - or on the day.</li>
+      <li><b>Practices</b> are the things you do again and again. Add one (or the <b>✎</b> to manage) to set a life area, a note or follow-along video, and a repeat schedule + time so it lays itself onto the right days.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
     body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Daybook - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
@@ -528,7 +530,7 @@ const HELP = {
       <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Daybook.</li></ul>
       <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which sections show, invites, and the tools that manage your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers life areas, mail accounts, spending categories, reminders and your Today lanes.</p>` },
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers life areas, mail accounts, spending categories and reminders.</p>` },
   'settings-account': { title: 'Account', tip: 'Your name, the addresses you sign in with, your phone and your plan.',
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on. <b>Download your data</b> exports everything; <b>Close account</b> removes it.</p>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
@@ -541,8 +543,8 @@ const HELP = {
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
   'settings-invites': { title: 'Invites', tip: 'Bring people onto Daybook.',
     body: `<p>Put in someone's email and a note, and Daybook emails them the invitation. They click one link, sign in and their own Daybook is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
-  'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories, reminders and your Today lanes.',
-    body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, <b>Reviews &amp; reminders</b> (cadence and nudges), and <b>Time streams</b> (your Today lanes and targets).</p>` },
+  'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories and reminders.',
+    body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -4256,6 +4258,7 @@ function t2DragEnd(e) {
   const d = t2Drag; if (!d || (e && e.pointerId !== d.pid)) return; t2Drag = null;
   if (d.ghost) d.ghost.remove(); if (d.src) d.src.classList.remove('t2-dragsrc');
   const ind = d.canvas.querySelector('.t2-dropind'); if (ind) ind.remove();
+  if (d.active) t2SuppressClick = Date.now();   // a real drag happened - don't let the release open the task popover
   if (!d.active || d.dropMin == null) return;
   if (d.type === 'prac') t2PlacePractice(d.id, d.dropMin);
   else if (d.type === 'task') t2PlaceTask(d.id, d.dropMin);
@@ -4281,6 +4284,49 @@ async function t2SlotTick(slotId) {
 }
 async function t2DelSlot(slotId) {
   try { await api('/api/slots/' + slotId, { method: 'DELETE' }); loadToday(); } catch (e) { toast(e.message); }
+}
+// Click a task on Today to open its details in a popover (name, priority, area,
+// length, done) - a body-level overlay like the practice editor.
+let t2SuppressClick = 0;
+function openTaskPopover(taskId) {
+  const t = (state.today.tasks || []).find((x) => String(x.tana_id) === String(taskId)); if (!t) return;
+  state.taskEdit = { id: t.tana_id };
+  let host = document.getElementById('task-editor-host');
+  if (!host) { host = document.createElement('div'); host.id = 'task-editor-host'; document.body.appendChild(host); }
+  const areas = state.areas || [];
+  host.innerHTML = `<div class="pe-bg" data-task-close></div>
+    <div class="pe-panel" role="dialog" aria-label="Task">
+      <div class="pe-head"><h2>Task</h2><button class="pe-x" data-task-close aria-label="Close">×</button></div>
+      <div class="pe-body">
+        <label class="pe-f"><span>Name</span><input class="sel" id="te-title" value="${esc(t.title || '')}" placeholder="What needs doing?" autocomplete="off"></label>
+        <div class="pe-two">
+          <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
+          <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
+        </div>
+        <label class="pe-f"><span>Life area</span><select class="sel" id="te-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
+      </div>
+      <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
+    </div>`;
+  setTimeout(() => { const el = document.getElementById('te-title'); if (el) el.focus(); }, 30);
+}
+function closeTaskPopover() { state.taskEdit = null; const h = document.getElementById('task-editor-host'); if (h) h.remove(); }
+async function saveTaskPopover() {
+  const te = state.taskEdit; if (!te) return;
+  const title = (($('#te-title') || {}).value || '').trim(); if (!title) { toast('Give it a name'); return; }
+  const props = {
+    priority: ($('#te-prio') || {}).value || null,
+    area: ($('#te-area') || {}).value || null,
+    duration: Math.max(5, Math.min(720, Number(($('#te-dur') || {}).value) || 30)),
+    done: $('#te-done') ? $('#te-done').checked : false,
+  };
+  try { await api('/api/blocks/' + te.id, { method: 'PATCH', body: JSON.stringify({ title, props }) }); closeTaskPopover(); toast('Saved'); loadToday(); }
+  catch (e) { toast(e.message); }
+}
+async function deleteTaskFromPopover(id) {
+  if (!(await uiConfirm('Delete this task?', { danger: true, okLabel: 'Delete' }))) return;
+  try { await api('/api/blocks/' + id, { method: 'DELETE' }); closeTaskPopover(); toast('Task deleted'); loadToday(); }
+  catch (e) { toast(e.message); }
 }
 
 // ── view: mail ───────────────────────────────────────
@@ -8728,6 +8774,10 @@ document.addEventListener('click', (e) => {
   { const st = t.closest('[data-t2-slot-tick]'); if (st) { t2SlotTick(st.dataset.t2SlotTick); return; } }
   { const sd = t.closest('[data-t2-del-slot]'); if (sd) { e.stopPropagation(); t2DelSlot(sd.dataset.t2DelSlot); return; } }
   { const ov = t.closest('[data-t2-open-slot]'); if (ov) { const s = (state.today.data.slots || []).find((x) => String(x.id) === String(ov.dataset.t2OpenSlot)); const a = s && (state.practices.activities || []).find((x) => String(x.id) === String(s.activity_id)); if (a && a.video) window.open(a.video, '_blank', 'noopener'); return; } }
+  if (t.closest('[data-task-close]')) { closeTaskPopover(); return; }
+  if (t.closest('[data-task-save]')) { saveTaskPopover(); return; }
+  { const tdel = t.closest('[data-task-del]'); if (tdel) { deleteTaskFromPopover(tdel.dataset.taskDel); return; } }
+  { const tr = t.closest('.t2-trow[data-t2-drag]'); if (tr) { if (Date.now() - t2SuppressClick < 350) return; openTaskPopover(tr.dataset.t2DragId); return; } }
   // Today section day-stepper. These live inside the collapse header, so they must
   // be handled (and return) before the sec-collapse toggle below, or a tap on an
   // arrow would also collapse the section.
