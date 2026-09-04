@@ -1787,7 +1787,12 @@ async function homeAlerts(request, env, json) {
       }
       continue;
     }
-    if (p.priority === 'P1') { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null, created_at: r.created_at }); }
+    // A snoozed task is hidden everywhere else - the Tasks board drops it, and the
+    // morning brief's query excludes it - but Home's Priority Tasks counted and
+    // listed it anyway. So a task put off until October sat at the top of Home all
+    // September, which is the opposite of what snoozing is for.
+    const snoozed = p.snooze && String(p.snooze) > today;
+    if (p.priority === 'P1' && !snoozed) { p1++; if (p1list.length < 12) p1list.push({ id: r.id, title: r.title || 'Untitled', area: p.area || null, created_at: r.created_at }); }
     // A task that was snoozed and whose snooze date has now arrived or passed has
     // "surfaced" - it's back in the open list. Robin wants those in Today, and
     // they stay until ticked (p.done) or hidden again (snooze pushed forward).
