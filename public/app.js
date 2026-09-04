@@ -4113,8 +4113,32 @@ async function loadToday(day) {
     ]);
     await loadPractices();               // activities + marks + areas
     T.data = dayData; T.tasks = tasks;
+    if (T.day === todayISO()) await autoPlaceScheduled(dayData);   // lay today's routine on the day
   } catch (e) { toast(e.message); }
   renderToday();
+}
+// Auto-drop: a practice scheduled for today (its weekdays + a time) lands on the
+// day on its own - no tapping. Tracked per day in a kv so deleting one for the day
+// makes it stay gone rather than resurrecting on the next open.
+async function autoPlaceScheduled(dayData) {
+  const day = state.today.day;
+  let kv = {};
+  try { const r = await api('/api/kv/today_placed'); kv = (r && r.value && JSON.parse(r.value)) || {}; } catch {}
+  const handled = new Set((kv[day] || []).map(String));
+  const slotActs = new Set((dayData.slots || []).map((s) => s.activity_id).filter(Boolean).map(String));
+  const now = new Date();
+  const due = (state.practices.activities || []).filter((a) => a.timed && a.time_min != null && a.time_min !== '' && prcDueOn(a, now) && !slotActs.has(String(a.id)) && !handled.has(String(a.id)));
+  if (!due.length) return;
+  const done = [...(kv[day] || [])];
+  for (const a of due) {
+    try {
+      const slot = await api('/api/slots', { method: 'POST', body: JSON.stringify({ day, lane: a.lane, title: a.title, start_min: a.time_min, duration: a.duration || 30, activity_id: a.id, url: a.video || undefined }) });
+      dayData.slots.push(slot);
+    } catch {}
+    done.push(String(a.id));
+  }
+  const next = {}; next[day] = [...new Set(done)];   // keep only today's record
+  api('/api/kv/today_placed', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(next) }) }).catch(() => {});
 }
 function renderToday() {
   const T = state.today; const data = T.data;
@@ -4187,24 +4211,19 @@ function t2DayHtml() {
   const slots = (data.slots || []).filter((s) => !s.event_id);   // adopted events draw as the event
   const floating = slots.filter((s) => s.start_min == null);
   const placed = slots.filter((s) => s.start_min != null);
-  // Practices scheduled for this weekday, with a time, not yet on the day.
-  const placedActs = new Set(slots.map((s) => s.activity_id).filter(Boolean).map(String));
-  const suggestions = isToday ? (state.practices.activities || []).filter((a) => a.timed && a.time_min != null && a.time_min !== '' && prcDueOn(a, new Date()) && !placedActs.has(String(a.id))) : [];
   const hours = [];
   for (let h = T2_START; h <= T2_END; h++) hours.push(`<div class="t2-hour" style="top:${t2Top(h * 60)}px"><span class="t2-hlab">${String(h).padStart(2, '0')}:00</span></div>`);
   const nowTop = isToday ? (() => { const n = new Date(); return t2Top(n.getHours() * 60 + n.getMinutes()); })() : null;
   const evBlocks = timed.map((e) => `<div class="t2-block t2-event" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round((e.duration || 30) * T2_PPM))}px">
     <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}</div></div>`).join('');
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
-  const sugBlocks = suggestions.map((a) => `<div class="t2-block t2-suggest" style="top:${t2Top(a.time_min)}px;height:${Math.max(26, Math.round((a.duration || 30) * T2_PPM))}px;--h:${hueOf(practiceArea(a)) ?? 220}" data-t2-place-prac="${a.id}" title="Tap to add to your day">
-    <div class="t2-brow"><span class="t2-tick ghost">＋</span><span class="t2-btime">${prcHHMM(a.time_min)}</span><span class="t2-btitle">${esc(a.title)}</span>${a.video ? '<span class="t2-vid">🎥</span>' : ''}</div></div>`).join('');
   return `
     ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
     ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime today</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
     <div class="t2-canvas" style="height:${t2Height}px">
       ${hours.join('')}
       ${nowTop != null ? `<div class="t2-now" style="top:${nowTop}px"><span class="t2-now-dot"></span></div>` : ''}
-      ${evBlocks}${sugBlocks}${slotBlocks}
+      ${evBlocks}${slotBlocks}
     </div>`;
 }
 function t2SlotBlock(s, floating) {
