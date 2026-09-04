@@ -4366,6 +4366,7 @@ async function loadMessages(quiet, force) {
     return;
   }
   // 3) Nothing cached: a loader while the live fetch runs.
+  if (q) state.mail.messages = [];   // nothing stale under a search
   if (!painted) { if (quiet) renderMailList(true); else renderMail(true); }
   state.mail.unseen = {};
   const acctErrors = [];
@@ -4376,7 +4377,13 @@ async function loadMessages(quiet, force) {
   // the slowest account (Gmail throttles cloud IPs). Each keeps its cached rows
   // until its own live result lands, so nothing blanks out mid-load.
   const bucket = {};
-  for (const mm of (state.mail.messages || [])) (bucket[mm._acct] = bucket[mm._acct] || []).push(mm);
+  // Seeding only makes sense when the new view is a variation of the old one -
+  // another folder, another account - where holding the last rows stops a blank
+  // flash. A SEARCH is not a variation: the rows already on screen are the
+  // unfiltered inbox, and leaving them under a search box is exactly what makes
+  // search look broken. Worse, a search that errors or times out never replaces
+  // them, so the inbox sits there for good, looking like the result.
+  if (!q) for (const mm of (state.mail.messages || [])) (bucket[mm._acct] = bucket[mm._acct] || []).push(mm);
   const rebuild = () => {
     let msgs = accts.flatMap((a) => bucket[a.id] || []);
     if (all) msgs = msgs.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));

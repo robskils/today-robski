@@ -812,9 +812,27 @@ export async function handleMail(request, env, url, json, err) {
           const boxes = await im.listMailboxes();
           const skip = (b) => /\\Junk/i.test(b.flags || '') || /(^|[/.\\])(spam|junk|bulk\s*mail)$/i.test(b.path || '');
           const cap = Math.max(limit, 60);
+          // Order matters, because the sweep can run out of time before it runs out
+          // of folders. Inbox first, then the archive and sent mail, then everything
+          // else - so a partial answer is still the answer most searches wanted. A
+          // Gmail account can carry twenty labels and each one costs a SELECT plus a
+          // SEARCH over a slow link.
+          const rank = (b) => {
+            const p = (b.path || '').toUpperCase(); const f = b.flags || '';
+            if (p === 'INBOX') return 0;
+            if (/\\All/i.test(f)) return 1;
+            if (/\\Sent/i.test(f)) return 2;
+            if (/\\Archive|\\Drafts/i.test(f)) return 3;
+            return 4;
+          };
+          const ordered = boxes.filter((b) => !/\\Noselect/i.test(b.flags || '') && !skip(b)).sort((a, c) => rank(a) - rank(c));
+          // Better a fast partial sweep than a request that dies at the edge and
+          // leaves the box looking broken. searchedAll says which one this was.
+          const deadline = Date.now() + 15000;
+          let searchedAll = true;
           const seen = new Set(); const out = [];
-          for (const b of boxes) {
-            if (/\\Noselect/i.test(b.flags || '') || skip(b)) continue;   // Noselect = container node
+          for (const b of ordered) {
+            if (Date.now() > deadline) { searchedAll = false; break; }
             try {
               const t = await im.select(b.path);
               if (!t) continue;
@@ -827,7 +845,7 @@ export async function handleMail(request, env, url, json, err) {
             } catch {}
           }
           out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
-          return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll: true }, request);
+          return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll }, request);
         }
         const box = await resolveMailbox(im, mailbox);
         const total = await im.select(box);
