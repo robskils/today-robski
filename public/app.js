@@ -518,6 +518,8 @@ const HELP = {
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
       <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
       <li><b>Click a task</b> to open it and edit its name, priority, life area or length.</li>
+      <li>A practice with a repeat schedule <b>lays itself onto the day automatically</b> at its time - no dragging. Don't want it today? Remove it and it stays gone for the day.</li>
+      <li>Got a calendar event that <b>is</b> a practice (a gym class that's your workout)? It shows a one-tap <b>＋ chip</b> to count it - the event then carries the practice's colour and tick, and ticking it feeds the streak. No need to add the practice twice.</li>
       <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Tick as you go - or on the day.</li>
       <li><b>Practices</b> are the things you do again and again. Add one (or the <b>✎</b> to manage) to set a life area, a note or follow-along video, and a repeat schedule + time so it lays itself onto the right days.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
