@@ -440,7 +440,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviewcard: '🎯', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠', friends: '👥', help: 'ⓘ' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviews: '🔄', reviewcard: '🔄', toolbox: '🧰', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠', friends: '👥', help: 'ⓘ' };
 // ── In-app guides ─────────────────────────────────────────────────────
 // The little i by the tabs. Hovering shows a one-line tip for whatever tool
 // you're on; clicking pins the full guide in its own tab. Content is plain and
@@ -554,7 +554,7 @@ function helpKey(v) {
   const t = (v && v.type) || 'home';
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
     journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
-    area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
+    area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'reviews', reviewcard: 'reviews', visioncard: 'goals', visionwall: 'goals',
     readwatch: 'saved' })[t] || t;
 }
 // The i beside the tabs, keyed to the tool you're on. Hover = the tip; click = pin
@@ -676,7 +676,8 @@ function labelForView(v) {
     case 'financial': return 'Money';
     case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'goals': return 'Goals'; case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
-    case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
+    case 'reviews': return 'Reviews'; case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
+    case 'toolbox': return 'Toolbox';
     case 'visioncard': return (state.vision_open && `${state.vision_open.area.title} · Vision`) || 'Vision'; case 'visionwall': return 'The wall';
     default: return 'Home';
   }
@@ -697,7 +698,9 @@ function openView(v) {
     case 'practices': return openPractices();
     case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
-    case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id); case 'reviewcard': return openReviewCard(v.id);
+    case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
+    case 'reviews': return openReviews(); case 'reviewcard': return openReviewCard(v.id);
+    case 'toolbox': return openToolbox();
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
     case 'help': return openHelp(v.tool);
     default: return openHome();
@@ -1755,10 +1758,12 @@ function renderNav() {
     ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-lbl">Today</span></button>` : ''}
     ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
     ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
-    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Reflection</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
+    ${modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-lbl">Reviews</span></button>` : ''}
+    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Reflection</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
     ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
+    ${modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-lbl">Toolbox</span></button>` : ''}
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
@@ -2276,18 +2281,21 @@ function pomoPanel() {
 // All three tools show at once, each collapsible on its own.
 function tbxToolOpen(k) { try { return !(JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}')[k]); } catch { return true; } }
 function tbxToolToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = true; localStorage.setItem('life.toolbox.collapsed', JSON.stringify(c)); } catch {} renderHome(); }
-function toolboxHtml() {
-  const open = secOpen('toolbox');
-  const badge = (k) => (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
+function tbxToolBadge(k) {
+  return (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
     : (k === 'timer' && timerState.running) ? `<span class="tbx-run js-timer-time">${timerFmt(timerRemaining())}</span>` : '';
-  const tool = (k, ic, label, panel) => { const o = tbxToolOpen(k); return `<div class="tbx-tool">
-    <div class="tbx-tool-h" data-tbx-tool="${k}"><span class="hs-chev">${o ? '▾' : '▸'}</span><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${badge(k)}</div>
-    ${o ? `<div class="tbx-tool-body tbx-${k}">${panel}</div>` : ''}
-  </div>`; };
-  return `<section class="home-sec home-toolbox" data-hsec="toolbox">
-    ${secH('toolbox', '🧰 Toolbox', '', true)}
-    ${open ? `<div class="tbx-tools">${tool('focus', '⏱', 'Focus', pomoPanel())}${tool('timer', '⏲', 'Timer', timerPanel())}${tool('tracker', '✓', 'Daily Practices', trackerPanel())}</div>` : ''}
-  </section>`;
+}
+function tbxTool(k, ic, label, panel) {
+  const o = tbxToolOpen(k);
+  return `<div class="tbx-tool"><div class="tbx-tool-h" data-tbx-tool="${k}"><span class="hs-chev">${o ? '▾' : '▸'}</span><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${tbxToolBadge(k)}</div>${o ? `<div class="tbx-tool-body tbx-${k}">${panel}</div>` : ''}</div>`;
+}
+function tbxToolsHtml() {
+  return `<div class="tbx-tools">${tbxTool('focus', '⏱', 'Focus', pomoPanel())}${tbxTool('timer', '⏲', 'Timer', timerPanel())}${tbxTool('tracker', '✓', 'Daily Practices', trackerPanel())}</div>`;
+}
+// Toolbox is now its own tool (own sidebar button); it no longer lives on Home.
+function openToolbox() { state.view = { type: 'toolbox' }; renderNav(); renderToolbox(); }
+function renderToolbox() {
+  $('#pane').innerHTML = `${pageCrumb('Toolbox')}<div class="pane-head"><h1>🧰 Toolbox</h1></div>${tbxToolsHtml()}`;
 }
 
 // ── plain countdown Timer ───────────────────────────────────────────────
@@ -2819,11 +2827,11 @@ function renderHome() {
             })(),
             priority: p1Html(),
             focus: homeGoals.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', '🎯 Goals', '', true)}${secOpen('focus') ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : ''}</section>` : '',
-            toolbox: modOn('timer') ? toolboxHtml() : '',
+            toolbox: '',   // Toolbox moved to its own sidebar tool
             keepintouch: kitHomeHtml(),
             favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>` : ''}</section>`,
           };
-          const def = ['favareas', 'today', 'priority', 'keepintouch', 'focus', 'toolbox', 'favs'];
+          const def = ['favareas', 'today', 'priority', 'keepintouch', 'focus', 'favs'];
           let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
           return order.map((k) => sec[k] || '').join('');
         })()}</div>
@@ -7770,6 +7778,18 @@ async function openGoals(tab) {
   renderNav(); renderGoals();
   api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewReminders = r.reminders || []; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
 }
+// Reviews are their own tool now (own sidebar button), split out of Goals.
+async function openReviews() {
+  state.view = { type: 'reviews' };
+  const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
+  state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
+  renderNav(); renderReviews();
+  api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewReminders = r.reminders || []; renderReviews(); } }).catch(() => {});
+}
+function renderReviews() {
+  $('#pane').innerHTML = `${pageCrumb('Reviews')}<div class="pane-head"><h1>Reviews</h1></div>
+    <p class="t2-sub" style="font-style:normal">Weekly, monthly, quarterly and yearly check-ins.</p>${reviewsBody()}`;
+}
 // Focus-list order (per device) and helpers, so you can drag the cards around.
 function focusOrderIds() { try { const o = JSON.parse(localStorage.getItem('life.home.focusOrder')); return Array.isArray(o) ? o : []; } catch { return []; } }
 function sortFocus(goals) { const o = focusOrderIds(); return goals.slice().sort((a, b) => { const ia = o.indexOf(a.id), ib = o.indexOf(b.id); return (ia < 0 ? 1e6 : ia) - (ib < 0 ? 1e6 : ib); }); }
@@ -7789,11 +7809,41 @@ function goalCardMini(g, drag) {
     <div class="gc-bar"><i style="width:${pct}%"></i></div></button>`;
 }
 function renderGoals() {
-  const tab = state.goalsTab || 'goals';
-  const seg = `<div class="seg"><button class="seg-b ${tab === 'bucket' ? 'on' : ''}" data-goals-tab="bucket">Bucket list</button><button class="seg-b ${tab === 'vision' ? 'on' : ''}" data-goals-tab="vision">Vision</button><button class="seg-b ${tab === 'goals' ? 'on' : ''}" data-goals-tab="goals">Goals</button><button class="seg-b ${tab === 'reviews' ? 'on' : ''}" data-goals-tab="reviews">Reviews</button></div>`;
-  const body = tab === 'bucket' ? bucketBody() : tab === 'reviews' ? reviewsBody() : tab === 'vision' ? visionBody() : goalsBody();
-  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Reviews</h1></div>${seg}${body}`;
-  if (tab === 'vision') loadVisionThumbs();
+  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Vision</h1></div>
+    <div class="goals-layout">
+      <div class="goals-main">${goalsByAreaBody()}</div>
+      <aside class="goals-side">${bucketSideBox()}</aside>
+    </div>`;
+  loadVisionThumbs();
+}
+// Goals organised the way Robin thinks: for each Life Area, its Vision then its
+// Goals. A compact "this quarter's focus" strip leads, cross-area.
+function goalsByAreaBody() {
+  const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
+  const done = state.goals.filter((g) => gp(g).status === 'done');
+  const focus = active.filter((g) => gp(g).focus);
+  const areaSections = state.areas.map((a) => {
+    const p = a.props || {};
+    const goals = active.filter((g) => gp(g).area === a.id);
+    const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
+    const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${(p.vision || '').trim() ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
+    return `<section class="goal-area" style="--h:${hueOf(a)}">
+      <div class="goal-area-h"><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span><button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button></div>
+      ${vision}
+      ${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals here yet.</div>'}
+    </section>`;
+  }).join('');
+  const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
+  const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No life area</span></div><div class="goal-grid">${noArea.map(goalCardMini).join('')}</div></section>` : '';
+  return `${focus.length ? `<section class="home-sec"><div class="home-sec-h">★ This quarter's focus</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>` : ''}
+    ${areaSections}${noAreaSec}
+    ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
+}
+// Bucket list: its own box, off to the side of Goals.
+function bucketSideBox() {
+  const items = state.bucket || [];
+  const inner = items.length ? `<div class="bucket-grid bucket-side">${items.map(bucketCard).join('')}</div>` : '<div class="gsb-empty">Nothing yet - what do you want to do before you die?</div>';
+  return `<div class="goals-side-box"><div class="gsb-h"><span>Bucket list</span><button class="gsb-add" data-new-bucket title="Add to bucket list">+</button></div>${inner}</div>`;
 }
 function goalsBody() {
   const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
@@ -9162,9 +9212,10 @@ document.addEventListener('click', (e) => {
   const tcr = t.closest('[data-trk-cat-rename]'); if (tcr) { renameTrkCat(tcr.dataset.trkCatRename); return; }
   const tcx = t.closest('[data-trk-cat-del]'); if (tcx) { delTrkCat(tcx.dataset.trkCatDel); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-open-reviews]')) { openGoals('reviews').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-reviews-tool]') || t.closest('[data-open-reviews]')) { openReviews().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
-  const gtb = t.closest('[data-goals-tab]'); if (gtb) { state.goalsTab = gtb.dataset.goalsTab; renderGoals(); return; }
+  { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   const remd = t.closest('[data-rem-del]'); if (remd) { delReviewReminder(remd.dataset.remDel); return; }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }

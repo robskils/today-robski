@@ -204,6 +204,25 @@ button { cursor:pointer; background:none; border:0; }
 .seg-b { border:none; background:none; color:var(--ink-2); font-size:15px; font-weight:600; padding:8px 18px; border-radius:9px; cursor:pointer; }
 .seg-b.on { background:var(--card); color:var(--ink); box-shadow:var(--shadow); }
 .goals-actions { margin-bottom:18px; }
+/* Goals page: main column (per-area vision + goals) beside a bucket-list box. */
+.goals-layout { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
+@media (max-width:900px){ .goals-layout { grid-template-columns:1fr; } }
+.goal-area { margin:0 0 22px; padding-left:14px; border-left:3px solid hsl(var(--h,220) 55% 55%); }
+.goal-area-h { display:flex; align-items:center; gap:9px; margin:0 0 10px; }
+.goal-area-h .cd { width:11px; height:11px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
+.goal-area-name { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; color:var(--ink); flex:1; min-width:0; }
+.goal-area-add { flex:none; padding:5px 12px; font-size:13px; border-radius:999px; }
+.gv-card { margin:0 0 12px; padding:13px 16px; }
+.gv-card .vc-text { font-size:15px; }
+.goal-area-empty { color:var(--ink-3); font-size:14px; padding:2px 0 4px; }
+.goals-side { position:sticky; top:96px; }
+.goals-side-box { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:14px 16px; }
+.gsb-h { display:flex; align-items:center; justify-content:space-between; font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:10px; }
+.gsb-add { flex:none; width:30px; height:30px; border-radius:8px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:18px; line-height:1; }
+.gsb-add:hover { border-color:var(--accent); color:var(--accent); }
+.gsb-empty { color:var(--ink-3); font-size:14px; padding:6px 0; }
+.bucket-side { grid-template-columns:1fr; }
+@media (max-width:900px){ .goals-side { position:static; } }
 .goal-group { margin-top:16px; }
 .goal-group-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin-bottom:10px; }
 .goal-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
