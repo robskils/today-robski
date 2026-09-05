@@ -562,6 +562,36 @@ button { cursor:pointer; background:none; border:0; }
 .rv-snap-t { font-size:15.5px; color:var(--ink); } .rv-snap-m { font-size:13.5px; color:var(--ink-3); white-space:nowrap; }
 .rv-prompt-list { margin:6px 0 16px 20px; color:var(--ink-2); font-size:16px; font-style:italic; }
 .rv-prompt-list li { padding:4px 0; }
+/* The actionable insight block on a review. */
+.rv-insight { margin:18px 0 8px; padding:16px 18px; border-radius:16px; background:color-mix(in srgb,var(--accent) 6%,var(--card)); border:1px solid var(--line); border-left:3px solid var(--accent); }
+.rv-insight-h { font-size:12.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
+.rv-insight-list { margin:0; padding-left:18px; }
+.rv-insight-list li { font-size:16px; line-height:1.5; color:var(--ink); padding:3px 0; }
+/* Reviews dashboard page. */
+.rv-hero { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:6px 0 20px; }
+.rv-start-weekly { flex:1 1 340px; display:flex; align-items:center; gap:14px; padding:16px 18px; border:1px solid var(--accent); border-radius:16px; background:color-mix(in srgb,var(--accent) 8%,var(--card)); box-shadow:var(--shadow); cursor:pointer; text-align:left; }
+.rv-start-weekly:hover { background:color-mix(in srgb,var(--accent) 14%,var(--card)); }
+.rvw-ic { font-size:26px; flex:none; }
+.rvw-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.rvw-body b { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; color:var(--ink); }
+.rvw-body small { font-size:13.5px; color:var(--ink-3); }
+.rvw-go { flex:none; font-size:22px; color:var(--accent); }
+.rv-other { display:flex; gap:8px; flex-wrap:wrap; }
+.rv-chip { padding:9px 15px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; cursor:pointer; }
+.rv-chip:hover { border-color:var(--accent); color:var(--accent); }
+.rv-trend-sec .rv-spark { display:flex; align-items:flex-end; gap:5px; height:64px; padding:8px 2px 0; }
+.rv-bar { flex:1 1 0; min-width:6px; max-width:34px; background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent)); border-radius:4px 4px 0 0; }
+.rv-trend-now { flex:none; align-self:center; font-size:14px; font-weight:600; color:var(--ink-2); margin-left:8px; }
+.rv-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.rv-card { text-align:left; padding:14px 16px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; display:flex; flex-direction:column; gap:8px; }
+.rv-card:hover { border-color:var(--accent); }
+.rv-card-h { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.rv-card-l { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); }
+.rv-card-d { font-size:12.5px; color:var(--ink-3); }
+.rv-card-stats { display:flex; flex-wrap:wrap; gap:6px 12px; }
+.rvc-stat { font-size:13px; color:var(--ink-3); }
+.rvc-stat b { color:var(--ink); font-variant-numeric:tabular-nums; }
+.wheel-hint { font-size:12.5px; color:var(--ink-3); font-weight:400; text-transform:none; letter-spacing:0; margin-left:6px; }
 
 /* Vision board & the wall */
 .vision-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }

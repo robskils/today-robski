@@ -8152,10 +8152,20 @@ function reviewTaskStats(from) {
   return { done, openP1, quiet };
 }
 function reviewsBody() {
-  const starts = RTYPE_ORDER.map((k, i) => `<button class="rv-start" data-start-review="${k}"><span class="rv-depth" data-d="${i + 1}"><i></i><i></i><i></i><i></i></span><span class="rv-start-l">${REVIEWS[k].label}</span><span class="rv-start-s">${REVIEWS[k].sub}</span></button>`).join('');
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  const list = past.map((r) => { const p = r.props || {}; const wv = wheelAvg(p.wheel); return `<button class="rv-row" data-open-review="${r.id}"><span class="rv-row-l"><b>${esc((REVIEWS[p.rtype] || {}).label || 'Review')}</b> · ${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span><span class="rv-row-m">${p.tasksDone != null ? `${p.tasksDone} done` : ''}${wv ? ` · wheel ${wv}` : ''}</span></button>`; }).join('');
-  return `<div class="rv-starts">${starts}</div>${reviewRemindersHtml()}${past.length ? `<section class="home-sec"><div class="home-sec-h">Past reviews</div><div class="rv-list">${list}</div></section>` : '<div class="empty" style="padding:30px">No reviews yet. Start with a weekly — it takes ten minutes.</div>'}`;
+  const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
+  const hero = `<div class="rv-hero">
+    <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>
+    <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
+  </div>`;
+  const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
+  const trendHtml = trend.length >= 2 ? `<section class="home-sec rv-trend-sec"><div class="home-sec-h">Wheel of Life over time</div><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></section>` : '';
+  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; return `<button class="rv-card" data-open-review="${r.id}">
+    <div class="rv-card-h"><span class="rv-card-l">${esc(lbl)}</span><span class="rv-card-d">${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span></div>
+    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1 open</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5 wheel</span>` : ''}</div>
+  </button>`; };
+  const cards = past.map(card).join('');
+  return `${hero}${trendHtml}${reviewRemindersHtml()}${past.length ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${past.length}</div><div class="rv-cards">${cards}</div></section>` : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>'}`;
 }
 const REM_REPEATS = [['once', 'Once'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
 function fmtReminder(at) { try { const d = new Date(at); return d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return at; } }
@@ -8198,15 +8208,33 @@ async function startReview(rtype) {
   const s = reviewTaskStats(from);
   const snapshot = state.goals.filter((g) => (gp(g).status || 'active') === 'active').map((g) => ({ id: g.id, title: g.title, area: gp(g).area, measure: goalMeasure(g), progress: Math.round(goalProgress(g) * 100) }));
   const lastWheel = state.reviews.map((r) => r.props && r.props.wheel).reverse().find((w) => w && Object.keys(w).length) || {};
+  const surfaced = state.tasks.filter((t) => t.props && t.props.snooze && t.props.snooze >= from && t.props.snooze <= to && !t.props.done).slice(0, 40).map((t) => ({ title: t.title, area: t.props.area }));
   const mirror = {
     practices: mir.practices || [],
     tasksDone: s.done.slice(0, 60).map((t) => ({ title: t.title, area: t.props.area })),
     openP1: s.openP1.slice(0, 60).map((t) => ({ title: t.title, area: t.props.area })),
     quietAreas: s.quiet.map((a) => a.id),
+    surfaced,
   };
   const props = { rtype, from, to, wheel: { ...lastWheel }, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length };
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'review', title: `${REVIEWS[rtype].label} review · ${dpLabel(to)}`, props }) });
   state.reviews.push(b); openReviewCard(b.id);
+}
+// A little actionable insight, drawn from the week's record. Subtle, and just the
+// piece worth knowing: the strongest area, what went quiet, an open P1, what
+// surfaced. 1-3 lines, most salient first.
+function reviewInsight(m) {
+  const lines = [];
+  const nm = (id) => { const a = areaById(id); return a ? a.title : null; };
+  const byArea = {}; (m.tasksDone || []).forEach((t) => { if (t.area) byArea[t.area] = (byArea[t.area] || 0) + 1; });
+  const top = Object.entries(byArea).sort((a, b) => b[1] - a[1])[0];
+  if (top && top[1] >= 2 && nm(top[0])) lines.push(`Your strongest area was <b>${esc(nm(top[0]))}</b> — ${top[1]} done.`);
+  const quiet = (m.quietAreas || []).map(nm).filter(Boolean);
+  if (quiet.length) lines.push(`Nothing logged in <b>${quiet.slice(0, 2).map(esc).join('</b>, <b>')}</b>${quiet.length > 2 ? ` and ${quiet.length - 2} more` : ''} — a small step next week?`);
+  if ((m.openP1 || []).length) lines.push(`<b>${m.openP1.length}</b> P1${m.openP1.length > 1 ? 's' : ''} still open — which one matters most?`);
+  if ((m.surfaced || []).length) lines.push(`<b>${m.surfaced.length}</b> task${m.surfaced.length > 1 ? 's' : ''} surfaced from snooze this week.`);
+  if (!lines.length) lines.push('A quiet week on the record. What would make next week feel good?');
+  return lines.slice(0, 3);
 }
 async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); }
 function renderReviewCard() {
@@ -8216,8 +8244,8 @@ function renderReviewCard() {
   const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
   const quiet = (m.quietAreas || []).map(areaName);
   const wheel = state.areas.map((a) => {
-    const sc = (p.wheel || {})[a.id] || 0;
-    const pips = Array.from({ length: 10 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-wheel="${a.id}:${i + 1}" style="--h:${hueOf(a)}"></button>`).join('');
+    const sc = Math.min((p.wheel || {})[a.id] || 0, 5);
+    const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-wheel="${a.id}:${i + 1}" style="--h:${hueOf(a)}"></button>`).join('');
     return `<div class="wheel-row"><span class="wheel-a">${esc(a.title)}</span><span class="wheel-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span></div>`;
   }).join('');
   const snap = (p.snapshot || []).map((g) => `<div class="rv-snap"><span class="rv-snap-t">${esc(g.title)}</span><span class="rv-snap-m">${esc(g.measure || '')}${g.progress != null ? ` · ${g.progress}%` : ''}</span></div>`).join('');
@@ -8227,22 +8255,29 @@ function renderReviewCard() {
     <div class="pane-head"><h1>${esc(cfg.label)} review</h1></div>
     <div class="rv-period">${esc(cfg.sub)} · ${esc(dpLabel(p.from))} – ${esc(dpLabel(p.to))}</div>
 
+    <section class="rv-insight">
+      <div class="rv-insight-h">✦ Worth knowing</div>
+      <ul class="rv-insight-list">${reviewInsight(m).map((l) => `<li>${l}</li>`).join('')}</ul>
+    </section>
+
     <section class="rv-mirror">
       <div class="home-sec-h">Your ${p.rtype === 'weekly' ? 'week' : 'period'}, from the record</div>
       <div class="rv-stats">
         ${pill('ticked off', (m.tasksDone || []).length, 'good')}
         ${pill('P1 still open', (m.openP1 || []).length, (m.openP1 || []).length ? 'warn' : '')}
         ${pill('practices kept', (m.practices || []).reduce((a, x) => a + x.count, 0), 'good')}
+        ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
         ${pill('quiet areas', quiet.length, quiet.length ? 'warn' : '')}
       </div>
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
       ${quiet.length ? `<div class="rv-line"><span class="rv-line-k">Went quiet</span> ${quiet.map(esc).join(', ')}</div>` : ''}
+      ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
       ${(m.openP1 || []).length ? `<details class="rv-det"><summary>P1s still open · ${(m.openP1 || []).length}</summary><ul>${(m.openP1 || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
       ${(m.tasksDone || []).length ? `<details class="rv-det"><summary>Ticked off · ${(m.tasksDone || []).length}</summary><ul>${(m.tasksDone || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
     </section>
 
     <section class="wheel">
-      <div class="home-sec-h">Wheel of Life <span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${wheelAvg(p.wheel)}/10` : ''}</span></div>
+      <div class="home-sec-h">Wheel of Life <span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</span> <span class="wheel-hint">rate each area 1–5</span></div>
       <div class="wheel-rows">${wheel || '<div class="muted">Add some Life Areas to rate them here.</div>'}</div>
     </section>
 
