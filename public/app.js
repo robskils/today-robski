@@ -3754,63 +3754,51 @@ function areaSelect(cur, attr) {
 // links to its area; the dropdown lists the areas it isn't in yet, so picking one
 // adds it. With none chosen it's just the familiar "+ Life area" control.
 function noteAreasControl(n) { return blockAreasControl('note', n); }
-// Which areas are expanded on the Life areas page, remembered across visits.
-function areasExpandedSet() { if (state.areasExpanded instanceof Set) return state.areasExpanded; let a = []; try { a = JSON.parse(localStorage.getItem('life.areas.expanded') || '[]'); } catch {} return (state.areasExpanded = new Set(Array.isArray(a) ? a : [])); }
-function saveAreasExpanded() { try { localStorage.setItem('life.areas.expanded', JSON.stringify([...areasExpandedSet()])); } catch {} }
 // Open-task count for an area, straight from the loaded task list (always there on
-// this page) - the headline metric even before an area's full detail is fetched.
+// this page) - the headline metric on each area card.
 function areaOpenTaskCount(id) { return (state.tasks || []).filter((t) => !t.props.done && !(t.props.hideUntil && isSnoozed(t)) && blockAreas(t).includes(id)).length; }
-// Lazy-load one area's blocks for its inline panel, cache, then re-render.
-async function loadAreaSummary(id) {
-  state.areaSummaries = state.areaSummaries || {};
-  if (state.areaSummaries[id] || state.areaSummaries[id + ':loading']) return;
-  state.areaSummaries[id + ':loading'] = true;
-  try { state.areaSummaries[id] = await api(`/api/blocks?area=${id}`); }
-  catch { state.areaSummaries[id] = []; }
-  delete state.areaSummaries[id + ':loading'];
-  if (state.view && state.view.type === 'areas') renderAreasList();
-}
-// The inline dashboard for one expanded area: metric tiles + its open tasks + a
-// way through to the full area page. Content Robin asked to see "all on one page".
-function areaPanelHtml(a) {
-  const bl = (state.areaSummaries || {})[a.id];
-  if (!bl) { loadAreaSummary(a.id); return '<div class="acc-panel-load">Loading…</div>'; }
-  const of = (k) => bl.filter((b) => b.kind === k);
-  const openTasks = of('task').filter((t) => !(t.props && t.props.done)).sort((x, y) => (PRIO_ORDER[(x.props || {}).priority || ''] || 5) - (PRIO_ORDER[(y.props || {}).priority || ''] || 5));
-  const goalsActive = of('goal').filter((g) => (((g.props || {}).status) || 'active') === 'active');
-  const notesN = of('note').length + of('table').length;
-  const stats = [['✓', 'Tasks', openTasks.length, true], ['🎯', 'Goals', goalsActive.length, true], ['▤', 'Notes', notesN, notesN > 0], ['👤', 'Contacts', of('contact').length, of('contact').length > 0], ['🔖', 'Saved', of('bookmark').length, of('bookmark').length > 0], ['✎', 'Reflections', of('journal').length, of('journal').length > 0], ['✦', 'Bucket', of('bucket').length, of('bucket').length > 0]];
-  const metrics = `<div class="area-metrics">${stats.filter((s) => s[3]).map(([ic, l, n]) => `<div class="am-stat"><span class="am-ic">${ic}</span><span class="am-n">${n}</span><span class="am-l">${l}</span></div>`).join('')}</div>`;
-  const tasksHtml = openTasks.length
-    ? `<div class="am-tasks"><div class="am-tasks-h">Open tasks · ${openTasks.length}</div>${openTasks.slice(0, 8).map((t) => `<button class="am-task" data-open-task="${t.id}">${(t.props || {}).priority ? `<span class="p-tag p-${t.props.priority}">${t.props.priority}</span>` : ''}<span class="am-task-t">${esc(t.title || 'Untitled')}</span></button>`).join('')}${openTasks.length > 8 ? `<div class="am-more muted">+${openTasks.length - 8} more on the full page</div>` : ''}</div>`
-    : '<div class="home-empty" style="padding:6px 0 2px">No open tasks here.</div>';
-  return `${metrics}${tasksHtml}<button class="add-btn wide am-openfull" data-open-area="${a.id}">Open ${esc(a.title)} in full →</button>`;
-}
+// Active-goal count for an area, from the globally loaded goals (no fetch needed).
+function areaActiveGoalCount(id) { return (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active' && gp(g).area === id).length; }
 async function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
-  // The open-task metric needs the task list; fetch it once if we came in cold.
-  if (!state.tasks) { try { state.tasks = notKit(await api('/api/blocks?kind=task')); } catch { state.tasks = state.tasks || []; } }
+  // The metrics need tasks and goals; fetch whichever we came in without.
+  await Promise.all([
+    state.tasks ? null : api('/api/blocks?kind=task').then((t) => { state.tasks = notKit(t); }).catch(() => { state.tasks = state.tasks || []; }),
+    state.goals ? null : api('/api/blocks?kind=goal').then((g) => { state.goals = g || []; }).catch(() => { state.goals = state.goals || []; }),
+  ]);
   renderAreasList();
 }
+// The Life areas page: a colourful grid of area cards, each a monogram in the
+// area's colour, its vision in a line, and live task/goal counts - a scannable
+// board that clicks straight through to the area's dashboard. (Reworked from the
+// full-width accordion, 2026-09; Robin wanted something more engaging.)
 function renderAreasList() {
-  const exp = areasExpandedSet();
   const ordered = areasByRank();
   const favAreas = ordered.filter((a) => a.props && a.props.fav);
-  const badges = (a) => { const ot = areaOpenTaskCount(a.id); const bl = (state.areaSummaries || {})[a.id]; const ga = bl ? bl.filter((b) => b.kind === 'goal' && ((b.props || {}).status || 'active') === 'active').length : 0; return `<span class="acc-badges">${ot ? `<span class="acc-b">✓ ${ot}</span>` : ''}${ga ? `<span class="acc-b">🎯 ${ga}</span>` : ''}</span>`; };
-  const card = (a) => { const on = exp.has(a.id); return `<div class="area-card area-acc ${on ? 'exp' : ''}" style="--h:${hueOf(a)}" draggable="true" data-area-drag="${a.id}">
-    <div class="acc-head">
-      <button class="acc-toggle" data-area-expand="${a.id}" title="Expand"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span>${badges(a)}<span class="acc-chev">${on ? '▾' : '▸'}</span></button>
-      <button class="star ${a.props && a.props.fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${a.props && a.props.fav ? '★' : '☆'}</button>
-    </div>
-    ${on ? `<div class="acc-panel">${areaPanelHtml(a)}</div>` : ''}</div>`; };
+  const card = (a) => {
+    const hue = hueOf(a);
+    const ot = areaOpenTaskCount(a.id);
+    const gc = areaActiveGoalCount(a.id);
+    const vision = (a.props && (a.props.vision || '').trim()) || '';
+    const fav = !!(a.props && a.props.fav);
+    return `<div class="area-gcard" style="--h:${hue}" draggable="true" data-area-drag="${a.id}">
+      <button class="agc-open" data-open-area="${a.id}">
+        <span class="agc-mono">${esc(initial(a.title || '?'))}</span>
+        <span class="agc-name">${esc(a.title || 'Untitled')}</span>
+        ${vision ? `<span class="agc-vision">${esc(vision.slice(0, 84))}${vision.length > 84 ? '…' : ''}</span>` : '<span class="agc-vision agc-vision-empty">Add a vision to steer by</span>'}
+        <span class="agc-metrics"><span class="agc-chip agc-chip-t">✓ ${ot} ${ot === 1 ? 'task' : 'tasks'}</span>${gc ? `<span class="agc-chip agc-chip-g">🎯 ${gc} ${gc === 1 ? 'goal' : 'goals'}</span>` : ''}</span>
+      </button>
+      <button class="star agc-star ${fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${fav ? '★' : '☆'}</button>
+    </div>`;
+  };
   $('#pane').innerHTML = `
     ${pageCrumb('Life areas')}
     <div class="pane-head home-head"><h1>Life areas</h1><button class="add-btn wide" data-new-area>+ New area</button></div>
-    <p class="t2-sub" style="font-style:normal">Tap an area to open it up right here - its tasks, goals and the rest, without leaving the page.</p>
-    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-accordion">${favAreas.map(card).join('')}</div></section>` : ''}
+    <p class="t2-sub" style="font-style:normal">The few domains your life orbits. Open one for its whole dashboard.</p>
+    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All areas · ${ordered.length}</div>
-      <div class="area-cards area-accordion">${ordered.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
+      <div class="area-cards area-gcards">${ordered.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -10102,7 +10090,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   { const ar = t.closest('[data-area-remove]'); if (ar) { const p = ar.dataset.areaRemove.split(':'); removeBlockArea(p[0], p[1], p[2]); return; } }
-  const aex = t.closest('[data-area-expand]'); if (aex) { const id = aex.dataset.areaExpand; const s = areasExpandedSet(); if (s.has(id)) s.delete(id); else s.add(id); saveAreasExpanded(); renderAreasList(); return; }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
