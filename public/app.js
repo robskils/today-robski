@@ -8060,7 +8060,7 @@ function renderGoalCard() {
     </div>
     <div class="goal-measure-block">${typeBody}</div>
     ${p.gtype !== 'achievement' ? `<div class="goal-actions-sec">
-      <div class="tf-label gt-loose-h">Actions<span class="gt-hint">real tasks to move this forward - they show up in Tasks &amp; Today too</span></div>
+      <div class="tf-label gt-loose-h">Tasks<span class="gt-hint">real tasks to move this forward - they show up in Tasks &amp; Today too</span></div>
       <div class="ms-tasks">${loose.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
     </div>` : ''}
     ${goalAreaTasksHtml()}
@@ -8074,10 +8074,13 @@ function goalAreaTasksHtml() {
   const go = state.goal_open; if (!go) return '';
   const p = gp(go.goal); if (!p.area) return '';
   const a = areaById(p.area); const aname = a ? esc(a.title) : 'this area';
-  return `<div class="goal-arealist" style="--h:${hueOf(a)}">
-    <div class="tf-label gt-loose-h">Tasks in ${aname}<span class="gt-hint">link an existing task into this goal</span></div>
-    <input class="sel gal-search" data-gal-q placeholder="Search ${aname} tasks…" value="${esc(go.areaQuery || '')}">
-    <div class="gal-list">${goalAreaListInner()}</div></div>`;
+  const open = !!go.areaListOpen;
+  // Quiet, secondary and collapsed by default: these are suggestions from the
+  // area, not tasks already on the goal. Tap to browse and pull one in.
+  return `<div class="goal-arealist ${open ? 'open' : ''}" style="--h:${hueOf(a)}">
+    <button class="gal-toggle" data-gal-toggle><span class="gal-chev">${open ? '▾' : '▸'}</span>Pull in a task from ${aname}<span class="gal-sub">existing tasks you could link</span></button>
+    ${open ? `<input class="sel gal-search" data-gal-q placeholder="Search ${aname} tasks…" value="${esc(go.areaQuery || '')}">
+    <div class="gal-list">${goalAreaListInner()}</div>` : ''}</div>`;
 }
 function goalAreaListInner() {
   const go = state.goal_open; const p = gp(go.goal);
@@ -9575,6 +9578,7 @@ document.addEventListener('click', (e) => {
   const dgl = t.closest('[data-del-goal]'); if (dgl) { delGoal(dgl.dataset.delGoal); return; }
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
   if (t.closest('[data-bucket-to-goal]')) { bucketToGoal().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-gal-toggle]') && state.goal_open) { state.goal_open.areaListOpen = !state.goal_open.areaListOpen; renderGoalCard(); return; }
   const glink = t.closest('[data-goal-link]'); if (glink) { linkTaskToGoal(glink.dataset.goalLink); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
