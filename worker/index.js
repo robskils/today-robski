@@ -2697,18 +2697,36 @@ async function maybePushMail(env, res) {
 }
 
 // Review reminders: user-set nudges to do a review. Stored in settings under
-// Review reminders are now dead simple: the user turns a review type's reminder
-// on, and it fires ON THE DATE that review is next due (last review of that type
-// + its period), by text and email (and a push if they have one). No dates to
-// pick. Stored in kv_review_reminders as { types:[...enabled rtypes],
-// lastFired:{rtype: 'YYYY-MM-DD'} } - lastFired dedups so a due date nudges once.
+// Review reminders fire on the day YOU choose (weekly on Sunday, say), by text +
+// email + push, and surface in Today with a link. Stored in kv_review_reminders
+// as { weekly:{on,dow}, monthly:{on,dom}, quarterly:{on,dom},
+// yearly:{on,month,day}, lastFired:{rtype:'YYYY-MM-DD'} }. lastFired dedups so a
+// day nudges once. reviewRemConfig migrates every older shape into this.
 const REVIEW_LABELS = { weekly: 'weekly', monthly: 'monthly', quarterly: 'quarterly', yearly: 'yearly' };
-const REVIEW_DAYS = { weekly: 7, monthly: 30, quarterly: 91, yearly: 365 };
-// Read the stored config, tolerating the old array-of-dated-reminders format.
+const clampInt = (n, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(n) || 0)));
+function reviewRemDefaults() {
+  return { weekly: { on: false, dow: 0 }, monthly: { on: false, dom: 1 }, quarterly: { on: false, dom: 1 }, yearly: { on: false, month: 0, day: 1 } };
+}
 function reviewRemConfig(value) {
-  let o; try { o = value ? JSON.parse(value) : null; } catch { return { types: [], lastFired: {} }; }
-  if (Array.isArray(o)) return { types: [...new Set(o.map((r) => r && r.rtype).filter(Boolean))], lastFired: {} };
-  return { types: Array.isArray(o && o.types) ? o.types : [], lastFired: (o && o.lastFired) || {} };
+  let o; try { o = value ? JSON.parse(value) : null; } catch { o = null; }
+  const cfg = reviewRemDefaults();
+  let lastFired = {};
+  if (Array.isArray(o)) {                                   // oldest: [{rtype, at, ...}]
+    for (const r of o) if (r && cfg[r.rtype]) cfg[r.rtype].on = true;
+  } else if (o && typeof o === 'object') {
+    lastFired = (o.lastFired && typeof o.lastFired === 'object') ? o.lastFired : {};
+    if (Array.isArray(o.types)) for (const t of o.types) if (cfg[t]) cfg[t].on = true;   // last shape: {types:[...]}
+    for (const rt of Object.keys(cfg)) {
+      const s = o[rt];
+      if (s && typeof s === 'object') {
+        if ('on' in s) cfg[rt].on = !!s.on;
+        if (rt === 'weekly' && s.dow != null) cfg[rt].dow = clampInt(s.dow, 0, 6);
+        if ((rt === 'monthly' || rt === 'quarterly') && s.dom != null) cfg[rt].dom = clampInt(s.dom, 1, 28);
+        if (rt === 'yearly') { if (s.month != null) cfg[rt].month = clampInt(s.month, 0, 11); if (s.day != null) cfg[rt].day = clampInt(s.day, 1, 28); }
+      }
+    }
+  }
+  return { cfg, lastFired };
 }
 async function maybeReviewReminders(env) {
   for (const u of await activeUsers(env)) {
@@ -2716,22 +2734,26 @@ async function maybeReviewReminders(env) {
   }
 }
 async function reviewRemindersForUser(env, uid) {
-  const { types, lastFired } = reviewRemConfig(await getSetting(env, 'kv_review_reminders', uid));
-  if (!types.length) return;
+  const { cfg, lastFired } = reviewRemConfig(await getSetting(env, 'kv_review_reminders', uid));
+  if (!['weekly', 'monthly', 'quarterly', 'yearly'].some((k) => cfg[k].on)) return;
   const parts = localParts(new Date(), TZ);
   if (parts.min < 525) return;              // fire from 08:45 Lisbon, never at midnight
-  const today = parts.date;
-
-  // Latest review period-end (props.to) per type, to know when the next is due.
-  const rows = (await env.DB.prepare("SELECT props FROM blocks WHERE kind='review' AND archived=0 AND user_id=?").bind(uid).all().catch(() => ({ results: [] }))).results || [];
-  const lastTo = {};
-  for (const r of rows) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} const rt = p.rtype; const to = p.to; if (rt && to && (!lastTo[rt] || to > lastTo[rt])) lastTo[rt] = to; }
+  const today = parts.date;                 // YYYY-MM-DD (Lisbon)
+  const [Y, M, D] = today.split('-').map(Number);
+  const jsDate = new Date(Date.UTC(Y, M - 1, D, 12));
+  const dow = jsDate.getUTCDay();           // 0=Sun
+  const month = M - 1; const dim = new Date(Date.UTC(Y, M, 0)).getUTCDate();
 
   const due = [];
   let changed = false;
-  for (const rt of types) {
-    const dueDate = lastTo[rt] ? addDaysStr(lastTo[rt], REVIEW_DAYS[rt] || 7) : today;   // never reviewed => nudge now
-    if (today >= dueDate && lastFired[rt] !== dueDate) { due.push(rt); lastFired[rt] = dueDate; changed = true; }
+  for (const rt of ['weekly', 'monthly', 'quarterly', 'yearly']) {
+    const s = cfg[rt]; if (!s.on) continue;
+    let isDue = false;
+    if (rt === 'weekly') isDue = dow === s.dow;
+    else if (rt === 'monthly') isDue = D === Math.min(s.dom, dim);
+    else if (rt === 'quarterly') isDue = (month % 3 === 0) && D === Math.min(s.dom, dim);
+    else if (rt === 'yearly') isDue = month === s.month && D === Math.min(s.day, dim);
+    if (isDue && lastFired[rt] !== today) { due.push(rt); lastFired[rt] = today; changed = true; }
   }
   if (due.length) {
     const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
@@ -2746,7 +2768,7 @@ async function reviewRemindersForUser(env, uid) {
       if (to) await sendReviewMail(env, { to, label, home }).catch(() => {});
     }
   }
-  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify({ types, lastFired }), uid);
+  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify({ ...cfg, lastFired }), uid);
 }
 
 // Portfolio history: on the every-minute tick, only actually fetch prices when
@@ -3222,17 +3244,16 @@ export default {
       if (path === '/api/journal/insights') return journalInsights(request, env, json, err);
       if (path === '/api/review-summary' && request.method === 'POST') return reviewSummary(request, env, json, err);
       if (path === '/api/review-reminders') {
-        const VALID = ['weekly', 'monthly', 'quarterly', 'yearly'];
         if (request.method === 'PUT') {
+          // Take the incoming schedule through the same normaliser (clamps days,
+          // coerces flags), then keep the server-owned lastFired stamps.
           const b = await request.json().catch(() => ({}));
-          const types = [...new Set((Array.isArray(b.types) ? b.types : []).filter((t) => VALID.includes(t)))];
-          // Keep only the lastFired stamps for types still enabled.
           const cur = reviewRemConfig(await getSetting(env, 'kv_review_reminders'));
-          const lastFired = {}; for (const t of types) if (cur.lastFired[t]) lastFired[t] = cur.lastFired[t];
-          await setSetting(env, 'kv_review_reminders', JSON.stringify({ types, lastFired }));
-          return json({ ok: true, types }, request);
+          const incoming = reviewRemConfig(JSON.stringify(b.reminders || {})).cfg;
+          await setSetting(env, 'kv_review_reminders', JSON.stringify({ ...incoming, lastFired: cur.lastFired }));
+          return json({ ok: true, reminders: incoming }, request);
         }
-        return json({ types: reviewRemConfig(await getSetting(env, 'kv_review_reminders')).types }, request);
+        return json({ reminders: reviewRemConfig(await getSetting(env, 'kv_review_reminders')).cfg }, request);
       }
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
       if (path === '/api/lookup' && request.method === 'GET') return lookupMedia(request, env, url, json, err);

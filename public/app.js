@@ -4314,7 +4314,24 @@ async function loadToday(day) {
     await loadPractices();               // activities + marks + areas
     T.data = dayData; T.tasks = tasks;
   } catch (e) { toast(e.message); }
+  // Review reminders, so a review due today can surface here with a link.
+  if (!state.reviewRem) api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'today') renderToday(); }).catch(() => {});
   renderToday();
+}
+// Which reviews are scheduled to land today (per the chosen day). Drives the
+// Today banner and the Home nudge; safe to call before reviewRem has loaded.
+function reviewsDueToday() {
+  const cfg = state.reviewRem; if (!cfg) return [];
+  const now = new Date(); const dow = now.getDay(); const dom = now.getDate(); const month = now.getMonth();
+  const dim = new Date(now.getFullYear(), month + 1, 0).getDate();
+  return RTYPE_ORDER.filter((k) => {
+    const s = cfg[k]; if (!s || !s.on) return false;
+    if (k === 'weekly') return dow === (s.dow || 0);
+    if (k === 'monthly') return dom === Math.min(s.dom || 1, dim);
+    if (k === 'quarterly') return (month % 3 === 0) && dom === Math.min(s.dom || 1, dim);
+    if (k === 'yearly') return month === (s.month || 0) && dom === Math.min(s.day || 1, dim);
+    return false;
+  });
 }
 function renderToday() {
   const T = state.today; const data = T.data;
@@ -4331,11 +4348,14 @@ function renderToday() {
     <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">Today</button>
     <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">Tracker${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
   </div>`;
+  const dueReviews = (isToday && T.tab === 'today') ? reviewsDueToday() : [];
+  const dueBanner = dueReviews.map((k) => `<button class="t2-reviewdue" data-start-review="${k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
   $('#pane').innerHTML = `
     ${pageCrumb('Today')}
     <div class="pane-head t2-head"><h1>${h1}</h1>${T.tab === 'today' ? nav : ''}</div>
     <p class="t2-sub">Plan your day, track your day</p>
     ${tabs}
+    ${dueBanner}
     ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>'
       : (T.tab === 'tracker' ? t2TrackerHtml() : `
     <div class="t2-grid" style="--t2h:${t2Height}px">
@@ -4343,6 +4363,9 @@ function renderToday() {
       <section class="t2-col t2-day">${t2DayHtml()}</section>
       <aside class="t2-col t2-tasks">${t2TasksHtml()}</aside>
     </div>`)}`;
+  // The Today/Tracker switch pins just under the breadcrumb; measure the crumb's
+  // height so the sticky offset sits exactly at its bottom edge (see .t2-tabs).
+  requestAnimationFrame(() => { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--t2-crumbh', cb.offsetHeight + 'px'); });
 }
 // The Tracker tab: every tracked practice, grouped by life area, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
@@ -7887,7 +7910,7 @@ async function openGoals(tab) {
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.goals = goals; state.bucket = bucket; state.reviews = reviews;
   renderNav(); renderGoals();
-  api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewRemTypes = r.types || []; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
+  api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewRem = r.reminders || {}; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
 }
 // Reviews are their own tool now (own sidebar button), split out of Goals.
 async function openReviews() {
@@ -7895,7 +7918,7 @@ async function openReviews() {
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
   renderNav(); renderReviews();
-  api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRemTypes = r.types || []; renderReviews(); } }).catch(() => {});
+  api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
 }
 function renderReviews() {
   $('#pane').innerHTML = `${pageCrumb('Reviews')}<div class="pane-head"><h1>Reviews</h1></div>
@@ -8196,9 +8219,12 @@ function reviewTaskStats(from) {
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
-  const weeklyDue = nextReviewDue('weekly');
+  const ws = reviewRemOf('weekly');
+  let weeklyDue;
+  if (ws.on && Number.isInteger(ws.dow)) { const now = new Date(); const add = (ws.dow - now.getDay() + 7) % 7; const nd = new Date(now); nd.setDate(nd.getDate() + add); weeklyDue = localISO(nd); }
+  else weeklyDue = nextReviewDue('weekly');
   let nextLine = '';
-  if (weeklyDue) nextLine = weeklyDue <= localISO() ? 'Next weekly review: due now' : `Next weekly review: ${esc(dpLabel(weeklyDue))}`;
+  if (weeklyDue) nextLine = weeklyDue <= localISO() ? 'Weekly review: due today' : `Next weekly review: ${esc(dpLabel(weeklyDue))}`;
   const hero = `<div class="rv-hero">
     <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>${nextLine || 'A few minutes, and you\'ll know where you stand.'}</small></span><span class="rvw-go">→</span></button>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
@@ -8222,29 +8248,67 @@ function nextReviewDue(rtype) {
   const nd = new Date(lastTo + 'T00:00'); nd.setDate(nd.getDate() + days);
   return localISO(nd);
 }
-// Simple reminders: one on/off per review type. No dates - it arrives on the day
-// that review is next due, by text and email. Same deal for every type.
+// Review reminders: one per review type, each scheduled to the day YOU choose
+// (weekly on Sunday, say). Click a card to open its settings. On the chosen day
+// it reaches you by text + email and shows in Today with a link to the review.
+const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+function reviewRemDefault(k) {
+  return ({ weekly: { on: false, dow: 0 }, monthly: { on: false, dom: 1 }, quarterly: { on: false, dom: 1 }, yearly: { on: false, month: 0, day: 1 } })[k];
+}
+function reviewRemOf(k) { return Object.assign(reviewRemDefault(k), (state.reviewRem || {})[k] || {}); }
+// Human "when" for a schedule, e.g. "every Sunday", "on the 1st of each month".
+function reviewRemWhen(k, s) {
+  if (k === 'weekly') return `every ${DOW_NAMES[s.dow || 0]}`;
+  if (k === 'monthly') return `the ${ordinal(s.dom || 1)} of each month`;
+  if (k === 'quarterly') return `the ${ordinal(s.dom || 1)}, each quarter`;
+  if (k === 'yearly') return `${MONTH_NAMES[s.month || 0]} ${s.day || 1}`;
+  return '';
+}
+function reviewDayPicker(k, s) {
+  if (k === 'weekly') return `<label class="rv-remfield">On <select class="sel" data-rev-dow>${DOW_NAMES.map((d, i) => `<option value="${i}" ${(s.dow || 0) === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>`;
+  const domSel = (attr) => `<select class="sel" ${attr}>${Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}" ${(s.dom || 1) === i + 1 ? 'selected' : ''}>${ordinal(i + 1)}</option>`).join('')}</select>`;
+  if (k === 'monthly') return `<label class="rv-remfield">On the ${domSel('data-rev-dom')}</label>`;
+  if (k === 'quarterly') return `<label class="rv-remfield">First month of each quarter, on the ${domSel('data-rev-dom')}</label>`;
+  if (k === 'yearly') return `<label class="rv-remfield">On <select class="sel" data-rev-month>${MONTH_NAMES.map((mn, i) => `<option value="${i}" ${(s.month || 0) === i ? 'selected' : ''}>${mn}</option>`).join('')}</select> <select class="sel" data-rev-day>${Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}" ${(s.day || 1) === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></label>`;
+  return '';
+}
 function reviewRemindersHtml() {
-  const on = new Set(state.reviewRemTypes || []);
-  const rows = RTYPE_ORDER.map((k) => {
-    const isOn = on.has(k); const due = nextReviewDue(k);
-    const sub = isOn
-      ? (due ? (due <= localISO() ? "On · due now, we'll remind you by text and email" : `On · we'll remind you on ${esc(dpLabel(due))} by text and email`) : "On · we'll remind you the day it's first due")
-      : 'Off';
-    return `<label class="rv-remtog"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${sub}</small></span><input type="checkbox" data-rev-rem="${k}" ${isOn ? 'checked' : ''}></label>`;
+  const open = state.reviewRemEdit;
+  const cards = RTYPE_ORDER.map((k) => {
+    const s = reviewRemOf(k); const isOpen = open === k;
+    const sub = s.on ? `On · ${reviewRemWhen(k, s)} · text + email` : 'Off · tap to set up';
+    const editor = isOpen ? `<div class="rv-remedit">
+        <label class="rv-remedit-on"><input type="checkbox" data-rev-rem="${k}" ${s.on ? 'checked' : ''}><span>Remind me for the ${REVIEWS[k].label.toLowerCase()} review</span></label>
+        <div class="rv-remedit-day ${s.on ? '' : 'off'}">${reviewDayPicker(k, s)}</div>
+        <div class="rv-remedit-note">On the day, you'll get a text and email, and it shows in your Today with a link to start the review.</div>
+      </div>` : '';
+    return `<div class="rv-remcard ${isOpen ? 'open' : ''} ${s.on ? 'is-on' : ''}">
+      <button class="rv-remhead" data-rev-rem-edit="${k}"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${sub}</small></span><span class="rv-remchev">${isOpen ? '▾' : '▸'}</span></button>
+      ${editor}</div>`;
   }).join('');
   return `<section class="home-sec"><div class="home-sec-h">⏰ Reminders</div>
-    <div class="rv-remtogs">${rows}</div>
-    <p class="rv-rem-note2">Turn one on and a reminder reaches you - by text and email - on the day that review is due. Nothing to schedule.</p>
+    <div class="rv-remcards">${cards}</div>
+    <p class="rv-rem-note2">Choose the day each review lands on. It reaches you by text and email, and shows in your Today with a link.</p>
   </section>`;
 }
+function saveReviewRem() {
+  api('/api/review-reminders', { method: 'PUT', body: JSON.stringify({ reminders: state.reviewRem || {} }) }).catch((e) => toast(e.message));
+}
+function reReviewRems() { if (state.view.type === 'reviews') renderReviews(); else renderGoals(); }
 function toggleReviewRem(rtype, isOn) {
-  const set = new Set(state.reviewRemTypes || []);
-  if (isOn) set.add(rtype); else set.delete(rtype);
-  state.reviewRemTypes = [...set];
-  api('/api/review-reminders', { method: 'PUT', body: JSON.stringify({ types: state.reviewRemTypes }) }).catch((e) => toast(e.message));
+  state.reviewRem = state.reviewRem || {};
+  state.reviewRem[rtype] = Object.assign(reviewRemOf(rtype), { on: isOn });
+  saveReviewRem();
   toast(isOn ? `${REVIEWS[rtype].label} reminder on` : `${REVIEWS[rtype].label} reminder off`);
-  if (state.view.type === 'reviews') renderReviews(); else renderGoals();
+  reReviewRems();
+}
+function setReviewRemDay(rtype, patch) {
+  state.reviewRem = state.reviewRem || {};
+  state.reviewRem[rtype] = Object.assign(reviewRemOf(rtype), patch);
+  saveReviewRem();
+  reReviewRems();
 }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
@@ -9493,6 +9557,7 @@ document.addEventListener('click', (e) => {
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
+  const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemEdit = state.reviewRemEdit === k ? null : k; reReviewRems(); return; }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R && R.summaryOpen && !R.summaryLoading) { R.summaryOpen = false; renderReviewCard(); } else { reviewDoneSummary(false); } return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
@@ -9934,6 +9999,10 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-rev-rem]')) { toggleReviewRem(e.target.dataset.revRem, e.target.checked); return; }
+  if (e.target.matches('[data-rev-dow]')) { setReviewRemDay(state.reviewRemEdit, { dow: +e.target.value }); return; }
+  if (e.target.matches('[data-rev-dom]')) { setReviewRemDay(state.reviewRemEdit, { dom: +e.target.value }); return; }
+  if (e.target.matches('[data-rev-month]')) { setReviewRemDay(state.reviewRemEdit, { month: +e.target.value }); return; }
+  if (e.target.matches('[data-rev-day]')) { setReviewRemDay(state.reviewRemEdit, { day: +e.target.value }); return; }
   if (e.target.matches('[data-rv-date]')) { const k = e.target.dataset.rvDate; const v = e.target.value; if (v && state.review_open) { patchReview(state.review_open.review.id, { [k]: v }, true); toast('Review dates updated'); } return; }
   if (e.target.matches('[data-goalrev-note]')) { const id = e.target.dataset.goalrevNote; const v = e.target.value; clearTimeout(window.__grnT); window.__grnT = setTimeout(() => { const r = state.review_open && state.review_open.review; if (!r) return; const gr = { ...((r.props || {}).goalReview || {}) }; gr[id] = { ...(gr[id] || {}), note: v }; patchReview(r.id, { goalReview: gr }, true); }, 600); return; }
   if (e.target.matches('[data-area-sec-vis]')) {
