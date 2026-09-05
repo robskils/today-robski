@@ -3888,8 +3888,8 @@ function renderArea() {
   const dashChips = (list, f) => `<div class="adc-chips">${list.map(f).join('')}</div>`;
   const dash = `<div class="area-dash" style="--h:${h}">
     ${dashCard('Vision', visionSnip ? `<div class="adc-vision">${esc(visionSnip.slice(0, 180))}${visionSnip.length > 180 ? '…' : ''}</div>` : '<div class="adc-empty">Tap to picture this area at its best.</div>')}
-    ${dashCard('Tasks', openTs.length ? openTs.slice(0, 6).map((t) => dashItem('data-open-task', t.id, t.title || 'Untitled', t.props.priority ? `<span class="p-tag p-${t.props.priority}">${t.props.priority}</span>` : '')).join('') : '<div class="adc-empty">No open tasks.</div>')}
     ${dashCard('Goals', activeGoals.length ? activeGoals.slice(0, 5).map((g) => dashItem('data-open-goal', g.id, g.title || 'Untitled')).join('') : '<div class="adc-empty">No goals yet.</div>')}
+    ${dashCard('Tasks', openTs.length ? openTs.slice(0, 6).map((t) => dashItem('data-open-task', t.id, t.title || 'Untitled', t.props.priority ? `<span class="p-tag p-${t.props.priority}">${t.props.priority}</span>` : '')).join('') : '<div class="adc-empty">No open tasks.</div>')}
     ${notesTotal ? dashCard('Notes and tables', [...starredNotes, ...otherNotes].slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled')).join('') + tables.slice(0, 2).map((t) => dashItem('data-open-table', t.id, t.title || 'Untitled', '<span class="adc-lead">▦</span>')).join('')) : ''}
     ${contacts.length ? dashCard('Contacts', dashChips(contacts.slice(0, 6), (c) => `<span class="adc-chip">${esc(c.title || 'Someone')}</span>`)) : ''}
     ${bookmarks.length ? dashCard('Saved links', dashChips(bookmarks.slice(0, 5), (b) => `<span class="adc-chip">${esc(b.title || 'Saved')}</span>`)) : ''}
@@ -3912,7 +3912,7 @@ function renderArea() {
     'Wall': areaWallBody(area),
   };
   const CORE = new Set(['Overview', 'Vision', 'Goals', 'Notes and tables', 'Tasks', 'Wall']);
-  const tileOrder = ['Overview', 'Vision', 'Tasks', 'Notes and tables', 'Goals', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall'];
+  const tileOrder = ['Overview', 'Vision', 'Goals', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall'];
   const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; return CORE.has(k) || counts[k] > 0; });
   // Landing on an area shows the Overview dashboard; a tile click switches for the
   // session (state only), so a fresh visit always opens on the dashboard again.
