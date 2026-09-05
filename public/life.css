@@ -1511,7 +1511,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 
 /* ── native Today (day canvas + practices + tasks + habits) ── */
 .t2-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
-.t2-dsmall { font-family:'Inter',system-ui,-apple-system,sans-serif; font-size:16px; font-weight:400; color:var(--ink-3); margin-left:4px; }
+.t2-dsmall { font-family:inherit; font-size:0.62em; font-weight:500; color:var(--ink-3); margin-left:6px; }
 .t2-nav { margin-left:auto; display:flex; align-items:center; gap:8px; }
 .t2-arw { width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:19px; line-height:1; }
 .t2-arw:hover { border-color:var(--accent); color:var(--accent); }
