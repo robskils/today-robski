@@ -558,15 +558,15 @@ const HELP = {
       <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
       <li><b>Assign</b> a task to one of them.</li>
       <li>Keep <b>shared meeting notes</b>, chat, and start a call.</li></ul>` },
-  today: { title: 'Today', tip: 'The hub for planning and tracking your day - drag routines and tasks onto a timed day, tick them off, keep your streaks.',
-    body: `<p><b>Today</b> is where you plan and track your day. Three columns: your <b>Routines</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by life area and priority.</p>
+  today: { title: 'Today', tip: 'The hub for planning and tracking your day - drag practices and tasks onto a timed day, tick them off, keep your streaks.',
+    body: `<p><b>Today</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by life area and priority.</p>
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
       <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
       <li><b>Click a task</b> to open it and edit its name, priority, life area or length.</li>
-      <li><b>Routines are a palette, not a timetable.</b> They're your options, grouped by life area - the things you could do. Feel like something musical? Open Music, see your choices, and <b>drag</b> one onto the day or just <b>tick</b> what you did.</li>
+      <li><b>Practices are a palette, not a timetable.</b> They're your options, grouped by life area - the things you could do. Feel like something musical? Open Music, see your choices, and <b>drag</b> one onto the day or just <b>tick</b> what you did.</li>
       <li>Got a calendar event that <b>is</b> a practice (a gym class that's your workout)? It shows a one-tap <b>＋ chip</b> to count it - the event then carries the practice's colour and tick, and ticking it feeds the streak. No need to add the practice twice.</li>
       <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
-      <li><b>Routines</b> are the things you do again and again. Add one to set a life area, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
+      <li><b>Practices</b> are the things you do again and again. Add one to set a life area, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
     body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Daybook - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
@@ -1623,7 +1623,7 @@ function renderSettings() {
   const tiles = [
     ['◈', 'Life areas', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
-    ['🧘', 'Routines', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
+    ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
@@ -2265,13 +2265,15 @@ function pomoEnsureTicker() {
     }
   }, 1000);
 }
+// Re-render whichever surface the tool is showing on (Toolbox or Home).
+function reTools() { const v = state.view && state.view.type; if (v === 'toolbox') renderToolbox(); else if (v === 'home') renderHome(); }
 function pomoToggle() {
   if (pomo.running) { pomo.remaining = pomoRemaining(); pomo.running = false; pomo.endAt = null; }
   else { pomo.endAt = Date.now() + pomoRemaining() * 1000; pomo.running = true; pomoEnsureTicker(); }
-  savePomo(); renderHome();
+  savePomo(); reTools();
 }
-function pomoReset() { pomo.running = false; pomo.endAt = null; pomo.remaining = POMO_MIN[pomo.mode] * 60; savePomo(); renderHome(); }
-function pomoSetMode(m) { if (!POMO_MIN[m]) return; pomo.mode = m; pomo.running = false; pomo.endAt = null; pomo.remaining = POMO_MIN[m] * 60; savePomo(); renderHome(); }
+function pomoReset() { pomo.running = false; pomo.endAt = null; pomo.remaining = POMO_MIN[pomo.mode] * 60; savePomo(); reTools(); }
+function pomoSetMode(m) { if (!POMO_MIN[m]) return; pomo.mode = m; pomo.running = false; pomo.endAt = null; pomo.remaining = POMO_MIN[m] * 60; savePomo(); reTools(); }
 if (pomo.running) pomoEnsureTicker();   // a timer left running keeps ticking across reloads
 function pomoHtml() {
   const r = pomoRemaining();
@@ -2330,25 +2332,34 @@ function pomoPanel() {
 }
 
 // ── Toolbox: Focus, a plain countdown Timer, and Daily Practices ─────────
-// All three tools show at once, each collapsible on its own.
-function tbxToolOpen(k) { try { return !(JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}')[k]); } catch { return true; } }
-function tbxToolToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = true; localStorage.setItem('life.toolbox.collapsed', JSON.stringify(c)); } catch {} if (state.view && state.view.type === 'toolbox') renderToolbox(); else renderHome(); }
+// The toolbox is a row of equal feature boxes; tap one to open its tool below.
+const TBX_TOOLS = [
+  { k: 'focus', ic: '⏱', label: 'Focus', desc: 'Pomodoro sessions for deep work', panel: () => pomoPanel() },
+  { k: 'timer', ic: '⏲', label: 'Timer', desc: 'A simple countdown for anything', panel: () => timerPanel() },
+  { k: 'med', ic: '🧘', label: 'Meditation', desc: 'A calm sit, with real bells', panel: () => medPanel() },
+  { k: 'tracker', ic: '✓', label: 'Practices', desc: 'Your practices, streaks and history', panel: () => trackerPanel() },
+];
 function tbxToolBadge(k) {
   return (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
     : (k === 'timer' && timerState.running) ? `<span class="tbx-run js-timer-time">${timerFmt(timerRemaining())}</span>`
     : (k === 'med' && medState.running) ? `<span class="tbx-run js-med-time">${medFmt(medRemaining())}</span>` : '';
 }
-function tbxTool(k, ic, label, panel) {
-  const o = tbxToolOpen(k);
-  return `<div class="tbx-tool"><div class="tbx-tool-h" data-tbx-tool="${k}"><span class="hs-chev">${o ? '▾' : '▸'}</span><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${tbxToolBadge(k)}</div>${o ? `<div class="tbx-tool-body tbx-${k}">${panel}</div>` : ''}</div>`;
-}
-function tbxToolsHtml() {
-  return `<div class="tbx-tools tbx-page">${tbxTool('focus', '⏱', 'Focus', pomoPanel())}${tbxTool('timer', '⏲', 'Timer', timerPanel())}${tbxTool('med', '🧘', 'Meditation', medPanel())}${tbxTool('tracker', '✓', 'Routines', trackerPanel())}</div>`;
-}
-// Toolbox is now its own tool (own sidebar button); it no longer lives on Home.
+function tbxActive() { try { return localStorage.getItem('life.toolbox.active') || ''; } catch { return ''; } }
+function tbxOpen(k) { const cur = tbxActive(); try { localStorage.setItem('life.toolbox.active', cur === k ? '' : k); } catch {} if (state.view && state.view.type === 'toolbox') renderToolbox(); }
+// Toolbox is its own tool (own sidebar button); it no longer lives on Home.
 function openToolbox() { state.view = { type: 'toolbox' }; renderNav(); renderToolbox(); }
 function renderToolbox() {
-  $('#pane').innerHTML = `${pageCrumb('Toolbox')}<div class="pane-head"><h1>🧰 Toolbox</h1></div>${tbxToolsHtml()}`;
+  const active = tbxActive();
+  const cards = TBX_TOOLS.map((t) => { const badge = tbxToolBadge(t.k); return `<button class="tbx-card ${active === t.k ? 'on' : ''} ${badge ? 'running' : ''}" data-tbx-open="${t.k}">
+      <span class="tbx-card-ic">${t.ic}</span>
+      <span class="tbx-card-t">${t.label}</span>
+      <span class="tbx-card-d">${t.desc}</span>
+      ${badge || ''}
+    </button>`; }).join('');
+  const open = TBX_TOOLS.find((t) => t.k === active);
+  $('#pane').innerHTML = `${pageCrumb('Toolbox')}<div class="pane-head"><h1>🧰 Toolbox</h1></div>
+    <div class="tbx-grid">${cards}</div>
+    ${open ? `<div class="tbx-panel tbx-${open.k}"><div class="tbx-panel-h"><span class="tbx-ic">${open.ic}</span>${open.label}</div>${open.panel()}</div>` : '<p class="tbx-hint">Pick a tool to open it.</p>'}`;
 }
 
 // ── plain countdown Timer ───────────────────────────────────────────────
@@ -2395,17 +2406,17 @@ function timerPanel() {
 function timerToggle() {
   if (timerState.running) { timerState.remaining = timerRemaining(); timerState.running = false; timerState.endAt = null; }
   else { if (timerRemaining() <= 0) timerState.remaining = timerState.dur; timerState.endAt = Date.now() + timerRemaining() * 1000; timerState.running = true; timerEnsureTicker(); }
-  saveTimer(); renderHome();
+  saveTimer(); reTools();
 }
-function timerReset() { timerState.running = false; timerState.endAt = null; timerState.remaining = timerState.dur; saveTimer(); renderHome(); }
-function timerSet(min) { timerState.dur = min * 60; timerState.running = false; timerState.endAt = null; timerState.remaining = min * 60; saveTimer(); renderHome(); }
+function timerReset() { timerState.running = false; timerState.endAt = null; timerState.remaining = timerState.dur; saveTimer(); reTools(); }
+function timerSet(min) { timerState.dur = min * 60; timerState.running = false; timerState.endAt = null; timerState.remaining = min * 60; saveTimer(); reTools(); }
 // Any exact length: minutes + seconds from the custom inputs.
 function timerSetCustom() {
   const mi = document.getElementById('timer-min'), se = document.getElementById('timer-sec');
   const m = Math.max(0, Math.min(1440, Math.floor(Number(mi && mi.value) || 0)));
   const s = Math.max(0, Math.min(59, Math.floor(Number(se && se.value) || 0)));
   const total = m * 60 + s; if (total < 1) { toast('Set at least one second'); return; }
-  timerState.dur = total; timerState.running = false; timerState.endAt = null; timerState.remaining = total; saveTimer(); renderHome();
+  timerState.dur = total; timerState.running = false; timerState.endAt = null; timerState.remaining = total; saveTimer(); reTools();
 }
 if (timerState.running) timerEnsureTicker();
 
@@ -2656,8 +2667,8 @@ async function openPractices() { state.view = { type: 'practices' }; renderNav()
 function renderPractices() {
   if (!state.practices) return;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Routines' }])}
-    <div class="pane-head home-head"><h1>Routines</h1></div>
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Practices' }])}
+    <div class="pane-head home-head"><h1>Practices</h1></div>
     <p class="t2-sub">Activities you want to repeat</p>
     <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by life area. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it on the <b>Tracker</b>.</p>
     ${practicesManageHtml()}`;
@@ -2667,7 +2678,7 @@ function renderPractices() {
 // shaping your practices. Delete lives inside the editor.
 function practicesManageHtml() {
   const P = state.practices; const acts = (P.activities || []);
-  if (!acts.length) return '<div class="home-empty" style="padding:8px 0">No routines yet.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New routine</button></div>';
+  if (!acts.length) return '<div class="home-empty" style="padding:8px 0">No practices yet.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
   acts.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
@@ -2680,10 +2691,10 @@ function practicesManageHtml() {
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
       ${rows}
-      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a routine</button>` : ''}
+      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}
     </div>`;
   }).join('');
-  return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New routine</button>`;
+  return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
 }
 function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
 function practiceStreak(id) { if (!state.practices) return 0; let s = 0; const d = new Date(); for (;;) { if (state.practices.marks[`${id}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
@@ -2723,7 +2734,7 @@ function practicesGroups(withWeek) {
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
         <span class="prc-name">${esc(a.title)}${badges}${withWeek ? '' : len}</span>
         ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
-        <button class="trk-del" data-prc-del="${a.id}" title="Remove routine">×</button>
+        <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
     }).join('');
     return `<div class="prc-group"><div class="prc-lane" style="--h:${g.hue}"><span class="prc-lane-dot"></span>${esc(g.label)}</div>${rows}</div>`;
@@ -2731,7 +2742,7 @@ function practicesGroups(withWeek) {
 }
 function practiceAddForm() {
   const areas = state.areas || [];
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New routine…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -2755,7 +2766,7 @@ function practiceEditorHtml() {
   const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
   return `<div class="pe-bg" data-prc-close></div>
     <div class="pe-panel ${timed ? 'timed-on' : ''}" role="dialog" aria-label="Practice">
-      <div class="pe-head"><h2>${pe.id ? 'Edit routine' : 'New routine'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
+      <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">
         <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
         <div class="pe-two">
@@ -2775,7 +2786,7 @@ function practiceEditorHtml() {
         </div>
         <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="2" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
       </div>
-      <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add routine'}</button></div>
+      <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add practice'}</button></div>
     </div>`;
 }
 async function savePractice() {
@@ -2798,14 +2809,14 @@ async function savePractice() {
     let a;
     if (pe.id) { a = await api('/api/activities/' + pe.id, { method: 'PATCH', body: JSON.stringify(body) }); const i = state.practices.activities.findIndex((x) => String(x.id) === String(pe.id)); if (i >= 0) state.practices.activities[i] = a; }
     else { a = await api('/api/activities', { method: 'POST', body: JSON.stringify(body) }); state.practices.activities.push(a); }
-    closePracticeEditor(); toast(pe.id ? 'Saved' : 'Routine added');
+    closePracticeEditor(); toast(pe.id ? 'Saved' : 'Practice added');
     if (state.view.type === 'today') renderToday(); else rerenderPractices();
   } catch (e) { toast(e.message); }
 }
 function trackerPanel() {
   if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHome(); }); return '<div class="home-empty" style="padding:6px 0">Loading practices…</div>'; }
   const groups = practicesGroups(true);
-  return `<div class="prc">${groups || '<div class="home-empty" style="padding:6px 0">No routines yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
+  return `<div class="prc">${groups || '<div class="home-empty" style="padding:6px 0">No practices yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
 }
 
 // Gentle Home notifications - today's birthdays and open P1 tasks. Each can be
@@ -3018,7 +3029,7 @@ function renderHome() {
               const nav = `<span class="today-nav">${off > 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button><button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button>` : ''}<button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
               const rows = evRows + (off === 0 ? surfacedRows : '');
               const body = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
-                : (rows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add routines and tasks.' : 'Nothing on this day.'}</div>`);
+                : (rows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`);
               return `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', homeDayLabel(off), nav, true)}${secOpen('today') ? `<div class="today-cal">${body}</div>` : ''}</section>`;
             })(),
             priority: p1Html(),
@@ -4569,14 +4580,14 @@ function renderToday() {
 }
 // The Tracker tab: every tracked practice, grouped by life area, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
-// Each life area can carry a check-in routine; the area then says, plainly and
+// Each life area can carry a check-in practice; the area then says, plainly and
 // forwards, how many days until you should do something in it next. An area
 // counts a day done if you did ANY of its practices. Each practice shows its own
 // run + status against its own aim.
 function t2TrackerHtml() {
   const P = state.practices;
   const tracked = (P.activities || []).filter((a) => a.tracked);
-  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a routine with <b>Track it</b> on and its run of days appears here.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
+  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a practice with <b>Track it</b> on and its run of days appears here.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
   const today = dayKey(new Date());
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
@@ -4613,10 +4624,10 @@ function t2TrackerHtml() {
       <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
       ${open ? `${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       ${rows}
-      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a routine</button>` : ''}` : ''}
+      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
-  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick routines as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p><div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New routine</button>`;
+  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p><div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
@@ -4728,16 +4739,16 @@ function t2PracticesHtml() {
       ${streak ? `<span class="t2-streak">🔥${streak}</span>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
-  const body = acts.length ? (inner || '<div class="t2-emptycol">None match the filter.</div>') : '<div class="t2-emptycol">No routines yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add routines</button></div>';
+  const body = acts.length ? (inner || '<div class="t2-emptycol">None match the filter.</div>') : '<div class="t2-emptycol">No practices yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add practices</button></div>';
   const filterBar = open ? t2FilterBar(areas, f, prios, 'data-t2-pracfilter', 'data-t2-pracprio') : '';
-  return `<div class="t2-scroll t2-colscroll">${t2ColHead('Routines', shown.length, 'prac', (f ? 1 : 0) + prios.size, open)}${filterBar}</div>
+  return `<div class="t2-scroll t2-colscroll">${t2ColHead('Practices', shown.length, 'prac', (f ? 1 : 0) + prios.size, open)}${filterBar}</div>
       <div class="t2-list">${body}</div>
     </div>
-    <button class="t2-newrow" data-prc-new>＋ New routine</button>`;
+    <button class="t2-newrow" data-prc-new>＋ New practice</button>`;
 }
 const T2_FILTER_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M2 3.2h12l-4.6 5.4v4.2L6.6 11V8.6z"/></svg>';
 // A sticky one-row column header: name + count + a filter button that reveals a
-// life-area + priority bar. Shared by Tasks and Routines so they read the same.
+// life-area + priority bar. Shared by Tasks and Practices so they read the same.
 function t2ColHead(name, count, kind, active, open) {
   return `<div class="t2-stickytop"><div class="t2-colh"><h2>${name}</h2><span class="t2-colcount">${count}</span><button class="t2-filterbtn ${active ? 'on' : ''} ${open ? 'open' : ''}" data-t2-filter="${kind}" title="Filter by life area and priority">${T2_FILTER_ICON}${active ? '<span class="t2-fdot"></span>' : ''}</button></div>`;
 }
@@ -4920,14 +4931,14 @@ async function t2SlotNotify(slotId) {
   if (now) toast(phoneless ? 'Reminder set - add a phone number in Settings to receive it' : 'Reminder set - text 5 min before');
   try { await api('/api/slots/' + slotId, { method: 'PATCH', body: JSON.stringify({ notify: now }) }); } catch (e) { toast(e.message); }
 }
-// Set a life area's check-in routine (stored in the area block's props.cadence).
+// Set a life area's check-in practice (stored in the area block's props.cadence).
 async function setAreaCadence(areaId, cadence) {
   const a = (state.areas || []).find((x) => x.id === areaId); if (!a) return;
   a.props = a.props || {}; a.props.cadence = cadence || null;
   renderToday();
   try { await api('/api/blocks/' + areaId, { method: 'PATCH', body: JSON.stringify({ props: { cadence: cadence || null } }) }); } catch (e) { toast(e.message); }
 }
-// "Custom…" check-in: ask for any routine in plain words. "5" or "every 5 days"
+// "Custom…" check-in: ask for any practice in plain words. "5" or "every 5 days"
 // -> 5d; "3 a week" -> 3w; "every 2 weeks" -> 14d.
 function parseCustomCadence(s) {
   s = String(s || '').toLowerCase().trim();
@@ -8714,7 +8725,7 @@ function renderReviewCard() {
       <div class="rv-stats">
         ${(m.tasksDone || []).length ? `<button class="rv-stat good rv-stat-btn ${R.summaryOpen ? 'on' : ''}" data-rv-summary title="See a written summary of what you got done"><b>${(m.tasksDone || []).length}</b> ticked off <span class="rv-stat-spark">✦</span></button>` : pill('ticked off', 0, 'good')}
         ${pill('P1 still open', (m.openP1 || []).length, (m.openP1 || []).length ? 'warn' : '')}
-        ${pill('routines kept', (m.practices || []).reduce((a, x) => a + x.count, 0), 'good')}
+        ${pill('practices kept', (m.practices || []).reduce((a, x) => a + x.count, 0), 'good')}
         ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
         ${pill('quiet areas', quiet.length, quiet.length ? 'warn' : '')}
       </div>
@@ -9872,7 +9883,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pomo-reset]')) { pomoReset(); return; }
   { const pm = t.closest('[data-pomo-mode]'); if (pm) { pomoSetMode(pm.dataset.pomoMode); return; } }
   // Toolbox: collapse a tool, drive the plain timer, tick practices.
-  { const tb = t.closest('[data-tbx-tool]'); if (tb) { tbxToolToggle(tb.dataset.tbxTool); return; } }
+  { const tb = t.closest('[data-tbx-open]'); if (tb) { tbxOpen(tb.dataset.tbxOpen); return; } }
   if (t.closest('[data-timer-toggle]')) { timerToggle(); return; }
   if (t.closest('[data-timer-reset]')) { timerReset(); return; }
   { const ts = t.closest('[data-timer-set]'); if (ts) { timerSet(Number(ts.dataset.timerSet)); return; } }

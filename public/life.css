@@ -1656,6 +1656,20 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tbx-run { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:13px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; }
 .tbx-tool-body { padding:4px 16px 18px; }
 .tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer, .tbx-tool-body.tbx-med { max-width:400px; margin-left:auto; margin-right:auto; }
+/* Feature-box toolbox: equal cards in a row, tap one to open its tool below. */
+.tbx-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px; margin:2px 0 4px; }
+.tbx-card { position:relative; display:flex; flex-direction:column; align-items:center; text-align:center; gap:7px; padding:22px 16px 20px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; transition:border-color .14s, transform .1s, box-shadow .14s; }
+.tbx-card:hover { border-color:var(--line-2); transform:translateY(-2px); box-shadow:0 16px 34px -20px rgba(0,0,0,.5); }
+.tbx-card.on { border-color:var(--accent); box-shadow:0 12px 30px -18px color-mix(in srgb,var(--accent) 60%,transparent); }
+.tbx-card-ic { font-size:30px; line-height:1; }
+.tbx-card.on .tbx-card-ic { filter:none; }
+.tbx-card-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); letter-spacing:-.01em; }
+.tbx-card-d { font-size:12.5px; color:var(--ink-3); line-height:1.4; max-width:20ch; }
+.tbx-card.running { border-color:color-mix(in srgb,var(--accent) 50%,var(--line)); }
+.tbx-card .tbx-run { position:absolute; top:10px; right:12px; }
+.tbx-panel { margin-top:18px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); padding:18px; max-width:440px; }
+.tbx-panel-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; font-weight:600; color:var(--ink); margin-bottom:12px; }
+.tbx-hint { margin:22px 2px; color:var(--ink-3); font-size:14.5px; }
 /* Meditation timer - calm, with a slowly breathing orb behind the time. */
 .med { display:flex; flex-direction:column; align-items:center; gap:16px; }
 .med-stage { position:relative; width:180px; height:180px; display:grid; place-items:center; margin:4px 0 2px; }
