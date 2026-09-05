@@ -7307,6 +7307,23 @@ const gp = (g) => (g && g.props) || {};
 const goalArea = (g) => areaById(gp(g).area);
 const gStatusLabel = (s) => (GSTATUS.find((x) => x[0] === (s || 'active')) || GSTATUS[0])[1];
 const horizonLabel = (h) => (HORIZONS.find((x) => x[0] === h) || ['', ''])[1];
+// A horizon carries its own deadline: "this quarter" = the end of the quarter
+// you set it in, "this year" = 31 Dec. So the goal card tells you the date rather
+// than asking. Long-term has no fixed date - that one you pick.
+const quarterOf = (d) => Math.floor(d.getMonth() / 3);   // 0-3
+function horizonTargetDate(horizon, ref) {
+  const d = ref || new Date();
+  if (horizon === 'quarter') return localISO(new Date(d.getFullYear(), quarterOf(d) * 3 + 3, 0));   // last day of the quarter
+  if (horizon === 'year') return localISO(new Date(d.getFullYear(), 11, 31));
+  return null;
+}
+function horizonDateLabel(horizon, iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00');
+  if (horizon === 'quarter') return `End of Q${quarterOf(d) + 1} ${d.getFullYear()} · ${dpLabel(iso)}`;
+  if (horizon === 'year') return `End of ${d.getFullYear()} · ${dpLabel(iso)}`;
+  return dpLabel(iso);
+}
 function goalProgress(g) {
   const p = gp(g); if (p.status === 'done') return 1;
   if (p.gtype === 'number') { const t = +p.target || 0, c = +p.current || 0; return t > 0 ? Math.max(0, Math.min(1, c / t)) : 0; }
@@ -8093,7 +8110,9 @@ function renderGoalCard() {
       <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype"><option value="" ${!p.gtype ? 'selected' : ''} disabled hidden>Choose…</option>${GTYPES.map(([v, l]) => `<option value="${v}" ${p.gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>
+      ${(p.horizon === 'quarter' || p.horizon === 'year')
+        ? `<div class="tf-field"><span class="tf-label">By when</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
+        : `<label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>`}
     </div>
     ${g.sharedBy ? '' : privateToggleHtml('goal', g)}
     <div class="goal-measure-block">${typeBody}</div>
@@ -10149,7 +10168,7 @@ document.addEventListener('change', (e) => {
     if (id === 'goalcard-title') { const v = e.target.value.trim(); if (v) patchGoal(gid, { title: v }, false); }
     else if (id === 'goalcard-why') patchGoal(gid, { why: e.target.value }, true);
     else if (id === 'goalcard-area') patchGoal(gid, { area: e.target.value || null }, true);
-    else if (id === 'goalcard-horizon') patchGoal(gid, { horizon: e.target.value }, true);
+    else if (id === 'goalcard-horizon') { const hz = e.target.value; const patch = { horizon: hz }; const td = horizonTargetDate(hz); if (td) patch.targetDate = td; patchGoal(gid, patch, true); renderGoalCard(); }
     else if (id === 'goalcard-gtype') patchGoal(gid, { gtype: e.target.value }, true).then(renderGoalCard);
     else if (id === 'goalcard-status') patchGoal(gid, { status: e.target.value }, true);
     else if (id === 'goalcard-target') patchGoal(gid, { targetDate: e.target.value || null }, true);

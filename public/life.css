@@ -3543,6 +3543,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .tf-meta { display:flex; flex-wrap:wrap; gap:26px; padding:18px 0 6px; margin-bottom:10px; border-bottom:1px solid var(--line); }
 .tf-field { display:flex; flex-direction:column; gap:6px; }
 .tf-label { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; }
+/* A read-only "By when" the horizon fills in for you (quarter/year goals). */
+.gc-target-auto { display:inline-flex; align-items:center; gap:8px; padding:11px 13px; font-size:15px; color:var(--ink); background:color-mix(in srgb,var(--accent) 7%,var(--paper)); border:1px dashed color-mix(in srgb,var(--accent) 40%,var(--line-2)); border-radius:12px; }
+.gc-target-auto::before { content:'🗓'; font-size:14px; opacity:.8; }
 /* Multi-value contact fields: several emails / phones, one row each, add & drop. */
 .cc-multi { display:flex; flex-direction:column; gap:6px; }
 .cc-multi-row { display:flex; align-items:center; gap:6px; }
