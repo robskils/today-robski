@@ -2402,7 +2402,8 @@ async function practiceFields(env, b) {
   // cadence: "<n>d" (every n days) or "<n>w" (n times a week); null = just log it.
   let cadence = null;
   if (b.cadence) { const m = String(b.cadence).trim().match(/^(\d{1,2})([dw])$/); if (m && Number(m[1]) >= 1) cadence = `${Number(m[1])}${m[2]}`; }
-  return { area, lane, note, video, timed, tracked, days, time_min, cadence };
+  const priority = ['P1', 'P2', 'P3', 'P4'].includes(b.priority) ? b.priority : null;
+  return { area, lane, note, video, timed, tracked, days, time_min, cadence, priority };
 }
 async function createActivity(request, env) {
   const b = await request.json().catch(() => ({}));
@@ -2424,10 +2425,10 @@ async function createActivity(request, env) {
   ).bind(lane, env.uid).first();
 
   const row = await env.DB.prepare(
-    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence, priority)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
   ).bind(lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid,
-    p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min, p.cadence).first();
+    p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min, p.cadence, p.priority).first();
 
   return json(row, request, 201);
 }
@@ -2447,7 +2448,7 @@ async function updateActivity(request, env, id) {
   for (const k of ['lane', 'title', 'url', 'duration', 'position']) if (b[k] !== undefined) set[k] = b[k];
 
   // New practice fields. Changing the area re-derives the legacy lane too.
-  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence'];
+  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence', 'priority'];
   if (newKeys.some((k) => b[k] !== undefined)) {
     const p = await practiceFields(env, b);
     if (b.area !== undefined) { set.area = p.area; if (p.lane && set.lane === undefined) set.lane = p.lane; }
@@ -2458,6 +2459,7 @@ async function updateActivity(request, env, id) {
     if (b.days !== undefined) set.days = p.days;
     if (b.time_min !== undefined) set.time_min = p.time_min;
     if (b.cadence !== undefined) set.cadence = p.cadence;
+    if (b.priority !== undefined) set.priority = p.priority;
   }
 
   const keys = Object.keys(set);

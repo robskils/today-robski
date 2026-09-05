@@ -122,7 +122,9 @@ CREATE TABLE IF NOT EXISTS activities (
   tracked  INTEGER NOT NULL DEFAULT 1,        -- 1 = feeds a habit streak
   days     TEXT,                              -- repeat weekdays, CSV of getDay() 0=Sun..6=Sat; NULL = not scheduled
   time_min INTEGER,                           -- default schedule time, mins from midnight; NULL = none
-  cadence  TEXT                               -- tracking target: "<n>d" every n days, "<n>w" n times/week; NULL = just log it
+  cadence  TEXT,                              -- tracking target: "<n>d" every n days, "<n>w" n times/week; NULL = just log it
+  -- optional P1-P4 on a rhythm, so the planner filters it like tasks; NULL = none
+  priority TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_activities_lane ON activities(lane, position);
 
