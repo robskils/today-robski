@@ -2588,6 +2588,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .adc-chips { display:flex; flex-wrap:wrap; gap:6px; padding:6px 8px; }
 .adc-chip { font-size:13px; color:var(--ink-2); background:color-mix(in srgb,var(--c) 9%,transparent); border:1px solid var(--line); padding:3px 10px; border-radius:999px; white-space:nowrap; }
 .area-dash-shared { margin-top:20px; }
+.area-dash-wall { margin-top:20px; }
 
 .area-hero { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-bottom:8px; }
 /* Area sections as equal icon tiles + one expanding panel (like Home/Toolbox). */

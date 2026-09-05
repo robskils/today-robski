@@ -3897,7 +3897,8 @@ function renderArea() {
     ${bucket.length ? dashCard('Bucket list', dashChips(bucket.slice(0, 5), (b) => `<span class="adc-chip">${esc(b.title || 'Someday')}</span>`)) : ''}
     ${emails.length ? dashCard('Emails', emails.slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled', '<span class="adc-lead">✉</span>')).join('')) : ''}
   </div>
-  ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}`;
+  ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
+  ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
   const panels = {
     'Overview': dash,
     'Vision': visionInner,
