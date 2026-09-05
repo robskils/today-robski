@@ -598,7 +598,16 @@ button { cursor:pointer; background:none; border:0; }
 .area-sentiment .as-lbl { font-size:14px; font-weight:600; color:var(--ink); }
 .area-sentiment .as-sub { font-size:12px; color:var(--ink-3); }
 .area-sentiment.s1 { --as-c:#c4462e; } .area-sentiment.s2 { --as-c:#cc7a33; } .area-sentiment.s3 { --as-c:#c9a227; } .area-sentiment.s4 { --as-c:#6f9f4a; } .area-sentiment.s5 { --as-c:#3f9b6a; }
-.rv-mirror, .wheel, .rv-snapshot, .rv-prompts { margin-top:30px; }
+.rv-mirror, .wheel, .rv-snapshot, .rv-prompts, .rv-goals-glance, .rv-goalreview { margin-top:30px; }
+.rvg-list { display:flex; flex-direction:column; gap:8px; }
+.rvg-row { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 14px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:12px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s; }
+.rvg-row:hover { border-color:var(--accent); }
+.rvg-dot { flex:none; width:9px; height:9px; border-radius:50%; background:var(--c); }
+.rvg-b { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.rvg-t { font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rvg-m { font-size:12.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rvg-bar { flex:none; width:70px; height:6px; border-radius:999px; background:var(--paper-2); overflow:hidden; }
+.rvg-bar i { display:block; height:100%; background:var(--c); border-radius:999px; }
 .rv-stats { display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 4px; }
 .rv-stat { font-size:14.5px; color:var(--ink-2); background:var(--paper-2); border:1px solid var(--line); border-radius:999px; padding:7px 14px; }
 .rv-stat b { color:var(--ink); font-variant-numeric:tabular-nums; }
@@ -2274,6 +2283,14 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    every card keeps all four borders instead of a long title pushing past them. */
 .tbl-card .tc-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tc-ic { color:var(--ink-3); flex:none; }
+/* Notes-page card: colour-coded, life area as a subtitle bar above the name. */
+.nt-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); flex-direction:column; align-items:stretch; gap:7px; padding:13px 15px; }
+.nt-card.has-area { border-left:3px solid var(--c); }
+.nt-sub { display:inline-flex; align-items:center; gap:7px; min-width:0; }
+.nt-sub-dot { flex:none; width:8px; height:8px; border-radius:50%; background:var(--c); }
+.nt-sub-t { font-size:12px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; color:var(--c); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nt-name { display:flex; align-items:center; gap:9px; min-width:0; }
+.nt-name .tc-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tc-lead-star { color:var(--gold,#c9a227); font-size:13px; flex:none; }
 .tc-mail { color:var(--ink-3); font-size:12.5px; flex:none; margin-right:2px; }
 .ico-tbl { color:var(--tbl-pink); }   /* table-note grid mark, everywhere it appears */

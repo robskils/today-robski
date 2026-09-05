@@ -2934,8 +2934,17 @@ function notesTypeMode() { return state.notesType || (state.notesType = localSto
 const NOTE_TYPES = [['all', 'All'], ['note', 'Notes'], ['table', 'Tables']];
 function noteCard(n) {
   const t = isTableNote(n);
-  // No bullet on a regular note; a table keeps its grid icon so it stands out.
-  return `<button class="tbl-card" data-open-${t ? 'table' : 'note'}="${n.id}">${t ? '<span class="tc-ic ico-tbl">▦</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${areaTag(n)}</button>`;
+  // Life area as a slim, colour-coded subtitle bar ABOVE the name (never a pill
+  // that eats half the card). Colour = the area; text = its name, so you get both.
+  const areas = blockAreas(n).map((id) => areaById(id)).filter(Boolean);
+  const a0 = areas[0];
+  const sub = a0
+    ? `<span class="nt-sub"><span class="nt-sub-dot"></span><span class="nt-sub-t">${esc(a0.title)}${areas.length > 1 ? ` +${areas.length - 1}` : ''}</span></span>`
+    : '';
+  return `<button class="tbl-card nt-card ${a0 ? 'has-area' : ''}" ${a0 ? `style="--h:${hueOf(a0)}"` : ''} data-open-${t ? 'table' : 'note'}="${n.id}">
+    ${sub}
+    <span class="nt-name">${t ? '<span class="tc-ic ico-tbl">▦</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span></span>
+  </button>`;
 }
 // The Note · Table type switch shown in a note/table header.
 function noteTypeToggle(id, current) {
@@ -8397,7 +8406,6 @@ function renderReviewCard() {
     return `<div class="wheel-row"><span class="wheel-a">${esc(a.title)}</span><span class="wheel-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span><button class="wheel-x" data-wheel-hide="${a.id}" title="Skip ${esc(a.title)} this time - it won't ask for a score">×</button></div>`;
   }).join('');
   const wheelHiddenN = state.areas.length - wheelAreas.length;
-  const snap = (p.snapshot || []).map((g) => `<div class="rv-snap"><span class="rv-snap-t">${esc(g.title)}</span><span class="rv-snap-m">${esc(g.measure || '')}${g.progress != null ? ` · ${g.progress}%` : ''}</span></div>`).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
@@ -8442,7 +8450,7 @@ function renderReviewCard() {
       ${wheel && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} skipped · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}
     </section>
 
-    ${p.rtype === 'weekly' ? (snap ? `<section class="rv-snapshot"><div class="home-sec-h">Goals, snapshotted</div>${snap}</section>` : '') : goalReviewSection(r)}
+    ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
 
     <section class="rv-prompts">
       <div class="home-sec-h">Reflect</div>
@@ -8492,8 +8500,23 @@ function wheelRestore() {
   patchReview(r.id, { wheelHidden: [] }, true).then(renderReviewCard);
 }
 // The structured goal review for the bigger reviews (monthly and up), grouped by
-// life area with that area's vision as the backdrop, so goals are weighed against
-// where they're meant to lead. Quarterly and yearly get the full "Goal review".
+// The weekly touch on goals: not a frozen snapshot, but a live glance at where
+// your energy is meant to go - the goals in focus (or your active goals), with
+// current progress, each a tap away. A gentle "still the right focus?" nudge.
+function weeklyGoalsGlance() {
+  const active = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active');
+  const focused = active.filter((g) => gp(g).focus);
+  const list = (focused.length ? focused : active).slice(0, 5);
+  if (!list.length) return '';
+  const rows = list.map((g) => {
+    const a = goalArea(g); const pct = Math.round(goalProgress(g) * 100);
+    return `<button class="rvg-row" data-open-goal="${g.id}" style="--h:${hueOf(a)}">
+      <span class="rvg-dot"></span>
+      <span class="rvg-b"><span class="rvg-t">${esc(g.title || 'Untitled')}</span><span class="rvg-m">${a ? esc(a.title) + ' · ' : ''}${esc(goalMeasure(g))}</span></span>
+      <span class="rvg-bar"><i style="width:${pct}%"></i></span></button>`;
+  }).join('');
+  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">still where your energy should go?</span></div><div class="rvg-list">${rows}</div></section>`;
+}
 function goalReviewSection(r) {
   const p = r.props || {};
   const goals = p.snapshot || [];
