@@ -3943,6 +3943,7 @@ function renderArea() {
     ${bucket.length ? dashCard('Bucket list', dashChips(bucket.slice(0, 5), (b) => `<span class="adc-chip">${esc(b.title || 'Someday')}</span>`)) : ''}
     ${emails.length ? dashCard('Emails', emails.slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled', '<span class="adc-lead">✉</span>')).join('')) : ''}
   </div>
+  <section class="area-dash-files">${areaAttachHtml(area)}</section>
   ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
   ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
   const panels = {
@@ -3981,7 +3982,7 @@ function renderArea() {
     </div>
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
-  if (areaOvOpen()) loadThumbs();   // overview attachment thumbnails
+  loadThumbs();   // area file/photo thumbnails (dashboard + overview)
 }
 // The area overview: a collapsible dashboard - counts, the people it's shared
 // with (+ invite), file attachments, and a recent-activity feed derived from the
@@ -4024,7 +4025,6 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
     ${sectionsBlock}
-    ${areaAttachHtml(area)}
   </section>`;
 }
 // Members of a life area: the people it's shared with, as a horizontal row of
@@ -4077,10 +4077,10 @@ function areaAttachHtml(area) {
   const tiles = list.map((a) => (isImgType(a.type)
     ? `<div class="att att-img" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><img data-att-thumb="${a.id}" alt="${esc(a.name)}"><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`
     : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
-  return `<section class="attachments area-ov-att" data-att-zone="${area.id}">
-    <div class="att-h">Attachments${list.length ? ` · ${list.length}` : ''}</div>
+  return `<section class="attachments area-files" data-att-zone="${area.id}">
+    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Daybook keeps things light, not a photo vault</span></div>
     <div class="att-grid">${tiles}
-      <label class="att-add"><input type="file" multiple hidden data-att-input="${area.id}"><span class="att-add-ic">+</span><span>Add file</span></label>
+      <label class="att-add"><input type="file" multiple hidden data-att-input="${area.id}"><span class="att-add-ic">+</span><span>Add file or photo</span></label>
     </div></section>`;
 }
 async function setBlockArea(kind, id, areaId) {

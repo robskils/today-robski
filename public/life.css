@@ -3299,6 +3299,8 @@ table.ttable tr:last-child td { border-bottom:0; }
 .attachments { margin-top:24px; }
 .attachments.att-drag { outline:2px dashed var(--accent); outline-offset:6px; border-radius:14px; }
 .att-h { font-size:13px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); margin-bottom:11px; }
+.att-hint { display:block; margin-top:3px; font-size:12px; font-weight:400; letter-spacing:0; text-transform:none; color:var(--ink-3); }
+.area-dash-files { margin-top:20px; }
 .att-grid { display:flex; flex-wrap:wrap; gap:12px; }
 .att { position:relative; display:flex; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; overflow:hidden; transition:box-shadow .12s, border-color .12s; }
 .att:hover { border-color:var(--line-2); box-shadow:var(--shadow); }
