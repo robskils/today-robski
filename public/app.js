@@ -1576,7 +1576,6 @@ const MOBILE_SECTIONS = [
   ['favareas', 'home-sec-favareas', 'Life areas'],
   ['recent', 'home-sec-recent', 'Recently viewed'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
-  ['mail', 'home-sec-mail', 'Inbox'],
   ['people', 'home-sec-people', 'People online'],
   ['toolbox', 'home-toolbox', 'Toolbox'],
 ];
@@ -2952,18 +2951,18 @@ async function loadHomeMail(force) {
 }
 function homeMailHtml() {
   const list = state.home && state.home.mailPreview;
-  if (list == null) { loadHomeMail(); return '<div class="home-empty" style="padding:8px 2px">Loading…</div>'; }
-  if (!list.length) return '<div class="home-empty" style="padding:8px 2px">Your inbox is clear.</div>';
-  const rows = list.slice(0, 3).map((m) => {
+  if (list == null) { loadHomeMail(); return '<div class="home-empty">Fetching your inbox…</div>'; }
+  if (!list.length) return '<div class="home-empty">Your inbox is clear. ✨</div>';
+  const rows = list.slice(0, 4).map((m) => {
     const from = m.from ? (m.from.name || m.from.address || 'Unknown') : 'Unknown';
     const when = m.date ? timeAgo(new Date(m.date).getTime()) : '';
     return `<button class="hm-row ${m.seen ? '' : 'unread'}" data-open-mail title="Open in Mail">
-      <span class="hm-dot"></span>
-      <span class="hm-body"><span class="hm-from">${esc(from)}</span><span class="hm-subj">${esc(m.subject || '(no subject)')}</span></span>
-      <span class="hm-when">${esc(when)}</span>
+      <span class="hm-av">${esc(initial(from))}</span>
+      <span class="hm-body"><span class="hm-top"><span class="hm-from">${esc(from)}</span><span class="hm-when">${esc(when)}</span></span><span class="hm-subj">${esc(m.subject || '(no subject)')}</span></span>
     </button>`;
   }).join('');
-  return `<div class="hm-list">${rows}</div><button class="p1-all" data-open-mail>Open Mail →</button>`;
+  const unread = state.mailUnreadTotal || 0;
+  return `<div class="hm-list">${rows}</div><button class="p1-all" data-open-mail>${unread ? `${unread > 99 ? '99+' : unread} unread · open Mail →` : 'Open Mail →'}</button>`;
 }
 function renderHome() {
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
@@ -3046,11 +3045,13 @@ function renderHome() {
           ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
           ${modOn('today') ? `<button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>` : ''}
           ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
-          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
-          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflection</span></button>` : ''}
           ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
           ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
+          ${modOn('goals') ? `<button class="hl-btn" data-open-reviews-tool><span class="hl-ic">🔄</span><span class="hl-t">Reviews</span></button>` : ''}
+          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflection</span></button>` : ''}
+          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
           ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
+          ${modOn('timer') ? `<button class="hl-btn" data-open-toolbox><span class="hl-ic">🧰</span><span class="hl-t">Toolbox</span></button>` : ''}
         </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
@@ -3071,6 +3072,7 @@ function renderHome() {
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: favAreas.length ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : '<div class="home-empty">Star a life area (the ★ on it) to pin it here.</div>',
             keepintouch: kit.length ? `<div class="kit-hlist">${kit.map((k) => { const a = areaById(k.area); const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet'; return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}><button class="kit-hopen" data-open-contact="${k.id}"><span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span><span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span></button><button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button></div>`; }).join('')}</div>` : '<div class="home-empty">Nobody due a catch-up.</div>',
+            mail: homeMailHtml(),
             favs: `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>`,
           };
           const meta = {
@@ -3079,9 +3081,10 @@ function renderHome() {
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
             favareas: { ic: '◈', label: 'Life areas', count: favAreas.length || null },
             keepintouch: { ic: '💬', label: 'Keep in touch', count: kit.length || null },
+            mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
           };
-          const order = ['today', 'priority', 'focus', 'favareas', 'keepintouch', 'favs'];
+          const order = ['today', 'priority', 'focus', 'favareas', 'keepintouch', ...(modOn('mail') ? ['mail'] : []), 'favs'];
           let open = state.home.tileOpen || (() => { try { return localStorage.getItem('life.home.tileOpen'); } catch { return ''; } })();
           if (!order.includes(open)) open = 'today';
           const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
@@ -3091,12 +3094,11 @@ function renderHome() {
           // The right column is drag-reorderable too (grips on desktop), each
           // section carrying data-hsec so the drop logic can read the order.
           const sideSec = {
-            mail: modOn('mail') ? `<section class="home-sec home-sec-mail" data-hsec="mail">${secH('mail', 'Inbox', state.mailUnreadTotal ? `<span class="muted">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal} unread</span>` : '', true)}${secOpen('mail') ? homeMailHtml() : ''}</section>` : '',
             recent: `<section class="home-sec home-sec-recent" data-hsec="recent">${secH('recent', 'Recently viewed', '', true)}${secOpen('recent') ? recentHtml : ''}</section>`,
             notepad: modOn('notepad') ? `<section class="home-sec home-sec-notepad" data-hsec="notepad">${secH('notepad', 'Notepad', '', true)}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
             people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-people" data-hsec="people">${secH('people', 'People', '', true)}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
           };
-          const sdef = ['mail', 'recent', 'notepad', 'people'];
+          const sdef = ['recent', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
           return sorder.map((k) => sideSec[k] || '').join('');
         })()}</aside>
