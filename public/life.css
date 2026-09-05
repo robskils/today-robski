@@ -1539,8 +1539,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .favarea { display:inline-flex; align-items:center; gap:9px; padding:9px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:15px; box-shadow:var(--shadow-sm); transition:border-color .12s, transform .12s; }
 .favarea:hover { border-color:var(--line-2); transform:translateY(-1px); }
 .fa-dot { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,4) 55% 55%); flex:none; }
-.home-grip { color:var(--ink-3); font-size:12px; opacity:0; cursor:grab; margin-right:1px; }
-.home-drag-h:hover .home-grip { opacity:.6; }
+.home-grip { color:var(--ink-3); font-size:14px; opacity:.32; cursor:grab; margin-right:2px; padding:2px 3px; border-radius:5px; touch-action:none; -webkit-user-select:none; user-select:none; line-height:1; }
+.home-drag-h:hover .home-grip { opacity:.75; }
+.home-grip:hover { background:var(--paper-2); color:var(--ink-2); }
+.home-grip:active { cursor:grabbing; color:var(--accent); }
+/* Desktop pointer-drag visuals for home sections (mobile has its own in the media query). */
+.home-sec.mdragging { position:relative; z-index:20; }
+.home-sec.mdragging .home-sec-h { border-radius:10px; background:var(--card); box-shadow:0 14px 34px -12px rgba(0,0,0,.45); }
+.home-sec.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
+.home-sec.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
 .home-sec[data-hsec].dragging { opacity:.4; }
 .home-main [data-hsec] { position:relative; }
 .home-main .drop-before::before, .home-main .drop-after::after { content:''; position:absolute; left:0; right:0; height:3px; border-radius:2px; background:var(--accent); z-index:4; }
@@ -1668,6 +1675,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .med-ctrls { display:flex; align-items:center; gap:10px; width:100%; max-width:280px; }
 .med-go { flex:1; }
 .med-note { font-size:12.5px; color:var(--ink-3); text-align:center; line-height:1.5; max-width:320px; }
+.med-opts { display:flex; flex-direction:column; gap:12px; width:100%; max-width:340px; }
+.med-opt { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.med-opt-l { font-size:12.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); font-weight:600; flex:none; }
+.med-opt-vals { display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.med-chip { padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:13px; cursor:pointer; }
+.med-chip:hover { border-color:var(--line-2); color:var(--ink); }
+.med-chip.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
+.med-num { width:56px; max-width:56px; text-align:center; padding:6px 6px; font-size:13.5px; }
+.med-shimmer { cursor:pointer; }
+.med-shimmer input { width:19px; height:19px; accent-color:var(--accent); flex:none; }
 @media (prefers-reduced-motion:reduce) { .med.running .med-orb { animation:none; } }
 /* plain Timer */
 .tmr { display:flex; flex-direction:column; align-items:center; gap:12px; }
