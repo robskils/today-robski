@@ -8981,7 +8981,7 @@ document.addEventListener('click', (e) => {
   // Today (native) view
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }
   { const pr = t.closest('[data-t2-prio]'); if (pr) { const s = state.today.taskPrios instanceof Set ? state.today.taskPrios : (state.today.taskPrios = new Set()); const p = pr.dataset.t2Prio; if (s.has(p)) s.delete(p); else s.add(p); renderToday(); return; } }
-  { const td = t.closest('[data-t2-day]'); if (td) { const dd = new Date(state.today.day + 'T00:00'); dd.setDate(dd.getDate() + Number(td.dataset.t2Day)); loadToday(dd.toISOString().slice(0, 10)); return; } }
+  { const td = t.closest('[data-t2-day]'); if (td) { const dd = new Date(state.today.day + 'T00:00'); dd.setDate(dd.getDate() + Number(td.dataset.t2Day)); loadToday(ymd(dd.getFullYear(), dd.getMonth(), dd.getDate())); return; } }
   if (t.closest('[data-t2-today]')) { loadToday(todayISO()); return; }
   { const pp = t.closest('[data-t2-place-prac]'); if (pp) { t2PlacePractice(pp.dataset.t2PlacePrac); return; } }
   { const pk = t.closest('[data-t2-place-task]'); if (pk) { t2PlaceTask(pk.dataset.t2PlaceTask); return; } }
