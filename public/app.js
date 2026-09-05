@@ -8216,7 +8216,8 @@ async function startReview(rtype) {
     quietAreas: s.quiet.map((a) => a.id),
     surfaced,
   };
-  const props = { rtype, from, to, wheel: { ...lastWheel }, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length };
+  const wheel = Object.fromEntries(Object.entries(lastWheel).map(([k, v]) => { const n = Number(v) || 0; return [k, n > 5 ? Math.round(n / 2) : n]; }));   // carry last time's ratings forward, rescaling any old 1-10 scores to 1-5
+  const props = { rtype, from, to, wheel, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length };
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'review', title: `${REVIEWS[rtype].label} review · ${dpLabel(to)}`, props }) });
   state.reviews.push(b); openReviewCard(b.id);
 }
