@@ -8500,11 +8500,11 @@ async function startReview(rtype) {
   state.tasks = notKit(tasks);
   const s = reviewTaskStats(from);
   const snapshot = state.goals.filter((g) => (gp(g).status || 'active') === 'active').map((g) => ({ id: g.id, title: g.title, area: gp(g).area, measure: goalMeasure(g), progress: Math.round(goalProgress(g) * 100) }));
-  const surfaced = state.tasks.filter((t) => t.props && t.props.snooze && t.props.snooze >= from && t.props.snooze <= to && !t.props.done).slice(0, 40).map((t) => ({ title: t.title, area: t.props.area }));
+  const surfaced = state.tasks.filter((t) => t.props && t.props.snooze && t.props.snooze >= from && t.props.snooze <= to && !t.props.done).slice(0, 40).map((t) => ({ id: t.id, title: t.title, area: t.props.area }));
   const mirror = {
     practices: mir.practices || [],
-    tasksDone: s.done.slice(0, 60).map((t) => ({ title: t.title, area: t.props.area })),
-    openP1: s.openP1.slice(0, 60).map((t) => ({ title: t.title, area: t.props.area })),
+    tasksDone: s.done.slice(0, 60).map((t) => ({ id: t.id, title: t.title, area: t.props.area })),
+    openP1: s.openP1.slice(0, 60).map((t) => ({ id: t.id, title: t.title, area: t.props.area })),
     quietAreas: s.quiet.map((a) => a.id),
     surfaced,
   };
@@ -8621,9 +8621,9 @@ function renderReviewCard() {
         ? '<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Writing your summary…</div>'
         : `<div class="rv-summary-h">✦ The ${p.rtype === 'weekly' ? 'week' : 'period'} in brief</div><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">Written from your record. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div>`}</div>` : ''}
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
-      ${quiet.length ? `<div class="rv-line"><span class="rv-line-k">Went quiet</span> ${quiet.map(esc).join(', ')}</div>` : ''}
+      ${(m.openP1 || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">P1s still open · ${(m.openP1 || []).length}</div><div class="rvm-cards">${(m.openP1 || []).map((t) => { const a = t.area ? areaById(t.area) : null; return `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="p-tag p-P1">P1</span><span class="rvm-t">${esc(t.title || 'Untitled')}</span>${a ? `<span class="rvm-area"><span class="rvm-dot"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div></div>` : ''}
+      ${(m.quietAreas || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">Went quiet · ${(m.quietAreas || []).length}</div><div class="rvm-cards">${(m.quietAreas || []).map((aid) => { const a = areaById(aid); if (!a) return ''; return `<button class="rvm-card rvm-area" style="--h:${hueOf(a)}" data-open-area="${aid}"><span class="rvm-dot"></span><span class="rvm-t">${esc(a.title)}</span><span class="rvm-go">→</span></button>`; }).filter(Boolean).join('')}</div></div>` : ''}
       ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
-      ${(m.openP1 || []).length ? `<details class="rv-det"><summary>P1s still open · ${(m.openP1 || []).length}</summary><ul>${(m.openP1 || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
       ${(m.tasksDone || []).length ? `<details class="rv-det"><summary>Ticked off · ${(m.tasksDone || []).length}</summary><ul>${(m.tasksDone || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
     </section>
 
