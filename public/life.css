@@ -746,6 +746,23 @@ button { cursor:pointer; background:none; border:0; }
 .rv-card-prog { border-left-color:var(--accent); background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
 .rv-card-prog-badge { font-size:11.5px; font-weight:700; color:var(--accent); }
 .rv-inprog-sec .home-sec-h { color:var(--accent); }
+/* Analysis section: the data read + the AI brief, promoted to the top. */
+.rv-analysis { margin:14px 0 6px; padding:16px 17px; border:1px solid var(--line); border-radius:14px; background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+.rv-analyse-cta { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.rv-summary-open { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+/* A collapsible section header (Wheel of Life). */
+.rv-collap-h { cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px; }
+.rv-collap-h .acw-chev { color:var(--ink-3); font-size:13px; width:14px; text-align:center; }
+/* Reflect: one box per question, with room to think. */
+.rv-qa { display:flex; flex-direction:column; gap:16px; margin:6px 0 20px; }
+.rv-q { display:flex; flex-direction:column; gap:6px; }
+.rv-q-label { font-size:16px; font-weight:600; color:var(--ink); line-height:1.35; }
+.rv-ans { width:100%; box-sizing:border-box; font:inherit; font-size:16px; line-height:1.5; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 12px; resize:vertical; min-height:58px; }
+.rv-ans:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+.rv-ans::placeholder { color:var(--ink-3); }
+.rv-freewrite { margin-top:8px; }
+.rv-freewrite-h { font-size:16px; font-weight:600; color:var(--ink); margin-bottom:8px; }
+.rv-prompts .prose { min-height:120px; border:1px solid var(--line); border-radius:10px; padding:11px 12px; background:var(--card); }
 .rv-pastfilter { display:flex; gap:6px; flex-wrap:wrap; margin:-2px 0 12px; }
 .rv-fchip { padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:12.5px; font-weight:600; cursor:pointer; }
 .rv-fchip:hover { border-color:var(--line-2); }

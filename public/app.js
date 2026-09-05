@@ -8700,18 +8700,40 @@ async function startReview(rtype) {
 // A little actionable insight, drawn from the week's record. Subtle, and just the
 // piece worth knowing: the strongest area, what went quiet, an open P1, what
 // surfaced. 1-3 lines, most salient first.
-function reviewInsight(m) {
+// A data-driven read of the period - not a list, an analysis: how much got done
+// and how widely, where effort concentrated or thinned, momentum, and what still
+// hangs over you. Always present (no AI needed); the ✦ brief goes deeper.
+function reviewInsight(m, p) {
+  const period = PERIOD_WORD[(p || {}).rtype] || 'period';
   const lines = [];
   const nm = (id) => { const a = areaById(id); return a ? a.title : null; };
-  const byArea = {}; (m.tasksDone || []).forEach((t) => { if (t.area) byArea[t.area] = (byArea[t.area] || 0) + 1; });
-  const top = Object.entries(byArea).sort((a, b) => b[1] - a[1])[0];
-  if (top && top[1] >= 2 && nm(top[0])) lines.push(`Your strongest area was <b>${esc(nm(top[0]))}</b> — ${top[1]} done.`);
+  const done = m.tasksDone || [];
+  const byArea = {}; done.forEach((t) => { if (t.area && nm(t.area)) byArea[t.area] = (byArea[t.area] || 0) + 1; });
+  const ranked = Object.entries(byArea).sort((a, b) => b[1] - a[1]);
+  const namedTotal = ranked.reduce((s, [, n]) => s + n, 0);
+  const areaCount = ranked.length;
+  // Headline: volume and spread.
+  if (done.length) {
+    lines.push(areaCount > 1
+      ? `You closed <b>${done.length}</b> task${done.length > 1 ? 's' : ''} across <b>${areaCount}</b> areas this ${period}.`
+      : `You closed <b>${done.length}</b> task${done.length > 1 ? 's' : ''} this ${period}.`);
+  }
+  // Concentration: where the effort really pooled.
+  if (ranked.length && namedTotal >= 3) {
+    const [topId, topN] = ranked[0]; const share = Math.round(topN / namedTotal * 100);
+    if (share >= 45) lines.push(`Most of it - <b>${share}%</b> - went to <b>${esc(nm(topId))}</b>.${ranked.length > 2 ? ' The rest was spread thin.' : ''}`);
+    else if (ranked.length >= 3) lines.push(`Effort was fairly balanced, led by <b>${esc(nm(ranked[0][0]))}</b> and <b>${esc(nm(ranked[1][0]))}</b>.`);
+  }
+  // Momentum from practices kept.
+  const pk = (m.practices || []).reduce((a, x) => a + x.count, 0);
+  if (pk) lines.push(`You kept <b>${pk}</b> practice${pk > 1 ? 's' : ''} going${(m.practices || []).length > 1 ? ` across ${(m.practices || []).length} habits` : ''} - steady momentum.`);
+  // What thinned out.
   const quiet = (m.quietAreas || []).map(nm).filter(Boolean);
-  if (quiet.length) lines.push(`Nothing logged in <b>${quiet.slice(0, 2).map(esc).join('</b>, <b>')}</b>${quiet.length > 2 ? ` and ${quiet.length - 2} more` : ''} — a small step next week?`);
-  if ((m.openP1 || []).length) lines.push(`<b>${m.openP1.length}</b> P1${m.openP1.length > 1 ? 's' : ''} still open — which one matters most?`);
-  if ((m.surfaced || []).length) lines.push(`<b>${m.surfaced.length}</b> task${m.surfaced.length > 1 ? 's' : ''} surfaced from snooze this week.`);
-  if (!lines.length) lines.push('A quiet week on the record. What would make next week feel good?');
-  return lines.slice(0, 3);
+  if (quiet.length) lines.push(`Nothing logged in <b>${quiet.slice(0, 2).map(esc).join('</b>, <b>')}</b>${quiet.length > 2 ? ` and ${quiet.length - 2} more` : ''} - worth a small step, or letting go for now?`);
+  // What still hangs over you.
+  if ((m.openP1 || []).length) lines.push(`<b>${m.openP1.length}</b> P1${m.openP1.length > 1 ? 's' : ''} still open - which one truly matters most next ${period}?`);
+  if (!lines.length) lines.push(`A quiet ${period} on the record. What would make the next one feel good?`);
+  return lines.slice(0, 5);
 }
 async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); }
 // The review's timeframe, shown in relation to NOW rather than as a dry range:
@@ -8771,6 +8793,30 @@ function reviewSiblings(r) {
   const i = list.findIndex((x) => x.id === r.id);
   return { list, i, prev: i > 0 ? list[i - 1] : null, next: (i >= 0 && i < list.length - 1) ? list[i + 1] : null };
 }
+const PERIOD_WORD = { weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' };
+// The Wheel of Life is bulky; let it fold away and remember the choice.
+const reviewWheelOpen = () => { try { return localStorage.getItem('life.review.wheelClosed') !== '1'; } catch { return true; } };
+function toggleReviewWheel() { try { localStorage.setItem('life.review.wheelClosed', reviewWheelOpen() ? '1' : '0'); } catch {} renderReviewCard(); }
+// Per-question answers (props.answers, keyed by prompt index). The in-memory copy
+// is updated synchronously on every keystroke, so a re-render (a Wheel score, say)
+// keeps what you're writing; the server save is debounced, and flushed on blur and
+// on app hide/close - the reflection you type here is never lost.
+let rvAnsT;
+function saveReviewAnswer(i, v, immediate) {
+  const r = state.review_open && state.review_open.review; if (!r) return;
+  r.props = r.props || {}; r.props.answers = { ...(r.props.answers || {}), [i]: v };
+  clearTimeout(rvAnsT);
+  if (immediate) { rvAnsT = null; patchReview(r.id, { answers: r.props.answers }, true); }
+  else rvAnsT = setTimeout(() => { rvAnsT = null; patchReview(r.id, { answers: r.props.answers }, true); }, 700);
+}
+function flushReviewAnswers() {
+  const r = state.review_open && state.review_open.review;
+  if (!r || !(state.view && state.view.type === 'reviewcard')) return;
+  const ans = { ...((r.props || {}).answers || {})}; let changed = false;
+  document.querySelectorAll('[data-rv-answer]').forEach((el) => { const i = el.dataset.rvAnswer; if (ans[i] !== el.value) { ans[i] = el.value; changed = true; } });
+  clearTimeout(rvAnsT); rvAnsT = null;
+  if (changed) { r.props = r.props || {}; r.props.answers = ans; patchReview(r.id, { answers: ans }, true); }
+}
 function renderReviewCard() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
   // A re-render (a Wheel score, a goal note, the AI summary landing) rebuilds this
@@ -8778,6 +8824,8 @@ function renderReviewCard() {
   // first, so your writing is never thrown away by a click elsewhere on the card.
   const liveProse = document.querySelector(`.prose[data-prose="review"][data-block-id="${r.id}"]`);
   if (liveProse && document.activeElement === liveProse) saveProse('review', liveProse.innerHTML, r.id);
+  flushReviewAnswers();
+  const periodWord = PERIOD_WORD[p.rtype] || 'period';
   // Reviews made before this field existed are treated as finished; a newly
   // started one is 'inprogress' until you mark it done, so an unfinished review is
   // never mistaken for a lost one - it's waiting for you, clearly labelled.
@@ -8808,23 +8856,26 @@ function renderReviewCard() {
       <button class="rv-editdates" data-rv-editdates>${R.editDates ? 'Done' : 'Adjust dates'}</button>
     </div>
 
-    <section class="rv-insight">
-      <div class="rv-insight-h">✦ Worth knowing</div>
-      <ul class="rv-insight-list">${reviewInsight(m).map((l) => `<li>${l}</li>`).join('')}</ul>
+    <section class="rv-analysis">
+      <div class="rv-insight-h">✦ The read</div>
+      <ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>
+      ${p.doneSummary
+        ? `<div class="rv-summary rv-summary-open"><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">A deeper read, written from your record by Claude. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div></div>`
+        : R.summaryLoading
+          ? `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`
+          : `<div class="rv-analyse-cta"><button class="add-btn wide rv-analyse-btn" data-rv-analyse>✦ Analyse my ${periodWord}</button><span class="rv-finish-hint">An honest read of where your effort actually went, the momentum, and one steer for the ${periodWord} ahead.</span></div>`}
     </section>
 
     <section class="rv-mirror">
       <div class="home-sec-h">Your ${p.rtype === 'weekly' ? 'week' : 'period'}, from the record</div>
       <div class="rv-stats">
-        ${(m.tasksDone || []).length ? `<button class="rv-stat good rv-stat-btn ${R.summaryOpen ? 'on' : ''}" data-rv-summary title="See a written summary of what you got done"><b>${(m.tasksDone || []).length}</b> ticked off <span class="rv-stat-spark">✦</span></button>` : pill('ticked off', 0, 'good')}
+        ${(m.tasksDone || []).length ? `<button class="rv-stat good rv-stat-btn ${R.summaryOpen ? 'on' : ''}" data-rv-summary title="List everything you ticked off"><b>${(m.tasksDone || []).length}</b> ticked off <span class="rv-stat-spark">${R.summaryOpen ? '▾' : '▸'}</span></button>` : pill('ticked off', 0, 'good')}
         ${pill('P1 still open', (m.openP1 || []).length, (m.openP1 || []).length ? 'warn' : '')}
         ${pill('practices kept', (m.practices || []).reduce((a, x) => a + x.count, 0), 'good')}
         ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
         ${pill('quiet areas', quiet.length, quiet.length ? 'warn' : '')}
       </div>
-      ${R.summaryOpen ? `<div class="rv-summary">${R.summaryLoading
-        ? '<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Writing your summary…</div>'
-        : `<div class="rv-summary-h">✦ The ${p.rtype === 'weekly' ? 'week' : 'period'} in brief</div><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">Written from your record. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div>`}${reviewDoneCards(m)}</div>` : ''}
+      ${R.summaryOpen ? `<div class="rv-summary">${reviewDoneCards(m)}</div>` : ''}
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
       ${(m.openP1 || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">P1s still open · ${(m.openP1 || []).length}</div><div class="rvm-cards">${(m.openP1 || []).map((t) => { const a = t.area ? areaById(t.area) : null; return `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="p-tag p-P1">P1</span><span class="rvm-t">${esc(t.title || 'Untitled')}</span>${a ? `<span class="rvm-area"><span class="rvm-dot"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div></div>` : ''}
       ${(m.quietAreas || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">Went quiet · ${(m.quietAreas || []).length}</div><div class="rvm-cards">${(m.quietAreas || []).map((aid) => { const a = areaById(aid); if (!a) return ''; return `<button class="rvm-card rvm-area" style="--h:${hueOf(a)}" data-open-area="${aid}"><span class="rvm-dot"></span><span class="rvm-t">${esc(a.title)}</span><span class="rvm-go">→</span></button>`; }).filter(Boolean).join('')}</div></div>` : ''}
@@ -8832,17 +8883,23 @@ function renderReviewCard() {
     </section>
 
     <section class="wheel">
-      <div class="home-sec-h">Wheel of Life <span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</span> <span class="wheel-hint">rate each area 1–5</span></div>
-      <div class="wheel-rows">${wheel || `<div class="muted">Every area skipped for this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to rate them here.'}</div>`}</div>
-      ${wheel && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} skipped · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}
+      <div class="home-sec-h rv-collap-h" data-wheel-toggle role="button" tabindex="0"><span class="acw-chev">${reviewWheelOpen() ? '▾' : '▸'}</span>Wheel of Life <span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</span> ${reviewWheelOpen() ? '<span class="wheel-hint">rate each area 1–5</span>' : ''}</div>
+      ${reviewWheelOpen() ? `<div class="wheel-rows">${wheel || `<div class="muted">Every area skipped for this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to rate them here.'}</div>`}</div>
+      ${wheel && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} skipped · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}` : ''}
     </section>
 
     ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
 
     <section class="rv-prompts">
       <div class="home-sec-h">Reflect</div>
-      <ul class="rv-prompt-list">${cfg.prompts.map((q) => `<li>${esc(q)}</li>`).join('')}</ul>
-      ${notesSection(r.body, 'review', r.id)}
+      <div class="rv-qa">${cfg.prompts.map((q, i) => `<div class="rv-q">
+        <label class="rv-q-label" for="rv-ans-${i}">${esc(q)}</label>
+        <textarea class="rv-ans" id="rv-ans-${i}" data-rv-answer="${i}" rows="2" placeholder="Write your answer…" autocomplete="off">${esc((p.answers || {})[i] || '')}</textarea>
+      </div>`).join('')}</div>
+      <div class="rv-freewrite">
+        <div class="rv-freewrite-h">Anything else on your mind</div>
+        ${notesSection(r.body, 'review', r.id)}
+      </div>
     </section>
 
     <div class="rv-finish">${st === 'done'
@@ -8977,15 +9034,15 @@ function buildReviewSummaryPayload(r) {
 // and cached on the review (props.doneSummary); "Rewrite" forces a fresh one.
 async function reviewDoneSummary(force) {
   const R = state.review_open; if (!R) return; const r = R.review; const p = r.props || {};
-  if (!force && p.doneSummary) { R.summaryOpen = true; renderReviewCard(); return; }
-  R.summaryOpen = true; R.summaryLoading = true; renderReviewCard();
+  if (!force && p.doneSummary) { renderReviewCard(); return; }
+  R.summaryLoading = true; renderReviewCard();
   try {
     const { summary } = await api('/api/review-summary', { method: 'POST', body: JSON.stringify(buildReviewSummaryPayload(r)) });
     R.summaryLoading = false;
     patchReview(r.id, { doneSummary: summary }, true);   // persist + updates r.props
     renderReviewCard();
   } catch (e) {
-    R.summaryLoading = false; R.summaryOpen = !!p.doneSummary; toast(e.message); renderReviewCard();
+    R.summaryLoading = false; toast(e.message); renderReviewCard();
   }
 }
 
@@ -9863,6 +9920,7 @@ document.addEventListener('input', (e) => {
   }
   const fvi = e.target.closest('input[data-filt-val]'); if (fvi) { const i = +fvi.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = e.target.value; renderTableBody(); } }
   if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); }
+  if (e.target.matches && e.target.matches('[data-rv-answer]')) saveReviewAnswer(e.target.dataset.rvAnswer, e.target.value);
 });
 let proseT;
 // Save every open rich-text editor RIGHT NOW, without waiting for the 800ms
@@ -9878,8 +9936,8 @@ function flushProse() {
     saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId);
   });
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) flushProse(); });
-window.addEventListener('pagehide', flushProse);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { flushProse(); flushReviewAnswers(); } });
+window.addEventListener('pagehide', () => { flushProse(); flushReviewAnswers(); });
 // The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
 // one pair of document listeners covers the button however the tabs re-render.
 document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
@@ -10113,8 +10171,10 @@ document.addEventListener('click', (e) => {
   { const rd = t.closest('[data-rev-remdel]'); if (rd) { const [k, i] = rd.dataset.revRemdel.split(':'); delReviewReminder(k, +i); return; } }
   { const rf = t.closest('[data-reviews-filter]'); if (rf) { state.reviewsFilter = rf.dataset.reviewsFilter || ''; if (state.view.type === 'reviews') renderReviews(); else renderGoals(); return; } }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R && R.summaryOpen && !R.summaryLoading) { R.summaryOpen = false; renderReviewCard(); } else { reviewDoneSummary(false); } return; }
+  if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R) { R.summaryOpen = !R.summaryOpen; renderReviewCard(); } return; }
+  if (t.closest('[data-rv-analyse]')) { reviewDoneSummary(false); return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
+  if (t.closest('[data-wheel-toggle]')) { toggleReviewWheel(); return; }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const rvd = t.closest('[data-review-done]'); if (rvd) { flushProse(); patchReview(rvd.dataset.reviewDone, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review marked done'); return; }
@@ -10635,6 +10695,7 @@ document.addEventListener('blur', (e) => {
   // Not while the link picker is open: it stole focus on purpose, and a save
   // here would re-render the prose and detach the selection we're about to link.
   if (e.target.dataset && e.target.dataset.prose && !state.linkpick) saveProse(e.target.dataset.prose, e.target.innerHTML, e.target.dataset.blockId);
+  if (e.target.matches && e.target.matches('[data-rv-answer]')) saveReviewAnswer(e.target.dataset.rvAnswer, e.target.value, true);
   if (e.target.dataset && e.target.dataset.rename !== undefined) renameTable(e.target.value.trim());
   if (e.target.id === 'area-title') renameArea(e.target.value.trim());
   const cn = e.target.dataset && e.target.dataset.colname; if (cn !== undefined && cn) renameColumn(cn, e.target.value.trim());
