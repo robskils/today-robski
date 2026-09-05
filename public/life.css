@@ -2569,6 +2569,25 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .am-more { font-size:12.5px; padding:2px 8px; }
 .am-openfull { margin-top:4px; }
 
+/* Life-area landing dashboard: a card per part of the area, at a glance. */
+.area-dash { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
+.area-dash-card { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+.adc-head { display:flex; align-items:center; gap:9px; padding:11px 13px; background:none; border:0; border-bottom:1px solid var(--line); cursor:pointer; text-align:left; color:var(--ink); width:100%; }
+.adc-head:hover { background:color-mix(in srgb,var(--c) 7%,transparent); }
+.adc-ic { font-size:16px; line-height:1; }
+.adc-l { font-size:15px; font-weight:700; }
+.adc-c { font-size:12.5px; font-weight:700; color:var(--ink-2); background:color-mix(in srgb,var(--c) 14%,transparent); padding:1px 8px; border-radius:999px; }
+.adc-go { margin-left:auto; color:var(--ink-3); font-size:15px; }
+.adc-body { display:flex; flex-direction:column; gap:2px; padding:8px 8px 10px; }
+.adc-item { display:flex; align-items:center; gap:7px; background:none; border:0; padding:6px 8px; border-radius:8px; cursor:pointer; text-align:left; color:var(--ink); font-size:14.5px; width:100%; }
+.adc-item:hover { background:color-mix(in srgb,var(--c) 8%,transparent); }
+.adc-item-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.adc-lead { color:var(--ink-3); flex:none; }
+.adc-vision { padding:8px 8px 4px; font-size:14.5px; line-height:1.5; color:var(--ink-2); font-style:italic; }
+.adc-empty { padding:8px; font-size:13.5px; color:var(--ink-3); }
+.adc-chips { display:flex; flex-wrap:wrap; gap:6px; padding:6px 8px; }
+.adc-chip { font-size:13px; color:var(--ink-2); background:color-mix(in srgb,var(--c) 9%,transparent); border:1px solid var(--line); padding:3px 10px; border-radius:999px; white-space:nowrap; }
+
 .area-hero { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-bottom:8px; }
 /* Area sections as equal icon tiles + one expanding panel (like Home/Toolbox). */
 .area-tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(108px, 1fr)); gap:10px; margin:14px 0 16px; }

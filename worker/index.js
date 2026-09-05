@@ -1662,31 +1662,78 @@ async function runSurfaceAlertsForUser(env, user) {
   return due.length;
 }
 
-// One plain email listing what surfaced today, sent the same way as the brief:
-// contact@daybook.fyi over Purelymail SMTP, falling back to Resend.
+// The house style for every small system email (surface note, review reminder),
+// held to the same standard as the morning brief: the Daybook mark, a Cormorant
+// headline on warm paper, a proper gold button, the tagline. Never a bare
+// one-liner - this is the brand landing in someone's inbox. `bodyHtml` is the
+// middle, already escaped by the caller.
+function brandedSystemEmail({ home, eyebrow, headline, bodyHtml, ctaHref, ctaLabel, preheader, title }) {
+  const PAPER = '#f5f0e8', CARD = '#fffdf9', INK = '#1c1812', MIST = '#6b6459', RULE = '#e0d9cc', GOLD = '#a8844a';
+  const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+  const SERIF = "'Cormorant Garamond',Georgia,'Times New Roman',serif";
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${escHtml(title || headline)}</title></head>
+<body style="margin:0;padding:0;background:${PAPER};font-family:${SANS};-webkit-text-size-adjust:100%">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">${escHtml(preheader || '')}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER};padding:34px 0 46px">
+    <tr><td align="center" style="padding:0 12px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
+        <tr><td align="center" style="padding:40px 34px 0">
+          <a href="${home}" style="text-decoration:none"><img src="https://daybook.fyi/email-mark.png" width="72" height="38" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
+          ${eyebrow ? `<p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">${escHtml(eyebrow)}</p>` : ''}
+          <p style="margin:14px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${escHtml(headline)}</p>
+        </td></tr>
+        <tr><td style="padding:22px 34px 0;font-family:${SANS};font-size:17px;line-height:1.6;color:${MIST}">${bodyHtml}</td></tr>
+        ${ctaHref ? `<tr><td align="center" style="padding:26px 34px 4px">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:${GOLD};border-radius:999px">
+            <a href="${ctaHref}" style="display:inline-block;padding:13px 30px;font-family:${SANS};font-size:15px;font-weight:600;letter-spacing:0.06em;color:${CARD};text-decoration:none">${escHtml(ctaLabel)} &#8594;</a>
+          </td></tr></table>
+        </td></tr>` : ''}
+        <tr><td style="padding:34px 34px 34px">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${RULE}">
+            <tr><td align="center" style="padding:22px 0 0">
+              <p style="margin:0;font-family:${SERIF};font-size:17px;font-style:italic;color:${MIST}">For a life well lived.</p>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+// One email listing what surfaced today, in the house style (see brandedSystemEmail).
 async function sendSurfaceMail(env, { to, day, titles, home }) {
   const subject = titles.length === 1
-    ? `Surfaced today: ${titles[0]}`
-    : `${titles.length} items surfaced on your Daybook`;
-  const items = titles.map((t) => `<li style="margin:6px 0;color:#211c17;font-size:17px">${escHtml(t)}</li>`).join('');
-  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:8px 4px">
-    <p style="font-size:17px;color:#574e44;margin:0 0 14px">You asked to be reminded - these are back on your Home today:</p>
-    <ul style="padding-left:22px;margin:0 0 20px">${items}</ul>
-    <p style="margin:0"><a href="${home}" style="color:#c4412e;font-weight:600;text-decoration:none;font-size:17px">Open Daybook →</a></p>
-  </div>`;
-  const text = `Back on your Home today:\n\n${titles.map((t) => `- ${t}`).join('\n')}\n\nOpen ${home}`;
+    ? `Back on your Home: ${titles[0]}`
+    : `${titles.length} items are back on your Daybook`;
+  const INK = '#1c1812', RULE = '#e0d9cc';
+  const items = titles.map((t) => `<tr><td style="padding:11px 0;border-top:1px solid ${RULE};font-size:17px;line-height:1.45;color:${INK}">${escHtml(t)}</td></tr>`).join('');
+  const bodyHtml = `<p style="margin:0 0 6px">You asked to be reminded - these are back on your Home today:</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 0">${items}</table>`;
+  const html = brandedSystemEmail({
+    home, eyebrow: 'A gentle nudge', headline: titles.length === 1 ? 'Back on your Home' : `${titles.length} back on your Home`,
+    bodyHtml, ctaHref: home, ctaLabel: 'Open Daybook', preheader: titles.slice(0, 3).join(' · '), title: subject,
+  });
+  const text = `Back on your Home today:\n\n${titles.map((t) => `- ${t}`).join('\n')}\n\nOpen ${home}\n\nFor a life well lived.`;
   await sendSystemMail(env, { to, subject, html, text });
 }
 
 // A review is due today: text + email + push (if the user turned that review's
-// reminder on). Kept plain and short, like the surface note.
+// reminder on). The email is held to the same house style as the morning brief -
+// the Daybook mark, Cormorant headline, warm paper, a proper button and the
+// tagline. It is the brand in someone's inbox, never a bare one-liner.
 async function sendReviewMail(env, { to, label, home }) {
-  const subject = `Your ${label} review is due`;
-  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:8px 4px">
-    <p style="font-size:17px;color:#574e44;margin:0 0 16px">It's time for your <b style="color:#211c17">${escHtml(label)}</b> review - a few minutes to see where you stand.</p>
-    <p style="margin:0"><a href="${home}/reviews" style="color:#c4412e;font-weight:600;text-decoration:none;font-size:17px">Do it now →</a></p>
-  </div>`;
-  const text = `Your ${label} review is due.\n\nOpen ${home}/reviews`;
+  const lc = String(label || 'review').toLowerCase();
+  const period = { weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' }[lc] || 'stretch';
+  const subject = `Time for your ${lc} review`;
+  const bodyHtml = `<p style="margin:0">A few quiet minutes to look back over the ${escHtml(period)} - what moved, what went quiet, and one thing to carry into the next. Daybook has read your ${escHtml(period)} from the record; it's waiting for you.</p>`;
+  const html = brandedSystemEmail({
+    home, eyebrow: 'Time to reflect', headline: `Your ${lc} review`, bodyHtml,
+    ctaHref: `${home}/reviews`, ctaLabel: 'Open your review',
+    preheader: `A few quiet minutes to see how your ${period} went.`, title: subject,
+  });
+  const text = `Your ${lc} review\n\nA few quiet minutes to look back over the ${period} - what moved, what went quiet, and one thing to carry forward.\n\nOpen your review: ${home}/reviews\n\nFor a life well lived.`;
   await sendSystemMail(env, { to, subject, html, text });
 }
 
