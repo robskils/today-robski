@@ -2762,18 +2762,18 @@ function practiceEditorHtml() {
           <label class="pe-f pe-inline"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
         </div>
-        <label class="pe-tog"><input type="checkbox" id="pe-timed" ${timed ? 'checked' : ''} data-pe-timed><span><b>Takes time</b> — has a length, so you can drop it onto your day</span></label>
-        <div class="pe-timing">
-          <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></label>
+        <div class="pe-mini">
+          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
+          <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></div>
+          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}></label>
+          <div class="pe-mini-row"><span class="pe-mini-l">Aim to do it</span>${(() => {
+            const cur = a.cadence || '';
+            const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
+            return `<select class="sel pe-mini-sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
+          })()}</div>
+          <div class="pe-mini-row"><span class="pe-mini-l">🎥 Video</span><input class="sel pe-mini-in" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a link (optional)" autocomplete="off"></div>
         </div>
-        <label class="pe-tog"><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}><span><b>Track it</b> — ticking it builds a streak</span></label>
-        <label class="pe-f"><span>Aim to do it</span>${(() => {
-          const cur = a.cadence || '';
-          const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
-          return `<select class="sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
-        })()}</label>
-        <label class="pe-f"><span>Follow-along video</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a video link (optional)" autocomplete="off"></label>
-        <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
+        <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="2" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
       </div>
       <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add routine'}</button></div>
     </div>`;
@@ -4331,10 +4331,11 @@ function showCalForm(ev) {
     <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
     <div class="ce-when">
-      <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span></div>
-      <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
+      <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span>
+      <span class="ce-warrow">→</span>
+      <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span>
+      <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
-    <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
     <textarea id="ce-notes" class="sel ce-notes" placeholder="Notes (optional)" rows="2">${esc(notes)}</textarea>
     ${noteLinksHtml(notes)}
     <div class="ce-foot">
@@ -4559,7 +4560,12 @@ function renderToday() {
     </div>`)}`;
   // The Today/Tracker switch pins just under the breadcrumb; measure the crumb's
   // height so the sticky offset sits exactly at its bottom edge (see .t2-tabs).
-  requestAnimationFrame(() => { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--t2-crumbh', cb.offsetHeight + 'px'); });
+  requestAnimationFrame(() => {
+    const root = document.documentElement;
+    const cb = document.querySelector('#pane .crumbbar'); if (cb) root.style.setProperty('--t2-crumbh', cb.offsetHeight + 'px');
+    // Tabs height too, so the column headers can pin just below the sticky tabs.
+    const tb = document.querySelector('#pane .t2-tabs'); if (tb) root.style.setProperty('--t2-tabsh', tb.offsetHeight + 'px');
+  });
 }
 // The Tracker tab: every tracked practice, grouped by life area, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
@@ -4883,7 +4889,7 @@ document.addEventListener('pointercancel', t2ResizeEnd);
 function t2OpenSlot(slotId) {
   const s = (state.today.data.slots || []).find((x) => String(x.id) === String(slotId)); if (!s) return;
   const taskId = s.tana_id || (s.tasks && s.tasks[0] && (s.tasks[0].tana_id || s.tasks[0].id));
-  if (taskId && (state.today.tasks || []).some((x) => String(x.tana_id) === String(taskId))) { openTaskPopover(taskId); return; }
+  if (taskId && (state.today.tasks || []).some((x) => String(x.tana_id) === String(taskId))) { openTaskPopover(taskId, slotId); return; }
   if (s.activity_id) { openPracticeEditor(s.activity_id); return; }
 }
 // Tick a placed block. A practice block also ticks its habit (one tick, counted
@@ -4950,9 +4956,9 @@ async function promptPracticeCadence(sel) {
 // Click a task on Today to open its details in a popover (name, priority, area,
 // length, done) - a body-level overlay like the practice editor.
 let t2SuppressClick = 0;
-function openTaskPopover(taskId) {
+function openTaskPopover(taskId, slotId) {
   const t = (state.today.tasks || []).find((x) => String(x.tana_id) === String(taskId)); if (!t) return;
-  state.taskEdit = { id: t.tana_id };
+  state.taskEdit = { id: t.tana_id, slotId: slotId || null };
   let host = document.getElementById('task-editor-host');
   if (!host) { host = document.createElement('div'); host.id = 'task-editor-host'; document.body.appendChild(host); }
   const areas = state.areas || [];
@@ -4982,8 +4988,16 @@ async function saveTaskPopover() {
     duration: Math.max(5, Math.min(720, Number(($('#te-dur') || {}).value) || 30)),
     done: $('#te-done') ? $('#te-done').checked : false,
   };
-  try { await api('/api/blocks/' + te.id, { method: 'PATCH', body: JSON.stringify({ title, props }) }); closeTaskPopover(); toast('Saved'); loadToday(); }
-  catch (e) { toast(e.message); }
+  try {
+    await api('/api/blocks/' + te.id, { method: 'PATCH', body: JSON.stringify({ title, props }) });
+    // If this task is placed on today's canvas, resize its block to the new length
+    // so the planner reflects the change you just made.
+    const slots = (state.today.data && state.today.data.slots) || [];
+    const slot = te.slotId ? slots.find((s) => String(s.id) === String(te.slotId))
+      : slots.find((s) => String(s.tana_id) === String(te.id) || (s.tasks || []).some((x) => String(x.tana_id) === String(te.id) || String(x.id) === String(te.id)));
+    if (slot && slot.duration !== props.duration) await api('/api/slots/' + slot.id, { method: 'PATCH', body: JSON.stringify({ duration: props.duration }) }).catch(() => {});
+    closeTaskPopover(); toast('Saved'); loadToday();
+  } catch (e) { toast(e.message); }
 }
 async function deleteTaskFromPopover(id) {
   if (!(await uiConfirm('Delete this task?', { danger: true, okLabel: 'Delete' }))) return;
