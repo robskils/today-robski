@@ -87,6 +87,17 @@ document.addEventListener('keydown', (ev) => {
   if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;  // native text undo wins in a field
   ev.preventDefault(); doUndo();
 });
+// On a review card, ← / → flip to the older / newer review of the same type.
+document.addEventListener('keydown', (ev) => {
+  if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+  if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+  if (!(state.view && state.view.type === 'reviewcard' && state.review_open)) return;
+  const el = document.activeElement;
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+  const s = reviewSiblings(state.review_open.review);
+  const go = ev.key === 'ArrowLeft' ? s.prev : s.next;
+  if (go) { ev.preventDefault(); openReviewCard(go.id).catch((e) => toast(e.message)); }
+});
 // Delete a block but keep a way back: ⌘Z (or Undo) recreates it and refreshes
 // the view. The id changes on restore, but the item and its content return.
 function undoableBlockDelete(block) {
@@ -8411,6 +8422,15 @@ function reviewInsight(m) {
   return lines.slice(0, 3);
 }
 async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); }
+// Reviews of the same type, oldest→newest, and where this one sits - so a review
+// card can flip ‹ back / forward › through your run of weeklies (or any type).
+function reviewSiblings(r) {
+  const rt = (r.props || {}).rtype;
+  const list = (state.reviews || []).filter((x) => (x.props || {}).rtype === rt)
+    .sort((a, b) => String(a.props && a.props.to || a.created_at || '').localeCompare(String(b.props && b.props.to || b.created_at || '')));
+  const i = list.findIndex((x) => x.id === r.id);
+  return { list, i, prev: i > 0 ? list[i - 1] : null, next: (i >= 0 && i < list.length - 1) ? list[i + 1] : null };
+}
 function renderReviewCard() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
   const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No area'; };
@@ -8428,7 +8448,7 @@ function renderReviewCard() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
-    <div class="pane-head"><h1>${esc(cfg.label)} review</h1></div>
+    <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
     <div class="rv-period">
       <span class="rv-period-sub">${esc(cfg.sub)}</span>
       <span class="rv-period-dates">
