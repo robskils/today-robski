@@ -1507,7 +1507,7 @@ async function runAlertsForUser(env, user, now, target) {
   // without alerting twice, since alerted_min guards the repeat.
   const rows = (await env.DB.prepare(
     `SELECT id, lane, title, start_min FROM slots
-      WHERE user_id = ? AND day = ? AND start_min IS NOT NULL
+      WHERE user_id = ? AND day = ? AND start_min IS NOT NULL AND notify = 1
         AND start_min BETWEEN ? AND ?
         AND (alerted_min IS NULL OR alerted_min != start_min)`,
   ).bind(uid, now.date, target - 1, target + 1).all()).results || [];
@@ -2157,6 +2157,9 @@ async function updateSlot(request, env, id) {
     if (b[k] !== undefined) { fields.push(`${k} = ?`); binds.push(b[k]); }
   }
   if (b.done !== undefined) { fields.push('done = ?'); binds.push(b.done ? 1 : 0); }
+  // notify: opt-in to a 5-min-before text, chosen per item in the Today planner.
+  // Clearing it also clears alerted_min so re-enabling can fire again the same day.
+  if (b.notify !== undefined) { fields.push('notify = ?'); binds.push(b.notify ? 1 : 0); if (!b.notify) fields.push('alerted_min = NULL'); }
   if (!fields.length) return json(existing, request);
 
   binds.push(id, env.uid);

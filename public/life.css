@@ -1294,7 +1294,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* Username field: input + fixed .daybook.fyi suffix, with a live URL note. */
 .su-username-row { display:flex; align-items:stretch; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; background:var(--card); max-width:420px; }
 .su-username-row:focus-within { border-color:var(--accent); }
-.su-username-in.sel { border:0; border-radius:0; flex:1; min-width:0; }
+.su-username-in.sel { border:0; border-radius:0; flex:1; min-width:0; max-width:none; }
 .su-username-suffix { display:flex; align-items:center; padding:0 13px; background:var(--paper-2); color:var(--ink-3); font-size:15px; white-space:nowrap; border-left:1px solid var(--line); }
 .su-username-note { font-size:13px; color:var(--ink-3); } .su-username-note b { color:var(--ink-2); font-weight:600; }
 .alias-list { display:flex; flex-wrap:wrap; gap:6px; }
@@ -1313,6 +1313,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .alias-verify-row input { width:110px; flex:none; letter-spacing:.18em; text-align:center; font-variant-numeric:tabular-nums; }
 .acct-plan { display:flex; align-items:center; gap:12px; } .acct-plan b { text-transform:capitalize; }
 .acct-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; }
+.acct-privacy { margin:14px 0 0; font-size:13.5px; line-height:1.55; color:var(--ink-3); max-width:560px; }
+.acct-privacy a { color:var(--ink-2); text-decoration:none; border-bottom:1px solid var(--line-2); white-space:nowrap; }
+.acct-privacy a:hover { color:var(--accent); border-color:var(--accent); }
 .acct-danger { color:var(--rust,#c4412e); } .acct-danger:hover { border-color:var(--rust,#c4412e); }
 /* Settings: section on/off switches. */
 .set-mods { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -1644,6 +1647,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-block:hover .t2-x { opacity:.7; }
 .t2-x:hover { opacity:1; color:var(--accent); }
 .t2-vid { flex:none; cursor:pointer; font-size:13px; }
+.t2-bell { flex:none; width:22px; height:22px; border-radius:6px; font-size:13px; line-height:1; opacity:0; cursor:pointer; background:transparent; border:0; }
+.t2-block:hover .t2-bell { opacity:.65; }
+.t2-bell:hover { opacity:1; }
+.t2-bell.on { opacity:1; }
 .t2-join { flex:none; text-decoration:none; }
 /* An event that names a practice: a one-tap chip to count it, no retyping. */
 .t2-countbtn { flex:none; border:1px solid hsl(var(--h,220) 55% 55% / .5); background:color-mix(in srgb,var(--accent) 10%,transparent); color:var(--accent); border-radius:999px; font-size:11.5px; font-weight:600; padding:2px 9px; line-height:1.4; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
@@ -2242,6 +2249,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ov-act-t { flex:1; min-width:0; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ov-act-time { flex:none; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .ov-muted { color:var(--ink-3); font-size:14px; padding:4px 0; }
+.ov-sections { margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+.ov-secgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:6px 14px; }
+.ov-sectog { display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:3px 0; }
+.ov-sectog input { width:17px; height:17px; accent-color:var(--accent); flex:none; }
 .area-ov-att { margin:0; }
 /* Collapsible section headers on a life area page. */
 .area-sec-h { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
@@ -3378,10 +3389,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-multi { display:flex; flex-direction:column; gap:6px; }
 .cc-multi-row { display:flex; align-items:center; gap:6px; }
 .cc-multi-row .cc-email-in, .cc-multi-row .cc-phone-num { flex:1 1 auto; min-width:0; }
-.cc-phone-cc { flex:0 0 76px; width:76px; text-align:center; }
+.cc-phone-cc { flex:0 0 104px; width:104px; text-align:center; }
 /* Settings phone: same dial-code picker + number as a contact card. */
 .acct-phone { display:flex; align-items:center; gap:6px; }
-.acct-phone .acct-phone-cc { flex:0 0 76px; width:76px; text-align:center; }
+.acct-phone .acct-phone-cc { flex:0 0 104px; width:104px; text-align:center; }
 .acct-phone .acct-phone-num { flex:1 1 auto; min-width:0; }
 .cc-multi-x { flex:0 0 auto; width:30px; height:30px; border:none; background:none; color:var(--ink-3); font-size:20px; line-height:1; cursor:pointer; border-radius:8px; }
 .cc-multi-x:hover { background:var(--surface-2); color:var(--danger,#c4412e); }

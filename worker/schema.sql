@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS slots (
   url        TEXT,              -- carried over when the slot came from an activity
   event_id   TEXT,              -- Google Calendar event this block was adopted from
   alerted_min INTEGER,          -- the start_min a 5-min SMS was sent for; NULL = none
+  notify     INTEGER DEFAULT 0, -- opt-in: text me 5 min before this block starts (chosen per item in the Today planner)
   activity_id INTEGER,          -- the practice (activities.id) this block came from; NULL for a task/ad-hoc block
   created_at TEXT NOT NULL
 );

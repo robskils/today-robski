@@ -1651,6 +1651,7 @@ function renderSettings() {
         </div>
         ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
         <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
+        <p class="acct-privacy">Your Daybook is private to you - never sold, never used to train a model. It's yours to download any time, and you can bring your own AI, or your own storage. <a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></p>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
@@ -1705,7 +1706,7 @@ function renderSettings() {
           <label class="set-mod"><span>When something surfaces<small>An email the morning a "surface on" task comes back to your Home</small></span><input type="checkbox" data-account-surface-email ${state.account.surfaceEmail !== false ? 'checked' : ''}></label>
         </div>
         <div class="set-notif-group"><div class="set-notif-h">By text</div>
-          <label class="set-mod"><span>Before a time block starts<small>A text 5 minutes before a scheduled block${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
+          <label class="set-mod"><span>Reminders you set on your day<small>A text 5 minutes before an item you've asked about - turn the bell on for any task or practice in the Today planner${state.account.phone ? '' : '. Add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
           <label class="set-mod"><span>When something surfaces<small>A text the morning a "surface on" task comes back${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-surface-sms ${state.account.surfaceSms ? 'checked' : ''}></label>
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -3607,7 +3608,12 @@ function renderArea() {
   const contactCards = contacts.map((c) => contactCardHtml(c)).join('');
   const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span></a>` : `<button class="tbl-card"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span></button>`; }).join('');
   const journalCards = journals.map((j) => `<button class="tbl-card" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span></button>`).join('');
-  const sec = (label, n, inner) => n ? `<section class="home-sec">${areaSecH(label, label, n)}${areaSecOpen(label) ? inner : ''}</section>` : '';
+  // Owner section control: the owner can hide any part of the page (Vision,
+  // Goals, etc.) from area.props.hiddenSecs. Hidden sections vanish for everyone;
+  // the owner turns them back on from the overview panel's "Sections" manager.
+  const hiddenSecs = (area.props && area.props.hiddenSecs) || [];
+  const secHidden = (k) => hiddenSecs.includes(k);
+  const sec = (label, n, inner) => (n && !secHidden(label)) ? `<section class="home-sec">${areaSecH(label, label, n)}${areaSecOpen(label) ? inner : ''}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
@@ -3618,10 +3624,10 @@ function renderArea() {
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
       ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
     </div>
-    <section class="home-sec">${areaSecH('Vision', 'Vision')}${areaSecOpen('Vision') ? visionInner : ''}</section>
+    ${secHidden('Vision') ? '' : `<section class="home-sec">${areaSecH('Vision', 'Vision')}${areaSecOpen('Vision') ? visionInner : ''}</section>`}
     ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
-    ${areaMembersHtml(area)}
-    ${areaWallHtml(area)}
+    ${secHidden('Shared with') ? '' : areaMembersHtml(area)}
+    ${secHidden('Wall') ? '' : areaWallHtml(area)}
     ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
     ${sec('Starred notes', starredNotes.length, `<div class="tbl-cards">${starredNoteCards}</div>`)}
     ${sec('Notes', otherNotes.length, `<div class="tbl-cards">${noteCards}</div>`)}
@@ -3648,12 +3654,22 @@ function areaOverviewHtml(area, c, blocks) {
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const recent = (blocks || []).map((b) => ({ b, t: new Date(b.updated_at || b.created_at || 0).getTime() })).filter((x) => x.t > 0).sort((a, b) => b.t - a.t).slice(0, 6);
   const activity = recent.length ? recent.map(({ b, t }) => `<div class="ov-act"><span class="ov-act-ic">${kIcon[b.kind] || '•'}</span><span class="ov-act-t">${esc(b.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(t)}</span></div>`).join('') : '<div class="ov-muted">No recent activity.</div>';
+  // Owner section control: the owner decides which parts of the page exist.
+  // Untick one and it disappears for everyone; empty sections hide themselves.
+  const AREA_SECS = ['Vision', 'Goals', 'Shared with', 'Wall', 'Bucket list', 'Starred notes', 'Notes', 'Emails', 'Tables', 'Contacts', 'Saved links', 'Reflections', 'Tasks'];
+  const hidden = (area.props && area.props.hiddenSecs) || [];
+  const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
+      <div class="ov-h"><span>Sections</span></div>
+      <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(k)}</span></label>`).join('')}</div>
+      <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this page. Empty sections hide themselves.</div>
+    </div>`;
   return `<section class="area-ov">
     <div class="ov-metrics">${metrics}</div>
     <div class="ov-cols">
       <div class="ov-block"><div class="ov-h"><span>People</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite to area</button>'}</div><div class="ov-people">${people}</div></div>
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
+    ${sectionsBlock}
     ${areaAttachHtml(area)}
   </section>`;
 }
@@ -4447,8 +4463,11 @@ function t2SlotBlock(s, floating) {
   const done = !!s.done || (task && task.done);
   const pos = floating ? '' : `style="top:${t2Top(s.start_min)}px;height:${Math.max(26, Math.round((s.duration || 30) * T2_PPM))}px;--h:${hue}"`;
   const vid = (act && act.video) ? '<span class="t2-vid" data-t2-open-slot="' + s.id + '">🎥</span>' : '';
+  // A per-item reminder: text me 5 min before this starts. Only for timed blocks
+  // (a floating "anytime" block has no start to remind before). Off by default.
+  const bell = floating ? '' : `<button class="t2-bell ${s.notify ? 'on' : ''}" data-t2-slot-notify="${s.id}" title="${s.notify ? 'Reminder on - text 5 min before' : 'Remind me 5 min before'}" aria-pressed="${s.notify ? 'true' : 'false'}">${s.notify ? '🔔' : '🔕'}</button>`;
   return `<div class="t2-block t2-slot ${done ? 'done' : ''} ${floating ? 't2-float' : ''}" ${floating ? `style="--h:${hue}"` : pos} data-slot-id="${s.id}" data-t2-drag="slot" data-t2-drag-id="${s.id}" data-t2-drag-label="${esc(s.title || 'Block')}">
-    <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${s.id}" title="${done ? 'Done' : 'Mark done'}">✓</button>${floating ? '' : `<span class="t2-btime">${prcHHMM(s.start_min)}</span>`}<span class="t2-btitle">${esc(s.title || 'Block')}</span>${task && task.priority ? `<span class="p-tag p-${task.priority}">${task.priority}</span>` : ''}${vid}<button class="t2-x" data-t2-del-slot="${s.id}" title="Remove">×</button></div>
+    <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${s.id}" title="${done ? 'Done' : 'Mark done'}">✓</button>${floating ? '' : `<span class="t2-btime">${prcHHMM(s.start_min)}</span>`}<span class="t2-btitle">${esc(s.title || 'Block')}</span>${task && task.priority ? `<span class="p-tag p-${task.priority}">${task.priority}</span>` : ''}${vid}${bell}<button class="t2-x" data-t2-del-slot="${s.id}" title="Remove">×</button></div>
     ${floating ? '' : '<div class="t2-rz t2-rz-top" data-t2-resize="top" title="Drag to resize"></div><div class="t2-rz t2-rz-bot" data-t2-resize="bot" title="Drag to resize"></div>'}
   </div>`;
 }
@@ -4637,6 +4656,15 @@ async function t2SlotTick(slotId) {
 }
 async function t2DelSlot(slotId) {
   try { await api('/api/slots/' + slotId, { method: 'DELETE' }); loadToday(); } catch (e) { toast(e.message); }
+}
+// Per-item reminder toggle on a placed block: text me 5 min before it starts.
+async function t2SlotNotify(slotId) {
+  const T = state.today; const s = (T.data.slots || []).find((x) => String(x.id) === String(slotId)); if (!s) return;
+  const now = !s.notify;
+  s.notify = now ? 1 : 0; renderToday();
+  const phoneless = !(state.account && state.account.phone) && !(state.me && state.me.id === 1);
+  if (now) toast(phoneless ? 'Reminder set - add a phone number in Settings to receive it' : 'Reminder set - text 5 min before');
+  try { await api('/api/slots/' + slotId, { method: 'PATCH', body: JSON.stringify({ notify: now }) }); } catch (e) { toast(e.message); }
 }
 // Set a life area's check-in rhythm (stored in the area block's props.cadence).
 async function setAreaCadence(areaId, cadence) {
@@ -9266,6 +9294,7 @@ document.addEventListener('click', (e) => {
   { const pk = t.closest('[data-t2-place-task]'); if (pk) { t2PlaceTask(pk.dataset.t2PlaceTask); return; } }
   { const st = t.closest('[data-t2-slot-tick]'); if (st) { t2SlotTick(st.dataset.t2SlotTick); return; } }
   { const sd = t.closest('[data-t2-del-slot]'); if (sd) { e.stopPropagation(); t2DelSlot(sd.dataset.t2DelSlot); return; } }
+  { const sn = t.closest('[data-t2-slot-notify]'); if (sn) { e.stopPropagation(); t2SlotNotify(sn.dataset.t2SlotNotify); return; } }
   { const ce = t.closest('[data-t2-count-ev]'); if (ce) { e.stopPropagation(); t2CountEvent(ce.dataset.t2CountEv); return; } }
   { const uc = t.closest('[data-t2-uncount]'); if (uc) { e.stopPropagation(); t2UncountEvent(uc.dataset.t2Uncount); return; } }
   { const ov = t.closest('[data-t2-open-slot]'); if (ov) { const s = (state.today.data.slots || []).find((x) => String(x.id) === String(ov.dataset.t2OpenSlot)); const a = s && (state.practices.activities || []).find((x) => String(x.id) === String(s.activity_id)); if (a && a.video) window.open(a.video, '_blank', 'noopener'); return; } }
@@ -9778,6 +9807,14 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
+  if (e.target.matches('[data-area-sec-vis]')) {
+    const key = e.target.dataset.areaSecVis; const a = state.area_open && state.area_open.area; if (!a) return;
+    a.props = a.props || {}; let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
+    if (e.target.checked) hs = hs.filter((x) => x !== key); else if (!hs.includes(key)) hs.push(key);
+    a.props.hiddenSecs = hs;
+    api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs } }) }).catch((err) => toast(err.message));
+    renderArea(); return;
+  }
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   if (e.target.id === 'contact-file' && e.target.files && e.target.files[0]) { importVcf(e.target.files[0]); e.target.value = ''; }
   if (state.contact_open) {
