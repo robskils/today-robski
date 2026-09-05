@@ -7876,7 +7876,7 @@ async function openGoals(tab) {
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.goals = goals; state.bucket = bucket; state.reviews = reviews;
   renderNav(); renderGoals();
-  api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewReminders = r.reminders || []; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
+  api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewRemTypes = r.types || []; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
 }
 // Reviews are their own tool now (own sidebar button), split out of Goals.
 async function openReviews() {
@@ -7884,7 +7884,7 @@ async function openReviews() {
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
   renderNav(); renderReviews();
-  api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewReminders = r.reminders || []; renderReviews(); } }).catch(() => {});
+  api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRemTypes = r.types || []; renderReviews(); } }).catch(() => {});
 }
 function renderReviews() {
   $('#pane').innerHTML = `${pageCrumb('Reviews')}<div class="pane-head"><h1>Reviews</h1></div>
@@ -8185,10 +8185,9 @@ function reviewTaskStats(from) {
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
-  const nextRem = (state.reviewReminders || []).filter((r) => new Date(r.at) > new Date()).sort((a, b) => String(a.at).localeCompare(String(b.at)))[0];
+  const weeklyDue = nextReviewDue('weekly');
   let nextLine = '';
-  if (nextRem) nextLine = `Next: ${(REVIEWS[nextRem.rtype] || {}).label || 'review'} on ${esc(fmtReminder(nextRem.at))}`;
-  else if (weeklies.length) { const lastTo = (weeklies[0].props || {}).to || localISO(new Date(weeklies[0].created_at)); const nd = new Date(lastTo + 'T00:00'); nd.setDate(nd.getDate() + 7); nextLine = nd <= new Date() ? 'Next weekly review: due now' : `Next weekly review: ${esc(dpLabel(localISO(nd)))}`; }
+  if (weeklyDue) nextLine = weeklyDue <= localISO() ? 'Next weekly review: due now' : `Next weekly review: ${esc(dpLabel(weeklyDue))}`;
   const hero = `<div class="rv-hero">
     <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>${nextLine || 'A few minutes, and you\'ll know where you stand.'}</small></span><span class="rvw-go">→</span></button>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
@@ -8202,38 +8201,39 @@ function reviewsBody() {
   const cards = past.map(card).join('');
   return `${hero}${trendHtml}${reviewRemindersHtml()}${past.length ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${past.length}</div><div class="rv-cards">${cards}</div></section>` : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>'}`;
 }
-const REM_REPEATS = [['once', 'Once'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
-function fmtReminder(at) { try { const d = new Date(at); return d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return at; } }
+// When is a review of this type next due? The last one of that type + its
+// period. Null if none done yet. Used for the hero line and the reminder subs.
+function nextReviewDue(rtype) {
+  const days = (REVIEWS[rtype] || REVIEWS.weekly).days;
+  const list = (state.reviews || []).filter((r) => (r.props || {}).rtype === rtype).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  if (!list.length) return null;
+  const lastTo = (list[0].props || {}).to || localISO(new Date(list[0].created_at));
+  const nd = new Date(lastTo + 'T00:00'); nd.setDate(nd.getDate() + days);
+  return localISO(nd);
+}
+// Simple reminders: one on/off per review type. No dates - it arrives on the day
+// that review is next due, by text and email. Same deal for every type.
 function reviewRemindersHtml() {
-  const rem = (state.reviewReminders || []).slice().sort((a, b) => String(a.at).localeCompare(String(b.at)));
-  const list = rem.map((r) => `<div class="rv-rem"><span class="rv-rem-t">⏰ <b>${esc((REVIEWS[r.rtype] || {}).label || 'Review')}</b> · ${esc(fmtReminder(r.at))}${r.repeat && r.repeat !== 'once' ? ` · repeats ${esc(r.repeat)}` : ''}</span><button class="rv-rem-x" data-rem-del="${esc(r.id)}" title="Remove reminder">×</button></div>`).join('');
-  const notifOff = (typeof Notification !== 'undefined' && Notification.permission !== 'granted');
+  const on = new Set(state.reviewRemTypes || []);
+  const rows = RTYPE_ORDER.map((k) => {
+    const isOn = on.has(k); const due = nextReviewDue(k);
+    const sub = isOn
+      ? (due ? (due <= localISO() ? "On · due now, we'll remind you by text and email" : `On · we'll remind you on ${esc(dpLabel(due))} by text and email`) : "On · we'll remind you the day it's first due")
+      : 'Off';
+    return `<label class="rv-remtog"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${sub}</small></span><input type="checkbox" data-rev-rem="${k}" ${isOn ? 'checked' : ''}></label>`;
+  }).join('');
   return `<section class="home-sec"><div class="home-sec-h">⏰ Reminders</div>
-    ${list ? `<div class="rv-rems">${list}</div>` : ''}
-    <form class="rv-rem-add" id="rv-rem-form">
-      <select class="sel" name="rtype">${RTYPE_ORDER.map((k) => `<option value="${k}">${REVIEWS[k].label}</option>`).join('')}</select>
-      <input class="sel" type="date" name="date" required>
-      <input class="sel" type="time" name="time" value="09:00" required>
-      <select class="sel" name="repeat">${REM_REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>
-      <button class="add-btn wide" type="submit">Add reminder</button>
-    </form>
-    ${notifOff ? '<div class="rv-rem-note">Turn on notifications so a reminder can reach you: <button class="ghost" data-push-enable>Enable notifications</button></div>' : ''}
+    <div class="rv-remtogs">${rows}</div>
+    <p class="rv-rem-note2">Turn one on and a reminder reaches you - by text and email - on the day that review is due. Nothing to schedule.</p>
   </section>`;
 }
-async function saveReviewReminders() {
-  try { await api('/api/review-reminders', { method: 'PUT', body: JSON.stringify({ reminders: state.reviewReminders || [] }) }); } catch (e) { toast(e.message); }
-}
-function addReviewReminder(form) {
-  const g = (n) => (form.querySelector(`[name="${n}"]`) || {}).value || '';
-  const date = g('date'), time = g('time') || '09:00';
-  if (!date) { toast('Pick a date'); return; }
-  state.reviewReminders = state.reviewReminders || [];
-  state.reviewReminders.push({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), rtype: g('rtype') || 'weekly', at: `${date}T${time}`, repeat: g('repeat') || 'once' });
-  saveReviewReminders(); renderGoals(); toast('Reminder set');
-}
-function delReviewReminder(id) {
-  state.reviewReminders = (state.reviewReminders || []).filter((r) => r.id !== id);
-  saveReviewReminders(); renderGoals();
+function toggleReviewRem(rtype, isOn) {
+  const set = new Set(state.reviewRemTypes || []);
+  if (isOn) set.add(rtype); else set.delete(rtype);
+  state.reviewRemTypes = [...set];
+  api('/api/review-reminders', { method: 'PUT', body: JSON.stringify({ types: state.reviewRemTypes }) }).catch((e) => toast(e.message));
+  toast(isOn ? `${REVIEWS[rtype].label} reminder on` : `${REVIEWS[rtype].label} reminder off`);
+  if (state.view.type === 'reviews') renderReviews(); else renderGoals();
 }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
@@ -8242,7 +8242,6 @@ async function startReview(rtype) {
   state.tasks = notKit(tasks);
   const s = reviewTaskStats(from);
   const snapshot = state.goals.filter((g) => (gp(g).status || 'active') === 'active').map((g) => ({ id: g.id, title: g.title, area: gp(g).area, measure: goalMeasure(g), progress: Math.round(goalProgress(g) * 100) }));
-  const lastWheel = state.reviews.map((r) => r.props && r.props.wheel).reverse().find((w) => w && Object.keys(w).length) || {};
   const surfaced = state.tasks.filter((t) => t.props && t.props.snooze && t.props.snooze >= from && t.props.snooze <= to && !t.props.done).slice(0, 40).map((t) => ({ title: t.title, area: t.props.area }));
   const mirror = {
     practices: mir.practices || [],
@@ -8251,7 +8250,9 @@ async function startReview(rtype) {
     quietAreas: s.quiet.map((a) => a.id),
     surfaced,
   };
-  const wheel = Object.fromEntries(Object.entries(lastWheel).map(([k, v]) => { const n = Number(v) || 0; return [k, n > 5 ? Math.round(n / 2) : n]; }));   // carry last time's ratings forward, rescaling any old 1-10 scores to 1-5
+  // Start the wheel blank every time, so each score is set consciously for this
+  // review rather than inherited from last time.
+  const wheel = {};
   const props = { rtype, from, to, wheel, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length };
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'review', title: `${REVIEWS[rtype].label} review · ${dpLabel(to)}`, props }) });
   state.reviews.push(b); openReviewCard(b.id);
@@ -9371,7 +9372,6 @@ document.addEventListener('click', (e) => {
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
-  const remd = t.closest('[data-rem-del]'); if (remd) { delReviewReminder(remd.dataset.remDel); return; }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
@@ -9807,6 +9807,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
+  if (e.target.matches('[data-rev-rem]')) { toggleReviewRem(e.target.dataset.revRem, e.target.checked); return; }
   if (e.target.matches('[data-area-sec-vis]')) {
     const key = e.target.dataset.areaSecVis; const a = state.area_open && state.area_open.area; if (!a) return;
     a.props = a.props || {}; let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
@@ -9950,7 +9951,6 @@ document.addEventListener('submit', (e) => {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
     saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });
   }
-  if (e.target.id === 'rv-rem-form') { addReviewReminder(e.target); return; }
   if (e.target.id === 'adv-add-form') { const el = $('#adv-input'); addAdviceChannel(el ? el.value : ''); return; }
   if (e.target.id === 'trk-add-form') { addTracker($('#trk-input') ? $('#trk-input').value : '', $('#trk-type') ? $('#trk-type').value : 'crypto', $('#trk-cat') ? $('#trk-cat').value : ''); return; }
   if (e.target.id === 'fin-add-form') { addHolding(e.target); return; }

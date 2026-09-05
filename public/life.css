@@ -532,6 +532,13 @@ button { cursor:pointer; background:none; border:0; }
 .rv-rem-add input[type=date], .rv-rem-add input[type=time] { min-width:0; }
 .rv-rem-add .add-btn.wide { flex:none; }
 .rv-rem-note { margin-top:10px; font-size:14px; color:var(--ink-3); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.rv-remtogs { display:flex; flex-direction:column; gap:8px; }
+.rv-remtog { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 14px; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); cursor:pointer; }
+.rv-remtog-b { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.rv-remtog-b b { font-size:15.5px; color:var(--ink); font-weight:600; }
+.rv-remtog-b small { font-size:13px; color:var(--ink-3); }
+.rv-remtog input { flex:none; width:20px; height:20px; accent-color:var(--accent); cursor:pointer; }
+.rv-rem-note2 { margin-top:12px; font-size:13.5px; color:var(--ink-3); line-height:1.5; }
 .rv-list { display:flex; flex-direction:column; }
 .rv-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line); text-align:left; cursor:pointer; color:var(--ink); background:none; border-left:0; border-right:0; border-top:0; }
 .rv-row:hover { background:var(--paper-2); }

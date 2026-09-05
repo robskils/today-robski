@@ -1624,6 +1624,24 @@ async function sendSurfaceMail(env, { to, day, titles, home }) {
     <p style="margin:0"><a href="${home}" style="color:#c4412e;font-weight:600;text-decoration:none;font-size:17px">Open Daybook →</a></p>
   </div>`;
   const text = `Back on your Home today:\n\n${titles.map((t) => `- ${t}`).join('\n')}\n\nOpen ${home}`;
+  await sendSystemMail(env, { to, subject, html, text });
+}
+
+// A review is due today: text + email + push (if the user turned that review's
+// reminder on). Kept plain and short, like the surface note.
+async function sendReviewMail(env, { to, label, home }) {
+  const subject = `Your ${label} review is due`;
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:8px 4px">
+    <p style="font-size:17px;color:#574e44;margin:0 0 16px">It's time for your <b style="color:#211c17">${escHtml(label)}</b> review - a few minutes to see where you stand.</p>
+    <p style="margin:0"><a href="${home}/reviews" style="color:#c4412e;font-weight:600;text-decoration:none;font-size:17px">Do it now →</a></p>
+  </div>`;
+  const text = `Your ${label} review is due.\n\nOpen ${home}/reviews`;
+  await sendSystemMail(env, { to, subject, html, text });
+}
+
+// Shared sender for the small system emails (surface note, review reminder):
+// contact@daybook.fyi over Purelymail SMTP, falling back to Resend.
+async function sendSystemMail(env, { to, subject, html, text }) {
   if (env.BRIEF_SMTP_PASS) {
     const acct = {
       email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Daybook',
@@ -2633,49 +2651,56 @@ async function maybePushMail(env, res) {
 }
 
 // Review reminders: user-set nudges to do a review. Stored in settings under
-// kv_review_reminders as [{id, rtype, at:'YYYY-MM-DDTHH:MM' (Lisbon wall-clock),
-// repeat}]. The every-minute cron fires a push when one is due, then advances a
-// repeating one to its next date or drops a one-off.
+// Review reminders are now dead simple: the user turns a review type's reminder
+// on, and it fires ON THE DATE that review is next due (last review of that type
+// + its period), by text and email (and a push if they have one). No dates to
+// pick. Stored in kv_review_reminders as { types:[...enabled rtypes],
+// lastFired:{rtype: 'YYYY-MM-DD'} } - lastFired dedups so a due date nudges once.
 const REVIEW_LABELS = { weekly: 'weekly', monthly: 'monthly', quarterly: 'quarterly', yearly: 'yearly' };
-function lisbonNowStr() {
-  const p = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
-  const g = (t) => (p.find((x) => x.type === t) || {}).value;
-  return `${g('year')}-${g('month')}-${g('day')}T${g('hour')}:${g('minute')}`;
-}
-function advanceReminderDate(dateStr, repeat) {
-  const [y, m, d] = String(dateStr).split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d, 12));   // noon UTC: date-only maths, DST-safe
-  if (repeat === 'weekly') dt.setUTCDate(dt.getUTCDate() + 7);
-  else if (repeat === 'monthly') dt.setUTCMonth(dt.getUTCMonth() + 1);
-  else if (repeat === 'quarterly') dt.setUTCMonth(dt.getUTCMonth() + 3);
-  else if (repeat === 'yearly') dt.setUTCFullYear(dt.getUTCFullYear() + 1);
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+const REVIEW_DAYS = { weekly: 7, monthly: 30, quarterly: 91, yearly: 365 };
+// Read the stored config, tolerating the old array-of-dated-reminders format.
+function reviewRemConfig(value) {
+  let o; try { o = value ? JSON.parse(value) : null; } catch { return { types: [], lastFired: {} }; }
+  if (Array.isArray(o)) return { types: [...new Set(o.map((r) => r && r.rtype).filter(Boolean))], lastFired: {} };
+  return { types: Array.isArray(o && o.types) ? o.types : [], lastFired: (o && o.lastFired) || {} };
 }
 async function maybeReviewReminders(env) {
-  const now = lisbonNowStr();
   for (const u of await activeUsers(env)) {
-    await reviewRemindersForUser(env, u.id, now).catch((e) => console.error('reviewReminders', u.id, e.message));
+    await reviewRemindersForUser(env, u.id).catch((e) => console.error('reviewReminders', u.id, e.message));
   }
 }
-async function reviewRemindersForUser(env, uid, now) {
-  const value = await getSetting(env, 'kv_review_reminders', uid);
-  if (!value) return;
-  let arr; try { arr = JSON.parse(value); } catch { return; }
-  if (!Array.isArray(arr) || !arr.length) return;
-  let changed = false; const keep = [];
-  for (const r of arr) {
-    if (r && r.at && String(r.at) <= now) {
-      const label = REVIEW_LABELS[r.rtype] || 'review';
-      await pushAll(env, { title: `Time for your ${label} review`, body: 'Open Daybook → Goals → Reviews to do it.', type: 'review' }, uid).catch(() => {});
-      changed = true;
-      if (r.repeat && r.repeat !== 'once') {
-        const [date, time] = String(r.at).split('T');
-        r.at = `${advanceReminderDate(date, r.repeat)}T${time || '09:00'}`;
-        keep.push(r);
-      }   // one-off: drop it
-    } else keep.push(r);
+async function reviewRemindersForUser(env, uid) {
+  const { types, lastFired } = reviewRemConfig(await getSetting(env, 'kv_review_reminders', uid));
+  if (!types.length) return;
+  const parts = localParts(new Date(), TZ);
+  if (parts.min < 525) return;              // fire from 08:45 Lisbon, never at midnight
+  const today = parts.date;
+
+  // Latest review period-end (props.to) per type, to know when the next is due.
+  const rows = (await env.DB.prepare("SELECT props FROM blocks WHERE kind='review' AND archived=0 AND user_id=?").bind(uid).all().catch(() => ({ results: [] }))).results || [];
+  const lastTo = {};
+  for (const r of rows) { let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {} const rt = p.rtype; const to = p.to; if (rt && to && (!lastTo[rt] || to > lastTo[rt])) lastTo[rt] = to; }
+
+  const due = [];
+  let changed = false;
+  for (const rt of types) {
+    const dueDate = lastTo[rt] ? addDaysStr(lastTo[rt], REVIEW_DAYS[rt] || 7) : today;   // never reviewed => nudge now
+    if (today >= dueDate && lastFired[rt] !== dueDate) { due.push(rt); lastFired[rt] = dueDate; changed = true; }
   }
-  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify(keep), uid);
+  if (due.length) {
+    const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
+    const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
+    const user = await env.DB.prepare('SELECT email, subdomain FROM users WHERE id=?').bind(uid).first().catch(() => null);
+    const to = uid === 1 ? (env.BRIEF_EMAIL || (user && user.email)) : (user && user.email);
+    const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
+    for (const rt of due) {
+      const label = REVIEW_LABELS[rt] || 'review';
+      await pushAll(env, { title: `Your ${label} review is due`, body: 'Open Daybook → Reviews to do it.', type: 'review' }, uid).catch(() => {});
+      if (phone) await sendSms(env, `Your ${label} review is due today - open Daybook to do it.`, phone).catch(() => {});
+      if (to) await sendReviewMail(env, { to, label, home }).catch(() => {});
+    }
+  }
+  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify({ types, lastFired }), uid);
 }
 
 // Portfolio history: on the every-minute tick, only actually fetch prices when
@@ -3150,14 +3175,17 @@ export default {
       if (path === '/api/journal/coach' && request.method === 'POST') return journalCoach(request, env, json, err);
       if (path === '/api/journal/insights') return journalInsights(request, env, json, err);
       if (path === '/api/review-reminders') {
+        const VALID = ['weekly', 'monthly', 'quarterly', 'yearly'];
         if (request.method === 'PUT') {
           const b = await request.json().catch(() => ({}));
-          const arr = (Array.isArray(b.reminders) ? b.reminders : []).filter((r) => r && r.at && r.rtype).slice(0, 50);
-          await setSetting(env, 'kv_review_reminders', JSON.stringify(arr));
-          return json({ ok: true, reminders: arr }, request);
+          const types = [...new Set((Array.isArray(b.types) ? b.types : []).filter((t) => VALID.includes(t)))];
+          // Keep only the lastFired stamps for types still enabled.
+          const cur = reviewRemConfig(await getSetting(env, 'kv_review_reminders'));
+          const lastFired = {}; for (const t of types) if (cur.lastFired[t]) lastFired[t] = cur.lastFired[t];
+          await setSetting(env, 'kv_review_reminders', JSON.stringify({ types, lastFired }));
+          return json({ ok: true, types }, request);
         }
-        const v = await getSetting(env, 'kv_review_reminders');
-        return json({ reminders: v ? JSON.parse(v) : [] }, request);
+        return json({ types: reviewRemConfig(await getSetting(env, 'kv_review_reminders')).types }, request);
       }
       if (path === '/api/ytinfo' && request.method === 'GET') return ytInfo(request, env, url, json, err);
       if (path === '/api/lookup' && request.method === 'GET') return lookupMedia(request, env, url, json, err);
