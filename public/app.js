@@ -2964,6 +2964,24 @@ function homeMailHtml() {
   const unread = state.mailUnreadTotal || 0;
   return `<div class="hm-list">${rows}</div><button class="p1-all" data-open-mail>${unread ? `${unread > 99 ? '99+' : unread} unread · open Mail →` : 'Open Mail →'}</button>`;
 }
+// A row that quietly shows off the good stuff people miss - the timers, the Wheel
+// of Life, the vision board, ⌘K. Each card opens the real feature. (Robin asked
+// to "highlight some cool features in a nice way", 2026-09.)
+function homeDiscoverHtml() {
+  const feats = [
+    ['⌨', 'Quick jump', 'Reach anything with ⌘K', 'data-palette'],
+    modOn('timer') ? ['🧘', 'Meditation & focus', 'Breathe with a synth-bell timer', 'data-open-toolbox'] : null,
+    modOn('goals') ? ['🎯', 'Wheel of Life', 'Rate your areas, watch the trend', 'data-open-reviews-tool'] : null,
+    modOn('goals') ? ['🖼', 'Vision board', "Picture where you're headed", 'data-open-vision-tab'] : null,
+    modOn('saved') ? ['🔖', 'Read & Watch', 'Park a link, come back later', 'data-open-readwatch'] : null,
+    modOn('reflect') ? ['✎', 'Reflection', 'Journal with a prompt, or free', 'data-open-journal'] : null,
+  ].filter(Boolean);
+  if (!feats.length) return '';
+  return `<section class="home-discover">
+    <div class="home-sec-h">Discover Daybook</div>
+    <div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>
+  </section>`;
+}
 function renderHome() {
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
   const favs = state.favs || [];
@@ -3103,6 +3121,7 @@ function renderHome() {
           return sorder.map((k) => sideSec[k] || '').join('');
         })()}</aside>
       </div>
+      ${homeDiscoverHtml()}
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
