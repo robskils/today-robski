@@ -2280,7 +2280,7 @@ function pomoPanel() {
 // ── Toolbox: Focus, a plain countdown Timer, and Daily Practices ─────────
 // All three tools show at once, each collapsible on its own.
 function tbxToolOpen(k) { try { return !(JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}')[k]); } catch { return true; } }
-function tbxToolToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = true; localStorage.setItem('life.toolbox.collapsed', JSON.stringify(c)); } catch {} renderHome(); }
+function tbxToolToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = true; localStorage.setItem('life.toolbox.collapsed', JSON.stringify(c)); } catch {} if (state.view && state.view.type === 'toolbox') renderToolbox(); else renderHome(); }
 function tbxToolBadge(k) {
   return (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
     : (k === 'timer' && timerState.running) ? `<span class="tbx-run js-timer-time">${timerFmt(timerRemaining())}</span>` : '';
