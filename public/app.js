@@ -3551,7 +3551,7 @@ function renderArea() {
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
   // Everything else that can carry this area, each linking to its own tool.
   const emailCards = emails.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
-  const contactCards = contacts.map((c) => `<button class="tbl-card" data-open-contact="${c.id}"><span class="tc-ic">👤</span><span class="tc-t">${esc(c.title || 'Unnamed')}</span></button>`).join('');
+  const contactCards = contacts.map((c) => contactCardHtml(c)).join('');
   const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span></a>` : `<button class="tbl-card"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span></button>`; }).join('');
   const journalCards = journals.map((j) => `<button class="tbl-card" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span></button>`).join('');
   const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
@@ -3572,7 +3572,7 @@ function renderArea() {
     ${sec('Notes', otherNotes.length, `<div class="tbl-cards">${noteCards}</div>`)}
     ${sec('Emails', emails.length, `<div class="tbl-cards">${emailCards}</div>`)}
     ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
-    ${sec('Contacts', contacts.length, `<div class="tbl-cards">${contactCards}</div>`)}
+    ${sec('Contacts', contacts.length, `<div class="contact-grid">${contactCards}</div>`)}
     ${sec('Saved links', bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`)}
     ${sec('Reflections', journals.length, `<div class="tbl-cards">${journalCards}</div>`)}
     ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}`;
@@ -4366,6 +4366,7 @@ function t2SlotBlock(s, floating) {
   const vid = (act && act.video) ? '<span class="t2-vid" data-t2-open-slot="' + s.id + '">🎥</span>' : '';
   return `<div class="t2-block t2-slot ${done ? 'done' : ''} ${floating ? 't2-float' : ''}" ${floating ? `style="--h:${hue}"` : pos} data-slot-id="${s.id}" data-t2-drag="slot" data-t2-drag-id="${s.id}" data-t2-drag-label="${esc(s.title || 'Block')}">
     <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${s.id}" title="${done ? 'Done' : 'Mark done'}">✓</button>${floating ? '' : `<span class="t2-btime">${prcHHMM(s.start_min)}</span>`}<span class="t2-btitle">${esc(s.title || 'Block')}</span>${task && task.priority ? `<span class="p-tag p-${task.priority}">${task.priority}</span>` : ''}${vid}<button class="t2-x" data-t2-del-slot="${s.id}" title="Remove">×</button></div>
+    ${floating ? '' : '<div class="t2-rz t2-rz-top" data-t2-resize="top" title="Drag to resize"></div><div class="t2-rz t2-rz-bot" data-t2-resize="bot" title="Drag to resize"></div>'}
   </div>`;
 }
 function t2PracticesHtml() {
@@ -4453,7 +4454,7 @@ const t2SnapMin = (m) => Math.max(T2_START * 60, Math.min(T2_END * 60, Math.roun
 let t2Drag = null;
 document.addEventListener('pointerdown', (e) => {
   if (!state.view || state.view.type !== 'today') return;
-  if (e.target.closest('button, a, input, select, textarea')) return;   // let controls work
+  if (e.target.closest('button, a, input, select, textarea, [data-t2-resize]')) return;   // let controls + resize handles work
   const src = e.target.closest('[data-t2-drag]'); if (!src) return;
   const canvas = document.querySelector('.t2-canvas'); if (!canvas) return;
   // NB: no preventDefault / capture here - a purely vertical touch must be free to
@@ -4495,6 +4496,46 @@ function t2DragEnd(e) {
 }
 document.addEventListener('pointerup', t2DragEnd);
 document.addEventListener('pointercancel', t2DragEnd);
+// Resize a placed block by dragging its top or bottom edge. Bottom changes the
+// length; top moves the start and keeps the end fixed. 15-min snap, min 15 min.
+let t2Resize = null;
+document.addEventListener('pointerdown', (e) => {
+  if (!state.view || state.view.type !== 'today') return;
+  const rz = e.target.closest('[data-t2-resize]'); if (!rz) return;
+  const block = rz.closest('[data-slot-id]'); if (!block) return;
+  const s = (state.today.data && state.today.data.slots || []).find((x) => String(x.id) === String(block.dataset.slotId)); if (!s) return;
+  e.preventDefault();
+  t2Resize = { id: block.dataset.slotId, edge: rz.dataset.t2Resize, start: s.start_min, dur: s.duration || 30, pid: e.pointerId, block, canvas: block.closest('.t2-canvas'), moved: false };
+  try { rz.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  const rz = t2Resize; if (!rz || e.pointerId !== rz.pid || !rz.canvas) return;
+  e.preventDefault();
+  const r = rz.canvas.getBoundingClientRect();
+  const min = t2SnapMin(T2_START * 60 + (e.clientY - r.top) / T2_PPM);
+  if (rz.edge === 'bot') { rz.newStart = rz.start; rz.newDur = Math.max(15, min - rz.start); }
+  else { const end = rz.start + rz.dur; rz.newStart = Math.min(end - 15, min); rz.newDur = end - rz.newStart; }
+  rz.block.style.top = t2Top(rz.newStart) + 'px';
+  rz.block.style.height = Math.max(26, Math.round(rz.newDur * T2_PPM)) + 'px';
+  rz.moved = true;
+});
+function t2ResizeEnd(e) {
+  const rz = t2Resize; if (!rz || (e && e.pointerId !== rz.pid)) return; t2Resize = null;
+  if (!rz.moved || rz.newDur == null) return;
+  t2SuppressClick = Date.now();
+  const s = (state.today.data.slots || []).find((x) => String(x.id) === String(rz.id));
+  if (s) { s.start_min = rz.newStart; s.duration = rz.newDur; }
+  api('/api/slots/' + rz.id, { method: 'PATCH', body: JSON.stringify({ start_min: rz.newStart, duration: rz.newDur }) }).then(() => loadToday()).catch((err) => toast(err.message));
+}
+document.addEventListener('pointerup', t2ResizeEnd);
+document.addEventListener('pointercancel', t2ResizeEnd);
+// Click a placed block to open it: a task's popover, or a practice's editor.
+function t2OpenSlot(slotId) {
+  const s = (state.today.data.slots || []).find((x) => String(x.id) === String(slotId)); if (!s) return;
+  const taskId = s.tana_id || (s.tasks && s.tasks[0] && (s.tasks[0].tana_id || s.tasks[0].id));
+  if (taskId && (state.today.tasks || []).some((x) => String(x.tana_id) === String(taskId))) { openTaskPopover(taskId); return; }
+  if (s.activity_id) { openPracticeEditor(s.activity_id); return; }
+}
 // Tick a placed block. A practice block also ticks its habit (one tick, counted
 // everywhere), per the agreed rule.
 async function t2SlotTick(slotId) {
@@ -6374,7 +6415,15 @@ function renderTasks() {
   </div>`;
   const preArea = state.taskAddArea || '';   // set when + Task is used from a Life Area page
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
-  const inFilter = (t) => taskMatchesFilters(t);
+  // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
+  const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
+  const qa = state.taskQuickArea || '';
+  const quickMatch = (t) => (!qp.size || qp.has(t.props.priority || '')) && (!qa || blockAreas(t).includes(qa));
+  const quickBar = `<div class="tq-bar">
+    <select class="sel tq-area" data-task-qarea><option value="">All life areas</option>${state.areas.map((a) => `<option value="${a.id}" ${qa === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>
+    <div class="tq-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="tq-prio ${qp.has(p) ? 'on' : ''}" data-task-qprio="${p}">${p}</button>`).join('')}</div>
+  </div>`;
+  const inFilter = (t) => taskMatchesFilters(t) && quickMatch(t);
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
   const open = state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && inFilter(t) && matchesQ(t));   // ticked or snoozed tasks vanish from view (taskTableHtml sorts via the column headers)
@@ -6418,8 +6467,9 @@ function renderTasks() {
     </form>`
       : ''}
     ${assignedSectionHtml()}
+    ${quickBar}
     ${filterBar}
-    ${taskTableHtml(open, (conds.length || tq) ? 'No tasks match these filters.' : 'No open tasks here.')}
+    ${taskTableHtml(open, (conds.length || tq || qp.size || qa) ? 'No tasks match these filters.' : 'No open tasks here.')}
     ${snoozedSection}
     ${completedSection}`;
   // Put the cursor in the new-task title whenever the add form is freshly opened -
@@ -9049,6 +9099,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-task-save]')) { saveTaskPopover(); return; }
   { const tdel = t.closest('[data-task-del]'); if (tdel) { deleteTaskFromPopover(tdel.dataset.taskDel); return; } }
   { const tr = t.closest('.t2-trow[data-t2-drag]'); if (tr) { if (Date.now() - t2SuppressClick < 350) return; openTaskPopover(tr.dataset.t2DragId); return; } }
+  { const sb = t.closest('.t2-slot[data-slot-id]'); if (sb && !t.closest('button, a, [data-t2-resize]')) { if (Date.now() - t2SuppressClick < 350) return; t2OpenSlot(sb.dataset.slotId); return; } }
   // Today section day-stepper. These live inside the collapse header, so they must
   // be handled (and return) before the sec-collapse toggle below, or a tap on an
   // arrow would also collapse the section.
@@ -9353,6 +9404,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-show-snoozed]')) { state.showSnoozed = true; renderTasks(); return; }
   if (t.closest('[data-hide-snoozed]')) { state.showSnoozed = false; renderTasks(); return; }
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
+  { const qpb = t.closest('[data-task-qprio]'); if (qpb) { const s = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set()); const p = qpb.dataset.taskQprio; if (s.has(p)) s.delete(p); else s.add(p); renderTasks(); return; } }
   if (t.closest('[data-tf-toggle]')) { state.taskFiltersOpen = !state.taskFiltersOpen; renderTasks(); return; }
   if (t.closest('[data-tf-add]')) { loadTaskFilters(); state.taskFilters.push({ field: 'priority', op: 'is', value: 'P1' }); state.taskFiltersOpen = true; saveTaskFilters(); renderTasks(); return; }
   if (t.closest('[data-tf-clear]')) { state.taskFilters = []; saveTaskFilters(); renderTasks(); return; }
@@ -9475,6 +9527,7 @@ function openLinkMenu(x, y, href, view) {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
+  if (e.target.matches('[data-task-qarea]')) { state.taskQuickArea = e.target.value || ''; renderTasks(); return; }
   if (e.target.matches('[data-trk-area-cad]')) { const v = e.target.value; if (v === '__custom') { promptAreaCadence(e.target.dataset.trkAreaCad); } else { setAreaCadence(e.target.dataset.trkAreaCad, v || ''); } return; }
   if (e.target.id === 'pe-cadence') { const sel = e.target; if (sel.value === '__custom') { promptPracticeCadence(sel); } else { sel.dataset.prev = sel.value; } return; }
   if (e.target.id === 'kit-last') { kitSetLast(e.target.value); return; }

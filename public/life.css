@@ -1154,6 +1154,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ar-check-btn { flex:none; font-size:19px; line-height:1; color:var(--ink-3); background:none; border:0; cursor:pointer; }
 .ar-check-btn:hover { color:var(--accent); }
 .ar-open { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left; background:none; border:0; cursor:pointer; }
+/* Tasks page quick filters: P1-P4 toggles + a life-area dropdown. */
+.tq-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; }
+.tq-bar .tq-area { flex:0 1 auto; min-width:170px; max-width:260px; margin:0; }
+.tq-prios { display:flex; gap:6px; }
+.tq-prio { padding:9px 16px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-3); font-size:13.5px; font-weight:700; letter-spacing:.02em; cursor:pointer; }
+.tq-prio.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.tq-prio:hover:not(.on) { border-color:var(--accent); color:var(--accent); }
+@media (max-width:560px){ .tq-bar .tq-area { flex:1 1 100%; max-width:none; } .tq-prios { flex:1 1 100%; } .tq-prio { flex:1; } }
 .p-tag { font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; background:var(--paper-2,var(--paper)); color:var(--ink-2); }
 .p-tag.p-P1 { color:#c4412e; } .p-tag.p-P2 { color:#c9822e; }
 /* Admin dashboard. */
@@ -1557,6 +1565,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-suggest { background:transparent; border-style:dashed; border-left-style:solid; cursor:pointer; opacity:.85; }
 .t2-suggest:hover { opacity:1; background:color-mix(in srgb,hsl(var(--h,220) 60% 55%) 8%,transparent); }
 .t2-float { position:static; display:inline-flex; }
+/* Placed blocks: click to open; drag the top/bottom edge to resize. Handles are
+   inset from the sides so they clear the tick and × buttons. */
+.t2-slot { cursor:pointer; }
+.t2-rz { position:absolute; left:28px; right:28px; height:9px; cursor:ns-resize; z-index:2; touch-action:none; }
+.t2-rz-top { top:0; } .t2-rz-bot { bottom:0; }
+.t2-rz::after { content:''; position:absolute; left:50%; transform:translateX(-50%); width:26px; height:3px; border-radius:2px; background:transparent; transition:background .12s; }
+.t2-rz-top::after { top:2px; } .t2-rz-bot::after { bottom:2px; }
+.t2-slot:hover .t2-rz::after { background:color-mix(in srgb,var(--ink-3) 55%,transparent); }
 .t2-tick { flex:none; width:24px; height:24px; border-radius:7px; border:1.5px solid var(--line-2); background:transparent; color:transparent; font-size:13px; font-weight:700; line-height:1; display:grid; place-items:center; }
 .t2-tick.on { border-color:var(--accent); background:var(--accent); color:var(--accent-ink); }
 .t2-tick.ghost { border-style:dashed; color:var(--ink-3); }
