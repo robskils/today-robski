@@ -3575,6 +3575,8 @@ function renderArea() {
     </div>
     <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
     ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
+    ${areaMembersHtml(area)}
+    ${areaWallHtml(area)}
     ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
     ${sec('Starred notes', starredNotes.length, `<div class="tbl-cards">${starredNoteCards}</div>`)}
     ${sec('Notes', otherNotes.length, `<div class="tbl-cards">${noteCards}</div>`)}
@@ -3608,6 +3610,32 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
     ${areaAttachHtml(area)}
+  </section>`;
+}
+// Members of a life area: the people it's shared with, as a horizontal row of
+// cards under Goals. Tap one to message them. "+N more" expands the full list.
+function areaMembersHtml(area) {
+  const shares = state.area_open && state.area_open.shares;
+  if (shares == null) return '';   // still loading - don't flash an empty bar
+  const friends = (state.friends && state.friends.friends) || [];
+  const LIMIT = 8;
+  const cards = shares.map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="mem-card" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''} title="Message ${esc(name)}"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="mem-name">${esc(name)}</span><span class="mem-msg">💬</span></button>`; });
+  const exp = state.area_open.membersExpanded;
+  const shown = exp ? cards : cards.slice(0, LIMIT);
+  const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
+  const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
+  const body = cards.length ? `<div class="mem-row">${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
+  return `<section class="home-sec area-members"><div class="home-sec-h">Members${cards.length ? ` · ${cards.length}` : ''}</div>${body}</section>`;
+}
+const areaWallOpen = () => { try { return localStorage.getItem('life.area.wall') !== '0'; } catch { return true; } };
+// A shared free-text wall for the area, saved on the area block so members with
+// access see and edit it. Collapsible, like the Home notepad.
+function areaWallHtml(area) {
+  const open = areaWallOpen();
+  const wall = (area.props && area.props.wall) || '';
+  return `<section class="home-sec area-wall">
+    <div class="home-sec-h area-wall-h" data-area-wall-toggle role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span>Wall</div>
+    ${open ? `<textarea class="home-notepad area-wall-ta" data-area-wall placeholder="A shared space for this area - jot anything, everyone with access can see it.">${esc(wall)}</textarea>` : ''}
   </section>`;
 }
 // Area file attachments - same store the vision images use, same handlers as a
@@ -8987,6 +9015,7 @@ document.addEventListener('input', (e) => {
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
+  if (e.target.matches('[data-area-wall]')) { const a = state.area_open && state.area_open.area; if (a) { a.props = a.props || {}; a.props.wall = e.target.value; const v = e.target.value; clearTimeout(window.__areaWallT); window.__areaWallT = setTimeout(() => { api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); }, 700); } }
   if (e.target.matches('[data-timer-label]')) { timerState.label = e.target.value; saveTimer(); }
   // Live search: refresh only the list (quiet), so the box you're typing in is
   // never rebuilt and keeps focus. Debounced so it fires when you pause.
@@ -9397,6 +9426,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
+  if (t.closest('[data-area-members-more]')) { if (state.area_open) state.area_open.membersExpanded = true; renderArea(); return; }
+  if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }

@@ -2193,6 +2193,21 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ov-act-time { flex:none; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .ov-muted { color:var(--ink-3); font-size:14px; padding:4px 0; }
 .area-ov-att { margin:0; }
+/* Members bar: horizontal cards, tap to message; "+N more" expands the list. */
+.mem-row { display:flex; flex-wrap:wrap; align-items:center; gap:9px; }
+.mem-card { display:inline-flex; align-items:center; gap:9px; padding:7px 13px 7px 8px; border:1px solid var(--line); border-radius:999px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; }
+.mem-card:hover { border-color:var(--accent); }
+.mem-card .fr-av { flex:none; width:28px; height:28px; font-size:12px; }
+.mem-name { font-size:14.5px; color:var(--ink); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mem-msg { font-size:13px; opacity:.55; }
+.mem-card:hover .mem-msg { opacity:1; }
+.mem-more, .mem-invite { flex:none; padding:8px 14px; border-radius:999px; border:1px dashed var(--line-2); background:transparent; color:var(--ink-3); font-size:13.5px; font-weight:600; cursor:pointer; }
+.mem-more:hover, .mem-invite:hover { border-color:var(--accent); color:var(--accent); }
+.mem-empty { color:var(--ink-3); font-size:14.5px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+/* Area wall: a collapsible shared scratchpad. */
+.area-wall-h { cursor:pointer; display:flex; align-items:center; gap:6px; }
+.area-wall-h .acw-chev { font-size:12px; color:var(--ink-3); }
+.area-wall-ta { min-height:160px; }
 
 .area-tasks { display:flex; flex-direction:column; }
 .area-task { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:center; gap:13px; padding:12px 4px; border-bottom:1px solid var(--line); }
