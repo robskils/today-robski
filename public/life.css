@@ -1239,7 +1239,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* The event form is a tidy card, not a wrapping flex row (which stretched the
    title box to the height of the Start/End block). Title on its own line, the
    when-block, an all-day toggle, then a footer row of location + repeat + save. */
-.add-event { display:flex; flex-direction:column; align-items:stretch; gap:15px; padding:18px 18px 16px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+.add-event { display:flex; flex-direction:column; align-items:stretch; gap:13px; padding:14px 18px 16px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+.ce-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:-2px 0 -2px; }
+.ce-head-t { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
+.ce-close { flex:none; width:30px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; }
+.ce-close:hover { border-color:var(--accent); color:var(--accent); }
 .add-event .ce-title { flex:none; width:100%; font-size:18px; font-weight:500; }
 .add-event .ce-when { gap:11px; }
 .add-event .ce-when-row { padding:2px 0; }
@@ -2290,6 +2294,20 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
 .home-body { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:26px; align-items:start; }
 .home-main > .home-sec:first-child { margin-top:0; }
+/* Home main sections as equal icon tiles + one expanding panel (like the Toolbox). */
+.home-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(94px, 1fr)); gap:10px; margin-bottom:16px; }
+.home-tile { display:flex; flex-direction:column; align-items:center; gap:5px; padding:14px 8px 12px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; position:relative; transition:border-color .12s, transform .08s; }
+.home-tile:hover { border-color:var(--line-2); transform:translateY(-1px); }
+.home-tile.on { border-color:var(--accent); box-shadow:0 10px 26px -16px color-mix(in srgb,var(--accent) 55%,transparent); }
+.ht-ic { font-size:22px; line-height:1; }
+.ht-l { font-size:12.5px; font-weight:600; color:var(--ink-2); text-align:center; }
+.home-tile.on .ht-l { color:var(--ink); }
+.ht-c { position:absolute; top:7px; right:9px; font-size:11px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 7px; min-width:18px; text-align:center; }
+.home-tile.on .ht-c { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
+.home-tilepanel { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:16px 18px; }
+.htp-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.htp-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:8px; }
+.htp-ic { font-size:17px; }
 .home-side { position:sticky; top:20px; }
 .home-side .home-sec { margin-top:0; }
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
@@ -2501,6 +2519,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-title-edit:hover { background:var(--paper-2); }
 .area-title-edit:focus-visible { outline:none; background:var(--card); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
 .area-meta { color:var(--ink-3); font-size:15px; margin-top:6px; }
+.area-meta .am-done { color:var(--done,#4a7a52); }
 /* Area overview: the ▾ toggle on the title row, and the collapsible dashboard. */
 .area-ov-toggle { flex:none; width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-3); font-size:15px; line-height:1; transition:transform .15s,border-color .12s,color .12s; }
 .area-ov-toggle:hover { border-color:var(--accent); color:var(--accent); }

@@ -3014,33 +3014,38 @@ function renderHome() {
         </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
-          // All active goals on Home, starred ones first (and still drag-orderable),
-          // then the rest - not only the starred subset.
           const fg = focusGoals();
           const fgIds = new Set(fg.map((g) => g.id));
           const restGoals = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active' && !fgIds.has(g.id));
           const homeGoals = [...fg, ...restGoals];
-          const sec = {
-            favareas: favAreas.length ? `<section class="home-sec home-sec-favareas" data-hsec="favareas">${secH('favareas', 'Life areas', '', true)}${secOpen('favareas') ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : ''}</section>` : '',
-            today: (() => {
-              const off = state.home.dayOffset || 0;
-              // Nav sits in the header: › steps forward a day, ‹ steps back, and a
-              // Today pill jumps straight home (the day you want most of the time).
-              const nav = `<span class="today-nav">${off > 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button><button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button>` : ''}<button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
-              const rows = evRows + (off === 0 ? surfacedRows : '');
-              const body = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
-                : (rows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`);
-              return `<section class="home-sec home-sec-today" data-hsec="today">${secH('today', homeDayLabel(off), nav, true)}${secOpen('today') ? `<div class="today-cal">${body}</div>` : ''}</section>`;
-            })(),
-            priority: p1Html(),
-            focus: homeGoals.length ? `<section class="home-sec home-sec-focus" data-hsec="focus">${secH('focus', '🎯 Goals', '', true)}${secOpen('focus') ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : ''}</section>` : '',
-            toolbox: '',   // Toolbox moved to its own sidebar tool
-            keepintouch: kitHomeHtml(),
-            favs: `<section class="home-sec home-sec-favs" data-hsec="favs">${secH('favs', 'Starred Notes and Tables', '', true)}${secOpen('favs') ? `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>` : ''}</section>`,
+          const alerts = state.home.alerts || {};
+          const off = state.home.dayOffset || 0;
+          const dayNav = `<span class="today-nav">${off > 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button><button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button>` : ''}<button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
+          const todayRows = evRows + (off === 0 ? surfacedRows : '');
+          const p1all = priorityTasks(); const p1total = alerts.p1 || p1all.length;
+          const kit = alerts.keepInTouch || [];
+          // Each Home section becomes an equal tile; the open one expands below.
+          const bodies = {
+            today: `<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (todayRows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
+            priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 8).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 8 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
+            focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
+            favareas: favAreas.length ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : '<div class="home-empty">Star a life area (the ★ on it) to pin it here.</div>',
+            keepintouch: kit.length ? `<div class="kit-hlist">${kit.map((k) => { const a = areaById(k.area); const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet'; return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}><button class="kit-hopen" data-open-contact="${k.id}"><span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span><span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span></button><button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button></div>`; }).join('')}</div>` : '<div class="home-empty">Nobody due a catch-up.</div>',
+            favs: `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>`,
           };
-          const def = ['favareas', 'today', 'priority', 'keepintouch', 'focus', 'favs'];
-          let order = def; try { const o = JSON.parse(localStorage.getItem('life.home.mainOrder')); if (Array.isArray(o)) order = [...o.filter((k) => def.includes(k)), ...def.filter((k) => !o.includes(k))]; } catch {}
-          return order.map((k) => sec[k] || '').join('');
+          const meta = {
+            today: { ic: '☀', label: 'Today', count: null, nav: dayNav },
+            priority: { ic: '✓', label: 'Priority', count: p1total || null },
+            focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
+            favareas: { ic: '◈', label: 'Life areas', count: favAreas.length || null },
+            keepintouch: { ic: '💬', label: 'Keep in touch', count: kit.length || null },
+            favs: { ic: '★', label: 'Starred', count: null },
+          };
+          const order = ['today', 'priority', 'focus', 'favareas', 'keepintouch', 'favs'];
+          let open = state.home.tileOpen || (() => { try { return localStorage.getItem('life.home.tileOpen'); } catch { return ''; } })();
+          if (!order.includes(open)) open = 'today';
+          const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
+          return `<div class="home-tiles">${tiles}</div><div class="home-tilepanel"><div class="htp-head"><span class="htp-t"><span class="htp-ic">${meta[open].ic}</span>${meta[open].label}</span>${meta[open].nav || ''}</div>${bodies[open]}</div>`;
         })()}</div>
         <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
@@ -3823,7 +3828,7 @@ function renderArea() {
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
         ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-gear" data-area-color title="Area colour">⚙</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></h1>
-      <p class="area-meta">${notes.length + tables.length} note${(notes.length + tables.length) === 1 ? '' : 's'} &amp; table${(notes.length + tables.length) === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
+      <p class="area-meta">${notes.length + tables.length} note${(notes.length + tables.length) === 1 ? '' : 's'} &amp; table${(notes.length + tables.length) === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -4339,6 +4344,7 @@ function showCalForm(ev) {
   // Start and End each get their own row of date + time. The end defaults to the
   // same day (and an hour on); change it only when you mean to.
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event${allDay ? ' allday-on' : ''}" data-ev="${ev ? ev.id : ''}" data-evgap="${allDay ? 60 : dur}">
+    <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
     <div class="ce-when">
@@ -9905,6 +9911,7 @@ document.addEventListener('click', (e) => {
   // arrow would also collapse the section.
   { const ds = t.closest('[data-home-day-set]'); if (ds) { homeDaySet(Number(ds.dataset.homeDaySet)); return; } }
   { const dd = t.closest('[data-home-day]'); if (dd) { homeDaySet((state.home.dayOffset || 0) + Number(dd.dataset.homeDay)); return; } }
+  { const ht = t.closest('[data-htile]'); if (ht) { state.home.tileOpen = ht.dataset.htile; try { localStorage.setItem('life.home.tileOpen', ht.dataset.htile); } catch {} renderHome(); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
@@ -10138,6 +10145,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
   if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; renderCalendar(); return; }
+  if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
   if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); return; }
