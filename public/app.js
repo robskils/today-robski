@@ -7837,7 +7837,7 @@ function goalCardMini(g, drag) {
     <div class="gc-bar"><i style="width:${pct}%"></i></div></button>`;
 }
 function renderGoals() {
-  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Goals &amp; Vision</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Vision and Goals</h1></div>
     <div class="goals-layout">
       <div class="goals-main">${goalsByAreaBody()}</div>
       <aside class="goals-side">${bucketSideBox()}</aside>
