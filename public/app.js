@@ -8559,10 +8559,24 @@ function reviewWhenHtml(p) {
   if (inRange) { const dayIn = Math.round((today - d0) / DAY) + 1; const left = len - dayIn; detail = `Day ${dayIn} of ${len} · ${left > 0 ? `${left} to go` : 'review day'}`; }
   else if (untilStart > 0) detail = `Starts in ${untilStart} day${untilStart === 1 ? '' : 's'}`;
   else detail = sinceEnd === 0 ? 'Ended today' : `Ended ${sinceEnd} day${sinceEnd === 1 ? '' : 's'} ago`;
-  const marker = inRange ? `<span class="rv-when-now" style="left:${pct}%"><span class="rv-when-now-lbl">today</span></span>` : '';
+  // Short periods (a week) get a block per day that lights up as the week goes on;
+  // long periods keep a simple progress bar.
+  let track;
+  if (len <= 10) {
+    const todayISO = localISO(new Date());
+    let blocks = '';
+    for (let i = 0; i < len; i++) {
+      const dt = new Date(d0.getTime() + i * DAY); const iso = localISO(dt);
+      const st = iso < todayISO ? 'done' : (iso === todayISO ? 'today' : 'future');
+      blocks += `<div class="rv-wb rv-wb-${st}" title="${dt.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}"><span class="rv-wb-l">${dt.toLocaleDateString('en-GB', { weekday: 'narrow' })}</span><span class="rv-wb-n">${dt.getDate()}</span></div>`;
+    }
+    track = `<div class="rv-week-blocks">${blocks}</div>`;
+  } else {
+    track = `<div class="rv-when-track"><span class="rv-when-fill" style="width:${pct}%"></span></div>`;
+  }
   return `<div class="rv-when ${inRange ? 'live' : 'past'}">
     <div class="rv-when-head"><span class="rv-when-rel">${esc(rel)}</span><span class="rv-when-range">${esc(range)}</span></div>
-    <div class="rv-when-track"><span class="rv-when-fill" style="width:${pct}%"></span>${marker}</div>
+    ${track}
     <div class="rv-when-detail">${esc(detail)}</div>
   </div>`;
 }
@@ -8619,12 +8633,11 @@ function renderReviewCard() {
       </div>
       ${R.summaryOpen ? `<div class="rv-summary">${R.summaryLoading
         ? '<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Writing your summary…</div>'
-        : `<div class="rv-summary-h">✦ The ${p.rtype === 'weekly' ? 'week' : 'period'} in brief</div><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">Written from your record. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div>`}</div>` : ''}
+        : `<div class="rv-summary-h">✦ The ${p.rtype === 'weekly' ? 'week' : 'period'} in brief</div><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">Written from your record. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div>`}${reviewDoneCards(m)}</div>` : ''}
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
       ${(m.openP1 || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">P1s still open · ${(m.openP1 || []).length}</div><div class="rvm-cards">${(m.openP1 || []).map((t) => { const a = t.area ? areaById(t.area) : null; return `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="p-tag p-P1">P1</span><span class="rvm-t">${esc(t.title || 'Untitled')}</span>${a ? `<span class="rvm-area"><span class="rvm-dot"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div></div>` : ''}
       ${(m.quietAreas || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">Went quiet · ${(m.quietAreas || []).length}</div><div class="rvm-cards">${(m.quietAreas || []).map((aid) => { const a = areaById(aid); if (!a) return ''; return `<button class="rvm-card rvm-area" style="--h:${hueOf(a)}" data-open-area="${aid}"><span class="rvm-dot"></span><span class="rvm-t">${esc(a.title)}</span><span class="rvm-go">→</span></button>`; }).filter(Boolean).join('')}</div></div>` : ''}
       ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
-      ${(m.tasksDone || []).length ? `<details class="rv-det"><summary>Ticked off · ${(m.tasksDone || []).length}</summary><ul>${(m.tasksDone || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
     </section>
 
     <section class="wheel">
@@ -8735,6 +8748,19 @@ function setGoalReviewScore(goalId, score) {
 function reviewSummaryHtml(text) {
   return String(text || '').split(/\n{2,}/).map((para) => para.trim()).filter(Boolean)
     .map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('');
+}
+// Everything you ticked off, grouped by life area (the "type"), each a card you
+// can click straight through to. Shown under the ✦ summary when "ticked off" is open.
+function reviewDoneCards(m) {
+  const done = m.tasksDone || []; if (!done.length) return '';
+  const byArea = new Map();
+  done.forEach((t) => { const k = t.area || '_none'; if (!byArea.has(k)) byArea.set(k, []); byArea.get(k).push(t); });
+  const groups = [...byArea.entries()].sort((a, b) => b[1].length - a[1].length).map(([aid, ts]) => {
+    const a = aid === '_none' ? null : areaById(aid); const name = a ? a.title : 'No area';
+    const cards = ts.map((t) => `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="rvm-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
+    return `<div class="rvd-group"><div class="rvd-group-h">${a ? `<span class="rvm-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span>` : ''}${esc(name)}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
+  }).join('');
+  return `<div class="rvd-list"><div class="rvd-total"><b>${done.length}</b> ticked off across <b>${byArea.size}</b> area${byArea.size === 1 ? '' : 's'} · tap any to open it</div>${groups}</div>`;
 }
 // The compact record the summary is written from - the same mirror the card
 // already shows, with area ids resolved to names so the brief can name them.
