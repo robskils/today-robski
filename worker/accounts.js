@@ -323,11 +323,15 @@ export async function getAccount(env) {
   const brief = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'brief_enabled'").bind(env.uid).first().catch(() => null);
   const qOff = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'quote_off'").bind(env.uid).first().catch(() => null);
   const aiOff = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'ai_off'").bind(env.uid).first().catch(() => null);
+  const surfEmail = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'surface_email'").bind(env.uid).first().catch(() => null);
+  const surfSms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'surface_sms'").bind(env.uid).first().catch(() => null);
   return {
     name: (u && u.name) || '', email: (u && u.email) || '', subdomain: (u && u.subdomain) || '',
     plan: (u && u.plan) || 'free', status: (u && u.status) || 'active',
     phone: ph ? ph.value : '', smsAlerts: !sms || sms.value !== '0',
     briefEmail: !brief || brief.value !== '0',
+    surfaceEmail: !surfEmail || surfEmail.value !== '0',   // default on
+    surfaceSms: !!(surfSms && surfSms.value === '1'),       // default off (costs money, needs a number)
     dailyQuote: !(qOff && qOff.value === '1'),
     aiOff: !!(aiOff && aiOff.value === '1'),
     aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),
@@ -349,6 +353,8 @@ export async function patchAccount(env, body) {
   if (body.briefEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'brief_enabled', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.briefEmail ? '1' : '0').run();
   if (body.dailyQuote !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'quote_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.dailyQuote ? '0' : '1').run();
   if (body.aiOff !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'ai_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.aiOff ? '1' : '0').run();
+  if (body.surfaceEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_email', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceEmail ? '1' : '0').run();
+  if (body.surfaceSms !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_sms', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceSms ? '1' : '0').run();
   return getAccount(env);
 }
 // Adding an alias no longer trusts the owner on its own: the address is stored

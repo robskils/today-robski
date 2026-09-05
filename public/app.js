@@ -1702,9 +1702,11 @@ function renderSettings() {
   const notificationsPane = state.account ? `<div class="set-card set-notifs">
         <div class="set-notif-group"><div class="set-notif-h">By email</div>
           <label class="set-mod"><span>Morning brief<small>Your day's calendar, open P1 tasks and the quote, emailed at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
+          <label class="set-mod"><span>When something surfaces<small>An email the morning a "surface on" task comes back to your Home</small></span><input type="checkbox" data-account-surface-email ${state.account.surfaceEmail !== false ? 'checked' : ''}></label>
         </div>
         <div class="set-notif-group"><div class="set-notif-h">By text</div>
           <label class="set-mod"><span>Before a time block starts<small>A text 5 minutes before a scheduled block${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
+          <label class="set-mod"><span>When something surfaces<small>A text the morning a "surface on" task comes back${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-surface-sms ${state.account.surfaceSms ? 'checked' : ''}></label>
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
@@ -3555,6 +3557,9 @@ const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') ===
 // Collapsible section headers on a life area page (open by default; collapse
 // remembered per section label across areas).
 const areaSecOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.area.secs') || '{}')[k]); } catch { return true; } };
+// Tracker area sections: collapsible, remembered per area.
+const trkOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}')[k]); } catch { return true; } };
+function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} renderToday(); }
 function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
 const areaSecH = (key, label, count) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${esc(label)}${count != null ? ` · ${count}` : ''}</div>`;
 function timeAgo(t) {
@@ -4352,11 +4357,13 @@ function t2TrackerHtml() {
         <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}</span>` : ''}<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span></span>
       </div>`;
     }).join('');
+    const key = g.areaId || ('lane:' + g.label);
+    const open = trkOpen(key);
     return `<div class="trk-area" style="--h:${g.hue}">
-      <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
-      ${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
+      <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
+      ${open ? `${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       ${rows}
-      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}
+      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
   return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p><div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
@@ -6366,7 +6373,7 @@ function nextRepeat(repeat, anchorISO) {
 }
 function taskBadges(t) {
   const out = [];
-  if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz">💤 ${esc(dpLabel(t.props.snooze))}</span>`);
+  if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz" title="Surfaces on your Home that day">☀ ${esc(dpLabel(t.props.snooze))}</span>`);
   if (t.props.repeat) out.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(t.props.repeat))}</span>`);
   return out.length ? `<span class="tbadges">${out.join('')}</span>` : '';
 }
@@ -6502,13 +6509,9 @@ function renderTasks() {
   const inFilter = (t) => taskMatchesFilters(t) && quickMatch(t);
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
-  const open = state.tasks.filter((t) => !t.props.done && !isSnoozed(t) && inFilter(t) && matchesQ(t));   // ticked or snoozed tasks vanish from view (taskTableHtml sorts via the column headers)
-  const snoozed = state.tasks.filter((t) => !t.props.done && isSnoozed(t) && inFilter(t)).sort((a, b) => (a.props.snooze || '').localeCompare(b.props.snooze || ''));
-  const snoozedSection = state.showSnoozed
-    ? `<section class="completed-sec">
-        <div class="completed-head"><h2>Snoozed · ${snoozed.length}</h2><button class="ghost" data-hide-snoozed>Hide</button></div>
-        ${taskTableHtml(snoozed, 'Nothing snoozed.')}</section>`
-    : (snoozed.length ? `<button class="ghost show-completed" data-show-snoozed>💤 Snoozed · ${snoozed.length}</button>` : '');
+  // "Surface on" is a reminder date, not a hide - surface-dated tasks stay in the list.
+  const open = state.tasks.filter((t) => !t.props.done && inFilter(t) && matchesQ(t));
+  const snoozedSection = '';
   const completed = state.tasks.filter((t) => t.props.done && inFilter(t));
   const cq = (state.completedQuery || '').trim().toLowerCase();
   const completedShown = completed.filter((t) => !cq || (t.title || '').toLowerCase().includes(cq));
@@ -8154,8 +8157,12 @@ function reviewTaskStats(from) {
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
+  const nextRem = (state.reviewReminders || []).filter((r) => new Date(r.at) > new Date()).sort((a, b) => String(a.at).localeCompare(String(b.at)))[0];
+  let nextLine = '';
+  if (nextRem) nextLine = `Next: ${(REVIEWS[nextRem.rtype] || {}).label || 'review'} on ${esc(fmtReminder(nextRem.at))}`;
+  else if (weeklies.length) { const lastTo = (weeklies[0].props || {}).to || localISO(new Date(weeklies[0].created_at)); const nd = new Date(lastTo + 'T00:00'); nd.setDate(nd.getDate() + 7); nextLine = nd <= new Date() ? 'Next weekly review: due now' : `Next weekly review: ${esc(dpLabel(localISO(nd)))}`; }
   const hero = `<div class="rv-hero">
-    <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>
+    <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>${nextLine || 'A few minutes, and you\'ll know where you stand.'}</small></span><span class="rvw-go">→</span></button>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
   </div>`;
   const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
@@ -9092,6 +9099,8 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('.acct-phone-cc, .acct-phone-num')) { clearTimeout(window.__acctPT); const cc = (document.querySelector('.acct-phone-cc') || {}).value; const number = (document.querySelector('.acct-phone-num') || {}).value; window.__acctPT = setTimeout(() => saveAccount({ phone: joinPhone({ cc, number }) }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
+  if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
+  if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
@@ -9248,6 +9257,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
   // Today (native) view
+  { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad]')) { trkToggle(tt.dataset.trkToggle); return; } }
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }
   { const pr = t.closest('[data-t2-prio]'); if (pr) { const s = state.today.taskPrios instanceof Set ? state.today.taskPrios : (state.today.taskPrios = new Set()); const p = pr.dataset.t2Prio; if (s.has(p)) s.delete(p); else s.add(p); renderToday(); return; } }
   { const td = t.closest('[data-t2-day]'); if (td) { const dd = new Date(state.today.day + 'T00:00'); dd.setDate(dd.getDate() + Number(td.dataset.t2Day)); loadToday(ymd(dd.getFullYear(), dd.getMonth(), dd.getDate())); return; } }
@@ -9767,6 +9777,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
+  if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   if (e.target.id === 'contact-file' && e.target.files && e.target.files[0]) { importVcf(e.target.files[0]); e.target.value = ''; }
   if (state.contact_open) {
@@ -10393,8 +10404,9 @@ function renderTaskCard() {
         ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Surface on${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}<small class="tf-hint">hidden from your lists until then</small></span>
+      <label class="tf-field"><span class="tf-label">Surface on${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}<small class="tf-hint">pops onto your Home that day (and can alert you)</small></span>
         ${dateFieldHtml('taskcard-snooze', t.props.snooze || '')}</label>
+      ${t.props.snooze ? `<label class="tf-toggle tf-notify"><input type="checkbox" data-surface-notify="${t.id}" ${t.props.surfaceNotify !== false ? 'checked' : ''}><span>Alert me (text/email) when it surfaces</span></label>` : ''}
       <label class="tf-field"><span class="tf-label">Repeat</span>
         <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>

@@ -1698,7 +1698,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .trk-prow .trk-week { flex:none; }
 .trk-prow .trk-dot { width:17px; height:17px; }
 .trk-area { background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); border-radius:14px; padding:13px 15px 8px; box-shadow:var(--shadow); display:inline-block; width:100%; margin:0 0 14px; break-inside:avoid; -webkit-column-break-inside:avoid; page-break-inside:avoid; }
-.trk-area-h { display:flex; align-items:center; gap:9px; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+.trk-area-h { display:flex; align-items:center; gap:9px; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid var(--line); flex-wrap:wrap; cursor:pointer; }
+.trk-area-h .acw-chev { font-size:12px; color:var(--ink-3); flex:none; }
 .trk-area-h .cd { width:11px; height:11px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
 .trk-area-name { font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:600; color:var(--ink); }
 .trk-area-stat { display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-2); }

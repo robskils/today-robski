@@ -7,7 +7,7 @@ import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignmen
 import { openMeeting } from './meetings.js';
 import { aiKey, aiNeedsKey, logAiUsage, setAiKey } from './ai.js';
 import { adminOverview, adminUsers, updateUser, adminAiUsage, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
-import { briefDue, briefEmail, briefSubject } from './brief.js';
+import { briefDue, briefEmail, briefSubject, esc as escHtml } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStatus, gcalAvailable } from './gcal.js';
 import { handleAttachments } from './attachments.js';
@@ -1526,6 +1526,122 @@ async function runAlertsForUser(env, user, now, target) {
   return rows.length;
 }
 
+// ── surface alerts ────────────────────────────────────────────────────
+// "Surface on <date>" doesn't hide a task - it brings it back onto Home's
+// Today that morning. If the user wants, we also *tell* them it surfaced, by
+// email and/or text, once. This is the dispatch: it runs off the same
+// every-minute cron, self-gates to a single pass a day per member (the same
+// morning window as the brief), and marks each task so a surfacing never
+// alerts twice. Channels are opt-in-able in Settings (email on by default,
+// text off), and a task can opt out on its own (props.surfaceNotify === false).
+async function runSurfaceAlertsAll(env) {
+  let sent = 0;
+  for (const u of await activeUsers(env)) {
+    sent += await runSurfaceAlertsForUser(env, u)
+      .catch((e) => { console.error('surfaceAlerts', u.id, e.message); return 0; });
+  }
+  return { sent };
+}
+
+async function runSurfaceAlertsForUser(env, user) {
+  const uid = user.id;
+  const now = localParts(new Date(), TZ);
+  const last = await getSetting(env, 'last_surface_day', uid);
+  if (!briefDue(now.min, now.date, last)) return 0;   // once, in the morning window
+
+  // Claim the day first - the conditional UPDATE is the lock, so two ticks a
+  // minute apart in the window can't both send. Only the tick that actually
+  // changes the stored day proceeds. A later send failure just leaves the tasks
+  // unmarked, so tomorrow's pass retries them; a missed nudge, never a double.
+  const claim = await env.DB.prepare(
+    `INSERT INTO settings (user_id, key, value) VALUES (?, 'last_surface_day', ?)
+       ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value
+        WHERE settings.value <> excluded.value`,
+  ).bind(uid, now.date).run();
+  if (!claim.meta?.changes) return 0;
+
+  // Email default on; text default off (a text costs money and needs a saved
+  // number). Both are switchable "generally" in Settings.
+  const emailOn = (await getSetting(env, 'surface_email', uid)) !== '0';
+  const smsOn = (await getSetting(env, 'surface_sms', uid)) === '1';
+  if (!emailOn && !smsOn) return 0;
+
+  const today = now.date;
+  const { results } = await env.DB.prepare(
+    "SELECT id, title, props FROM blocks WHERE kind='task' AND archived=0 AND user_id=?",
+  ).bind(uid).all().catch(() => ({ results: [] }));
+
+  const due = [];
+  for (const r of results || []) {
+    let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
+    if (p.done || p.kit) continue;                          // done, or a keep-in-touch nudge (its own path)
+    if (!p.snooze || String(p.snooze) > today) continue;    // not surfaced yet
+    if (p.surfaceNotify === false) continue;                // this task opted out
+    if (String(p.surfacedNotified || '') === String(p.snooze)) continue;  // already told for this surfacing
+    due.push({ id: r.id, title: r.title || 'Untitled', snooze: String(p.snooze), props: p });
+  }
+  if (!due.length) return 0;
+
+  const home = `https://${user.subdomain || 'robski'}.daybook.fyi`;
+  const titles = due.map((d) => d.title);
+
+  if (smsOn) {
+    const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
+    const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
+    if (phone) {
+      const body = due.length === 1
+        ? `Surfacing on your Daybook today: ${titles[0]}.`
+        : `${due.length} items surface on your Daybook today: ${titles.slice(0, 5).join('; ')}${due.length > 5 ? '…' : ''}.`;
+      await sendSms(env, body, phone).catch(() => {});
+    }
+  }
+  if (emailOn) {
+    const to = uid === 1 ? (env.BRIEF_EMAIL || user.email) : user.email;
+    if (to) await sendSurfaceMail(env, { to, day: today, titles, home }).catch(() => {});
+  }
+
+  // Mark each as told for this surfacing. Re-snoozing to a new date resets it
+  // (surfacedNotified no longer equals the snooze), so it can alert again when
+  // it next comes due.
+  for (const d of due) {
+    const np = { ...d.props, surfacedNotified: d.snooze };
+    await env.DB.prepare('UPDATE blocks SET props=? WHERE id=? AND user_id=?')
+      .bind(JSON.stringify(np), d.id, uid).run().catch(() => {});
+  }
+  return due.length;
+}
+
+// One plain email listing what surfaced today, sent the same way as the brief:
+// contact@daybook.fyi over Purelymail SMTP, falling back to Resend.
+async function sendSurfaceMail(env, { to, day, titles, home }) {
+  const subject = titles.length === 1
+    ? `Surfaced today: ${titles[0]}`
+    : `${titles.length} items surfaced on your Daybook`;
+  const items = titles.map((t) => `<li style="margin:6px 0;color:#211c17;font-size:17px">${escHtml(t)}</li>`).join('');
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:8px 4px">
+    <p style="font-size:17px;color:#574e44;margin:0 0 14px">You asked to be reminded - these are back on your Home today:</p>
+    <ul style="padding-left:22px;margin:0 0 20px">${items}</ul>
+    <p style="margin:0"><a href="${home}" style="color:#c4412e;font-weight:600;text-decoration:none;font-size:17px">Open Daybook →</a></p>
+  </div>`;
+  const text = `Back on your Home today:\n\n${titles.map((t) => `- ${t}`).join('\n')}\n\nOpen ${home}`;
+  if (env.BRIEF_SMTP_PASS) {
+    const acct = {
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Daybook',
+      username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
+      smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
+    };
+    const raw = buildMessage(acct, { to, subject, html, text });
+    await smtpSend(env, acct, { rcpts: [to], raw });
+  } else {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html }),
+    });
+    if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
+  }
+}
+
 // ── the morning brief ─────────────────────────────────────────────────
 
 // Sent once a day at 08:45, off the same every-minute cron as the alerts.
@@ -2581,6 +2697,9 @@ export default {
     // Both run off the same every-minute tick. The brief returns immediately on
     // all but one tick a day, so this costs a single indexed D1 read a minute.
     ctx.waitUntil(runDailyBriefAll(env).catch((e) => console.error('runDailyBrief:', e.message)));
+    // Tell members a "surface on" task has come due, once, the morning it does.
+    // Self-gates to one pass a day per member, like the brief.
+    ctx.waitUntil(runSurfaceAlertsAll(env).catch((e) => console.error('surfaceAlerts:', e.message)));
     // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min),
     // then push an icon badge if the unread total just rose.
     ctx.waitUntil(syncMailCache(env).then((res) => maybePushMail(env, res)).catch((e) => console.error('syncMailCache/push:', e.message)));
