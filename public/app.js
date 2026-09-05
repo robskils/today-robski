@@ -1794,8 +1794,8 @@ function renderNav() {
     ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-lbl">Reviews</span></button>` : ''}
-    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
     ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Reflection</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
+    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
     ${modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-lbl">Toolbox</span></button>` : ''}
     </div>
@@ -3552,6 +3552,11 @@ async function openArea(id) {
   ]).then(([shares]) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.shares = shares; if (state.view.type === 'area') renderArea(); } });
 }
 const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
+// Collapsible section headers on a life area page (open by default; collapse
+// remembered per section label across areas).
+const areaSecOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.area.secs') || '{}')[k]); } catch { return true; } };
+function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
+const areaSecH = (key, label, count) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${esc(label)}${count != null ? ` · ${count}` : ''}</div>`;
 function timeAgo(t) {
   const s = Math.floor((Date.now() - t) / 1000);
   if (s < 60) return 'just now';
@@ -3597,7 +3602,7 @@ function renderArea() {
   const contactCards = contacts.map((c) => contactCardHtml(c)).join('');
   const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span></a>` : `<button class="tbl-card"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span></button>`; }).join('');
   const journalCards = journals.map((j) => `<button class="tbl-card" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span></button>`).join('');
-  const sec = (label, n, inner) => n ? `<section class="home-sec"><div class="home-sec-h">${label} · ${n}</div>${inner}</section>` : '';
+  const sec = (label, n, inner) => n ? `<section class="home-sec">${areaSecH(label, label, n)}${areaSecOpen(label) ? inner : ''}</section>` : '';
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
@@ -3608,7 +3613,7 @@ function renderArea() {
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
       ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
     </div>
-    <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
+    <section class="home-sec">${areaSecH('Vision', 'Vision')}${areaSecOpen('Vision') ? visionInner : ''}</section>
     ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
     ${areaMembersHtml(area)}
     ${areaWallHtml(area)}
@@ -3660,7 +3665,7 @@ function areaMembersHtml(area) {
   const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
   const body = cards.length ? `<div class="mem-row">${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
-  return `<section class="home-sec area-members"><div class="home-sec-h">Shared with${cards.length ? ` · ${cards.length}` : ''}</div>${body}</section>`;
+  return `<section class="home-sec area-members">${areaSecH('Shared with', 'Shared with', cards.length || null)}${areaSecOpen('Shared with') ? body : ''}</section>`;
 }
 const areaWallOpen = () => { try { return localStorage.getItem('life.area.wall') !== '0'; } catch { return true; } };
 // A shared free-text wall for the area, saved on the area block so members with
@@ -9473,6 +9478,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
   if (t.closest('[data-area-members-more]')) { if (state.area_open) state.area_open.membersExpanded = true; renderArea(); return; }
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
+  { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }

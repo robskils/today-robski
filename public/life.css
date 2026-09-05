@@ -2212,6 +2212,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ov-act-time { flex:none; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .ov-muted { color:var(--ink-3); font-size:14px; padding:4px 0; }
 .area-ov-att { margin:0; }
+/* Collapsible section headers on a life area page. */
+.area-sec-h { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
+.area-sec-h .acw-chev { font-size:12px; color:var(--ink-3); flex:none; }
+.area-sec-h:hover { color:var(--ink); }
 /* Members bar: horizontal cards, tap to message; "+N more" expands the list. */
 .mem-row { display:flex; flex-wrap:wrap; align-items:center; gap:9px; }
 .mem-card { display:inline-flex; align-items:center; gap:9px; padding:7px 13px 7px 8px; border:1px solid var(--line); border-radius:999px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; }
