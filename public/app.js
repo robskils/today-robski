@@ -1757,11 +1757,11 @@ function renderNav() {
     ${modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : ''}
     ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-lbl">Today</span></button>` : ''}
     ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
-    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
+    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-lbl">Reviews</span></button>` : ''}
+    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
     ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Reflection</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
-    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
     ${modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-lbl">Toolbox</span></button>` : ''}
     </div>
@@ -2290,7 +2290,7 @@ function tbxTool(k, ic, label, panel) {
   return `<div class="tbx-tool"><div class="tbx-tool-h" data-tbx-tool="${k}"><span class="hs-chev">${o ? '▾' : '▸'}</span><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${tbxToolBadge(k)}</div>${o ? `<div class="tbx-tool-body tbx-${k}">${panel}</div>` : ''}</div>`;
 }
 function tbxToolsHtml() {
-  return `<div class="tbx-tools">${tbxTool('focus', '⏱', 'Focus', pomoPanel())}${tbxTool('timer', '⏲', 'Timer', timerPanel())}${tbxTool('tracker', '✓', 'Daily Practices', trackerPanel())}</div>`;
+  return `<div class="tbx-tools tbx-page">${tbxTool('focus', '⏱', 'Focus', pomoPanel())}${tbxTool('timer', '⏲', 'Timer', timerPanel())}${tbxTool('tracker', '✓', 'Daily Practices', trackerPanel())}</div>`;
 }
 // Toolbox is now its own tool (own sidebar button); it no longer lives on Home.
 function openToolbox() { state.view = { type: 'toolbox' }; renderNav(); renderToolbox(); }
