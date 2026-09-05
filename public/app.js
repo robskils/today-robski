@@ -3499,9 +3499,25 @@ function openAreasList() {
 async function openArea(id) {
   state.view = { type: 'area', id };
   const [area, blocks] = await Promise.all([api(`/api/blocks/${id}`), api(`/api/blocks?area=${id}`)]);
-  state.area_open = { area, blocks };
+  state.area_open = { area, blocks, shares: null };
   recordRecent('area', id, area.title);
   renderNav(); renderArea();
+  // People connected: who this area is shared with (async, non-blocking).
+  Promise.all([
+    api(`/api/blocks/${id}/shares`).then((r) => r.shares || []).catch(() => []),
+    state.friends ? Promise.resolve() : api('/api/friends').then((f) => { state.friends = f; }).catch(() => {}),
+  ]).then(([shares]) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.shares = shares; if (state.view.type === 'area') renderArea(); } });
+}
+const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
+function timeAgo(t) {
+  const s = Math.floor((Date.now() - t) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60); if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24); if (d < 7) return d + 'd ago';
+  const w = Math.floor(d / 7); if (w < 5) return w + 'w ago';
+  const mo = Math.floor(d / 30); if (mo < 12) return mo + 'mo ago';
+  return Math.floor(d / 365) + 'y ago';
 }
 function renderArea() {
   const { area, blocks } = state.area_open;
@@ -3543,9 +3559,10 @@ function renderArea() {
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
         ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-gear" data-area-color title="Customise this area\'s colour">⚙</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
-      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
+      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area overview" title="Overview">▾</button></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${sharedBanner(area)}
+      ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
       ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
     </div>
     <section class="home-sec"><div class="home-sec-h">Vision</div>${visionInner}</section>
@@ -3560,6 +3577,43 @@ function renderArea() {
     ${sec('Reflections', journals.length, `<div class="tbl-cards">${journalCards}</div>`)}
     ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
+  if (areaOvOpen()) loadThumbs();   // overview attachment thumbnails
+}
+// The area overview: a collapsible dashboard - counts, the people it's shared
+// with (+ invite), file attachments, and a recent-activity feed derived from the
+// area's blocks. Opened from the ▾ on the title row.
+function areaOverviewHtml(area, c, blocks) {
+  const metric = (n, label) => `<span class="ov-metric"><b>${n}</b> ${label}</span>`;
+  const metrics = [metric(c.notes, 'notes'), metric(c.goals, 'goals'), metric(c.tasks, 'open tasks'), metric(c.tables, 'tables'), metric(c.saved, 'saved'), metric(c.reflections, 'reflections')].join('');
+  const shares = state.area_open && state.area_open.shares;
+  const friends = (state.friends && state.friends.friends) || [];
+  const people = shares == null ? '<div class="ov-muted">Loading…</div>'
+    : (shares.length ? shares.map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''}><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('')
+      : '<div class="ov-muted">Just you so far.</div>');
+  const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
+  const recent = (blocks || []).map((b) => ({ b, t: new Date(b.updated_at || b.created_at || 0).getTime() })).filter((x) => x.t > 0).sort((a, b) => b.t - a.t).slice(0, 6);
+  const activity = recent.length ? recent.map(({ b, t }) => `<div class="ov-act"><span class="ov-act-ic">${kIcon[b.kind] || '•'}</span><span class="ov-act-t">${esc(b.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(t)}</span></div>`).join('') : '<div class="ov-muted">No recent activity.</div>';
+  return `<section class="area-ov">
+    <div class="ov-metrics">${metrics}</div>
+    <div class="ov-cols">
+      <div class="ov-block"><div class="ov-h"><span>People</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite to area</button>'}</div><div class="ov-people">${people}</div></div>
+      <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
+    </div>
+    ${areaAttachHtml(area)}
+  </section>`;
+}
+// Area file attachments - same store the vision images use, same handlers as a
+// note's attachments (upload/open/delete/thumbnails), minus the note-only Scan.
+function areaAttachHtml(area) {
+  const list = (area.props && area.props.attachments) || [];
+  const tiles = list.map((a) => (isImgType(a.type)
+    ? `<div class="att att-img" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><img data-att-thumb="${a.id}" alt="${esc(a.name)}"><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`
+    : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
+  return `<section class="attachments area-ov-att" data-att-zone="${area.id}">
+    <div class="att-h">Attachments${list.length ? ` · ${list.length}` : ''}</div>
+    <div class="att-grid">${tiles}
+      <label class="att-add"><input type="file" multiple hidden data-att-input="${area.id}"><span class="att-add-ic">+</span><span>Add file</span></label>
+    </div></section>`;
 }
 async function setBlockArea(kind, id, areaId) {
   try {
@@ -9239,6 +9293,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
+  if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
+  if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
@@ -10108,6 +10164,7 @@ function attHost() {
   if (state.view.type === 'taskcard') return state.task_open && state.task_open.task;
   if (state.view.type === 'bucketcard') return state.bucket_open && state.bucket_open.item;
   if (state.view.type === 'visioncard') return state.vision_open && state.vision_open.area;
+  if (state.view.type === 'area') return state.area_open && state.area_open.area;
   if (state.view.type === 'table' && state.tables_view && state.tables_view.openRow) {
     return state.tables_rows && state.tables_rows.find((x) => x.id === state.tables_view.openRow);
   }
@@ -10135,6 +10192,7 @@ function rerenderHost() {
   else if (state.view.type === 'bucketcard') renderBucketCard();
   else if (state.view.type === 'visioncard') renderVisionCard();
   else if (state.view.type === 'table') renderTable();
+  else if (state.view.type === 'area') renderArea();
 }
 function attachSection(block) {
   const list = (block && block.props && block.props.attachments) || [];
