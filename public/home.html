@@ -259,6 +259,20 @@ section { position: relative; }
 .closing h2 { font-size: clamp(34px, 5vw, 54px); }
 .closing p { margin: 20px auto 0; max-width: 46ch; font-size: 19px; color: var(--ink-2); }
 .closing .hero-actions { justify-content: center; margin-top: 36px; }
+/* Request-an-invite form */
+.invite-form { max-width: 520px; margin: 32px auto 0; text-align: left; }
+.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.if-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.invite-form input, .invite-form textarea { width: 100%; font-family: inherit; font-size: 16px; color: var(--ink); background: var(--card); border: 1px solid var(--line-2); border-radius: 13px; padding: 13px 15px; }
+.invite-form textarea { margin-top: 12px; resize: vertical; line-height: 1.5; }
+.invite-form input::placeholder, .invite-form textarea::placeholder { color: var(--ink-3); }
+.invite-form input:focus, .invite-form textarea:focus { outline: none; border-color: var(--rust); box-shadow: 0 0 0 3px var(--rust-soft); }
+.if-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin-top: 16px; }
+.if-note { margin-top: 12px; text-align: center; font-size: 15px; color: var(--rust); }
+.invite-thanks { text-align: center; padding: 8px 0; }
+.invite-thanks h3 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; }
+.invite-thanks p { margin: 10px auto 0; max-width: 42ch; color: var(--ink-2); font-size: 17px; }
+@media (max-width: 520px) { .if-grid { grid-template-columns: 1fr; } }
 
 /* footer */
 footer { border-top: 1px solid var(--line); padding: 46px 0; }
@@ -478,11 +492,20 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap reveal">
     <div class="eyebrow" style="text-align:center">Early access</div>
     <h2>Make some space in your head.</h2>
-    <p>Daybook is invite-only while it's young, so it stays calm and well cared for. Ask for an invite and I'll set you up.</p>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="mailto:contact@daybook.fyi?subject=Daybook%20invite&body=Hi%2C%20I%27d%20love%20an%20invite%20to%20Daybook.">Request an invite →</a>
-      <a class="btn btn-ghost" href="#" data-signin>I have an account</a>
-    </div>
+    <p>Daybook is invite-only while it's young, growing gently by word of mouth so it stays calm and well cared for. Tell us a little about you and we'll set you up.</p>
+    <form class="invite-form reveal" id="invite-form" novalidate>
+      <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="if-grid">
+        <input id="if-name" placeholder="Your name" autocomplete="name" required>
+        <input id="if-email" type="email" placeholder="Your email" autocomplete="email" required>
+      </div>
+      <textarea id="if-why" placeholder="What would you use Daybook for? A line is plenty." rows="2"></textarea>
+      <div class="if-actions">
+        <button class="btn btn-primary" type="submit" id="if-submit">Request an invite →</button>
+        <a class="btn btn-ghost" href="#" data-signin>I have an account</a>
+      </div>
+      <p class="if-note" id="if-note" hidden></p>
+    </form>
   </div>
 </section>
 
@@ -543,6 +566,25 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     const err = document.getElementById('signin-err');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter your email address.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
+  });
+  // Request-an-invite form: posts to the worker, which stores it and emails us.
+  const invForm = document.getElementById('invite-form');
+  if (invForm) invForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const name = document.getElementById('if-name').value.trim();
+    const email = document.getElementById('if-email').value.trim();
+    const why = document.getElementById('if-why').value.trim();
+    const hp = document.getElementById('if-hp').value;
+    const note = document.getElementById('if-note');
+    const btn = document.getElementById('if-submit');
+    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Request an invite →'; };
+    if (!name) return fail('A name, please.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('A valid email, please.');
+    note.hidden = true; btn.disabled = true; btn.textContent = 'Sending…';
+    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you 🌱</h3><p>We\'ll be in touch soon. Daybook grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
+      .catch(() => fail('Something went wrong - email contact@daybook.fyi and we\'ll sort you out.'));
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {

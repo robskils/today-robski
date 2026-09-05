@@ -307,3 +307,15 @@ CREATE TABLE IF NOT EXISTS push_subs (
   email      TEXT,
   created_at TEXT NOT NULL
 );
+
+-- Invite requests from the public marketing site (name/email/why). Emailed to
+-- the owner as they arrive; kept here so nothing is lost if an email bounces.
+CREATE TABLE IF NOT EXISTS invite_requests (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT,
+  email      TEXT,
+  why        TEXT,
+  source     TEXT,
+  handled    INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL
+);

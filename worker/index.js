@@ -2752,6 +2752,30 @@ function reviewRemConfig(value) {
   }
   return { cfg };
 }
+// A public invite request from the marketing site. Best-effort store in D1, then
+// email the owner (the email is what matters, so a store failure never blocks it).
+// A hidden honeypot field catches bots. No auth - it sits before the JWT gate.
+async function handleInviteRequest(request, env, json, err) {
+  const b = await request.json().catch(() => ({}));
+  if (b.hp) return json({ ok: true }, request);   // honeypot filled = bot; pretend success
+  const name = String(b.name || '').trim().slice(0, 120);
+  const email = String(b.email || '').trim().toLowerCase().slice(0, 200);
+  const why = String(b.why || '').trim().slice(0, 1200);
+  if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('Please add your name and a valid email.', request, 400);
+  try {
+    await env.DB.prepare('INSERT INTO invite_requests (name, email, why, source, created_at) VALUES (?,?,?,?,?)')
+      .bind(name, email, why, String(b.source || '').slice(0, 300), new Date().toISOString()).run();
+  } catch (e) { console.error('invite-request store:', e.message); }
+  try {
+    const to = env.BRIEF_EMAIL || 'contact@daybook.fyi';
+    const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;font-size:16px;color:#211c17">
+      <p><b>${escHtml(name)}</b> &lt;${escHtml(email)}&gt; would like a Daybook invite.</p>
+      ${why ? `<p style="color:#574e44;border-left:3px solid #c4412e;padding-left:12px">${escHtml(why)}</p>` : ''}
+      <p style="color:#8b7f72;font-size:13px">Reply to them at ${escHtml(email)}.</p></div>`;
+    await sendSystemMail(env, { to, subject: `Daybook invite request — ${name}`, html, text: `${name} <${email}>\n\n${why}` });
+  } catch (e) { console.error('invite-request mail:', e.message); }
+  return json({ ok: true }, request);
+}
 async function maybeReviewReminders(env) {
   for (const u of await activeUsers(env)) {
     await reviewRemindersForUser(env, u.id).catch((e) => console.error('reviewReminders', u.id, e.message));
@@ -2943,6 +2967,9 @@ export default {
       return verifyCode(request, env,
         (d) => json(d, request), (m, s) => err(m, request, s));
     }
+
+    // Public: someone asking for an invite from the marketing site. Stored + emailed.
+    if (path === '/api/invite-request' && request.method === 'POST') return handleInviteRequest(request, env, json, err);
 
     // Google Calendar OAuth callback: unauthenticated (Google redirects the
     // member's browser here on the apex, with no Daybook session), so trust
