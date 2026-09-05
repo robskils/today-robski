@@ -1576,6 +1576,7 @@ const MOBILE_SECTIONS = [
   ['favareas', 'home-sec-favareas', 'Life areas'],
   ['recent', 'home-sec-recent', 'Recently viewed'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
+  ['mail', 'home-sec-mail', 'Inbox'],
   ['people', 'home-sec-people', 'People online'],
   ['toolbox', 'home-toolbox', 'Toolbox'],
 ];
@@ -2929,6 +2930,41 @@ function p1Html() {
   const more = total - shown.length;
   return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
 }
+// A few of the newest inbox messages on Home, from the warm server-side cache
+// (the same one the cron keeps fresh) - instant, no slow IMAP round-trip. Loaded
+// lazily the first time the section renders, then cached for a couple of minutes.
+async function loadHomeMail(force) {
+  if (!modOn('mail')) return;
+  state.home = state.home || {};
+  const h = state.home;
+  if (h._mailLoading) return;
+  if (!force && h._mailAt && Date.now() - h._mailAt < 120000) return;
+  h._mailLoading = true;
+  try {
+    const r = await mailApi('/cached?account=all');
+    const msgs = (r && Array.isArray(r.messages)) ? r.messages.slice() : [];
+    msgs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    h.mailPreview = msgs;
+    h._mailAt = Date.now();
+  } catch { h.mailPreview = h.mailPreview || []; }
+  h._mailLoading = false;
+  if (state.view && state.view.type === 'home') renderHome();
+}
+function homeMailHtml() {
+  const list = state.home && state.home.mailPreview;
+  if (list == null) { loadHomeMail(); return '<div class="home-empty" style="padding:8px 2px">Loading…</div>'; }
+  if (!list.length) return '<div class="home-empty" style="padding:8px 2px">Your inbox is clear.</div>';
+  const rows = list.slice(0, 3).map((m) => {
+    const from = m.from ? (m.from.name || m.from.address || 'Unknown') : 'Unknown';
+    const when = m.date ? timeAgo(new Date(m.date).getTime()) : '';
+    return `<button class="hm-row ${m.seen ? '' : 'unread'}" data-open-mail title="Open in Mail">
+      <span class="hm-dot"></span>
+      <span class="hm-body"><span class="hm-from">${esc(from)}</span><span class="hm-subj">${esc(m.subject || '(no subject)')}</span></span>
+      <span class="hm-when">${esc(when)}</span>
+    </button>`;
+  }).join('');
+  return `<div class="hm-list">${rows}</div><button class="p1-all" data-open-mail>Open Mail →</button>`;
+}
 function renderHome() {
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
   const favs = state.favs || [];
@@ -3055,11 +3091,12 @@ function renderHome() {
           // The right column is drag-reorderable too (grips on desktop), each
           // section carrying data-hsec so the drop logic can read the order.
           const sideSec = {
+            mail: modOn('mail') ? `<section class="home-sec home-sec-mail" data-hsec="mail">${secH('mail', 'Inbox', state.mailUnreadTotal ? `<span class="muted">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal} unread</span>` : '', true)}${secOpen('mail') ? homeMailHtml() : ''}</section>` : '',
             recent: `<section class="home-sec home-sec-recent" data-hsec="recent">${secH('recent', 'Recently viewed', '', true)}${secOpen('recent') ? recentHtml : ''}</section>`,
             notepad: modOn('notepad') ? `<section class="home-sec home-sec-notepad" data-hsec="notepad">${secH('notepad', 'Notepad', '', true)}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
             people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-people" data-hsec="people">${secH('people', 'People', '', true)}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
           };
-          const sdef = ['recent', 'notepad', 'people'];
+          const sdef = ['mail', 'recent', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
           return sorder.map((k) => sideSec[k] || '').join('');
         })()}</aside>
