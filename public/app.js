@@ -3912,7 +3912,7 @@ function renderArea() {
     'Wall': areaWallBody(area),
   };
   const CORE = new Set(['Overview', 'Vision', 'Goals', 'Notes and tables', 'Tasks', 'Wall']);
-  const tileOrder = ['Overview', 'Vision', 'Goals', 'Notes and tables', 'Tasks', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall'];
+  const tileOrder = ['Overview', 'Vision', 'Tasks', 'Notes and tables', 'Goals', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall'];
   const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; return CORE.has(k) || counts[k] > 0; });
   // Landing on an area shows the Overview dashboard; a tile click switches for the
   // session (state only), so a fresh visit always opens on the dashboard again.
