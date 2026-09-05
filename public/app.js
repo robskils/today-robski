@@ -8275,7 +8275,7 @@ function reviewInsight(m) {
 }
 async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); }
 function renderReviewCard() {
-  const r = state.review_open.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
+  const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
   const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No area'; };
   const pill = (label, n, cls) => `<span class="rv-stat ${cls || ''}"><b>${n}</b> ${label}</span>`;
   const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
@@ -8300,12 +8300,15 @@ function renderReviewCard() {
     <section class="rv-mirror">
       <div class="home-sec-h">Your ${p.rtype === 'weekly' ? 'week' : 'period'}, from the record</div>
       <div class="rv-stats">
-        ${pill('ticked off', (m.tasksDone || []).length, 'good')}
+        ${(m.tasksDone || []).length ? `<button class="rv-stat good rv-stat-btn ${R.summaryOpen ? 'on' : ''}" data-rv-summary title="See a written summary of what you got done"><b>${(m.tasksDone || []).length}</b> ticked off <span class="rv-stat-spark">✦</span></button>` : pill('ticked off', 0, 'good')}
         ${pill('P1 still open', (m.openP1 || []).length, (m.openP1 || []).length ? 'warn' : '')}
         ${pill('practices kept', (m.practices || []).reduce((a, x) => a + x.count, 0), 'good')}
         ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
         ${pill('quiet areas', quiet.length, quiet.length ? 'warn' : '')}
       </div>
+      ${R.summaryOpen ? `<div class="rv-summary">${R.summaryLoading
+        ? '<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Writing your summary…</div>'
+        : `<div class="rv-summary-h">✦ The ${p.rtype === 'weekly' ? 'week' : 'period'} in brief</div><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">Written from your record. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div>`}</div>` : ''}
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
       ${quiet.length ? `<div class="rv-line"><span class="rv-line-k">Went quiet</span> ${quiet.map(esc).join(', ')}</div>` : ''}
       ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}
@@ -8341,6 +8344,42 @@ function setWheel(areaId, score) {
   const r = state.review_open.review; const w = { ...(r.props.wheel || {}) };
   w[areaId] = w[areaId] === score ? 0 : score;   // tap the same pip to clear
   patchReview(r.id, { wheel: w }, true).then(renderReviewCard);
+}
+// Render the stored AI summary text (plain prose, blank-line paragraphs) as HTML.
+function reviewSummaryHtml(text) {
+  return String(text || '').split(/\n{2,}/).map((para) => para.trim()).filter(Boolean)
+    .map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('');
+}
+// The compact record the summary is written from - the same mirror the card
+// already shows, with area ids resolved to names so the brief can name them.
+function buildReviewSummaryPayload(r) {
+  const p = r.props || {}; const m = p.mirror || {};
+  const nm = (id) => { const a = areaById(id); return a ? a.title : null; };
+  const period = { weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' }[p.rtype] || 'period';
+  return {
+    period, from: p.from, to: p.to,
+    done: (m.tasksDone || []).map((t) => ({ title: t.title, area: nm(t.area) })),
+    practices: (m.practices || []).map((x) => ({ title: x.title, count: x.count })),
+    openP1: (m.openP1 || []).map((t) => t.title),
+    surfaced: (m.surfaced || []).map((t) => t.title),
+    quiet: (m.quietAreas || []).map(nm).filter(Boolean),
+    goals: (p.snapshot || []).map((g) => ({ title: g.title, measure: g.measure, progress: g.progress })),
+  };
+}
+// Click "ticked off" for a manager-to-CEO brief of what got done. Generated once
+// and cached on the review (props.doneSummary); "Rewrite" forces a fresh one.
+async function reviewDoneSummary(force) {
+  const R = state.review_open; if (!R) return; const r = R.review; const p = r.props || {};
+  if (!force && p.doneSummary) { R.summaryOpen = true; renderReviewCard(); return; }
+  R.summaryOpen = true; R.summaryLoading = true; renderReviewCard();
+  try {
+    const { summary } = await api('/api/review-summary', { method: 'POST', body: JSON.stringify(buildReviewSummaryPayload(r)) });
+    R.summaryLoading = false;
+    patchReview(r.id, { doneSummary: summary }, true);   // persist + updates r.props
+    renderReviewCard();
+  } catch (e) {
+    R.summaryLoading = false; R.summaryOpen = !!p.doneSummary; toast(e.message); renderReviewCard();
+  }
 }
 
 // ── vision board ─────────────────────────────────────
@@ -9373,6 +9412,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R && R.summaryOpen && !R.summaryLoading) { R.summaryOpen = false; renderReviewCard(); } else { reviewDoneSummary(false); } return; }
+  if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
   if (t.closest('[data-open-vision-tab]')) { openGoals('vision').catch((x) => toast(x.message)); return; }
