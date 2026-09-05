@@ -4160,8 +4160,9 @@ function renderToday() {
   const isToday = T.day === todayISO();
   const d = new Date(T.day + 'T00:00');
   const dateLabel = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   // Always show the day + date; when it's today, lead with "Today" and set the date beside it.
-  const h1 = T.tab === 'tracker' ? 'Tracker' : (isToday ? `Today <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel));
+  const h1 = T.tab === 'tracker' ? `Tracker <span class="t2-dsmall">${esc(todayLabel)}</span>` : (isToday ? `Today <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel));
   const nav = `<span class="t2-nav">${!isToday ? '<button class="t2-navbtn" data-t2-today>Today</button>' : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
   const toTick = (state.practices && (state.practices.activities || []).filter((a) => a.tracked && !practiceMarked(a.id, dayKey(new Date()))).length) || 0;
   const tabs = `<div class="t2-tabs">
