@@ -3573,6 +3573,16 @@ function timeAgo(t) {
   const mo = Math.floor(d / 30); if (mo < 12) return mo + 'mo ago';
   return Math.floor(d / 365) + 'y ago';
 }
+// A life area's sentiment, carried over from the last Wheel of Life score it was
+// given in a review (area.props.wheelScore/wheelAt, denormalised by setWheel).
+const AREA_SENTIMENT = ['', 'Struggling', 'Finding its feet', 'Okay', 'Good', 'Thriving'];
+function areaSentimentHtml(area) {
+  const sc = Math.min(Number((area.props || {}).wheelScore) || 0, 5);
+  if (!sc) return '';
+  const when = (area.props || {}).wheelAt;
+  const dots = `<span class="as-dots">${'●'.repeat(sc)}${'○'.repeat(5 - sc)}</span>`;
+  return `<div class="area-sentiment s${sc}" title="From your last Wheel of Life rating${when ? `, ${esc(dpLabel(when))}` : ''}">${dots}<span class="as-lbl">${AREA_SENTIMENT[sc]}</span><span class="as-sub">${sc}/5 · last review</span></div>`;
+}
 function renderArea() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
@@ -3620,6 +3630,7 @@ function renderArea() {
         ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-gear" data-area-color title="Customise this area\'s colour">⚙</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
       <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area overview" title="Overview">▾</button></h1>
       <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
+      ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
       ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
@@ -8280,17 +8291,28 @@ function renderReviewCard() {
   const pill = (label, n, cls) => `<span class="rv-stat ${cls || ''}"><b>${n}</b> ${label}</span>`;
   const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
   const quiet = (m.quietAreas || []).map(areaName);
-  const wheel = state.areas.map((a) => {
+  const wheelHiddenSet = new Set(p.wheelHidden || []);
+  const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id));
+  const wheel = wheelAreas.map((a) => {
     const sc = Math.min((p.wheel || {})[a.id] || 0, 5);
     const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-wheel="${a.id}:${i + 1}" style="--h:${hueOf(a)}"></button>`).join('');
-    return `<div class="wheel-row"><span class="wheel-a">${esc(a.title)}</span><span class="wheel-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span></div>`;
+    return `<div class="wheel-row"><span class="wheel-a">${esc(a.title)}</span><span class="wheel-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span><button class="wheel-x" data-wheel-hide="${a.id}" title="Skip ${esc(a.title)} this time - it won't ask for a score">×</button></div>`;
   }).join('');
+  const wheelHiddenN = state.areas.length - wheelAreas.length;
   const snap = (p.snapshot || []).map((g) => `<div class="rv-snap"><span class="rv-snap-t">${esc(g.title)}</span><span class="rv-snap-m">${esc(g.measure || '')}${g.progress != null ? ` · ${g.progress}%` : ''}</span></div>`).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head"><h1>${esc(cfg.label)} review</h1></div>
-    <div class="rv-period">${esc(cfg.sub)} · ${esc(dpLabel(p.from))} – ${esc(dpLabel(p.to))}</div>
+    <div class="rv-period">
+      <span class="rv-period-sub">${esc(cfg.sub)}</span>
+      <span class="rv-period-dates">
+        <label class="rv-dt">Start <input type="date" data-rv-date="from" value="${esc(p.from || '')}"></label>
+        <span class="rv-dt-dash">→</span>
+        <label class="rv-dt">End <input type="date" data-rv-date="to" value="${esc(p.to || '')}"></label>
+      </span>
+      <span class="rv-period-when">Reviewed ${esc(dpLabel(localISO(new Date(r.created_at))))}</span>
+    </div>
 
     <section class="rv-insight">
       <div class="rv-insight-h">✦ Worth knowing</div>
@@ -8318,10 +8340,11 @@ function renderReviewCard() {
 
     <section class="wheel">
       <div class="home-sec-h">Wheel of Life <span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</span> <span class="wheel-hint">rate each area 1–5</span></div>
-      <div class="wheel-rows">${wheel || '<div class="muted">Add some Life Areas to rate them here.</div>'}</div>
+      <div class="wheel-rows">${wheel || `<div class="muted">Every area skipped for this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to rate them here.'}</div>`}</div>
+      ${wheel && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} skipped · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}
     </section>
 
-    ${snap ? `<section class="rv-snapshot"><div class="home-sec-h">Goals, snapshotted</div>${snap}</section>` : ''}
+    ${p.rtype === 'weekly' ? (snap ? `<section class="rv-snapshot"><div class="home-sec-h">Goals, snapshotted</div>${snap}</section>` : '') : goalReviewSection(r)}
 
     <section class="rv-prompts">
       <div class="home-sec-h">Reflect</div>
@@ -8341,9 +8364,68 @@ async function delReview(id) {
   state.reviews = state.reviews.filter((x) => x.id !== id); toast('Review deleted'); openGoals('reviews');
 }
 function setWheel(areaId, score) {
-  const r = state.review_open.review; const w = { ...(r.props.wheel || {}) };
-  w[areaId] = w[areaId] === score ? 0 : score;   // tap the same pip to clear
+  const r = state.review_open.review; const p = r.props || {}; const w = { ...(p.wheel || {}) };
+  const ns = w[areaId] === score ? 0 : score;   // tap the same pip to clear
+  w[areaId] = ns;
   patchReview(r.id, { wheel: w }, true).then(renderReviewCard);
+  if (ns > 0) bumpAreaSentiment(areaId, ns, p.to || localISO());   // carry the latest score onto the area itself
+}
+// The wheel score doubles as a life-area sentiment: keep the newest one on the
+// area block (props.wheelScore + wheelAt), so the area page can show how it felt
+// last time it was rated, without loading every review. Only advance it if this
+// review is at least as recent as the score already stored.
+function bumpAreaSentiment(areaId, score, when) {
+  const a = (state.areas || []).find((x) => x.id === areaId); if (!a) return;
+  a.props = a.props || {};
+  if (a.props.wheelAt && String(when) < String(a.props.wheelAt)) return;   // an older review shouldn't overwrite a newer feeling
+  a.props.wheelScore = score; a.props.wheelAt = when;
+  api('/api/blocks/' + areaId, { method: 'PATCH', body: JSON.stringify({ props: { wheelScore: score, wheelAt: when } }) }).catch(() => {});
+}
+// Skip a life area for this review (no score asked). Stored per-review in
+// props.wheelHidden; clears any score it had so the average stays honest.
+function wheelHide(areaId) {
+  const r = state.review_open.review; const p = r.props || {};
+  const hidden = new Set(p.wheelHidden || []); hidden.add(areaId);
+  const w = { ...(p.wheel || {}) }; delete w[areaId];
+  patchReview(r.id, { wheelHidden: [...hidden], wheel: w }, true).then(renderReviewCard);
+}
+function wheelRestore() {
+  const r = state.review_open.review;
+  patchReview(r.id, { wheelHidden: [] }, true).then(renderReviewCard);
+}
+// The structured goal review for the bigger reviews (monthly and up), grouped by
+// life area with that area's vision as the backdrop, so goals are weighed against
+// where they're meant to lead. Quarterly and yearly get the full "Goal review".
+function goalReviewSection(r) {
+  const p = r.props || {};
+  const goals = p.snapshot || [];
+  if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Life Areas and they'll appear here next time.</div></section>`;
+  const gr = p.goalReview || {};
+  const byArea = new Map();
+  goals.forEach((g) => { const k = g.area || '_none'; if (!byArea.has(k)) byArea.set(k, []); byArea.get(k).push(g); });
+  const groups = [...byArea.entries()].map(([aid, gs]) => {
+    const a = aid === '_none' ? null : areaById(aid);
+    const vision = a && a.props && a.props.vision ? String(a.props.vision).trim() : '';
+    const head = `<div class="gr-area"><span class="gr-area-n"><span class="ac-dot" style="--h:${a ? hueOf(a) : 220}"></span>${a ? esc(a.title) : 'No area'}</span>${vision ? `<span class="gr-vision">“${esc(vision.slice(0, 160))}${vision.length > 160 ? '…' : ''}”</span>` : ''}</div>`;
+    const rows = gs.map((g) => {
+      const rv = gr[g.id] || {}; const sc = Math.min(rv.score || 0, 5);
+      const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-goalrev="${esc(g.id)}:${i + 1}" style="--h:${a ? hueOf(a) : 220}"></button>`).join('');
+      return `<div class="gr-goal">
+        <div class="gr-goal-h"><span class="gr-goal-t">${esc(g.title)}</span><span class="gr-goal-m">${esc(g.measure || '')}${g.progress != null ? ` · ${g.progress}%` : ''}</span></div>
+        <div class="gr-goal-rate"><span class="gr-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span></div>
+        <input class="sel gr-note" data-goalrev-note="${esc(g.id)}" value="${esc(rv.note || '')}" placeholder="Where does it stand, against the vision?">
+      </div>`;
+    }).join('');
+    return `<div class="gr-group">${head}${rows}</div>`;
+  }).join('');
+  const label = (p.rtype === 'quarterly' || p.rtype === 'yearly') ? 'Goal review' : 'Goals & vision';
+  return `<section class="rv-goalreview"><div class="home-sec-h">${label} <span class="wheel-hint">score each against your vision</span></div>${groups}</section>`;
+}
+function setGoalReviewScore(goalId, score) {
+  const r = state.review_open.review; const p = r.props || {}; const gr = { ...(p.goalReview || {}) };
+  const cur = gr[goalId] || {}; const ns = cur.score === score ? 0 : score;
+  gr[goalId] = { ...cur, score: ns };
+  patchReview(r.id, { goalReview: gr }, true).then(renderReviewCard);
 }
 // Render the stored AI summary text (plain prose, blank-line paragraphs) as HTML.
 function reviewSummaryHtml(text) {
@@ -9416,6 +9498,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
+  const whx = t.closest('[data-wheel-hide]'); if (whx) { wheelHide(whx.dataset.wheelHide); return; }
+  if (t.closest('[data-wheel-restore]')) { wheelRestore(); return; }
+  const grp = t.closest('[data-goalrev]'); if (grp) { const s = grp.dataset.goalrev; const i = s.lastIndexOf(':'); setGoalReviewScore(s.slice(0, i), +s.slice(i + 1)); return; }
   if (t.closest('[data-open-vision-tab]')) { openGoals('vision').catch((x) => toast(x.message)); return; }
   const ovi = t.closest('[data-open-vision]'); if (ovi) { openVisionCard(ovi.dataset.openVision).catch((x) => toast(x.message)); return; }
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
@@ -9849,6 +9934,8 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-rev-rem]')) { toggleReviewRem(e.target.dataset.revRem, e.target.checked); return; }
+  if (e.target.matches('[data-rv-date]')) { const k = e.target.dataset.rvDate; const v = e.target.value; if (v && state.review_open) { patchReview(state.review_open.review.id, { [k]: v }, true); toast('Review dates updated'); } return; }
+  if (e.target.matches('[data-goalrev-note]')) { const id = e.target.dataset.goalrevNote; const v = e.target.value; clearTimeout(window.__grnT); window.__grnT = setTimeout(() => { const r = state.review_open && state.review_open.review; if (!r) return; const gr = { ...((r.props || {}).goalReview || {}) }; gr[id] = { ...(gr[id] || {}), note: v }; patchReview(r.id, { goalReview: gr }, true); }, 600); return; }
   if (e.target.matches('[data-area-sec-vis]')) {
     const key = e.target.dataset.areaSecVis; const a = state.area_open && state.area_open.area; if (!a) return;
     a.props = a.props || {}; let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];

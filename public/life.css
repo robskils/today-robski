@@ -544,7 +544,35 @@ button { cursor:pointer; background:none; border:0; }
 .rv-row:hover { background:var(--paper-2); }
 .rv-row-l { font-size:16px; } .rv-row-l b { font-weight:600; }
 .rv-row-m { font-size:13.5px; color:var(--ink-3); white-space:nowrap; }
-.rv-period { color:var(--ink-3); font-size:15px; margin:-10px 0 22px; }
+.rv-period { display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap; margin:-6px 0 22px; padding:12px 16px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+.rv-period-sub { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
+.rv-period-dates { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.rv-dt { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); }
+.rv-dt input { font:inherit; font-size:14.5px; text-transform:none; letter-spacing:0; color:var(--ink); background:var(--paper); border:1px solid var(--line-2); border-radius:9px; padding:6px 10px; }
+.rv-dt input:focus { border-color:var(--accent); outline:none; }
+.rv-dt-dash { color:var(--ink-3); }
+.rv-period-when { margin-left:auto; font-size:13px; color:var(--ink-3); }
+/* Structured goal review (bigger reviews) */
+.rv-goalreview { margin:22px 0 8px; }
+.gr-group { margin-bottom:18px; }
+.gr-area { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+.gr-area-n { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; gap:8px; font-size:16px; font-weight:600; color:var(--ink); }
+.gr-area-n .ac-dot { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.gr-vision { font-size:14px; font-style:italic; color:var(--ink-3); line-height:1.4; }
+.gr-goal { padding:10px 0; border-bottom:1px solid var(--line); }
+.gr-goal:last-child { border-bottom:0; }
+.gr-goal-h { display:flex; justify-content:space-between; gap:12px; align-items:baseline; margin-bottom:8px; }
+.gr-goal-t { font-size:15.5px; color:var(--ink); }
+.gr-goal-m { font-size:13px; color:var(--ink-3); white-space:nowrap; }
+.gr-goal-rate { display:grid; grid-template-columns:1fr 26px; align-items:center; gap:12px; margin-bottom:8px; }
+.gr-pips { display:flex; gap:4px; }
+.gr-note { width:100%; max-width:none; font-size:14.5px; padding:9px 12px; }
+/* Life-area sentiment, carried from the last wheel score */
+.area-sentiment { display:inline-flex; align-items:center; gap:10px; margin:2px 0 6px; padding:6px 13px; border-radius:999px; background:color-mix(in srgb,var(--as-c,var(--ink-3)) 12%,var(--card)); border:1px solid color-mix(in srgb,var(--as-c,var(--ink-3)) 30%,transparent); }
+.area-sentiment .as-dots { letter-spacing:2px; color:var(--as-c,var(--ink-3)); font-size:12px; }
+.area-sentiment .as-lbl { font-size:14px; font-weight:600; color:var(--ink); }
+.area-sentiment .as-sub { font-size:12px; color:var(--ink-3); }
+.area-sentiment.s1 { --as-c:#c4462e; } .area-sentiment.s2 { --as-c:#cc7a33; } .area-sentiment.s3 { --as-c:#c9a227; } .area-sentiment.s4 { --as-c:#6f9f4a; } .area-sentiment.s5 { --as-c:#3f9b6a; }
 .rv-mirror, .wheel, .rv-snapshot, .rv-prompts { margin-top:30px; }
 .rv-stats { display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 4px; }
 .rv-stat { font-size:14.5px; color:var(--ink-2); background:var(--paper-2); border:1px solid var(--line); border-radius:999px; padding:7px 14px; }
@@ -573,7 +601,12 @@ button { cursor:pointer; background:none; border:0; }
 .rv-det li { padding:2px 0; }
 .wheel-avg { font-size:13.5px; color:var(--ink-3); font-weight:500; text-transform:none; letter-spacing:0; margin-left:8px; }
 .wheel-rows { display:flex; flex-direction:column; gap:4px; }
-.wheel-row { display:grid; grid-template-columns:minmax(84px,140px) 1fr 26px; align-items:center; gap:12px; padding:7px 0; }
+.wheel-row { display:grid; grid-template-columns:minmax(84px,140px) 1fr 26px 22px; align-items:center; gap:12px; padding:7px 0; }
+.wheel-x { flex:none; width:22px; height:22px; border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; border-radius:6px; opacity:.55; }
+.wheel-x:hover { opacity:1; color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+.wheel-restore { margin-top:10px; border:0; background:none; color:var(--ink-3); font-size:13.5px; cursor:pointer; padding:4px 0; }
+.wheel-restore:hover { color:var(--accent); }
+.linkish { border:0; background:none; color:var(--accent); font:inherit; cursor:pointer; padding:0; text-decoration:underline; }
 .wheel-a { font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wheel-pips { display:flex; gap:4px; }
 .wp { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); flex:1 1 0; min-width:0; height:22px; border:1px solid var(--line-2); border-radius:5px; background:var(--card); cursor:pointer; padding:0; }
