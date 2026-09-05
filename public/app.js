@@ -3785,8 +3785,10 @@ function areaSentimentHtml(area) {
 function renderArea() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
-  const openTs = tasks.filter((t) => !t.props.done).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
-  const doneN = tasks.length - openTs.length;
+  const allOpen = tasks.filter((t) => !t.props.done);
+  const doneN = tasks.length - allOpen.length;
+  // "Hide until then" tasks drop out of the visible list until they surface.
+  const openTs = allOpen.filter((t) => !(t.props.hideUntil && isSnoozed(t))).sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5));
   const tables = blocks.filter((b) => b.kind === 'table');
   // Every note that carries this area shows here. The 2026-08-12 cleanup pruned
   // the area off notes nested deeper than first level (they had inherited it on
@@ -6840,8 +6842,11 @@ function renderTasks() {
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchesQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
   // "Surface on" is a reminder date, not a hide - surface-dated tasks stay in the list.
-  const open = state.tasks.filter((t) => !t.props.done && inFilter(t) && matchesQ(t));
-  const snoozedSection = '';
+  // A "surface on" task stays visible by default; but if you asked to hide it
+  // until then (props.hideUntil), it drops out of the list until its date arrives.
+  const hiddenUntil = state.tasks.filter((t) => !t.props.done && t.props.hideUntil && isSnoozed(t));
+  const open = state.tasks.filter((t) => !t.props.done && inFilter(t) && matchesQ(t) && !(t.props.hideUntil && isSnoozed(t)));
+  const snoozedSection = hiddenUntil.length ? `<details class="rv-det tf-hidden-det"><summary>Hidden until they surface · ${hiddenUntil.length}</summary><ul>${hiddenUntil.slice(0, 50).map((t) => `<li><button class="linkish" data-open-task="${t.id}">${esc(t.title || 'Untitled')}</button> <span class="muted">→ ${esc(dpLabel(t.props.snooze))}</span></li>`).join('')}</ul></details>` : '';
   const completed = state.tasks.filter((t) => t.props.done && inFilter(t));
   const cq = (state.completedQuery || '').trim().toLowerCase();
   const completedShown = completed.filter((t) => !cq || (t.title || '').toLowerCase().includes(cq));
@@ -10459,6 +10464,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
+  if (e.target.matches('[data-surface-hide]')) { patchTaskProps(e.target.dataset.surfaceHide, { hideUntil: e.target.checked }); if (state.view.type === 'tasks') renderTasks(); }
   if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') renderGoalCard(); else if (k === 'task' && state.view.type === 'taskcard') renderTaskCard(); }); return; }
   if (e.target.matches('[data-rev-remdate]')) { const [k, i] = e.target.dataset.revRemdate.split(':'); setReviewRemAt(k, +i, e.target.value); return; }
   if (e.target.matches('[data-rev-remrepeat]')) { const [k, i] = e.target.dataset.revRemrepeat.split(':'); setReviewRemRepeat(k, +i, e.target.checked); return; }
@@ -11137,7 +11143,8 @@ function renderTaskCard() {
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Surface on${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}<small class="tf-hint">pops onto your Home that day (and can alert you)</small></span>
         ${dateFieldHtml('taskcard-snooze', t.props.snooze || '')}</label>
-      ${t.props.snooze ? `<label class="tf-toggle tf-notify"><input type="checkbox" data-surface-notify="${t.id}" ${t.props.surfaceNotify !== false ? 'checked' : ''}><span>Alert me (text/email) when it surfaces</span></label>` : ''}
+      ${t.props.snooze ? `<label class="tf-toggle tf-notify"><input type="checkbox" data-surface-notify="${t.id}" ${t.props.surfaceNotify !== false ? 'checked' : ''}><span>Alert me (text/email) when it surfaces</span></label>
+      <label class="tf-toggle tf-notify"><input type="checkbox" data-surface-hide="${t.id}" ${t.props.hideUntil ? 'checked' : ''}><span>Hide it from my lists until then</span></label>` : ''}
       <label class="tf-field"><span class="tf-label">Repeat</span>
         <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
