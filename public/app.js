@@ -1998,12 +1998,16 @@ async function openNote(id) {
   // Both sub-notes and table notes nested inside this note.
   const children = (await api(`/api/blocks?parent_id=${id}`)).filter((b) => b.kind === 'note' || b.kind === 'table');
   if (!state.allTasks) state.allTasks = notKit(await api('/api/blocks?kind=task').catch(() => []));
-  state.note = { current: note, path, children, taskQuery: '' };
+  state.note = { current: note, path, children, taskQuery: '', shares: null };
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title, blockAreas(note)[0]);
   renderNav(); renderNote();
   // A shared note (given to me, or one I've shared out) syncs live while open.
   if (note.sharedBy || note.sharedWith) startNotePoll(id);
+  // Who this note is shared with, for the members section + wall. Owner only -
+  // a borrowed note's membership is the owner's to see; you get the banner.
+  if (!note.sharedBy) api(`/api/blocks/${id}/shares`).then((r) => { if (state.note && state.note.current.id === id) { state.note.shares = r.shares || []; if (state.view.type === 'note') renderNote(); } }).catch(() => { if (state.note) state.note.shares = []; });
+  if (!state.friends) api('/api/friends').then((fr) => { state.friends = fr; if (state.view.type === 'note') renderNote(); }).catch(() => {});
 }
 async function openTable(id) {
   const table = await api(`/api/blocks/${id}`);
@@ -8074,13 +8078,13 @@ function goalAreaTasksHtml() {
   const go = state.goal_open; if (!go) return '';
   const p = gp(go.goal); if (!p.area) return '';
   const a = areaById(p.area); const aname = a ? esc(a.title) : 'this area';
-  const open = !!go.areaListOpen;
-  // Quiet, secondary and collapsed by default: these are suggestions from the
-  // area, not tasks already on the goal. Tap to browse and pull one in.
-  return `<div class="goal-arealist ${open ? 'open' : ''}" style="--h:${hueOf(a)}">
-    <button class="gal-toggle" data-gal-toggle><span class="gal-chev">${open ? '▾' : '▸'}</span>Pull in a task from ${aname}<span class="gal-sub">existing tasks you could link</span></button>
-    ${open ? `<input class="sel gal-search" data-gal-q placeholder="Search ${aname} tasks…" value="${esc(go.areaQuery || '')}">
-    <div class="gal-list">${goalAreaListInner()}</div>` : ''}</div>`;
+  // A quiet box: click in it and a dropdown of the area's tasks appears (P1
+  // first), searchable. These are suggestions to pull in, not attached work.
+  return `<div class="goal-arealist" style="--h:${hueOf(a)}">
+    <div class="gal-box">
+      <input class="sel gal-search" data-gal-q placeholder="Link a task from ${aname}…" value="${esc(go.areaQuery || '')}" autocomplete="off">
+      <div class="gal-drop"><div class="gal-list">${goalAreaListInner()}</div></div>
+    </div></div>`;
 }
 function goalAreaListInner() {
   const go = state.goal_open; const p = gp(go.goal);
@@ -8088,8 +8092,10 @@ function goalAreaListInner() {
   const linked = new Set((go.tasks || []).map((t) => t.id));
   let list = (go.allTasks || []).filter((t) => t.props && t.props.area === p.area && !t.props.done && !linked.has(t.id));
   if (q) list = list.filter((t) => (t.title || '').toLowerCase().includes(q));
-  if (!list.length) return `<div class="home-empty" style="padding:8px 0 0">No ${q ? 'matching ' : 'unlinked '}tasks in this area${q ? '' : ' yet'}.</div>`;
-  return list.slice(0, 60).map((t) => `<div class="gal-row"><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span><button class="ghost gal-link" data-goal-link="${t.id}" title="Link to this goal">＋ Link</button></div>`).join('')
+  // Priority first (P1 at the top), then newest, so the ones that matter lead.
+  list = list.slice().sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5) || String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : 'unlinked '}tasks in this area${q ? '' : ' yet'}.</div>`;
+  return list.slice(0, 60).map((t) => { const pr = t.props.priority; return `<div class="gal-row"><span class="ga-t" data-open-task="${t.id}">${pr ? `<span class="p-tag p-${pr}">${pr}</span>` : ''}${esc(t.title)}</span><button class="ghost gal-link" data-goal-link="${t.id}" title="Link to this goal">＋ Link</button></div>`; }).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
 function renderGoalAreaList() { const el = $('.gal-list'); if (el) el.innerHTML = goalAreaListInner(); }
@@ -8654,6 +8660,33 @@ function sharedBanner(block) {
   if (!block.sharedBy) return '';
   return `<div class="shared-banner">🤝 Shared with you by <b>${esc(block.sharedBy)}</b>${block.canEdit ? '' : ' · view only'}</div>`;
 }
+// People a note is shared with: their Daybook contact cards, tap to message.
+// Owner only - a borrowed note shows the "shared with you" banner instead.
+function noteMembersHtml(n) {
+  if (n.sharedBy) return '';
+  const shares = state.note && state.note.shares;
+  if (shares == null) return n.sharedWith ? '<section class="home-sec note-members"><div class="home-sec-h">Shared with</div><div class="mem-empty">Loading…</div></section>' : '';
+  if (!shares.length) return '';
+  const friends = (state.friends && state.friends.friends) || [];
+  const cards = shares.map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="mem-card" data-friend-chat="${s.id}" data-friend-name="${esc(name)}" title="Message ${esc(name)}"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="mem-name">${esc(name)}</span><span class="mem-msg">💬</span></button>`; }).join('');
+  const share = `<button class="mem-invite" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}" title="Share with more people">✦ Share</button>`;
+  return `<section class="home-sec note-members"><div class="home-sec-h">Shared with · ${shares.length}</div><div class="mem-row">${cards}${share}</div></section>`;
+}
+const noteWallOpen = () => { try { return localStorage.getItem('life.note.wall') !== '0'; } catch { return true; } };
+// A shared free-text wall on the note (props.wall), for the people it's shared
+// with to leave messages. Shown only once the note is shared, editable by anyone
+// with edit access. Collapsible, like the area wall.
+function noteWallHtml(n) {
+  const shared = n.sharedBy || n.sharedWith || (state.note && state.note.shares && state.note.shares.length);
+  if (!shared) return '';
+  const ro = n.sharedBy && !n.canEdit;
+  const open = noteWallOpen();
+  const wall = (n.props && n.props.wall) || '';
+  return `<section class="home-sec note-wall">
+    <div class="home-sec-h note-wall-h" data-note-wall-toggle role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span>Wall</div>
+    ${open ? `<textarea class="home-notepad note-wall-ta" data-note-wall placeholder="A shared space for this note - everyone with access can see it." ${ro ? 'readonly' : ''}>${esc(wall)}</textarea>` : ''}
+  </section>`;
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -8676,6 +8709,8 @@ function renderNote() {
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
         <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}</div>
         ${embedsHtml(n.body)}
+        ${noteMembersHtml(n)}
+        ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
         <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
@@ -9327,6 +9362,7 @@ document.addEventListener('input', (e) => {
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
   if (e.target.matches('[data-area-wall]')) { const a = state.area_open && state.area_open.area; if (a) { a.props = a.props || {}; a.props.wall = e.target.value; const v = e.target.value; clearTimeout(window.__areaWallT); window.__areaWallT = setTimeout(() => { api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); }, 700); } }
+  if (e.target.matches('[data-note-wall]')) { const n = state.note && state.note.current; if (n) { n.props = n.props || {}; n.props.wall = e.target.value; const v = e.target.value; clearTimeout(window.__noteWallT); window.__noteWallT = setTimeout(() => { api('/api/blocks/' + n.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); }, 700); } }
   if (e.target.matches('[data-timer-label]')) { timerState.label = e.target.value; saveTimer(); }
   // Live search: refresh only the list (quiet), so the box you're typing in is
   // never rebuilt and keeps focus. Debounced so it fires when you pause.
@@ -9578,7 +9614,6 @@ document.addEventListener('click', (e) => {
   const dgl = t.closest('[data-del-goal]'); if (dgl) { delGoal(dgl.dataset.delGoal); return; }
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
   if (t.closest('[data-bucket-to-goal]')) { bucketToGoal().catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-gal-toggle]') && state.goal_open) { state.goal_open.areaListOpen = !state.goal_open.areaListOpen; renderGoalCard(); return; }
   const glink = t.closest('[data-goal-link]'); if (glink) { linkTaskToGoal(glink.dataset.goalLink); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
@@ -9748,6 +9783,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
   if (t.closest('[data-area-members-more]')) { if (state.area_open) state.area_open.membersExpanded = true; renderArea(); return; }
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
+  if (t.closest('[data-note-wall-toggle]')) { try { localStorage.setItem('life.note.wall', noteWallOpen() ? '0' : '1'); } catch {} renderNote(); return; }
   { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }

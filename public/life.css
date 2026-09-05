@@ -1963,16 +1963,16 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .set-tile-s { font-size:12.5px; color:var(--ink-3); line-height:1.35; }
 /* Goal: existing tasks in the same life area, to link in */
 .goal-arealist { margin-top:18px; }
-.gal-toggle { display:inline-flex; align-items:baseline; gap:8px; padding:6px 0; background:none; border:0; cursor:pointer; color:var(--ink-3); font-size:13.5px; }
-.gal-toggle:hover { color:var(--ink-2); }
-.gal-chev { font-size:11px; }
-.gal-sub { font-size:12.5px; color:var(--ink-4,var(--ink-3)); }
-.goal-arealist.open .gal-toggle { color:var(--ink-2); margin-bottom:2px; }
-.gal-search { margin:8px 0 10px; }
+.gal-box { position:relative; max-width:420px; }
+.gal-box .gal-search { width:100%; max-width:none; margin:0; }
+.gal-drop { display:none; position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:30;
+  background:var(--card); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 16px 40px -18px rgba(0,0,0,.5); max-height:340px; overflow:auto; padding:6px; }
+.gal-box:focus-within .gal-drop { display:block; }
 .gal-list { display:flex; flex-direction:column; gap:2px; }
 .gal-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; }
 .gal-row:hover { background:var(--paper); }
-.gal-row .ga-t { flex:1; min-width:0; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gal-row .ga-t { flex:1; min-width:0; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:7px; }
+.gal-row .ga-t .p-tag { flex:none; }
 .gal-link { flex:none; padding:4px 11px; font-size:13px; opacity:.7; }
 .gal-row:hover .gal-link { opacity:1; border-color:var(--accent); color:var(--accent); }
 .set-collapse-h { cursor:pointer; display:flex; align-items:center; gap:9px; user-select:none; }
@@ -2359,6 +2359,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-sec-h:hover { color:var(--ink); }
 /* Members bar: horizontal cards, tap to message; "+N more" expands the list. */
 .mem-row { display:flex; flex-wrap:wrap; align-items:center; gap:9px; }
+.note-members { margin-top:22px; }
+.note-wall { margin-top:20px; }
+.note-wall-h { cursor:pointer; display:flex; align-items:center; gap:8px; }
+.note-wall-ta { min-height:120px; }
 .mem-card { display:inline-flex; align-items:center; gap:9px; padding:7px 13px 7px 8px; border:1px solid var(--line); border-radius:999px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; }
 .mem-card:hover { border-color:var(--accent); }
 .mem-card .fr-av { flex:none; width:28px; height:28px; font-size:12px; }
