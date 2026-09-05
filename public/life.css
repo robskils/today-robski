@@ -735,6 +735,17 @@ button { cursor:pointer; background:none; border:0; }
 .rv-l-monthly { color:#6f9f4a; } .rv-card:has(.rv-l-monthly) { border-left-color:#6f9f4a; }
 .rv-l-quarterly { color:#4a86b0; } .rv-card:has(.rv-l-quarterly) { border-left-color:#4a86b0; }
 .rv-l-yearly { color:#8a6fb0; } .rv-card:has(.rv-l-yearly) { border-left-color:#8a6fb0; }
+/* Review status: an in-progress review is clearly held, never lost. */
+.rv-status { font-size:12.5px; font-weight:700; padding:3px 10px; border-radius:999px; letter-spacing:.02em; }
+.rv-status-inprogress { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); }
+.rv-status-done { color:var(--ink-3); background:var(--bg-2,transparent); border:1px solid var(--line); }
+.rv-finish { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+.rv-finish-hint { font-size:13px; color:var(--ink-3); }
+.rv-done-badge { font-size:14px; font-weight:700; color:#6f9f4a; }
+.rv-reopen { font-size:13px; }
+.rv-card-prog { border-left-color:var(--accent); background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+.rv-card-prog-badge { font-size:11.5px; font-weight:700; color:var(--accent); }
+.rv-inprog-sec .home-sec-h { color:var(--accent); }
 .rv-pastfilter { display:flex; gap:6px; flex-wrap:wrap; margin:-2px 0 12px; }
 .rv-fchip { padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:12.5px; font-weight:600; cursor:pointer; }
 .rv-fchip:hover { border-color:var(--line-2); }
@@ -2516,6 +2527,30 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-cards .area-card.drop-before::before { left:-6px; } .area-cards .area-card.drop-after::after { right:-6px; }
 .ac-dot { width:11px; height:11px; border-radius:50%; background:var(--c); flex:none; }
 .ac-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Life areas homepage as a one-page accordion: tap a row, it opens its own
+   dashboard inline (like the P1-P4 toggles and the area tiles). */
+.area-accordion { display:block; }
+.area-acc { display:block; padding:0; align-items:stretch; margin-bottom:10px; }
+.area-acc .acc-head { display:flex; align-items:center; gap:8px; padding:14px 15px; }
+.acc-toggle { flex:1; min-width:0; display:flex; align-items:center; gap:11px; background:none; border:0; padding:0; cursor:pointer; color:var(--ink); font-size:17px; text-align:left; }
+.acc-badges { display:flex; gap:7px; margin-left:auto; flex:none; }
+.acc-b { font-size:12.5px; font-weight:700; color:var(--ink-2); background:color-mix(in srgb,var(--c) 12%,transparent); padding:2px 8px; border-radius:999px; white-space:nowrap; }
+.acc-chev { flex:none; color:var(--ink-3); font-size:13px; width:14px; text-align:center; }
+.area-acc.exp { border-color:var(--c); box-shadow:0 12px 30px -18px color-mix(in srgb,var(--c) 60%,transparent); }
+.acc-panel { padding:2px 15px 16px; border-top:1px solid var(--line); margin-top:2px; }
+.acc-panel-load { padding:14px 2px; color:var(--ink-3); font-size:14px; }
+.area-metrics { display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:8px; margin:14px 0; }
+.am-stat { display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 6px; border:1px solid var(--line); border-radius:11px; background:var(--card); }
+.am-ic { font-size:18px; line-height:1; }
+.am-n { font-size:19px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+.am-l { font-size:11.5px; color:var(--ink-3); }
+.am-tasks { margin:6px 0 12px; display:flex; flex-direction:column; gap:5px; }
+.am-tasks-h { font-size:12.5px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.03em; margin-bottom:2px; }
+.am-task { display:flex; align-items:center; gap:8px; background:none; border:0; padding:6px 8px; border-radius:8px; cursor:pointer; text-align:left; color:var(--ink); font-size:15px; width:100%; }
+.am-task:hover { background:color-mix(in srgb,var(--c) 8%,transparent); }
+.am-task-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.am-more { font-size:12.5px; padding:2px 8px; }
+.am-openfull { margin-top:4px; }
 
 .area-hero { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-bottom:8px; }
 /* Area sections as equal icon tiles + one expanding panel (like Home/Toolbox). */

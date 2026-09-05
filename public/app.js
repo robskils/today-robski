@@ -3715,20 +3715,63 @@ function areaSelect(cur, attr) {
 // links to its area; the dropdown lists the areas it isn't in yet, so picking one
 // adds it. With none chosen it's just the familiar "+ Life area" control.
 function noteAreasControl(n) { return blockAreasControl('note', n); }
-function openAreasList() {
+// Which areas are expanded on the Life areas page, remembered across visits.
+function areasExpandedSet() { if (state.areasExpanded instanceof Set) return state.areasExpanded; let a = []; try { a = JSON.parse(localStorage.getItem('life.areas.expanded') || '[]'); } catch {} return (state.areasExpanded = new Set(Array.isArray(a) ? a : [])); }
+function saveAreasExpanded() { try { localStorage.setItem('life.areas.expanded', JSON.stringify([...areasExpandedSet()])); } catch {} }
+// Open-task count for an area, straight from the loaded task list (always there on
+// this page) - the headline metric even before an area's full detail is fetched.
+function areaOpenTaskCount(id) { return (state.tasks || []).filter((t) => !t.props.done && !(t.props.hideUntil && isSnoozed(t)) && blockAreas(t).includes(id)).length; }
+// Lazy-load one area's blocks for its inline panel, cache, then re-render.
+async function loadAreaSummary(id) {
+  state.areaSummaries = state.areaSummaries || {};
+  if (state.areaSummaries[id] || state.areaSummaries[id + ':loading']) return;
+  state.areaSummaries[id + ':loading'] = true;
+  try { state.areaSummaries[id] = await api(`/api/blocks?area=${id}`); }
+  catch { state.areaSummaries[id] = []; }
+  delete state.areaSummaries[id + ':loading'];
+  if (state.view && state.view.type === 'areas') renderAreasList();
+}
+// The inline dashboard for one expanded area: metric tiles + its open tasks + a
+// way through to the full area page. Content Robin asked to see "all on one page".
+function areaPanelHtml(a) {
+  const bl = (state.areaSummaries || {})[a.id];
+  if (!bl) { loadAreaSummary(a.id); return '<div class="acc-panel-load">Loading…</div>'; }
+  const of = (k) => bl.filter((b) => b.kind === k);
+  const openTasks = of('task').filter((t) => !(t.props && t.props.done)).sort((x, y) => (PRIO_ORDER[(x.props || {}).priority || ''] || 5) - (PRIO_ORDER[(y.props || {}).priority || ''] || 5));
+  const goalsActive = of('goal').filter((g) => (((g.props || {}).status) || 'active') === 'active');
+  const notesN = of('note').length + of('table').length;
+  const stats = [['✓', 'Tasks', openTasks.length, true], ['🎯', 'Goals', goalsActive.length, true], ['▤', 'Notes', notesN, notesN > 0], ['👤', 'Contacts', of('contact').length, of('contact').length > 0], ['🔖', 'Saved', of('bookmark').length, of('bookmark').length > 0], ['✎', 'Reflections', of('journal').length, of('journal').length > 0], ['✦', 'Bucket', of('bucket').length, of('bucket').length > 0]];
+  const metrics = `<div class="area-metrics">${stats.filter((s) => s[3]).map(([ic, l, n]) => `<div class="am-stat"><span class="am-ic">${ic}</span><span class="am-n">${n}</span><span class="am-l">${l}</span></div>`).join('')}</div>`;
+  const tasksHtml = openTasks.length
+    ? `<div class="am-tasks"><div class="am-tasks-h">Open tasks · ${openTasks.length}</div>${openTasks.slice(0, 8).map((t) => `<button class="am-task" data-open-task="${t.id}">${(t.props || {}).priority ? `<span class="p-tag p-${t.props.priority}">${t.props.priority}</span>` : ''}<span class="am-task-t">${esc(t.title || 'Untitled')}</span></button>`).join('')}${openTasks.length > 8 ? `<div class="am-more muted">+${openTasks.length - 8} more on the full page</div>` : ''}</div>`
+    : '<div class="home-empty" style="padding:6px 0 2px">No open tasks here.</div>';
+  return `${metrics}${tasksHtml}<button class="add-btn wide am-openfull" data-open-area="${a.id}">Open ${esc(a.title)} in full →</button>`;
+}
+async function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
+  // The open-task metric needs the task list; fetch it once if we came in cold.
+  if (!state.tasks) { try { state.tasks = notKit(await api('/api/blocks?kind=task')); } catch { state.tasks = state.tasks || []; } }
+  renderAreasList();
+}
+function renderAreasList() {
+  const exp = areasExpandedSet();
   const ordered = areasByRank();
   const favAreas = ordered.filter((a) => a.props && a.props.fav);
-  const card = (a) => `<div class="area-card" style="--h:${hueOf(a)}" draggable="true" data-area-drag="${a.id}" title="Drag to reorder">
-    <button class="ac-open" data-open-area="${a.id}"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span></button>
-    <button class="star ${a.props && a.props.fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${a.props && a.props.fav ? '★' : '☆'}</button></div>`;
+  const badges = (a) => { const ot = areaOpenTaskCount(a.id); const bl = (state.areaSummaries || {})[a.id]; const ga = bl ? bl.filter((b) => b.kind === 'goal' && ((b.props || {}).status || 'active') === 'active').length : 0; return `<span class="acc-badges">${ot ? `<span class="acc-b">✓ ${ot}</span>` : ''}${ga ? `<span class="acc-b">🎯 ${ga}</span>` : ''}</span>`; };
+  const card = (a) => { const on = exp.has(a.id); return `<div class="area-card area-acc ${on ? 'exp' : ''}" style="--h:${hueOf(a)}" draggable="true" data-area-drag="${a.id}">
+    <div class="acc-head">
+      <button class="acc-toggle" data-area-expand="${a.id}" title="Expand"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span>${badges(a)}<span class="acc-chev">${on ? '▾' : '▸'}</span></button>
+      <button class="star ${a.props && a.props.fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${a.props && a.props.fav ? '★' : '☆'}</button>
+    </div>
+    ${on ? `<div class="acc-panel">${areaPanelHtml(a)}</div>` : ''}</div>`; };
   $('#pane').innerHTML = `
     ${pageCrumb('Life areas')}
     <div class="pane-head home-head"><h1>Life areas</h1><button class="add-btn wide" data-new-area>+ New area</button></div>
-    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards">${favAreas.map(card).join('')}</div></section>` : ''}
+    <p class="t2-sub" style="font-style:normal">Tap an area to open it up right here - its tasks, goals and the rest, without leaving the page.</p>
+    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-accordion">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All areas · ${ordered.length}</div>
-      <div class="area-cards">${ordered.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
+      <div class="area-cards area-accordion">${ordered.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -6428,6 +6471,7 @@ function showQuickTask() {
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
       <label class="atf"><span>Repeat</span><select id="qt-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+      <label class="atf" id="qt-repeatfrom-wrap" hidden><span>Next one is due</span><select id="qt-repeatfrom" class="sel"><option value="due">On its schedule</option><option value="done">After I tick it off</option></select></label>
     </div>
     <label class="atf atf-full"><span>Notes</span><textarea id="qt-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
     <button class="add-btn wide" type="submit">Add task</button></form>`;
@@ -6483,6 +6527,7 @@ async function homeAddTask(o) {
   if (o.duration) props.duration = Number(o.duration);
   if (o.snooze) props.snooze = o.snooze;
   if (o.repeat) props.repeat = o.repeat;
+  if (o.repeat && o.repeatFrom === 'done') props.repeatFrom = 'done';
   const body = textToProse(o.notes);
   try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props, ...(body ? { body } : {}) }) }); toast('Task added'); }
   catch (e) { toast(e.message); }
@@ -6885,6 +6930,7 @@ function renderTasks() {
         <label class="atf"><span>Duration</span><select id="task-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
         <label class="atf"><span>Surface on</span>${dateFieldHtml('task-snooze', '')}</label>
         <label class="atf"><span>Repeat</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+        <label class="atf" id="task-repeatfrom-wrap" hidden><span>Next one is due</span><select id="task-repeatfrom" class="sel"><option value="due">On its schedule</option><option value="done">After I tick it off</option></select></label>
       </div>
       <label class="atf atf-full"><span>Notes</span><textarea id="task-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
       <div class="atf-actions">
@@ -8529,6 +8575,8 @@ function reviewTaskStats(from) {
 }
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const inProgress = past.filter((r) => (r.props || {}).status === 'inprogress');
+  const finished = past.filter((r) => (r.props || {}).status !== 'inprogress');
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
   const todayISO = localISO(new Date());
   // This week's review lands on its soonest reminder, else last review + 7.
@@ -8550,18 +8598,24 @@ function reviewsBody() {
   const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
   const trendHtml = trend.length >= 2 ? `<section class="home-sec rv-trend-sec"><div class="home-sec-h">Wheel of Life over time</div><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></section>` : '';
   // Compact, dashboard-y past-review cards, filterable by type.
-  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; return `<button class="rv-card" data-open-review="${r.id}">
+  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
     <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-d">${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span></div>
+    ${prog ? '<div class="rv-card-prog-badge">● In progress</div>' : ''}
     <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5</span>` : ''}</div>
   </button>`; };
+  // Anything you started but haven't finished sits up top, plainly labelled, so a
+  // half-written review is never mistaken for one that vanished.
+  const inProgressHtml = inProgress.length
+    ? `<section class="home-sec rv-inprog-sec"><div class="home-sec-h">Pick up where you left off · ${inProgress.length}</div><div class="rv-cards">${inProgress.map(card).join('')}</div></section>`
+    : '';
   const filt = state.reviewsFilter || '';
-  const shownPast = filt ? past.filter((r) => (r.props || {}).rtype === filt) : past;
-  const fcounts = {}; past.forEach((r) => { const t = (r.props || {}).rtype || 'weekly'; fcounts[t] = (fcounts[t] || 0) + 1; });
-  const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${past.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
-  const pastSection = past.length
-    ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${past.length}</div>${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div></section>`
-    : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>';
-  return `${hero}${trendHtml}${reviewsListHtml()}${pastSection}`;
+  const shownPast = filt ? finished.filter((r) => (r.props || {}).rtype === filt) : finished;
+  const fcounts = {}; finished.forEach((r) => { const t = (r.props || {}).rtype || 'weekly'; fcounts[t] = (fcounts[t] || 0) + 1; });
+  const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${finished.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
+  const pastSection = finished.length
+    ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${finished.length}</div>${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div></section>`
+    : (inProgress.length ? '' : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>');
+  return `${hero}${inProgressHtml}${trendHtml}${reviewsListHtml()}${pastSection}`;
 }
 // When is a review of this type next due? The last one of that type + its
 // period. Null if none done yet. Used for the hero line and the reminder subs.
@@ -8639,7 +8693,7 @@ async function startReview(rtype) {
   // Start the wheel blank every time, so each score is set consciously for this
   // review rather than inherited from last time.
   const wheel = {};
-  const props = { rtype, from, to, wheel, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length };
+  const props = { rtype, from, to, wheel, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length, status: 'inprogress' };
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'review', title: `${REVIEWS[rtype].label} review · ${dpLabel(to)}`, props }) });
   state.reviews.push(b); openReviewCard(b.id);
 }
@@ -8719,6 +8773,15 @@ function reviewSiblings(r) {
 }
 function renderReviewCard() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
+  // A re-render (a Wheel score, a goal note, the AI summary landing) rebuilds this
+  // whole pane from r.body. Capture whatever is live in the reflection editor
+  // first, so your writing is never thrown away by a click elsewhere on the card.
+  const liveProse = document.querySelector(`.prose[data-prose="review"][data-block-id="${r.id}"]`);
+  if (liveProse && document.activeElement === liveProse) saveProse('review', liveProse.innerHTML, r.id);
+  // Reviews made before this field existed are treated as finished; a newly
+  // started one is 'inprogress' until you mark it done, so an unfinished review is
+  // never mistaken for a lost one - it's waiting for you, clearly labelled.
+  const st = p.status || 'done';
   const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No area'; };
   const pill = (label, n, cls) => `<span class="rv-stat ${cls || ''}"><b>${n}</b> ${label}</span>`;
   const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
@@ -8734,7 +8797,7 @@ function renderReviewCard() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
-    <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
+    <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Done' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
     <div class="rv-period">
       ${reviewWhenHtml(p)}
       ${R.editDates ? `<div class="rv-period-dates">
@@ -8780,7 +8843,11 @@ function renderReviewCard() {
       <div class="home-sec-h">Reflect</div>
       <ul class="rv-prompt-list">${cfg.prompts.map((q) => `<li>${esc(q)}</li>`).join('')}</ul>
       ${notesSection(r.body, 'review', r.id)}
-    </section>`;
+    </section>
+
+    <div class="rv-finish">${st === 'done'
+      ? `<span class="rv-done-badge">✓ Review done${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="ghost rv-reopen" data-review-reopen="${r.id}">Reopen</button>`
+      : `<button class="add-btn wide rv-markdone" data-review-done="${r.id}">✓ Mark this review done</button><span class="rv-finish-hint">Everything you write saves as you go - come back any time.</span>`}</div>`;
 }
 async function patchReview(id, patch, isProps) {
   const r = state.review_open && state.review_open.review;
@@ -9798,6 +9865,21 @@ document.addEventListener('input', (e) => {
   if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); }
 });
 let proseT;
+// Save every open rich-text editor RIGHT NOW, without waiting for the 800ms
+// debounce. Blur already flushes one editor; this covers the two ways text still
+// slipped away: the app being closed or backgrounded seconds after you typed
+// (an installed PWA does this constantly), and a re-render firing before the
+// debounce did. saveProse keys off data-block-id, so a stale editor can't clobber
+// what's open now. Cheap: usually there's one editor on screen.
+function flushProse() {
+  clearTimeout(proseT);
+  document.querySelectorAll('.prose[data-block-id][data-prose]').forEach((pe) => {
+    if (pe.classList.contains('readonly') || !pe.dataset.blockId) return;
+    saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId);
+  });
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushProse(); });
+window.addEventListener('pagehide', flushProse);
 // The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
 // one pair of document listeners covers the button however the tabs re-render.
 document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
@@ -9898,6 +9980,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   { const ar = t.closest('[data-area-remove]'); if (ar) { const p = ar.dataset.areaRemove.split(':'); removeBlockArea(p[0], p[1], p[2]); return; } }
+  const aex = t.closest('[data-area-expand]'); if (aex) { const id = aex.dataset.areaExpand; const s = areasExpandedSet(); if (s.has(id)) s.delete(id); else s.add(id); saveAreasExpanded(); renderAreasList(); return; }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
@@ -10034,6 +10117,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
+  const rvd = t.closest('[data-review-done]'); if (rvd) { flushProse(); patchReview(rvd.dataset.reviewDone, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review marked done'); return; }
+  const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
   const whx = t.closest('[data-wheel-hide]'); if (whx) { wheelHide(whx.dataset.wheelHide); return; }
   if (t.closest('[data-wheel-restore]')) { wheelRestore(); return; }
@@ -10493,6 +10578,8 @@ document.addEventListener('change', (e) => {
   }
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   if (e.target.matches('[data-repeatfrom-task]')) patchTaskProps(e.target.dataset.repeatfromTask, { repeatFrom: e.target.value === 'done' ? 'done' : null });
+  if (e.target.id === 'task-repeat') { const w = $('#task-repeatfrom-wrap'); if (w) w.hidden = !e.target.value; }
+  if (e.target.id === 'qt-repeat') { const w = $('#qt-repeatfrom-wrap'); if (w) w.hidden = !e.target.value; }
   if (e.target.id === 'contact-file' && e.target.files && e.target.files[0]) { importVcf(e.target.files[0]); e.target.value = ''; }
   if (state.contact_open) {
     const cid = state.contact_open.contact.id;
@@ -10600,12 +10687,12 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
-  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
   if (e.target.id === 'qt-form') {
     const i = $('#qt-title'); const v = i.value.trim();
     if (v) {
-      homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, notes: ($('#qt-notes') || {}).value });
+      homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, repeatFrom: ($('#qt-repeatfrom') || {}).value, notes: ($('#qt-notes') || {}).value });
       if (matchMedia('(max-width:820px)').matches) {
         // On mobile, act like "Done" too: drop focus so the keyboard dismisses,
         // then close the form - one task, done, out of the way.
@@ -11012,6 +11099,7 @@ async function addTask(o) {
   if (o.duration) props.duration = Number(o.duration);
   if (o.snooze) props.snooze = o.snooze;
   if (o.repeat) props.repeat = o.repeat;
+  if (o.repeat && o.repeatFrom === 'done') props.repeatFrom = 'done';
   // Free-form notes typed on the add form become the task's prose body, so they
   // show straight away in the card's Notes section.
   const body = textToProse(o.notes);
