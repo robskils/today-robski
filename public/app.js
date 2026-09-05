@@ -4372,8 +4372,10 @@ function reviewsDueToday() {
   const cfg = state.reviewRem; if (!cfg) return [];
   const now = new Date(); const dow = now.getDay(); const dom = now.getDate(); const month = now.getMonth();
   const dim = new Date(now.getFullYear(), month + 1, 0).getDate();
+  const todayISO = localISO(now);
   return RTYPE_ORDER.filter((k) => {
     const s = cfg[k]; if (!s || !s.on) return false;
+    if (s.snooze && todayISO < s.snooze) return false;   // snoozed - not due yet
     if (k === 'weekly') return dow === (s.dow || 0);
     if (k === 'monthly') return dom === Math.min(s.dom || 1, dim);
     if (k === 'quarterly') return (month % 3 === 0) && dom === Math.min(s.dom || 1, dim);
@@ -8293,13 +8295,30 @@ function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
   const ws = reviewRemOf('weekly');
-  let weeklyDue;
-  if (ws.on && Number.isInteger(ws.dow)) { const now = new Date(); const add = (ws.dow - now.getDay() + 7) % 7; const nd = new Date(now); nd.setDate(nd.getDate() + add); weeklyDue = localISO(nd); }
-  else weeklyDue = nextReviewDue('weekly');
-  let nextLine = '';
-  if (weeklyDue) nextLine = weeklyDue <= localISO() ? 'Weekly review: due today' : `Next weekly review: ${esc(dpLabel(weeklyDue))}`;
+  const todayISO = localISO(new Date());
+  // The day this week's review lands on: the scheduled weekday, or (no schedule)
+  // last review + 7, or today. A snooze pushes it out.
+  let due;
+  if (ws.on && Number.isInteger(ws.dow)) { const now = new Date(); const add = (ws.dow - now.getDay() + 7) % 7; const nd = new Date(now); nd.setDate(nd.getDate() + add); due = localISO(nd); }
+  else due = nextReviewDue('weekly');
+  const snooze = (ws.snooze && ws.snooze > todayISO) ? ws.snooze : null;
+  const eff = snooze || due || todayISO;
+  const from = localISO(new Date(new Date(eff + 'T00:00').getTime() - 6 * 86400000));
+  const whenHtml = reviewWhenHtml({ rtype: 'weekly', from, to: eff });
+  const dueDate = new Date(eff + 'T00:00');
+  const dueLbl = dueDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+  const diff = Math.round((dueDate - new Date(todayISO + 'T00:00')) / 86400000);
+  const rel = diff < 0 ? `${-diff} day${diff === -1 ? '' : 's'} overdue` : diff === 0 ? 'today' : `in ${diff} day${diff === 1 ? '' : 's'}`;
+  const snoozeCtl = snooze
+    ? `<span class="rv-snooze-cur">💤 Snoozed to ${esc(dpLabel(snooze))}</span><button class="rv-snooze-btn" data-review-snooze="0">Un-snooze</button>`
+    : `<span class="rv-snooze-l">Snooze</span><button class="rv-snooze-btn" data-review-snooze="1">a day</button><button class="rv-snooze-btn" data-review-snooze="3">3 days</button><button class="rv-snooze-btn" data-review-snooze="7">a week</button>`;
   const hero = `<div class="rv-hero">
-    <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>${nextLine || 'A few minutes, and you\'ll know where you stand.'}</small></span><span class="rvw-go">→</span></button>
+    <div class="rv-weekcard">
+      ${whenHtml}
+      <div class="rv-week-due">${snooze ? '💤' : '📅'} Review lands <b>${esc(dueLbl)}</b> · ${esc(rel)}</div>
+      <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>
+      <div class="rv-snooze">${snoozeCtl}</div>
+    </div>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
   </div>`;
   const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
@@ -9751,6 +9770,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemEdit = state.reviewRemEdit === k ? null : k; reReviewRems(); return; }
+  { const rsn = t.closest('[data-review-snooze]'); if (rsn) { const d = +rsn.dataset.reviewSnooze; const w = reviewRemOf('weekly'); if (d > 0) { const nd = new Date(); nd.setDate(nd.getDate() + d); w.snooze = localISO(nd); } else delete w.snooze; state.reviewRem = state.reviewRem || {}; state.reviewRem.weekly = w; saveReviewRem(); toast(d > 0 ? `Review snoozed ${d} day${d > 1 ? 's' : ''}` : 'Review un-snoozed'); reReviewRems(); return; } }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R && R.summaryOpen && !R.summaryLoading) { R.summaryOpen = false; renderReviewCard(); } else { reviewDoneSummary(false); } return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }

@@ -2728,6 +2728,7 @@ function reviewRemConfig(value) {
         if (rt === 'weekly' && s.dow != null) cfg[rt].dow = clampInt(s.dow, 0, 6);
         if ((rt === 'monthly' || rt === 'quarterly') && s.dom != null) cfg[rt].dom = clampInt(s.dom, 1, 28);
         if (rt === 'yearly') { if (s.month != null) cfg[rt].month = clampInt(s.month, 0, 11); if (s.day != null) cfg[rt].day = clampInt(s.day, 1, 28); }
+        if (typeof s.snooze === 'string' && /^\d{4}-\d\d-\d\d$/.test(s.snooze)) cfg[rt].snooze = s.snooze;   // don't nag until this date
       }
     }
   }
@@ -2753,6 +2754,7 @@ async function reviewRemindersForUser(env, uid) {
   let changed = false;
   for (const rt of ['weekly', 'monthly', 'quarterly', 'yearly']) {
     const s = cfg[rt]; if (!s.on) continue;
+    if (s.snooze && today < s.snooze) continue;   // snoozed - hold off until then
     let isDue = false;
     if (rt === 'weekly') isDue = dow === s.dow;
     else if (rt === 'monthly') isDue = D === Math.min(s.dom, dim);

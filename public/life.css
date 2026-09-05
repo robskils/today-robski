@@ -674,7 +674,16 @@ button { cursor:pointer; background:none; border:0; }
 .rv-insight-list { margin:0; padding-left:18px; }
 .rv-insight-list li { font-size:16px; line-height:1.5; color:var(--ink); padding:3px 0; }
 /* Reviews dashboard page. */
-.rv-hero { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:6px 0 20px; }
+.rv-hero { display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px; margin:6px 0 20px; }
+.rv-weekcard { flex:1 1 380px; min-width:0; border:1px solid var(--line); border-radius:18px; padding:16px 18px; background:var(--card); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; }
+.rv-weekcard .rv-start-weekly { flex:none; box-shadow:none; }
+.rv-week-due { font-size:14.5px; color:var(--ink-2); }
+.rv-week-due b { color:var(--ink); font-weight:600; }
+.rv-snooze { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; }
+.rv-snooze-l { color:var(--ink-3); }
+.rv-snooze-cur { color:var(--ink-2); }
+.rv-snooze-btn { border:1px solid var(--line-2); background:var(--paper); color:var(--ink-2); font-size:12.5px; padding:5px 11px; border-radius:999px; cursor:pointer; }
+.rv-snooze-btn:hover { border-color:var(--accent); color:var(--accent); }
 .rv-start-weekly { flex:1 1 340px; display:flex; align-items:center; gap:14px; padding:16px 18px; border:1px solid var(--accent); border-radius:16px; background:color-mix(in srgb,var(--accent) 8%,var(--card)); box-shadow:var(--shadow); cursor:pointer; text-align:left; }
 .rv-start-weekly:hover { background:color-mix(in srgb,var(--accent) 14%,var(--card)); }
 .rvw-ic { font-size:26px; flex:none; }
