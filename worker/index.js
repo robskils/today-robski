@@ -1268,9 +1268,12 @@ async function blockAccess(env, id) {
     if (psh) return { ownerId: own.user_id, canEdit: !!psh.can_edit, mine: false };
   }
   // A block tagged to a life area that's shared with me is viewable (read-only):
-  // sharing an area shares everything filed under it.
+  // sharing an area shares everything filed under it - EXCEPT anything the owner
+  // marked private (props.private), which stays theirs alone even inside a shared
+  // area. An explicit per-block share (checked above) still overrides this.
+  let ownProps = {}; try { ownProps = own.props ? JSON.parse(own.props) : {}; } catch {}
   const areas = areaIdsFromProps(own.props);
-  if (areas.length) {
+  if (areas.length && !ownProps.private) {
     const ph = areas.map(() => '?').join(',');
     const ash = await env.DB.prepare(`SELECT 1 FROM shares WHERE friend_id = ? AND block_id IN (${ph})`).bind(env.uid, ...areas).first().catch(() => null);
     if (ash) return { ownerId: own.user_id, canEdit: false, mine: false };
@@ -1387,7 +1390,9 @@ async function listBlocks(request, env, url) {
     const aid = url.searchParams.get('area');
     const acc = await blockAccess(env, aid);
     if (acc && !acc.mine) {
-      const cl = ['user_id = ?', "(json_extract(props,'$.area') = ? OR EXISTS (SELECT 1 FROM json_each(json_extract(props,'$.areas')) WHERE value = ?))"];
+      // A member sees the owner's blocks in this area, minus anything the owner
+      // kept private (props.private) - private to them, still filed in the area.
+      const cl = ['user_id = ?', "(json_extract(props,'$.area') = ? OR EXISTS (SELECT 1 FROM json_each(json_extract(props,'$.areas')) WHERE value = ?))", "IFNULL(json_extract(props,'$.private'),0) = 0"];
       const ar = [acc.ownerId, aid, aid];
       if (kind) { cl.push('kind = ?'); ar.push(kind); }
       if (!wantArchived) cl.push('archived = 0');

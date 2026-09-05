@@ -3577,6 +3577,21 @@ function timeAgo(t) {
   const mo = Math.floor(d / 30); if (mo < 12) return mo + 'mo ago';
   return Math.floor(d / 365) + 'y ago';
 }
+// A "keep private" toggle for a block filed in a life area. When the area is
+// shared, private items stay yours - members never see them, though they're still
+// filed here. Owner-only (a borrowed block can't be hidden by the borrower).
+function privateToggleHtml(kind, block) {
+  const on = !!(block.props && block.props.private);
+  return `<label class="tf-toggle pv-toggle ${on ? 'on' : ''}"><input type="checkbox" data-block-private="${kind}:${block.id}" ${on ? 'checked' : ''}><span>${on ? '🔒' : '🔓'} Private to me<small>If this area is shared, only you see this</small></span></label>`;
+}
+async function setBlockPrivate(kind, id, on) {
+  const upd = (b) => { if (b && b.id === id) { b.props = b.props || {}; b.props.private = on; } };
+  upd(state.goal_open && state.goal_open.goal); upd((state.goals || []).find((x) => x.id === id));
+  upd(state.note && state.note.current);
+  upd(state.taskcard && state.taskcard.task); upd(state.task_open && state.task_open.task);
+  try { await api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: { private: on } }) }); toast(on ? '🔒 Private to you' : 'Visible to area members'); }
+  catch (e) { toast(e.message); }
+}
 // A life area's sentiment, carried over from the last Wheel of Life score it was
 // given in a review (area.props.wheelScore/wheelAt, denormalised by setWheel).
 const AREA_SENTIMENT = ['', 'Struggling', 'Finding its feet', 'Okay', 'Good', 'Thriving'];
@@ -3614,7 +3629,7 @@ function renderArea() {
   const isFav = (n) => !!(n.props && n.props.fav);
   const starredNotes = notes.filter(isFav);
   const otherNotes = notes.filter((n) => !isFav(n));
-  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`;
+  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${n.props && n.props.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}</button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
   // Everything else that can carry this area, each linking to its own tool.
@@ -7951,7 +7966,7 @@ function reorderFocus(dragged, before) {
 function goalCardMini(g, drag) {
   const a = goalArea(g); const p = gp(g); const pct = Math.round(goalProgress(g) * 100);
   return `<button class="goal-card" data-open-goal="${g.id}" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
-    <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span><span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
+    <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span>${p.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}<span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
     <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
     <div class="gc-bar"><i style="width:${pct}%"></i></div></button>`;
 }
@@ -8071,6 +8086,7 @@ function renderGoalCard() {
       <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>
     </div>
+    ${g.sharedBy ? '' : privateToggleHtml('goal', g)}
     <div class="goal-measure-block">${typeBody}</div>
     ${p.gtype !== 'achievement' ? `<div class="goal-actions-sec">
       <div class="tf-label gt-loose-h">Tasks<span class="gt-hint">real tasks to move this forward - they show up in Tasks &amp; Today too</span></div>
@@ -8710,7 +8726,8 @@ function renderNote() {
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       ${noteTypeToggle(n.id, 'note')}
       ${shareBtn(n, 'note')}
-      ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
+      ${n.sharedBy ? '' : `<button class="note-lock ghost ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" title="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
+      <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
       <button class="note-del ghost" data-del-note title="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
@@ -8735,45 +8752,75 @@ function renderNote() {
 // ── move a note inside another (re-parent) ───────────
 function openMoveNote() {
   const cur = state.note && state.note.current; if (!cur) return;
-  api('/api/blocks?kind=note').then((all) => {
+  Promise.all([
+    api('/api/blocks?kind=note'),
+    (state.areas && state.areas.length) ? Promise.resolve(state.areas) : api('/api/blocks?kind=area').catch(() => []),
+  ]).then(([all, areas]) => {
     // Can't move a note into itself or any of its own descendants.
     const kids = {}; all.forEach((n) => { const p = n.parent_id || ''; (kids[p] = kids[p] || []).push(n.id); });
     const bad = new Set([cur.id]); const st = [cur.id];
     while (st.length) { const p = st.pop(); (kids[p] || []).forEach((c) => { if (!bad.has(c)) { bad.add(c); st.push(c); } }); }
     const opts = all.filter((n) => !bad.has(n.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    state.move = { cur: cur.id, curParent: cur.parent_id || null, opts, q: '' };
+    const areaList = (areas || []).filter((a) => !a.sharedBy).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    state.move = { cur: cur.id, curParent: cur.parent_id || null, curArea: (cur.props && cur.props.area) || null, opts, areas: areaList, q: '' };
     renderMove();
   }).catch((e) => toast(e.message));
 }
 function renderMove() {
   let el = document.getElementById('move-overlay');
   if (!el) { el = document.createElement('div'); el.id = 'move-overlay'; document.body.appendChild(el); }
-  el.innerHTML = `<div class="pal-bg" data-move-bg><div class="pal">
-    <input id="move-input" placeholder="Move into which note…" value="${esc(state.move.q)}" autocomplete="off">
-    <div class="pal-list" id="move-list"></div></div></div>`;
+  const title = (state.note && state.note.current && state.note.current.title) || 'this note';
+  el.innerHTML = `<div class="mv-bg" data-move-bg><div class="mv-panel" role="dialog" aria-label="Move note">
+    <div class="mv-head"><div class="mv-head-b"><div class="mv-title">Move note</div><div class="mv-sub">${esc(title)}</div></div><button class="mv-x" data-move-bg aria-label="Close">×</button></div>
+    <div class="mv-searchwrap"><span class="mv-search-ic">⌕</span><input id="move-input" class="mv-search" placeholder="Search notes and areas…" value="${esc(state.move.q)}" autocomplete="off"></div>
+    <div class="mv-scroll" id="move-list"></div>
+  </div></div>`;
   renderMoveList();
   $('#move-input').focus();
 }
 function renderMoveList() {
   const el = $('#move-list'); if (!el) return;
   const q = state.move.q.trim().toLowerCase();
-  const opts = state.move.opts.filter((n) => (n.title || '').toLowerCase().includes(q));
-  const top = !q || 'top level'.includes(q)
-    ? `<button class="pal-item ${state.move.curParent ? '' : 'muted-cur'}" data-move-to=""><span class="pal-kind muted">top</span><span class="pal-t">Top level (not inside any note)</span></button>` : '';
-  el.innerHTML = top + (opts.map((n) => `<button class="pal-item" data-move-to="${n.id}"><span class="pal-kind muted">note</span><span class="pal-t">${esc(n.title || 'Untitled')}</span></button>`).join('') || (top ? '' : '<div class="pal-empty">No notes.</div>'));
+  const match = (s) => !q || (s || '').toLowerCase().includes(q);
+  const topSel = !state.move.curParent && !state.move.curArea;
+  const here = '<span class="mv-cur">Here now</span>';
+  const topHtml = match('top level') || match('out on its own') ? `<div class="mv-group"><div class="mv-glabel">On its own</div>
+    <button class="mv-opt" data-move-to=""><span class="mv-ic mv-ic-top">◇</span><span class="mv-opt-b"><span class="mv-opt-t">Top level</span><span class="mv-opt-s">Not inside a note, not in an area</span></span>${topSel ? here : ''}</button></div>` : '';
+  const areas = (state.move.areas || []).filter((a) => match(a.title));
+  const areasHtml = areas.length ? `<div class="mv-group"><div class="mv-glabel">Into a life area</div>${areas.map((a) => `<button class="mv-opt" data-move-area="${a.id}"><span class="mv-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span><span class="mv-opt-b"><span class="mv-opt-t">${esc(a.title || 'Untitled')}</span></span>${state.move.curArea === a.id && !state.move.curParent ? here : ''}</button>`).join('')}</div>` : '';
+  const notes = state.move.opts.filter((n) => match(n.title));
+  const notesHtml = notes.length ? `<div class="mv-group"><div class="mv-glabel">Inside another note</div>${notes.map((n) => `<button class="mv-opt" data-move-to="${n.id}"><span class="mv-ic">▤</span><span class="mv-opt-b"><span class="mv-opt-t">${esc(n.title || 'Untitled')}</span></span>${state.move.curParent === n.id ? here : ''}</button>`).join('')}</div>` : '';
+  const html = topHtml + areasHtml + notesHtml;
+  el.innerHTML = html || '<div class="mv-empty">Nothing matches.</div>';
 }
-function closeMove() { const el = document.getElementById('move-overlay'); if (el) el.innerHTML = ''; state.move = null; }
 async function moveNote(targetId) {
   if (!state.move) return;
   const cur = state.move.cur; closeMove();
   try {
     await api(`/api/blocks/${cur}`, { method: 'PATCH', body: JSON.stringify({ parent_id: targetId || null }) });
-    state.noteTops = await api('/api/blocks?kind=note&parent_id=');   // top-level list may have changed
-    await openNote(cur);                                              // rebuild path/crumbs from the new home
+    state.noteTops = await api('/api/blocks?kind=note&parent_id=').catch(() => state.noteTops);
+    await openNote(cur);
     renderNav();
-    toast('Note moved');
+    toast(targetId ? 'Note moved' : 'Moved to top level');
   } catch (e) { toast(e.message); }
 }
+// Move a note into a life area: it becomes a top-level note carrying that area,
+// so it surfaces on the area page. (Notes belong to an area by props.area, not by
+// nesting - so we clear the parent and set the area together.)
+async function moveNoteToArea(areaId) {
+  if (!state.move) return;
+  const cur = state.move.cur;
+  const a = (state.move.areas || []).find((x) => x.id === areaId);
+  closeMove();
+  try {
+    await api(`/api/blocks/${cur}`, { method: 'PATCH', body: JSON.stringify({ parent_id: null, props: { area: areaId } }) });
+    state.noteTops = await api('/api/blocks?kind=note&parent_id=').catch(() => state.noteTops);
+    await openNote(cur);
+    renderNav();
+    toast('Moved to ' + ((a && a.title) || 'the area'));
+  } catch (e) { toast(e.message); }
+}
+function closeMove() { const el = document.getElementById('move-overlay'); if (el) el.innerHTML = ''; state.move = null; }
 
 // ── view: table ──────────────────────────────────────
 const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Life area'], ['attach', 'Attachments']];
@@ -9442,7 +9489,9 @@ document.addEventListener('click', (e) => {
   const lpt = t.closest('[data-linkpick-to]'); if (lpt) { linkPickPick(lpt.dataset.linkpickTo); return; }
   const mbg = t.closest('[data-move-bg]'); if (mbg && !t.closest('.pal')) { closeMove(); return; }
   const mvt = t.closest('[data-move-to]'); if (mvt) { moveNote(mvt.dataset.moveTo || null); return; }
+  const mva = t.closest('[data-move-area]'); if (mva) { moveNoteToArea(mva.dataset.moveArea); return; }
   if (t.closest('[data-move-note]')) { openMoveNote(); return; }
+  { const bp = t.closest('[data-block-private-btn]'); if (bp) { const [k, id] = bp.dataset.blockPrivateBtn.split(':'); const cur = state.note && state.note.current; const on = !(cur && cur.props && cur.props.private); setBlockPrivate(k, id, on).then(() => { if (k === 'note' && state.view.type === 'note') renderNote(); }); return; } }
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
@@ -10047,6 +10096,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
+  if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') renderGoalCard(); else if (k === 'task' && state.view.type === 'taskcard') renderTaskCard(); }); return; }
   if (e.target.matches('[data-rev-rem]')) { toggleReviewRem(e.target.dataset.revRem, e.target.checked); return; }
   if (e.target.matches('[data-rev-dow]')) { setReviewRemDay(state.reviewRemEdit, { dow: +e.target.value }); return; }
   if (e.target.matches('[data-rev-dom]')) { setReviewRemDay(state.reviewRemEdit, { dom: +e.target.value }); return; }
@@ -10693,6 +10743,7 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Repeat</span>
         <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
+    ${t.sharedBy ? '' : privateToggleHtml('task', t)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();

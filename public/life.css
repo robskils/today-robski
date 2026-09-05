@@ -2474,6 +2474,40 @@ table.ttable tr:last-child td { border-bottom:0; }
 .pal { width:min(620px,92vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); overflow:hidden; }
 .recur-dialog { width:min(420px,92vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); padding:22px; }
 
+/* Move-note sheet: a calm, considered chooser (top level / a life area / another note). */
+.mv-bg { position:fixed; inset:0; z-index:120; background:color-mix(in srgb,var(--ink) 34%,transparent); backdrop-filter:blur(4px); display:flex; align-items:flex-start; justify-content:center; padding:11vh 16px 16px; animation:mv-fade .16s ease; }
+@keyframes mv-fade { from { opacity:0; } to { opacity:1; } }
+.mv-panel { width:min(500px,96vw); max-height:78vh; display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line-2); border-radius:20px; box-shadow:0 36px 90px -28px rgba(0,0,0,.6); overflow:hidden; animation:mv-rise .2s cubic-bezier(.2,.8,.2,1); }
+@keyframes mv-rise { from { transform:translateY(10px) scale(.985); opacity:0; } to { transform:none; opacity:1; } }
+.mv-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:18px 20px 12px; }
+.mv-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; letter-spacing:-.01em; color:var(--ink); }
+.mv-sub { font-size:13.5px; color:var(--ink-3); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:360px; }
+.mv-x { flex:none; width:32px; height:32px; border-radius:9px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; }
+.mv-x:hover { border-color:var(--accent); color:var(--accent); }
+.mv-searchwrap { position:relative; margin:0 20px 6px; }
+.mv-search-ic { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--ink-3); font-size:16px; pointer-events:none; }
+.mv-search { width:100%; box-sizing:border-box; padding:11px 14px 11px 38px; font-size:15px; font-family:inherit; color:var(--ink); background:var(--paper); border:1px solid var(--line-2); border-radius:12px; }
+.mv-search:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); }
+.mv-scroll { overflow-y:auto; padding:6px 12px 14px; }
+.mv-group { padding:6px 0 2px; }
+.mv-glabel { font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); padding:8px 8px 6px; }
+.mv-opt { display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; text-align:left; padding:10px 12px; border:1px solid transparent; border-radius:12px; background:none; cursor:pointer; transition:background .12s,border-color .12s; }
+.mv-opt:hover { background:var(--paper-2); border-color:var(--line); }
+.mv-ic { flex:none; width:30px; height:30px; display:grid; place-items:center; border-radius:9px; background:var(--paper-2); color:var(--ink-3); font-size:15px; }
+.mv-ic-top { color:var(--accent); }
+.mv-dot { flex:none; width:14px; height:14px; border-radius:50%; margin:0 8px; box-shadow:0 0 0 3px color-mix(in srgb,var(--ink) 6%,transparent); }
+.mv-opt-b { display:flex; flex-direction:column; gap:1px; min-width:0; flex:1; }
+.mv-opt-t { font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mv-opt-s { font-size:12.5px; color:var(--ink-3); }
+.mv-cur { flex:none; font-size:11.5px; font-weight:600; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); padding:3px 9px; border-radius:999px; }
+.mv-empty { padding:20px 12px; text-align:center; color:var(--ink-3); font-size:14px; }
+
+/* "Private to me" toggle + lock badges (per-item privacy inside a shared area). */
+.pv-toggle { margin:10px 0 2px; }
+.pv-toggle.on span { color:var(--ink); }
+.tc-lock { flex:none; margin-left:6px; font-size:12px; opacity:.7; }
+.note-lock.on { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); }
+
 /* Keyboard shortcuts reference */
 .sc-bg { position:fixed; inset:0; z-index:62; background:rgba(20,16,24,.34); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:10vh 16px 16px; overflow:auto; }
 .sc-panel { width:min(560px,94vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); overflow:hidden; }
