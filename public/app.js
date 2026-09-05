@@ -3527,16 +3527,17 @@ function noteAreasControl(n) { return blockAreasControl('note', n); }
 function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
-  const favAreas = state.areas.filter((a) => a.props && a.props.fav);
-  const card = (a) => `<div class="area-card" style="--h:${hueOf(a)}">
+  const ordered = areasByRank();
+  const favAreas = ordered.filter((a) => a.props && a.props.fav);
+  const card = (a) => `<div class="area-card" style="--h:${hueOf(a)}" draggable="true" data-area-drag="${a.id}" title="Drag to reorder">
     <button class="ac-open" data-open-area="${a.id}"><span class="ac-dot"></span><span class="ac-t">${esc(a.title)}</span></button>
     <button class="star ${a.props && a.props.fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${a.props && a.props.fav ? '★' : '☆'}</button></div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Life areas')}
     <div class="pane-head home-head"><h1>Life areas</h1><button class="add-btn wide" data-new-area>+ New area</button></div>
     ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards">${favAreas.map(card).join('')}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">All areas · ${state.areas.length}</div>
-      <div class="area-cards">${state.areas.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
+    <section class="home-sec"><div class="home-sec-h">All areas · ${ordered.length}</div>
+      <div class="area-cards">${ordered.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -6077,7 +6078,7 @@ function showQuickTask() {
       <label class="atf"><span>Life area</span><select id="qt-area" class="sel">${opts}</select></label>
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
-      <label class="atf"><span>Snooze until</span>${dateFieldHtml('qt-snooze', '')}</label>
+      <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
       <label class="atf"><span>Repeat</span><select id="qt-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
     </div>
     <label class="atf atf-full"><span>Notes</span><textarea id="qt-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
@@ -6526,7 +6527,7 @@ function renderTasks() {
         <label class="atf"><span>Life area</span><select id="task-area" class="sel">${opts}</select></label>
         <label class="atf"><span>Priority</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
         <label class="atf"><span>Duration</span><select id="task-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
-        <label class="atf"><span>Snooze until</span>${dateFieldHtml('task-snooze', '')}</label>
+        <label class="atf"><span>Surface on</span>${dateFieldHtml('task-snooze', '')}</label>
         <label class="atf"><span>Repeat</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       </div>
       <label class="atf atf-full"><span>Notes</span><textarea id="task-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
@@ -9873,7 +9874,31 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null, dragArea = null;
+// Life areas in the user's chosen order (props.rank), title as the tiebreak.
+function areasByRank() { return state.areas.slice().sort((a, b) => { const ra = (a.props && a.props.rank), rb = (b.props && b.props.rank); return (ra == null ? 1e9 : ra) - (rb == null ? 1e9 : rb) || (a.title || '').localeCompare(b.title || ''); }); }
+// Drag reorder for area cards (a wrapping grid): snap to the nearest card, insert
+// on the side the cursor is on. Writes a rank onto every area so the order sticks.
+function areaDropTarget(container, x, y, draggedId) {
+  clearDropMarks();
+  const cards = [...container.querySelectorAll('[data-area-drag]')].filter((el) => el.dataset.areaDrag !== draggedId);
+  if (!cards.length) return null;
+  let best = null, bestD = Infinity;
+  for (const el of cards) { const r = el.getBoundingClientRect(); const d = (x - (r.left + r.width / 2)) ** 2 + (y - (r.top + r.height / 2)) ** 2; if (d < bestD) { bestD = d; best = el; } }
+  const r = best.getBoundingClientRect();
+  const after = x > r.left + r.width / 2;
+  best.classList.add(after ? 'drop-after' : 'drop-before');
+  return { beforeId: best.dataset.areaDrag, after };
+}
+function reorderAreas(draggedId, target) {
+  if (!target) return;
+  const ordered = areasByRank().map((a) => a.id).filter((id) => id !== draggedId);
+  let i = ordered.indexOf(target.beforeId); if (i < 0) i = ordered.length; if (target.after) i += 1;
+  ordered.splice(i, 0, draggedId);
+  ordered.forEach((id, idx) => { const a = state.areas.find((x) => x.id === id); if (a) { a.props = a.props || {}; a.props.rank = idx; } });
+  openAreasList();
+  ordered.forEach((id, idx) => api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: { rank: idx } }) }).catch(() => {}));
+}
 // Pointer-based drag reorder for the Settings → Mobile section list. Pointer
 // events (not HTML5 drag) so it works with touch on the phone as well as a mouse.
 let msecDrag = null;
@@ -10024,10 +10049,12 @@ document.addEventListener('dragstart', (e) => {
   const hg = e.target.closest('[data-hsec-grip]'); if (hg) { dragHomeSec = hg.dataset.hsecGrip; const s = e.target.closest('[data-hsec]'); if (s) s.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const ar = e.target.closest('[data-area-drag]'); if (ar) { dragArea = ar.dataset.areaDrag; ar.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const cc = e.target.closest('[data-contact-drag]'); if (cc) { dragContact = cc.dataset.contactDrag; cc.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', cc.dataset.contactDrag); } catch {} }
 });
 document.addEventListener('dragover', (e) => {
   if (dragFav) { const c = e.target.closest('#favs') || e.target.closest('.home-sec-favs'); if (c) { e.preventDefault(); favDrop(c, e.clientX, e.clientY, dragFav); } return; }
+  if (dragArea) { const c = e.target.closest('.area-cards'); if (c) { e.preventDefault(); areaDropTarget(c, e.clientX, e.clientY, dragArea); } return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
   if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'h'); return; }
   if (dragHomeSec && (e.target.closest('.home-main') || e.target.closest('.home-side'))) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
@@ -10050,6 +10077,12 @@ document.addEventListener('drop', (e) => {
     const c = e.target.closest('#favs') || e.target.closest('.home-sec-favs');
     if (c) { const before = favDrop(c, e.clientX, e.clientY, dragFav); reorderFavs(dragFav, before); }
     clearDropMarks(); dragFav = null; return;   // dropped off the list: leave it where it was
+  }
+  if (dragArea) {
+    e.preventDefault();
+    const c = e.target.closest('.area-cards');
+    if (c) { const target = areaDropTarget(c, e.clientX, e.clientY, dragArea); reorderAreas(dragArea, target); }
+    clearDropMarks(); dragArea = null; return;
   }
   if (dragFocus) {
     e.preventDefault(); const over = e.target.closest('[data-focus-id]');
@@ -10094,7 +10127,7 @@ document.addEventListener('drop', (e) => {
     dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; dragArea = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
@@ -10318,7 +10351,7 @@ function renderTaskCard() {
         ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Snooze until${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}</span>
+      <label class="tf-field"><span class="tf-label">Surface on${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}<small class="tf-hint">hidden from your lists until then</small></span>
         ${dateFieldHtml('taskcard-snooze', t.props.snooze || '')}</label>
       <label class="tf-field"><span class="tf-label">Repeat</span>
         <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
