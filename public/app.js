@@ -64,6 +64,40 @@ function toast(m, undoFn) {
   t.hidden = false; clearTimeout(toastT);
   toastT = setTimeout(() => { t.hidden = true; }, undoFn ? 7000 : 2600);
 }
+// A general undo stack. Anything regrettable registers "how to reverse me" via
+// pushUndo; ⌘Z (or the toast's Undo button) runs the most recent one. Each entry
+// runs at most once, so the button and the shortcut can't double-fire.
+let undoStack = [];
+function pushUndo(label, undoFn) {
+  let done = false;
+  const run = async () => { if (done) return; done = true; try { await undoFn(); toast('Undone'); } catch (e) { toast('Could not undo'); } };
+  undoStack.push({ label, run });
+  if (undoStack.length > 30) undoStack.shift();
+  toast(label, run);
+}
+async function doUndo() {
+  const e = undoStack.pop();
+  if (!e) { toast('Nothing to undo'); return; }
+  await e.run();
+}
+document.addEventListener('keydown', (ev) => {
+  if (!(ev.metaKey || ev.ctrlKey) || ev.shiftKey || ev.altKey) return;
+  if ((ev.key || '').toLowerCase() !== 'z') return;
+  const el = document.activeElement;
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;  // native text undo wins in a field
+  ev.preventDefault(); doUndo();
+});
+// Delete a block but keep a way back: ⌘Z (or Undo) recreates it and refreshes
+// the view. The id changes on restore, but the item and its content return.
+function undoableBlockDelete(block) {
+  if (!block) return;
+  const snap = { kind: block.kind, title: block.title || '', body: block.body || null, props: block.props ? JSON.parse(JSON.stringify(block.props)) : {} };
+  const name = (block.title || '').trim().slice(0, 30);
+  pushUndo(name ? `Deleted "${name}"` : 'Deleted', async () => {
+    await api('/api/blocks', { method: 'POST', body: JSON.stringify(snap) });
+    try { await openView(state.view); } catch {}
+  });
+}
 
 const readLS = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch { return fb; } };
 const state = {
@@ -6982,9 +7016,10 @@ async function patchContact(id, patch, isProps) {
 }
 async function delContact(id) {
   // No confirm: the Delete button is a deliberate press on an open contact.
+  const gone = (state.contact_open && state.contact_open.contact && state.contact_open.contact.id === id) ? state.contact_open.contact : (state.contacts || []).find((x) => x.id === id);
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
   state.contacts = (state.contacts || []).filter((x) => x.id !== id);
-  toast('Contact deleted'); openContacts();
+  await openContacts(); if (gone) undoableBlockDelete(gone);
 }
 // New group: type a name, or spin one up from a life area. A group made from an
 // area is linked to it (props.area) and pulls in every contact already tagged to
@@ -8004,8 +8039,9 @@ async function patchGoal(id, patch, isProps) {
 }
 async function delGoal(id) {
   if (!(await uiConfirm('Delete this goal?', { danger: true, okLabel: 'Delete' }))) return;
+  const gone = (state.goal_open && state.goal_open.goal && state.goal_open.goal.id === id) ? state.goal_open.goal : state.goals.find((x) => x.id === id);
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
-  state.goals = state.goals.filter((x) => x.id !== id); toast('Goal deleted'); openGoals('goals');
+  state.goals = state.goals.filter((x) => x.id !== id); await openGoals(); if (gone) undoableBlockDelete(gone);
 }
 function toggleGoalFocus(id) { const g = state.goal_open && state.goal_open.goal; patchGoal(id, { focus: !gp(g).focus }, true).then(renderGoalCard); }
 function goalMs() { const g = state.goal_open.goal; g.props = g.props || {}; if (!Array.isArray(g.props.milestones)) g.props.milestones = []; return g.props.milestones; }
@@ -8068,8 +8104,9 @@ async function patchBucket(id, patch, isProps) {
 }
 async function delBucket(id) {
   if (!(await uiConfirm('Remove from your bucket list?', { danger: true, okLabel: 'Remove' }))) return;
+  const gone = (state.bucket_open && state.bucket_open.item && state.bucket_open.item.id === id) ? state.bucket_open.item : state.bucket.find((x) => x.id === id);
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
-  state.bucket = state.bucket.filter((x) => x.id !== id); toast('Removed'); openGoals('bucket');
+  state.bucket = state.bucket.filter((x) => x.id !== id); await openGoals(); if (gone) undoableBlockDelete(gone);
 }
 function bucketToggleDone(id) { const b = state.bucket_open.item; const done = (b.props || {}).status === 'done'; patchBucket(id, { status: done ? 'someday' : 'done', doneDate: done ? null : new Date().toISOString().slice(0, 10) }, true).then(renderBucketCard); }
 // Promote a bucket-list dream into an actively-pursued goal. The bucket item
@@ -10214,10 +10251,12 @@ async function homeTaskDismiss(id) {
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { snooze: null } }) }); toast('Removed from Today'); }
   catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }
 }
-async function delTask(id) {
+async function delTask(id, known) {
+  const gone = known || state.tasks.find((t) => t.id === id) || (state.area_open && state.area_open.blocks.find((t) => t.id === id));
   state.tasks = state.tasks.filter((t) => t.id !== id);
   if (state.area_open) state.area_open.blocks = state.area_open.blocks.filter((t) => t.id !== id);
-  rerenderCurrent(); try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { toast(e.message); }
+  rerenderCurrent();
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); if (gone) undoableBlockDelete(gone); } catch (e) { toast(e.message); }
 }
 function editTaskTitle(span) {
   const id = span.dataset.editTask; const t = taskCopies(id)[0]; if (!t) return;
@@ -10737,7 +10776,7 @@ async function saveProse(key, rawHtml, blockId) {
 }
 async function delTaskCard() {
   const t = state.task_open.task; if (!(await uiConfirm(`Delete “${t.title || 'Untitled'}”?`, { title: 'Delete task', okLabel: 'Delete', danger: true }))) return;
-  await delTask(t.id); await openTasks();
+  await delTask(t.id, t); await openTasks();
 }
 async function saveNoteTitle(v) {
   const n = state.note.current; if (!n || v === n.title) return; n.title = v;
@@ -10749,7 +10788,8 @@ async function saveNoteTitle(v) {
 async function delNote() {
   const n = state.note.current; if (!(await uiConfirm(`Delete “${n.title || 'Untitled'}”?`, { title: 'Delete note', okLabel: 'Delete', danger: true }))) return;
   const parent = state.note.path.length > 1 ? state.note.path[state.note.path.length - 2].id : null;
-  try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); state.noteTops = state.noteTops.filter((t) => t.id !== n.id); if (parent) await openNote(parent); else await openNotesList(); } catch (e) { toast(e.message); }
+  const gone = { kind: 'note', title: n.title, body: n.body, props: n.props };
+  try { await api(`/api/blocks/${n.id}`, { method: 'DELETE' }); state.noteTops = state.noteTops.filter((t) => t.id !== n.id); if (parent) await openNote(parent); else await openNotesList(); undoableBlockDelete(gone); } catch (e) { toast(e.message); }
 }
 // Turn a note into a table: each block (bullet/paragraph/heading) becomes a row.
 // If every line splits cleanly on a delimiter (| , tab, " - ", ": ", ","), those
