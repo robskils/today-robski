@@ -1615,7 +1615,32 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tbx-tt { flex:1; }
 .tbx-run { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:13px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; }
 .tbx-tool-body { padding:4px 16px 18px; }
-.tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:360px; margin-left:auto; margin-right:auto; }
+.tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer, .tbx-tool-body.tbx-med { max-width:400px; margin-left:auto; margin-right:auto; }
+/* Meditation timer - calm, with a slowly breathing orb behind the time. */
+.med { display:flex; flex-direction:column; align-items:center; gap:16px; }
+.med-stage { position:relative; width:180px; height:180px; display:grid; place-items:center; margin:4px 0 2px; }
+.med-orb { position:absolute; inset:14px; border-radius:50%; background:radial-gradient(circle at 50% 42%, color-mix(in srgb,var(--accent) 26%,transparent), color-mix(in srgb,var(--accent) 8%,transparent) 62%, transparent 72%); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); }
+.med.running .med-orb { animation:med-breathe 10s ease-in-out infinite; }
+@keyframes med-breathe { 0%,100% { transform:scale(.86); opacity:.7; } 50% { transform:scale(1.04); opacity:1; } }
+.med-time { position:relative; font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:40px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }
+.med.running .med-time { color:var(--accent); }
+.med-presets { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; align-items:center; }
+.med-preset { padding:8px 15px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; cursor:pointer; }
+.med-preset:hover { border-color:var(--line-2); color:var(--ink); }
+.med-preset.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
+.med-custom { display:inline-flex; align-items:center; gap:6px; }
+.med-cnum { width:64px; max-width:64px; text-align:center; padding:7px 8px; font-size:14px; }
+.med-cset { padding:6px 12px; font-size:13px; }
+.med-interval { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.med-int-l { font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); font-weight:600; }
+.med-int-opts { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+.med-int { padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:13px; cursor:pointer; }
+.med-int:hover { border-color:var(--line-2); color:var(--ink); }
+.med-int.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
+.med-ctrls { display:flex; align-items:center; gap:10px; width:100%; max-width:280px; }
+.med-go { flex:1; }
+.med-note { font-size:12.5px; color:var(--ink-3); text-align:center; line-height:1.5; max-width:320px; }
+@media (prefers-reduced-motion:reduce) { .med.running .med-orb { animation:none; } }
 /* plain Timer */
 .tmr { display:flex; flex-direction:column; align-items:center; gap:12px; }
 .tmr-time { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:44px; font-weight:600; letter-spacing:.02em; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1; }

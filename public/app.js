@@ -2335,14 +2335,15 @@ function tbxToolOpen(k) { try { return !(JSON.parse(localStorage.getItem('life.t
 function tbxToolToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.toolbox.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = true; localStorage.setItem('life.toolbox.collapsed', JSON.stringify(c)); } catch {} if (state.view && state.view.type === 'toolbox') renderToolbox(); else renderHome(); }
 function tbxToolBadge(k) {
   return (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
-    : (k === 'timer' && timerState.running) ? `<span class="tbx-run js-timer-time">${timerFmt(timerRemaining())}</span>` : '';
+    : (k === 'timer' && timerState.running) ? `<span class="tbx-run js-timer-time">${timerFmt(timerRemaining())}</span>`
+    : (k === 'med' && medState.running) ? `<span class="tbx-run js-med-time">${medFmt(medRemaining())}</span>` : '';
 }
 function tbxTool(k, ic, label, panel) {
   const o = tbxToolOpen(k);
   return `<div class="tbx-tool"><div class="tbx-tool-h" data-tbx-tool="${k}"><span class="hs-chev">${o ? '▾' : '▸'}</span><span class="tbx-ic">${ic}</span><span class="tbx-tt">${label}</span>${tbxToolBadge(k)}</div>${o ? `<div class="tbx-tool-body tbx-${k}">${panel}</div>` : ''}</div>`;
 }
 function tbxToolsHtml() {
-  return `<div class="tbx-tools tbx-page">${tbxTool('focus', '⏱', 'Focus', pomoPanel())}${tbxTool('timer', '⏲', 'Timer', timerPanel())}${tbxTool('tracker', '✓', 'Daily Practices', trackerPanel())}</div>`;
+  return `<div class="tbx-tools tbx-page">${tbxTool('focus', '⏱', 'Focus', pomoPanel())}${tbxTool('timer', '⏲', 'Timer', timerPanel())}${tbxTool('med', '🧘', 'Meditation', medPanel())}${tbxTool('tracker', '✓', 'Daily Practices', trackerPanel())}</div>`;
 }
 // Toolbox is now its own tool (own sidebar button); it no longer lives on Home.
 function openToolbox() { state.view = { type: 'toolbox' }; renderNav(); renderToolbox(); }
@@ -2407,6 +2408,96 @@ function timerSetCustom() {
   timerState.dur = total; timerState.running = false; timerState.endAt = null; timerState.remaining = total; saveTimer(); renderHome();
 }
 if (timerState.running) timerEnsureTicker();
+
+// ── Meditation timer (built for zazen) ───────────────────────────────────
+// A calm sit with a real bell: three gongs to open and to close (the last of the
+// three fuller and longer), and an optional soft bell at intervals. The bell is
+// synthesised - inharmonic partials with a long decay, a keisu rather than a beep.
+let medState = (() => { try { const t = JSON.parse(localStorage.getItem('life.med')); if (t && typeof t.dur === 'number') return { running: false, endAt: null, remaining: t.dur, dur: t.dur, interval: t.interval || 0 }; } catch {} return { running: false, endAt: null, remaining: 1800, dur: 1800, interval: 0 }; })();
+let medFired = new Set();
+function saveMed() { try { localStorage.setItem('life.med', JSON.stringify({ dur: medState.dur, interval: medState.interval })); } catch {} }
+function medRemaining() { return (medState.running && medState.endAt) ? Math.max(0, Math.round((medState.endAt - Date.now()) / 1000)) : medState.remaining; }
+const medFmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+// One struck bell. Inharmonic partials (bell ratios), each decaying at its own
+// rate, plus a brief strike shimmer. Warm, not shrill; `when` schedules ahead.
+let medAudioCtx = null;
+function medCtx() {
+  try { if (!medAudioCtx) medAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (medAudioCtx.state === 'suspended') medAudioCtx.resume().catch(() => {}); } catch {}
+  return medAudioCtx;
+}
+function medBell({ base = 340, gain = 0.5, decay = 6, when = 0 } = {}) {
+  const ctx = medCtx(); if (!ctx) return;
+  const t0 = ctx.currentTime + when;
+  const master = ctx.createGain(); master.connect(ctx.destination); master.gain.setValueAtTime(gain, t0);
+  const partials = [[1.0, 1.0, 1.0], [2.02, 0.62, 0.82], [2.74, 0.42, 0.62], [3.76, 0.28, 0.46], [5.42, 0.18, 0.32], [8.21, 0.1, 0.22]];
+  partials.forEach(([r, amp, dk]) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain(); o.type = 'sine'; o.frequency.value = base * r;
+    o.connect(g); g.connect(master); const d = Math.max(0.4, decay * dk);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(amp, t0 + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+    o.start(t0); o.stop(t0 + d + 0.1);
+  });
+  try { const o2 = ctx.createOscillator(); const g2 = ctx.createGain(); o2.type = 'triangle'; o2.frequency.value = base * 5.4; o2.connect(g2); g2.connect(master); g2.gain.setValueAtTime(0.0001, t0); g2.gain.exponentialRampToValueAtTime(gain * 0.28, t0 + 0.004); g2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28); o2.start(t0); o2.stop(t0 + 0.32); } catch {}
+}
+function medStartGongs() { medBell({ when: 0, base: 340, decay: 6 }); medBell({ when: 2.6, base: 340, decay: 6 }); medBell({ when: 5.2, base: 340, decay: 6.5 }); }
+// The close: three bells, the last lower, fuller and longer - a gentle crescendo.
+function medEndGongs() { medBell({ when: 0, base: 330, decay: 6.5 }); medBell({ when: 2.8, base: 300, gain: 0.55, decay: 8 }); medBell({ when: 6.0, base: 232, gain: 0.66, decay: 13 }); }
+let medTicker = null;
+function medEnsureTicker() {
+  if (medTicker) return;
+  medTicker = setInterval(() => {
+    if (!medState.running) return;
+    const r = medRemaining(); const elapsed = medState.dur - r;
+    document.querySelectorAll('.js-med-time').forEach((el) => { el.textContent = medFmt(r); });
+    if (medState.interval > 0) {
+      const step = medState.interval * 60;
+      for (let m = step; m < medState.dur - 5; m += step) { if (elapsed >= m && !medFired.has(m)) { medFired.add(m); medBell({ base: 360, gain: 0.4, decay: 5 }); } }
+    }
+    if (r <= 0) {
+      medState.running = false; medState.endAt = null; medState.remaining = medState.dur; saveMed(); medReleaseWake();
+      medEndGongs(); toast('🧘 Sit complete'); try { navigator.vibrate && navigator.vibrate([120, 80, 120]); } catch {}
+      if (state.view && state.view.type === 'toolbox') renderToolbox();
+    }
+  }, 250);
+}
+const reMed = () => { if (state.view && state.view.type === 'toolbox') renderToolbox(); };
+// Keep the screen awake through a sit, so it doesn't sleep (and mute the bells)
+// mid-meditation. The lock drops when the tab is hidden, so re-take it on return.
+let medWakeLock = null;
+async function medAcquireWake() { try { if ('wakeLock' in navigator) medWakeLock = await navigator.wakeLock.request('screen'); } catch {} }
+function medReleaseWake() { try { if (medWakeLock) { medWakeLock.release(); medWakeLock = null; } } catch {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && medState.running && !medWakeLock) medAcquireWake(); });
+function medToggle() {
+  if (medState.running) { medState.remaining = medRemaining(); medState.running = false; medState.endAt = null; medReleaseWake(); }
+  else {
+    const fresh = medRemaining() >= medState.dur;
+    if (medRemaining() <= 0) medState.remaining = medState.dur;
+    medState.endAt = Date.now() + medRemaining() * 1000; medState.running = true;
+    medFired = new Set(); medCtx(); medAcquireWake();
+    if (fresh) medStartGongs();
+    medEnsureTicker();
+  }
+  saveMed(); reMed();
+}
+function medReset() { medState.running = false; medState.endAt = null; medState.remaining = medState.dur; medReleaseWake(); saveMed(); reMed(); }
+function medSet(min) { medState.dur = min * 60; medState.running = false; medState.endAt = null; medState.remaining = min * 60; saveMed(); reMed(); }
+function medSetInterval(min) { medState.interval = min; saveMed(); reMed(); }
+function medSetCustom() {
+  const mi = document.getElementById('med-min'); const m = Math.max(1, Math.min(180, Math.floor(Number(mi && mi.value) || 0)));
+  medState.dur = m * 60; medState.running = false; medState.endAt = null; medState.remaining = m * 60; saveMed(); reMed();
+}
+const MED_PRESETS = [15, 30, 40];
+const MED_INTERVALS = [[0, 'Off'], [5, '5 min'], [10, '10 min'], [15, '15 min']];
+function medPanel() {
+  const r = medRemaining(); const running = medState.running; const dur = medState.dur;
+  return `<div class="med ${running ? 'running' : ''}">
+      <div class="med-stage"><div class="med-orb"></div><div class="med-time js-med-time">${medFmt(r)}</div></div>
+      <div class="med-presets">${MED_PRESETS.map((m) => `<button class="med-preset ${dur === m * 60 ? 'on' : ''}" data-med-set="${m}">${m} min</button>`).join('')}<span class="med-custom"><input class="sel med-cnum" id="med-min" type="number" min="1" max="180" inputmode="numeric" value="${Math.round(dur / 60)}" title="Minutes"><button class="ghost med-cset" data-med-custom>Set</button></span></div>
+      <div class="med-interval"><span class="med-int-l">Bell along the way</span><span class="med-int-opts">${MED_INTERVALS.map(([v, l]) => `<button class="med-int ${medState.interval === v ? 'on' : ''}" data-med-interval="${v}">${l}</button>`).join('')}</span></div>
+      <div class="med-ctrls"><button class="add-btn wide med-go" data-med-toggle>${running ? 'Pause' : (r < dur ? 'Resume' : 'Begin')}</button><button class="ghost med-reset" data-med-reset title="Reset">↺</button></div>
+      <div class="med-note">Three bells to open and to close - the last one lower and longer${medState.interval ? `, a soft bell every ${medState.interval} minutes` : ''}. Keep the screen awake for the bells.</div>
+    </div>`;
+}
+if (medState.running) medEnsureTicker();
 
 // ── Daily Practices (shared with the Today tool via `activities`) ─────────
 // The list of practices lives in the shared `activities` model, grouped by lane
@@ -9673,6 +9764,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-timer-reset]')) { timerReset(); return; }
   { const ts = t.closest('[data-timer-set]'); if (ts) { timerSet(Number(ts.dataset.timerSet)); return; } }
   if (t.closest('[data-timer-custom]')) { timerSetCustom(); return; }
+  if (t.closest('[data-med-toggle]')) { medToggle(); return; }
+  if (t.closest('[data-med-reset]')) { medReset(); return; }
+  { const ms = t.closest('[data-med-set]'); if (ms) { medSet(Number(ms.dataset.medSet)); return; } }
+  { const mi = t.closest('[data-med-interval]'); if (mi) { medSetInterval(Number(mi.dataset.medInterval)); return; } }
+  if (t.closest('[data-med-custom]')) { medSetCustom(); return; }
   { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
   { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
