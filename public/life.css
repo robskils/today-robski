@@ -1590,7 +1590,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-hname { flex:1; min-width:0; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .t2-habit.done .t2-hname { color:var(--ink-3); }
 /* ── Tracker dashboard (keep your life alive, by area) ── */
-.t2-sub { margin:-2px 0 14px; font-size:15.5px; color:var(--ink-3); }
+.t2-sub { margin:-2px 0 14px; font-family:'Cormorant Garamond',serif; font-style:italic; font-size:20px; color:var(--ink-3); }
 .trk-intro { margin:2px 0 16px; }
 .trk-newbtn { margin-top:16px; }
 /* A quiet "add a practice" row at the foot of each area card. */
