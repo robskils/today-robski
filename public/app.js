@@ -1043,7 +1043,7 @@ async function signOut() {
   try { for (const k of Object.keys(localStorage)) { if (k === KEY || (k.startsWith('life.') && !SIGNOUT_KEEP.has(k))) localStorage.removeItem(k); } } catch {}
   location.replace('/');
 }
-async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; if (state.view && (state.view.type === 'settings' || state.view.type === 'admin')) (state.view.type === 'admin' ? renderAdmin : renderSettings)(); } catch {} }
+async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; state.giftsLeft = r.giftsLeft; state.giftMonths = r.giftMonths || 6; if (state.view && (state.view.type === 'settings' || state.view.type === 'admin')) (state.view.type === 'admin' ? renderAdmin : renderSettings)(); } catch {} }
 async function cancelInviteAction(code) {
   const inv = (state.invites || []).find((i) => i.code === code);
   const who = inv && inv.email ? inv.email : 'this shareable code';
@@ -1239,19 +1239,25 @@ async function friendRemove(id) { try { state.friends = await api('/api/friends/
 // One dialog behind every entry point (Contacts, Settings, Admin) so there is a
 // single way to do this.
 function inviteToDaybook(prefill) {
-  const owner = !!(state.me && state.me.id === 1);
+  // The one generous move, offered to everyone: 6 months of Premium, free, for up
+  // to ten friends. No plan to pick - a plain invite lands them on Free and they
+  // upgrade themselves if they ever want to. `giftsLeft` is undefined until the
+  // invites list has loaded; treat that as "available" and let the server enforce.
+  const gLeft = state.giftsLeft;
+  const gMonths = state.giftMonths || 6;
+  const canGift = gLeft == null || gLeft > 0;
+  const giftHtml = canGift
+    ? `<label class="inv-gift"><input type="checkbox" id="inv-d-gift"><span>🎁 Give them <b>${gMonths} months of Premium, free</b>${gLeft != null ? ` <em>(${gLeft} of 10 left)</em>` : ''}</span></label>`
+    : `<p class="inv-d-hint">You've given out all 10 of your free ${gMonths}-month gifts - a plain invite still lands them on Free.</p>`;
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box inv-dialog">
     <div class="recur-h">Invite someone to Daybook</div>
-    <p class="recur-p">They get an email with a one-click link. No code to type, nothing to set up first.</p>
+    <p class="recur-p">They get an email with a one-click link. No code to type, no plan to choose, nothing to set up first.</p>
     <label class="inv-f"><span>Their email</span>
       <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
     <label class="inv-f"><span>A note from you <em>optional</em></span>
       <textarea class="ui-dialog-input inv-d-msg" id="inv-d-msg" rows="3" placeholder="Thought you'd like this - it's how I run my day."></textarea></label>
-    ${owner ? `<div class="inv-d-owner">
-      <label class="inv-f"><span>Plan</span><select class="sel" id="inv-d-plan"><option value="byok">Premium · €6</option><option value="managed">Premium Plus · €13</option></select></label>
-      <label class="inv-free"><input type="checkbox" id="inv-d-free"> Free of charge (100% off)</label>
-      <label class="inv-f inv-d-period" id="inv-d-period-wrap" hidden><span>Free for</span><select class="sel" id="inv-d-period"><option value="">No limit</option><option value="3">3 months</option><option value="6">6 months</option><option value="12">1 year</option></select></label></div>` : ''}
+    ${giftHtml}
     <p class="inv-d-hint">No email? Leave it blank and we'll just make you a code to pass on.</p>
     <p class="gate2-err inv-d-err" id="inv-d-err" hidden></p>
     <div class="ui-dialog-btns">
@@ -1265,15 +1271,13 @@ function inviteToDaybook(prefill) {
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
   const syncBtn = () => { ok.textContent = emailIn.value.trim() ? 'Send invitation' : 'Create a code'; };
   const fail = (m) => { errEl.textContent = m; errEl.hidden = false; ok.disabled = false; };
-  // The free-period picker only makes sense on a free-of-charge invite.
-  const freeCb = el.querySelector('#inv-d-free'), periodWrap = el.querySelector('#inv-d-period-wrap');
-  if (freeCb && periodWrap) freeCb.addEventListener('change', () => { periodWrap.hidden = !freeCb.checked; });
   async function send() {
     const email = emailIn.value.trim();
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('That does not look like an email address.');
     errEl.hidden = true; ok.disabled = true;
     const body = { email, message: (el.querySelector('#inv-d-msg').value || '').trim().slice(0, 600) };
-    if (owner) { body.plan = el.querySelector('#inv-d-plan').value; const free = el.querySelector('#inv-d-free').checked; body.free = free ? 1 : 0; if (free) { const m = Number(el.querySelector('#inv-d-period').value); if (m) body.freeMonths = m; } }
+    const giftCb = el.querySelector('#inv-d-gift');
+    if (giftCb && giftCb.checked) body.gift = 1;
     try {
       const r = await api('/api/invites', { method: 'POST', body: JSON.stringify(body) });
       close();
@@ -6669,6 +6673,15 @@ function repeatShort(r) {
   if (c) { const n = Math.max(1, Number(c[1])); return n === 1 ? `Every ${CUSTOM_UNIT[c[2]][0]}` : `Every ${n} ${CUSTOM_UNIT[c[2]][1]}`; }
   return { daily: 'Daily', every3d: 'Every 3 days', weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly', quarterly: 'Every 3 months', halfyearly: 'Every 6 months', yearly: 'Yearly' }[r] || '';
 }
+// The "count from when I tick it" option, phrased as the gap for this period, so
+// it reads as a plain sentence: "A week after I tick it off".
+function repeatFromDoneLabel(r) {
+  const c = CUSTOM_PERIOD.exec(r || '');
+  let gap;
+  if (c) { const n = Math.max(1, Number(c[1])); gap = n === 1 ? `A ${CUSTOM_UNIT[c[2]][0]}` : `${n} ${CUSTOM_UNIT[c[2]][1]}`; }
+  else gap = { daily: 'A day', every3d: '3 days', weekly: 'A week', fortnightly: 'A fortnight', monthly: 'A month', quarterly: '3 months', halfyearly: '6 months', yearly: 'A year' }[r] || 'A while';
+  return `${gap} after I tick it off`;
+}
 const isSnoozed = (t) => !!(t.props && t.props.snooze && t.props.snooze > todayISO());
 function addMonthsUTC(dt, n, day) {
   dt.setUTCDate(1);
@@ -10479,6 +10492,7 @@ document.addEventListener('change', (e) => {
     renderArea(); return;
   }
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
+  if (e.target.matches('[data-repeatfrom-task]')) patchTaskProps(e.target.dataset.repeatfromTask, { repeatFrom: e.target.value === 'done' ? 'done' : null });
   if (e.target.id === 'contact-file' && e.target.files && e.target.files[0]) { importVcf(e.target.files[0]); e.target.value = ''; }
   if (state.contact_open) {
     const cid = state.contact_open.contact.id;
@@ -11035,7 +11049,11 @@ function toggleTask(id) {
   // Completing a repeating task doesn't finish it - it rolls forward to the next
   // occurrence and hides until then (mirrors setTaskDone on the server).
   if (!t.props.done && t.props.repeat) {
-    const next = nextRepeat(t.props.repeat, t.props.kit ? todayISO() : (t.props.snooze || todayISO()));
+    // Two rhythms: anchor on the due date (a fixed calendar - discipline), or on
+    // today (a full gap since you actually did it - relaxed). Keep-in-touch nudges
+    // are always the latter. Mirrors setTaskDone on the server.
+    const fromDone = t.props.kit || t.props.repeatFrom === 'done';
+    const next = nextRepeat(t.props.repeat, fromDone ? todayISO() : (t.props.snooze || todayISO()));
     patchTaskProps(id, { snooze: next, done: false, ...(t.props.kit ? { last: todayISO() } : {}) });
     toast(`Repeats ${repeatShort(t.props.repeat).toLowerCase()} — back ${dpLabel(next)}`);
     return;
@@ -11147,6 +11165,8 @@ function renderTaskCard() {
       <label class="tf-toggle tf-notify"><input type="checkbox" data-surface-hide="${t.id}" ${t.props.hideUntil ? 'checked' : ''}><span>Hide it from my lists until then</span></label>` : ''}
       <label class="tf-field"><span class="tf-label">Repeat</span>
         <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      ${t.props.repeat && !t.props.kit ? `<label class="tf-field"><span class="tf-label">Next one is due<small class="tf-hint">keep to the calendar, or space it out from when you actually do it</small></span>
+        <select class="sel" data-repeatfrom-task="${t.id}"><option value="due" ${(t.props.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${t.props.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(t.props.repeat)}</option></select></label>` : ''}
     </div>
     ${t.sharedBy ? '' : privateToggleHtml('task', t)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}

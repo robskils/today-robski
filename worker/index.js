@@ -1,6 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
-import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
+import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople, isOnline } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
@@ -2313,10 +2313,13 @@ async function setTaskDone(env, id, done) {
     // A keep-in-touch nudge measures from the day you ACTUALLY got in touch, so
     // it anchors on today rather than on the date it fell due. Ticking a monthly
     // one three weeks late means the next is a month from now, not a week away -
-    // otherwise the nudges bunch up behind you and start reading as nagging. Every
-    // other repeating task keeps its calendar: water the plants is due on the day
-    // it's due whenever you got round to the last one.
-    p.snooze = nextRepeatDate(p.repeat, p.kit ? today : (p.snooze || today), today);
+    // otherwise the nudges bunch up behind you and start reading as nagging. An
+    // ordinary task defaults to keeping its calendar (water the plants is due on
+    // the day it's due), but a task can opt into the same "from when I did it"
+    // rhythm with props.repeatFrom === 'done' - sometimes discipline matters,
+    // sometimes spacing does. `toggleTask` in app.js mirrors this.
+    const fromDone = p.kit || p.repeatFrom === 'done';
+    p.snooze = nextRepeatDate(p.repeat, fromDone ? today : (p.snooze || today), today);
     if (p.kit) p.last = today;
     p.done = false;
     slotDone = true;   // today's tick still counts toward the day's ring
@@ -3020,7 +3023,7 @@ export default {
       // all. A member sees only their own and can only grant the free plan.
       if (path === '/api/invites') {
         try {
-          if (request.method === 'GET') return json({ invites: await listInvites(env), admin: env.uid === 1 }, request);
+          if (request.method === 'GET') return json({ invites: await listInvites(env), admin: env.uid === 1, giftsLeft: Math.max(0, GIFT_LIMIT - await giftsUsed(env)), giftLimit: GIFT_LIMIT, giftMonths: 6 }, request);
           if (request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await createInvite(env, b), request, 201); }
         } catch (e) { return err(e.message, request, 400); }
       }

@@ -208,6 +208,18 @@ function randomCode() {
   return s;
 }
 const MEMBER_INVITE_CAP = 5;   // unused invites a non-admin member may hold at once
+// A gift is the whole reel-them-in move: 6 months of Premium, free, that anyone
+// (owner or member) can hand to up to ten friends. It costs us next to nothing -
+// Premium is BYO-key, so there's no AI bill behind it, just the flat hosting we
+// already pay. Nobody chooses a *plan* when they invite any more; a plain invite
+// lands the newcomer on Free and they upgrade themselves if they ever want to.
+const GIFT_MONTHS = 6;         // a gift = this many months of Premium, free
+export const GIFT_LIMIT = 10;  // lifetime gift invites per member
+export async function giftsUsed(env) {
+  const c = await env.DB.prepare('SELECT COUNT(*) AS n FROM invites WHERE created_by = ? AND free = 1 AND free_months = ?')
+    .bind(env.uid, GIFT_MONTHS).first().catch(() => ({ n: 0 }));
+  return c ? (c.n || 0) : 0;
+}
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const joinLink = (code) => `https://daybook.fyi/join/${code}`;
 
@@ -217,31 +229,35 @@ export const joinLink = (code) => `https://daybook.fyi/join/${code}`;
 // still just mints a code to share by hand.
 export async function createInvite(env, input) {
   const admin = env.uid === 1;
-  // Anyone may address an invite to a person - that is how it gets sent. Only the
-  // owner may set a plan or the free (BYO-key) flag; a member's invite always
-  // grants the default free plan.
+  // Nobody picks a *plan* to invite someone - you just invite them, and they land
+  // on Free. The one choice is whether to make it a gift: 6 months of Premium,
+  // free (see GIFT_LIMIT). That's it.
   const email = (String(input.email || '').trim().toLowerCase()) || null;
   if (email && !EMAIL_RE.test(email)) throw new Error('That does not look like an email address.');
   if (email && await getUserByEmail(env, email)) throw new Error(`${email} is already on Daybook.`);
 
   // Inviting the same person twice re-sends their standing invitation rather than
   // leaving two live codes with one name on them. That also means a re-send never
-  // trips the cap: it costs no new invite. Its plan and free flag stay as first
-  // set - changing them is what a fresh code is for.
+  // trips the cap: it costs no new invite. Its gift stands as first set -
+  // changing it is what a fresh code is for.
   const existing = email ? await pendingInvite(env, email) : null;
   if (!admin && !existing) {
     const c = await env.DB.prepare('SELECT COUNT(*) AS n FROM invites WHERE created_by = ? AND used_by IS NULL').bind(env.uid).first().catch(() => ({ n: 0 }));
     if ((c.n || 0) >= MEMBER_INVITE_CAP) throw new Error(`You already have ${MEMBER_INVITE_CAP} invitations open. Wait for one to be accepted before sending more.`);
   }
 
+  const gift = !!input.gift;
+  if (gift && !existing && (await giftsUsed(env)) >= GIFT_LIMIT) {
+    throw new Error(`You've given out all ${GIFT_LIMIT} of your free 6-month gifts.`);
+  }
+
   const code = existing ? existing.code
     : (String(input.code || '').trim() || randomCode()).toUpperCase().slice(0, 24);
   if (!existing) {
-    const plan = admin ? normPlan(input.plan || 'byok') : 'free';
-    const free = admin && input.free ? 1 : 0;
-    // A time-limited free run: 3, 6 or 12 months, or NULL for no limit. Only
-    // meaningful on a free invite.
-    const fm = free ? ([3, 6, 12].includes(Number(input.freeMonths)) ? Number(input.freeMonths) : null) : null;
+    // A gift is Premium (BYO-key), free for GIFT_MONTHS. A plain invite is Free.
+    const plan = gift ? 'byok' : 'free';
+    const free = gift ? 1 : 0;
+    const fm = gift ? GIFT_MONTHS : null;
     const note = admin ? (input.note || null) : null;
     await env.DB.prepare(
       'INSERT INTO invites (code, email, plan, free, free_months, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
