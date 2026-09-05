@@ -4526,18 +4526,9 @@ async function loadToday(day) {
 // Today banner and the Home nudge; safe to call before reviewRem has loaded.
 function reviewsDueToday() {
   const cfg = state.reviewRem; if (!cfg) return [];
-  const now = new Date(); const dow = now.getDay(); const dom = now.getDate(); const month = now.getMonth();
-  const dim = new Date(now.getFullYear(), month + 1, 0).getDate();
-  const todayISO = localISO(now);
-  return RTYPE_ORDER.filter((k) => {
-    const s = cfg[k]; if (!s || !s.on) return false;
-    if (s.snooze && todayISO < s.snooze) return false;   // snoozed - not due yet
-    if (k === 'weekly') return dow === (s.dow || 0);
-    if (k === 'monthly') return dom === Math.min(s.dom || 1, dim);
-    if (k === 'quarterly') return (month % 3 === 0) && dom === Math.min(s.dom || 1, dim);
-    if (k === 'yearly') return month === (s.month || 0) && dom === Math.min(s.day || 1, dim);
-    return false;
-  });
+  const todayISO = localISO(new Date());
+  // Due today if any of that review's reminders lands on or before today.
+  return RTYPE_ORDER.filter((k) => { const s = cfg[k]; return s && Array.isArray(s.reminders) && s.reminders.some((r) => r.at && r.at <= todayISO); });
 }
 function renderToday() {
   const T = state.today; const data = T.data;
@@ -8483,41 +8474,38 @@ function reviewTaskStats(from) {
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
-  const ws = reviewRemOf('weekly');
   const todayISO = localISO(new Date());
-  // The day this week's review lands on: the scheduled weekday, or (no schedule)
-  // last review + 7, or today. A snooze pushes it out.
-  let due;
-  if (ws.on && Number.isInteger(ws.dow)) { const now = new Date(); const add = (ws.dow - now.getDay() + 7) % 7; const nd = new Date(now); nd.setDate(nd.getDate() + add); due = localISO(nd); }
-  else due = nextReviewDue('weekly');
-  const snooze = (ws.snooze && ws.snooze > todayISO) ? ws.snooze : null;
-  const eff = snooze || due || todayISO;
+  // This week's review lands on its soonest reminder, else last review + 7.
+  const eff = nextReviewReminder('weekly') || nextReviewDue('weekly') || todayISO;
   const from = localISO(new Date(new Date(eff + 'T00:00').getTime() - 6 * 86400000));
   const whenHtml = reviewWhenHtml({ rtype: 'weekly', from, to: eff });
   const dueDate = new Date(eff + 'T00:00');
   const dueLbl = dueDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
   const diff = Math.round((dueDate - new Date(todayISO + 'T00:00')) / 86400000);
   const rel = diff < 0 ? `${-diff} day${diff === -1 ? '' : 's'} overdue` : diff === 0 ? 'today' : `in ${diff} day${diff === 1 ? '' : 's'}`;
-  const snoozeCtl = snooze
-    ? `<span class="rv-snooze-cur">💤 Snoozed to ${esc(dpLabel(snooze))}</span><button class="rv-snooze-btn" data-review-snooze="0">Un-snooze</button>`
-    : `<span class="rv-snooze-l">Snooze</span><button class="rv-snooze-btn" data-review-snooze="1">a day</button><button class="rv-snooze-btn" data-review-snooze="3">3 days</button><button class="rv-snooze-btn" data-review-snooze="7">a week</button>`;
   const hero = `<div class="rv-hero">
     <div class="rv-weekcard">
       ${whenHtml}
-      <div class="rv-week-due">${snooze ? '💤' : '📅'} Review lands <b>${esc(dueLbl)}</b> · ${esc(rel)}</div>
+      <div class="rv-week-due">📅 Review lands <b>${esc(dueLbl)}</b> · ${esc(rel)}</div>
       <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>
-      <div class="rv-snooze">${snoozeCtl}</div>
     </div>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
   </div>`;
   const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
   const trendHtml = trend.length >= 2 ? `<section class="home-sec rv-trend-sec"><div class="home-sec-h">Wheel of Life over time</div><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></section>` : '';
+  // Compact, dashboard-y past-review cards, filterable by type.
   const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; return `<button class="rv-card" data-open-review="${r.id}">
-    <div class="rv-card-h"><span class="rv-card-l">${esc(lbl)}</span><span class="rv-card-d">${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span></div>
-    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1 open</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5 wheel</span>` : ''}</div>
+    <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-d">${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span></div>
+    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5</span>` : ''}</div>
   </button>`; };
-  const cards = past.map(card).join('');
-  return `${hero}${trendHtml}${reviewRemindersHtml()}${past.length ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${past.length}</div><div class="rv-cards">${cards}</div></section>` : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>'}`;
+  const filt = state.reviewsFilter || '';
+  const shownPast = filt ? past.filter((r) => (r.props || {}).rtype === filt) : past;
+  const fcounts = {}; past.forEach((r) => { const t = (r.props || {}).rtype || 'weekly'; fcounts[t] = (fcounts[t] || 0) + 1; });
+  const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${past.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
+  const pastSection = past.length
+    ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${past.length}</div>${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div></section>`
+    : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>';
+  return `${hero}${trendHtml}${reviewsListHtml()}${pastSection}`;
 }
 // When is a review of this type next due? The last one of that type + its
 // period. Null if none done yet. Used for the hero line and the reminder subs.
@@ -8529,68 +8517,54 @@ function nextReviewDue(rtype) {
   const nd = new Date(lastTo + 'T00:00'); nd.setDate(nd.getDate() + days);
   return localISO(nd);
 }
-// Review reminders: one per review type, each scheduled to the day YOU choose
-// (weekly on Sunday, say). Click a card to open its settings. On the chosen day
-// it reaches you by text + email and shows in Today with a link to the review.
-const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-function reviewRemDefault(k) {
-  return ({ weekly: { on: false, dow: 0 }, monthly: { on: false, dom: 1 }, quarterly: { on: false, dom: 1 }, yearly: { on: false, month: 0, day: 1 } })[k];
-}
-function reviewRemOf(k) { return Object.assign(reviewRemDefault(k), (state.reviewRem || {})[k] || {}); }
-// Human "when" for a schedule, e.g. "every Sunday", "on the 1st of each month".
-function reviewRemWhen(k, s) {
-  if (k === 'weekly') return `every ${DOW_NAMES[s.dow || 0]}`;
-  if (k === 'monthly') return `the ${ordinal(s.dom || 1)} of each month`;
-  if (k === 'quarterly') return `the ${ordinal(s.dom || 1)}, each quarter`;
-  if (k === 'yearly') return `${MONTH_NAMES[s.month || 0]} ${s.day || 1}`;
-  return '';
-}
-function reviewDayPicker(k, s) {
-  if (k === 'weekly') return `<label class="rv-remfield">On <select class="sel" data-rev-dow>${DOW_NAMES.map((d, i) => `<option value="${i}" ${(s.dow || 0) === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>`;
-  const domSel = (attr) => `<select class="sel" ${attr}>${Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}" ${(s.dom || 1) === i + 1 ? 'selected' : ''}>${ordinal(i + 1)}</option>`).join('')}</select>`;
-  if (k === 'monthly') return `<label class="rv-remfield">On the ${domSel('data-rev-dom')}</label>`;
-  if (k === 'quarterly') return `<label class="rv-remfield">First month of each quarter, on the ${domSel('data-rev-dom')}</label>`;
-  if (k === 'yearly') return `<label class="rv-remfield">On <select class="sel" data-rev-month>${MONTH_NAMES.map((mn, i) => `<option value="${i}" ${(s.month || 0) === i ? 'selected' : ''}>${mn}</option>`).join('')}</select> <select class="sel" data-rev-day>${Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}" ${(s.day || 1) === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></label>`;
-  return '';
-}
-function reviewRemindersHtml() {
+// Reviews & their reminders: each review type carries a list of dated reminders,
+// each optionally repeating at the review's cadence. The first defaults to the
+// review's next due day; you can edit the date, add another, or repeat it.
+const REVIEW_CADENCE_WORD = { weekly: 'weekly', monthly: 'monthly', quarterly: 'quarterly', yearly: 'yearly' };
+function reviewRemsOf(k) { const s = (state.reviewRem || {})[k]; return (s && Array.isArray(s.reminders)) ? s.reminders : []; }
+function ensureRemArr(k) { state.reviewRem = state.reviewRem || {}; if (!state.reviewRem[k] || !Array.isArray(state.reviewRem[k].reminders)) state.reviewRem[k] = { reminders: (state.reviewRem[k] && state.reviewRem[k].reminders) || [] }; return state.reviewRem[k].reminders; }
+// Soonest upcoming reminder date for a type (>= today), else the latest one.
+function nextReviewReminder(k) { const t = localISO(new Date()); const ds = reviewRemsOf(k).map((r) => r.at).filter(Boolean).sort(); return ds.find((d) => d >= t) || ds[ds.length - 1] || null; }
+function reviewsListHtml() {
   const open = state.reviewRemEdit;
   const cards = RTYPE_ORDER.map((k) => {
-    const s = reviewRemOf(k); const isOpen = open === k;
-    const sub = s.on ? `On · ${reviewRemWhen(k, s)} · text + email` : 'Off · tap to set up';
+    const rems = reviewRemsOf(k); const isOpen = open === k;
+    const sub = rems.length
+      ? rems.slice().sort((a, b) => String(a.at).localeCompare(String(b.at))).map((r) => `${esc(dpLabel(r.at))}${r.repeat ? ' <span class="rv-rep-i" title="Repeats">↻</span>' : ''}`).join(' · ')
+      : 'No reminder yet · tap to set one';
+    const items = rems.map((r, i) => `<div class="rv-remitem">
+        <input type="date" class="sel rv-remdate" data-rev-remdate="${k}:${i}" value="${esc(r.at)}">
+        <label class="rv-remrep"><input type="checkbox" data-rev-remrepeat="${k}:${i}" ${r.repeat ? 'checked' : ''}><span>Repeat ${REVIEW_CADENCE_WORD[k]}</span></label>
+        <button class="rv-remitem-x" data-rev-remdel="${k}:${i}" title="Remove reminder">×</button>
+      </div>`).join('');
     const editor = isOpen ? `<div class="rv-remedit">
-        <label class="rv-remedit-on"><input type="checkbox" data-rev-rem="${k}" ${s.on ? 'checked' : ''}><span>Remind me for the ${REVIEWS[k].label.toLowerCase()} review</span></label>
-        <div class="rv-remedit-day ${s.on ? '' : 'off'}">${reviewDayPicker(k, s)}</div>
-        <div class="rv-remedit-note">On the day, you'll get a text and email, and it shows in your Today with a link to start the review.</div>
+        ${items}
+        <button class="ghost rv-remadd" data-rev-remadd="${k}">＋ ${rems.length ? 'Add another reminder' : 'Set a reminder'}</button>
+        <div class="rv-remedit-note">On a reminder's day, a text and email nudge you, and it shows in your Today with a link to start it.</div>
       </div>` : '';
-    return `<div class="rv-remcard ${isOpen ? 'open' : ''} ${s.on ? 'is-on' : ''}">
+    return `<div class="rv-remcard ${isOpen ? 'open' : ''} ${rems.length ? 'is-on' : ''}">
       <button class="rv-remhead" data-rev-rem-edit="${k}"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${sub}</small></span><span class="rv-remchev">${isOpen ? '▾' : '▸'}</span></button>
       ${editor}</div>`;
   }).join('');
-  return `<section class="home-sec"><div class="home-sec-h">⏰ Reminders</div>
+  return `<section class="home-sec"><div class="home-sec-h">Reviews</div>
     <div class="rv-remcards">${cards}</div>
-    <p class="rv-rem-note2">Choose the day each review lands on. It reaches you by text and email, and shows in your Today with a link.</p>
+    <p class="rv-rem-note2">Each review can carry one or more reminders. The first defaults to its next due day - edit the date, add another, or let it repeat.</p>
   </section>`;
 }
 function saveReviewRem() {
   api('/api/review-reminders', { method: 'PUT', body: JSON.stringify({ reminders: state.reviewRem || {} }) }).catch((e) => toast(e.message));
 }
 function reReviewRems() { if (state.view.type === 'reviews') renderReviews(); else renderGoals(); }
-function toggleReviewRem(rtype, isOn) {
-  state.reviewRem = state.reviewRem || {};
-  state.reviewRem[rtype] = Object.assign(reviewRemOf(rtype), { on: isOn });
-  saveReviewRem();
-  toast(isOn ? `${REVIEWS[rtype].label} reminder on` : `${REVIEWS[rtype].label} reminder off`);
-  reReviewRems();
+function addReviewReminder(k) {
+  const arr = ensureRemArr(k);
+  const def = nextReviewDue(k) || localISO(new Date());
+  arr.push({ at: def, repeat: true });
+  saveReviewRem(); reReviewRems();
+  toast(`${REVIEWS[k].label} reminder set for ${dpLabel(def)}`);
 }
-function setReviewRemDay(rtype, patch) {
-  state.reviewRem = state.reviewRem || {};
-  state.reviewRem[rtype] = Object.assign(reviewRemOf(rtype), patch);
-  saveReviewRem();
-  reReviewRems();
-}
+function setReviewRemAt(k, i, at) { const arr = ensureRemArr(k); if (arr[i] && at) { arr[i].at = at; saveReviewRem(); reReviewRems(); } }
+function setReviewRemRepeat(k, i, rep) { const arr = ensureRemArr(k); if (arr[i]) { arr[i].repeat = rep; saveReviewRem(); reReviewRems(); } }
+function delReviewReminder(k, i) { const arr = ensureRemArr(k); if (arr[i]) { arr.splice(i, 1); saveReviewRem(); reReviewRems(); } }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
   const { from, to } = reviewPeriod(rtype);
@@ -9995,7 +9969,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemEdit = state.reviewRemEdit === k ? null : k; reReviewRems(); return; }
-  { const rsn = t.closest('[data-review-snooze]'); if (rsn) { const d = +rsn.dataset.reviewSnooze; const w = reviewRemOf('weekly'); if (d > 0) { const nd = new Date(); nd.setDate(nd.getDate() + d); w.snooze = localISO(nd); } else delete w.snooze; state.reviewRem = state.reviewRem || {}; state.reviewRem.weekly = w; saveReviewRem(); toast(d > 0 ? `Review snoozed ${d} day${d > 1 ? 's' : ''}` : 'Review un-snoozed'); reReviewRems(); return; } }
+  { const ra = t.closest('[data-rev-remadd]'); if (ra) { addReviewReminder(ra.dataset.revRemadd); return; } }
+  { const rd = t.closest('[data-rev-remdel]'); if (rd) { const [k, i] = rd.dataset.revRemdel.split(':'); delReviewReminder(k, +i); return; } }
+  { const rf = t.closest('[data-reviews-filter]'); if (rf) { state.reviewsFilter = rf.dataset.reviewsFilter || ''; if (state.view.type === 'reviews') renderReviews(); else renderGoals(); return; } }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R && R.summaryOpen && !R.summaryLoading) { R.summaryOpen = false; renderReviewCard(); } else { reviewDoneSummary(false); } return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
@@ -10443,11 +10419,8 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') renderGoalCard(); else if (k === 'task' && state.view.type === 'taskcard') renderTaskCard(); }); return; }
-  if (e.target.matches('[data-rev-rem]')) { toggleReviewRem(e.target.dataset.revRem, e.target.checked); return; }
-  if (e.target.matches('[data-rev-dow]')) { setReviewRemDay(state.reviewRemEdit, { dow: +e.target.value }); return; }
-  if (e.target.matches('[data-rev-dom]')) { setReviewRemDay(state.reviewRemEdit, { dom: +e.target.value }); return; }
-  if (e.target.matches('[data-rev-month]')) { setReviewRemDay(state.reviewRemEdit, { month: +e.target.value }); return; }
-  if (e.target.matches('[data-rev-day]')) { setReviewRemDay(state.reviewRemEdit, { day: +e.target.value }); return; }
+  if (e.target.matches('[data-rev-remdate]')) { const [k, i] = e.target.dataset.revRemdate.split(':'); setReviewRemAt(k, +i, e.target.value); return; }
+  if (e.target.matches('[data-rev-remrepeat]')) { const [k, i] = e.target.dataset.revRemrepeat.split(':'); setReviewRemRepeat(k, +i, e.target.checked); return; }
   if (e.target.matches('[data-rv-date]')) { const k = e.target.dataset.rvDate; const v = e.target.value; if (v && state.review_open) { patchReview(state.review_open.review.id, { [k]: v }, true); toast('Review dates updated'); } return; }
   if (e.target.matches('[data-goalrev-note]')) { const id = e.target.dataset.goalrevNote; const v = e.target.value; clearTimeout(window.__grnT); window.__grnT = setTimeout(() => { const r = state.review_open && state.review_open.review; if (!r) return; const gr = { ...((r.props || {}).goalReview || {}) }; gr[id] = { ...(gr[id] || {}), note: v }; patchReview(r.id, { goalReview: gr }, true); }, 600); return; }
   if (e.target.matches('[data-area-sec-vis]')) {

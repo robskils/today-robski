@@ -2703,38 +2703,54 @@ async function maybePushMail(env, res) {
   }
 }
 
-// Review reminders: user-set nudges to do a review. Stored in settings under
-// Review reminders fire on the day YOU choose (weekly on Sunday, say), by text +
-// email + push, and surface in Today with a link. Stored in kv_review_reminders
-// as { weekly:{on,dow}, monthly:{on,dom}, quarterly:{on,dom},
-// yearly:{on,month,day}, lastFired:{rtype:'YYYY-MM-DD'} }. lastFired dedups so a
-// day nudges once. reviewRemConfig migrates every older shape into this.
+// Review reminders: per review type, a LIST of dated reminders, each optionally
+// repeating at the review's cadence. Stored in kv_review_reminders as
+// { weekly:{reminders:[{at:'YYYY-MM-DD', repeat:bool}]}, monthly:{...}, ... }.
+// A repeating reminder advances its own `at` to the next occurrence once it
+// fires (self-dedup); a one-off drops after firing. reviewRemConfig migrates
+// every older shape (dated array / {types} / {on,dow,...}) into this.
+const REVIEW_TYPES = ['weekly', 'monthly', 'quarterly', 'yearly'];
 const REVIEW_LABELS = { weekly: 'weekly', monthly: 'monthly', quarterly: 'quarterly', yearly: 'yearly' };
+const REVIEW_DAYS = { weekly: 7, monthly: 30, quarterly: 91, yearly: 365 };
 const clampInt = (n, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(n) || 0)));
-function reviewRemDefaults() {
-  return { weekly: { on: false, dow: 0 }, monthly: { on: false, dom: 1 }, quarterly: { on: false, dom: 1 }, yearly: { on: false, month: 0, day: 1 } };
+const isISODate = (s) => typeof s === 'string' && /^\d{4}-\d\d-\d\d$/.test(s);
+const utcNoon = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d, 12)); };
+const toISO = (d) => d.toISOString().slice(0, 10);
+function advanceReviewDate(at, type) {
+  const d = utcNoon(at);
+  if (type === 'weekly') d.setUTCDate(d.getUTCDate() + 7);
+  else if (type === 'monthly') d.setUTCMonth(d.getUTCMonth() + 1);
+  else if (type === 'quarterly') d.setUTCMonth(d.getUTCMonth() + 3);
+  else d.setUTCFullYear(d.getUTCFullYear() + 1);
+  return toISO(d);
 }
+function reviewRemDefaults() { return { weekly: { reminders: [] }, monthly: { reminders: [] }, quarterly: { reminders: [] }, yearly: { reminders: [] } }; }
 function reviewRemConfig(value) {
   let o; try { o = value ? JSON.parse(value) : null; } catch { o = null; }
   const cfg = reviewRemDefaults();
-  let lastFired = {};
-  if (Array.isArray(o)) {                                   // oldest: [{rtype, at, ...}]
-    for (const r of o) if (r && cfg[r.rtype]) cfg[r.rtype].on = true;
+  const todayISO = toISO(new Date());
+  const nextDow = (dow) => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); d.setUTCDate(d.getUTCDate() + (((dow - d.getUTCDay()) + 7) % 7)); return toISO(d); };
+  const nextDom = (dom, quarterOnly) => { const now = new Date(); let y = now.getUTCFullYear(); let m = now.getUTCMonth(); for (let i = 0; i < 48; i++) { if (!quarterOnly || m % 3 === 0) { const dim = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(Math.min(dom, dim)).padStart(2, '0')}`; if (iso >= todayISO) return iso; } m++; if (m > 11) { m = 0; y++; } } return todayISO; };
+  const nextMonthDay = (month, day) => { const now = new Date(); let y = now.getUTCFullYear(); const dim = new Date(Date.UTC(y, month + 1, 0)).getUTCDate(); let iso = `${y}-${String(month + 1).padStart(2, '0')}-${String(Math.min(day, dim)).padStart(2, '0')}`; if (iso < todayISO) { y++; const dim2 = new Date(Date.UTC(y, month + 1, 0)).getUTCDate(); iso = `${y}-${String(month + 1).padStart(2, '0')}-${String(Math.min(day, dim2)).padStart(2, '0')}`; } return iso; };
+  if (Array.isArray(o)) {                                   // oldest: [{rtype, at, repeat}]
+    for (const r of o) if (r && cfg[r.rtype] && isISODate(r.at)) cfg[r.rtype].reminders.push({ at: r.at, repeat: !!(r.repeat && r.repeat !== 'once') });
   } else if (o && typeof o === 'object') {
-    lastFired = (o.lastFired && typeof o.lastFired === 'object') ? o.lastFired : {};
-    if (Array.isArray(o.types)) for (const t of o.types) if (cfg[t]) cfg[t].on = true;   // last shape: {types:[...]}
-    for (const rt of Object.keys(cfg)) {
-      const s = o[rt];
-      if (s && typeof s === 'object') {
-        if ('on' in s) cfg[rt].on = !!s.on;
-        if (rt === 'weekly' && s.dow != null) cfg[rt].dow = clampInt(s.dow, 0, 6);
-        if ((rt === 'monthly' || rt === 'quarterly') && s.dom != null) cfg[rt].dom = clampInt(s.dom, 1, 28);
-        if (rt === 'yearly') { if (s.month != null) cfg[rt].month = clampInt(s.month, 0, 11); if (s.day != null) cfg[rt].day = clampInt(s.day, 1, 28); }
-        if (typeof s.snooze === 'string' && /^\d{4}-\d\d-\d\d$/.test(s.snooze)) cfg[rt].snooze = s.snooze;   // don't nag until this date
+    if (Array.isArray(o.types)) for (const t of o.types) if (cfg[t]) cfg[t].reminders.push({ at: todayISO, repeat: true });
+    for (const rt of REVIEW_TYPES) {
+      const s = o[rt]; if (!s || typeof s !== 'object') continue;
+      if (Array.isArray(s.reminders)) {                     // current shape
+        for (const r of s.reminders) if (r && isISODate(r.at)) cfg[rt].reminders.push({ at: r.at, repeat: !!r.repeat });
+      } else if (s.on) {                                    // prior {on,dow,...} shape
+        let at = todayISO;
+        if (rt === 'weekly') at = nextDow(clampInt(s.dow, 0, 6));
+        else if (rt === 'monthly') at = nextDom(clampInt(s.dom || 1, 1, 28), false);
+        else if (rt === 'quarterly') at = nextDom(clampInt(s.dom || 1, 1, 28), true);
+        else if (rt === 'yearly') at = nextMonthDay(clampInt(s.month || 0, 0, 11), clampInt(s.day || 1, 1, 28));
+        cfg[rt].reminders.push({ at, repeat: true });
       }
     }
   }
-  return { cfg, lastFired };
+  return { cfg };
 }
 async function maybeReviewReminders(env) {
   for (const u of await activeUsers(env)) {
@@ -2742,27 +2758,25 @@ async function maybeReviewReminders(env) {
   }
 }
 async function reviewRemindersForUser(env, uid) {
-  const { cfg, lastFired } = reviewRemConfig(await getSetting(env, 'kv_review_reminders', uid));
-  if (!['weekly', 'monthly', 'quarterly', 'yearly'].some((k) => cfg[k].on)) return;
+  const { cfg } = reviewRemConfig(await getSetting(env, 'kv_review_reminders', uid));
+  if (!REVIEW_TYPES.some((k) => (cfg[k].reminders || []).length)) return;
   const parts = localParts(new Date(), TZ);
   if (parts.min < 525) return;              // fire from 08:45 Lisbon, never at midnight
   const today = parts.date;                 // YYYY-MM-DD (Lisbon)
-  const [Y, M, D] = today.split('-').map(Number);
-  const jsDate = new Date(Date.UTC(Y, M - 1, D, 12));
-  const dow = jsDate.getUTCDay();           // 0=Sun
-  const month = M - 1; const dim = new Date(Date.UTC(Y, M, 0)).getUTCDate();
 
   const due = [];
   let changed = false;
-  for (const rt of ['weekly', 'monthly', 'quarterly', 'yearly']) {
-    const s = cfg[rt]; if (!s.on) continue;
-    if (s.snooze && today < s.snooze) continue;   // snoozed - hold off until then
-    let isDue = false;
-    if (rt === 'weekly') isDue = dow === s.dow;
-    else if (rt === 'monthly') isDue = D === Math.min(s.dom, dim);
-    else if (rt === 'quarterly') isDue = (month % 3 === 0) && D === Math.min(s.dom, dim);
-    else if (rt === 'yearly') isDue = month === s.month && D === Math.min(s.day, dim);
-    if (isDue && lastFired[rt] !== today) { due.push(rt); lastFired[rt] = today; changed = true; }
+  for (const rt of REVIEW_TYPES) {
+    const kept = [];
+    let hit = false;
+    for (const rem of cfg[rt].reminders) {
+      if (today >= rem.at) {
+        hit = true;
+        if (rem.repeat) { let a = advanceReviewDate(rem.at, rt); let guard = 0; while (a <= today && guard++ < 400) a = advanceReviewDate(a, rt); kept.push({ at: a, repeat: true }); }
+        // one-off: drop it
+      } else kept.push(rem);
+    }
+    if (hit) { due.push(rt); cfg[rt].reminders = kept; changed = true; }
   }
   if (due.length) {
     const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
@@ -2777,7 +2791,7 @@ async function reviewRemindersForUser(env, uid) {
       if (to) await sendReviewMail(env, { to, label, home }).catch(() => {});
     }
   }
-  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify({ ...cfg, lastFired }), uid);
+  if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify(cfg), uid);
 }
 
 // Portfolio history: on the every-minute tick, only actually fetch prices when
@@ -3254,12 +3268,10 @@ export default {
       if (path === '/api/review-summary' && request.method === 'POST') return reviewSummary(request, env, json, err);
       if (path === '/api/review-reminders') {
         if (request.method === 'PUT') {
-          // Take the incoming schedule through the same normaliser (clamps days,
-          // coerces flags), then keep the server-owned lastFired stamps.
+          // Normalise the incoming per-type reminder lists (drops bad dates).
           const b = await request.json().catch(() => ({}));
-          const cur = reviewRemConfig(await getSetting(env, 'kv_review_reminders'));
           const incoming = reviewRemConfig(JSON.stringify(b.reminders || {})).cfg;
-          await setSetting(env, 'kv_review_reminders', JSON.stringify({ ...incoming, lastFired: cur.lastFired }));
+          await setSetting(env, 'kv_review_reminders', JSON.stringify(incoming));
           return json({ ok: true, reminders: incoming }, request);
         }
         return json({ reminders: reviewRemConfig(await getSetting(env, 'kv_review_reminders')).cfg }, request);
