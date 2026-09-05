@@ -207,17 +207,28 @@ button { cursor:pointer; background:none; border:0; }
 /* Goals page: main column (per-area vision + goals) beside a bucket-list box. */
 .goals-layout { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
 @media (max-width:900px){ .goals-layout { grid-template-columns:1fr; } }
-.goal-area { margin:0 0 22px; padding-left:14px; border-left:3px solid hsl(var(--h,220) 55% 55%); }
-.goal-area-h { display:flex; align-items:center; gap:9px; margin:0 0 10px; }
-.goal-area-h .cd { width:11px; height:11px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
-.goal-area-name { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; color:var(--ink); flex:1; min-width:0; }
+/* An area's Vision → Goals as one connected flow: a tinted panel, the vision on
+   top, a labelled connector, then the goals working towards it. */
+.goal-area { margin:0 0 20px; padding:16px 18px 18px; border-radius:16px; background:color-mix(in srgb,hsl(var(--h,220) 55% 55%) 5%,var(--card)); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); }
+.goal-area-h { display:flex; align-items:center; gap:9px; margin:0 0 12px; }
+.goal-area-h .cd { width:12px; height:12px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
+.goal-area-name { font-family:'Cormorant Garamond',serif; font-size:25px; font-weight:600; color:var(--ink); flex:1; min-width:0; }
 .goal-area-add { flex:none; padding:5px 12px; font-size:13px; border-radius:999px; }
-.gv-card { margin:0 0 12px; padding:13px 16px; }
+.ga-step-l { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.09em; font-weight:700; color:hsl(var(--h,220) 42% 46%); margin:0 0 7px 2px; }
+.gv-card { margin:0; padding:14px 16px; background:var(--card); }
 .gv-card .vc-text { font-size:15px; }
-.goal-area-empty { color:var(--ink-3); font-size:14px; padding:2px 0 4px; }
+/* The connector between vision and goals - a hairline with a small centred label. */
+.ga-flow { display:flex; align-items:center; gap:12px; margin:14px 2px 12px; }
+.ga-flow::before, .ga-flow::after { content:''; height:1px; flex:1; background:linear-gradient(to right,transparent,color-mix(in srgb,hsl(var(--h,220) 55% 55%) 40%,transparent),transparent); }
+.ga-flow-l { flex:none; font-size:11.5px; font-style:italic; color:hsl(var(--h,220) 40% 48%); }
+.goal-area-empty { color:var(--ink-3); font-size:14px; padding:2px 0; }
 .goals-side { position:sticky; top:96px; }
 .goals-side-box { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:14px 16px; }
-.gsb-h { display:flex; align-items:center; justify-content:space-between; font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:10px; }
+.goals-side-box.collapsed { padding:12px 16px; }
+.goals-side-box.collapsed .gsb-h { margin-bottom:0; }
+.gsb-h { display:flex; align-items:center; gap:8px; justify-content:flex-start; font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:10px; cursor:pointer; }
+.gsb-h .acw-chev { font-size:13px; color:var(--ink-3); flex:none; }
+.gsb-h > span:not(.acw-chev) { flex:1; }
 .gsb-add { flex:none; width:30px; height:30px; border-radius:8px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:18px; line-height:1; }
 .gsb-add:hover { border-color:var(--accent); color:var(--accent); }
 .gsb-empty { color:var(--ink-3); font-size:14px; padding:6px 0; }

@@ -3625,7 +3625,7 @@ function areaMembersHtml(area) {
   const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
   const body = cards.length ? `<div class="mem-row">${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
-  return `<section class="home-sec area-members"><div class="home-sec-h">Members${cards.length ? ` · ${cards.length}` : ''}</div>${body}</section>`;
+  return `<section class="home-sec area-members"><div class="home-sec-h">Shared with${cards.length ? ` · ${cards.length}` : ''}</div>${body}</section>`;
 }
 const areaWallOpen = () => { try { return localStorage.getItem('life.area.wall') !== '0'; } catch { return true; } };
 // A shared free-text wall for the area, saved on the area block so members with
@@ -7857,8 +7857,9 @@ function goalsByAreaBody() {
     const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${(p.vision || '').trim() ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
     return `<section class="goal-area" style="--h:${hueOf(a)}">
       <div class="goal-area-h"><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span><button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button></div>
-      ${vision}
-      ${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals here yet.</div>'}
+      <div class="ga-step"><span class="ga-step-l">Vision</span>${vision}</div>
+      <div class="ga-flow"><span class="ga-flow-l">${goals.length ? 'Working towards it' : 'Goals'}</span></div>
+      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>
     </section>`;
   }).join('');
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
@@ -7867,11 +7868,16 @@ function goalsByAreaBody() {
     ${areaSections}${noAreaSec}
     ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
 }
-// Bucket list: its own box, off to the side of Goals.
+// Bucket list: its own box, off to the side of Goals - collapsed by default so
+// those someday-ideas aren't front and centre every time (Robin's call).
+const bucketBoxOpen = () => { try { return localStorage.getItem('life.goals.bucket') === '1'; } catch { return false; } };
 function bucketSideBox() {
   const items = state.bucket || [];
-  const inner = items.length ? `<div class="bucket-grid bucket-side">${items.map(bucketCard).join('')}</div>` : '<div class="gsb-empty">Nothing yet - what do you want to do before you die?</div>';
-  return `<div class="goals-side-box"><div class="gsb-h"><span>Bucket list</span><button class="gsb-add" data-new-bucket title="Add to bucket list">+</button></div>${inner}</div>`;
+  const open = bucketBoxOpen();
+  const inner = open ? (items.length ? `<div class="bucket-grid bucket-side">${items.map(bucketCard).join('')}</div>` : '<div class="gsb-empty">Nothing yet - what do you want to do before you die?</div>') : '';
+  return `<div class="goals-side-box ${open ? '' : 'collapsed'}">
+    <div class="gsb-h" data-bucket-toggle role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span>Bucket list${items.length ? ` · ${items.length}` : ''}</span>${open ? '<button class="gsb-add" data-new-bucket title="Add to bucket list">+</button>' : ''}</div>
+    ${inner}</div>`;
 }
 function goalsBody() {
   const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
@@ -9245,6 +9251,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
+  if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   const remd = t.closest('[data-rem-del]'); if (remd) { delReviewReminder(remd.dataset.remDel); return; }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
