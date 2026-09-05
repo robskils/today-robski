@@ -8422,6 +8422,40 @@ function reviewInsight(m) {
   return lines.slice(0, 3);
 }
 async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); }
+// The review's timeframe, shown in relation to NOW rather than as a dry range:
+// a relative headline (This week / Last week / 3 weeks ago), a bar with a "today"
+// marker so you see how far through the period we are, and a plain-English detail.
+function reviewWhenHtml(p) {
+  const from = p.from, to = p.to;
+  if (!from || !to) return '';
+  const DAY = 86400000;
+  const d0 = new Date(from + 'T00:00'), d1 = new Date(to + 'T00:00');
+  const today = new Date(localISO(new Date()) + 'T00:00');
+  const len = Math.max(1, Math.round((d1 - d0) / DAY) + 1);
+  const sinceEnd = Math.round((today - d1) / DAY);      // >0 = ended that many days ago
+  const untilStart = Math.round((d0 - today) / DAY);    // >0 = starts in future
+  const inRange = today >= d0 && today <= d1;
+  const word = { weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' }[p.rtype] || 'period';
+  let rel;
+  if (inRange) rel = `This ${word}`;
+  else if (untilStart > 0) rel = 'Coming up';
+  else if (word === 'week') rel = sinceEnd <= 7 ? 'Last week' : `${Math.round(sinceEnd / 7)} weeks ago`;
+  else if (sinceEnd <= 45) rel = `Last ${word}`;
+  else rel = `${Math.round(sinceEnd / (word === 'year' ? 365 : word === 'quarter' ? 91 : 30))} ${word}s ago`;
+  const pct = Math.max(0, Math.min(100, Math.round((today - d0) / Math.max(DAY, d1 - d0) * 100)));
+  const shortD = (iso) => new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const range = `${shortD(from)} – ${shortD(to)}`;
+  let detail;
+  if (inRange) { const dayIn = Math.round((today - d0) / DAY) + 1; const left = len - dayIn; detail = `Day ${dayIn} of ${len} · ${left > 0 ? `${left} to go` : 'review day'}`; }
+  else if (untilStart > 0) detail = `Starts in ${untilStart} day${untilStart === 1 ? '' : 's'}`;
+  else detail = sinceEnd === 0 ? 'Ended today' : `Ended ${sinceEnd} day${sinceEnd === 1 ? '' : 's'} ago`;
+  const marker = inRange ? `<span class="rv-when-now" style="left:${pct}%"><span class="rv-when-now-lbl">today</span></span>` : '';
+  return `<div class="rv-when ${inRange ? 'live' : 'past'}">
+    <div class="rv-when-head"><span class="rv-when-rel">${esc(rel)}</span><span class="rv-when-range">${esc(range)}</span></div>
+    <div class="rv-when-track"><span class="rv-when-fill" style="width:${pct}%"></span>${marker}</div>
+    <div class="rv-when-detail">${esc(detail)}</div>
+  </div>`;
+}
 // Reviews of the same type, oldest→newest, and where this one sits - so a review
 // card can flip ‹ back / forward › through your run of weeklies (or any type).
 function reviewSiblings(r) {
@@ -8450,13 +8484,13 @@ function renderReviewCard() {
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
     <div class="rv-period">
-      <span class="rv-period-sub">${esc(cfg.sub)}</span>
-      <span class="rv-period-dates">
+      ${reviewWhenHtml(p)}
+      ${R.editDates ? `<div class="rv-period-dates">
         <label class="rv-dt">Start <input type="date" data-rv-date="from" value="${esc(p.from || '')}"></label>
         <span class="rv-dt-dash">→</span>
         <label class="rv-dt">End <input type="date" data-rv-date="to" value="${esc(p.to || '')}"></label>
-      </span>
-      <span class="rv-period-when">Reviewed ${esc(dpLabel(localISO(new Date(r.created_at))))}</span>
+      </div>` : ''}
+      <button class="rv-editdates" data-rv-editdates>${R.editDates ? 'Done' : 'Adjust dates'}</button>
     </div>
 
     <section class="rv-insight">
@@ -9720,6 +9754,7 @@ document.addEventListener('click', (e) => {
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R && R.summaryOpen && !R.summaryLoading) { R.summaryOpen = false; renderReviewCard(); } else { reviewDoneSummary(false); } return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
+  if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
   const whx = t.closest('[data-wheel-hide]'); if (whx) { wheelHide(whx.dataset.wheelHide); return; }

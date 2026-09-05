@@ -569,14 +569,26 @@ button { cursor:pointer; background:none; border:0; }
 .rv-row:hover { background:var(--paper-2); }
 .rv-row-l { font-size:16px; } .rv-row-l b { font-weight:600; }
 .rv-row-m { font-size:13.5px; color:var(--ink-3); white-space:nowrap; }
-.rv-period { display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap; margin:-6px 0 22px; padding:12px 16px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
-.rv-period-sub { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
-.rv-period-dates { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.rv-period { margin:-6px 0 22px; padding:16px 18px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+/* The "where are we, relative to now" timeline. */
+.rv-when-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:11px; }
+.rv-when-rel { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-weight:600; letter-spacing:-.01em; color:var(--ink); }
+.rv-when.past .rv-when-rel { color:var(--ink-2); }
+.rv-when-range { font-size:13.5px; color:var(--ink-3); }
+.rv-when-track { position:relative; height:8px; border-radius:999px; background:var(--paper-2); overflow:visible; }
+.rv-when-fill { position:absolute; left:0; top:0; bottom:0; border-radius:999px; background:color-mix(in srgb,var(--accent) 55%,var(--line-2)); }
+.rv-when.live .rv-when-fill { background:var(--accent); }
+.rv-when-now { position:absolute; top:50%; transform:translate(-50%,-50%); }
+.rv-when-now::before { content:''; display:block; width:14px; height:14px; border-radius:50%; background:var(--accent); border:2.5px solid var(--card); box-shadow:0 1px 4px rgba(0,0,0,.3); }
+.rv-when-now-lbl { position:absolute; top:16px; left:50%; transform:translateX(-50%); font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); white-space:nowrap; }
+.rv-when-detail { margin-top:18px; font-size:13.5px; color:var(--ink-2); }
+.rv-editdates { margin-top:10px; border:0; background:none; padding:0; font-size:12.5px; color:var(--ink-3); cursor:pointer; }
+.rv-editdates:hover { color:var(--accent); }
+.rv-period-dates { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
 .rv-dt { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); }
 .rv-dt input { font:inherit; font-size:14.5px; text-transform:none; letter-spacing:0; color:var(--ink); background:var(--paper); border:1px solid var(--line-2); border-radius:9px; padding:6px 10px; }
 .rv-dt input:focus { border-color:var(--accent); outline:none; }
 .rv-dt-dash { color:var(--ink-3); }
-.rv-period-when { margin-left:auto; font-size:13px; color:var(--ink-3); }
 /* Structured goal review (bigger reviews) */
 .rv-goalreview { margin:22px 0 8px; }
 .gr-group { margin-bottom:18px; }
