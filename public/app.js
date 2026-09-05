@@ -3896,7 +3896,8 @@ function renderArea() {
     ${journals.length ? dashCard('Reflections', journals.slice(0, 4).map((j) => dashItem('data-open-jentry', j.id, j.title || 'Journal entry')).join('')) : ''}
     ${bucket.length ? dashCard('Bucket list', dashChips(bucket.slice(0, 5), (b) => `<span class="adc-chip">${esc(b.title || 'Someday')}</span>`)) : ''}
     ${emails.length ? dashCard('Emails', emails.slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled', '<span class="adc-lead">✉</span>')).join('')) : ''}
-  </div>`;
+  </div>
+  ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}`;
   const panels = {
     'Overview': dash,
     'Vision': visionInner,
