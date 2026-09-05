@@ -3631,9 +3631,9 @@ function renderArea() {
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
-        ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-gear" data-area-color title="Customise this area\'s colour">⚙</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
-      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area overview" title="Overview">▾</button></h1>
-      <p class="area-meta">${notes.length} note${notes.length === 1 ? '' : 's'} · ${tables.length} table${tables.length === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
+        ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-gear" data-area-color title="Area colour">⚙</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
+      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></h1>
+      <p class="area-meta">${notes.length + tables.length} note${(notes.length + tables.length) === 1 ? '' : 's'} &amp; table${(notes.length + tables.length) === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -3641,16 +3641,14 @@ function renderArea() {
     </div>
     ${secHidden('Vision') ? '' : `<section class="home-sec">${areaSecH('Vision', 'Vision')}${areaSecOpen('Vision') ? visionInner : ''}</section>`}
     ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
-    ${secHidden('Shared with') ? '' : areaMembersHtml(area)}
-    ${secHidden('Wall') ? '' : areaWallHtml(area)}
-    ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
-    ${sec('Starred notes', starredNotes.length, `<div class="tbl-cards">${starredNoteCards}</div>`)}
-    ${sec('Notes', otherNotes.length, `<div class="tbl-cards">${noteCards}</div>`)}
-    ${sec('Emails', emails.length, `<div class="tbl-cards">${emailCards}</div>`)}
-    ${sec('Tables', tables.length, `<div class="tbl-cards">${tblCards}</div>`)}
+    ${sec('Notes and tables', starredNotes.length + otherNotes.length + tables.length, `<div class="tbl-cards">${starredNoteCards}${noteCards}${tblCards}</div>`)}
     ${sec('Contacts', contacts.length, `<div class="contact-grid">${contactCards}</div>`)}
     ${sec('Saved links', bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`)}
     ${sec('Reflections', journals.length, `<div class="tbl-cards">${journalCards}</div>`)}
+    ${sec('Emails', emails.length, `<div class="tbl-cards">${emailCards}</div>`)}
+    ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
+    ${secHidden('Shared with') ? '' : areaMembersHtml(area)}
+    ${secHidden('Wall') ? '' : areaWallHtml(area)}
     ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   if (areaOvOpen()) loadThumbs();   // overview attachment thumbnails
@@ -3671,17 +3669,28 @@ function areaOverviewHtml(area, c, blocks) {
   const activity = recent.length ? recent.map(({ b, t }) => `<div class="ov-act"><span class="ov-act-ic">${kIcon[b.kind] || '•'}</span><span class="ov-act-t">${esc(b.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(t)}</span></div>`).join('') : '<div class="ov-muted">No recent activity.</div>';
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
-  const AREA_SECS = ['Vision', 'Goals', 'Shared with', 'Wall', 'Bucket list', 'Starred notes', 'Notes', 'Emails', 'Tables', 'Contacts', 'Saved links', 'Reflections', 'Tasks'];
+  const AREA_SECS = ['Vision', 'Goals', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall', 'Tasks'];
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections</span></div>
       <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(k)}</span></label>`).join('')}</div>
       <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this page. Empty sections hide themselves.</div>
     </div>`;
+  // A quiet lead that frames the area: where it's headed (vision), how it's
+  // tracking (goals, sentiment) and who's here (access). Settings, understated.
+  const visionSnip = area.props && area.props.vision ? String(area.props.vision).trim() : '';
+  const sc = Math.min(Number((area.props || {}).wheelScore) || 0, 5);
+  const access = shares == null ? '' : (shares.length ? `shared with ${shares.length}` : 'private to you');
+  const leadBits = [`${c.goals} active goal${c.goals === 1 ? '' : 's'}`, sc ? `feeling ${AREA_SENTIMENT[sc].toLowerCase()}` : '', access].filter(Boolean).join(' · ');
+  const lead = `<div class="ov-lead">
+      <div class="ov-lead-t">${visionSnip ? `Working toward <b>“${esc(visionSnip.slice(0, 110))}${visionSnip.length > 110 ? '…' : ''}”</b>` : 'Give this area a vision to steer by'}</div>
+      <div class="ov-lead-s">${esc(leadBits)}</div>
+    </div>`;
   return `<section class="area-ov">
+    ${lead}
     <div class="ov-metrics">${metrics}</div>
     <div class="ov-cols">
-      <div class="ov-block"><div class="ov-h"><span>People</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite to area</button>'}</div><div class="ov-people">${people}</div></div>
+      <div class="ov-block"><div class="ov-h"><span>Who has access</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite</button>'}</div><div class="ov-people">${people}</div></div>
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
     ${sectionsBlock}

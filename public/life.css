@@ -2326,6 +2326,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-ov-toggle:hover { border-color:var(--accent); color:var(--accent); }
 .area-ov-toggle.on { transform:rotate(180deg); border-color:var(--accent); color:var(--accent); }
 .area-ov { margin-top:14px; padding:16px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:16px; }
+.ov-lead { padding-bottom:14px; border-bottom:1px solid var(--line); }
+.ov-lead-t { font-size:16px; line-height:1.5; color:var(--ink-2); }
+.ov-lead-t b { color:var(--ink); font-weight:600; font-style:italic; }
+.ov-lead-s { margin-top:5px; font-size:13px; color:var(--ink-3); text-transform:lowercase; letter-spacing:.01em; }
 .ov-metrics { display:flex; flex-wrap:wrap; gap:8px; }
 .ov-metric { display:inline-flex; align-items:baseline; gap:5px; padding:7px 13px; border-radius:999px; background:var(--paper-2); font-size:13.5px; color:var(--ink-3); }
 .ov-metric b { font-size:16px; color:var(--ink); font-variant-numeric:tabular-nums; }
