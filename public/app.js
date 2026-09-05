@@ -3822,7 +3822,32 @@ function renderArea() {
   // the owner turns them back on from the overview panel's "Sections" manager.
   const hiddenSecs = (area.props && area.props.hiddenSecs) || [];
   const secHidden = (k) => hiddenSecs.includes(k);
-  const sec = (label, n, inner) => (n && !secHidden(label)) ? `<section class="home-sec">${areaSecH(label, label, n)}${areaSecOpen(label) ? inner : ''}</section>` : '';
+  // The area's sections are equal icon tiles; the chosen one expands below (the
+  // pattern Robin liked on the Toolbox + Home). Order fixed and sensible.
+  const notesTotal = starredNotes.length + otherNotes.length + tables.length;
+  const memberCount = (state.area_open.shares && state.area_open.shares.length) || 0;
+  const TILE_META = { 'Vision': '🧭', 'Goals': '🎯', 'Notes and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Reflections': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
+  const panels = {
+    'Vision': visionInner,
+    'Goals': activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>',
+    'Notes and tables': notesTotal ? `<div class="tbl-cards">${starredNoteCards}${noteCards}${tblCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
+    'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',
+    'Contacts': `<div class="contact-grid">${contactCards}</div>`,
+    'Saved links': `<div class="tbl-cards">${bookmarkCards}</div>`,
+    'Reflections': `<div class="tbl-cards">${journalCards}</div>`,
+    'Emails': `<div class="tbl-cards">${emailCards}</div>`,
+    'Bucket list': `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`,
+    'Shared with': areaMembersBody(area),
+    'Wall': areaWallBody(area),
+  };
+  const counts = { 'Vision': null, 'Goals': activeGoals.length, 'Notes and tables': notesTotal, 'Tasks': openTs.length, 'Contacts': contacts.length, 'Saved links': bookmarks.length, 'Reflections': journals.length, 'Emails': emails.length, 'Bucket list': bucket.length, 'Shared with': memberCount || null, 'Wall': null };
+  const CORE = new Set(['Vision', 'Goals', 'Notes and tables', 'Tasks', 'Wall']);
+  const tileOrder = ['Vision', 'Goals', 'Notes and tables', 'Tasks', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall'];
+  const avail = tileOrder.filter((k) => { if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; return CORE.has(k) || counts[k] > 0; });
+  let openTile = state.area_open.tileOpen || (() => { try { return localStorage.getItem('life.area.tileOpen'); } catch { return ''; } })();
+  if (!avail.includes(openTile)) openTile = avail[0] || 'Vision';
+  const areaTilesHtml = `<div class="area-tiles">${avail.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
+    <div class="area-tilepanel"><div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(openTile)}</span></div>${panels[openTile]}</div>`;
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
@@ -3834,17 +3859,7 @@ function renderArea() {
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
       ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
     </div>
-    ${secHidden('Vision') ? '' : `<section class="home-sec">${areaSecH('Vision', 'Vision')}${areaSecOpen('Vision') ? visionInner : ''}</section>`}
-    ${sec('Goals', activeGoals.length, `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>`)}
-    ${sec('Notes and tables', starredNotes.length + otherNotes.length + tables.length, `<div class="tbl-cards">${starredNoteCards}${noteCards}${tblCards}</div>`)}
-    ${sec('Contacts', contacts.length, `<div class="contact-grid">${contactCards}</div>`)}
-    ${sec('Saved links', bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`)}
-    ${sec('Reflections', journals.length, `<div class="tbl-cards">${journalCards}</div>`)}
-    ${sec('Emails', emails.length, `<div class="tbl-cards">${emailCards}</div>`)}
-    ${sec('Bucket list', bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
-    ${secHidden('Shared with') ? '' : areaMembersHtml(area)}
-    ${secHidden('Wall') ? '' : areaWallHtml(area)}
-    ${sec('Tasks', openTs.length, taskTableHtml(openTs, 'No open tasks here.'))}`;
+    ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   if (areaOvOpen()) loadThumbs();   // overview attachment thumbnails
 }
@@ -3917,6 +3932,23 @@ function areaWallHtml(area) {
     <div class="home-sec-h area-wall-h" data-area-wall-toggle role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span>Wall</div>
     ${open ? `<textarea class="home-notepad area-wall-ta" data-area-wall placeholder="A shared space for this area - jot anything, everyone with access can see it.">${esc(wall)}</textarea>` : ''}
   </section>`;
+}
+// Bare bodies of the members / wall sections, for the area-page tile panel.
+function areaMembersBody(area) {
+  const shares = state.area_open && state.area_open.shares;
+  if (shares == null) return '<div class="mem-empty">Loading…</div>';
+  const friends = (state.friends && state.friends.friends) || [];
+  const LIMIT = 8;
+  const cards = shares.map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="mem-card" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''} title="Message ${esc(name)}"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="mem-name">${esc(name)}</span><span class="mem-msg">💬</span></button>`; });
+  const exp = state.area_open.membersExpanded;
+  const shown = exp ? cards : cards.slice(0, LIMIT);
+  const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
+  const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
+  return cards.length ? `<div class="mem-row">${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
+}
+function areaWallBody(area) {
+  const wall = (area.props && area.props.wall) || '';
+  return `<textarea class="home-notepad area-wall-ta" data-area-wall placeholder="A shared space for this area - jot anything, everyone with access can see it.">${esc(wall)}</textarea>`;
 }
 // Area file attachments - same store the vision images use, same handlers as a
 // note's attachments (upload/open/delete/thumbnails), minus the note-only Scan.
@@ -10169,6 +10201,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-note-wall-toggle]')) { try { localStorage.setItem('life.note.wall', noteWallOpen() ? '0' : '1'); } catch {} renderNote(); return; }
   { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
+  { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }

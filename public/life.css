@@ -2512,6 +2512,23 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ac-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 .area-hero { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-bottom:8px; }
+/* Area sections as equal icon tiles + one expanding panel (like Home/Toolbox). */
+.area-tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(108px, 1fr)); gap:10px; margin:14px 0 16px; }
+.area-tile { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; align-items:center; gap:5px; padding:14px 8px 12px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; position:relative; transition:border-color .12s, transform .08s; }
+.area-tile:hover { border-color:var(--line-2); transform:translateY(-1px); }
+.area-tile.on { border-color:var(--c); box-shadow:0 10px 26px -16px color-mix(in srgb,var(--c) 60%,transparent); }
+.at-ic { font-size:21px; line-height:1; }
+.at-l { font-size:12.5px; font-weight:600; color:var(--ink-2); text-align:center; line-height:1.2; }
+.area-tile.on .at-l { color:var(--ink); }
+.at-c { position:absolute; top:7px; right:9px; font-size:11px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 7px; min-width:18px; text-align:center; }
+.area-tile.on .at-c { color:var(--c); background:color-mix(in srgb,var(--c) 14%,var(--card)); }
+.area-tilepanel { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:16px 18px; }
+.atp-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+.atp-t { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:9px; }
+.atp-ic { font-size:17px; }
+/* The vision card + textareas already have their own frames; drop the double border inside the panel. */
+.area-tilepanel .vision-card { box-shadow:none; }
+.area-tilepanel .area-wall-ta { min-height:200px; }
 .area-hero h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(30px,4.5vw,44px); font-weight:500; display:flex; align-items:center; gap:12px; margin-top:4px; }
 .area-hero h1 .ac-dot { width:15px; height:15px; }
 /* The area title is editable in place — click to rename. */
