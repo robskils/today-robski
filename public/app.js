@@ -2562,7 +2562,7 @@ function medPanel() {
       <div class="med-opts">
         ${optRow('Bell', bells)}
         ${optRow('Opening &amp; closing gongs', gongs)}
-        ${optRow('Repeating gong', intervals)}
+        ${optRow('Intermittent gong', intervals)}
         <label class="med-opt med-shimmer"><span class="med-opt-l">Shimmer before the end</span><input type="checkbox" data-med-shimmer ${medState.shimmer ? 'checked' : ''}></label>
       </div>
       <div class="med-ctrls"><button class="add-btn wide med-go" data-med-toggle>${running ? 'Pause' : (r < dur ? 'Resume' : 'Begin')}</button><button class="ghost med-reset" data-med-reset title="Reset">↺</button></div>
@@ -8999,7 +8999,23 @@ function reviewsBody() {
       <div class="rv-week-due">${dueLine}</div>
       ${heroBtn}
     </div>
-    <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
+    <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => {
+      const w = periodWindow(k, todayISO());
+      const pt = periodTitle(k, w.from, w.to);
+      const ex = past.find((r) => (r.props || {}).rtype === k && (r.props || {}).to === w.to);
+      const exProg = ex && (ex.props || {}).status === 'inprogress';
+      const exDone = ex && (ex.props || {}).status === 'done';
+      const hook = { monthly: 'What actually moved this month?', quarterly: 'Score the cycle just gone.', yearly: 'The whole year, in the round.' }[k];
+      const badge = exDone ? '<span class="rv-pt-badge is-done">✓ Filed</span>' : exProg ? '<span class="rv-pt-badge is-prog">● In progress</span>' : '';
+      const cta = exDone ? 'Look back' : exProg ? 'Continue' : 'Start';
+      const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review="${k}"`;
+      return `<button class="rv-ptile rv-pt-${k}" ${attr}>
+        <div class="rv-pt-top"><span class="rv-pt-label rv-l-${k}">${REVIEWS[k].label}</span>${badge}</div>
+        <div class="rv-pt-period">${esc(pt.main)}</div>
+        <div class="rv-pt-hook">${esc(hook)}</div>
+        <div class="rv-pt-cta">${cta} <span class="rv-pt-arrow">→</span></div>
+      </button>`;
+    }).join('')}</div>
   </div>`;
   const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
   const trendHtml = trend.length >= 2 ? `<section class="home-sec rv-trend-sec">${rvSecH('trend', 'Wheel of Life over time')}${rvSecOpen('trend') ? `<div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div>` : ''}</section>` : '';
