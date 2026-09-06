@@ -4735,7 +4735,7 @@ function uiPrompt(message, opts = {}) {
 // while living inside the Life shell. ?embed hides its own header chrome.
 function openToday() { state.view = { type: 'today' }; if (!state.today) state.today = { day: todayISO(), taskPrios: new Set(['P1']) }; renderNav(); return loadToday(); }
 // ── Today: native timed day + practices + tasks + habits ───────────────
-const T2_START = 6, T2_END = 23, T2_PPM = 0.9;   // canvas spans 06:00–23:00
+const T2_START = 6, T2_END = 24, T2_PPM = 0.9;   // canvas spans 06:00 → midnight
 const t2Top = (m) => Math.max(0, Math.round((Math.max(T2_START * 60, Math.min(T2_END * 60, m)) - T2_START * 60) * T2_PPM));
 const t2Height = (T2_END - T2_START) * 60 * T2_PPM + 34;   // + a little foot room so the last block/label isn't clipped
 async function loadToday(day) {
@@ -4896,7 +4896,7 @@ function t2DayHtml() {
   const floating = slots.filter((s) => s.start_min == null);
   const placed = slots.filter((s) => s.start_min != null);
   const hours = [];
-  for (let h = T2_START; h <= T2_END; h++) hours.push(`<div class="t2-hour" style="top:${t2Top(h * 60)}px"><span class="t2-hlab">${String(h).padStart(2, '0')}:00</span></div>`);
+  for (let h = T2_START; h <= T2_END; h++) hours.push(`<div class="t2-hour" style="top:${t2Top(h * 60)}px"><span class="t2-hlab">${String(h % 24).padStart(2, '0')}:00</span></div>`);
   const nowTop = isToday ? (() => { const n = new Date(); return t2Top(n.getHours() * 60 + n.getMinutes()); })() : null;
   // Events already counted as a practice (a slot carries the event id).
   const evSlots = {}; (data.slots || []).forEach((s) => { if (s.event_id) evSlots[String(s.event_id)] = s; });
@@ -4910,8 +4910,15 @@ function t2DayHtml() {
         <div class="t2-evtag">counts as ${esc(act ? act.title : 'a practice')}</div></div>`;
     }
     const match = isToday ? practiceForEvent(e.title) : null;
-    return `<div class="t2-block t2-event" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round((e.duration || 30) * T2_PPM))}px">
-    <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}${match ? `<button class="t2-countbtn" data-t2-count-ev="${e.id}" title="Count this as your ${esc(match.title)} practice">＋ ${esc(match.title)}</button>` : ''}</div></div>`;
+    const evDur = e.duration || ((e.end_min != null && e.end_min > e.start_min) ? e.end_min - e.start_min : 60);
+    // A recurring occurrence isn't dragged/resized here (that would move the whole
+    // series); it stays click-to-edit and delete-with-choice. One-off events get
+    // full direct manipulation on the day.
+    const recur = !!e.recurringId;
+    const dragAttrs = recur ? '' : ` data-t2-drag="event" data-t2-drag-id="${esc(e.id)}" data-t2-drag-label="${esc(e.title || 'Event')}"`;
+    return `<div class="t2-block t2-event t2-evedit" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round(evDur * T2_PPM))}px" data-t2-ev-id="${esc(e.id)}" data-ev-start="${e.start_min}" data-ev-dur="${evDur}"${dragAttrs}>
+    <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle" data-t2-editev="${esc(e.id)}" title="Edit this event">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}${match ? `<button class="t2-countbtn" data-t2-count-ev="${e.id}" title="Count this as your ${esc(match.title)} practice">＋ ${esc(match.title)}</button>` : ''}<button class="t2-x" data-t2-delev="${esc(e.id)}" data-t2-recur="${recur ? 1 : 0}" title="Delete event">×</button></div>
+    ${recur ? '' : '<div class="t2-rz t2-rz-top" data-t2-resize="top"></div><div class="t2-rz t2-rz-bot" data-t2-resize="bot"></div>'}</div>`;
   }).join('');
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
   return `
@@ -5088,6 +5095,7 @@ function t2DragEnd(e) {
   if (d.type === 'prac') t2PlacePractice(d.id, d.dropMin);
   else if (d.type === 'task') t2PlaceTask(d.id, d.dropMin);
   else if (d.type === 'slot') { api('/api/slots/' + d.id, { method: 'PATCH', body: JSON.stringify({ start_min: d.dropMin }) }).then(() => loadToday()).catch((err) => toast(err.message)); }
+  else if (d.type === 'event') { const dur = Number(d.src && d.src.dataset.evDur) || 60; api('/api/events/' + encodeURIComponent(d.id), { method: 'PATCH', body: JSON.stringify({ day: state.today.day, start_min: d.dropMin, duration: dur, allDay: false }) }).then(() => loadToday()).catch((err) => toast(err.message)); }
 }
 document.addEventListener('pointerup', t2DragEnd);
 document.addEventListener('pointercancel', t2DragEnd);
@@ -5097,6 +5105,13 @@ let t2Resize = null;
 document.addEventListener('pointerdown', (e) => {
   if (!state.view || state.view.type !== 'today') return;
   const rz = e.target.closest('[data-t2-resize]'); if (!rz) return;
+  const evBlock = rz.closest('[data-t2-ev-id]');
+  if (evBlock) {
+    e.preventDefault();
+    t2Resize = { evId: evBlock.dataset.t2EvId, edge: rz.dataset.t2Resize, start: Number(evBlock.dataset.evStart) || 0, dur: Number(evBlock.dataset.evDur) || 60, pid: e.pointerId, block: evBlock, canvas: evBlock.closest('.t2-canvas'), moved: false };
+    try { rz.setPointerCapture(e.pointerId); } catch {}
+    return;
+  }
   const block = rz.closest('[data-slot-id]'); if (!block) return;
   const s = (state.today.data && state.today.data.slots || []).find((x) => String(x.id) === String(block.dataset.slotId)); if (!s) return;
   e.preventDefault();
@@ -5118,12 +5133,34 @@ function t2ResizeEnd(e) {
   const rz = t2Resize; if (!rz || (e && e.pointerId !== rz.pid)) return; t2Resize = null;
   if (!rz.moved || rz.newDur == null) return;
   t2SuppressClick = Date.now();
+  if (rz.evId) {
+    api('/api/events/' + encodeURIComponent(rz.evId), { method: 'PATCH', body: JSON.stringify({ day: state.today.day, start_min: rz.newStart, duration: rz.newDur, allDay: false }) }).then(() => loadToday()).catch((err) => toast(err.message));
+    return;
+  }
   const s = (state.today.data.slots || []).find((x) => String(x.id) === String(rz.id));
   if (s) { s.start_min = rz.newStart; s.duration = rz.newDur; }
   api('/api/slots/' + rz.id, { method: 'PATCH', body: JSON.stringify({ start_min: rz.newStart, duration: rz.newDur }) }).then(() => loadToday()).catch((err) => toast(err.message));
 }
 document.addEventListener('pointerup', t2ResizeEnd);
 document.addEventListener('pointercancel', t2ResizeEnd);
+// Delete a calendar event straight from the day canvas (with the this/following
+// choice for a recurring one).
+async function t2DelEvent(id, recur) {
+  let scope = 'single';
+  if (recur) { const choice = await recurDeleteChoice(); if (!choice) return; scope = choice; }
+  else if (!(await uiConfirm('Delete this event?', { title: 'Delete event', okLabel: 'Delete', danger: true }))) return;
+  try { await api('/api/events/' + encodeURIComponent(id) + (scope === 'future' ? '?scope=future' : ''), { method: 'DELETE' }); toast('Event deleted'); loadToday(); }
+  catch (e) { toast(e.message); }
+}
+// Edit an event's details: jump to the Calendar with its editor open (the full
+// editor lives there). Drag/resize/delete happen right here on the day.
+async function t2EditEvent(id) {
+  const todayEv = ((state.today.data && state.today.data.events) || []).find((x) => String(x.id) === String(id));
+  const date = todayEv ? todayEv.date : (state.today && state.today.day);
+  await openCalendar(date);
+  const ev = (state.cal.events || []).find((x) => String(x.id) === String(id)) || todayEv;
+  if (ev) { state.cal.editing = ev; state.cal.selected = ev.date || state.cal.selected; state.cal.adding = false; renderCalendar(); }
+}
 // Click a placed block to open it: a task's popover, or a practice's editor.
 function t2OpenSlot(slotId) {
   const s = (state.today.data.slots || []).find((x) => String(x.id) === String(slotId)); if (!s) return;
@@ -10380,6 +10417,8 @@ document.addEventListener('click', (e) => {
   { const sn = t.closest('[data-t2-slot-notify]'); if (sn) { e.stopPropagation(); t2SlotNotify(sn.dataset.t2SlotNotify); return; } }
   { const ce = t.closest('[data-t2-count-ev]'); if (ce) { e.stopPropagation(); t2CountEvent(ce.dataset.t2CountEv); return; } }
   { const uc = t.closest('[data-t2-uncount]'); if (uc) { e.stopPropagation(); t2UncountEvent(uc.dataset.t2Uncount); return; } }
+  { const dev = t.closest('[data-t2-delev]'); if (dev) { e.stopPropagation(); t2DelEvent(dev.dataset.t2Delev, dev.dataset.t2Recur === '1'); return; } }
+  { const eev = t.closest('[data-t2-editev]'); if (eev) { if (Date.now() - t2SuppressClick < 350) return; e.stopPropagation(); t2EditEvent(eev.dataset.t2Editev); return; } }
   { const ov = t.closest('[data-t2-open-slot]'); if (ov) { const s = (state.today.data.slots || []).find((x) => String(x.id) === String(ov.dataset.t2OpenSlot)); const a = s && (state.practices.activities || []).find((x) => String(x.id) === String(s.activity_id)); if (a && a.video) window.open(a.video, '_blank', 'noopener'); return; } }
   if (t.closest('[data-task-close]')) { closeTaskPopover(); return; }
   if (t.closest('[data-task-save]')) { saveTaskPopover(); return; }

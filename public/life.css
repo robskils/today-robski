@@ -1986,6 +1986,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .t2-rz::after { content:''; position:absolute; left:50%; transform:translateX(-50%); width:26px; height:3px; border-radius:2px; background:transparent; transition:background .12s; }
 .t2-rz-top::after { top:2px; } .t2-rz-bot::after { bottom:2px; }
 .t2-slot:hover .t2-rz::after { background:color-mix(in srgb,var(--ink-3) 55%,transparent); }
+.t2-evedit:hover .t2-rz::after { background:color-mix(in srgb,var(--ink-3) 55%,transparent); }
+.t2-evedit { cursor:pointer; }
+.t2-evedit[data-t2-drag] { cursor:grab; }
+.t2-evedit .t2-btitle { cursor:pointer; }
 .t2-tick { flex:none; width:24px; height:24px; border-radius:7px; border:1.5px solid var(--line-2); background:transparent; color:transparent; font-size:13px; font-weight:700; line-height:1; display:grid; place-items:center; }
 .t2-tick.on { border-color:var(--accent); background:var(--accent); color:var(--accent-ink); }
 .t2-tick.ghost { border-style:dashed; color:var(--ink-3); }

@@ -440,6 +440,7 @@ async function updateEvent(request, env, id) {
     // the field at all - an empty string means the editor cleared it on purpose.
     if (b.notes === undefined && native.p.notes) p.notes = native.p.notes;
     if (b.url === undefined && native.p.url) p.url = native.p.url;
+    if (b.location === undefined && native.p.location) p.location = native.p.location;   // a drag/resize sends only timing - keep the place
     await env.DB.prepare("UPDATE blocks SET title=?, props=?, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
       .bind(title, JSON.stringify(p), new Date().toISOString(), native.id, env.uid).run();
     if (b.area !== undefined) await setEventAreaFor(env, native.id, b.area).catch(() => {});
