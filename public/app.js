@@ -4710,7 +4710,7 @@ function openToday() { state.view = { type: 'today' }; if (!state.today) state.t
 // ── Today: native timed day + practices + tasks + habits ───────────────
 const T2_START = 6, T2_END = 23, T2_PPM = 0.9;   // canvas spans 06:00–23:00
 const t2Top = (m) => Math.max(0, Math.round((Math.max(T2_START * 60, Math.min(T2_END * 60, m)) - T2_START * 60) * T2_PPM));
-const t2Height = (T2_END - T2_START) * 60 * T2_PPM;
+const t2Height = (T2_END - T2_START) * 60 * T2_PPM + 34;   // + a little foot room so the last block/label isn't clipped
 async function loadToday(day) {
   const T = state.today; if (day) T.day = day;
   renderToday();   // paints the shell + a loading day while we fetch
@@ -4888,6 +4888,7 @@ function t2DayHtml() {
   }).join('');
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
   return `
+    <div class="t2-stickytop t2-dayhead"><div class="t2-colh"><h2>The day</h2><span class="t2-daysub">calendar &amp; what you've planned</span></div></div>
     ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
     ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime today</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
     <div class="t2-canvas" style="height:${t2Height}px">
@@ -4950,8 +4951,12 @@ function t2ColHead(name, count, kind, active, open) {
 function t2FilterBar(areas, f, prios, selAttr, prioAttr) {
   return `<div class="t2-filterbar">
     <select class="sel t2-tfilter" ${selAttr}><option value="">All life areas</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
-    <div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" ${prioAttr}="${p}">${p}</button>`).join('')}</div>
+    ${prioAttr ? `<div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" ${prioAttr}="${p}">${p}</button>`).join('')}</div>` : ''}
   </div>`;
+}
+// The trusty P1-P4 toggles, always visible under a column header.
+function t2PrioRow(prios, prioAttr) {
+  return `<div class="t2-prios t2-prios-row">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" ${prioAttr}="${p}">${p}</button>`).join('')}</div>`;
 }
 function t2TasksHtml() {
   const T = state.today; const tasks = T.tasks || [];
@@ -4961,11 +4966,12 @@ function t2TasksHtml() {
   const open = !!T.taskFilterOpen;
   const areaHue = (id) => id ? (hueOf(areas.find((a) => a.id === id)) ?? 220) : 220;
   const shown = tasks.filter((t) => (!f || t.area_id === f) && (!prios.size || prios.has(t.priority)));
-  const filterBar = open ? t2FilterBar(areas, f, prios, 'data-t2-taskfilter', 'data-t2-prio') : '';
+  // Life-area filter hides behind the filter icon; P1-P4 are always on show.
+  const filterBar = open ? t2FilterBar(areas, f, prios, 'data-t2-taskfilter', null) : '';
   const rows = shown.map((t) => `<div class="t2-trow t2-draggable" data-t2-drag="task" data-t2-drag-id="${esc(t.tana_id)}" data-t2-drag-label="${esc(t.title || 'Task')}" title="Drag onto your day to plan it" style="--h:${areaHue(t.area_id)}">
     <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}
   </div>`).join('') || `<div class="t2-emptycol">${tasks.length ? 'None match the filter.' : 'Nothing to plan.'}</div>`;
-  return `<div class="t2-scroll t2-colscroll">${t2ColHead('Tasks', shown.length, 'task', (f ? 1 : 0) + prios.size, open)}${filterBar}</div>
+  return `<div class="t2-scroll t2-colscroll">${t2ColHead('Tasks', shown.length, 'task', (f ? 1 : 0), open)}${t2PrioRow(prios, 'data-t2-prio')}${filterBar}</div>
       <div class="t2-tlist t2-list">${rows}</div>
     </div>
     <form class="t2-newrow t2-taskadd" data-t2-taskadd><input id="t2-newtask" placeholder="＋ New task…" autocomplete="off"></form>`;
