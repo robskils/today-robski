@@ -1641,14 +1641,14 @@ async function runSurfaceAlertsForUser(env, user) {
     const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
     if (phone) {
       const body = due.length === 1
-        ? `Surfacing on your Daybook today: ${titles[0]}.`
-        : `${due.length} items surface on your Daybook today: ${titles.slice(0, 5).join('; ')}${due.length > 5 ? '…' : ''}.`;
+        ? `A task surfaced to your Today feed - you asked to be told: ${titles[0]}. ${home}/task/${due[0].id}`
+        : `${due.length} tasks surfaced to your Today feed - you asked to be told: ${titles.slice(0, 5).join('; ')}${due.length > 5 ? '…' : ''}. ${home}/today`;
       await sendSms(env, body, phone).catch(() => {});
     }
   }
   if (emailOn) {
     const to = uid === 1 ? (env.BRIEF_EMAIL || user.email) : user.email;
-    if (to) await sendSurfaceMail(env, { to, day: today, titles, home }).catch(() => {});
+    if (to) await sendSurfaceMail(env, { to, tasks: due.map((d) => ({ id: d.id, title: d.title })), home }).catch(() => {});
   }
 
   // Mark each as told for this surfacing. Re-snoozing to a new date resets it
@@ -1702,20 +1702,23 @@ function brandedSystemEmail({ home, eyebrow, headline, bodyHtml, ctaHref, ctaLab
 </body></html>`;
 }
 
-// One email listing what surfaced today, in the house style (see brandedSystemEmail).
-async function sendSurfaceMail(env, { to, day, titles, home }) {
-  const subject = titles.length === 1
-    ? `Back on your Home: ${titles[0]}`
-    : `${titles.length} items are back on your Daybook`;
+// One email for the tasks that surfaced today, in the house style. Each task
+// deep-links to its own card (${home}/task/<id>); a single surfacing opens
+// straight to the task. `tasks` is [{id, title}].
+async function sendSurfaceMail(env, { to, tasks, home }) {
+  const one = tasks.length === 1;
+  const subject = one ? `Surfaced to your Today: ${tasks[0].title}` : `${tasks.length} tasks surfaced to your Today`;
   const INK = '#1c1812', RULE = '#e0d9cc';
-  const items = titles.map((t) => `<tr><td style="padding:11px 0;border-top:1px solid ${RULE};font-size:17px;line-height:1.45;color:${INK}">${escHtml(t)}</td></tr>`).join('');
-  const bodyHtml = `<p style="margin:0 0 6px">You asked to be reminded - these are back on your Home today:</p>
+  const link = (id) => `${home}/task/${id}`;
+  const items = tasks.map((t) => `<tr><td style="padding:11px 0;border-top:1px solid ${RULE};font-size:17px;line-height:1.45"><a href="${link(t.id)}" style="color:${INK};text-decoration:none">${escHtml(t.title)}</a></td></tr>`).join('');
+  const bodyHtml = `<p style="margin:0 0 6px">The date you set has arrived, so ${one ? 'this task is' : 'these tasks are'} back in play - ${one ? "it's" : "they're"} surfaced to your <b>Today</b> feed. You asked to be told:</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 0">${items}</table>`;
   const html = brandedSystemEmail({
-    home, eyebrow: 'A gentle nudge', headline: titles.length === 1 ? 'Back on your Home' : `${titles.length} back on your Home`,
-    bodyHtml, ctaHref: home, ctaLabel: 'Open Daybook', preheader: titles.slice(0, 3).join(' · '), title: subject,
+    home, eyebrow: 'You asked to be told', headline: one ? 'A task just surfaced' : `${tasks.length} tasks just surfaced`,
+    bodyHtml, ctaHref: one ? link(tasks[0].id) : `${home}/today`, ctaLabel: one ? 'Open the task' : 'See them in Today',
+    preheader: tasks.slice(0, 3).map((t) => t.title).join(' · '), title: subject,
   });
-  const text = `Back on your Home today:\n\n${titles.map((t) => `- ${t}`).join('\n')}\n\nOpen ${home}\n\nFor a life well lived.`;
+  const text = `${one ? 'A task has' : tasks.length + ' tasks have'} surfaced to your Today feed - you asked to be told:\n\n${tasks.map((t) => `- ${t.title}  ${link(t.id)}`).join('\n')}\n\nFor a life well lived.`;
   await sendSystemMail(env, { to, subject, html, text });
 }
 
@@ -2968,9 +2971,10 @@ export default {
       if (isLife && /^\/today(\/|$)/.test(path)) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin), request)));
       }
-      // The Life app is a single page; its in-app routes (/calendar, /mail) must
-      // serve the app shell so a pinned home-screen icon can deep-link into one.
-      if (path === '/' || (isLife && /^\/(calendar|mail)(\/|$)/.test(path))) {
+      // The Life app is a single page; its in-app routes must serve the app shell
+      // so a link or a pinned icon can deep-link straight into one (e.g. a surface
+      // alert emails ${sub}.daybook.fyi/task/<id> to open that task).
+      if (path === '/' || (isLife && /^\/(calendar|mail|task|tasks|goals|journal|dreams|saved|read|reviews|areas|contacts|financial|toolbox)(\/|$)/.test(path))) {
         const file = isLife ? '/app.html' : '/index.html';
         return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
       }

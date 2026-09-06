@@ -12610,6 +12610,7 @@ async function onbConnectGmail() {
     else if (route === '/dreams') { await openJournal(); if (state.journal) { state.journal.picking = true; renderJournalList(); } }
     else if (route === '/goals') await openGoals();
     else if (route === '/today') await openToday();
+    else if (route.startsWith('/task/')) { const id = route.slice(6); history.replaceState(null, '', '/'); await openTaskCard(id).catch(() => openHome()); }
     else if (route === '/tasks') { if (new URLSearchParams(location.search).get('p1') === '1') openP1Tasks(); else await openTasks(); }
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
