@@ -4009,14 +4009,17 @@ function privateToggleHtml(kind, block) {
 // and a private switch. Replaces the bare "Keep this private" toggle.
 function blockVisibilityHtml(kind, block, viewers) {
   const priv = !!(block.props && block.props.private);
+  // Notes/tasks/tables/areas can be shared with a person directly; goals (and the
+  // like) get their audience only from the life area they're filed under.
+  const shareable = kind === 'task' || kind === 'note' || kind === 'table' || kind === 'area';
   const meInit = esc(initial(firstName() || 'You'));
   const list = priv ? [] : (viewers || []);
   const faces = list.slice(0, 14).map((v) => `<span class="tf-face" title="${esc(v.name)}${v.via === 'area' ? ' - via a shared life area' : ''}">${esc(initial(v.name || '?'))}</span>`).join('');
-  const shareBtnInline = `<button class="tf-vis-share" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}">${list.length ? 'Manage' : '＋ Share'}</button>`;
+  const shareBtnInline = shareable ? `<button class="tf-vis-share" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}">${list.length ? 'Manage' : '＋ Share'}</button>` : '';
   let note;
   if (priv) note = 'Private - only you can see this, even inside a shared life area.';
-  else if (!list.length) note = "Only you can see this. Share it, or file it under a life area you've shared.";
-  else { const n = list.length; const viaArea = list.some((v) => v.via === 'area'); note = `${n} ${n === 1 ? 'person' : 'people'} can see this${viaArea ? ' - through its life area and any direct shares' : ''}.`; }
+  else if (!list.length) note = shareable ? "Only you can see this. Share it, or file it under a life area you've shared." : "Only you can see this. File it under a life area you've shared for others to see it.";
+  else { const n = list.length; const viaArea = list.some((v) => v.via === 'area'); note = `${n} ${n === 1 ? 'person' : 'people'} can see this${viaArea ? (shareable ? ' - through its life area and any direct shares' : ' - through its life area') : ''}.`; }
   const open = tfCardOpen('visible');
   const body = `<div class="tfs-cardbody">
     <div class="tf-vis-row">
@@ -8753,6 +8756,8 @@ async function openGoalCard(id) {
   state.goal_open = { goal: g, tasks, allTasks: all, notes, allNotes: allNotes || [], areaQuery: '', noteQuery: '' };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
+  // Who can see this goal (via its shared life area). Owner only.
+  if (!g.sharedBy) api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {});
 }
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
@@ -8795,7 +8800,7 @@ function renderGoalCard() {
         ? `<div class="tf-field"><span class="tf-label">By when</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
         : `<label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>`}
     </div>
-    ${g.sharedBy ? '' : privateToggleHtml('goal', g)}
+    ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     <div class="goal-measure-block">${typeBody}</div>
     ${p.gtype !== 'achievement' ? `<div class="goal-actions-sec">
       <div class="tf-label gt-loose-h">Tasks<span class="gt-hint">real tasks to move this forward - they show up in Tasks &amp; Today too</span></div>
@@ -11295,7 +11300,7 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-surface-hide]')) { patchTaskProps(e.target.dataset.surfaceHide, { hideUntil: e.target.checked }); if (state.view.type === 'tasks') renderTasks(); }
-  if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') renderGoalCard(); else if (k === 'task' && state.view.type === 'taskcard') { renderTaskCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {}); } }); return; }
+  if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') { renderGoalCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {}); } else if (k === 'task' && state.view.type === 'taskcard') { renderTaskCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {}); } }); return; }
   if (e.target.matches('[data-rev-cad-on]')) { toggleReviewCad(e.target.dataset.revCadOn, e.target.checked); return; }
   if (e.target.matches('[data-rv-date]')) { const k = e.target.dataset.rvDate; const v = e.target.value; if (v && state.review_open) { patchReview(state.review_open.review.id, { [k]: v }, true); toast('Review dates updated'); } return; }
   if (e.target.matches('[data-goalrev-note]')) { const id = e.target.dataset.goalrevNote; const v = e.target.value; clearTimeout(window.__grnT); window.__grnT = setTimeout(() => { const r = state.review_open && state.review_open.review; if (!r) return; const gr = { ...((r.props || {}).goalReview || {}) }; gr[id] = { ...(gr[id] || {}), note: v }; patchReview(r.id, { goalReview: gr }, true); }, 600); return; }
