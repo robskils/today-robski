@@ -9692,6 +9692,44 @@ function reviewPullQuote(p, r) {
   const pick = sentences.sort((a, b) => b.length - a.length)[0] || texts.sort((a, b) => b.length - a.length)[0].slice(0, 170);
   return pick.replace(/[."'\s]+$/, '');
 }
+// The few things to take in at a glance - scannable one-liners, most salient
+// first, each linked where it can be. The fast read before the fuller one.
+function reviewKeyPoints(m, p, r) {
+  const period = PERIOD_WORD[p.rtype] || 'period';
+  const nm = (id) => { const a = areaById(id); return a ? a.title : null; };
+  const nmLink = (id) => { const a = areaById(id); return a ? `<button class="rvi-link" data-open-area="${id}">${esc(a.title)}</button>` : esc('an area'); };
+  const pts = [];
+  const done = m.tasksDone || [];
+  const byArea = {}; done.forEach((t) => { if (t.area && nm(t.area)) byArea[t.area] = (byArea[t.area] || 0) + 1; });
+  const ranked = Object.entries(byArea).sort((a, b) => b[1] - a[1]);
+  // Volume vs last time.
+  const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
+  const prevDone = prev ? (prev.tasksDone != null ? prev.tasksDone : ((prev.mirror || {}).tasksDone || []).length) : null;
+  if (done.length) { const d = prevDone != null ? done.length - prevDone : null; pts.push(['✓', `<b>${done.length}</b> ticked off${ranked[0] ? `, most in ${nmLink(ranked[0][0])}` : ''}${d ? ` <span class="rr-key-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)} vs last ${period}</span>` : ''}`]); }
+  // Wheel mover vs last time.
+  if (p.wheel && prev && prev.wheel) {
+    const deltas = [];
+    for (const aid of Object.keys(p.wheel)) { const now = Math.min(p.wheel[aid] || 0, 5), was = Math.min(prev.wheel[aid] || 0, 5); if (now && was && now !== was && nm(aid)) deltas.push({ aid, d: now - was, now }); }
+    deltas.sort((a, b) => b.d - a.d);
+    if (deltas[0] && deltas[0].d > 0) pts.push(['📈', `${nmLink(deltas[0].aid)} is up to <b>${deltas[0].now}/5</b>`]);
+    const dn = deltas[deltas.length - 1];
+    if (dn && dn.d < 0) pts.push(['📉', `${nmLink(dn.aid)} slipped to <b>${dn.now}/5</b>`]);
+  }
+  const pk = (m.practices || []).reduce((a, x) => a + x.count, 0);
+  if (pk) pts.push(['🔥', `<b>${pk}</b> practice${pk > 1 ? 's' : ''} kept going`]);
+  const gm = done.filter((t) => t.goal).length;
+  if (gm) pts.push(['🎯', `<b>${gm}</b> moved a goal forward`]);
+  const quietIds = (m.quietAreas || []).filter((id) => nm(id));
+  if (quietIds.length) pts.push(['🌥', `Quiet in ${quietIds.slice(0, 2).map(nmLink).join(', ')}`]);
+  if ((m.openP1 || []).length) pts.push(['⚑', `<b>${m.openP1.length}</b> P1 still open`]);
+  const s = reviewSentiment(p, r);
+  if (s && pts.length < 5) pts.push([s.emoji, `The mood: <b>${esc(s.label)}</b>`]);
+  return pts.slice(0, 5);
+}
+function reviewKeyPointsHtml(m, p, r) {
+  const pts = reviewKeyPoints(m, p, r); if (!pts.length) return '';
+  return `<div class="rr-keys"><div class="rr-keys-h">Key things to know</div><ul class="rr-keys-list">${pts.map(([ic, h]) => `<li><span class="rr-key-ic">${ic}</span><span class="rr-key-t">${h}</span></li>`).join('')}</ul></div>`;
+}
 function reviewSentimentHtml(p, r) {
   const s = reviewSentiment(p, r); if (!s) return '';
   return `<div class="rv-sentiment"><span class="rv-sent-emoji">${s.emoji}</span><span class="rv-sent-body"><span class="rv-sent-l">The mood: ${s.label}</span><span class="rv-sent-note">${esc(s.note)}</span></span></div>`;
@@ -9780,6 +9818,7 @@ function renderReviewReport() {
       <p class="rr-standfirst">${standfirst}</p>
       ${sent ? `<div class="rr-byline"><span class="rr-byline-emoji">${sent.emoji}</span> The mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
       ${figsHtml}
+      ${reviewKeyPointsHtml(m, p, r)}
       ${feature}
       ${rrSec('read', '✦ The read', `<div class="rr-article">${readHtml}</div>`)}
       ${quote ? `<blockquote class="rr-quote">“${esc(quote)}”<cite>- your own words</cite></blockquote>` : ''}

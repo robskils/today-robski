@@ -833,6 +833,15 @@ button { cursor:pointer; background:none; border:0; }
 .rr-feature-tag { display:block; font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--c); }
 .rr-feature-t { display:block; font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; line-height:1.2; color:var(--ink); margin:4px 0 2px; }
 .rr-feature-sub { font-size:13px; color:var(--ink-3); }
+/* Key things - the fast scannable read, high in the report. */
+.rr-keys { margin:20px 0; padding:16px 20px; border-radius:16px; background:color-mix(in srgb,hsl(var(--h,40) 45% 50%) 8%,var(--card)); border:1px solid color-mix(in srgb,hsl(var(--h,40) 45% 50%) 24%,var(--line)); }
+.rr-keys-h { font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:hsl(var(--h,40) 45% 42%); margin-bottom:10px; }
+.rr-keys-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+.rr-keys-list li { display:flex; align-items:baseline; gap:11px; font-size:16.5px; line-height:1.4; color:var(--ink); }
+.rr-key-ic { flex:none; font-size:16px; width:22px; text-align:center; }
+.rr-key-t b { font-weight:600; }
+.rr-key-d { font-size:12.5px; font-weight:700; white-space:nowrap; }
+.rr-key-d.up { color:var(--done); } .rr-key-d.down { color:var(--ink-3); }
 .rr-article { margin:6px 0 4px; }
 .rr-article .rr-read p { font-size:17px; line-height:1.66; }
 .rr-article .rr-read p:first-child::first-letter { font-family:'Cormorant Garamond',serif; font-size:52px; font-weight:600; float:left; line-height:.8; padding:6px 10px 0 0; color:var(--c); }
