@@ -9355,7 +9355,7 @@ function reviewInsight(m, p) {
   if (!lines.length) lines.push(`A quiet ${period} on the record. What would make the next one feel good?`);
   return lines.slice(0, 5);
 }
-async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); }
+async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); maybeAutoReadReview(); }
 // The review's timeframe, shown in relation to NOW rather than as a dry range:
 // a relative headline (This week / Last week / 3 weeks ago), a bar with a "today"
 // marker so you see how far through the period we are, and a plain-English detail.
@@ -9503,12 +9503,12 @@ function renderReviewCard() {
 
     <section class="rv-mirror">
       ${rvSecH('record', 'What you did')}
-      ${rvSecOpen('record') ? `<div class="rv-stats">
-        ${(m.tasksDone || []).length ? `<button class="rv-stat good rv-stat-btn ${R.summaryOpen ? 'on' : ''}" data-rv-summary title="List everything you ticked off"><b>${(m.tasksDone || []).length}</b> ticked off <span class="rv-stat-spark">${R.summaryOpen ? '▾' : '▸'}</span></button>` : pill('ticked off', 0, 'good')}
+      ${rvSecOpen('record') ? `${(m.tasksDone || []).length ? `<div class="rv-didbig"><b>${(m.tasksDone || []).length}</b> ticked off this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>` : '<div class="rv-didbig rv-didnone">Nothing ticked off on the record this time.</div>'}
+      <div class="rv-stats">
         ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<button class="rv-stat good rv-stat-btn" data-open-today title="Open your practices"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button>` : ''}
         ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
       </div>
-      ${R.summaryOpen ? `<div class="rv-summary">${reviewDoneCards(m)}</div>` : ''}
+      ${(m.tasksDone || []).length ? `<div class="rv-summary rv-didlist">${reviewDoneCards(m)}</div>` : ''}
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
       ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}` : ''}
     </section>
@@ -9518,9 +9518,11 @@ function renderReviewCard() {
       ${rvSecOpen('read') ? `<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>
       ${p.doneSummary
         ? `<div class="rv-summary rv-summary-open"><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">A deeper read, written from your record by Claude. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div></div>`
-        : R.summaryLoading
-          ? `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`
-          : `<div class="rv-analyse-cta"><button class="add-btn wide rv-analyse-btn" data-rv-analyse>✦ Go deeper with AI</button><span class="rv-finish-hint">An honest read of where your effort actually went, the momentum, and one steer for the ${periodWord} ahead.</span></div>`}` : ''}
+        : (!!(state.account && state.account.aiOff))
+          ? `<p class="rv-read-note">Turn on AI in Settings for a deeper, written read of your ${periodWord}.</p>`
+          : R.summaryFailed
+            ? `<div class="rv-analyse-cta"><button class="add-btn wide rv-analyse-btn" data-rv-analyse>✦ Get the deeper read</button><span class="rv-finish-hint">Where your effort actually went, the momentum, and one steer for the ${periodWord} ahead.</span></div>`
+            : `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`}` : ''}
     </section>
 
     <section class="rv-byarea">
@@ -9674,18 +9676,31 @@ function buildReviewSummaryPayload(r) {
 }
 // Click "ticked off" for a manager-to-CEO brief of what got done. Generated once
 // and cached on the review (props.doneSummary); "Rewrite" forces a fresh one.
-async function reviewDoneSummary(force) {
+async function reviewDoneSummary(force, auto) {
   const R = state.review_open; if (!R) return; const r = R.review; const p = r.props || {};
   if (!force && p.doneSummary) { renderReviewCard(); return; }
-  R.summaryLoading = true; renderReviewCard();
+  if (R.summaryLoading) return;                    // already in flight (e.g. auto)
+  R.summaryLoading = true; R.summaryFailed = false; renderReviewCard();
   try {
     const { summary } = await api('/api/review-summary', { method: 'POST', body: JSON.stringify(buildReviewSummaryPayload(r)) });
     R.summaryLoading = false;
     patchReview(r.id, { doneSummary: summary }, true);   // persist + updates r.props
     renderReviewCard();
   } catch (e) {
-    R.summaryLoading = false; toast(e.message); renderReviewCard();
+    // On auto-run, fail quietly to a manual button (no key, quota, etc.) rather
+    // than throwing a toast at someone who never asked for it.
+    R.summaryLoading = false; R.summaryFailed = true;
+    if (!auto) toast(e.message);
+    renderReviewCard();
   }
+}
+// The read writes itself: on opening a review with no summary yet, generate it
+// automatically when AI is on. Cached on the review, so it runs once.
+function maybeAutoReadReview() {
+  const R = state.review_open; if (!R) return; const p = (R.review || {}).props || {};
+  if (p.doneSummary || R.summaryLoading || R.summaryFailed) return;
+  if (state.account && state.account.aiOff) return;
+  reviewDoneSummary(false, true);
 }
 
 // ── vision board ─────────────────────────────────────
