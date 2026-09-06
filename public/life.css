@@ -564,9 +564,8 @@ button { cursor:pointer; background:none; border:0; }
 .rv-remtog input { flex:none; width:20px; height:20px; accent-color:var(--accent); cursor:pointer; }
 .rv-rem-note2 { margin-top:12px; font-size:13.5px; color:var(--ink-3); line-height:1.5; }
 /* Reminder cards: click to open and pick the day it lands. */
-.rv-remcards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; align-items:start; }
-@media (max-width:900px) { .rv-remcards { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (max-width:520px) { .rv-remcards { grid-template-columns:1fr; } }
+.rv-remcards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start; }
+@media (max-width:560px) { .rv-remcards { grid-template-columns:1fr; } }
 .rv-remcard { background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
 .rv-remcard.is-on { border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); }
 .rv-remhead { width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:none; border:0; cursor:pointer; text-align:left; }

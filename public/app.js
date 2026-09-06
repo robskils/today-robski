@@ -9173,8 +9173,9 @@ const dowOrder = () => Array.from({ length: 7 }, (_, i) => (weekStart() + i) % 7
 function reviewCad(k) {
   const s = (state.reviewRem || {})[k] || {};
   const dowDef = k === 'weekly' ? (weekStart() + 6) % 7 : 0;   // weekly defaults to your review day
-  return { on: !!s.on, mode: s.mode || 'end', dow: (s.dow == null ? dowDef : Number(s.dow)), last: s.last || null };
+  return { on: !!s.on, mode: s.mode || 'end', dow: (s.dow == null ? dowDef : Number(s.dow)), last: s.last || null, alertBefore: Math.max(0, Math.min(14, Number(s.alertBefore) || 0)) };
 }
+const alertBeforeLabel = (n) => n === 0 ? 'on the day' : n === 1 ? 'the day before' : `${n} days before`;
 function reviewCadWords(k) {
   const c = reviewCad(k);
   if (!c.on) return 'No reminder yet - tap to set when';
@@ -9243,11 +9244,12 @@ function reviewCadEditor(k, c) {
       when = `<div class="rv-cad-when"><div class="rv-cad-chips">${modeChips}</div></div>${dowRow}`;
     }
   }
+  const alertRow = c.on ? `<div class="rv-cad-when"><span class="rv-cad-l">Alert me</span><div class="rv-cad-chips">${[[0, 'On the day'], [1, 'Day before'], [2, '2 days before'], [3, '3 days before']].map(([v, l]) => `<button class="rv-cad-chip sm ${c.alertBefore === v ? 'on' : ''}" data-rev-cad-alert="${k}:${v}">${l}</button>`).join('')}</div></div>` : '';
   const nx = c.on ? reviewCadNext(k, todayISO()) : null;
   const note = c.on
-    ? `<div class="rv-remedit-note">${nx ? `Next nudge <b>${esc(dpLabel(nx))}</b>. ` : ''}A text and email on the day, plus a link in your Today to start it.</div>`
+    ? `<div class="rv-remedit-note">${nx ? `Due <b>${esc(dpLabel(nx))}</b>, nudge ${esc(alertBeforeLabel(c.alertBefore))}. ` : ''}A text and email${c.alertBefore ? '' : ' on the day'}, plus a link in your Today to start it.</div>`
     : `<div class="rv-remedit-note">Off, so no nudges. You can still start a ${REVIEWS[k].label.toLowerCase()} review any time from the cards above.</div>`;
-  return `<div class="rv-remedit">${onRow}${when}${note}</div>`;
+  return `<div class="rv-remedit">${onRow}${when}${alertRow}${note}</div>`;
 }
 function reviewsListHtml() {
   const open = state.reviewRemEdit; const t0 = todayISO();
@@ -9263,11 +9265,11 @@ function reviewsListHtml() {
     const editor = isOpen ? reviewCadEditor(k, c) : '';
     return `<div class="rv-remcard ${isOpen ? 'open' : ''} ${c.on ? 'is-on' : ''}">
       <button class="rv-remhead" data-rev-rem-edit="${k}"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${esc(reviewCadWords(k))}</small></span><span class="rv-remchev">${isOpen ? '▾' : '▸'}</span></button>
-      <div class="rv-rem-meta"><span class="rv-rem-stat"><b>${done}</b> done</span><span class="rv-rem-dot">·</span>${nextBit}</div>
+      <div class="rv-rem-meta"><span class="rv-rem-stat"><b>${done}</b> done</span><span class="rv-rem-dot">·</span>${nextBit}${c.on && next ? `<span class="rv-rem-dot">·</span><span class="rv-rem-stat rv-rem-muted">alert ${esc(alertBeforeLabel(c.alertBefore))}</span>` : ''}</div>
       ${editor}</div>`;
   }).join('');
-  return `<section class="home-sec"><div class="home-sec-h">Your review cadence</div>
-    <p class="rv-rem-note2">Set the day each review <b>officially</b> lands - every Sunday, the last day of the month, the nearest Saturday to the quarter's end. Do it a little early or late and it still counts as that date. Daybook counts how many you've done and nudges you when the next one is due.</p>
+  return `<section class="home-sec"><div class="home-sec-h">Reviews and cadence</div>
+    <p class="rv-rem-note2">Set the day each review <b>officially</b> lands - every Sunday, the last day of the month, the nearest Saturday to the quarter's end - and when to be alerted (on the day, or a day or two before). Do it a little early or late and it still counts as that date.</p>
     <div class="rv-remcards">${cards}</div>
   </section>`;
 }
@@ -9277,7 +9279,7 @@ function saveReviewRem() {
 function reReviewRems() { if (state.view.type === 'reviews') renderReviews(); else renderGoals(); }
 // Materialise a type's cadence into state (resolving defaults), so a mutation
 // starts from concrete values rather than undefined.
-function ensureCad(k) { state.reviewRem = state.reviewRem || {}; const c = reviewCad(k); state.reviewRem[k] = { on: c.on, mode: c.mode, dow: c.dow, last: c.last }; return state.reviewRem[k]; }
+function ensureCad(k) { state.reviewRem = state.reviewRem || {}; const c = reviewCad(k); state.reviewRem[k] = { on: c.on, mode: c.mode, dow: c.dow, last: c.last, alertBefore: c.alertBefore }; return state.reviewRem[k]; }
 // After any change, mark the current occurrence as already handled so a fresh
 // cadence doesn't fire the very same day you set it - only the next one nudges.
 function reviewCadSettle(k) { const c = state.reviewRem[k]; c.last = c.on ? reviewCadRecent(k, todayISO()) : null; }
@@ -9287,6 +9289,7 @@ function toggleReviewCad(k, on) {
 }
 function setReviewCadDow(k, dow) { const c = ensureCad(k); c.dow = dow; if (k !== 'weekly') c.mode = 'neardow'; c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadMode(k, mode) { const c = ensureCad(k); c.mode = mode; c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
+function setReviewCadAlert(k, n) { const c = ensureCad(k); c.alertBefore = Math.max(0, Math.min(14, n)); c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
   const { from, to } = reviewPeriod(rtype);
@@ -10842,6 +10845,7 @@ document.addEventListener('click', (e) => {
   const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemEdit = state.reviewRemEdit === k ? null : k; reReviewRems(); return; }
   { const cd = t.closest('[data-rev-cad-dow]'); if (cd) { const [k, d] = cd.dataset.revCadDow.split(':'); setReviewCadDow(k, +d); return; } }
   { const cm = t.closest('[data-rev-cad-mode]'); if (cm) { const [k, m] = cm.dataset.revCadMode.split(':'); setReviewCadMode(k, m); return; } }
+  { const ca = t.closest('[data-rev-cad-alert]'); if (ca) { const [k, n] = ca.dataset.revCadAlert.split(':'); setReviewCadAlert(k, +n); return; } }
   { const rf = t.closest('[data-reviews-filter]'); if (rf) { state.reviewsFilter = rf.dataset.reviewsFilter || ''; if (state.view.type === 'reviews') renderReviews(); else renderGoals(); return; } }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R) { R.summaryOpen = !R.summaryOpen; renderReviewCard(); } return; }

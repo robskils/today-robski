@@ -2886,7 +2886,17 @@ function reviewCadRecentW(k, c, todayISO) {
     if (k === 'monthly') { m--; if (m < 0) { m = 11; y--; } } else if (k === 'quarterly') { m -= 3; if (m < 0) { m += 12; y--; } } else y--; }
   return null;
 }
-function reviewRemDefaults() { const o = {}; for (const k of REVIEW_TYPES) o[k] = { on: false, mode: 'end', dow: 0, last: null }; return o; }
+// Next cadence occurrence on-or-after todayISO.
+function reviewCadNextW(k, c, todayISO) {
+  if (!c.on) return null;
+  if (k === 'weekly') { const d = utcNoon(todayISO); d.setUTCDate(d.getUTCDate() + ((c.dow - d.getUTCDay() + 7) % 7)); return toISO(d); }
+  const t = utcNoon(todayISO); let y = t.getUTCFullYear(), m = t.getUTCMonth();
+  for (let i = 0; i < 40; i++) { const occ = toISO(reviewCadOccW(k, c, y, m)); if (occ >= todayISO) return occ;
+    if (k === 'monthly') { m++; if (m > 11) { m = 0; y++; } } else if (k === 'quarterly') { m += 3; if (m > 11) { m -= 12; y++; } } else y++; }
+  return null;
+}
+const shiftISO = (iso, days) => { const d = utcNoon(iso); d.setUTCDate(d.getUTCDate() + days); return toISO(d); };
+function reviewRemDefaults() { const o = {}; for (const k of REVIEW_TYPES) o[k] = { on: false, mode: 'end', dow: 0, last: null, alertBefore: 0 }; return o; }
 function reviewRemConfig(value) {
   let o; try { o = value ? JSON.parse(value) : null; } catch { o = null; }
   const cfg = reviewRemDefaults();
@@ -2898,7 +2908,7 @@ function reviewRemConfig(value) {
     for (const rt of REVIEW_TYPES) {
       const s = o[rt]; if (!s || typeof s !== 'object') continue;
       if ('on' in s && !Array.isArray(s.reminders)) {        // current cadence shape
-        cfg[rt] = { on: !!s.on, mode: mode(s.mode), dow: clampInt(s.dow, 0, 6), last: isISODate(s.last) ? s.last : null };
+        cfg[rt] = { on: !!s.on, mode: mode(s.mode), dow: clampInt(s.dow, 0, 6), last: isISODate(s.last) ? s.last : null, alertBefore: clampInt(s.alertBefore, 0, 14) };
       } else if (Array.isArray(s.reminders) && s.reminders.length) {   // legacy dated reminders
         const first = s.reminders.find((r) => r && isISODate(r.at));
         cfg[rt] = { on: true, mode: 'end', dow: (rt === 'weekly' && first) ? utcNoon(first.at).getUTCDay() : 0, last: null };
@@ -2949,8 +2959,12 @@ async function reviewRemindersForUser(env, uid) {
   let changed = false;
   for (const rt of REVIEW_TYPES) {
     const c = cfg[rt]; if (!c.on) continue;
-    const occ = reviewCadRecentW(rt, c, today);   // most recent occurrence <= today
-    if (occ && occ !== c.last) { due.push(rt); c.last = occ; changed = true; }
+    // Fire at (official date - alertBefore days): the next occurrence whose alert
+    // day has arrived, deduped by the occurrence date so it nudges once.
+    const occ = reviewCadNextW(rt, c, today);
+    if (!occ) continue;
+    const alertDay = shiftISO(occ, -(c.alertBefore || 0));
+    if (today >= alertDay && c.last !== occ) { due.push(rt); c.last = occ; changed = true; }
   }
   if (due.length) {
     const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
@@ -2961,7 +2975,7 @@ async function reviewRemindersForUser(env, uid) {
     for (const rt of due) {
       const label = REVIEW_LABELS[rt] || 'review';
       await pushAll(env, { title: `Your ${label} review is due`, body: 'Open Daybook → Reviews to do it.', type: 'review' }, uid).catch(() => {});
-      if (phone) await sendSms(env, `Your ${label} review is due today - open Daybook to do it.`, phone).catch(() => {});
+      if (phone) await sendSms(env, `Your ${label} review is due - open Daybook to do it.`, phone).catch(() => {});
       if (to) await sendReviewMail(env, { to, label, home }).catch(() => {});
     }
   }
