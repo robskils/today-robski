@@ -9082,6 +9082,37 @@ function reviewTaskStats(from) {
   const quiet = state.areas.filter((a) => !activeAreas.has(a.id));
   return { done, openP1, quiet };
 }
+// The Wheel of Life on the Reviews landing page: a proper circular wheel of the
+// most recent score per life area (denormalised onto each area by setWheel), with
+// a legend and the average over time. Collapsible; prominent, up top.
+function wheelOfLifeHtml() {
+  const areas = (state.areas || []).filter((a) => a && a.title);
+  if (!areas.length) return '';
+  const data = areas.map((a) => ({ a, score: Math.min((a.props && a.props.wheelScore) || 0, 5) }));
+  const scored = data.filter((d) => d.score > 0);
+  const avg = scored.length ? Math.round(scored.reduce((s, d) => s + d.score, 0) / scored.length * 10) / 10 : 0;
+  const head = rvSecH('wol', 'Wheel of Life', avg ? `<span class="wol-avg">${avg}/5 across ${scored.length} area${scored.length === 1 ? '' : 's'}</span>` : '');
+  if (!rvSecOpen('wol')) return `<section class="home-sec wol-sec">${head}</section>`;
+  if (!avg) return `<section class="home-sec wol-sec">${head}<div class="home-empty" style="padding:14px 0">Rate your life areas in a review and your wheel takes shape here.</div></section>`;
+  const N = data.length, cx = 120, cy = 120, R = 100, seg = 2 * Math.PI / N;
+  const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
+  const wedges = data.map((d, i) => {
+    const a0 = -Math.PI / 2 + i * seg, a1 = a0 + seg, large = seg > Math.PI ? 1 : 0;
+    const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`;
+    const track = `<path d="M${cx},${cy} L${P(R, a0)} A${R},${R} 0 ${large} 1 ${P(R, a1)} Z" class="wol-track"/>`;
+    let fill = '';
+    if (d.score > 0) { const rr = R * d.score / 5; fill = `<path d="M${cx},${cy} L${P(rr, a0)} A${rr.toFixed(1)},${rr.toFixed(1)} 0 ${large} 1 ${P(rr, a1)} Z" fill="hsl(${hueOf(d.a)} 58% 55%)" fill-opacity="0.9" stroke="var(--card)" stroke-width="1.5"/>`; }
+    return track + fill;
+  }).join('');
+  const svg = `<svg viewBox="0 0 240 240" class="wol-svg" role="img" aria-label="Wheel of Life">${rings}${wedges}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
+  const legend = data.map((d) => `<button class="wol-leg" data-open-area="${d.a.id}" style="--h:${hueOf(d.a)}"><span class="wol-leg-dot"></span><span class="wol-leg-n">${esc(d.a.title)}</span><span class="wol-leg-s">${d.score || '–'}</span></button>`).join('');
+  const revs = (state.reviews || []).filter((r) => (r.props || {}).wheel && wheelAvg(r.props.wheel) > 0).sort((a, b) => String((a.props && a.props.to) || a.created_at || '').localeCompare(String((b.props && b.props.to) || b.created_at || '')));
+  const trend = revs.slice(-12).map((r) => Math.min(wheelAvg(r.props.wheel), 5));
+  const trendHtml = trend.length >= 2 ? `<div class="wol-trend"><span class="wol-trend-h">Average over time</span><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></div>` : '';
+  return `<section class="home-sec wol-sec">${head}
+    <div class="wol-wrap"><div class="wol-chart">${svg}<div class="wol-center"><b>${avg}</b><small>/5</small></div></div>
+      <div class="wol-side"><div class="wol-legend">${legend}</div>${trendHtml}</div></div></section>`;
+}
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const inProgress = past.filter((r) => (r.props || {}).status === 'inprogress');
@@ -9134,8 +9165,6 @@ function reviewsBody() {
       </button>`;
     }).join('')}</div>
   </div>`;
-  const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
-  const trendHtml = trend.length >= 2 ? `<section class="home-sec rv-trend-sec">${rvSecH('trend', 'Wheel of Life over time')}${rvSecOpen('trend') ? `<div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div>` : ''}</section>` : '';
   // Compact, dashboard-y past-review cards, filterable by type.
   const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
   const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pt = periodTitle(p.rtype, p.from, p.to); const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${shortD(p.from)} – ${shortD(p.to)}` : pt.main) : pt.main; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
@@ -9155,7 +9184,7 @@ function reviewsBody() {
   const pastSection = finished.length
     ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${finished.length}</div>${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div></section>`
     : (inProgress.length ? '' : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>');
-  return `${hero}${inProgressHtml}${pastSection}${trendHtml}${reviewsListHtml()}`;
+  return `${hero}${inProgressHtml}${wheelOfLifeHtml()}${pastSection}${reviewsListHtml()}`;
 }
 // When is a review of this type next due? The last one of that type + its
 // period. Null if none done yet. Used for the hero line and the reminder subs.
@@ -9345,6 +9374,21 @@ function reviewInsight(m, p) {
       ? `You closed <b>${done.length}</b> task${done.length > 1 ? 's' : ''} across <b>${areaCount}</b> areas this ${period}.`
       : `You closed <b>${done.length}</b> task${done.length > 1 ? 's' : ''} this ${period}.`);
   }
+  // What's moving: compare this review's wheel to the last one of the same type -
+  // what's climbing (celebrate it) and what's slipped (a gentle flag). Insight, not
+  // just a number.
+  if (p.wheel && p.to) {
+    const prev = (state.reviews || []).map((r) => r.props || {}).filter((q) => q.rtype === p.rtype && q.wheel && q.to && q.to < p.to).sort((a, b) => String(b.to).localeCompare(String(a.to)))[0];
+    if (prev && prev.wheel) {
+      const deltas = [];
+      for (const aid of Object.keys(p.wheel)) { const now = Math.min(p.wheel[aid] || 0, 5), was = Math.min(prev.wheel[aid] || 0, 5); if (now && was && now !== was && nm(aid)) deltas.push({ aid, d: now - was, now, was }); }
+      deltas.sort((a, b) => b.d - a.d);
+      const up = deltas[0] && deltas[0].d > 0 ? deltas[0] : null;
+      const down = deltas[deltas.length - 1] && deltas[deltas.length - 1].d < 0 ? deltas[deltas.length - 1] : null;
+      if (up) lines.push(`${nmLink(up.aid)} is on the up - <b>${up.now}/5</b>, from ${up.was}. Whatever you're doing there, keep it.`);
+      if (down && (!up || down.aid !== up.aid)) lines.push(`${nmLink(down.aid)} slipped to <b>${down.now}/5</b> (was ${down.was}) - worth a little love?`);
+    }
+  }
   // Concentration: where the effort really pooled.
   if (ranked.length && namedTotal >= 3) {
     const [topId, topN] = ranked[0]; const share = Math.round(topN / namedTotal * 100);
@@ -9360,7 +9404,7 @@ function reviewInsight(m, p) {
   const quietIds = (m.quietAreas || []).filter((id) => nm(id));
   if (quietIds.length) lines.push(`Quiet in ${quietIds.slice(0, 2).map(nmLink).join(', ')}${quietIds.length > 2 ? ` +${quietIds.length - 2}` : ''} - a small step, or let it go for now?`);
   if (!lines.length) lines.push(`A quiet ${period} on the record. What would make the next one feel good?`);
-  return lines.slice(0, 5);
+  return lines.slice(0, 6);
 }
 async function openReviewCard(id) {
   const r = await api(`/api/blocks/${id}`); state.review_open = { review: r, mode: (r.props || {}).status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
@@ -9681,7 +9725,9 @@ function weeklyGoalsGlance() {
       <input class="rvg-note" data-goalrev-note="${esc(g.id)}" value="${esc(note)}" placeholder="A line on how this went this week…" autocomplete="off">
     </div>`;
   }).join('');
-  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">update where each one's at, right here</span></div><div class="rvg-list rvg-goals">${rows}</div></section>`;
+  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'}</div>
+    <p class="rvg-intro">The bar is how far along each goal is. Move it on right here - type the new number (or tick a simple goal done) - and add a line on how it went.</p>
+    <div class="rvg-list rvg-goals">${rows}</div></section>`;
 }
 // Update a goal's current number from inside a review: patch it (debounced) and
 // move its bar/percent live, without a re-render that would drop the input focus.

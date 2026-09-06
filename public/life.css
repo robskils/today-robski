@@ -691,6 +691,7 @@ button { cursor:pointer; background:none; border:0; }
 .rvg-t2:hover { color:var(--accent); }
 .rvg-pct { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .rvg-goal-m { font-size:12.5px; color:var(--ink-3); margin-top:-2px; }
+.rvg-intro { font-size:13.5px; color:var(--ink-3); line-height:1.5; margin:2px 0 12px; }
 /* Editable focus controls: a number goal's current value, or a done tick. */
 .rvg-num { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .rvg-num-l { font-size:13px; color:var(--ink-3); }
@@ -897,6 +898,27 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rv-trend-sec .rv-spark { display:flex; align-items:flex-end; gap:5px; height:64px; padding:8px 2px 0; }
 .rv-bar { flex:1 1 0; min-width:6px; max-width:34px; background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent)); border-radius:4px 4px 0 0; }
 .rv-trend-now { flex:none; align-self:center; font-size:14px; font-weight:600; color:var(--ink-2); margin-left:8px; }
+/* Wheel of Life on the Reviews landing page. */
+.wol-avg { font-size:13.5px; font-weight:500; color:var(--ink-3); text-transform:none; letter-spacing:0; margin-left:8px; }
+.wol-wrap { display:flex; gap:24px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+.wol-chart { position:relative; flex:none; width:240px; max-width:72vw; }
+.wol-svg { width:100%; height:auto; display:block; }
+.wol-ring { fill:none; stroke:var(--line); stroke-width:1; opacity:.6; }
+.wol-track { fill:color-mix(in srgb,var(--ink) 4%,transparent); stroke:var(--card); stroke-width:1; }
+.wol-hub { fill:var(--ink-3); }
+.wol-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+.wol-center b { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:600; color:var(--ink); }
+.wol-center small { display:block; font-size:12px; color:var(--ink-3); margin-top:-4px; }
+.wol-side { flex:1 1 240px; min-width:0; }
+.wol-legend { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:4px 12px; }
+.wol-leg { --h:220; display:flex; align-items:center; gap:8px; background:none; border:0; padding:6px 4px; cursor:pointer; text-align:left; border-radius:8px; }
+.wol-leg:hover { background:var(--paper-2,color-mix(in srgb,var(--ink) 5%,transparent)); }
+.wol-leg-dot { flex:none; width:11px; height:11px; border-radius:50%; background:hsl(var(--h) 58% 55%); }
+.wol-leg-n { flex:1; min-width:0; font-size:14px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wol-leg-s { flex:none; font-size:13.5px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+.wol-trend { margin-top:18px; }
+.wol-trend-h { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+.wol-trend .rv-spark { display:flex; align-items:flex-end; gap:5px; height:56px; padding:8px 2px 0; }
 .rv-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 @media (max-width:640px) { .rv-cards { grid-template-columns:1fr; } }
 .rv-card { text-align:left; padding:11px 13px; border:1px solid var(--line); border-left:3px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; display:flex; flex-direction:column; gap:6px; transition:border-color .12s, transform .08s; }
