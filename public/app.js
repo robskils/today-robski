@@ -8761,20 +8761,33 @@ function reviewsBody() {
   const finished = past.filter((r) => (r.props || {}).status !== 'inprogress');
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
   const todayISO = localISO(new Date());
-  // This week's review lands on its soonest reminder, else last review + 7.
-  const eff = nextReviewReminder('weekly') || nextReviewDue('weekly') || todayISO;
-  // The period the review actually covers: the week just gone, per week-start.
+  // The period the review covers, and its review day = the week's end. The review
+  // is due ON the review day (today, if today is the week-end), NOT next week.
   const win = weeklyWindow(todayISO);
   const whenHtml = reviewWhenHtml({ rtype: 'weekly', from: win.from, to: win.to });
+  // Have we already got a review for this exact week? (in progress or submitted.)
+  const thisWeek = weeklies.find((r) => (r.props || {}).to === win.to);
+  const submittedThisWeek = thisWeek && (thisWeek.props || {}).status === 'done';
+  // Due day: this week's review day, unless it's already submitted - then next week's.
+  const eff = submittedThisWeek ? localISO(new Date(Date.parse(win.to + 'T00:00') + 7 * 86400000)) : win.to;
   const dueDate = new Date(eff + 'T00:00');
   const dueLbl = dueDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
   const diff = Math.round((dueDate - new Date(todayISO + 'T00:00')) / 86400000);
-  const rel = diff < 0 ? `${-diff} day${diff === -1 ? '' : 's'} overdue` : diff === 0 ? 'today' : `in ${diff} day${diff === 1 ? '' : 's'}`;
+  let dueLine;
+  if (submittedThisWeek) dueLine = `📅 Next review lands <b>${esc(dueLbl)}</b> · ${diff === 0 ? 'today' : `in ${diff} day${diff === 1 ? '' : 's'}`}`;
+  else if (diff > 0) dueLine = `📅 Review lands <b>${esc(dueLbl)}</b> · in ${diff} day${diff === 1 ? '' : 's'}`;
+  else if (diff === 0) dueLine = `📅 <b>Today is review day</b> - it's due now`;
+  else dueLine = `📅 <b>Review overdue</b> · ${-diff} day${diff === -1 ? '' : 's'}`;
+  const heroBtn = (thisWeek && !submittedThisWeek)
+    ? `<button class="rv-start-weekly" data-open-review="${thisWeek.id}"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Continue this week's review</b><small>You've started it - pick up where you left off.</small></span><span class="rvw-go">→</span></button>`
+    : submittedThisWeek
+    ? `<button class="rv-start-weekly rv-hero-done" data-open-review="${thisWeek.id}"><span class="rvw-ic">✓</span><span class="rvw-body"><b>This week's review - submitted</b><small>Tap to look back over it.</small></span><span class="rvw-go">→</span></button>`
+    : `<button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>`;
   const hero = `<div class="rv-hero">
     <div class="rv-weekcard">
       ${whenHtml}
-      <div class="rv-week-due">📅 Review lands <b>${esc(dueLbl)}</b> · ${esc(rel)}</div>
-      <button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>
+      <div class="rv-week-due">${dueLine}</div>
+      ${heroBtn}
     </div>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => `<button class="rv-chip" data-start-review="${k}">${REVIEWS[k].label}</button>`).join('')}</div>
   </div>`;
@@ -8862,6 +8875,9 @@ function delReviewReminder(k, i) { const arr = ensureRemArr(k); if (arr[i]) { ar
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
   const { from, to } = reviewPeriod(rtype);
+  // Never mint a second review for the same period - open the existing one instead.
+  const existing = (state.reviews || []).find((r) => (r.props || {}).rtype === rtype && (r.props || {}).to === to);
+  if (existing) { openReviewCard(existing.id); return; }
   const [tasks, mir] = await Promise.all([api('/api/blocks?kind=task'), api(`/api/review-mirror?from=${from}&to=${to}`).catch(() => ({ practices: [], total: 0 }))]);
   state.tasks = notKit(tasks);
   const s = reviewTaskStats(from);

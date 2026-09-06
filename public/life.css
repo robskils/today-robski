@@ -709,6 +709,7 @@ button { cursor:pointer; background:none; border:0; }
 .rv-hero { display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px; margin:6px 0 20px; }
 .rv-weekcard { flex:1 1 380px; min-width:0; border:1px solid var(--line); border-radius:18px; padding:16px 18px; background:var(--card); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; }
 .rv-weekcard .rv-start-weekly { flex:none; box-shadow:none; }
+.rv-start-weekly.rv-hero-done { border-color:color-mix(in srgb,#6f9f4a 45%,var(--line)); background:color-mix(in srgb,#6f9f4a 8%,var(--card)); }
 .rv-week-due { font-size:14.5px; color:var(--ink-2); }
 .rv-week-due b { color:var(--ink); font-weight:600; }
 .rv-snooze { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; }
