@@ -1657,8 +1657,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tfs-row { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:11px 0; border-top:1px solid var(--line); }
 .tfs-l { display:flex; flex-direction:column; gap:2px; font-size:14.5px; font-weight:600; color:var(--ink); }
 .tfs-l .tf-hint { font-weight:400; }
-.tfs-ctrl { flex:none; }
+.tfs-ctrl { flex:none; display:inline-flex; align-items:center; gap:10px; }
 .tfs-ctrl .sel, .tfs-ctrl .date-field { min-width:190px; }
+.tfs-clear { flex:none; }
 .tfs-block { display:flex; flex-direction:column; gap:12px; padding:14px; margin:4px 0; border-radius:12px; background:color-mix(in srgb,var(--accent) 5%,transparent); border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line)); }
 .tfs-toggle { display:flex; align-items:center; gap:10px; font-size:15px; color:var(--ink); cursor:pointer; }
 .tfs-toggle input { flex:none; width:19px; height:19px; accent-color:var(--accent); }

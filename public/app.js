@@ -11932,7 +11932,7 @@ function taskSurfaceHtml(t) {
   const email = p.surfaceEmail == null ? acctEmail : !!p.surfaceEmail;
   const sms = p.surfaceSms == null ? acctSms : !!p.surfaceSms;
   const notify = p.surfaceNotify !== false;
-  const clear = p.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${id}">clear</button>` : '';
+  const clear = p.snooze ? `<button type="button" class="tf-clear tfs-clear" data-clear-snooze="${id}">clear</button>` : '';
   let chanHint = '';
   if (notify && p.snooze) {
     if (!email && !sms) chanHint = 'No channel picked, so nothing will reach you - choose text, email, or both.';
@@ -11940,7 +11940,7 @@ function taskSurfaceHtml(t) {
   }
   return `<section class="tf-surface">
     <div class="tfs-h">Surface &amp; reminders</div>
-    <label class="tfs-row"><span class="tfs-l">Surface on${clear}<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
+    <label class="tfs-row"><span class="tfs-l">Surface on<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${clear}${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
     ${p.snooze ? `<div class="tfs-block">
       <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
       ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${email ? 'on' : ''}" data-surface-ch="email:${id}"><span class="tfs-chip-ic">✉</span> Email</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
