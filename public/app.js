@@ -9261,14 +9261,14 @@ function reviewsBody() {
   // Anything you started but haven't finished sits up top, plainly labelled, so a
   // half-written review is never mistaken for one that vanished.
   const inProgressHtml = inProgress.length
-    ? `<section class="home-sec rv-inprog-sec"><div class="home-sec-h">Pick up where you left off · ${inProgress.length}</div><div class="rv-cards">${inProgress.map(card).join('')}</div></section>`
+    ? `<section class="home-sec rv-inprog-sec">${rvSecH('inprog', `Pick up where you left off · ${inProgress.length}`)}${rvSecOpen('inprog') ? `<div class="rv-cards">${inProgress.map(card).join('')}</div>` : ''}</section>`
     : '';
   const filt = state.reviewsFilter || '';
   const shownPast = filt ? finished.filter((r) => (r.props || {}).rtype === filt) : finished;
   const fcounts = {}; finished.forEach((r) => { const t = (r.props || {}).rtype || 'weekly'; fcounts[t] = (fcounts[t] || 0) + 1; });
   const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${finished.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
   const pastSection = finished.length
-    ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${finished.length}</div>${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div></section>`
+    ? `<section class="home-sec">${rvSecH('past', `Past reviews · ${finished.length}`)}${rvSecOpen('past') ? `${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div>` : ''}</section>`
     : (inProgress.length ? '' : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>');
   return `${hero}${inProgressHtml}${wheelOfLifeHtml()}${pastSection}${reviewsListHtml()}`;
 }
@@ -9393,9 +9393,9 @@ function reviewsListHtml() {
       <div class="rv-rem-meta"><span class="rv-rem-stat"><b>${done}</b> done</span><span class="rv-rem-dot">·</span>${(c.pausedUntil && c.pausedUntil > t0) ? `<span class="rv-rem-stat rv-rem-muted">⏸ paused until ${esc(dpLabel(c.pausedUntil))}</span>` : `${nextBit}<span class="rv-rem-dot">·</span><span class="rv-rem-stat rv-rem-muted">${c.on ? `alert ${esc(alertBeforeLabel(c.alertBefore))}` : 'no alert'}</span>`}</div>
       ${editor}</div>`;
   }).join('');
-  return `<section class="home-sec"><div class="home-sec-h">Reviews and cadence</div>
-    <p class="rv-rem-note2">Set the day each review <b>officially</b> lands - every Sunday, the last day of the month, the nearest Saturday to the quarter's end - and when to be alerted (on the day, or a day or two before). Do it a little early or late and it still counts as that date.</p>
-    <div class="rv-remcards">${cards}</div>
+  return `<section class="home-sec">${rvSecH('cadence', 'Reviews and cadence')}
+    ${rvSecOpen('cadence') ? `<p class="rv-rem-note2">Set the day each review <b>officially</b> lands - every Sunday, the last day of the month, the nearest Saturday to the quarter's end - and when to be alerted (on the day, or a day or two before). Do it a little early or late and it still counts as that date.</p>
+    <div class="rv-remcards">${cards}</div>` : ''}
   </section>`;
 }
 function saveReviewRem() {
@@ -9653,6 +9653,11 @@ function reviewSentimentHtml(p, r) {
 // A submitted review, laid out as a calm, read-only report: the period, the read,
 // the wins showcase, your area scores + notes, goals, and reflections - a document
 // you'd be happy to look back on. "Edit" flips to the working form.
+// A collapsible section in the report (reuses the review-section toggle store).
+function rrSec(key, label, inner) {
+  const open = rvSecOpen(key);
+  return `<section class="rr-sec"><button type="button" class="rr-h rr-collap" data-rvsec="${esc(key)}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span>${label}</span></button>${open ? inner : ''}</section>`;
+}
 function renderReviewReport() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
   const pt = p.to ? periodTitle(p.rtype, p.from, p.to) : { main: cfg.label, range: '' };
@@ -9704,12 +9709,14 @@ function renderReviewReport() {
       ${sent ? `<div class="rr-byline"><span class="rr-byline-emoji">${sent.emoji}</span> The mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
       ${figsHtml}
       ${feature}
-      <div class="rr-article">${readHtml}</div>
-      ${doneN ? `<section class="rr-sec"><h2 class="rr-h">What moved</h2>${reviewWinsHtml(m, p, true)}</section>` : ''}
-      ${wheelRows ? `<section class="rr-sec"><h2 class="rr-h">By life area</h2>${reviewWheelHtml(p)}<div class="rr-areas">${wheelRows}</div></section>` : ''}
-      ${goalRows ? `<section class="rr-sec"><h2 class="rr-h">Goals</h2><div class="rr-areas">${goalRows}</div></section>` : ''}
-      ${(refl.trim() || free) ? `<section class="rr-sec"><h2 class="rr-h">In your words</h2>${refl}${free}</section>` : ''}
-      <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">Everything here is saved - open the editor to change any of it.</span></div>
+      ${rrSec('read', '✦ The read', `<div class="rr-article">${readHtml}</div>`)}
+      ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
+      ${doneN ? rrSec('moved', 'What moved', reviewWinsHtml(m, p, true)) : ''}
+      ${(wheelRows || goalRows || refl.trim() || free) ? rrSec('record', 'The record - your scores &amp; words', `
+        ${wheelRows ? `<div class="rr-recsub">Life areas</div><div class="rr-areas">${wheelRows}</div>` : ''}
+        ${goalRows ? `<div class="rr-recsub">Goals</div><div class="rr-areas">${goalRows}</div>` : ''}
+        ${(refl.trim() || free) ? `<div class="rr-recsub">In your words</div>${refl}${free}` : ''}`) : ''}
+      <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">The scores and words above are the fuel; the report reads them back to you. Open the editor to change any of it.</span></div>
     </article>`;
   loadThumbs();
 }

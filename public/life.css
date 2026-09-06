@@ -825,6 +825,10 @@ button { cursor:pointer; background:none; border:0; }
 .rr-sec { margin:26px 0; padding-top:22px; border-top:1px solid var(--line); }
 .rr-sec:first-of-type { border-top:0; padding-top:0; }
 .rr-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; color:var(--ink); margin:0 0 14px; }
+.rr-h.rr-collap { display:flex; align-items:center; gap:9px; width:100%; background:none; border:0; padding:0; cursor:pointer; text-align:left; }
+.rr-h.rr-collap .acw-chev { font-size:14px; color:var(--ink-3); }
+.rr-recsub { font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin:16px 0 8px; }
+.rr-recsub:first-child { margin-top:2px; }
 .rr-read p { font-size:16.5px; line-height:1.62; color:var(--ink); margin:0 0 12px; }
 .rr-read p:last-child { margin-bottom:0; }
 .rr-wheel { display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin:2px 0 16px; }
