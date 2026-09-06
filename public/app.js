@@ -8829,38 +8829,54 @@ function renderGoalCard() {
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
   const isDone = (p.status || 'active') === 'done';
+  const st = p.status || 'active';
+  const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
   const pctNum = Math.round(goalProgress(g) * 100);
-  const typeBody = gtype === 'number'
-    ? `<label class="tf-field"><span class="tf-label">Where it's at</span><div class="gnum"><input class="sel" id="gc-current" type="number" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="e.g. users"></div></label>
-       <div class="goal-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div><div class="goal-bar-pct">${pctNum}%</div>`
-    : `<div class="goal-doneblock"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? '✓ Achieved' : 'Mark as achieved'}</button><span class="goal-done-note">${isDone ? 'Nicely done.' : 'Just tick it off when you get there.'}</span></div>`;
+  const dueLbl = p.targetDate ? dpLabel(p.targetDate) : ((p.horizon === 'quarter' || p.horizon === 'year') ? horizonDateLabel(p.horizon, horizonTargetDate(p.horizon)) : '');
+  const doneN = gtasks.filter((t) => t.props && t.props.done).length;
+  // Progress front and centre: a number goal shows its bar + an inline "update"
+  // row; a simple goal shows the (liked) Mark-as-achieved button.
+  const progressBlock = gtype === 'number'
+    ? `<div class="gc-prog">
+        <div class="gc-prog-nums"><span class="gc-prog-cur"><b>${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${p.unit ? ` ${esc(p.unit)}` : ''}</span><span class="gc-prog-pct">${pctNum}%</span></div>
+        <div class="goal-bar gc-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div>
+        <div class="gc-prog-edit"><span class="gc-prog-l">Update</span><input class="sel" id="gc-current" type="number" inputmode="decimal" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div>
+      </div>`
+    : `<div class="gc-prog gc-prog-done"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? '✓ Achieved' : 'Mark as achieved'}</button><span class="goal-done-note">${isDone ? 'Nicely done.' : 'Tick it off when you get there.'}</span></div>`;
+  const focusMins = focusMinsFor('goal', g.id);
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
-    <div class="task-focus" style="--h:${hueOf(a)}">
-      <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="Focus this quarter">${p.focus ? '★' : '☆'}</button>
-      <textarea class="note-title" id="goalcard-title" rows="1" placeholder="What do you want to achieve?">${esc(g.title || '')}</textarea>
+    <div class="gc-hero" style="--h:${hueOf(a)}">
+      <div class="gc-hero-top">
+        <div class="gc-chips">${a ? `<button class="gc-areachip" data-open-area="${a.id}"><span class="cd"></span>${esc(a.title)}</button>` : ''}<span class="gc-status s-${st}">${esc(stLabel)}</span>${dueLbl ? `<span class="gc-due">🎯 by ${esc(dueLbl)}</span>` : ''}</div>
+        <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="Focus this quarter">${p.focus ? '★' : '☆'}</button>
+      </div>
+      <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="What do you want to achieve?">${esc(g.title || '')}</textarea>
+      ${progressBlock}
+      <label class="gc-why"><span class="gc-why-l">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
+      ${(doneN || focusMins) ? `<div class="gc-hero-stats">${doneN ? `<span>✓ ${doneN} task${doneN === 1 ? '' : 's'} done</span>` : ''}${focusMins ? `<span>🍅 ${fmtMins(focusMins)} focused</span>` : ''}</div>` : ''}
     </div>
-    ${(() => { const m = focusMinsFor('goal', g.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this goal</div>` : ''; })()}
-    <label class="tf-field goal-why"><span class="tf-label">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
-    <div class="tf-meta">
-      <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('goal', g)}</div>
-      <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      ${(p.horizon === 'quarter' || p.horizon === 'year')
-        ? `<div class="tf-field"><span class="tf-label">By when</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
-        : `<label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>`}
-    </div>
-    ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
-    <div class="goal-measure-block">${typeBody}</div>
-    <div class="goal-actions-sec">
-      <div class="tf-label gt-loose-h">Tasks<span class="gt-hint">the real tasks that move this forward - they show up in Tasks &amp; Today too</span></div>
+    <section class="focus-notes gc-tasks-sec">
+      <div class="fn-h">Tasks${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
       <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
-    </div>
-    ${goalAreaTasksHtml()}
+      ${goalAreaTasksHtml()}
+    </section>
     ${connectedNotesHtml()}
-    ${notesSection(g.body, 'goal', g.id)}`;
+    ${notesSection(g.body, 'goal', g.id)}
+    <details class="gc-settings">
+      <summary>⚙ Goal settings</summary>
+      <div class="tf-meta">
+        <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('goal', g)}</div>
+        <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        ${(p.horizon === 'quarter' || p.horizon === 'year')
+          ? `<div class="tf-field"><span class="tf-label">By when</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
+          : `<label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>`}
+      </div>
+      ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
+    </details>`;
   autoGrowSoon($('#goalcard-title'));
 }
 // Every task already sitting in this goal's life area, so you can pull an
