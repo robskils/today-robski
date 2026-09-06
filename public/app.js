@@ -3057,9 +3057,12 @@ function homeDiscoverHtml() {
     modOn('reflect') ? ['✎', 'Reflection', 'Journal with a prompt, or free', 'data-open-journal'] : null,
   ].filter(Boolean);
   if (!feats.length) return '';
+  let hidden = false, open = true;
+  try { hidden = localStorage.getItem('life.home.discHidden') === '1'; open = localStorage.getItem('life.home.discOpen') !== '0'; } catch {}
+  if (hidden) return '';
   return `<section class="home-discover">
-    <div class="home-sec-h">Discover Daybook</div>
-    <div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>
+    <div class="home-sec-h disc-h" data-disc-toggle role="button" tabindex="0"><span class="acw-chev">${open ? '▾' : '▸'}</span>Discover Daybook<button class="disc-hide" data-disc-hide title="Hide this section">×</button></div>
+    ${open ? `<div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>` : ''}
   </section>`;
 }
 function renderHome() {
@@ -9602,6 +9605,28 @@ function flushReviewAnswers() {
   clearTimeout(rvAreaT); rvAreaT = null;
   if (nChanged) { r.props = r.props || {}; r.props.areaNotes = notes; patchReview(r.id, { areaNotes: notes }, true); }
 }
+// A gentle sentiment read of a review, from what you wrote (the prompt answers +
+// freewrite) nudged by your Wheel of Life. Supportive, never clinical - it's your
+// own private reflection. Returns null when there's nothing to read yet.
+function reviewSentiment(p, r) {
+  const text = [...Object.values(p.answers || {}), String(r.body || '').replace(/<[^>]+>/g, ' ')].join(' ').toLowerCase();
+  const POS = ['good', 'great', 'proud', 'happy', 'progress', 'win', 'won', 'love', 'grateful', 'energis', 'energiz', 'calm', 'strong', 'excit', 'achiev', 'joy', 'hopeful', 'momentum', 'better', 'accomplish', 'clear', 'focus', 'pleased', 'glad', 'positive', 'breakthrough', 'grew', 'growth'];
+  const NEG = ['tired', 'stress', 'anxious', 'sad', 'struggl', 'overwhelm', 'behind', 'failed', 'stuck', 'drain', 'lonely', 'angry', 'frustrat', 'worried', 'difficult', 'exhaust', 'burnt', 'burned', 'unmotivat', 'disappoint', 'flat', 'heavy', 'hard time', 'no energy'];
+  let s = 0; POS.forEach((w) => { if (text.includes(w)) s++; }); NEG.forEach((w) => { if (text.includes(w)) s--; });
+  const wAvg = wheelAvg(p.wheel) ? Math.min(wheelAvg(p.wheel), 5) : 0;
+  if (wAvg) s += Math.round(wAvg - 3);   // 5/5 nudges +2, 1/5 nudges -2
+  const hasText = text.trim().length > 8;
+  if (!hasText && !wAvg) return null;
+  if (s >= 3) return { emoji: '🌤', label: 'Bright', note: 'Reads like a good one.' };
+  if (s >= 1) return { emoji: '🙂', label: 'Steady', note: 'More up than down this week.' };
+  if (s <= -3) return { emoji: '🌧', label: 'Heavy', note: 'A tougher stretch - be kind to yourself.' };
+  if (s <= -1) return { emoji: '🌥', label: 'Mixed', note: 'Some weight in there this week.' };
+  return { emoji: '😌', label: 'Even', note: 'A fairly level week.' };
+}
+function reviewSentimentHtml(p, r) {
+  const s = reviewSentiment(p, r); if (!s) return '';
+  return `<div class="rv-sentiment"><span class="rv-sent-emoji">${s.emoji}</span><span class="rv-sent-body"><span class="rv-sent-l">The mood: ${s.label}</span><span class="rv-sent-note">${esc(s.note)}</span></span></div>`;
+}
 // A submitted review, laid out as a calm, read-only report: the period, the read,
 // the wins showcase, your area scores + notes, goals, and reflections - a document
 // you'd be happy to look back on. "Edit" flips to the working form.
@@ -9634,6 +9659,7 @@ function renderReviewReport() {
       ${pt.range ? `<div class="rr-hero-range">${esc(pt.range)}</div>` : ''}
       <div class="rr-hero-meta">${p.doneAt ? `✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(String(p.doneAt).slice(0, 4))}` : ''}${wAvg ? ` · Wheel of Life <b>${wAvg}</b>/5` : ''}${(m.tasksDone || []).length ? ` · <b>${(m.tasksDone || []).length}</b> ticked off` : ''}</div>
     </div>
+    ${reviewSentimentHtml(p, r)}
     <section class="rr-sec"><h2 class="rr-h">✦ The read</h2>${readHtml}</section>
     ${(m.tasksDone || []).length ? `<section class="rr-sec"><h2 class="rr-h">What you did</h2>${reviewWinsHtml(m, p)}</section>` : ''}
     ${wheelRows ? `<section class="rr-sec"><h2 class="rr-h">By life area</h2><div class="rr-areas">${wheelRows}</div></section>` : ''}
@@ -9706,7 +9732,7 @@ function renderReviewCard() {
 
     <section class="rv-analysis">
       ${rvSecH('read', '✦ The read')}
-      ${rvSecOpen('read') ? `<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>
+      ${rvSecOpen('read') ? `${reviewSentimentHtml(p, r)}<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>
       ${p.doneSummary
         ? `<div class="rv-summary rv-summary-open"><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">A deeper read, written from your record by Claude. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div></div>`
         : (!!(state.account && state.account.aiOff))
@@ -10950,6 +10976,8 @@ document.addEventListener('click', (e) => {
   { const bp = t.closest('[data-block-private-btn]'); if (bp) { const [k, id] = bp.dataset.blockPrivateBtn.split(':'); const cur = state.note && state.note.current; const on = !(cur && cur.props && cur.props.private); setBlockPrivate(k, id, on).then(() => { if (k === 'note' && state.view.type === 'note') renderNote(); }); return; } }
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
+  if (t.closest('[data-disc-hide]')) { try { localStorage.setItem('life.home.discHidden', '1'); } catch {} renderHome(); return; }
+  if (t.closest('[data-disc-toggle]')) { try { localStorage.setItem('life.home.discOpen', (localStorage.getItem('life.home.discOpen') !== '0') ? '0' : '1'); } catch {} renderHome(); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
   if (t.closest('[data-open-guide]')) { openHelp('index'); return; }
   const hlp = t.closest('[data-help-open]'); if (hlp) { hideHelpPop(); if (window.matchMedia('(max-width:820px)').matches) openHelp(hlp.dataset.helpOpen); else openHelpTab(hlp.dataset.helpOpen); return; }
