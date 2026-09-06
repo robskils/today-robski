@@ -7265,18 +7265,26 @@ function renderContacts() {
   $('#pane').innerHTML = `
     ${pageCrumb('Contacts')}
     <div class="pane-head"><h1>Contacts</h1></div>
+    ${searching ? `
     <div class="list-head">
       <input class="list-search sel" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
-      ${searching ? '' : `${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add contact</button>`}
-      <button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button>
-      <input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden>`}
     </div>
-    ${searching ? `
     <section class="home-sec">
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>` : `
-    <section class="home-sec">
-      <div class="home-sec-h">Contacts on Daybook<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
+    <section class="home-sec contacts-mine">
+      <div class="cts-head">
+        <input class="list-search sel cts-search" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
+        ${groupBarHtml()}
+        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+      </div>
+      ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
+      ${state.contactAdding ? contactAddForm() : ''}
+      <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
+    </section>
+
+    <section class="home-sec ppl-sec">
+      <div class="home-sec-h">Daybook friends<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       <p class="fr-intro">Invite your friends to Daybook so you can share with them - a whole Life Area, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
       ${(d.suggestions && d.suggestions.length) ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
@@ -7285,14 +7293,6 @@ function renderContacts() {
       ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Daybook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life area' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
-    </section>
-
-    <section class="home-sec">
-      <div class="home-sec-h">Contacts<span class="muted">${(state.contacts || []).length}</span></div>
-      ${groupBarHtml()}
-      ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
-      ${state.contactAdding ? contactAddForm() : ''}
-      <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>`}
 
     ${contactMenuHtml()}`;
@@ -7303,28 +7303,9 @@ function renderContacts() {
 // buttons, so the find box grows to fill and the row reserves right-padding equal
 // to the gap, landing Invite exactly under the search box's edge. Desktop only;
 // re-runs on resize.
-function alignConnectRow() {
-  const row = document.querySelector('.fr-connect-row');
-  const find = document.querySelector('.fr-connect');
-  const search = document.querySelector('[data-contacts-q]');
-  const connect = document.querySelector('.fr-connect-btn');
-  const invite = document.querySelector('.fr-invite-btn');
-  if (!row || !find || !search || !connect || !invite) return;
-  if (window.matchMedia('(max-width:820px)').matches) { find.style.width = ''; return; }
-  // Solve for the find box width so the group [find + Connect + Invite] ends at
-  // the search box's right edge: width = searchRight - rowLeft - buttons - gaps.
-  // Absolute (not delta-based), so it's correct however wide the window is.
-  // (Reading a rect forces the layout we need, so no requestAnimationFrame - and
-  // rAF is paused when the tab isn't visible anyway.)
-  const gap = parseFloat(getComputedStyle(row).columnGap) || 12;
-  const w = search.getBoundingClientRect().right - row.getBoundingClientRect().left
-    - connect.offsetWidth - invite.offsetWidth - 2 * gap;
-  // Only force the alignment when the window is wide enough to leave a usable
-  // find box; on a narrow desktop the buttons won't fit under the search edge, so
-  // fall back to the natural width rather than a cramped (or overshooting) box.
-  find.style.width = w >= 200 ? `${Math.round(w)}px` : '';
-}
-if (!window.__alignConnectBound) { window.__alignConnectBound = true; window.addEventListener('resize', () => { if (state.view && state.view.type === 'contacts') alignConnectRow(); }); }
+// The Daybook-friends connect row now lives in its own section, so it just
+// flexes to fill via CSS - no cross-section width alignment needed any more.
+function alignConnectRow() { const find = document.querySelector('.fr-connect'); if (find) find.style.width = ''; }
 function contactAddForm() {
   return `<form id="contact-form" class="add-task expanded">
     <input id="ct-name" type="text" placeholder="Name" autocomplete="off" required>
