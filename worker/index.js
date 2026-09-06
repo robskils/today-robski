@@ -2703,9 +2703,37 @@ async function handleSettings(request, env) {
 // One year. No includeSubDomains on purpose: it would force *every* robski.uk
 // web subdomain onto HTTPS forever, and only these two are ours to promise for.
 const HSTS = 'max-age=31536000';
+// Content-Security-Policy for the app's HTML documents. The session token lives
+// in localStorage, so this is the main brake on an injected script stealing it:
+// no external script hosts, no eval, and connect-src 'self' so a fetch/beacon
+// can't post data off-site. Inline scripts stay allowed ('unsafe-inline') for the
+// pre-paint theme stamp - moving those to a nonce is the next step up. img-src is
+// deliberately broad (email bodies and YouTube posters pull external images);
+// frame-src allows only the YouTube player; framing of us is denied.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob:",
+  "connect-src 'self'",
+  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self'",
+].join('; ');
 function withHsts(res) {
   const h = new Headers(res.headers);
   h.set('Strict-Transport-Security', HSTS);
+  const ct = (h.get('Content-Type') || '').toLowerCase();
+  if (ct.includes('text/html')) {
+    h.set('Content-Security-Policy', CSP);
+    h.set('X-Content-Type-Options', 'nosniff');
+    h.set('X-Frame-Options', 'DENY');
+    h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  }
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
