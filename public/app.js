@@ -3927,13 +3927,15 @@ function renderArea() {
   // count and a few items, and clicking its header drills into that section's tile.
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
   const visionSnip = (area.props && (area.props.vision || '').trim()) || '';
-  const dashCard = (key, items) => `<section class="area-dash-card">
-    <button class="adc-head" data-area-tile="${esc(key)}"><span class="adc-ic">${TILE_META[key]}</span><span class="adc-l">${esc(key)}</span>${counts[key] != null ? `<span class="adc-c">${counts[key]}</span>` : ''}<span class="adc-go">→</span></button>
+  // `target` is the tile the card opens (defaults to its own key) - Vision now
+  // opens the combined Goals tab.
+  const dashCard = (key, items, target) => `<section class="area-dash-card">
+    <button class="adc-head" data-area-tile="${esc(target || key)}"><span class="adc-ic">${TILE_META[key]}</span><span class="adc-l">${esc(key)}</span>${counts[key] != null ? `<span class="adc-c">${counts[key]}</span>` : ''}<span class="adc-go">→</span></button>
     <div class="adc-body">${items}</div></section>`;
   const dashItem = (attr, id, label, lead) => `<button class="adc-item" ${attr}="${id}">${lead || ''}<span class="adc-item-t">${esc(label)}</span></button>`;
   const dashChips = (list, f) => `<div class="adc-chips">${list.map(f).join('')}</div>`;
   const dash = `<div class="area-dash" style="--h:${h}">
-    ${dashCard('Vision', visionSnip ? `<div class="adc-vision">${esc(visionSnip.slice(0, 180))}${visionSnip.length > 180 ? '…' : ''}</div>` : '<div class="adc-empty">Tap to picture this area at its best.</div>')}
+    ${dashCard('Vision', visionSnip ? `<div class="adc-vision">${esc(visionSnip.slice(0, 180))}${visionSnip.length > 180 ? '…' : ''}</div>` : '<div class="adc-empty">Tap to picture this area at its best.</div>', 'Goals')}
     ${dashCard('Goals', activeGoals.length ? activeGoals.slice(0, 5).map((g) => dashItem('data-open-goal', g.id, g.title || 'Untitled')).join('') : '<div class="adc-empty">No goals yet.</div>')}
     ${dashCard('Tasks', openTs.length ? openTs.slice(0, 6).map((t) => dashItem('data-open-task', t.id, t.title || 'Untitled', t.props.priority ? `<span class="p-tag p-${t.props.priority}">${t.props.priority}</span>` : '')).join('') : '<div class="adc-empty">No open tasks.</div>')}
     ${notesTotal ? dashCard('Notes and tables', [...starredNotes, ...otherNotes].slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled')).join('') + tables.slice(0, 2).map((t) => dashItem('data-open-table', t.id, t.title || 'Untitled', '<span class="adc-lead">▦</span>')).join('')) : ''}
@@ -3948,8 +3950,9 @@ function renderArea() {
   ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
   const panels = {
     'Overview': dash,
-    'Vision': visionInner,
-    'Goals': activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>',
+    // Vision and Goals share one tab now (button says "Goals", page says "Vision
+    // and Goals") - the vision sets the direction the goals serve.
+    'Goals': `<div class="area-vg"><div class="avg-h">Vision</div>${visionInner}<div class="avg-h avg-h-goals">Goals</div>${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>'}</div>`,
     'Notes and tables': notesTotal ? `<div class="tbl-cards">${starredNoteCards}${noteCards}${tblCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
     'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',
     'Contacts': `<div class="contact-grid">${contactCards}</div>`,
@@ -3960,15 +3963,17 @@ function renderArea() {
     'Shared with': areaMembersBody(area),
     'Wall': areaWallBody(area),
   };
-  const CORE = new Set(['Overview', 'Vision', 'Goals', 'Notes and tables', 'Tasks', 'Wall']);
-  const tileOrder = ['Overview', 'Vision', 'Goals', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall'];
+  // Vision folded into Goals; Wall lives on the Overview dashboard, not a tile.
+  const TILE_TITLE = { 'Goals': 'Vision and Goals' };
+  const CORE = new Set(['Overview', 'Goals', 'Notes and tables', 'Tasks']);
+  const tileOrder = ['Overview', 'Goals', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with'];
   const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; return CORE.has(k) || counts[k] > 0; });
   // Landing on an area shows the Overview dashboard; a tile click switches for the
   // session (state only), so a fresh visit always opens on the dashboard again.
   let openTile = state.area_open.tileOpen || 'Overview';
   if (!avail.includes(openTile)) openTile = avail[0] || 'Overview';
   const areaTilesHtml = `<div class="area-tiles">${avail.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
-    <div class="area-tilepanel"><div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(openTile)}</span></div>${panels[openTile]}</div>`;
+    <div class="area-tilepanel"><div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span></div>${panels[openTile]}</div>`;
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
