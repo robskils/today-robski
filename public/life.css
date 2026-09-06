@@ -1932,6 +1932,53 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ho-body p { font-size:16.5px; line-height:1.65; color:var(--ink); margin:0 0 12px; }
 .ho-loading { font-size:15px; color:var(--ink-3); text-align:center; padding:14px 0; }
 .ho-meta { font-size:12.5px; color:var(--ink-3); }
+
+/* ── Your Daybook card ────────────────────────────────────────────────── */
+.set-cardlink { display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; padding:16px 18px; margin-bottom:16px; }
+.set-cardlink:hover { border-color:var(--accent); }
+.set-cardlink-ic { font-size:26px; flex:none; }
+.set-cardlink-body { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.set-cardlink-t { font-size:16px; font-weight:600; color:var(--ink); }
+.set-cardlink-s { font-size:13px; color:var(--ink-3); }
+.set-cardlink-go { font-size:22px; color:var(--ink-3); flex:none; }
+.dbc-lede { font-size:15px; color:var(--ink-2); line-height:1.55; margin:0 0 18px; max-width:560px; }
+.dbc-wrap { display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap; }
+.dbc-preview { flex:none; width:340px; max-width:100%; position:sticky; top:12px; }
+.dbc-edit { flex:1; min-width:260px; display:flex; flex-direction:column; gap:16px; }
+/* The card */
+.dbc-card { --dbc:#c4412e; position:relative; background:var(--card); border:1px solid var(--line); border-radius:22px; overflow:hidden; box-shadow:0 24px 60px -30px rgba(0,0,0,.5); }
+.dbc-band { height:84px; background:linear-gradient(135deg, var(--dbc), color-mix(in srgb,var(--dbc) 62%,#000 30%)); }
+.dbc-top { display:flex; align-items:flex-end; gap:14px; padding:0 22px; margin-top:-42px; }
+.dbc-photo { width:84px; height:84px; border-radius:50%; flex:none; background-size:cover; background-position:center; border:4px solid var(--card); box-shadow:0 6px 18px -8px rgba(0,0,0,.4); display:grid; place-items:center; }
+.dbc-photo-mono { background:linear-gradient(135deg, var(--dbc,#c4412e), color-mix(in srgb,var(--dbc,#c4412e) 62%,#000 30%)); color:#fff; font-family:'Cormorant Garamond',Georgia,serif; font-size:38px; font-weight:600; }
+.dbc-photo.sm { width:56px; height:56px; border-width:3px; font-size:24px; }
+.dbc-id { display:flex; flex-direction:column; gap:1px; min-width:0; padding-bottom:6px; }
+.dbc-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:27px; font-weight:600; color:var(--ink); line-height:1.05; }
+.dbc-handle { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:12.5px; color:var(--dbc); font-weight:600; }
+.dbc-tag { margin:14px 22px 0; font-size:16px; line-height:1.5; color:var(--ink); }
+.dbc-tag-ph { color:var(--ink-3); font-style:italic; }
+.dbc-chips { display:flex; flex-wrap:wrap; gap:8px; margin:14px 22px 0; }
+.dbc-chip { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); text-decoration:none; }
+a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
+.dbc-mark { display:flex; align-items:center; gap:6px; margin:18px 22px 18px; padding-top:14px; border-top:1px solid var(--line); color:var(--ink-3); font-size:12.5px; font-weight:600; letter-spacing:.02em; }
+.dbc-mark .brand-mark { width:18px; height:18px; color:var(--dbc); }
+/* The editor */
+.dbc-field { display:flex; flex-direction:column; gap:7px; }
+.dbc-l { font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
+.dbc-opt { font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink-3); }
+.dbc-field .sel { font-size:16px; }
+.dbc-photo-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.dbc-photo-btn { flex:none; }
+.dbc-swatches { display:flex; flex-wrap:wrap; gap:9px; align-items:center; }
+.dbc-swatch { width:30px; height:30px; border-radius:50%; border:2px solid var(--line); cursor:pointer; padding:0; position:relative; }
+.dbc-swatch.on { border-color:var(--ink); box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ink); }
+.dbc-swatch-custom { display:grid; place-items:center; background:var(--paper-2); color:var(--ink-2); font-size:17px; font-weight:600; overflow:hidden; }
+.dbc-swatch-custom input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.dbc-tog { display:flex; align-items:center; gap:10px; font-size:15px; color:var(--ink); cursor:pointer; font-weight:400; text-transform:none; letter-spacing:0; }
+.dbc-tog input { flex:none; width:19px; height:19px; accent-color:var(--accent); }
+.dbc-tog input:disabled { opacity:.5; } .dbc-tog input:disabled + span { color:var(--ink-3); }
+.dbc-note { font-size:13px; color:var(--ink-3); line-height:1.5; margin:2px 0 0; } .dbc-note b { color:var(--ink-2); }
+@media (max-width:640px) { .dbc-preview { position:static; width:100%; } }
 /* Settings: account. */
 .set-account { display:flex; flex-direction:column; gap:15px; }
 .set-field { display:flex; flex-direction:column; gap:6px; }
@@ -3233,8 +3280,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ov-person-body { min-width:0; display:flex; flex-direction:column; gap:1px; }
 .ov-person-name { font-size:14.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ov-person-sub { font-size:12px; color:var(--ink-3); }
-.ov-person-me { cursor:default; }
-.ov-person-me:hover { background:none; }
+.fr-av-photo { background-size:cover; background-position:center; color:transparent; }
 .ov-you-tag { display:inline-block; margin-left:4px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); border-radius:999px; padding:1px 7px; vertical-align:middle; }
 .ov-acts { display:flex; flex-direction:column; gap:2px; }
 .ov-act { display:flex; align-items:center; gap:9px; padding:6px 4px; border-bottom:1px solid var(--line); }

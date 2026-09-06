@@ -714,6 +714,7 @@ function labelForView(v) {
     case 'journal': return 'Well-being'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Well-being';
     case 'readwatch': return 'Read & Watch';
     case 'settings': return 'Settings';
+    case 'card': return 'Daybook card';
     case 'admin': return 'Admin';
     case 'friends': return 'Contacts on Daybook';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
@@ -739,6 +740,7 @@ function openView(v) {
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'financial': return openFinancial(v.tab);
     case 'settings': return openSettings();
+    case 'card': return openCard();
     case 'admin': return openAdmin();
     case 'practices': return openPractices();
     case 'friends': return openContacts();   // merged into Contacts
@@ -971,6 +973,101 @@ async function loadAccount() { try { state.account = await api('/api/account'); 
 // owner (managed key) or a stored own key. Optimistic before the account loads.
 function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnthropicSet; }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
+
+// ── Your Daybook card ─────────────────────────────────────────────────────
+// A little profile: how people find you on Daybook, and your window to the
+// world - photo, tagline, a colour, and the contact details you choose to show.
+// Kept in kv_card_profile (photo is a small square data URI); name/handle come
+// from the account. Others seeing it comes next; for now it's yours to make.
+const CARD_COLOURS = ['#c4412e', '#b8863b', '#4d7c4d', '#2f6f7e', '#3a5a97', '#6d5399', '#a3466f', '#5b5b64'];
+function cardProfile() { return state.card || {}; }
+async function openCard() {
+  state.view = { type: 'card' };
+  state.navUtilOpen = false;
+  renderNav();
+  if (state.card === undefined) {
+    state.card = {};
+    try { const r = await api('/api/kv/card_profile'); if (r && r.value) state.card = JSON.parse(r.value) || {}; } catch {}
+  }
+  if (!state.account) await loadAccount();
+  renderCard();
+}
+function saveCard() {
+  api('/api/kv/card_profile', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.card || {}) }) }).catch(() => {});
+}
+// Repaint just the preview card (keeps focus in the field you're typing in).
+function cardLivePreview() { const pv = document.querySelector('.dbc-preview'); if (pv) pv.innerHTML = cardPreviewHtml(true); }
+// Crop-to-square and downscale a chosen photo to a small JPEG data URI (256px),
+// light enough to live in a settings value and paint instantly anywhere.
+async function avatarDataUri(file) {
+  if (!isImgType(file.type)) throw new Error('Please choose an image');
+  let url, bmp;
+  try {
+    bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) { url = URL.createObjectURL(file); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = url; }); }
+    const w = bmp.width, h = bmp.height; if (!w || !h) throw new Error('decode');
+    const side = Math.min(w, h); const sx = (w - side) / 2, sy = (h - side) / 2; const D = 256;
+    const cv = document.createElement('canvas'); cv.width = D; cv.height = D;
+    cv.getContext('2d').drawImage(bmp, sx, sy, side, side, 0, 0, D, D);
+    if (bmp.close) bmp.close();
+    return cv.toDataURL('image/jpeg', 0.82);
+  } finally { if (url) URL.revokeObjectURL(url); }
+}
+async function cardSetPhoto(file) {
+  try { const uri = await avatarDataUri(file); state.card = state.card || {}; state.card.photo = uri; saveCard(); renderCard(); toast('Photo updated'); }
+  catch (e) { toast(e.message || 'Could not read that image'); }
+}
+// The card itself, drawn from account + profile. `full` adds the share line.
+function cardPreviewHtml(full) {
+  const a = state.account || {}; const c = cardProfile();
+  const name = a.name || firstName() || 'You';
+  const handle = a.subdomain ? `${esc(a.subdomain)}.daybook.fyi` : '';
+  const accent = c.accent || savedAccent() || '#c4412e';
+  const photo = c.photo ? `<span class="dbc-photo" style="background-image:url('${c.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(name))}</span>`;
+  const chips = [];
+  if (c.location) chips.push(`<span class="dbc-chip">📍 ${esc(c.location)}</span>`);
+  if (c.website) { const w = String(c.website).replace(/^https?:\/\//, ''); chips.push(`<a class="dbc-chip" href="${esc(/^https?:\/\//.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">🔗 ${esc(w)}</a>`); }
+  if (c.showEmail && a.email) chips.push(`<a class="dbc-chip" href="mailto:${esc(a.email)}">✉ ${esc(a.email)}</a>`);
+  if (c.showPhone && a.phone) chips.push(`<span class="dbc-chip">📞 ${esc(a.phone)}</span>`);
+  return `<div class="dbc-card" style="--dbc:${esc(accent)}">
+    <div class="dbc-band"></div>
+    <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(name)}</span>${handle ? `<span class="dbc-handle">${handle}</span>` : ''}</span></div>
+    ${c.tagline ? `<p class="dbc-tag">${esc(c.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
+    ${chips.length ? `<div class="dbc-chips">${chips.join('')}</div>` : ''}
+    <div class="dbc-mark">${MARK}<span>Daybook</span></div>
+  </div>`;
+}
+function renderCard() {
+  const a = state.account || {}; const c = cardProfile();
+  const accent = c.accent || savedAccent() || '#c4412e';
+  const swatches = CARD_COLOURS.map((h) => `<button class="dbc-swatch ${accent.toLowerCase() === h ? 'on' : ''}" style="background:${h}" data-card-accent="${h}" title="${h}"></button>`).join('');
+  $('#pane').innerHTML = `${pageCrumb('Daybook card')}
+    <div class="pane-head home-head"><h1>Your Daybook card</h1></div>
+    <p class="dbc-lede">How people find you on Daybook, and your small window to the world. Make it yours.</p>
+    <div class="dbc-wrap">
+      <div class="dbc-preview">${cardPreviewHtml(true)}</div>
+      <div class="dbc-edit">
+        <div class="dbc-field dbc-photo-field">
+          <span class="dbc-l">Photo</span>
+          <div class="dbc-photo-row">
+            ${c.photo ? `<span class="dbc-photo sm" style="background-image:url('${c.photo}')"></span>` : `<span class="dbc-photo sm dbc-photo-mono" style="--dbc:${esc(accent)}">${esc(initial(a.name || firstName() || 'You'))}</span>`}
+            <label class="add-btn wide dbc-photo-btn"><input type="file" accept="image/*" hidden data-card-photo><span>${c.photo ? 'Change photo' : 'Add a photo'}</span></label>
+            ${c.photo ? '<button class="ghost" data-card-photo-x>Remove</button>' : ''}
+          </div>
+        </div>
+        <label class="dbc-field"><span class="dbc-l">Display name</span><input class="sel" data-card-name value="${esc(a.name || '')}" placeholder="Your name" maxlength="60"></label>
+        <label class="dbc-field"><span class="dbc-l">Tagline</span><input class="sel" data-card-tagline value="${esc(c.tagline || '')}" placeholder="A line about you" maxlength="120"></label>
+        <div class="dbc-field"><span class="dbc-l">Card colour</span><div class="dbc-swatches">${swatches}<label class="dbc-swatch dbc-swatch-custom" title="Custom colour"><input type="color" value="${esc(accent)}" data-card-accent-custom>+</label></div></div>
+        <label class="dbc-field"><span class="dbc-l">Location <span class="dbc-opt">optional</span></span><input class="sel" data-card-location value="${esc(c.location || '')}" placeholder="Lisbon, Portugal" maxlength="60"></label>
+        <label class="dbc-field"><span class="dbc-l">Website <span class="dbc-opt">optional</span></span><input class="sel" data-card-website value="${esc(c.website || '')}" placeholder="yoursite.com" maxlength="120"></label>
+        <div class="dbc-field"><span class="dbc-l">Show my contact details</span>
+          <label class="dbc-tog"><input type="checkbox" data-card-showemail ${c.showEmail ? 'checked' : ''}><span>Email${a.email ? ` (${esc(a.email)})` : ''}</span></label>
+          <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings'}</span></label>
+        </div>
+        <p class="dbc-note">Your handle <b>${a.subdomain ? esc(a.subdomain) + '.daybook.fyi' : 'is set in Settings'}</b>${a.subdomain ? ' - change it in Settings › Account.' : '.'}</p>
+      </div>
+    </div>`;
+}
 // Optional two-factor (TOTP). state.totp holds the transient enrolment view:
 // { setup:{secret,uri} } while enrolling, { recovery:[...] } right after turning
 // it on (shown once), else null. a.totpEnabled is the persisted truth.
@@ -1711,7 +1808,8 @@ function renderSettings() {
   const tab = state.settings.tab;
   const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
-  const accountPane = state.account ? `<div class="set-card set-account">
+  const accountPane = state.account ? `<button class="set-card set-cardlink" data-open-card><span class="set-cardlink-ic">🪪</span><span class="set-cardlink-body"><span class="set-cardlink-t">Your Daybook card</span><span class="set-cardlink-s">Photo, tagline, colour and the contact details you show</span></span><span class="set-cardlink-go">›</span></button>
+      <div class="set-card set-account">
         <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
         <label class="set-field"><span>Username</span>
           <div class="su-username-row"><input class="sel su-username-in" data-account-username value="${esc(state.account.subdomain || '')}" placeholder="username" autocomplete="off" spellcheck="false"><span class="su-username-suffix">.daybook.fyi</span></div>
@@ -4517,8 +4615,11 @@ function areaOverviewHtml(area, c, blocks) {
     if (area.sharedBy) return '';
     const a = state.account || {};
     const name = a.name || (state.me && state.me.name) || 'You';
-    const sub = a.subdomain ? `${esc(a.subdomain)}.daybook.fyi` : 'owner';
-    return `<div class="ov-person ov-person-me"><span class="fr-av online">${esc(initial(name))}</span><span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></div>`;
+    const subd = a.subdomain || (state.me && state.me.subdomain) || '';
+    const sub = subd ? `${esc(subd)}.daybook.fyi` : 'owner';
+    const photo = state.card && state.card.photo;
+    const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
+    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Daybook card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
   })();
   const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''}><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
   const people = shares == null ? `${meCard || '<div class="ov-muted">Loading…</div>'}`
@@ -11402,6 +11503,11 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
+  // Daybook card: live-update the preview as you type, save shortly after.
+  if (e.target.matches('[data-card-name]')) { const v = e.target.value; if (state.account) state.account.name = v; cardLivePreview(); clearTimeout(window.__cardNT); window.__cardNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.me && state.account) state.me.name = state.account.name; renderNav(); }), 700); return; }
+  if (e.target.matches('[data-card-tagline]')) { state.card = state.card || {}; state.card.tagline = e.target.value; cardLivePreview(); clearTimeout(window.__cardTg); window.__cardTg = setTimeout(saveCard, 500); return; }
+  if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
+  if (e.target.matches('[data-card-website]')) { state.card = state.card || {}; state.card.website = e.target.value; cardLivePreview(); clearTimeout(window.__cardWs); window.__cardWs = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-account-username]')) {
     const pos = e.target.selectionStart; const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (e.target.value !== v) { e.target.value = v; try { e.target.setSelectionRange(pos - 1, pos - 1); } catch {} }
@@ -11988,6 +12094,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-horo-canceledit]')) { state.horoEdit = false; renderHoro(); return; }
   if (t.closest('[data-horo-close]') || t.closest('[data-horo-bgclose]') === t) { closeHoro(); return; }
   if (t.closest('[data-open-medi]')) { openMeditationTool(); return; }
+  if (t.closest('[data-open-card]')) { openCard(); return; }
+  { const sw = t.closest('[data-card-accent]'); if (sw) { state.card = state.card || {}; state.card.accent = sw.dataset.cardAccent; saveCard(); renderCard(); return; } }
+  if (t.closest('[data-card-photo-x]')) { if (state.card) { delete state.card.photo; saveCard(); renderCard(); } return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
@@ -12132,6 +12241,10 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
+  if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); renderCard(); return; }
+  if (e.target.matches('[data-card-showemail]')) { state.card = state.card || {}; state.card.showEmail = e.target.checked; saveCard(); cardLivePreview(); return; }
+  if (e.target.matches('[data-card-showphone]')) { state.card = state.card || {}; state.card.showPhone = e.target.checked; saveCard(); cardLivePreview(); return; }
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
   if (e.target.matches('[data-t2-pracfilter]')) { state.today.pracArea = e.target.value || ''; renderToday(); return; }
   if (e.target.matches('[data-med-shimmer]')) { medState.shimmer = e.target.checked; saveMed(); reMed(); return; }
@@ -14224,6 +14337,8 @@ async function onbConnectGmail() {
     initPush();              // register the SW; refresh the push subscription if already granted
     registerMailHandler();   // offer Robski Life as the browser's mailto: handler
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
+    loadAccount();           // name, handle & contact details for the Daybook card
+    api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
     // Week-start preference, mirrored for pages (Reviews) that render before Settings.
     api('/api/account').then((a) => { if (a) { state.account = a; try { localStorage.setItem('life.weekStart', String(a.weekStart)); } catch {} if (state.view && state.view.type === 'reviews') renderReviews(); } }).catch(() => {});
     maybeOnboard();          // first-run welcome guide, once per new account
