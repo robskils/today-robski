@@ -4984,7 +4984,7 @@ function t2DayHtml() {
   }).join('');
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
   return `
-    <div class="t2-stickytop t2-dayhead"><div class="t2-colh"><h2>The day</h2><span class="t2-daysub">calendar &amp; what you've planned</span></div></div>
+    <div class="t2-stickytop t2-dayhead"><div class="t2-colh"><h2>${esc(new Date(T.day + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long' }))}</h2></div><span class="t2-daysub">calendar &amp; what you've planned</span></div>
     <div class="t2-colscroll t2-dayscroll">
       ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
       ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime today</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
@@ -9021,7 +9021,7 @@ function reviewsBody() {
       ${heroBtn}
     </div>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => {
-      const w = periodWindow(k, todayISO());
+      const w = periodWindow(k, todayISO);
       const pt = periodTitle(k, w.from, w.to);
       const ex = past.find((r) => (r.props || {}).rtype === k && (r.props || {}).to === w.to);
       const exProg = ex && (ex.props || {}).status === 'inprogress';
