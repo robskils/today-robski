@@ -9660,6 +9660,38 @@ function reviewWheelHtml(p) {
   comm += spread >= 3 ? ' - an uneven picture, worth steering some energy to the lower spokes.' : ' - a nicely balanced spread.';
   return `<div class="rr-wheel"><div class="rr-wheel-chart">${svg}</div><p class="rr-wheel-comm">${comm}</p></div>`;
 }
+// Trends across this review type's history: sparklines for tasks completed and
+// Wheel of Life, with the move vs last time - an infographic read, not a list.
+function reviewSeries(rtype) {
+  return (state.reviews || []).map((r) => r.props || {}).filter((q) => q.rtype === rtype && q.to).sort((a, b) => String(a.to).localeCompare(String(b.to)));
+}
+function reviewTrendsHtml(p) {
+  const rt = p.rtype || 'weekly'; const word = PERIOD_WORD[rt] || 'period';
+  const series = reviewSeries(rt);
+  if (series.length < 2) return '';
+  const last = series.slice(-10);
+  const doneS = last.map((q) => q.tasksDone != null ? q.tasksDone : (((q.mirror || {}).tasksDone || []).length));
+  const wheelS = last.map((q) => Math.min(wheelAvg(q.wheel), 5));
+  const spark = (vals, hi, fmt) => { const mx = Math.max(...vals, 1); return `<div class="rr-spark">${vals.map((v, i) => `<span class="rr-spark-bar ${i === vals.length - 1 ? 'now' : ''}" style="height:${Math.max(8, Math.round(v / mx * 100))}%" title="${esc(fmt(v))}"></span>`).join('')}</div>`; };
+  const deltaTag = (cur, prev, unit) => { if (prev == null) return ''; const d = Math.round((cur - prev) * 10) / 10; if (!d) return `<span class="rr-trend-delta flat">— level with last ${word}</span>`; return `<span class="rr-trend-delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}${unit} vs last ${word}</span>`; };
+  const dn = doneS[doneS.length - 1], pdn = doneS.length >= 2 ? doneS[doneS.length - 2] : null;
+  const wn = wheelS[wheelS.length - 1], pwn = wheelS.length >= 2 ? wheelS[wheelS.length - 2] : null;
+  const rows = [];
+  rows.push(`<div class="rr-trend"><div class="rr-trend-h"><span class="rr-trend-lbl">Tasks completed</span><span class="rr-trend-now">${dn}</span>${deltaTag(dn, pdn, '')}</div>${spark(doneS, doneS.length - 1, (v) => `${v} done`)}</div>`);
+  if (wn) rows.push(`<div class="rr-trend"><div class="rr-trend-h"><span class="rr-trend-lbl">Wheel of Life</span><span class="rr-trend-now">${wn}<small>/5</small></span>${deltaTag(wn, pwn, '')}</div>${spark(wheelS.map((v) => v || 0), wheelS.length - 1, (v) => `${v}/5`)}</div>`);
+  return `<div class="rr-trends">${rows.join('')}</div>`;
+}
+// A pull-quote lifted from what you actually wrote (a reflection answer or the
+// freewrite) - a line of your own words, featured magazine-style.
+function reviewPullQuote(p, r) {
+  const texts = [...Object.values(p.answers || {}), String(r.body || '').replace(/<[^>]+>/g, ' ')].map((s) => String(s || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (!texts.length) return null;
+  let sentences = [];
+  try { sentences = texts.join(' ').split(/(?<=[.!?])\s+/); } catch { sentences = texts.join(' ').split(/[.!?]\s+/); }
+  sentences = sentences.map((s) => s.trim()).filter((s) => s.length >= 24 && s.length <= 200);
+  const pick = sentences.sort((a, b) => b.length - a.length)[0] || texts.sort((a, b) => b.length - a.length)[0].slice(0, 170);
+  return pick.replace(/[."'\s]+$/, '');
+}
 function reviewSentimentHtml(p, r) {
   const s = reviewSentiment(p, r); if (!s) return '';
   return `<div class="rv-sentiment"><span class="rv-sent-emoji">${s.emoji}</span><span class="rv-sent-body"><span class="rv-sent-l">The mood: ${s.label}</span><span class="rv-sent-note">${esc(s.note)}</span></span></div>`;
@@ -9707,11 +9739,18 @@ function renderReviewReport() {
   // Featured win: the week's standout, as a magazine feature line.
   const top = reviewTopWin(m);
   const feature = top ? `<button class="rr-feature" ${top.id ? `data-open-task="${top.id}"` : ''}><span class="rr-feature-tag">The win of the ${esc(PERIOD_WORD[p.rtype] || 'period')}</span><span class="rr-feature-t">${esc(top.title || 'Untitled')}</span><span class="rr-feature-sub">${esc(top.tag)} →</span></button>` : '';
-  // Figures strip - the numbers, magazine-infographic style.
+  // A pull-quote from your own words, if you wrote any.
+  const quote = reviewPullQuote(p, r);
+  // The previous review of this type, for figure deltas (▲/▼ vs last time).
+  const prevRev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
+  const dTag = (cur, prev) => { if (prev == null || cur == null) return ''; const d = Math.round((cur - prev) * 10) / 10; if (!d) return ''; return `<span class="rr-fig-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)}</span>`; };
+  // Figures strip - the numbers, magazine-infographic style, with a move on last.
   const practicesK = (m.practices || []).reduce((a, x) => a + x.count, 0);
   const goalMoved = doneItems.filter((t) => t.goal).length;
-  const figs = [doneN ? [doneN, 'ticked off'] : null, nAreas > 1 ? [nAreas, 'areas moved'] : null, practicesK ? [practicesK, 'practices kept'] : null, goalMoved ? [goalMoved, 'toward goals'] : null, wAvg ? [`${wAvg}/5`, 'wheel of life'] : null].filter(Boolean);
-  const figsHtml = figs.length ? `<div class="rr-figs">${figs.map(([n, l]) => `<div class="rr-fig"><span class="rr-fig-n">${n}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
+  const prevDone = prevRev ? (prevRev.tasksDone != null ? prevRev.tasksDone : ((prevRev.mirror || {}).tasksDone || []).length) : null;
+  const prevWheel = prevRev ? Math.min(wheelAvg(prevRev.wheel), 5) : null;
+  const figs = [doneN ? [doneN, 'ticked off', dTag(doneN, prevDone)] : null, nAreas > 1 ? [nAreas, 'areas moved', ''] : null, practicesK ? [practicesK, 'practices kept', ''] : null, goalMoved ? [goalMoved, 'toward goals', ''] : null, wAvg ? [`${wAvg}/5`, 'wheel of life', dTag(wAvg, prevWheel)] : null].filter(Boolean);
+  const figsHtml = figs.length ? `<div class="rr-figs">${figs.map(([n, l, d]) => `<div class="rr-fig"><span class="rr-fig-n">${n}${d || ''}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
   // The record - the fuel behind the report - as tabs (By life area / Goals / In
   // your words), inside a collapsible section below the commentary.
   const recTabs = [];
@@ -9737,6 +9776,8 @@ function renderReviewReport() {
       ${figsHtml}
       ${feature}
       ${rrSec('read', '✦ The read', `<div class="rr-article">${readHtml}</div>`)}
+      ${quote ? `<blockquote class="rr-quote">“${esc(quote)}”<cite>- your own words</cite></blockquote>` : ''}
+      ${reviewTrendsHtml(p) ? rrSec('trends', 'Trends', reviewTrendsHtml(p)) : ''}
       ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
       ${doneN ? rrSec('moved', 'What moved', reviewWinsHtml(m, p, true)) : ''}
       ${recordHtml}
