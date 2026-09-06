@@ -2308,6 +2308,19 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .set-row-t { font-size:16px; font-weight:600; color:var(--ink); }
 .set-row-s { font-size:13.5px; color:var(--ink-3); margin-top:3px; }
 .set-block { border-top:1px solid var(--line); padding-top:18px; }
+/* Two-factor (TOTP) enrolment in Settings. */
+.tfa-block { margin-top:18px; }
+.tfa-block .set-row-s { margin-top:8px; line-height:1.5; }
+.tfa-block .set-row-s + .set-row-s { margin-top:12px; }
+.tfa-pill { font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; vertical-align:middle; margin-left:6px; }
+.tfa-pill.on { color:#6f9f4a; background:color-mix(in srgb,#6f9f4a 14%,transparent); }
+.tfa-pill.off { color:var(--ink-3); background:var(--paper-2,color-mix(in srgb,var(--ink) 8%,transparent)); }
+.tfa-secret { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:19px; letter-spacing:.12em; font-weight:600; color:var(--ink); background:var(--paper-2,color-mix(in srgb,var(--accent) 7%,var(--card))); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:10px 0; text-align:center; user-select:all; word-break:break-all; }
+.tfa-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+.tfa-row .sel { max-width:180px; text-align:center; letter-spacing:.14em; font-size:16px; }
+.tfa-reccodes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 16px; margin:12px 0; padding:14px; border:1px dashed var(--line-2); border-radius:12px; background:var(--card); }
+.tfa-reccodes span { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:15px; letter-spacing:.08em; color:var(--ink); user-select:all; text-align:center; }
+.tfa-err { color:var(--danger,#c4412e); font-size:13px; margin-top:8px; }
 .acc-swatches { display:flex; flex-wrap:wrap; gap:12px; margin-top:14px; }
 .acc-swatch { display:inline-flex; flex-direction:column; align-items:center; gap:6px; border:0; background:none; cursor:pointer; padding:2px; }
 .acc-swatch .acc-dot { width:34px; height:34px; border-radius:50%; background:var(--sw); box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--line); transition:box-shadow .12s, transform .07s; }

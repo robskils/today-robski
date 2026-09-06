@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS users (
   free_until   TEXT,                            -- ISO date the free period ends (NULL = not time-limited)
   gcal_refresh_enc TEXT,                        -- member's own Google Calendar refresh token, AES-256-GCM
   gcal_email   TEXT,                            -- the Google account they connected (shown in Settings)
+  totp_secret_enc TEXT,                         -- optional 2FA: TOTP shared secret, AES-256-GCM (NULL = not set up)
+  totp_enabled INTEGER NOT NULL DEFAULT 0,      -- 1 once the authenticator code has been confirmed
+  totp_recovery TEXT,                           -- JSON array of SHA-256-hashed one-time recovery codes
   created_at   TEXT NOT NULL
 );
 

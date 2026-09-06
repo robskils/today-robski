@@ -1,11 +1,12 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
-import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
+import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople, isOnline } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { openMeeting } from './meetings.js';
-import { aiKey, aiNeedsKey, logAiUsage, setAiKey } from './ai.js';
+import { aiKey, aiNeedsKey, logAiUsage, setAiKey, encryptSecret, decryptSecret } from './ai.js';
+import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery } from './totp.js';
 import { adminOverview, adminUsers, updateUser, adminAiUsage, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
 import { briefDue, briefEmail, briefSubject, esc as escHtml } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
@@ -3117,6 +3118,12 @@ export default {
       return verifyCode(request, env,
         (d) => json(d, request), (m, s) => err(m, request, s));
     }
+    // Public: second factor. Trades the pending token from /auth/verify for a
+    // real session once the authenticator (or a recovery) code checks out.
+    if (path === '/auth/verify-totp' && request.method === 'POST') {
+      return verifyTotp(request, env,
+        (d) => json(d, request), (m, s) => err(m, request, s));
+    }
 
     // Public: someone asking for an invite from the marketing site. Stored + emailed.
     if (path === '/api/invite-request' && request.method === 'POST') return handleInviteRequest(request, env, json, err);
@@ -3226,6 +3233,38 @@ export default {
         const b = await request.json().catch(() => ({}));
         const provider = b.provider === 'gemini' ? 'gemini' : 'anthropic';
         try { await setAiKey(env, provider, b.value); return json(await getAccount(env), request); } catch (e) { return err(e.message, request, 400); }
+      }
+      // ── Optional TOTP two-factor: begin enrolment, confirm, turn off ──
+      if (path === '/api/totp/setup' && request.method === 'POST') {
+        const secret = randomSecret();
+        // Held as pending (totp_enabled stays 0) until a code confirms it. Starting
+        // setup again just replaces the pending secret, so a half-finished attempt
+        // can't lock anyone out.
+        await env.DB.prepare('UPDATE users SET totp_secret_enc = ?, totp_enabled = 0 WHERE id = ?').bind(await encryptSecret(env, secret), env.uid).run();
+        const urow = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(env.uid).first().catch(() => null);
+        return json({ secret, uri: otpauthURI(secret, (urow && urow.email) || 'account') }, request);
+      }
+      if (path === '/api/totp/enable' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const row = await env.DB.prepare('SELECT totp_secret_enc FROM users WHERE id = ?').bind(env.uid).first().catch(() => null);
+        if (!row || !row.totp_secret_enc) return err('Start setup first.', 400);
+        let ok = false; try { ok = await totpVerify(await decryptSecret(env, row.totp_secret_enc), b.code); } catch {}
+        if (!ok) return err('That code was not right - check your authenticator and try again.', 400);
+        const recovery = makeRecoveryCodes(10);
+        const hashes = await Promise.all(recovery.map(hashRecovery));
+        await env.DB.prepare('UPDATE users SET totp_enabled = 1, totp_recovery = ? WHERE id = ?').bind(JSON.stringify(hashes), env.uid).run();
+        return json({ enabled: true, recovery }, request);
+      }
+      if (path === '/api/totp/disable' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const row = await env.DB.prepare('SELECT totp_secret_enc, totp_enabled, totp_recovery FROM users WHERE id = ?').bind(env.uid).first().catch(() => null);
+        if (!row || !row.totp_enabled) return json({ enabled: false }, request);
+        const code = String(b.code || '').trim();
+        let ok = false; try { ok = await totpVerify(await decryptSecret(env, row.totp_secret_enc), code); } catch {}
+        if (!ok && /[a-z0-9]/i.test(code)) { let list = []; try { list = JSON.parse(row.totp_recovery || '[]'); } catch {} if (list.includes(await hashRecovery(code))) ok = true; }
+        if (!ok) return err('Enter a current authenticator or recovery code to turn 2FA off.', 400);
+        await env.DB.prepare('UPDATE users SET totp_enabled = 0, totp_secret_enc = NULL, totp_recovery = NULL WHERE id = ?').bind(env.uid).run();
+        return json({ enabled: false }, request);
       }
       if (path === '/api/account/alias/verify' && request.method === 'POST') {
         const b = await request.json().catch(() => ({}));

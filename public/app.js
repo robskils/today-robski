@@ -968,6 +968,56 @@ async function syncAccentFromServer() {
 function openSettings(tab) { state.view = { type: 'settings' }; state.settings = state.settings || {}; if (tab) state.settings.tab = tab; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
+// Optional two-factor (TOTP). state.totp holds the transient enrolment view:
+// { setup:{secret,uri} } while enrolling, { recovery:[...] } right after turning
+// it on (shown once), else null. a.totpEnabled is the persisted truth.
+function twoFactorHtml() {
+  const a = state.account; if (!a) return '';
+  const t = state.totp || {};
+  if (t.recovery) {
+    return `<div class="set-block tfa-block">
+      <div class="set-row-t">✓ Two-factor is on</div>
+      <div class="set-row-s">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they're shown.</div>
+      <div class="tfa-reccodes">${t.recovery.map((c) => `<span>${esc(c)}</span>`).join('')}</div>
+      <div class="acct-actions"><button class="ghost" data-totp-copy>Copy codes</button><button class="add-btn wide" data-totp-done>Done</button></div>
+    </div>`;
+  }
+  if (t.setup) {
+    const grouped = (t.setup.secret.match(/.{1,4}/g) || []).join(' ');
+    return `<div class="set-block tfa-block">
+      <div class="set-row-t">Set up two-factor</div>
+      <div class="set-row-s"><b>1.</b> In your authenticator app (Google Authenticator, 1Password, Authy…) add an account and enter this key - or, on this phone, tap <a href="${esc(t.setup.uri)}">open in your app</a>.</div>
+      <div class="tfa-secret">${esc(grouped)}</div>
+      <div class="set-row-s"><b>2.</b> Then enter the 6-digit code it shows:</div>
+      <div class="tfa-row"><input class="sel" id="totp-code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" maxlength="6"><button class="add-btn wide" data-totp-enable>Turn on</button><button class="ghost" data-totp-cancel>Cancel</button></div>
+      ${t.err ? `<p class="tfa-err">${esc(t.err)}</p>` : ''}
+    </div>`;
+  }
+  if (a.totpEnabled) {
+    return `<div class="set-block tfa-block">
+      <div class="set-row-t">Two-factor authentication <span class="tfa-pill on">On</span></div>
+      <div class="set-row-s">After your email code, sign-in also asks for a code from your authenticator app. To turn it off, enter a current code (or a recovery code).</div>
+      <div class="tfa-row"><input class="sel" id="totp-code" inputmode="numeric" autocomplete="one-time-code" placeholder="Code to confirm"><button class="ghost acct-danger" data-totp-disable>Turn off</button></div>
+      ${t.err ? `<p class="tfa-err">${esc(t.err)}</p>` : ''}
+    </div>`;
+  }
+  return `<div class="set-block tfa-block">
+    <div class="set-row-t">Two-factor authentication <span class="tfa-pill off">Off</span></div>
+    <div class="set-row-s">Add a second step at sign-in with an authenticator app, so your email alone isn't enough to get in. Recommended.</div>
+    <button class="add-btn wide" data-totp-setup>Set up two-factor</button>
+  </div>`;
+}
+async function totpSetup() { try { const d = await api('/api/totp/setup', { method: 'POST' }); state.totp = { setup: d }; renderSettings(); } catch (e) { toast(e.message); } }
+async function totpEnable() {
+  const code = ($('#totp-code') || {}).value || '';
+  try { const d = await api('/api/totp/enable', { method: 'POST', body: JSON.stringify({ code: code.trim() }) }); state.totp = { recovery: d.recovery || [] }; await loadAccount(); renderSettings(); }
+  catch (e) { state.totp = { ...(state.totp || {}), err: e.message }; renderSettings(); }
+}
+async function totpDisable() {
+  const code = ($('#totp-code') || {}).value || '';
+  try { await api('/api/totp/disable', { method: 'POST', body: JSON.stringify({ code: code.trim() }) }); state.totp = null; await loadAccount(); renderSettings(); toast('Two-factor turned off'); }
+  catch (e) { state.totp = { err: e.message }; renderSettings(); }
+}
 function aiKeyRow(provider, label, isSet, ph) {
   return `<div class="ai-key-row"><span class="ai-key-l">${label}${isSet ? ' <span class="ai-set">✓ set</span>' : ''}</span>
     <div class="ai-key-in"><input class="sel" type="password" data-ai-key="${provider}" placeholder="${isSet ? '•••••• — enter a new key to replace' : ph}" autocomplete="off" spellcheck="false">
@@ -1674,6 +1724,7 @@ function renderSettings() {
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
+        ${twoFactorHtml()}
         <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
         <p class="acct-privacy">Your Daybook is private to you - never sold, never used to train a model. It's yours to download any time, and you can bring your own AI, or your own storage. <a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></p>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -10717,6 +10768,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-account-export]')) { downloadExport(); return; }
   if (t.closest('[data-account-close]')) { closeMyAccount(); return; }
   if (t.closest('[data-account-signout]')) { signOut(); return; }
+  if (t.closest('[data-totp-setup]')) { totpSetup(); return; }
+  if (t.closest('[data-totp-enable]')) { totpEnable(); return; }
+  if (t.closest('[data-totp-disable]')) { totpDisable(); return; }
+  if (t.closest('[data-totp-cancel]') || t.closest('[data-totp-done]')) { state.totp = null; renderSettings(); return; }
+  if (t.closest('[data-totp-copy]')) { const codes = (state.totp && state.totp.recovery || []).join('\n'); if (codes) { try { navigator.clipboard.writeText(codes); toast('Recovery codes copied'); } catch { toast('Copy failed - select them by hand'); } } return; }
   if (t.closest('[data-create-invite]')) { inviteToDaybook(); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
@@ -12822,7 +12878,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
-let gateStep = 'email', gateEmail = '';
+let gateStep = 'email', gateEmail = '', gateMfaToken = '';
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
 // in to Robin's Daybook, so the wordmark drops the owner's name and reads just
 // "Daybook". On a tenant subdomain it stays whose it is.
@@ -12932,8 +12988,23 @@ async function gateSubmit(e) {
   const err = $('#gate-err'), btn = $('#gate-btn');
   err.hidden = true; btn.disabled = true;
   try {
+    // Second factor: trade the pending token for a real session.
+    if (gateStep === 'totp') {
+      const r = await fetch('/auth/verify-totp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mfaToken: gateMfaToken, code: $('#gate-code').value.trim() }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.token) throw new Error(d.error || 'That code did not work.');
+      localStorage.setItem(KEY, d.token); location.reload(); return;
+    }
     const r = await fetch('/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, code: $('#gate-code').value.trim() }) });
     const d = await r.json().catch(() => ({}));
+    // 2FA on: step up to the authenticator code before a session is issued.
+    if (r.ok && d.mfa && d.mfaToken) {
+      gateMfaToken = d.mfaToken; gateStep = 'totp';
+      $('#gate-sub').textContent = 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).';
+      const c = $('#gate-code'); c.value = ''; c.placeholder = '000000'; c.focus();
+      const sms = $('#gate-sms'); if (sms) sms.hidden = true;
+      btn.textContent = 'Verify'; btn.disabled = false; return;
+    }
     if (!r.ok || !d.token) throw new Error(d.error || 'That code did not work.');
     localStorage.setItem(KEY, d.token); location.reload();
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }

@@ -23,6 +23,8 @@ import { getUserByEmail } from './accounts.js';
 // smtpSend/buildMessage are used only inside sendCodeMail (call time), so the
 // auth.js <-> mail.js cycle (mail.js imports signJWT) resolves fine.
 import { smtpSend, buildMessage } from './mail.js';
+import { totpVerify, hashRecovery } from './totp.js';
+import { decryptSecret } from './ai.js';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -96,6 +98,8 @@ export async function isAuthed(request, env) {
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ') || !env.AUTH_SECRET) return false;
   const payload = await verifyJWT(auth.slice(7), env.AUTH_SECRET);
+  // A pending-MFA token is NOT a session - it only unlocks /auth/verify-totp.
+  if (payload && payload.mfa === 'pending') return false;
   // Re-check on every request, not just at sign-in: dropping an address from
   // ADMIN_EMAILS should kill its live sessions, not wait out the 7 days.
   return !!payload && isAllowed(payload.sub, env);
@@ -117,14 +121,14 @@ export async function resolveUser(request, env) {
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ') || !env.AUTH_SECRET) return null;
   const payload = await verifyJWT(auth.slice(7), env.AUTH_SECRET);
-  if (!payload) return null;
+  if (!payload || payload.mfa === 'pending') return null;   // pending-MFA token is not a session
   // Access is by being *provisioned* now, not by an allow-list: the users-row
   // lookup below IS the gate. A verified token with no account resolves to null
   // (a 401 that routes to signup), never to a silent all-tenants view.
   // Match the account's primary email, or any alias in user_emails, so all of a
   // person's addresses sign into the one account.
   const user = await env.DB.prepare(
-    `SELECT id, email, name, subdomain, plan, status, ai_anthropic_enc, ai_gemini_enc, gcal_refresh_enc, gcal_email FROM users
+    `SELECT id, email, name, subdomain, plan, status, ai_anthropic_enc, ai_gemini_enc, gcal_refresh_enc, gcal_email, totp_enabled FROM users
       WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ? AND verified = 1)`,
   ).bind(payload.sub, payload.sub).first().catch(() => null);
   if (!user || user.status === 'suspended') return null;
@@ -244,10 +248,57 @@ export async function verifyCode(request, env, json, err) {
 
   await env.DB.prepare('DELETE FROM otp_codes WHERE email = ?').bind(email).run();
 
+  // If this account has TOTP two-factor on, the email code alone is not enough:
+  // hand back a short-lived (10 min) "pending" token that ONLY /auth/verify-totp
+  // accepts, never a full session. The two steps are bound - you must have passed
+  // the email code to hold this token, and must pass the authenticator to trade
+  // it for a real session.
+  const acct = await env.DB.prepare(
+    `SELECT totp_enabled FROM users
+      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ? AND verified = 1)`,
+  ).bind(email, email).first().catch(() => null);
+  if (acct && acct.totp_enabled) {
+    const mfaToken = await signJWT({ sub: email, mfa: 'pending', iat: now, exp: now + 600 }, env.AUTH_SECRET);
+    return json({ mfa: true, mfaToken, email });
+  }
+
   const token = await signJWT(
     { sub: email, iat: now, exp: now + 60 * 60 * 24 * SESSION_DAYS },
     env.AUTH_SECRET,
   );
+  return json({ token, email });
+}
+
+// ── POST /auth/verify-totp ────────────────────────────────────────────
+// Second factor. Takes the pending token from /auth/verify plus a 6-digit
+// authenticator code (or a recovery code), and returns the real session token.
+export async function verifyTotp(request, env, json, err) {
+  let body; try { body = await request.json(); } catch { return err('Invalid request', 400); }
+  const mfaToken = String(body.mfaToken || '');
+  const code = String(body.code || '').trim();
+  const payload = mfaToken ? await verifyJWT(mfaToken, env.AUTH_SECRET) : null;
+  if (!payload || payload.mfa !== 'pending') return err('Your sign-in expired. Start again.', 401);
+  const email = payload.sub;
+  const u = await env.DB.prepare(
+    `SELECT id, totp_enabled, totp_secret_enc, totp_recovery FROM users
+      WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ? AND verified = 1)`,
+  ).bind(email, email).first().catch(() => null);
+  if (!u || !u.totp_enabled || !u.totp_secret_enc) return err('Two-factor is not set up. Sign in again.', 400);
+  if (!code) return err('Enter the code from your authenticator app.', 400);
+
+  let ok = false;
+  try { ok = await totpVerify(await decryptSecret(env, u.totp_secret_enc), code); } catch { ok = false; }
+  // Fall back to a one-time recovery code: match a stored hash, then burn it.
+  if (!ok && /[a-z0-9]/i.test(code)) {
+    let list = []; try { list = JSON.parse(u.totp_recovery || '[]'); } catch {}
+    const h = await hashRecovery(code);
+    const i = list.indexOf(h);
+    if (i >= 0) { ok = true; list.splice(i, 1); await env.DB.prepare('UPDATE users SET totp_recovery = ? WHERE id = ?').bind(JSON.stringify(list), u.id).run().catch(() => {}); }
+  }
+  if (!ok) return err('That code was not right. Try again.', 400);
+
+  const now = Math.floor(Date.now() / 1000);
+  const token = await signJWT({ sub: email, iat: now, exp: now + 60 * 60 * 24 * SESSION_DAYS }, env.AUTH_SECRET);
   return json({ token, email });
 }
 
