@@ -2751,7 +2751,7 @@ function practicesManageHtml() {
   const body = ordered.map((g) => {
     const rows = g.items.map((a) => {
       const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
-      return `<button class="pm-row" data-prc-edit="${a.id}"><span class="pm-name">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<span class="pm-edit" title="Edit">✎</span></button>`;
+      return `<button class="pm-row ${a.avoid ? 'pm-avoid' : ''}" data-prc-edit="${a.id}"><span class="pm-name">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<span class="pm-edit" title="Edit">✎</span></button>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
