@@ -2067,6 +2067,35 @@ async function homeAlerts(request, env, json) {
   return json({ birthdays, p1, p1list, surfaced: surfaced.slice(0, 50), keepInTouch: keepInTouch.slice(0, 50) }, request);
 }
 
+// Per-area counts + last-activity, for the Life areas dashboard. One scan of the
+// user's blocks (tasks/goals/notes/…), plus a share count per area. Cheap enough
+// to compute live; the page shows it as counts and an "how active" indicator.
+async function areasSummary(request, env) {
+  const { results } = await env.DB.prepare(
+    "SELECT kind, props, updated_at FROM blocks WHERE user_id=? AND archived=0 AND kind IN ('task','goal','note','table','contact','bookmark','journal','bucket')",
+  ).bind(env.uid).all().catch(() => ({ results: [] }));
+  const sum = {};
+  const S = (aid) => sum[aid] || (sum[aid] = { tasks: 0, goals: 0, notes: 0, contacts: 0, saved: 0, reflections: 0, bucket: 0, members: 0, last: 0 });
+  for (const r of results || []) {
+    let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
+    const areas = (Array.isArray(p.areas) && p.areas.length) ? p.areas : (p.area ? [p.area] : []);
+    if (!areas.length) continue;
+    const when = Date.parse(r.updated_at || '') || 0;
+    for (const aid of areas) {
+      const s = S(aid); if (when > s.last) s.last = when;
+      if (r.kind === 'task') { if (!p.done && !p.kit) s.tasks++; }
+      else if (r.kind === 'goal') { if ((p.status || 'active') === 'active') s.goals++; }
+      else if (r.kind === 'note' || r.kind === 'table') s.notes++;
+      else if (r.kind === 'contact') s.contacts++;
+      else if (r.kind === 'bookmark') s.saved++;
+      else if (r.kind === 'journal') s.reflections++;
+      else if (r.kind === 'bucket') s.bucket++;
+    }
+  }
+  const sh = await env.DB.prepare('SELECT block_id, COUNT(*) AS n FROM shares WHERE owner_id=? GROUP BY block_id').bind(env.uid).all().catch(() => ({ results: [] }));
+  for (const r of sh.results || []) { S(r.block_id).members = r.n; }
+  return json({ summary: sum }, request);
+}
 async function handleDay(request, env, url) {
   const day = url.searchParams.get('date') || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
@@ -3205,6 +3234,7 @@ export default {
       if (path === '/api/messages/unread' && request.method === 'GET') return json(await unreadCounts(env), request);
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
+      if (path === '/api/areas/summary' && request.method === 'GET') return areasSummary(request, env);
       if (path === '/api/home/alerts' && request.method === 'GET') return homeAlerts(request, env, json);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
 

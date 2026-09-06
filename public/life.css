@@ -2642,6 +2642,18 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .agc-chip-t { color:var(--ink-2); background:color-mix(in srgb,var(--c) 13%,transparent); }
 .agc-chip-g { color:var(--ink-2); background:var(--bg-2,color-mix(in srgb,var(--ink) 6%,transparent)); }
 .agc-star { position:absolute; top:12px; right:10px; }
+/* Top row: monogram + an "how active" pill. */
+.agc-toprow { display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; }
+.agc-act { font-size:11px; font-weight:700; letter-spacing:.02em; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.agc-act-hot { color:#fff; background:var(--c); }
+.agc-act-warm { color:var(--ink-1); background:color-mix(in srgb,var(--c) 22%,transparent); }
+.agc-act-mild { color:var(--ink-2); background:color-mix(in srgb,var(--c) 11%,transparent); }
+.agc-act-quiet { color:var(--ink-3); background:var(--bg-2,color-mix(in srgb,var(--ink) 5%,transparent)); }
+/* Sort + filter controls on the Life areas page. */
+.areas-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 16px; }
+.areas-sortwrap { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-3); }
+.areas-sort { max-width:200px; }
+.areas-sharedchip.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 /* Home "Discover" row: a nudge toward the features people miss. */
 .home-discover { margin:26px 0 0; }
 .disc-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(212px,1fr)); gap:12px; margin-top:6px; }

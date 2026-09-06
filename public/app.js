@@ -3821,43 +3821,68 @@ function areaActiveGoalCount(id) { return (state.goals || []).filter((g) => (gp(
 async function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
-  // The metrics need tasks and goals; fetch whichever we came in without.
-  await Promise.all([
-    state.tasks ? null : api('/api/blocks?kind=task').then((t) => { state.tasks = notKit(t); }).catch(() => { state.tasks = state.tasks || []; }),
-    state.goals ? null : api('/api/blocks?kind=goal').then((g) => { state.goals = g || []; }).catch(() => { state.goals = state.goals || []; }),
-  ]);
-  renderAreasList();
+  renderAreasList();   // paint immediately with whatever summary we have
+  try { const r = await api('/api/areas/summary'); state.areaSummary = r.summary || {}; if (state.view && state.view.type === 'areas') renderAreasList(); }
+  catch { state.areaSummary = state.areaSummary || {}; }
 }
-// The Life areas page: a colourful grid of area cards, each a monogram in the
-// area's colour, its vision in a line, and live task/goal counts - a scannable
-// board that clicks straight through to the area's dashboard. (Reworked from the
-// full-width accordion, 2026-09; Robin wanted something more engaging.)
+const AREAS_SORTS = [['rank', 'My order'], ['active', 'Recently active'], ['tasks', 'Most open tasks'], ['name', 'Name A–Z']];
+const areasSortMode = () => state.areasSort || (state.areasSort = (() => { try { return localStorage.getItem('life.areas.sort') || 'rank'; } catch { return 'rank'; } })());
+// How active an area's been, from its most recent block activity.
+function areaActivity(last) {
+  if (!last) return { cls: 'quiet', label: 'Quiet' };
+  const d = (Date.now() - last) / 86400000;
+  if (d < 1) return { cls: 'hot', label: 'Active today' };
+  if (d < 7) return { cls: 'warm', label: 'This week' };
+  if (d < 31) return { cls: 'mild', label: 'This month' };
+  return { cls: 'quiet', label: `Quiet · ${Math.max(1, Math.round(d / 7))}w` };
+}
+// The Life areas page: a colourful, sortable board of area cards - each a monogram
+// in the area's colour, its vision, an "how active" indicator, and live counts
+// (open tasks, goals, notes, people). Clicks through to the area's dashboard.
 function renderAreasList() {
-  const ordered = areasByRank();
+  const sum = state.areaSummary || {};
+  const S = (id) => sum[id] || {};
+  const sortMode = areasSortMode();
+  const sharedOnly = !!state.areasSharedOnly;
+  const canDrag = sortMode === 'rank' && !sharedOnly;
+  let ordered = areasByRank();
+  if (sharedOnly) ordered = ordered.filter((a) => (S(a.id).members || 0) > 0);
+  if (sortMode === 'active') ordered = ordered.slice().sort((a, b) => (S(b.id).last || 0) - (S(a.id).last || 0));
+  else if (sortMode === 'tasks') ordered = ordered.slice().sort((a, b) => (S(b.id).tasks || 0) - (S(a.id).tasks || 0));
+  else if (sortMode === 'name') ordered = ordered.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   const favAreas = ordered.filter((a) => a.props && a.props.fav);
   const card = (a) => {
-    const hue = hueOf(a);
-    const ot = areaOpenTaskCount(a.id);
-    const gc = areaActiveGoalCount(a.id);
+    const hue = hueOf(a); const s = S(a.id); const fav = !!(a.props && a.props.fav);
     const vision = (a.props && (a.props.vision || '').trim()) || '';
-    const fav = !!(a.props && a.props.fav);
-    return `<div class="area-gcard" style="--h:${hue}" draggable="true" data-area-drag="${a.id}">
+    const act = areaActivity(s.last);
+    const chips = [
+      `<span class="agc-chip agc-chip-t">✓ ${s.tasks || 0}</span>`,
+      s.goals ? `<span class="agc-chip agc-chip-g">🎯 ${s.goals}</span>` : '',
+      s.notes ? `<span class="agc-chip">▤ ${s.notes}</span>` : '',
+      s.members ? `<span class="agc-chip">👥 ${s.members}</span>` : '',
+    ].join('');
+    return `<div class="area-gcard" style="--h:${hue}" ${canDrag ? `draggable="true" data-area-drag="${a.id}"` : `data-area-drag="${a.id}"`}>
       <button class="agc-open" data-open-area="${a.id}">
-        <span class="agc-mono">${esc(initial(a.title || '?'))}</span>
+        <span class="agc-toprow"><span class="agc-mono">${esc(initial(a.title || '?'))}</span><span class="agc-act agc-act-${act.cls}" title="How active this area has been">${act.label}</span></span>
         <span class="agc-name">${esc(a.title || 'Untitled')}</span>
         ${vision ? `<span class="agc-vision">${esc(vision.slice(0, 84))}${vision.length > 84 ? '…' : ''}</span>` : '<span class="agc-vision agc-vision-empty">Add a vision to steer by</span>'}
-        <span class="agc-metrics"><span class="agc-chip agc-chip-t">✓ ${ot} ${ot === 1 ? 'task' : 'tasks'}</span>${gc ? `<span class="agc-chip agc-chip-g">🎯 ${gc} ${gc === 1 ? 'goal' : 'goals'}</span>` : ''}</span>
+        <span class="agc-metrics">${chips}</span>
       </button>
       <button class="star agc-star ${fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${fav ? '★' : '☆'}</button>
     </div>`;
   };
+  const controls = `<div class="areas-controls">
+    <label class="areas-sortwrap">Sort <select class="sel areas-sort" data-areas-sort>${AREAS_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <button class="cg-chip areas-sharedchip ${sharedOnly ? 'on' : ''}" data-areas-shared title="Only areas you share with someone">👥 Shared</button>
+  </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Life areas')}
     <div class="pane-head home-head"><h1>Life areas</h1><button class="add-btn wide" data-new-area>+ New area</button></div>
     <p class="t2-sub" style="font-style:normal">The few domains your life orbits. Open one for its whole dashboard.</p>
-    ${favAreas.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">All areas · ${ordered.length}</div>
-      <div class="area-cards area-gcards">${ordered.map(card).join('') || '<div class="empty">No life areas yet.</div>'}</div></section>`;
+    ${controls}
+    ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
+    <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All areas'} · ${ordered.length}</div>
+      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No areas shared yet.' : 'No life areas yet.'}</div>`}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -10139,6 +10164,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-goalnote-q]') && state.goal_open) { state.goal_open.noteQuery = e.target.value; renderGoalNoteList(); }
+  if (e.target.matches('[data-areas-sort]')) { state.areasSort = e.target.value; try { localStorage.setItem('life.areas.sort', state.areasSort); } catch {} renderAreasList(); }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
@@ -10623,6 +10649,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-home-cal]')) { openCalendar(todayISO()).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-areas-shared]')) { state.areasSharedOnly = !state.areasSharedOnly; renderAreasList(); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
