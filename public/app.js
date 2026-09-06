@@ -8849,10 +8849,11 @@ function renderGoalCard() {
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
     <div class="gc-hero" style="--h:${hueOf(a)}">
       <div class="gc-hero-top">
-        <div class="gc-chips">${a ? `<button class="gc-areachip" data-open-area="${a.id}"><span class="cd"></span>${esc(a.title)}</button>` : ''}<span class="gc-status s-${st}">${esc(stLabel)}</span>${dueLbl ? `<span class="gc-due">🎯 by ${esc(dueLbl)}</span>` : ''}</div>
+        <div class="gc-chips"><span class="gc-status s-${st}">${esc(stLabel)}</span>${dueLbl ? `<span class="gc-due">🎯 by ${esc(dueLbl)}</span>` : ''}</div>
         <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="Focus this quarter">${p.focus ? '★' : '☆'}</button>
       </div>
       <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="What do you want to achieve?">${esc(g.title || '')}</textarea>
+      <div class="gc-areas"><span class="gc-areas-l">Life areas</span>${blockAreasControl('goal', g)}</div>
       ${progressBlock}
       <label class="gc-why"><span class="gc-why-l">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
       ${(doneN || focusMins) ? `<div class="gc-hero-stats">${doneN ? `<span>✓ ${doneN} task${doneN === 1 ? '' : 's'} done</span>` : ''}${focusMins ? `<span>🍅 ${fmtMins(focusMins)} focused</span>` : ''}</div>` : ''}
@@ -8867,7 +8868,6 @@ function renderGoalCard() {
     <details class="gc-settings">
       <summary>⚙ Goal settings</summary>
       <div class="tf-meta">
-        <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('goal', g)}</div>
         <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
