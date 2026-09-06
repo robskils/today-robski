@@ -1055,7 +1055,7 @@ async function avatarDataUri(file) {
   } finally { if (url) URL.revokeObjectURL(url); }
 }
 async function cardSetPhoto(file) {
-  try { const uri = await avatarDataUri(file); state.card = state.card || {}; state.card.photo = uri; saveCard(); renderCard(); toast('Photo updated'); }
+  try { const uri = await avatarDataUri(file); state.card = state.card || {}; state.card.photo = uri; saveCard(); rerenderCard(); toast('Photo updated'); }
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 // Your own card, from account + profile. `full` shows the tagline hint.
@@ -1070,12 +1070,20 @@ function myCardData() {
 }
 function cardPreviewHtml(full) { return cardHtml(myCardData(), full); }
 function renderCard() {
+  $('#pane').innerHTML = `${pageCrumb('Daybook card')}
+    <div class="pane-head home-head"><h1>Your Daybook card</h1></div>
+    ${cardEditorHtml()}`;
+}
+// Repaint the card editor on whichever surface it's on: the Settings > Card tab,
+// or the standalone Daybook card view.
+function rerenderCard() { if (state.view && state.view.type === 'settings') renderSettings(); else renderCard(); }
+// The card editor body (preview + fields), reused by the standalone Daybook card
+// view and the Settings > Card tab.
+function cardEditorHtml() {
   const a = state.account || {}; const c = cardProfile();
   const accent = c.accent || savedAccent() || '#c4412e';
   const swatches = CARD_COLOURS.map((h) => `<button class="dbc-swatch ${accent.toLowerCase() === h ? 'on' : ''}" style="background:${h}" data-card-accent="${h}" title="${h}"></button>`).join('');
-  $('#pane').innerHTML = `${pageCrumb('Daybook card')}
-    <div class="pane-head home-head"><h1>Your Daybook card</h1></div>
-    <p class="dbc-lede">How people find you on Daybook, and your small window to the world. Make it yours.</p>
+  return `<p class="dbc-lede">How people find you on Daybook, and your small window to the world. Make it yours.</p>
     <div class="dbc-wrap">
       <div class="dbc-preview">${cardPreviewHtml(true)}</div>
       <div class="dbc-edit">
@@ -1872,6 +1880,7 @@ function renderSettings() {
   // collapsing scroll, so the settings you reach for most are one tap in.
   const TABS = [
     ['account', 'Account'],
+    ['card', 'Card'],
     ['ai', 'Plan'],
     ['appearance', 'Appearance'],
     ['mobile', 'Mobile'],
@@ -1880,11 +1889,16 @@ function renderSettings() {
     ['invites', 'Invites'],
     ['manage', 'Manage'],
   ];
+  // The Card tab shows the Daybook-card editor; make sure its data is loaded.
+  if (state.settings.tab === 'card' && state.card === undefined) {
+    state.card = {};
+    api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} } if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {});
+  }
   if (!TABS.some(([k]) => k === state.settings.tab)) state.settings.tab = 'account';
   const tab = state.settings.tab;
   const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
-  const accountPane = state.account ? `<button class="set-card set-cardlink" data-open-card><span class="set-cardlink-ic">🪪</span><span class="set-cardlink-body"><span class="set-cardlink-t">Your Daybook card</span><span class="set-cardlink-s">Photo, tagline, colour and the contact details you show</span></span><span class="set-cardlink-go">›</span></button>
+  const accountPane = state.account ? `<button class="set-card set-cardlink" data-set-tab="card"><span class="set-cardlink-ic">🪪</span><span class="set-cardlink-body"><span class="set-cardlink-t">Your Daybook card</span><span class="set-cardlink-s">Photo, tagline, colour and the contact details you show</span></span><span class="set-cardlink-go">›</span></button>
       <div class="set-card set-account">
         <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
         <label class="set-field"><span>Username</span>
@@ -1972,8 +1986,8 @@ function renderSettings() {
 
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
-  const panes = { account: accountPane, appearance: appearancePane, mobile: mobileSettingsHtml(), ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: 'Your details & sign-in addresses', appearance: 'Theme & accent colour', mobile: 'Arrange your Home on the phone', ai: 'Your plan, and how the AI runs', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
+  const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: 'Your details & sign-in addresses', card: 'Your Daybook card - photo, tagline, links & colour', appearance: 'Theme & accent colour', mobile: 'Arrange your Home on the phone', ai: 'Your plan, and how the AI runs', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
 
   $('#pane').innerHTML = `
     ${pageCrumb('Settings')}
@@ -12264,11 +12278,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-card]')) { openCard(); return; }
   { const oc = t.closest('[data-open-personcard]'); if (oc) { openPublicCard(oc.dataset.openPersoncard); return; } }
   if (t.closest('[data-viewcard-close]') || t.closest('[data-viewcard-bgclose]') === t) { closePublicCard(); return; }
-  { const sw = t.closest('[data-card-accent]'); if (sw) { state.card = state.card || {}; state.card.accent = sw.dataset.cardAccent; saveCard(); renderCard(); return; } }
-  { const pat = t.closest('[data-card-pattern]'); if (pat) { state.card = state.card || {}; state.card.pattern = pat.dataset.cardPattern; saveCard(); renderCard(); return; } }
-  if (t.closest('[data-card-link-add]')) { state.card = state.card || {}; state.card.links = state.card.links || []; state.card.links.push({ url: '', label: '' }); renderCard(); const rows = document.querySelectorAll('[data-card-link-url]'); const last = rows[rows.length - 1]; if (last) last.focus(); return; }
-  { const lx = t.closest('[data-card-link-x]'); if (lx) { const i = Number(lx.dataset.cardLinkX); if (state.card && state.card.links) { state.card.links.splice(i, 1); saveCard(); renderCard(); } return; } }
-  if (t.closest('[data-card-photo-x]')) { if (state.card) { delete state.card.photo; saveCard(); renderCard(); } return; }
+  { const sw = t.closest('[data-card-accent]'); if (sw) { state.card = state.card || {}; state.card.accent = sw.dataset.cardAccent; saveCard(); rerenderCard(); return; } }
+  { const pat = t.closest('[data-card-pattern]'); if (pat) { state.card = state.card || {}; state.card.pattern = pat.dataset.cardPattern; saveCard(); rerenderCard(); return; } }
+  if (t.closest('[data-card-link-add]')) { state.card = state.card || {}; state.card.links = state.card.links || []; state.card.links.push({ url: '', label: '' }); rerenderCard(); const rows = document.querySelectorAll('[data-card-link-url]'); const last = rows[rows.length - 1]; if (last) last.focus(); return; }
+  { const lx = t.closest('[data-card-link-x]'); if (lx) { const i = Number(lx.dataset.cardLinkX); if (state.card && state.card.links) { state.card.links.splice(i, 1); saveCard(); rerenderCard(); } return; } }
+  if (t.closest('[data-card-photo-x]')) { if (state.card) { delete state.card.photo; saveCard(); rerenderCard(); } return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
@@ -12414,7 +12428,7 @@ function openLinkMenu(x, y, href, view) {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
-  if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); renderCard(); return; }
+  if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
   if (e.target.matches('[data-card-showemail]')) { state.card = state.card || {}; state.card.showEmail = e.target.checked; saveCard(); cardLivePreview(); return; }
   if (e.target.matches('[data-card-showphone]')) { state.card = state.card || {}; state.card.showPhone = e.target.checked; saveCard(); cardLivePreview(); return; }
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
