@@ -9715,9 +9715,9 @@ function renderReviewReport() {
   // The record - the fuel behind the report - as tabs (By life area / Goals / In
   // your words), inside a collapsible section below the commentary.
   const recTabs = [];
+  if (refl.trim() || free) recTabs.push(['words', 'In your words', `${refl}${free}`]);
   if (wheelRows) recTabs.push(['areas', 'By life area', `<div class="rr-areas">${wheelRows}</div>`]);
   if (goalRows) recTabs.push(['goals', 'Goals', `<div class="rr-areas">${goalRows}</div>`]);
-  if (refl.trim() || free) recTabs.push(['words', 'In your words', `${refl}${free}`]);
   let recordHtml = '';
   if (recTabs.length) {
     const active = recTabs.some((x) => x[0] === R.reportTab) ? R.reportTab : recTabs[0][0];
