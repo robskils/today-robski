@@ -9110,7 +9110,7 @@ function wheelOfLifeHtml() {
   const trend = revs.slice(-12).map((r) => Math.min(wheelAvg(r.props.wheel), 5));
   const trendHtml = trend.length >= 2 ? `<div class="wol-trend"><span class="wol-trend-h">Average over time</span><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></div>` : '';
   return `<section class="home-sec wol-sec">${head}
-    <div class="wol-wrap"><div class="wol-chart">${svg}<div class="wol-center"><b>${avg}</b><small>/5</small></div></div>
+    <div class="wol-wrap"><div class="wol-chart">${svg}<div class="wol-cap">Average <b>${avg}</b> / 5</div></div>
       <div class="wol-side"><div class="wol-legend">${legend}</div>${trendHtml}</div></div></section>`;
 }
 function reviewsBody() {

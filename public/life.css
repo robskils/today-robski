@@ -907,9 +907,8 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .wol-ring { fill:none; stroke:var(--line); stroke-width:1; opacity:.6; }
 .wol-track { fill:color-mix(in srgb,var(--ink) 4%,transparent); stroke:var(--card); stroke-width:1; }
 .wol-hub { fill:var(--ink-3); }
-.wol-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
-.wol-center b { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:600; color:var(--ink); }
-.wol-center small { display:block; font-size:12px; color:var(--ink-3); margin-top:-4px; }
+.wol-cap { text-align:center; margin-top:10px; font-size:14px; color:var(--ink-2); }
+.wol-cap b { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; color:var(--ink); }
 .wol-side { flex:1 1 240px; min-width:0; }
 .wol-legend { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:4px 12px; }
 .wol-leg { --h:220; display:flex; align-items:center; gap:8px; background:none; border:0; padding:6px 4px; cursor:pointer; text-align:left; border-radius:8px; }
