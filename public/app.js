@@ -12499,6 +12499,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-glist-sort]')) { state.goalsListSort = e.target.value; renderGoals(); return; }
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   if (e.target.matches('[data-repeatfrom-task]')) patchTaskProps(e.target.dataset.repeatfromTask, { repeatFrom: e.target.value === 'done' ? 'done' : null });
+  if (e.target.matches('[data-repeatcount-task]')) { const n = Math.max(0, Math.min(999, parseInt(e.target.value, 10) || 0)); patchTaskProps(e.target.dataset.repeatcountTask, { repeatCount: n || null }); }
   if (e.target.id === 'task-repeat') { const w = $('#task-repeatfrom-wrap'); if (w) w.hidden = !e.target.value; }
   if (e.target.id === 'qt-repeat') { const w = $('#qt-repeatfrom-wrap'); if (w) w.hidden = !e.target.value; }
   if (e.target.id === 'contact-file' && e.target.files && e.target.files[0]) { importVcf(e.target.files[0]); e.target.value = ''; }
@@ -13095,9 +13096,18 @@ function toggleTask(id) {
     // today (a full gap since you actually did it - relaxed). Keep-in-touch nudges
     // are always the latter. Mirrors setTaskDone on the server.
     const fromDone = t.props.kit || t.props.repeatFrom === 'done';
+    // A capped series (props.repeatCount) finishes on its last occurrence instead
+    // of rolling forward. Mirrors setTaskDone on the server.
+    const total = (!t.props.kit && Number(t.props.repeatCount)) || 0;
+    const doneCount = (Number(t.props.repeatDone) || 0) + 1;
+    if (total && doneCount >= total) {
+      patchTaskProps(id, { done: true, repeatDone: doneCount });
+      toast('Series complete - that was the last one');
+      return;
+    }
     const next = nextRepeat(t.props.repeat, fromDone ? todayISO() : (t.props.snooze || todayISO()));
-    patchTaskProps(id, { snooze: next, done: false, ...(t.props.kit ? { last: todayISO() } : {}) });
-    toast(`Repeats ${repeatShort(t.props.repeat).toLowerCase()} — back ${dpLabel(next)}`);
+    patchTaskProps(id, { snooze: next, done: false, ...(total ? { repeatDone: doneCount } : {}), ...(t.props.kit ? { last: todayISO() } : {}) });
+    toast(`Repeats ${repeatShort(t.props.repeat).toLowerCase()} - back ${dpLabel(next)}${total ? ` · ${doneCount} of ${total}` : ''}`);
     return;
   }
   patchTaskProps(id, { done: !t.props.done });
@@ -13209,7 +13219,8 @@ function taskSurfaceHtml(t) {
       <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my lists until then</span></label>
     </div>` : ''}
     <label class="tfs-row"><span class="tfs-l">Repeat</span><span class="tfs-ctrl"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(p.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></label>
-    ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">Next one is due<small class="tf-hint">keep to the calendar, or space it from when you do it</small></span><span class="tfs-ctrl"><select class="sel" data-repeatfrom-task="${id}"><option value="due" ${(p.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${p.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(p.repeat)}</option></select></span></label>` : ''}
+    ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">Next one is due<small class="tf-hint">keep to the calendar, or space it from when you do it</small></span><span class="tfs-ctrl"><select class="sel" data-repeatfrom-task="${id}"><option value="due" ${(p.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${p.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(p.repeat)}</option></select></span></label>
+    <label class="tfs-row"><span class="tfs-l">How many times<small class="tf-hint">${p.repeatCount ? `${Number(p.repeatDone) || 0} of ${p.repeatCount} done so far` : 'leave blank to repeat forever'}</small></span><span class="tfs-ctrl"><input type="number" min="1" max="999" inputmode="numeric" class="sel tfs-num" data-repeatcount-task="${id}" value="${p.repeatCount || ''}" placeholder="∞ forever"></span></label>` : ''}
   </div>`;
   return `<section class="tf-surface ${open ? '' : 'folded'}">
     ${tfCardHead('surface', 'Surface')}

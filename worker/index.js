@@ -2533,10 +2533,20 @@ async function setTaskDone(env, id, done) {
     // rhythm with props.repeatFrom === 'done' - sometimes discipline matters,
     // sometimes spacing does. `toggleTask` in app.js mirrors this.
     const fromDone = p.kit || p.repeatFrom === 'done';
-    p.snooze = nextRepeatDate(p.repeat, fromDone ? today : (p.snooze || today), today);
-    if (p.kit) p.last = today;
-    p.done = false;
-    slotDone = true;   // today's tick still counts toward the day's ring
+    // A capped series (props.repeatCount, kit tasks excepted) counts how many
+    // times it has been done; when the last one is ticked it finishes for good
+    // rather than rolling forward again. `toggleTask` in app.js mirrors this.
+    const total = (!p.kit && Number(p.repeatCount)) || 0;
+    const doneCount = (Number(p.repeatDone) || 0) + 1;
+    if (total && doneCount >= total) {
+      p.repeatDone = doneCount; p.done = true; slotDone = true;   // series complete
+    } else {
+      p.snooze = nextRepeatDate(p.repeat, fromDone ? today : (p.snooze || today), today);
+      if (p.kit) p.last = today;
+      if (total) p.repeatDone = doneCount;
+      p.done = false;
+      slotDone = true;   // today's tick still counts toward the day's ring
+    }
   } else {
     p.done = !!done;
   }
