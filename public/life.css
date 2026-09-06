@@ -802,7 +802,7 @@ button { cursor:pointer; background:none; border:0; }
 .rr { --c:hsl(var(--h,40) 45% 50%); max-width:680px; }
 .rr-eyebrow { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--c); }
 .rr-headline { font-family:'Cormorant Garamond',Georgia,serif; font-size:46px; font-weight:600; line-height:1.03; letter-spacing:-.01em; color:var(--ink); margin:8px 0 2px; text-wrap:balance; }
-.rr-kicker { font-size:14.5px; color:var(--ink-3); }
+.rr-kicker { font-size:15px; font-weight:600; color:var(--ink-2); margin-top:2px; }
 .rr-standfirst { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; line-height:1.45; color:var(--ink-2); margin:12px 0 0; }
 .rr-standfirst b { color:var(--ink); font-weight:600; }
 .rr-byline { margin-top:12px; font-size:13.5px; color:var(--ink-3); } .rr-byline b { color:var(--ink-2); }

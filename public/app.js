@@ -9739,6 +9739,12 @@ function renderReviewReport() {
   // Featured win: the week's standout, as a magazine feature line.
   const top = reviewTopWin(m);
   const feature = top ? `<button class="rr-feature" ${top.id ? `data-open-task="${top.id}"` : ''}><span class="rr-feature-tag">The win of the ${esc(PERIOD_WORD[p.rtype] || 'period')}</span><span class="rr-feature-t">${esc(top.title || 'Untitled')}</span><span class="rr-feature-sub">${esc(top.tag)} →</span></button>` : '';
+  // The period, stated plainly and big: the span (1 month) + the exact dates, so
+  // you know what you're looking at at a glance.
+  const spanWords = { weekly: '1 week', monthly: '1 month', quarterly: '3 months', yearly: '1 year' }[p.rtype] || '';
+  const shortDR = (iso) => new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const rangeLine = (p.from && p.to) ? `${shortDR(p.from)} - ${shortDR(p.to)}` : (pt.range || '');
+  const periodLine = [spanWords, rangeLine].filter(Boolean).join(' · ');
   // A pull-quote from your own words, if you wrote any.
   const quote = reviewPullQuote(p, r);
   // The previous review of this type, for figure deltas (▲/▼ vs last time).
@@ -9768,9 +9774,9 @@ function renderReviewReport() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
     <article class="rr" style="--h:${hue}">
-      <div class="rr-eyebrow"><span>${esc(cfg.label)} review${p.doneAt ? ` · ${esc(prettyDate(p.doneAt))}` : ''}</span>${navHtml}</div>
+      <div class="rr-eyebrow"><span>${esc(cfg.label)} review${p.doneAt ? ` · submitted ${esc(prettyDate(p.doneAt))}` : ''}</span>${navHtml}</div>
       <h1 class="rr-headline">${esc(pt.main)}</h1>
-      ${pt.range ? `<div class="rr-kicker">${esc(pt.range)}</div>` : ''}
+      ${periodLine ? `<div class="rr-kicker">${esc(periodLine)}</div>` : ''}
       <p class="rr-standfirst">${standfirst}</p>
       ${sent ? `<div class="rr-byline"><span class="rr-byline-emoji">${sent.emoji}</span> The mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
       ${figsHtml}
