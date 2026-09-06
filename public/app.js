@@ -4550,6 +4550,7 @@ function showCalForm(ev) {
       <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span>
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
+    <label class="ce-field"><span class="ce-flbl">Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
@@ -4590,16 +4591,17 @@ function onEventEndEdit(prefix) {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
 // Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
-function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, isNew, fallbackDate }) {
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
   const rep = isNew && repeat && repeat !== 'none' ? { repeat } : {};
   const nt = (notes && String(notes).trim()) ? { notes: String(notes).trim() } : { notes: '' };
+  const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a life area
   if (allDay) {
     // Stored end is exclusive (the day after the last), so a multi-day trip pushes
     // the inclusive end date on by one.
     const multi = endDate && endDate > startDate ? { end_date: addDayISO(endDate, 1) } : {};
-    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt };
+    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt, ...ar };
   }
   // Duration = the gap between the two date+times (spanning days if it crosses
   // midnight). A non-positive or missing end falls back to an hour.
@@ -4607,10 +4609,10 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   let duration = Math.max(0, daysBetween(startDate, endDate)) * 1440 + isoToMin(endTime) - sMin;
   if (!(duration > 0)) duration = 60;
   duration = Math.max(15, duration);
-  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt };
+  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar };
 }
-async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes) {
-  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, isNew: !id, fallbackDate: state.cal.selected }));
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area) {
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, isNew: !id, fallbackDate: state.cal.selected }));
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
@@ -6678,6 +6680,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
+    <label class="ce-field"><span class="ce-flbl">Life area</span><select id="qe-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -11042,9 +11045,9 @@ document.addEventListener('submit', (e) => {
   }
   if (e.target.id === 'qe-form') {
     const v = $('#qe-title').value.trim();
-    if (v) homeAddEvent(buildEventBody({ title: v, startDate: $('#qe-date').value, startTime: ($('#qe-time') || {}).value, endDate: ($('#qe-enddate') || {}).value, endTime: ($('#qe-endtime') || {}).value, location: $('#qe-loc').value.trim(), allDay: $('#qe-allday').checked, repeat: ($('#qe-repeat') || {}).value, notes: ($('#qe-notes') || {}).value, isNew: true }));
+    if (v) homeAddEvent(buildEventBody({ title: v, startDate: $('#qe-date').value, startTime: ($('#qe-time') || {}).value, endDate: ($('#qe-enddate') || {}).value, endTime: ($('#qe-endtime') || {}).value, location: $('#qe-loc').value.trim(), allDay: $('#qe-allday').checked, repeat: ($('#qe-repeat') || {}).value, notes: ($('#qe-notes') || {}).value, area: ($('#qe-area') || {}).value, isNew: true }));
   }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : ''); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';

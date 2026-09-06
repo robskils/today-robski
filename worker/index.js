@@ -289,7 +289,8 @@ async function handleCalendar(request, env, url) {
   // Workspace calendar, or a member's own connected calendar (googleCtx picks).
   const native = await nativeRangeEvents(env, from, to).catch(() => []);
   const g = await calendarRange(env, from, to);
-  return json({ events: [...(g.events || []), ...native], error: g.error || null }, request);
+  const events = applyEventAreas([...(g.events || []), ...native], await getEventAreas(env).catch(() => ({})));
+  return json({ events, error: g.error || null }, request);
 }
 
 // Create a real event on the Google calendar. Needs the calendar.events scope:
@@ -326,6 +327,7 @@ async function createEvent(request, env) {
   if (!(env.uid === 1 && env.GOOGLE_REFRESH_TOKEN)) {
     const r = await createNativeEvent(env, b);
     if (r.error) return err(r.error, request);
+    if (b.area !== undefined) await setEventAreaFor(env, r.id, b.area).catch(() => {});
     return json({ ok: true, id: r.id }, request, 201);
   }
 
@@ -375,7 +377,7 @@ async function createEvent(request, env) {
         const qRes = await fetch(q, { headers: { Authorization: `Bearer ${token}` } });
         if (qRes.ok) {
           const found = ((await qRes.json()).items || []).find((e) => e.status !== 'cancelled');
-          if (found) return json({ ok: true, id: found.id, existed: true }, request, 200);
+          if (found) { if (b.area !== undefined) await setEventAreaFor(env, found.id, b.area).catch(() => {}); return json({ ok: true, id: found.id, existed: true }, request, 200); }
         }
       } catch { /* lookup is best-effort; fall through and create */ }
     }
@@ -410,6 +412,7 @@ async function createEvent(request, env) {
     }
 
     const ev = await res.json();
+    if (b.area !== undefined) await setEventAreaFor(env, ev.id, b.area).catch(() => {});
     return json({ ok: true, id: ev.id }, request, 201);
   } catch (e) {
     console.error('createEvent:', e.message);
@@ -439,6 +442,7 @@ async function updateEvent(request, env, id) {
     if (b.url === undefined && native.p.url) p.url = native.p.url;
     await env.DB.prepare("UPDATE blocks SET title=?, props=?, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
       .bind(title, JSON.stringify(p), new Date().toISOString(), native.id, env.uid).run();
+    if (b.area !== undefined) await setEventAreaFor(env, native.id, b.area).catch(() => {});
     return json({ ok: true, id: native.id }, request);
   }
   if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
@@ -477,6 +481,7 @@ async function updateEvent(request, env, id) {
     if (res.status === 404) return err('That event is not on the calendar.', request, 404);
     if (!res.ok) { console.error('google update event:', res.status, await res.text()); return err('Google would not update that event.', request, 502); }
     const ev = await res.json();
+    if (b.area !== undefined) await setEventAreaFor(env, id, b.area).catch(() => {});
     return json({ ok: true, id: ev.id }, request);
   } catch (e) {
     console.error('updateEvent:', e.message);
@@ -695,6 +700,19 @@ async function setSetting(env, key, value, uid = env.uid) {
     'INSERT INTO settings (user_id, key, value) VALUES (?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value',
   ).bind(uid, key, value).run();
 }
+
+// A calendar event can carry a life area. Native events could hold it in props,
+// but Google events have nowhere to put it - so a per-event map (keyed by the
+// event's base id, ::date occurrences share the series' area) is the one home for
+// both, merged onto events as they're read.
+async function getEventAreas(env) { const v = await getSetting(env, 'event_areas'); try { return v ? JSON.parse(v) : {}; } catch { return {}; } }
+async function setEventAreaFor(env, id, areaId) {
+  const key = String(id || '').split('::')[0]; if (!key) return;
+  const map = await getEventAreas(env);
+  if (areaId) map[key] = String(areaId); else delete map[key];
+  await setSetting(env, 'event_areas', JSON.stringify(map));
+}
+function applyEventAreas(events, map) { if (!map) return events; for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; if (map[k]) e.area = map[k]; } return events; }
 
 // The accounts the per-minute cron fans out over: every active member. A NULL
 // status counts as active - rows created before the column existed have none,
@@ -2083,6 +2101,7 @@ async function handleDay(request, env, url) {
   // Daybook's own events for this day, merged with any Google events above.
   const nativeDay = await nativeDayEvents(env, day).catch(() => []);
   cal.events = [...(cal.events || []), ...nativeDay];
+  applyEventAreas(cal.events, await getEventAreas(env).catch(() => ({})));
 
   const byslot = new Map();
   for (const r of linksRes.results) {
