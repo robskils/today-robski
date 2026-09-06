@@ -2592,6 +2592,14 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .tbl-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; padding:3px; }
 .tbl-card { display:flex; align-items:center; gap:10px; text-align:left; padding:15px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:16.5px; box-shadow:var(--shadow); overflow:hidden; min-width:0; }
 .tbl-card:hover { border-color:var(--accent); }
+/* Draggable note/table cards in a life area, with a drag handle + drop marks. */
+.noteord-card { position:relative; cursor:pointer; }
+.noteord-card[draggable] { cursor:grab; }
+.noteord-card.dragging { opacity:.4; }
+.tc-grip { flex:none; color:var(--ink-3); opacity:0; font-size:13px; cursor:grab; transition:opacity .12s; }
+.noteord-card:hover .tc-grip { opacity:.6; }
+.noteord-cards .noteord-card.drop-before::before, .noteord-cards .noteord-card.drop-after::after { content:''; position:absolute; top:5px; bottom:5px; width:3px; border-radius:2px; background:var(--accent); z-index:3; }
+.noteord-cards .noteord-card.drop-before::before { left:-6px; } .noteord-cards .noteord-card.drop-after::after { right:-6px; }
 /* The title, ellipsised. A bare text node can't be truncated inside a flex card,
    so it's wrapped in .tc-t: it takes the leftover width and clips with an … so
    every card keeps all four borders instead of a long title pushing past them. */

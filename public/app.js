@@ -3991,6 +3991,18 @@ function renderArea() {
   const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${n.props && n.props.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}</button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
+  // Notes & tables in a draggable order (saved on the area as props.noteOrder;
+  // starred first, then the rest, until you drag them into your own order).
+  const noteTblOrdered = (() => {
+    const items = [...starredNotes, ...otherNotes, ...tables];
+    const ord = (area.props && Array.isArray(area.props.noteOrder)) ? area.props.noteOrder : [];
+    const idx = (id) => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };
+    return items.map((n, i0) => ({ n, i0 })).sort((a, b) => (idx(a.n.id) - idx(b.n.id)) || (a.i0 - b.i0)).map((x) => x.n);
+  })();
+  const ntCard = (n) => n.kind === 'table'
+    ? `<button class="tbl-card noteord-card" draggable="true" data-noteord="${n.id}" data-open-table="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`
+    : `<button class="tbl-card noteord-card" draggable="true" data-noteord="${n.id}" data-open-note="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span>${isFav(n) ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${n.props && n.props.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}</button>`;
+  const orderedNoteCards = noteTblOrdered.map(ntCard).join('');
   // Everything else that can carry this area, each linking to its own tool.
   const emailCards = emails.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
   const contactCards = contacts.map((c) => contactCardHtml(c)).join('');
@@ -4037,7 +4049,7 @@ function renderArea() {
     // Vision and Goals share one tab now (button says "Goals", page says "Vision
     // and Goals") - the vision sets the direction the goals serve.
     'Goals': `<div class="area-vg"><div class="avg-h">Vision</div>${visionInner}<div class="avg-h avg-h-goals">Goals</div>${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>'}</div>`,
-    'Notes and tables': notesTotal ? `<div class="tbl-cards">${starredNoteCards}${noteCards}${tblCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
+    'Notes and tables': notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
     'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',
     'Contacts': `<div class="contact-grid">${contactCards}</div>`,
     'Saved links': `<div class="tbl-cards">${bookmarkCards}</div>`,
@@ -11206,7 +11218,30 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null, dragArea = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null, dragArea = null, dragNoteOrd = null;
+// Reorder the note/table cards in a life area's panel; the order lives on the area
+// (props.noteOrder) so it sticks. Mirrors areaDropTarget.
+function noteordDropTarget(container, x, y, draggedId) {
+  clearDropMarks();
+  const cards = [...container.querySelectorAll('[data-noteord]')].filter((el) => el.dataset.noteord !== draggedId);
+  if (!cards.length) return null;
+  let best = null, bestD = Infinity;
+  for (const el of cards) { const r = el.getBoundingClientRect(); const d = (x - (r.left + r.width / 2)) ** 2 + (y - (r.top + r.height / 2)) ** 2; if (d < bestD) { bestD = d; best = el; } }
+  const r = best.getBoundingClientRect();
+  const after = x > r.left + r.width / 2;
+  best.classList.add(after ? 'drop-after' : 'drop-before');
+  return { beforeId: best.dataset.noteord, after };
+}
+function reorderAreaNotes(draggedId, target) {
+  if (!target) return;
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  const ordered = [...document.querySelectorAll('.noteord-cards [data-noteord]')].map((el) => el.dataset.noteord).filter((id) => id !== draggedId);
+  let i = ordered.indexOf(target.beforeId); if (i < 0) i = ordered.length; if (target.after) i += 1;
+  ordered.splice(i, 0, draggedId);
+  area.props = area.props || {}; area.props.noteOrder = ordered;
+  renderArea();
+  api('/api/blocks/' + area.id, { method: 'PATCH', body: JSON.stringify({ props: { noteOrder: ordered } }) }).catch(() => {});
+}
 // Life areas in the user's chosen order (props.rank), title as the tiebreak.
 function areasByRank() { return state.areas.slice().sort((a, b) => { const ra = (a.props && a.props.rank), rb = (b.props && b.props.rank); return (ra == null ? 1e9 : ra) - (rb == null ? 1e9 : rb) || (a.title || '').localeCompare(b.title || ''); }); }
 // Drag reorder for area cards (a wrapping grid): snap to the nearest card, insert
@@ -11420,11 +11455,13 @@ document.addEventListener('dragstart', (e) => {
   const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const ar = e.target.closest('[data-area-drag]'); if (ar) { dragArea = ar.dataset.areaDrag; ar.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const nd = e.target.closest('[data-noteord]'); if (nd) { dragNoteOrd = nd.dataset.noteord; nd.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const cc = e.target.closest('[data-contact-drag]'); if (cc) { dragContact = cc.dataset.contactDrag; cc.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', cc.dataset.contactDrag); } catch {} }
 });
 document.addEventListener('dragover', (e) => {
   if (dragFav) { const c = e.target.closest('#favs') || e.target.closest('.home-sec-favs'); if (c) { e.preventDefault(); favDrop(c, e.clientX, e.clientY, dragFav); } return; }
   if (dragArea) { const c = e.target.closest('.area-cards'); if (c) { e.preventDefault(); areaDropTarget(c, e.clientX, e.clientY, dragArea); } return; }
+  if (dragNoteOrd) { const c = e.target.closest('.noteord-cards'); if (c) { e.preventDefault(); noteordDropTarget(c, e.clientX, e.clientY, dragNoteOrd); } return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
   if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'h'); return; }
   if (dragHomeSec && (e.target.closest('.home-main') || e.target.closest('.home-side'))) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
@@ -11453,6 +11490,12 @@ document.addEventListener('drop', (e) => {
     const c = e.target.closest('.area-cards');
     if (c) { const target = areaDropTarget(c, e.clientX, e.clientY, dragArea); reorderAreas(dragArea, target); }
     clearDropMarks(); dragArea = null; return;
+  }
+  if (dragNoteOrd) {
+    e.preventDefault();
+    const c = e.target.closest('.noteord-cards');
+    if (c) { const target = noteordDropTarget(c, e.clientX, e.clientY, dragNoteOrd); reorderAreaNotes(dragNoteOrd, target); }
+    clearDropMarks(); dragNoteOrd = null; return;
   }
   if (dragFocus) {
     e.preventDefault(); const over = e.target.closest('[data-focus-id]');
@@ -11497,7 +11540,7 @@ document.addEventListener('drop', (e) => {
     dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; dragArea = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; dragArea = null; dragNoteOrd = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
