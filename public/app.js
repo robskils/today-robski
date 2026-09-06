@@ -8452,10 +8452,14 @@ async function newGoal(area) {
   if (el) { el.focus(); try { el.setSelectionRange(0, 0); } catch {} }
 }
 async function openGoalCard(id) {
-  const g = await api(`/api/blocks/${id}`);
-  const all = await api('/api/blocks?kind=task');
+  const [g, all, allNotes] = await Promise.all([
+    api(`/api/blocks/${id}`),
+    api('/api/blocks?kind=task'),
+    api('/api/blocks?kind=note').catch(() => []),
+  ]);
   const tasks = all.filter((t) => t.props && t.props.goal === id);
-  state.goal_open = { goal: g, tasks, allTasks: all, areaQuery: '' };
+  const notes = (allNotes || []).filter((n) => n.props && n.props.goal === id);
+  state.goal_open = { goal: g, tasks, allTasks: all, notes, allNotes: allNotes || [], areaQuery: '', noteQuery: '' };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
 }
@@ -8507,6 +8511,7 @@ function renderGoalCard() {
       <div class="ms-tasks">${loose.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
     </div>` : ''}
     ${goalAreaTasksHtml()}
+    ${connectedNotesHtml()}
     ${notesSection(g.body, 'goal', g.id)}`;
   autoGrowSoon($('#goalcard-title'));
 }
@@ -8538,6 +8543,65 @@ function goalAreaListInner() {
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
 function renderGoalAreaList() { const el = $('.gal-list'); if (el) el.innerHTML = goalAreaListInner(); }
+// Connected notes: standalone notes linked to this goal (props.goal). The same
+// note, shown here as well as wherever it already lives - never a copy. Mirrors
+// the connected-tasks linker so the two read as a pair.
+function connectedNotesHtml() {
+  const go = state.goal_open; if (!go) return '';
+  const notes = go.notes || [];
+  const cards = notes.map((n) => `<div class="gc-note-card"><button class="gc-note-open" data-open-note="${n.id}"><span class="gc-note-ic">▤</span><span class="gc-note-t">${esc(n.title || 'Untitled')}</span></button><button class="gc-note-x" data-goal-unlink-note="${n.id}" title="Disconnect from this goal">×</button></div>`).join('');
+  return `<div class="goal-notes-sec">
+    <div class="tf-label gt-loose-h">Connected notes<span class="gt-hint">notes that belong to this goal - the same note, shown here too</span></div>
+    ${notes.length ? `<div class="gc-notes-grid">${cards}</div>` : ''}
+    <div class="goal-notelist">
+      <div class="gal-box">
+        <input class="sel gal-search" data-goalnote-q placeholder="Connect an existing note…" value="${esc(go.noteQuery || '')}" autocomplete="off">
+        <div class="gal-drop"><div class="gc-note-list">${connectedNotesPickerInner()}</div></div>
+      </div>
+      <button class="ghost gc-note-new" data-goal-addnote>+ New note</button>
+    </div>
+  </div>`;
+}
+function connectedNotesPickerInner() {
+  const go = state.goal_open; if (!go) return '';
+  const q = (go.noteQuery || '').trim().toLowerCase();
+  const linked = new Set((go.notes || []).map((n) => n.id));
+  let list = (go.allNotes || []).filter((n) => !linked.has(n.id));
+  if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q));
+  list = list.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}notes to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
+  return list.slice(0, 60).map((n) => `<div class="gal-row"><span class="ga-t" data-open-note="${n.id}">▤ ${esc(n.title || 'Untitled')}</span><button class="ghost gal-link" data-goal-link-note="${n.id}" title="Connect to this goal">＋ Link</button></div>`).join('')
+    + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
+}
+function renderGoalNoteList() { const el = $('.gc-note-list'); if (el) el.innerHTML = connectedNotesPickerInner(); }
+async function linkNoteToGoal(noteId) {
+  const go = state.goal_open; if (!go) return;
+  const n = (go.allNotes || []).find((x) => x.id === noteId); if (!n) return;
+  n.props = n.props || {}; n.props.goal = go.goal.id;
+  go.notes.push(n); go.noteQuery = ''; renderGoalCard();
+  try { await api(`/api/blocks/${noteId}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: go.goal.id } }) }); toast('Note connected'); }
+  catch (e) { toast(e.message); }
+}
+async function unlinkNoteFromGoal(noteId) {
+  const go = state.goal_open; if (!go) return;
+  const n = (go.notes || []).find((x) => x.id === noteId);
+  go.notes = (go.notes || []).filter((x) => x.id !== noteId);
+  if (n) { n.props = n.props || {}; n.props.goal = null; }
+  renderGoalCard();
+  try { await api(`/api/blocks/${noteId}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: null } }) }); toast('Note disconnected'); }
+  catch (e) { toast(e.message); }
+}
+async function addGoalNote() {
+  const go = state.goal_open; if (!go) return;
+  const title = await uiPrompt('New note for this goal:', { placeholder: 'e.g. Research notes' }); if (title == null) return;
+  const g = go.goal; const p = gp(g);
+  const props = { goal: g.id }; if (p.area) props.area = p.area;
+  try {
+    const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: (title.trim() || 'Untitled'), props }) });
+    go.notes.push(n); go.allNotes.push(n); renderGoalCard();
+    openNote(n.id).catch(() => {});
+  } catch (e) { toast(e.message); }
+}
 // Link an existing area task into this goal: it keeps its place in Tasks/Today
 // and now also shows under the goal (props.goal). No copy is made.
 async function linkTaskToGoal(taskId) {
@@ -9967,6 +10031,7 @@ document.addEventListener('input', (e) => {
   // Table search + filter value inputs: only the tbody re-renders, so the input keeps focus.
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
+  if (e.target.matches('[data-goalnote-q]') && state.goal_open) { state.goal_open.noteQuery = e.target.value; renderGoalNoteList(); }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
@@ -10284,6 +10349,9 @@ document.addEventListener('click', (e) => {
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
   if (t.closest('[data-bucket-to-goal]')) { bucketToGoal().catch((x) => toast(x.message)); return; }
   const glink = t.closest('[data-goal-link]'); if (glink) { linkTaskToGoal(glink.dataset.goalLink); return; }
+  const nlink = t.closest('[data-goal-link-note]'); if (nlink) { linkNoteToGoal(nlink.dataset.goalLinkNote); return; }
+  const nunlink = t.closest('[data-goal-unlink-note]'); if (nunlink) { unlinkNoteFromGoal(nunlink.dataset.goalUnlinkNote); return; }
+  if (t.closest('[data-goal-addnote]')) { addGoalNote(); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
   const sgt = t.closest('[data-set-gtype]'); if (sgt) { const g = state.goal_open && state.goal_open.goal; if (g) { patchGoal(g.id, { gtype: sgt.dataset.setGtype }, true); renderGoalCard(); } return; }

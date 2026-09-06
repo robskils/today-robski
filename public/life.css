@@ -2200,6 +2200,21 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .gal-row .ga-t .p-tag { flex:none; }
 .gal-link { flex:none; padding:4px 11px; font-size:13px; opacity:.7; }
 .gal-row:hover .gal-link { opacity:1; border-color:var(--accent); color:var(--accent); }
+/* Connected notes on a goal - a matching pair to the connected tasks. */
+.goal-notes-sec { margin:22px 0 4px; }
+.goal-notes-sec .gt-loose-h { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.gc-notes-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.gc-note-card { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:11px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+.gc-note-card:hover { border-color:var(--accent); }
+.gc-note-open { display:inline-flex; align-items:center; gap:8px; background:none; border:0; padding:9px 4px 9px 12px; cursor:pointer; color:var(--ink); font-size:14.5px; max-width:240px; }
+.gc-note-ic { color:var(--ink-3); flex:none; }
+.gc-note-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gc-note-x { flex:none; background:none; border:0; padding:6px 10px 6px 4px; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; }
+.gc-note-x:hover { color:var(--accent); }
+.goal-notelist { display:flex; align-items:flex-start; gap:10px; }
+.goal-notelist .gal-box { flex:1; }
+.gc-note-new { flex:none; white-space:nowrap; }
+.gc-note-list { display:flex; flex-direction:column; gap:2px; }
 .set-collapse-h { cursor:pointer; display:flex; align-items:center; gap:9px; user-select:none; }
 .set-collapse-h .acw-chev { font-size:11px; color:var(--ink-3); width:11px; flex:none; }
 .set-areas-grid { display:flex; flex-wrap:wrap; gap:9px; }
