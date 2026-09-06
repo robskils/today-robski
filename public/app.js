@@ -3859,7 +3859,7 @@ function timeAgo(t) {
 // filed here. Owner-only (a borrowed block can't be hidden by the borrower).
 function privateToggleHtml(kind, block) {
   const on = !!(block.props && block.props.private);
-  return `<label class="tf-toggle pv-toggle ${on ? 'on' : ''}"><input type="checkbox" data-block-private="${kind}:${block.id}" ${on ? 'checked' : ''}><span>${on ? '🔒' : '🔓'} Private to me<small>If this area is shared, only you see this</small></span></label>`;
+  return `<label class="tf-toggle pv-toggle ${on ? 'on' : ''}"><input type="checkbox" data-block-private="${kind}:${block.id}" ${on ? 'checked' : ''}><span class="pv-lbl">${on ? '🔒' : '🔓'} Keep this private<small class="tf-hint">Only you can see it - hidden from anyone you share with</small></span></label>`;
 }
 async function setBlockPrivate(kind, id, on) {
   const upd = (b) => { if (b && b.id === id) { b.props = b.props || {}; b.props.private = on; } };
