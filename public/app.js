@@ -9367,8 +9367,9 @@ function reviewCadRecent(k, todayI) {
 }
 function reviewDoneCount(k) { return (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).status !== 'inprogress').length; }
 function reviewCadEditor(k, c) {
-  // The "when it lands" always shows (it sets the due date); the "Remind me"
-  // toggle sits BELOW it, and the alert timing appears under that when on.
+  // Two independent settings, each its own block: the SUBMIT DATE (the cadence
+  // rule that decides the day it officially lands) and, separately, the
+  // NOTIFICATION (whether and when you get nudged - can be a different day).
   const dayChip = (d, sm) => `<button class="rv-cad-chip${sm ? ' sm' : ''} ${c.dow === d ? 'on' : ''}" data-rev-cad-dow="${k}:${d}">${DOW_LONG[d].slice(0, 3)}</button>`;
   let when;
   if (k === 'weekly') {
@@ -9380,14 +9381,19 @@ function reviewCadEditor(k, c) {
     const dowRow = c.mode === 'neardow' ? `<div class="rv-cad-when"><span class="rv-cad-l">Nearest</span><div class="rv-cad-chips">${dowOrder().map((d) => dayChip(d, true)).join('')}</div><span class="rv-cad-l">to the ${per}'s end</span></div>` : '';
     when = `<div class="rv-cad-when"><div class="rv-cad-chips">${modeChips}</div></div>${dowRow}`;
   }
-  const onRow = `<label class="rv-cad-toggle"><input type="checkbox" data-rev-cad-on="${k}" ${c.on ? 'checked' : ''}><span>Remind me for ${REVIEWS[k].label.toLowerCase()} reviews</span></label>`;
-  const alertRow = c.on ? `<div class="rv-cad-when"><span class="rv-cad-l">Alert me</span><div class="rv-cad-chips">${[[0, 'On the day'], [1, 'Day before'], [2, '2 days before'], [3, '3 days before']].map(([v, l]) => `<button class="rv-cad-chip sm ${c.alertBefore === v ? 'on' : ''}" data-rev-cad-alert="${k}:${v}">${l}</button>`).join('')}</div></div>` : '';
-  // Pause: hide this review until a date, then it surfaces again.
+  const nx = reviewCadNext(k, todayISO());
+  // The submit block: heading, the picker, and the concrete date it lands on.
+  const submitBlock = `<div class="rv-remedit-sec"><span class="rv-cad-whenl">Submit date</span>${when}${nx ? `<div class="rv-cad-date">Next one lands <b>${esc(dpLabel(nx))}</b></div>` : ''}</div>`;
+  // The notification block: on/off, then when (an offset from the submit date,
+  // so the two dates can differ), then the concrete notify date.
+  const onRow = `<label class="rv-cad-toggle"><input type="checkbox" data-rev-cad-on="${k}" ${c.on ? 'checked' : ''}><span>Notify me for ${REVIEWS[k].label.toLowerCase()} reviews</span></label>`;
+  const alertRow = c.on ? `<div class="rv-cad-when"><span class="rv-cad-l">Notify me</span><div class="rv-cad-chips">${[[0, 'On the day'], [1, 'Day before'], [2, '2 days before'], [3, '3 days before'], [7, 'A week before']].map(([v, l]) => `<button class="rv-cad-chip sm ${c.alertBefore === v ? 'on' : ''}" data-rev-cad-alert="${k}:${v}">${l}</button>`).join('')}</div></div>` : '';
+  const notifyISO = nx ? (c.alertBefore ? addDaysStr(nx, -c.alertBefore) : nx) : '';
   const paused = c.pausedUntil && c.pausedUntil > todayISO();
   const pauseRow = c.on ? `<div class="rv-cad-when"><span class="rv-cad-l">Pause until</span><input type="date" class="sel rv-cad-pause" data-rev-cad-pause="${k}" value="${esc(c.pausedUntil || '')}">${paused ? `<button class="linkish" data-rev-cad-resume="${k}">Resume now</button>` : ''}</div>` : '';
-  const nx = reviewCadNext(k, todayISO());
-  const note = `<div class="rv-remedit-note">${paused ? `⏸ Paused until <b>${esc(dpLabel(c.pausedUntil))}</b> - no nudges until then.` : `${nx ? `Due <b>${esc(dpLabel(nx))}</b>` : ''}${c.on ? `${nx ? ', ' : ''}a text and email ${esc(alertBeforeLabel(c.alertBefore))}, plus a link in your Today.` : `${nx ? ' · ' : ''}no reminder set - you can still start it any time.`}`}</div>`;
-  return `<div class="rv-remedit"><span class="rv-cad-whenl">When it lands</span>${when}${onRow}${alertRow}${pauseRow}${note}</div>`;
+  const notifyDate = c.on && !paused && notifyISO ? `<div class="rv-cad-date">A text and email <b>${esc(dpLabel(notifyISO))}</b>${c.alertBefore ? ` (${esc(alertBeforeLabel(c.alertBefore))})` : ''}, plus a link in your Today.</div>` : '';
+  const notifyBlock = `<div class="rv-remedit-sec"><span class="rv-cad-whenl">Notification</span>${onRow}${alertRow}${pauseRow}${paused ? `<div class="rv-cad-date">⏸ Paused until <b>${esc(dpLabel(c.pausedUntil))}</b> - no nudges until then.</div>` : (c.on ? notifyDate : `<div class="rv-cad-date">No notification set - you can still start it any time.</div>`)}</div>`;
+  return `<div class="rv-remedit">${submitBlock}${notifyBlock}</div>`;
 }
 function reviewsListHtml() {
   const open = state.reviewRemEdit; const t0 = todayISO();
