@@ -980,7 +980,48 @@ async function saveAccount(patch) { try { state.account = await api('/api/accoun
 // Kept in kv_card_profile (photo is a small square data URI); name/handle come
 // from the account. Others seeing it comes next; for now it's yours to make.
 const CARD_COLOURS = ['#c4412e', '#b8863b', '#4d7c4d', '#2f6f7e', '#3a5a97', '#6d5399', '#a3466f', '#5b5b64'];
+// A few subtle background textures for the card's colour band (CSS in life.css).
+const CARD_PATTERNS = [['none', 'Plain'], ['dots', 'Dots'], ['grid', 'Grid'], ['diagonal', 'Lines'], ['waves', 'Waves']];
 function cardProfile() { return state.card || {}; }
+// Known link platforms get an icon; anything else falls back to a link glyph.
+function cardLinkMeta(url) {
+  const u = String(url || '').toLowerCase();
+  if (/instagram\.com/.test(u)) return ['◙', 'Instagram'];
+  if (/(twitter\.com|\/\/x\.com|\bx\.com)/.test(u)) return ['𝕏', 'X'];
+  if (/linkedin\.com/.test(u)) return ['in', 'LinkedIn'];
+  if (/github\.com/.test(u)) return ['⌥', 'GitHub'];
+  if (/youtube\.com|youtu\.be/.test(u)) return ['▶', 'YouTube'];
+  if (/facebook\.com/.test(u)) return ['f', 'Facebook'];
+  if (/tiktok\.com/.test(u)) return ['♪', 'TikTok'];
+  if (/(t\.me|telegram)/.test(u)) return ['✈', 'Telegram'];
+  return ['🔗', ''];
+}
+const cardHref = (u) => /^https?:\/\//.test(u) ? u : 'https://' + u;
+const cardLinkText = (l) => (l.label || '').trim() || cardLinkMeta(l.url)[1] || String(l.url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+// Build the contact/link chips for a normalised card object.
+function cardChipsHtml(d) {
+  const chips = [];
+  if (d.location) chips.push(`<span class="dbc-chip">📍 ${esc(d.location)}</span>`);
+  if (d.website) { const w = String(d.website).replace(/^https?:\/\//, '').replace(/\/$/, ''); chips.push(`<a class="dbc-chip" href="${esc(cardHref(d.website))}" target="_blank" rel="noopener">🔗 ${esc(w)}</a>`); }
+  (d.links || []).forEach((l) => { if (!l.url) return; const [ic] = cardLinkMeta(l.url); chips.push(`<a class="dbc-chip" href="${esc(cardHref(l.url))}" target="_blank" rel="noopener"><span class="dbc-lk-ic">${ic}</span> ${esc(cardLinkText(l))}</a>`); });
+  if (d.email) chips.push(`<a class="dbc-chip" href="mailto:${esc(d.email)}">✉ ${esc(d.email)}</a>`);
+  if (d.phone) chips.push(`<span class="dbc-chip">📞 ${esc(d.phone)}</span>`);
+  return chips.join('');
+}
+// The card itself from a normalised object {name,handle,photo,accent,pattern,
+// tagline,location,website,links,email,phone}. `full` shows the tagline hint.
+function cardHtml(d, full) {
+  const accent = d.accent || '#c4412e';
+  const photo = d.photo ? `<span class="dbc-photo" style="background-image:url('${d.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(d.name || 'You'))}</span>`;
+  const chips = cardChipsHtml(d);
+  return `<div class="dbc-card dbc-pat-${esc(d.pattern || 'none')}" style="--dbc:${esc(accent)}">
+    <div class="dbc-band"></div>
+    <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
+    ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
+    ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
+    <div class="dbc-mark">${MARK}<span>Daybook</span></div>
+  </div>`;
+}
 async function openCard() {
   state.view = { type: 'card' };
   state.navUtilOpen = false;
@@ -1017,26 +1058,17 @@ async function cardSetPhoto(file) {
   try { const uri = await avatarDataUri(file); state.card = state.card || {}; state.card.photo = uri; saveCard(); renderCard(); toast('Photo updated'); }
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
-// The card itself, drawn from account + profile. `full` adds the share line.
-function cardPreviewHtml(full) {
+// Your own card, from account + profile. `full` shows the tagline hint.
+function myCardData() {
   const a = state.account || {}; const c = cardProfile();
-  const name = a.name || firstName() || 'You';
-  const handle = a.subdomain ? `${esc(a.subdomain)}.daybook.fyi` : '';
-  const accent = c.accent || savedAccent() || '#c4412e';
-  const photo = c.photo ? `<span class="dbc-photo" style="background-image:url('${c.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(name))}</span>`;
-  const chips = [];
-  if (c.location) chips.push(`<span class="dbc-chip">📍 ${esc(c.location)}</span>`);
-  if (c.website) { const w = String(c.website).replace(/^https?:\/\//, ''); chips.push(`<a class="dbc-chip" href="${esc(/^https?:\/\//.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">🔗 ${esc(w)}</a>`); }
-  if (c.showEmail && a.email) chips.push(`<a class="dbc-chip" href="mailto:${esc(a.email)}">✉ ${esc(a.email)}</a>`);
-  if (c.showPhone && a.phone) chips.push(`<span class="dbc-chip">📞 ${esc(a.phone)}</span>`);
-  return `<div class="dbc-card" style="--dbc:${esc(accent)}">
-    <div class="dbc-band"></div>
-    <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(name)}</span>${handle ? `<span class="dbc-handle">${handle}</span>` : ''}</span></div>
-    ${c.tagline ? `<p class="dbc-tag">${esc(c.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
-    ${chips.length ? `<div class="dbc-chips">${chips.join('')}</div>` : ''}
-    <div class="dbc-mark">${MARK}<span>Daybook</span></div>
-  </div>`;
+  return {
+    name: a.name || firstName() || 'You', handle: a.subdomain ? `${a.subdomain}.daybook.fyi` : '',
+    photo: c.photo || '', accent: c.accent || savedAccent() || '#c4412e', pattern: c.pattern || 'none',
+    tagline: c.tagline || '', location: c.location || '', website: c.website || '', links: c.links || [],
+    email: c.showEmail ? (a.email || '') : '', phone: c.showPhone ? (a.phone || '') : '',
+  };
 }
+function cardPreviewHtml(full) { return cardHtml(myCardData(), full); }
 function renderCard() {
   const a = state.account || {}; const c = cardProfile();
   const accent = c.accent || savedAccent() || '#c4412e';
@@ -1058,8 +1090,13 @@ function renderCard() {
         <label class="dbc-field"><span class="dbc-l">Display name</span><input class="sel" data-card-name value="${esc(a.name || '')}" placeholder="Your name" maxlength="60"></label>
         <label class="dbc-field"><span class="dbc-l">Tagline</span><input class="sel" data-card-tagline value="${esc(c.tagline || '')}" placeholder="A line about you" maxlength="120"></label>
         <div class="dbc-field"><span class="dbc-l">Card colour</span><div class="dbc-swatches">${swatches}<label class="dbc-swatch dbc-swatch-custom" title="Custom colour"><input type="color" value="${esc(accent)}" data-card-accent-custom>+</label></div></div>
+        <div class="dbc-field"><span class="dbc-l">Background</span><div class="dbc-pats">${CARD_PATTERNS.map(([k, l]) => `<button class="dbc-pat-btn dbc-pat-${k} ${(c.pattern || 'none') === k ? 'on' : ''}" data-card-pattern="${k}" title="${esc(l)}" style="--dbc:${esc(accent)}"><span class="dbc-pat-swatch"></span><span class="dbc-pat-l">${esc(l)}</span></button>`).join('')}</div></div>
         <label class="dbc-field"><span class="dbc-l">Location <span class="dbc-opt">optional</span></span><input class="sel" data-card-location value="${esc(c.location || '')}" placeholder="Lisbon, Portugal" maxlength="60"></label>
         <label class="dbc-field"><span class="dbc-l">Website <span class="dbc-opt">optional</span></span><input class="sel" data-card-website value="${esc(c.website || '')}" placeholder="yoursite.com" maxlength="120"></label>
+        <div class="dbc-field"><span class="dbc-l">Links <span class="dbc-opt">Instagram, X, LinkedIn…</span></span>
+          <div class="dbc-links">${(c.links || []).map((l, i) => `<div class="dbc-link-row"><input class="sel dbc-link-url" data-card-link-url="${i}" value="${esc(l.url || '')}" placeholder="instagram.com/you" maxlength="300"><input class="sel dbc-link-label" data-card-link-label="${i}" value="${esc(l.label || '')}" placeholder="Label (optional)" maxlength="40"><button class="ghost dbc-link-x" data-card-link-x="${i}" title="Remove">×</button></div>`).join('')}</div>
+          <button class="add-btn wide dbc-link-add" data-card-link-add>＋ Add a link</button>
+        </div>
         <div class="dbc-field"><span class="dbc-l">Show my contact details</span>
           <label class="dbc-tog"><input type="checkbox" data-card-showemail ${c.showEmail ? 'checked' : ''}><span>Email${a.email ? ` (${esc(a.email)})` : ''}</span></label>
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings'}</span></label>
@@ -1068,6 +1105,43 @@ function renderCard() {
       </div>
     </div>`;
 }
+// A small cache of other people's light cards (avatars in lists), and a loader
+// that batch-fetches any missing ones then repaints.
+function loadCards(ids) {
+  state.cardCache = state.cardCache || {};
+  const want = [...new Set((ids || []).map(Number).filter((n) => n && n !== (state.me && state.me.id)))].filter((id) => state.cardCache[id] === undefined);
+  if (!want.length) return;
+  want.forEach((id) => { state.cardCache[id] = null; });   // mark in-flight
+  api('/api/cards?ids=' + want.join(',')).then((m) => {
+    want.forEach((id) => { state.cardCache[id] = (m && m[id]) || false; });
+    const v = state.view && state.view.type; if (v === 'area' || v === 'contacts' || v === 'friends') rerenderCurrent();
+    if (document.getElementById('share') && state.share) renderShare();
+  }).catch(() => { want.forEach((id) => { state.cardCache[id] = false; }); });
+}
+// A small avatar for a person by id (photo if we have it, else a monogram).
+function personAvatar(id, name, extra) {
+  const c = state.cardCache && state.cardCache[id];
+  if (c && c.photo) return `<span class="fr-av fr-av-photo ${extra || ''}" style="background-image:url('${c.photo}')"></span>`;
+  return `<span class="fr-av ${extra || ''}">${esc(initial((c && c.name) || name || '?'))}</span>`;
+}
+// Read-only view of someone else's Daybook card, in a light overlay.
+async function openPublicCard(id, seed) {
+  id = Number(id); if (!id) return;
+  state.viewCard = { id, data: seed || (state.cardCache && state.cardCache[id]) || null, loading: true };
+  renderPublicCard();
+  try { const d = await api('/api/card/' + id); state.viewCard = { id, data: d, loading: false }; }
+  catch (e) { state.viewCard = { id, data: state.viewCard.data, loading: false, error: e.message }; }
+  if (document.getElementById('viewcard')) renderPublicCard();
+}
+function renderPublicCard() {
+  let el = document.getElementById('viewcard'); if (!el) { el = document.createElement('div'); el.id = 'viewcard'; document.body.appendChild(el); }
+  const v = state.viewCard || {}; const d = v.data;
+  const card = d ? cardHtml({ ...d, handle: d.subdomain ? `${d.subdomain}.daybook.fyi` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
+  const connected = d && d.id && ((state.friends && state.friends.friends) || []).some((f) => f.id === d.id);
+  const chat = connected ? `<button class="ic-btn ic-btn-primary dbc-view-msg" data-friend-chat="${d.id}" data-friend-name="${esc(d.name || '')}">Message</button>` : '';
+  el.innerHTML = `<div class="ic-bg" data-viewcard-bgclose><button class="ic-x" data-viewcard-close title="Close">×</button><div class="dbc-viewwrap">${card}${chat ? `<div class="dbc-view-acts">${chat}</div>` : ''}</div></div>`;
+}
+function closePublicCard() { const el = document.getElementById('viewcard'); if (el) el.remove(); state.viewCard = null; }
 // Optional two-factor (TOTP). state.totp holds the transient enrolment view:
 // { setup:{secret,uri} } while enrolling, { recovery:[...] } right after turning
 // it on (shown once), else null. a.totpEnabled is the persisted truth.
@@ -1362,7 +1436,8 @@ async function setUserFree(id, months) {
 async function openFriends() { return openContacts(); }
 function friendRow(f, action) {
   const n = unreadFrom(f.id);
-  return `<div class="friend-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${action}</div>`;
+  loadCards([f.id]);
+  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Daybook card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></button>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
 // page re-renders the unified Contacts view.
@@ -1604,10 +1679,11 @@ function shareModeFor(fid) { const s = (state.share.shares || []).find((x) => x.
 function renderShare() {
   let el = document.getElementById('share'); if (!el) { el = document.createElement('div'); el.id = 'share'; document.body.appendChild(el); }
   const s = state.share; const friends = s.friends || [];
+  if (friends.length) loadCards(friends.map((f) => f.id));
   const rows = s.loading ? '<div class="chat-empty">Loading…</div>'
     : (friends.length ? friends.map((f) => {
       const mode = shareModeFor(f.id);
-      return `<div class="share-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${mode
+      return `<div class="share-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><span class="fr-body"><span class="fr-name">${esc(f.name)}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${mode
         ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
     }).join('') : `<div class="share-empty">
@@ -4621,7 +4697,8 @@ function areaOverviewHtml(area, c, blocks) {
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
     return `<button class="ov-person ov-person-me" data-open-card title="Edit your Daybook card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
   })();
-  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''}><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
+  if (shares && shares.length) loadCards(shares.map((s) => s.id));
+  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Daybook card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
   const people = shares == null ? `${meCard || '<div class="ov-muted">Loading…</div>'}`
     : `${meCard}${shareRows}${(!meCard && !shareRows) ? '<div class="ov-muted">Just you so far.</div>' : ''}`;
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
@@ -11508,6 +11585,13 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-card-tagline]')) { state.card = state.card || {}; state.card.tagline = e.target.value; cardLivePreview(); clearTimeout(window.__cardTg); window.__cardTg = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-website]')) { state.card = state.card || {}; state.card.website = e.target.value; cardLivePreview(); clearTimeout(window.__cardWs); window.__cardWs = setTimeout(saveCard, 500); return; }
+  if (e.target.matches('[data-card-link-url]') || e.target.matches('[data-card-link-label]')) {
+    const i = Number(e.target.dataset.cardLinkUrl != null ? e.target.dataset.cardLinkUrl : e.target.dataset.cardLinkLabel);
+    state.card = state.card || {}; state.card.links = state.card.links || [];
+    if (!state.card.links[i]) state.card.links[i] = { url: '', label: '' };
+    if (e.target.dataset.cardLinkUrl != null) state.card.links[i].url = e.target.value; else state.card.links[i].label = e.target.value;
+    cardLivePreview(); clearTimeout(window.__cardLk); window.__cardLk = setTimeout(saveCard, 500); return;
+  }
   if (e.target.matches('[data-account-username]')) {
     const pos = e.target.selectionStart; const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (e.target.value !== v) { e.target.value = v; try { e.target.setSelectionRange(pos - 1, pos - 1); } catch {} }
@@ -12095,7 +12179,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-horo-close]') || t.closest('[data-horo-bgclose]') === t) { closeHoro(); return; }
   if (t.closest('[data-open-medi]')) { openMeditationTool(); return; }
   if (t.closest('[data-open-card]')) { openCard(); return; }
+  { const oc = t.closest('[data-open-personcard]'); if (oc) { openPublicCard(oc.dataset.openPersoncard); return; } }
+  if (t.closest('[data-viewcard-close]') || t.closest('[data-viewcard-bgclose]') === t) { closePublicCard(); return; }
   { const sw = t.closest('[data-card-accent]'); if (sw) { state.card = state.card || {}; state.card.accent = sw.dataset.cardAccent; saveCard(); renderCard(); return; } }
+  { const pat = t.closest('[data-card-pattern]'); if (pat) { state.card = state.card || {}; state.card.pattern = pat.dataset.cardPattern; saveCard(); renderCard(); return; } }
+  if (t.closest('[data-card-link-add]')) { state.card = state.card || {}; state.card.links = state.card.links || []; state.card.links.push({ url: '', label: '' }); renderCard(); const rows = document.querySelectorAll('[data-card-link-url]'); const last = rows[rows.length - 1]; if (last) last.focus(); return; }
+  { const lx = t.closest('[data-card-link-x]'); if (lx) { const i = Number(lx.dataset.cardLinkX); if (state.card && state.card.links) { state.card.links.splice(i, 1); saveCard(); renderCard(); } return; } }
   if (t.closest('[data-card-photo-x]')) { if (state.card) { delete state.card.photo; saveCard(); renderCard(); } return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }

@@ -776,6 +776,41 @@ async function setSetting(env, key, value, uid = env.uid) {
   ).bind(uid, key, value).run();
 }
 
+// A person's public Daybook card: their profile as others may see it. Name and
+// handle come from users; the look and links from their kv_card_profile. Email
+// and phone appear ONLY when they turned those toggles on - never otherwise.
+function cardLinksClean(arr) {
+  return (Array.isArray(arr) ? arr : []).slice(0, 8)
+    .map((l) => ({ label: String((l && l.label) || '').slice(0, 40), url: String((l && l.url) || '').slice(0, 300) }))
+    .filter((l) => l.url);
+}
+async function getPublicCard(env, id) {
+  const uid = Number(id); if (!uid) return null;
+  const u = await env.DB.prepare("SELECT id, name, subdomain, email FROM users WHERE id = ? AND status = 'active'").bind(uid).first().catch(() => null);
+  if (!u) return null;
+  let c = {}; try { c = JSON.parse((await getSetting(env, 'card_profile', uid)) || '{}') || {}; } catch {}
+  let phone = '';
+  if (c.showPhone) phone = (await getSetting(env, 'phone', uid)) || '';
+  return {
+    id: u.id, name: u.name || u.subdomain || '', subdomain: u.subdomain || '',
+    photo: c.photo || '', tagline: c.tagline || '', accent: c.accent || '', pattern: c.pattern || '',
+    location: c.location || '', website: c.website || '', links: cardLinksClean(c.links),
+    email: c.showEmail ? (u.email || '') : '', phone,
+  };
+}
+// Light cards for a set of people (avatars in lists): no contact details, just
+// the look. Batched in one query, capped well under D1's bound-parameter limit.
+async function getPublicCards(env, ids) {
+  const list = [...new Set((ids || []).map(Number).filter(Boolean))].slice(0, 80);
+  const out = {}; if (!list.length) return out;
+  const ph = list.map(() => '?').join(',');
+  const us = await env.DB.prepare(`SELECT id, name, subdomain FROM users WHERE id IN (${ph}) AND status = 'active'`).bind(...list).all().catch(() => ({ results: [] }));
+  const cs = await env.DB.prepare(`SELECT user_id, value FROM settings WHERE key = 'card_profile' AND user_id IN (${ph})`).bind(...list).all().catch(() => ({ results: [] }));
+  const cards = {}; for (const r of cs.results || []) { try { cards[r.user_id] = JSON.parse(r.value || '{}') || {}; } catch {} }
+  for (const u of us.results || []) { const c = cards[u.id] || {}; out[u.id] = { id: u.id, name: u.name || u.subdomain || '', subdomain: u.subdomain || '', photo: c.photo || '', tagline: c.tagline || '', accent: c.accent || '' }; }
+  return out;
+}
+
 // A calendar event can carry a life area. Native events could hold it in props,
 // but Google events have nowhere to put it - so a per-event map (keyed by the
 // event's base id, ::date occurrences share the series' area) is the one home for
@@ -3365,6 +3400,8 @@ export default {
 
       // Friends on Daybook: presence + connections.
       if (path === '/api/presence' && request.method === 'POST') return json(await touchPresence(env), request);
+      { const cm = path.match(/^\/api\/card\/(\d{1,12})$/); if (cm && request.method === 'GET') { const c = await getPublicCard(env, cm[1]); return c ? json(c, request) : err('No such card.', request, 404); } }
+      if (path === '/api/cards' && request.method === 'GET') { const ids = (url.searchParams.get('ids') || '').split(',').map((x) => x.trim()).filter(Boolean); return json(await getPublicCards(env, ids), request); }
       if (path === '/api/friends' && request.method === 'GET') return json(await getFriends(env), request);
       if (path === '/api/friends/status' && request.method === 'GET') return json(await friendStatus(env), request);
       if (path === '/api/friends/search' && request.method === 'GET') return json(await searchPeople(env, url.searchParams.get('q')), request);

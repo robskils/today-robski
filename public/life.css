@@ -1979,6 +1979,37 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .dbc-tog input:disabled { opacity:.5; } .dbc-tog input:disabled + span { color:var(--ink-3); }
 .dbc-note { font-size:13px; color:var(--ink-3); line-height:1.5; margin:2px 0 0; } .dbc-note b { color:var(--ink-2); }
 @media (max-width:640px) { .dbc-preview { position:static; width:100%; } }
+/* Band background patterns (a translucent overlay tinted by the light band). */
+.dbc-band { position:relative; }
+.dbc-pat-none { --pat:none; --patsize:auto; }
+.dbc-pat-dots { --pat:radial-gradient(rgba(255,255,255,.30) 1.5px, transparent 1.7px); --patsize:14px 14px; }
+.dbc-pat-grid { --pat:linear-gradient(rgba(255,255,255,.24) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.24) 1px, transparent 1px); --patsize:16px 16px, 16px 16px; }
+.dbc-pat-diagonal { --pat:repeating-linear-gradient(45deg, rgba(255,255,255,.20) 0 2px, transparent 2px 11px); --patsize:auto; }
+.dbc-pat-waves { --pat:radial-gradient(circle at 50% 120%, transparent 8px, rgba(255,255,255,.20) 9px, transparent 10px); --patsize:22px 12px; }
+.dbc-band::after { content:''; position:absolute; inset:0; background-image:var(--pat,none); background-size:var(--patsize,auto); pointer-events:none; }
+/* Pattern picker */
+.dbc-pats { display:flex; flex-wrap:wrap; gap:9px; }
+.dbc-pat-btn { display:flex; flex-direction:column; align-items:center; gap:5px; border:0; background:none; cursor:pointer; padding:0; }
+.dbc-pat-swatch { position:relative; width:52px; height:34px; border-radius:9px; overflow:hidden; border:2px solid var(--line); background:linear-gradient(135deg, var(--dbc,#c4412e), color-mix(in srgb,var(--dbc,#c4412e) 62%,#000 30%)); }
+.dbc-pat-swatch::after { content:''; position:absolute; inset:0; background-image:var(--pat,none); background-size:var(--patsize,auto); }
+.dbc-pat-btn.on .dbc-pat-swatch { border-color:var(--ink); box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ink); }
+.dbc-pat-l { font-size:11.5px; color:var(--ink-3); }
+.dbc-pat-btn.on .dbc-pat-l { color:var(--ink); font-weight:600; }
+/* Links editor */
+.dbc-links { display:flex; flex-direction:column; gap:8px; }
+.dbc-link-row { display:flex; gap:8px; align-items:center; }
+.dbc-link-url { flex:2; min-width:0; } .dbc-link-label { flex:1; min-width:0; max-width:140px; }
+.dbc-link-x { flex:none; font-size:18px; line-height:1; color:var(--ink-3); }
+.dbc-link-x:hover { color:var(--accent); }
+.dbc-link-add { align-self:flex-start; }
+.dbc-lk-ic { font-weight:700; font-style:normal; }
+/* Read-only card viewer */
+.dbc-viewwrap { width:min(360px,100%); margin:auto; display:flex; flex-direction:column; gap:14px; }
+.dbc-view-acts { display:flex; justify-content:center; }
+.dbc-viewmsg { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:30px; text-align:center; color:var(--ink-3); }
+/* Clickable person avatar / row */
+.fr-av-btn { border:0; background:none; padding:0; cursor:pointer; flex:none; border-radius:50%; }
+.fr-body-btn { border:0; background:none; padding:0; cursor:pointer; text-align:left; min-width:0; }
 /* Settings: account. */
 .set-account { display:flex; flex-direction:column; gap:15px; }
 .set-field { display:flex; flex-direction:column; gap:6px; }

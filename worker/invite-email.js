@@ -10,9 +10,19 @@ const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace
 
 // Table-and-inline-styles, like the sign-in code email: the same warm paper, the
 // same rust keyline. No code to copy - the button carries it.
-export function inviteEmail({ from, message, link }) {
+export function inviteEmail({ from, message, link, tagline, accent }) {
   const who = escHtml(from);
   const pre = `${who} has invited you to join Daybook.`;
+  const dbc = /^#[0-9a-f]{3,6}$/i.test(String(accent || '')) ? accent : '#c4412e';
+  const initial = escHtml((String(from || '?').trim()[0] || '?').toUpperCase());
+  // A little of the inviter's Daybook card: a coloured monogram and their
+  // tagline. Email-safe (a background-colour circle, no data-URI image).
+  const cardBlock = tagline ? `<tr><td style="padding:20px 38px 0" align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td width="48" style="width:48px"><div style="width:48px;height:48px;border-radius:50%;background:${dbc};color:#ffffff;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:48px;text-align:center">${initial}</div></td>
+            <td style="padding-left:13px;text-align:left"><p style="margin:0;font-size:15.5px;color:#211c17;line-height:1.45"><b>${who}</b><br><span style="font-size:14.5px;color:#8b7f72">${escHtml(tagline)}</span></p></td>
+          </tr></table>
+        </td></tr>` : '';
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
@@ -38,6 +48,8 @@ export function inviteEmail({ from, message, link }) {
         <tr><td style="padding:28px 38px 0" align="center">
           <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:1.35;color:#211c17">${who} has invited you to join <em>Daybook</em></p>
         </td></tr>
+
+        ${cardBlock}
 
         ${message ? `<tr><td style="padding:22px 38px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>

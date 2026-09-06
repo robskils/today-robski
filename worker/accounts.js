@@ -306,7 +306,10 @@ async function sendInviteMail(env, { to, code, message }) {
   const from = String((env.user && env.user.name) || 'Someone').replace(/[\r\n]+/g, ' ').trim().slice(0, 40) || 'Someone';
   const subject = `${from} has invited you to join Daybook`;
   const link = joinLink(code);
-  const html = inviteEmail({ from, message, link });
+  // A touch of the inviter's Daybook card in the email (tagline + colour).
+  let tagline = '', accent = '';
+  try { const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'card_profile'").bind(env.uid).first(); if (row && row.value) { const c = JSON.parse(row.value) || {}; tagline = String(c.tagline || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 140); accent = c.accent || ''; } } catch {}
+  const html = inviteEmail({ from, message, link, tagline, accent });
   const text = `${from} has invited you to join Daybook.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nDaybook is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
   const replyTo = (env.user && env.user.email) || null;
 
