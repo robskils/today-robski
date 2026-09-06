@@ -761,7 +761,8 @@ button { cursor:pointer; background:none; border:0; }
 .rv-trend-sec .rv-spark { display:flex; align-items:flex-end; gap:5px; height:64px; padding:8px 2px 0; }
 .rv-bar { flex:1 1 0; min-width:6px; max-width:34px; background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent)); border-radius:4px 4px 0 0; }
 .rv-trend-now { flex:none; align-self:center; font-size:14px; font-weight:600; color:var(--ink-2); margin-left:8px; }
-.rv-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(172px,1fr)); gap:10px; }
+.rv-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+@media (max-width:640px) { .rv-cards { grid-template-columns:1fr; } }
 .rv-card { text-align:left; padding:11px 13px; border:1px solid var(--line); border-left:3px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; display:flex; flex-direction:column; gap:6px; transition:border-color .12s, transform .08s; }
 .rv-card:hover { border-color:var(--accent); transform:translateY(-1px); }
 .rv-card-h { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
@@ -1650,6 +1651,23 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tf-toggle { display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border:1px solid var(--line); border-radius:999px; color:var(--ink-2); font-size:14.5px; }
 .tf-toggle:hover { color:var(--ink); border-color:var(--line-2); }
 .tf-toggle .acw-chev { font-size:11px; color:var(--ink-3); }
+/* Task "Surface & reminders" section: a tidy grouped card. */
+.tf-surface { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
+.tfs-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 6px; }
+.tfs-row { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:11px 0; border-top:1px solid var(--line); }
+.tfs-l { display:flex; flex-direction:column; gap:2px; font-size:14.5px; font-weight:600; color:var(--ink); }
+.tfs-l .tf-hint { font-weight:400; }
+.tfs-ctrl { flex:none; }
+.tfs-ctrl .sel, .tfs-ctrl .date-field { min-width:190px; }
+.tfs-block { display:flex; flex-direction:column; gap:12px; padding:14px; margin:4px 0; border-radius:12px; background:color-mix(in srgb,var(--accent) 5%,transparent); border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line)); }
+.tfs-toggle { display:flex; align-items:center; gap:10px; font-size:15px; color:var(--ink); cursor:pointer; }
+.tfs-toggle input { flex:none; width:19px; height:19px; accent-color:var(--accent); }
+.tfs-chan { display:flex; gap:9px; flex-wrap:wrap; padding-left:29px; }
+.tfs-chip { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; cursor:pointer; }
+.tfs-chip:hover { border-color:var(--accent); color:var(--accent); }
+.tfs-chip.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
+.tfs-chip-ic { font-size:15px; }
+.tfs-note { padding-left:29px; margin:0; font-size:12.5px; color:var(--ink-3); line-height:1.5; }
 .tf-count { display:inline-grid; place-items:center; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:var(--accent); color:#fff; font-size:12px; font-weight:600; }
 .tf-chips { display:flex; gap:6px; flex-wrap:wrap; flex:1; min-width:0; }
 .tf-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 6px 5px 12px; border:1px solid color-mix(in srgb,var(--accent) 25%,var(--line)); background:color-mix(in srgb,var(--accent) 7%,transparent); border-radius:999px; font-size:13.5px; color:var(--ink); }
@@ -2173,6 +2191,18 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .t2-grid { grid-template-columns:1fr; }
   .t2-day { order:-1; }
   .t2-scroll { max-height:none; }
+}
+/* Wide layout: each of the three columns scrolls on its own within a grid that
+   is bounded to the window (height set in JS by sizeTodayGrid). The column
+   headers pin to the top of their own scrollbox. */
+@media (min-width:1041px){
+  .t2-grid { align-items:stretch; }
+  .t2-col { min-height:0; }
+  .t2-col .t2-colscroll { flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; padding-right:6px; }
+  .t2-col .t2-colscroll::-webkit-scrollbar { width:8px; }
+  .t2-col .t2-colscroll::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
+  .t2-col .t2-stickytop { top:0; }
+  .t2-dayscroll { padding-top:2px; }
 }
 @media (max-width:640px){ .trk-week { display:none; } .trk-prow .trk-week { display:inline-flex; } .tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer { max-width:none; } }
 .focus-stat { font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 7%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:9px; padding:7px 12px; margin:2px 0 4px; display:inline-block; }
@@ -2735,6 +2765,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .adc-item-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .adc-lead { color:var(--ink-3); flex:none; }
 .adc-vision { padding:8px 8px 4px; font-size:14.5px; line-height:1.5; color:var(--ink-2); font-style:italic; }
+.adc-vision-edit { width:100%; border:0; background:none; resize:vertical; margin:2px 4px 4px; padding:6px 6px; font:inherit; font-size:14.5px; line-height:1.5; color:var(--ink); min-height:92px; border-radius:8px; }
+.adc-vision-edit:focus { outline:none; background:color-mix(in srgb,var(--c) 6%,transparent); }
+.adc-vision-edit::placeholder { color:var(--ink-3); font-style:italic; }
+.adc-addgoal { align-self:flex-start; margin:4px 4px 2px; padding:6px 12px; border:1px dashed var(--line-2); border-radius:999px; background:none; color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; }
+.adc-addgoal:hover { border-color:var(--accent); color:var(--accent); border-style:solid; }
 .adc-empty { padding:8px; font-size:13.5px; color:var(--ink-3); }
 .adc-chips { display:flex; flex-wrap:wrap; gap:6px; padding:6px 8px; }
 .adc-chip { font-size:13px; color:var(--ink-2); background:color-mix(in srgb,var(--c) 9%,transparent); border:1px solid var(--line); padding:3px 10px; border-radius:999px; white-space:nowrap; }

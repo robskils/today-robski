@@ -4042,9 +4042,16 @@ function renderArea() {
     <div class="adc-body">${items}</div></section>`;
   const dashItem = (attr, id, label, lead) => `<button class="adc-item" ${attr}="${id}">${lead || ''}<span class="adc-item-t">${esc(label)}</span></button>`;
   const dashChips = (list, f) => `<div class="adc-chips">${list.map(f).join('')}</div>`;
+  const canEditArea = !area.sharedBy;
+  // Vision: write it straight here, no click-through. (Robin, 2026-09.)
+  const visionBodyHtml = canEditArea
+    ? `<textarea class="adc-vision-edit" data-area-vision="${area.id}" rows="4" placeholder="Picture this area at its best - write it in the present tense…">${esc(visionSnip)}</textarea>`
+    : (visionSnip ? `<div class="adc-vision">${esc(visionSnip.slice(0, 180))}${visionSnip.length > 180 ? '…' : ''}</div>` : '<div class="adc-empty">Nothing yet.</div>');
+  const goalsBodyHtml = (activeGoals.length ? activeGoals.slice(0, 5).map((g) => dashItem('data-open-goal', g.id, g.title || 'Untitled')).join('') : (canEditArea ? '' : '<div class="adc-empty">No goals yet.</div>'))
+    + (canEditArea ? `<button class="adc-addgoal" data-area-add-goal>+ ${activeGoals.length ? 'Add another goal' : 'Add a goal'}</button>` : '');
   const dash = `<div class="area-dash" style="--h:${h}">
-    ${dashCard('Vision', visionSnip ? `<div class="adc-vision">${esc(visionSnip.slice(0, 180))}${visionSnip.length > 180 ? '…' : ''}</div>` : '<div class="adc-empty">Tap to picture this area at its best.</div>', 'Goals')}
-    ${dashCard('Goals', activeGoals.length ? activeGoals.slice(0, 5).map((g) => dashItem('data-open-goal', g.id, g.title || 'Untitled')).join('') : '<div class="adc-empty">No goals yet.</div>')}
+    ${dashCard('Vision', visionBodyHtml, 'Goals')}
+    ${dashCard('Goals', goalsBodyHtml)}
     ${dashCard('Tasks', openTs.length ? openTs.slice(0, 6).map((t) => dashItem('data-open-task', t.id, t.title || 'Untitled', t.props.priority ? `<span class="p-tag p-${t.props.priority}">${t.props.priority}</span>` : '')).join('') : '<div class="adc-empty">No open tasks.</div>')}
     ${notesTotal ? dashCard('Notes and tables', [...starredNotes, ...otherNotes].slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled')).join('') + tables.slice(0, 2).map((t) => dashItem('data-open-table', t.id, t.title || 'Untitled', '<span class="adc-lead">▦</span>')).join('')) : ''}
     ${contacts.length ? dashCard('Contacts', dashChips(contacts.slice(0, 6), (c) => `<span class="adc-chip">${esc(c.title || 'Someone')}</span>`)) : ''}
@@ -4841,8 +4848,20 @@ function renderToday() {
     const cb = document.querySelector('#pane .crumbbar'); if (cb) root.style.setProperty('--t2-crumbh', cb.offsetHeight + 'px');
     // Tabs height too, so the column headers can pin just below the sticky tabs.
     const tb = document.querySelector('#pane .t2-tabs'); if (tb) root.style.setProperty('--t2-tabsh', tb.offsetHeight + 'px');
+    sizeTodayGrid();
   });
 }
+// On the wide layout the three columns each scroll on their own, so the grid is
+// bounded to the space between its top and the bottom of the window. Measured
+// (not a fixed calc) because the head above it - date nav, sub, review banner -
+// varies in height. Re-measured on resize.
+function sizeTodayGrid() {
+  const grid = document.querySelector('#pane .t2-grid'); if (!grid) return;
+  if (window.innerWidth <= 1040) { grid.style.removeProperty('height'); return; }
+  const top = grid.getBoundingClientRect().top;
+  grid.style.height = Math.max(380, window.innerHeight - top - 14) + 'px';
+}
+window.addEventListener('resize', () => { if (state.view && state.view.type === 'today') sizeTodayGrid(); });
 // The Tracker tab: every tracked practice, grouped by life area, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
 // Each life area can carry a check-in practice; the area then says, plainly and
@@ -4966,12 +4985,14 @@ function t2DayHtml() {
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
   return `
     <div class="t2-stickytop t2-dayhead"><div class="t2-colh"><h2>The day</h2><span class="t2-daysub">calendar &amp; what you've planned</span></div></div>
-    ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
-    ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime today</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
-    <div class="t2-canvas" style="height:${t2Height}px">
-      ${hours.join('')}
-      ${nowTop != null ? `<div class="t2-now" style="top:${nowTop}px"><span class="t2-now-dot"></span></div>` : ''}
-      ${evBlocks}${slotBlocks}
+    <div class="t2-colscroll t2-dayscroll">
+      ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
+      ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime today</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
+      <div class="t2-canvas" style="height:${t2Height}px">
+        ${hours.join('')}
+        ${nowTop != null ? `<div class="t2-now" style="top:${nowTop}px"><span class="t2-now-dot"></span></div>` : ''}
+        ${evBlocks}${slotBlocks}
+      </div>
     </div>`;
 }
 function t2SlotBlock(s, floating) {
@@ -9612,6 +9633,21 @@ function patchVisionText(id, text) {
   const inList = state.areas.find((x) => x.id === id); if (inList) { inList.props = inList.props || {}; inList.props.vision = text; }
   api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { vision: text } }) }).catch((e) => toast(e.message));
 }
+// Inline vision editing on the area dashboard: update state now (so a re-render
+// keeps the text), but debounce the save so we don't PATCH on every keystroke.
+// Flushed on blur / hide, like the prose editor.
+let visionSaveTimer = null; let visionSavePending = null;
+function patchVisionInline(id, text) {
+  const a = state.area_open && state.area_open.area; if (a && a.id === id) { a.props = a.props || {}; a.props.vision = text; }
+  const inList = state.areas.find((x) => x.id === id); if (inList) { inList.props = inList.props || {}; inList.props.vision = text; }
+  visionSavePending = { id, text };
+  clearTimeout(visionSaveTimer); visionSaveTimer = setTimeout(flushVisionInline, 700);
+}
+function flushVisionInline() {
+  clearTimeout(visionSaveTimer);
+  const p = visionSavePending; visionSavePending = null;
+  if (p) api(`/api/blocks/${p.id}`, { method: 'PATCH', body: JSON.stringify({ props: { vision: p.text } }) }).catch(() => {});
+}
 
 // ── view: note ───────────────────────────────────────
 // Title fields are textareas so a long title wraps instead of cropping; grow
@@ -10449,8 +10485,9 @@ function flushProse() {
     saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId);
   });
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { flushProse(); flushReviewAnswers(); } });
-window.addEventListener('pagehide', () => { flushProse(); flushReviewAnswers(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { flushProse(); flushReviewAnswers(); flushVisionInline(); } });
+window.addEventListener('pagehide', () => { flushProse(); flushReviewAnswers(); flushVisionInline(); });
+document.addEventListener('focusout', (e) => { if (e.target && e.target.matches && e.target.matches('[data-area-vision]')) flushVisionInline(); }, true);
 // The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
 // one pair of document listeners covers the button however the tabs re-render.
 document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
@@ -10954,6 +10991,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-show-snoozed]')) { state.showSnoozed = true; renderTasks(); return; }
   if (t.closest('[data-hide-snoozed]')) { state.showSnoozed = false; renderTasks(); return; }
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
+  { const sc = t.closest('[data-surface-ch]'); if (sc) { const [ch, id] = sc.dataset.surfaceCh.split(':'); const tk = taskCopies(id)[0]; if (tk) { const acctEmail = !(state.account && state.account.surfaceEmail === false); const acctSms = !!(state.account && state.account.surfaceSms); const cur = ch === 'email' ? (tk.props.surfaceEmail == null ? acctEmail : !!tk.props.surfaceEmail) : (tk.props.surfaceSms == null ? acctSms : !!tk.props.surfaceSms); patchTaskProps(id, ch === 'email' ? { surfaceEmail: !cur } : { surfaceSms: !cur }); } return; } }
   { const qpb = t.closest('[data-task-qprio]'); if (qpb) { const s = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set()); const p = qpb.dataset.taskQprio; if (s.has(p)) s.delete(p); else s.add(p); renderTasks(); return; } }
   if (t.closest('[data-tf-toggle]')) { state.taskFiltersOpen = !state.taskFiltersOpen; renderTasks(); return; }
   if (t.closest('[data-tf-add]')) { loadTaskFilters(); state.taskFilters.push({ field: 'priority', op: 'is', value: 'P1' }); state.taskFiltersOpen = true; saveTaskFilters(); renderTasks(); return; }
@@ -11210,6 +11248,7 @@ document.addEventListener('change', (e) => {
     else if (id === 'bucketcard-year') patchBucket(bid, { targetYear: e.target.value.trim() || null }, true);
   }
   if (state.view.type === 'visioncard' && e.target.id === 'visioncard-text') patchVisionText(state.vision_open.area.id, e.target.value);
+  if (e.target.matches('[data-area-vision]')) { patchVisionInline(e.target.dataset.areaVision, e.target.value); return; }
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
@@ -11857,6 +11896,37 @@ async function openTaskCard(id) {
 // Duration presets (minutes) for the task card. Free-form isn't needed - these
 // cover the useful range; '—' clears it.
 const DURATION_OPTS = [['', '—'], [15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 hour'], [90, '1 hr 30 min'], [120, '2 hours'], [180, '3 hours'], [240, '4 hours'], [480, '8 hours']];
+// The "Surface & reminders" block on a task: when it comes back to your Today,
+// whether to be alerted and on which channel (text, email or both), whether to
+// hide it until then, and how it repeats. Channels default to your account-wide
+// surface settings; picking here overrides them for this task.
+function taskSurfaceHtml(t) {
+  const p = t.props; const id = t.id;
+  const acctEmail = !(state.account && state.account.surfaceEmail === false);
+  const acctSms = !!(state.account && state.account.surfaceSms);
+  const hasPhone = !!(state.account && state.account.phone);
+  const email = p.surfaceEmail == null ? acctEmail : !!p.surfaceEmail;
+  const sms = p.surfaceSms == null ? acctSms : !!p.surfaceSms;
+  const notify = p.surfaceNotify !== false;
+  const clear = p.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${id}">clear</button>` : '';
+  let chanHint = '';
+  if (notify && p.snooze) {
+    if (!email && !sms) chanHint = 'No channel picked, so nothing will reach you - choose text, email, or both.';
+    else { const bits = []; if (email) bits.push('email'); if (sms) bits.push(hasPhone ? 'text' : 'text (add a phone number in Settings first)'); chanHint = `A ${bits.join(' and a ')} on the morning it surfaces.`; }
+  }
+  return `<section class="tf-surface">
+    <div class="tfs-h">Surface &amp; reminders</div>
+    <label class="tfs-row"><span class="tfs-l">Surface on${clear}<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
+    ${p.snooze ? `<div class="tfs-block">
+      <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
+      ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${email ? 'on' : ''}" data-surface-ch="email:${id}"><span class="tfs-chip-ic">✉</span> Email</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
+      <p class="tfs-note">${esc(chanHint)}</p>` : ''}
+      <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my lists until then</span></label>
+    </div>` : ''}
+    <label class="tfs-row"><span class="tfs-l">Repeat</span><span class="tfs-ctrl"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(p.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></label>
+    ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">Next one is due<small class="tf-hint">keep to the calendar, or space it from when you do it</small></span><span class="tfs-ctrl"><select class="sel" data-repeatfrom-task="${id}"><option value="due" ${(p.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${p.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(p.repeat)}</option></select></span></label>` : ''}
+  </section>`;
+}
 function renderTaskCard() {
   const t = state.task_open.task; migrateCards(t); const a = areaById(t.props.area); const p = t.props.priority;
   $('#pane').innerHTML = `
@@ -11879,15 +11949,8 @@ function renderTaskCard() {
         ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Surface on${t.props.snooze ? ` <button type="button" class="tf-clear" data-clear-snooze="${t.id}">clear</button>` : ''}<small class="tf-hint">pops onto your Home that day (and can alert you)</small></span>
-        ${dateFieldHtml('taskcard-snooze', t.props.snooze || '')}</label>
-      ${t.props.snooze ? `<label class="tf-toggle tf-notify"><input type="checkbox" data-surface-notify="${t.id}" ${t.props.surfaceNotify !== false ? 'checked' : ''}><span>Alert me (text/email) when it surfaces</span></label>
-      <label class="tf-toggle tf-notify"><input type="checkbox" data-surface-hide="${t.id}" ${t.props.hideUntil ? 'checked' : ''}><span>Hide it from my lists until then</span></label>` : ''}
-      <label class="tf-field"><span class="tf-label">Repeat</span>
-        <select class="sel" data-repeat-task="${t.id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(t.props.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      ${t.props.repeat && !t.props.kit ? `<label class="tf-field"><span class="tf-label">Next one is due<small class="tf-hint">keep to the calendar, or space it out from when you actually do it</small></span>
-        <select class="sel" data-repeatfrom-task="${t.id}"><option value="due" ${(t.props.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${t.props.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(t.props.repeat)}</option></select></label>` : ''}
     </div>
+    ${taskSurfaceHtml(t)}
     ${t.sharedBy ? '' : privateToggleHtml('task', t)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;

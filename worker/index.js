@@ -1632,9 +1632,10 @@ async function runSurfaceAlertsForUser(env, user) {
 
   // Email default on; text default off (a text costs money and needs a saved
   // number). Both are switchable "generally" in Settings.
+  // Account-wide defaults; a task can override its channels (props.surfaceEmail /
+  // props.surfaceSms) so someone can pick text, email or both per task.
   const emailOn = (await getSetting(env, 'surface_email', uid)) !== '0';
   const smsOn = (await getSetting(env, 'surface_sms', uid)) === '1';
-  if (!emailOn && !smsOn) return 0;
 
   const today = now.date;
   const { results } = await env.DB.prepare(
@@ -1653,21 +1654,25 @@ async function runSurfaceAlertsForUser(env, user) {
   if (!due.length) return 0;
 
   const home = `https://${user.subdomain || 'robski'}.daybook.fyi`;
-  const titles = due.map((d) => d.title);
+  // Resolve each task's channels: an explicit per-task choice wins, else the
+  // account default.
+  const smsDue = due.filter((d) => (d.props.surfaceSms == null ? smsOn : !!d.props.surfaceSms));
+  const emailDue = due.filter((d) => (d.props.surfaceEmail == null ? emailOn : !!d.props.surfaceEmail));
 
-  if (smsOn) {
+  if (smsDue.length) {
     const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
     const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
     if (phone) {
-      const body = due.length === 1
-        ? `A task surfaced to your Today feed - you asked to be told: ${titles[0]}. ${home}/task/${due[0].id}`
-        : `${due.length} tasks surfaced to your Today feed - you asked to be told: ${titles.slice(0, 5).join('; ')}${due.length > 5 ? '…' : ''}. ${home}/today`;
+      const titles = smsDue.map((d) => d.title);
+      const body = smsDue.length === 1
+        ? `A task surfaced to your Today feed - you asked to be told: ${titles[0]}. ${home}/task/${smsDue[0].id}`
+        : `${smsDue.length} tasks surfaced to your Today feed - you asked to be told: ${titles.slice(0, 5).join('; ')}${smsDue.length > 5 ? '…' : ''}. ${home}/today`;
       await sendSms(env, body, phone).catch(() => {});
     }
   }
-  if (emailOn) {
+  if (emailDue.length) {
     const to = uid === 1 ? (env.BRIEF_EMAIL || user.email) : user.email;
-    if (to) await sendSurfaceMail(env, { to, tasks: due.map((d) => ({ id: d.id, title: d.title })), home }).catch(() => {});
+    if (to) await sendSurfaceMail(env, { to, tasks: emailDue.map((d) => ({ id: d.id, title: d.title })), home }).catch(() => {});
   }
 
   // Mark each as told for this surfacing. Re-snoozing to a new date resets it
