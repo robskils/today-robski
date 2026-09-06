@@ -9322,6 +9322,8 @@ function reviewInsight(m, p) {
   const period = PERIOD_WORD[(p || {}).rtype] || 'period';
   const lines = [];
   const nm = (id) => { const a = areaById(id); return a ? a.title : null; };
+  // Area names in the read are tappable - they take you straight to the area.
+  const nmLink = (id) => { const a = areaById(id); return a ? `<button class="rvi-link" data-open-area="${id}">${esc(a.title)}</button>` : null; };
   const done = m.tasksDone || [];
   const byArea = {}; done.forEach((t) => { if (t.area && nm(t.area)) byArea[t.area] = (byArea[t.area] || 0) + 1; });
   const ranked = Object.entries(byArea).sort((a, b) => b[1] - a[1]);
@@ -9336,17 +9338,17 @@ function reviewInsight(m, p) {
   // Concentration: where the effort really pooled.
   if (ranked.length && namedTotal >= 3) {
     const [topId, topN] = ranked[0]; const share = Math.round(topN / namedTotal * 100);
-    if (share >= 45) lines.push(`Most of it - <b>${share}%</b> - went to <b>${esc(nm(topId))}</b>.${ranked.length > 2 ? ' The rest was spread thin.' : ''}`);
-    else if (ranked.length >= 3) lines.push(`Effort was fairly balanced, led by <b>${esc(nm(ranked[0][0]))}</b> and <b>${esc(nm(ranked[1][0]))}</b>.`);
+    if (share >= 45) lines.push(`Most of it - <b>${share}%</b> - went to ${nmLink(topId)}.${ranked.length > 2 ? ' The rest was spread thin.' : ''}`);
+    else if (ranked.length >= 3) lines.push(`Effort was fairly balanced, led by ${nmLink(ranked[0][0])} and ${nmLink(ranked[1][0])}.`);
   }
-  // Momentum from practices kept.
+  // Momentum from practices kept - links to your practices.
   const pk = (m.practices || []).reduce((a, x) => a + x.count, 0);
-  if (pk) lines.push(`You kept <b>${pk}</b> practice${pk > 1 ? 's' : ''} going${(m.practices || []).length > 1 ? ` across ${(m.practices || []).length} habits` : ''} - steady momentum.`);
-  // What thinned out.
-  const quiet = (m.quietAreas || []).map(nm).filter(Boolean);
-  if (quiet.length) lines.push(`Nothing logged in <b>${quiet.slice(0, 2).map(esc).join('</b>, <b>')}</b>${quiet.length > 2 ? ` and ${quiet.length - 2} more` : ''} - worth a small step, or letting go for now?`);
-  // What still hangs over you.
-  if ((m.openP1 || []).length) lines.push(`<b>${m.openP1.length}</b> P1${m.openP1.length > 1 ? 's' : ''} still open - which one truly matters most next ${period}?`);
+  if (pk) lines.push(`You kept <b>${pk}</b> practice${pk > 1 ? 's' : ''} going${(m.practices || []).length > 1 ? ` across ${(m.practices || []).length} habits` : ''} - steady momentum. <button class="rvi-link" data-open-today>see practices →</button>`);
+  // What still hangs over you - a nudge, with the board one tap away.
+  if ((m.openP1 || []).length) lines.push(`<b>${m.openP1.length}</b> P1${m.openP1.length > 1 ? 's' : ''} still open - which one truly matters most next ${period}? <button class="rvi-link" data-view-tasks>open the board →</button>`);
+  // What thinned out - kept to a single, quiet, actionable line.
+  const quietIds = (m.quietAreas || []).filter((id) => nm(id));
+  if (quietIds.length) lines.push(`Quiet in ${quietIds.slice(0, 2).map(nmLink).join(', ')}${quietIds.length > 2 ? ` +${quietIds.length - 2}` : ''} - a small step, or let it go for now?`);
   if (!lines.length) lines.push(`A quiet ${period} on the record. What would make the next one feel good?`);
   return lines.slice(0, 5);
 }
@@ -9424,6 +9426,13 @@ const rvSecH = (k, label, extra) => `<div class="home-sec-h rv-collap-h" data-rv
 // keeps what you're writing; the server save is debounced, and flushed on blur and
 // on app hide/close - the reflection you type here is never lost.
 let rvAnsT;
+let rvAreaT;
+// A per-area "how it went" line, saved to props.areaNotes, debounced like answers.
+function saveReviewAreaNote(id, v) {
+  const r = state.review_open && state.review_open.review; if (!r) return;
+  r.props = r.props || {}; r.props.areaNotes = { ...(r.props.areaNotes || {}), [id]: v };
+  clearTimeout(rvAreaT); rvAreaT = setTimeout(() => { rvAreaT = null; patchReview(r.id, { areaNotes: r.props.areaNotes }, true); }, 700);
+}
 function saveReviewAnswer(i, v, immediate) {
   const r = state.review_open && state.review_open.review; if (!r) return;
   r.props = r.props || {}; r.props.answers = { ...(r.props.answers || {}), [i]: v };
@@ -9438,6 +9447,11 @@ function flushReviewAnswers() {
   document.querySelectorAll('[data-rv-answer]').forEach((el) => { const i = el.dataset.rvAnswer; if (ans[i] !== el.value) { ans[i] = el.value; changed = true; } });
   clearTimeout(rvAnsT); rvAnsT = null;
   if (changed) { r.props = r.props || {}; r.props.answers = ans; patchReview(r.id, { answers: ans }, true); }
+  // Per-area notes flush the same way, so a fold or navigate never loses them.
+  const notes = { ...((r.props || {}).areaNotes || {}) }; let nChanged = false;
+  document.querySelectorAll('[data-rv-areanote]').forEach((el) => { const id = el.dataset.rvAreanote; if (notes[id] !== el.value) { notes[id] = el.value; nChanged = true; } });
+  clearTimeout(rvAreaT); rvAreaT = null;
+  if (nChanged) { r.props = r.props || {}; r.props.areaNotes = notes; patchReview(r.id, { areaNotes: notes }, true); }
 }
 function renderReviewCard() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
@@ -9458,10 +9472,15 @@ function renderReviewCard() {
   const quiet = (m.quietAreas || []).map(areaName);
   const wheelHiddenSet = new Set(p.wheelHidden || []);
   const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id));
-  const wheel = wheelAreas.map((a) => {
+  // By life area: a score /5 (draws the Wheel of Life) AND a line on how it went.
+  const areaBlock = wheelAreas.map((a) => {
     const sc = Math.min((p.wheel || {})[a.id] || 0, 5);
     const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-wheel="${a.id}:${i + 1}" style="--h:${hueOf(a)}"></button>`).join('');
-    return `<div class="wheel-row"><span class="wheel-a">${esc(a.title)}</span><span class="wheel-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span><button class="wheel-x" data-wheel-hide="${a.id}" title="Skip ${esc(a.title)} this time - it won't ask for a score">×</button></div>`;
+    const note = (p.areaNotes || {})[a.id] || '';
+    return `<div class="rva-row" style="--h:${hueOf(a)}">
+      <div class="rva-head"><span class="rva-dot"></span><button class="rva-name" data-open-area="${a.id}" title="Open ${esc(a.title)}">${esc(a.title)}</button><span class="rva-pips">${pips}</span><span class="rva-v">${sc || '–'}</span><button class="wheel-x" data-wheel-hide="${a.id}" title="Skip ${esc(a.title)} this time">×</button></div>
+      <input class="rva-note" data-rv-areanote="${a.id}" value="${esc(note)}" placeholder="A line on how ${esc(a.title)} went…" autocomplete="off">
+    </div>`;
   }).join('');
   const wheelHiddenN = state.areas.length - wheelAreas.length;
   $('#pane').innerHTML = `
@@ -9479,6 +9498,18 @@ function renderReviewCard() {
       <button class="rv-editdates" data-rv-editdates>${R.editDates ? 'Done' : 'Adjust dates'}</button>
     </div>
 
+    <section class="rv-mirror">
+      ${rvSecH('record', 'What you did')}
+      ${rvSecOpen('record') ? `<div class="rv-stats">
+        ${(m.tasksDone || []).length ? `<button class="rv-stat good rv-stat-btn ${R.summaryOpen ? 'on' : ''}" data-rv-summary title="List everything you ticked off"><b>${(m.tasksDone || []).length}</b> ticked off <span class="rv-stat-spark">${R.summaryOpen ? '▾' : '▸'}</span></button>` : pill('ticked off', 0, 'good')}
+        ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<button class="rv-stat good rv-stat-btn" data-open-today title="Open your practices"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button>` : ''}
+        ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
+      </div>
+      ${R.summaryOpen ? `<div class="rv-summary">${reviewDoneCards(m)}</div>` : ''}
+      ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
+      ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}` : ''}
+    </section>
+
     <section class="rv-analysis">
       ${rvSecH('read', '✦ The read')}
       ${rvSecOpen('read') ? `<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>
@@ -9486,29 +9517,14 @@ function renderReviewCard() {
         ? `<div class="rv-summary rv-summary-open"><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">A deeper read, written from your record by Claude. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div></div>`
         : R.summaryLoading
           ? `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`
-          : `<div class="rv-analyse-cta"><button class="add-btn wide rv-analyse-btn" data-rv-analyse>✦ Analyse my ${periodWord}</button><span class="rv-finish-hint">An honest read of where your effort actually went, the momentum, and one steer for the ${periodWord} ahead.</span></div>`}` : ''}
+          : `<div class="rv-analyse-cta"><button class="add-btn wide rv-analyse-btn" data-rv-analyse>✦ Go deeper with AI</button><span class="rv-finish-hint">An honest read of where your effort actually went, the momentum, and one steer for the ${periodWord} ahead.</span></div>`}` : ''}
     </section>
 
-    <section class="rv-mirror">
-      ${rvSecH('record', `Your ${p.rtype === 'weekly' ? 'week' : 'period'}, from the record`)}
-      ${rvSecOpen('record') ? `<div class="rv-stats">
-        ${(m.tasksDone || []).length ? `<button class="rv-stat good rv-stat-btn ${R.summaryOpen ? 'on' : ''}" data-rv-summary title="List everything you ticked off"><b>${(m.tasksDone || []).length}</b> ticked off <span class="rv-stat-spark">${R.summaryOpen ? '▾' : '▸'}</span></button>` : pill('ticked off', 0, 'good')}
-        ${pill('P1 still open', (m.openP1 || []).length, (m.openP1 || []).length ? 'warn' : '')}
-        ${pill('practices kept', (m.practices || []).reduce((a, x) => a + x.count, 0), 'good')}
-        ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
-        ${pill('quiet areas', quiet.length, quiet.length ? 'warn' : '')}
-      </div>
-      ${R.summaryOpen ? `<div class="rv-summary">${reviewDoneCards(m)}</div>` : ''}
-      ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
-      ${(m.openP1 || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">P1s still open · ${(m.openP1 || []).length}</div><div class="rvm-cards">${(m.openP1 || []).map((t) => { const a = t.area ? areaById(t.area) : null; return `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="p-tag p-P1">P1</span><span class="rvm-t">${esc(t.title || 'Untitled')}</span>${a ? `<span class="rvm-area"><span class="rvm-dot"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div></div>` : ''}
-      ${(m.quietAreas || []).length ? `<div class="rv-cardsec"><div class="rv-cardsec-h">Went quiet · ${(m.quietAreas || []).length}</div><div class="rvm-cards">${(m.quietAreas || []).map((aid) => { const a = areaById(aid); if (!a) return ''; return `<button class="rvm-card rvm-area" style="--h:${hueOf(a)}" data-open-area="${aid}"><span class="rvm-dot"></span><span class="rvm-t">${esc(a.title)}</span><span class="rvm-go">→</span></button>`; }).filter(Boolean).join('')}</div></div>` : ''}
-      ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}` : ''}
-    </section>
-
-    <section class="wheel">
-      ${rvSecH('wheel', 'Wheel of Life', `<span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</span>${rvSecOpen('wheel') ? '<span class="wheel-hint">rate each area 1–5</span>' : ''}`)}
-      ${rvSecOpen('wheel') ? `<div class="wheel-rows">${wheel || `<div class="muted">Every area skipped for this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to rate them here.'}</div>`}</div>
-      ${wheel && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} skipped · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}` : ''}
+    <section class="rv-byarea">
+      ${rvSecH('wheel', 'By life area', `<span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</span>`)}
+      ${rvSecOpen('wheel') ? `<p class="rva-intro">A line on how each area went, and a score out of 5 - your scores draw the <b>Wheel of Life</b> and its trend.</p>
+      <div class="rva-rows">${areaBlock || `<div class="muted">Every area skipped for this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to reflect on them here.'}</div>`}</div>
+      ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} skipped · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}` : ''}
     </section>
 
     ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
@@ -9586,7 +9602,7 @@ function weeklyGoalsGlance() {
       <span class="rvg-b"><span class="rvg-t">${esc(g.title || 'Untitled')}</span><span class="rvg-m">${a ? esc(a.title) + ' · ' : ''}${esc(goalMeasure(g))}</span></span>
       <span class="rvg-bar"><i style="width:${pct}%"></i></span></button>`;
   }).join('');
-  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">still where your energy should go?</span></div><div class="rvg-list">${rows}</div></section>`;
+  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">a look at where you're aiming - tap one to update it</span></div><div class="rvg-list">${rows}</div></section>`;
 }
 function goalReviewSection(r) {
   const p = r.props || {};
@@ -10562,6 +10578,7 @@ document.addEventListener('input', (e) => {
   const fvi = e.target.closest('input[data-filt-val]'); if (fvi) { const i = +fvi.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = e.target.value; renderTableBody(); } }
   if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); }
   if (e.target.matches && e.target.matches('[data-rv-answer]')) saveReviewAnswer(e.target.dataset.rvAnswer, e.target.value);
+  if (e.target.matches && e.target.matches('[data-rv-areanote]')) saveReviewAreaNote(e.target.dataset.rvAreanote, e.target.value);
 });
 let proseT;
 // Save every open rich-text editor RIGHT NOW, without waiting for the 800ms
