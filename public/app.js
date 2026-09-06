@@ -9198,9 +9198,12 @@ function reviewsListHtml() {
   const cards = RTYPE_ORDER.map((k) => {
     const c = reviewCad(k); const isOpen = open === k;
     const done = reviewDoneCount(k);
-    const next = c.on ? reviewCadNext(k, t0) : nextReviewDue(k);
-    let nextBit = '<span class="rv-rem-stat rv-rem-muted">no next date yet</span>';
-    if (next) { const nd = new Date(next + 'T00:00'); const diff = Math.round((nd - new Date(t0 + 'T00:00')) / 86400000); const rel = diff <= 0 ? 'due now' : diff === 1 ? 'tomorrow' : `in ${diff} days`; nextBit = `<span class="rv-rem-stat">next <b>${esc(dpLabel(next))}</b> · ${rel}</span>`; }
+    // The next date is the official cadence date (e.g. the coming Sunday), never
+    // "N days since the last one" - you may do it early or late, it still counts
+    // as that official date. With no cadence set there simply is no date yet.
+    const next = c.on ? reviewCadNext(k, t0) : null;
+    let nextBit = c.on ? '<span class="rv-rem-stat rv-rem-muted">no next date yet</span>' : '<span class="rv-rem-stat rv-rem-muted">tap to set when</span>';
+    if (next) { const nd = new Date(next + 'T00:00'); const diff = Math.round((nd - new Date(t0 + 'T00:00')) / 86400000); const rel = diff <= 0 ? 'due today' : diff === 1 ? 'tomorrow' : `in ${diff} days`; nextBit = `<span class="rv-rem-stat">officially <b>${esc(dpLabel(next))}</b> · ${rel}</span>`; }
     const editor = isOpen ? reviewCadEditor(k, c) : '';
     return `<div class="rv-remcard ${isOpen ? 'open' : ''} ${c.on ? 'is-on' : ''}">
       <button class="rv-remhead" data-rev-rem-edit="${k}"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${esc(reviewCadWords(k))}</small></span><span class="rv-remchev">${isOpen ? '▾' : '▸'}</span></button>
@@ -9208,7 +9211,7 @@ function reviewsListHtml() {
       ${editor}</div>`;
   }).join('');
   return `<section class="home-sec"><div class="home-sec-h">Your review cadence</div>
-    <p class="rv-rem-note2">For each type of review, set <b>when</b> it should come round - every Sunday, the last day of the month, the nearest Saturday to the quarter's end. Daybook counts how many you've done and works out the next one, then nudges you on the day.</p>
+    <p class="rv-rem-note2">Set the day each review <b>officially</b> lands - every Sunday, the last day of the month, the nearest Saturday to the quarter's end. Do it a little early or late and it still counts as that date. Daybook counts how many you've done and nudges you when the next one is due.</p>
     <div class="rv-remcards">${cards}</div>
   </section>`;
 }
