@@ -956,7 +956,7 @@ async function syncAccentFromServer() {
 }
 
 // ── Settings hub ──────────────────────────────────────────────────────
-function openSettings() { state.view = { type: 'settings' }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
+function openSettings(tab) { state.view = { type: 'settings' }; state.settings = state.settings || {}; if (tab) state.settings.tab = tab; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 function aiKeyRow(provider, label, isSet, ph) {
@@ -12627,6 +12627,7 @@ async function onbConnectGmail() {
     else if (route === '/goals') await openGoals();
     else if (route === '/today') await openToday();
     else if (route.startsWith('/task/')) { const id = route.slice(6); history.replaceState(null, '', '/'); await openTaskCard(id).catch(() => openHome()); }
+    else if (route === '/settings' || route.startsWith('/settings/')) { const tab = route.slice(10); history.replaceState(null, '', '/'); await openSettings(tab || undefined); }
     else if (route === '/tasks') { if (new URLSearchParams(location.search).get('p1') === '1') openP1Tasks(); else await openTasks(); }
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
