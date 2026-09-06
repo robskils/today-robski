@@ -7919,6 +7919,16 @@ async function loadContacts(force) {
 const contactEmail = (c) => ((c.props && c.props.email) || '').toLowerCase();
 const haveContact = (email) => !!email && (state.contacts || []).some((c) => contactEmail(c) === email.toLowerCase());
 function sortContacts(list) { return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')); }
+// Star a contact: a contacts-only flag (props.starred), separate from props.fav
+// so it never spills into the sidebar Favourites. Feeds the Starred section.
+async function toggleContactStar(id) {
+  const c = findContact(id); if (!c) return;
+  const starred = !(c.props && c.props.starred);
+  const copies = [c, (state.contacts || []).find((x) => x.id === id), (state.contact_open && state.contact_open.contact && state.contact_open.contact.id === id) ? state.contact_open.contact : null].filter(Boolean);
+  copies.forEach((b) => { b.props = b.props || {}; b.props.starred = starred; });
+  if (state.view.type === 'contacts') renderContacts(); else if (state.view.type === 'contactcard') renderContactCard();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { starred } }) }); } catch (e) { toast(e.message); }
+}
 // Groups are their own blocks (kind='contactgroup', title = name). Membership
 // lives on the contact as props.groups (an array of group ids), so a contact's
 // groups travel with it and are easy to show on the card and filter by.
@@ -8035,8 +8045,10 @@ function contactCardHtml(c) {
   if (formatAddress(p.address)) bits.push(`<span class="cc-row">📍 ${esc(formatAddress(p.address))}</span>`);
   const tags = liveGroupsOf(c);
   const sel = (state.contactSel instanceof Set) && state.contactSel.has(c.id);
-  return `<button class="contact-card ${sel ? 'selected' : ''}" data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}" title="Drag onto a group to add">
+  const starred = !!p.starred;
+  return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}" data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}" title="Drag onto a group to add">
     <span class="cc-check ${sel ? 'on' : ''}" data-contact-sel="${c.id}" role="checkbox" aria-checked="${sel}" title="Select (to merge)">${sel ? '✓' : ''}</span>
+    <span class="cc-star ${starred ? 'on' : ''}" data-contact-star="${c.id}" role="button" title="${starred ? 'Starred - tap to unstar' : 'Star this contact'}">${starred ? '★' : '☆'}</span>
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${tags.length ? `<span class="contact-tags">${tags.map((g) => `<span class="contact-tag">${esc(g.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
@@ -8060,6 +8072,8 @@ function contactMenuHtml() {
   const selN = (state.contactSel instanceof Set) ? state.contactSel.size : 0;
   return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
     <div class="ctx-h">${esc(c.title || 'Contact')}</div>
+    <button class="ctx-item" data-ctx-star="${c.id}">${(c.props && c.props.starred) ? '★ Unstar' : '☆ Star contact'}</button>
+    <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
     ${addable.length ? `<div class="ctx-lbl">Add to group</div>${addable.map((g) => `<button class="ctx-item" data-ctx-add="${g.id}">${esc(g.title)}</button>`).join('')}` : ''}
     <button class="ctx-item ctx-new" data-ctx-newgroup>+ New group…</button>
@@ -8118,7 +8132,14 @@ function renderContacts() {
       ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
       ${contactSelBarHtml()}
       ${state.contactAdding ? contactAddForm() : ''}
-      <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
+      ${(() => {
+        // On the default "All" view, pull starred contacts into their own section
+        // at the top; the grid below then holds the rest, A-Z.
+        const starred = (!g) ? list.filter((c) => c.props && c.props.starred) : [];
+        const rest = starred.length ? list.filter((c) => !(c.props && c.props.starred)) : list;
+        return `${starred.length ? `<div class="cts-sec-h">★ Starred <span class="muted">${starred.length}</span></div><div class="contact-grid cts-starred">${starred.map(contactCardHtml).join('')}</div>${rest.length ? '<div class="cts-sec-h">All contacts</div>' : ''}` : ''}
+      <div class="contact-grid">${rest.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>`;
+      })()}
     </section>
 
     <section class="home-sec ppl-sec">
@@ -8307,7 +8328,7 @@ function renderContactCard() {
   const c = state.contact_open.contact; const p = c.props || {};
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-contacts>Contacts</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(c.title || 'Unnamed')}</span>
-      <span class="crumb-tools"><button class="note-del ghost" data-del-contact="${c.id}" title="Delete this contact">Delete</button></span></div>
+      <span class="crumb-tools"><button class="star ${p.starred ? 'on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star this contact'}">${p.starred ? '★' : '☆'}</button><button class="note-del ghost" data-del-contact="${c.id}" title="Delete this contact">Delete</button></span></div>
     <div class="task-focus cc-focus">
       <span class="contact-av big">${esc(initial(c.title || '?'))}</span>
       <textarea class="note-title" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
@@ -12004,6 +12025,7 @@ document.addEventListener('click', (e) => {
   const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
   const gat = t.closest('[data-goal-addtask]'); if (gat) { const [gid, mid] = gat.dataset.goalAddtask.split(':'); addGoalTask(gid, mid || null).catch((x) => toast(x.message)); return; }
   { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
+  { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
   if (t.closest('[data-contacts-merge]')) { mergeSelectedContacts(); return; }
   if (t.closest('[data-contacts-selclear]')) { state.contactSel = new Set(); renderContacts(); return; }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
@@ -12028,6 +12050,7 @@ document.addEventListener('click', (e) => {
   const ctxAdd = t.closest('[data-ctx-add]'); if (ctxAdd) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) addContactToGroup(id, ctxAdd.dataset.ctxAdd); else renderContacts(); return; }
   if (t.closest('[data-ctx-newgroup]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; renderContacts(); if (id) addContactViaNewGroup(id); return; }
   const ctxRm = t.closest('[data-ctx-remove]'); if (ctxRm) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) removeContactFromGroup(id, ctxRm.dataset.ctxRemove); else renderContacts(); return; }
+  { const cxs = t.closest('[data-ctx-star]'); if (cxs) { const id = cxs.dataset.ctxStar; state.contactMenu = null; toggleContactStar(id); return; } }
   if (t.closest('[data-ctx-merge]')) { state.contactMenu = null; mergeSelectedContacts(); return; }
   if (t.closest('[data-ctx-delete]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) delContact(id); else renderContacts(); return; }
   if (t.closest('[data-ctx-close]') && !t.closest('.ctx-menu')) { state.contactMenu = null; renderContacts(); return; }

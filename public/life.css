@@ -160,6 +160,12 @@ button { cursor:pointer; background:none; border:0; }
 .cc-check { position:absolute; top:8px; right:8px; width:22px; height:22px; border-radius:7px; border:1.5px solid var(--line-2); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; opacity:0; transition:opacity .12s; z-index:2; }
 .contact-card:hover .cc-check, .cc-check.on { opacity:1; }
 .cc-check.on { background:var(--accent); border-color:var(--accent); }
+.cc-star { position:absolute; bottom:7px; right:10px; border:0; background:none; padding:0; font-size:18px; line-height:1; color:var(--line-2); opacity:0; transition:opacity .12s, color .12s, transform .1s; z-index:2; cursor:pointer; }
+.contact-card:hover .cc-star, .cc-star.on { opacity:1; }
+.cc-star.on { color:var(--gold); }
+.cc-star:hover { color:var(--gold); transform:scale(1.15); }
+.cts-sec-h { font-size:12.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); margin:18px 0 2px; display:flex; align-items:center; gap:8px; }
+.cts-sec-h .muted { font-weight:600; }
 .contact-selbar { display:flex; align-items:center; gap:12px; padding:10px 14px; margin:0 0 12px; border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); border-radius:12px; background:color-mix(in srgb,var(--accent) 7%,var(--card)); }
 .csb-n { font-weight:700; }
 .csb-hint { color:var(--ink-3); font-size:13.5px; }
