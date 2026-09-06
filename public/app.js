@@ -5159,7 +5159,7 @@ function t2PracticesHtml() {
   return `<div class="t2-scroll t2-colscroll">${t2ColHead('Practices', shown.length, 'prac', (f ? 1 : 0) + prios.size, open)}${filterBar}</div>
       <div class="t2-list">${body}</div>
     </div>
-    <button class="t2-newrow" data-prc-new>＋ New practice</button>`;
+    <div class="t2-pfoot"><button class="t2-newrow" data-prc-new>＋ New practice</button><button class="t2-plink" data-open-practices title="Open the Practices page to edit, group and track them">Manage all →</button></div>`;
 }
 const T2_FILTER_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M2 3.2h12l-4.6 5.4v4.2L6.6 11V8.6z"/></svg>';
 // A sticky one-row column header: name + count + a filter button that reveals a
@@ -9501,7 +9501,7 @@ function reviewInsight(m, p) {
   }
   // Momentum from practices kept - links to your practices.
   const pk = (m.practices || []).reduce((a, x) => a + x.count, 0);
-  if (pk) lines.push(`You kept <b>${pk}</b> practice${pk > 1 ? 's' : ''} going${(m.practices || []).length > 1 ? ` across ${(m.practices || []).length} habits` : ''} - steady momentum. <button class="rvi-link" data-open-today>see practices →</button>`);
+  if (pk) lines.push(`You kept <b>${pk}</b> practice${pk > 1 ? 's' : ''} going${(m.practices || []).length > 1 ? ` across ${(m.practices || []).length} habits` : ''} - steady momentum. <button class="rvi-link" data-open-practices>see practices →</button>`);
   // What still hangs over you - a nudge, with the board one tap away.
   if ((m.openP1 || []).length) lines.push(`<b>${m.openP1.length}</b> P1${m.openP1.length > 1 ? 's' : ''} still open - which one truly matters most next ${period}? <button class="rvi-link" data-view-tasks>open the board →</button>`);
   // What thinned out - kept to a single, quiet, actionable line.
@@ -9843,9 +9843,9 @@ function renderReviewCard() {
     <section class="rv-mirror">
       ${rvSecH('record', 'What you did')}
       ${rvSecOpen('record') ? `${(m.tasksDone || []).length ? `<div class="rv-didbig"><b>${(m.tasksDone || []).length}</b> ticked off this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>` : '<div class="rv-didbig rv-didnone">Nothing ticked off on the record this time.</div>'}
-      ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<div class="rv-stats"><button class="rv-stat good rv-stat-btn" data-open-today title="Open your practices"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button></div>` : ''}
+      ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<div class="rv-stats"><button class="rv-stat good rv-stat-btn" data-open-practices title="Open the Practices page"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button></div>` : ''}
       ${(m.tasksDone || []).length ? reviewWinsHtml(m, p) : ''}
-      ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
+      ${practiceStr ? `<div class="rv-line"><button class="rv-line-k rvi-link" data-open-practices>Practices</button> ${esc(practiceStr)}</div>` : ''}
       ${(m.surfaced || []).length ? `<div class="rv-surfaced">
         <div class="rv-surfaced-h">☀ Surfaced from snooze · ${(m.surfaced || []).length}</div>
         <div class="rv-surfaced-note">Tasks you'd parked that came back this ${periodWord} - did they land, or do they need re-parking?</div>
