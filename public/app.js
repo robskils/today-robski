@@ -10669,7 +10669,17 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-tf-add]')) { loadTaskFilters(); state.taskFilters.push({ field: 'priority', op: 'is', value: 'P1' }); state.taskFiltersOpen = true; saveTaskFilters(); renderTasks(); return; }
   if (t.closest('[data-tf-clear]')) { state.taskFilters = []; saveTaskFilters(); renderTasks(); return; }
   { const td = t.closest('[data-tf-del]'); if (td) { loadTaskFilters(); state.taskFilters.splice(Number(td.dataset.tfDel), 1); saveTaskFilters(); renderTasks(); return; } }
-  const ck = t.closest('[data-check]'); if (ck) { toggleTask(ck.dataset.check); return; }
+  const ck = t.closest('[data-check]'); if (ck) {
+    const id = ck.dataset.check;
+    // Ticking a task OFF from its own card should close the card and go back -
+    // a repeating task rolls to next time and staying looked like it hadn't
+    // ticked, so you'd tick again and roll it forward twice (Robin, pay rent).
+    const onCard = state.view && state.view.type === 'taskcard' && state.view.id === id;
+    const wasOpen = onCard && (() => { const c = taskCopies(id)[0]; return c && !c.props.done; })();
+    toggleTask(id);
+    if (wasOpen) { if (navHist.length) navBack(); else openTasks().catch(() => openHome()); }
+    return;
+  }
   // On the narrow task cards the whole card opens - only the checkbox (handled
   // just above) and the × are special. Star/priority/area are display-only here;
   // you edit them inside the card. Desktop keeps its inline-edit table.
