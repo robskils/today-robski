@@ -1047,6 +1047,8 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rv-cad-toggle input { flex:none; width:19px; height:19px; accent-color:var(--accent); }
 .rv-cad-when { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; }
 .rv-cad-l { font-size:13.5px; color:var(--ink-3); }
+.rv-cad-whenl { display:block; font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin-bottom:2px; }
+.rv-remedit .rv-cad-toggle { border-top:1px solid var(--line); margin-top:6px; }
 .rv-cad-chips { display:flex; gap:7px; flex-wrap:wrap; }
 .rv-cad-chip { padding:7px 13px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; }
 .rv-cad-chip.sm { padding:5px 10px; font-size:12.5px; }

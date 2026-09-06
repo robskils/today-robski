@@ -9341,26 +9341,24 @@ function reviewCadRecent(k, todayI) {
 }
 function reviewDoneCount(k) { return (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).status !== 'inprogress').length; }
 function reviewCadEditor(k, c) {
-  const onRow = `<label class="rv-cad-toggle"><input type="checkbox" data-rev-cad-on="${k}" ${c.on ? 'checked' : ''}><span>Remind me for ${REVIEWS[k].label.toLowerCase()} reviews</span></label>`;
-  let when = '';
-  if (c.on) {
-    const dayChip = (d, sm) => `<button class="rv-cad-chip${sm ? ' sm' : ''} ${c.dow === d ? 'on' : ''}" data-rev-cad-dow="${k}:${d}">${DOW_LONG[d].slice(0, 3)}</button>`;
-    if (k === 'weekly') {
-      when = `<div class="rv-cad-when"><span class="rv-cad-l">Every</span><div class="rv-cad-chips">${dowOrder().map((d) => dayChip(d, false)).join('')}</div></div>`;
-    } else {
-      const per = REVIEW_PERIOD_WORD[k];
-      const modes = [['end', `Last day of the ${per}`], ['start', `First day of the ${per}`], ['neardow', 'Nearest weekday to the end']];
-      const modeChips = modes.map(([mv, ml]) => `<button class="rv-cad-chip ${c.mode === mv ? 'on' : ''}" data-rev-cad-mode="${k}:${mv}">${esc(ml)}</button>`).join('');
-      const dowRow = c.mode === 'neardow' ? `<div class="rv-cad-when"><span class="rv-cad-l">Nearest</span><div class="rv-cad-chips">${dowOrder().map((d) => dayChip(d, true)).join('')}</div><span class="rv-cad-l">to the ${per}'s end</span></div>` : '';
-      when = `<div class="rv-cad-when"><div class="rv-cad-chips">${modeChips}</div></div>${dowRow}`;
-    }
+  // The "when it lands" always shows (it sets the due date); the "Remind me"
+  // toggle sits BELOW it, and the alert timing appears under that when on.
+  const dayChip = (d, sm) => `<button class="rv-cad-chip${sm ? ' sm' : ''} ${c.dow === d ? 'on' : ''}" data-rev-cad-dow="${k}:${d}">${DOW_LONG[d].slice(0, 3)}</button>`;
+  let when;
+  if (k === 'weekly') {
+    when = `<div class="rv-cad-when"><span class="rv-cad-l">Every</span><div class="rv-cad-chips">${dowOrder().map((d) => dayChip(d, false)).join('')}</div></div>`;
+  } else {
+    const per = REVIEW_PERIOD_WORD[k];
+    const modes = [['end', `Last day of the ${per}`], ['start', `First day of the ${per}`], ['neardow', 'Nearest weekday to the end']];
+    const modeChips = modes.map(([mv, ml]) => `<button class="rv-cad-chip ${c.mode === mv ? 'on' : ''}" data-rev-cad-mode="${k}:${mv}">${esc(ml)}</button>`).join('');
+    const dowRow = c.mode === 'neardow' ? `<div class="rv-cad-when"><span class="rv-cad-l">Nearest</span><div class="rv-cad-chips">${dowOrder().map((d) => dayChip(d, true)).join('')}</div><span class="rv-cad-l">to the ${per}'s end</span></div>` : '';
+    when = `<div class="rv-cad-when"><div class="rv-cad-chips">${modeChips}</div></div>${dowRow}`;
   }
+  const onRow = `<label class="rv-cad-toggle"><input type="checkbox" data-rev-cad-on="${k}" ${c.on ? 'checked' : ''}><span>Remind me for ${REVIEWS[k].label.toLowerCase()} reviews</span></label>`;
   const alertRow = c.on ? `<div class="rv-cad-when"><span class="rv-cad-l">Alert me</span><div class="rv-cad-chips">${[[0, 'On the day'], [1, 'Day before'], [2, '2 days before'], [3, '3 days before']].map(([v, l]) => `<button class="rv-cad-chip sm ${c.alertBefore === v ? 'on' : ''}" data-rev-cad-alert="${k}:${v}">${l}</button>`).join('')}</div></div>` : '';
-  const nx = c.on ? reviewCadNext(k, todayISO()) : null;
-  const note = c.on
-    ? `<div class="rv-remedit-note">${nx ? `Due <b>${esc(dpLabel(nx))}</b>, nudge ${esc(alertBeforeLabel(c.alertBefore))}. ` : ''}A text and email${c.alertBefore ? '' : ' on the day'}, plus a link in your Today to start it.</div>`
-    : `<div class="rv-remedit-note">Off, so no nudges. You can still start a ${REVIEWS[k].label.toLowerCase()} review any time from the cards above.</div>`;
-  return `<div class="rv-remedit">${onRow}${when}${alertRow}${note}</div>`;
+  const nx = reviewCadNext(k, todayISO());
+  const note = `<div class="rv-remedit-note">${nx ? `Due <b>${esc(dpLabel(nx))}</b>` : ''}${c.on ? `${nx ? ', ' : ''}a text and email ${esc(alertBeforeLabel(c.alertBefore))}, plus a link in your Today.` : `${nx ? ' · ' : ''}no reminder set - you can still start it any time.`}</div>`;
+  return `<div class="rv-remedit"><span class="rv-cad-whenl">When it lands</span>${when}${onRow}${alertRow}${note}</div>`;
 }
 function reviewsListHtml() {
   const open = state.reviewRemEdit; const t0 = todayISO();
@@ -9399,8 +9397,8 @@ function toggleReviewCad(k, on) {
   const c = ensureCad(k); c.on = on; reviewCadSettle(k); saveReviewRem(); reReviewRems();
   if (on) { const nx = reviewCadNext(k, todayISO()); toast(`${REVIEWS[k].label} reminders on${nx ? ` - next ${dpLabel(nx)}` : ''}`); }
 }
-function setReviewCadDow(k, dow) { const c = ensureCad(k); c.dow = dow; if (k !== 'weekly') c.mode = 'neardow'; c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
-function setReviewCadMode(k, mode) { const c = ensureCad(k); c.mode = mode; c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
+function setReviewCadDow(k, dow) { const c = ensureCad(k); c.dow = dow; if (k !== 'weekly') c.mode = 'neardow'; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
+function setReviewCadMode(k, mode) { const c = ensureCad(k); c.mode = mode; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadAlert(k, n) { const c = ensureCad(k); c.alertBefore = Math.max(0, Math.min(14, n)); c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
