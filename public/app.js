@@ -1004,7 +1004,8 @@ function cardChipsHtml(d) {
   if (d.location) chips.push(`<span class="dbc-chip">📍 ${esc(d.location)}</span>`);
   if (d.website) { const w = String(d.website).replace(/^https?:\/\//, '').replace(/\/$/, ''); chips.push(`<a class="dbc-chip" href="${esc(cardHref(d.website))}" target="_blank" rel="noopener">🔗 ${esc(w)}</a>`); }
   (d.links || []).forEach((l) => { if (!l.url) return; const [ic] = cardLinkMeta(l.url); chips.push(`<a class="dbc-chip" href="${esc(cardHref(l.url))}" target="_blank" rel="noopener"><span class="dbc-lk-ic">${ic}</span> ${esc(cardLinkText(l))}</a>`); });
-  if (d.email) chips.push(`<a class="dbc-chip" href="mailto:${esc(d.email)}">✉ ${esc(d.email)}</a>`);
+  const emails = d.emails && d.emails.length ? d.emails : (d.email ? [d.email] : []);
+  emails.forEach((em) => chips.push(`<a class="dbc-chip" href="mailto:${esc(em)}">✉ ${esc(em)}</a>`));
   if (d.phone) chips.push(`<span class="dbc-chip">📞 ${esc(d.phone)}</span>`);
   return chips.join('');
 }
@@ -1065,8 +1066,20 @@ function myCardData() {
     name: a.name || firstName() || 'You', handle: a.subdomain ? `${a.subdomain}.daybook.fyi` : '',
     photo: c.photo || '', accent: c.accent || savedAccent() || '#c4412e', pattern: c.pattern || 'none',
     tagline: c.tagline || '', location: c.location || '', website: c.website || '', links: c.links || [],
-    email: c.showEmail ? (a.email || '') : '', phone: c.showPhone ? (a.phone || '') : '',
+    emails: cardChosenEmails(c), phone: c.showPhone ? (a.phone || '') : '',
   };
+}
+// All of your own addresses that can appear on the card: primary + verified
+// aliases. And which are currently chosen (with legacy showEmail migrated).
+function ownEmails() {
+  const a = state.account || {}; const out = [];
+  if (a.email) out.push(a.email);
+  (a.aliases || []).forEach((al) => { const e = typeof al === 'string' ? al : al.email; const v = typeof al === 'string' ? true : al.verified; if (v && e && !out.some((x) => x.toLowerCase() === e.toLowerCase())) out.push(e); });
+  return out;
+}
+function cardChosenEmails(c) {
+  if (Array.isArray(c.emails)) return c.emails;
+  const a = state.account || {}; return (c.showEmail && a.email) ? [a.email] : [];
 }
 function cardPreviewHtml(full) { return cardHtml(myCardData(), full); }
 function renderCard() {
@@ -1105,9 +1118,11 @@ function cardEditorHtml() {
           <div class="dbc-links">${(c.links || []).map((l, i) => `<div class="dbc-link-row"><input class="sel dbc-link-url" data-card-link-url="${i}" value="${esc(l.url || '')}" placeholder="instagram.com/you" maxlength="300"><input class="sel dbc-link-label" data-card-link-label="${i}" value="${esc(l.label || '')}" placeholder="Label (optional)" maxlength="40"><button class="ghost dbc-link-x" data-card-link-x="${i}" title="Remove">×</button></div>`).join('')}</div>
           <button class="add-btn wide dbc-link-add" data-card-link-add>＋ Add a link</button>
         </div>
-        <div class="dbc-field"><span class="dbc-l">Show my contact details</span>
-          <label class="dbc-tog"><input type="checkbox" data-card-showemail ${c.showEmail ? 'checked' : ''}><span>Email${a.email ? ` (${esc(a.email)})` : ''}</span></label>
-          <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings'}</span></label>
+        <div class="dbc-field"><span class="dbc-l">Show my email${ownEmails().length > 1 ? ' addresses' : ''}<small class="tf-hint">tick any of your addresses to show on the card</small></span>
+          ${(() => { const chosen = new Set(cardChosenEmails(c).map((e) => e.toLowerCase())); const list = ownEmails(); return list.length ? list.map((em) => `<label class="dbc-tog"><input type="checkbox" data-card-email="${esc(em)}" ${chosen.has(em.toLowerCase()) ? 'checked' : ''}><span>✉ ${esc(em)}</span></label>`).join('') : '<div class="dbc-note">Add addresses in Settings › Account.</div>'; })()}
+        </div>
+        <div class="dbc-field"><span class="dbc-l">Show my phone</span>
+          <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
         <p class="dbc-note">Your handle <b>${a.subdomain ? esc(a.subdomain) + '.daybook.fyi' : 'is set in Settings'}</b>${a.subdomain ? ' - change it in Settings › Account.' : '.'}</p>
       </div>
@@ -12429,7 +12444,13 @@ function openLinkMenu(x, y, href, view) {
 document.addEventListener('change', (e) => {
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
-  if (e.target.matches('[data-card-showemail]')) { state.card = state.card || {}; state.card.showEmail = e.target.checked; saveCard(); cardLivePreview(); return; }
+  if (e.target.matches('[data-card-email]')) {
+    const addr = e.target.dataset.cardEmail; state.card = state.card || {};
+    let list = cardChosenEmails(state.card).slice();
+    if (e.target.checked) { if (!list.some((x) => x.toLowerCase() === addr.toLowerCase())) list.push(addr); }
+    else list = list.filter((x) => x.toLowerCase() !== addr.toLowerCase());
+    state.card.emails = list; delete state.card.showEmail; saveCard(); cardLivePreview(); return;
+  }
   if (e.target.matches('[data-card-showphone]')) { state.card = state.card || {}; state.card.showPhone = e.target.checked; saveCard(); cardLivePreview(); return; }
   if (e.target.matches('[data-t2-taskfilter]')) { state.today.taskArea = e.target.value || ''; renderToday(); return; }
   if (e.target.matches('[data-t2-pracfilter]')) { state.today.pracArea = e.target.value || ''; renderToday(); return; }

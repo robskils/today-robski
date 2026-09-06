@@ -1953,12 +1953,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .dbc-edit { flex:1; min-width:260px; display:flex; flex-direction:column; gap:16px; }
 /* The card */
 .dbc-card { --dbc:#c4412e; position:relative; background:var(--card); border:1px solid var(--line); border-radius:22px; overflow:hidden; box-shadow:0 24px 60px -30px rgba(0,0,0,.5); }
-.dbc-band { height:84px; background:linear-gradient(135deg, var(--dbc), color-mix(in srgb,var(--dbc) 62%,#000 30%)); }
-.dbc-top { display:flex; align-items:flex-end; gap:14px; padding:0 22px; margin-top:-42px; }
-.dbc-photo { width:84px; height:84px; border-radius:50%; flex:none; background-size:cover; background-position:center; border:4px solid var(--card); box-shadow:0 6px 18px -8px rgba(0,0,0,.4); display:grid; place-items:center; }
-.dbc-photo-mono { background:linear-gradient(135deg, var(--dbc,#c4412e), color-mix(in srgb,var(--dbc,#c4412e) 62%,#000 30%)); color:#fff; font-family:'Cormorant Garamond',Georgia,serif; font-size:38px; font-weight:600; }
+.dbc-band { height:74px; background:linear-gradient(135deg, var(--dbc), color-mix(in srgb,var(--dbc) 62%,#000 30%)); }
+.dbc-top { display:flex; flex-direction:column; align-items:flex-start; gap:9px; padding:0 22px; margin-top:-38px; }
+.dbc-photo { width:76px; height:76px; border-radius:50%; flex:none; background-size:cover; background-position:center; border:4px solid var(--card); box-shadow:0 6px 18px -8px rgba(0,0,0,.4); display:grid; place-items:center; }
+.dbc-photo-mono { background:linear-gradient(135deg, var(--dbc,#c4412e), color-mix(in srgb,var(--dbc,#c4412e) 62%,#000 30%)); color:#fff; font-family:'Cormorant Garamond',Georgia,serif; font-size:34px; font-weight:600; }
 .dbc-photo.sm { width:56px; height:56px; border-width:3px; font-size:24px; }
-.dbc-id { display:flex; flex-direction:column; gap:1px; min-width:0; padding-bottom:6px; }
+.dbc-id { display:flex; flex-direction:column; gap:2px; min-width:0; max-width:100%; }
 .dbc-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:27px; font-weight:600; color:var(--ink); line-height:1.05; }
 .dbc-handle { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:12.5px; color:var(--dbc); font-weight:600; }
 .dbc-tag { margin:14px 22px 0; font-size:16px; line-height:1.5; color:var(--ink); }

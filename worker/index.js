@@ -791,11 +791,20 @@ async function getPublicCard(env, id) {
   let c = {}; try { c = JSON.parse((await getSetting(env, 'card_profile', uid)) || '{}') || {}; } catch {}
   let phone = '';
   if (c.showPhone) phone = (await getSetting(env, 'phone', uid)) || '';
+  // Which of the owner's addresses to show. Only their own verified addresses can
+  // appear - the primary, plus any confirmed alias - never an arbitrary string.
+  const owned = new Set([String(u.email || '').toLowerCase()].filter(Boolean));
+  try {
+    const al = await env.DB.prepare('SELECT lower(email) AS e FROM user_emails WHERE user_id = ? AND verified = 1').bind(uid).all();
+    for (const r of al.results || []) if (r.e) owned.add(r.e);
+  } catch {}
+  const chosen = Array.isArray(c.emails) ? c.emails : (c.showEmail ? [u.email || ''] : []);
+  const emails = [...new Set(chosen.map((e) => String(e || '').trim()).filter((e) => owned.has(e.toLowerCase())))].slice(0, 6);
   return {
     id: u.id, name: u.name || u.subdomain || '', subdomain: u.subdomain || '',
     photo: c.photo || '', tagline: c.tagline || '', accent: c.accent || '', pattern: c.pattern || '',
     location: c.location || '', website: c.website || '', links: cardLinksClean(c.links),
-    email: c.showEmail ? (u.email || '') : '', phone,
+    emails, email: emails[0] || '', phone,
   };
 }
 // Light cards for a set of people (avatars in lists): no contact details, just
