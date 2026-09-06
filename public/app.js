@@ -8691,16 +8691,18 @@ const goalsView = () => state.goalsView || (state.goalsView = (() => { try { ret
 function renderGoals() {
   const view = goalsView();
   const focusN = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus).length;
+  const allN = state.goals.filter((g) => (gp(g).status || 'active') === 'active').length;
   const tabs = `<div class="goals-tabs">
     <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By area</button>
     <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">This quarter${focusN ? ` · ${focusN}` : ''}</button>
+    <button class="gtab ${view === 'list' ? 'on' : ''}" data-goals-view="list">Goals${allN ? ` · ${allN}` : ''}</button>
   </div>`;
+  const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : goalsByAreaBody();
   $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Vision and Goals</h1></div>
     ${tabs}
-    <div class="goals-layout">
-      <div class="goals-main">${view === 'focus' ? goalsFocusBody() : goalsByAreaBody()}</div>
-      <aside class="goals-side">${bucketSideBox()}</aside>
-    </div>`;
+    ${view === 'list'
+      ? `<div class="goals-main goals-main-full">${body}</div>`
+      : `<div class="goals-layout"><div class="goals-main">${body}</div><aside class="goals-side">${bucketSideBox()}</aside></div>`}`;
   loadVisionThumbs();
 }
 // "This quarter" tab: just the goals you've starred into focus, cross-area.
@@ -8709,6 +8711,43 @@ function goalsFocusBody() {
   return focus.length
     ? `<section class="home-sec"><div class="home-sec-h">★ This quarter's focus · ${focus.length}</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>`
     : '<div class="empty" style="padding:28px">Nothing in focus yet. On any goal, tap ★ to bring it into focus for this quarter.</div>';
+}
+// "Goals" tab: every goal across all areas, one per row, sortable and filterable.
+function goalsListBody() {
+  const sort = state.goalsListSort || 'area';
+  const fArea = state.goalsListArea || '';
+  const fStatus = state.goalsListStatus || 'active';
+  const areaName = (g) => { const a = areaById(gp(g).area); return a ? a.title : '￿'; };
+  let goals = state.goals.slice();
+  if (fStatus !== 'all') goals = goals.filter((g) => (gp(g).status || 'active') === fStatus);
+  if (fArea) goals = goals.filter((g) => gp(g).area === fArea);
+  const cmp = {
+    area: (a, b) => areaName(a).localeCompare(areaName(b)) || (a.title || '').localeCompare(b.title || ''),
+    progress: (a, b) => goalProgress(b) - goalProgress(a),
+    due: (a, b) => String(gp(a).targetDate || '9999').localeCompare(String(gp(b).targetDate || '9999')),
+    updated: (a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')),
+    title: (a, b) => (a.title || '').localeCompare(b.title || ''),
+  }[sort] || (() => 0);
+  goals.sort(cmp);
+  const areaOpts = ['<option value="">All areas</option>', ...state.areas.map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`)].join('');
+  const controls = `<div class="glist-controls">
+    <select class="sel" data-glist-status><option value="all" ${fStatus === 'all' ? 'selected' : ''}>All statuses</option>${GSTATUS.map(([v, l]) => `<option value="${v}" ${fStatus === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <select class="sel" data-glist-area>${areaOpts}</select>
+    <select class="sel" data-glist-sort>${[['area', 'Area'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
+  </div>`;
+  if (!goals.length) return `${controls}<div class="empty" style="padding:28px">No goals match these filters.</div>`;
+  const rows = goals.map((g) => {
+    const p = gp(g); const a = areaById(p.area); const pct = Math.round(goalProgress(g) * 100); const st = p.status || 'active';
+    const measure = goalMeasure(g);
+    const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
+    return `<button class="glist-row" data-open-goal="${g.id}" style="--h:${a ? hueOf(a) : 220}">
+      <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'In focus this quarter' : ''}">${p.focus ? '★' : ''}</span>
+      <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
+      <span class="glist-bar"><i style="width:${pct}%"></i></span>
+      <span class="glist-pct">${st === 'done' ? '✓' : pct + '%'}</span>
+    </button>`;
+  }).join('');
+  return `${controls}<div class="glist">${rows}</div>`;
 }
 // Goals organised the way Robin thinks: for each Life Area, its Vision then its
 // Goals. ("This quarter's focus" is its own tab now, not the lead here.)
@@ -11576,6 +11615,9 @@ document.addEventListener('change', (e) => {
     api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
     renderArea(); return;
   }
+  if (e.target.matches('[data-glist-status]')) { state.goalsListStatus = e.target.value; renderGoals(); return; }
+  if (e.target.matches('[data-glist-area]')) { state.goalsListArea = e.target.value; renderGoals(); return; }
+  if (e.target.matches('[data-glist-sort]')) { state.goalsListSort = e.target.value; renderGoals(); return; }
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   if (e.target.matches('[data-repeatfrom-task]')) patchTaskProps(e.target.dataset.repeatfromTask, { repeatFrom: e.target.value === 'done' ? 'done' : null });
   if (e.target.id === 'task-repeat') { const w = $('#task-repeatfrom-wrap'); if (w) w.hidden = !e.target.value; }
