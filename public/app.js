@@ -1675,6 +1675,7 @@ function renderSettings() {
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
+        ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
         ${state.account ? `<label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>` : ''}
         ${modOn('contacts') ? `<label class="set-mod"><span>People on Home<small>Show who's online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
       </div>`;
@@ -8719,7 +8720,30 @@ const REVIEWS = {
 };
 const RTYPE_ORDER = ['weekly', 'monthly', 'quarterly', 'yearly'];
 function localISO(d) { const x = d || new Date(); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; }
-function reviewPeriod(rtype) { const days = (REVIEWS[rtype] || REVIEWS.weekly).days; return { from: localISO(new Date(Date.now() - (days - 1) * 86400000)), to: localISO() }; }
+// Which day the week starts on (0=Sun..6=Sat), from the account, mirrored to
+// localStorage so pages that render before the account loads still get it.
+// Default Monday - Robin works Mon-Sun.
+function weekStart() {
+  const w = state.account && state.account.weekStart;
+  if (w != null && /^[0-6]$/.test(String(w))) return Number(w);
+  try { const l = localStorage.getItem('life.weekStart'); if (l != null && /^[0-6]$/.test(l)) return Number(l); } catch {}
+  return 1;
+}
+// The most recently completed week per the chosen week-start, ending on-or-before
+// the anchor - i.e. "the week just gone".
+function weeklyWindow(anchorISO) {
+  const endDow = (weekStart() + 6) % 7;   // last day of the week
+  const a = new Date((anchorISO || todayISO()) + 'T00:00');
+  const back = (a.getDay() - endDow + 7) % 7;
+  const end = new Date(a.getTime() - back * 86400000);
+  const start = new Date(end.getTime() - 6 * 86400000);
+  return { from: localISO(start), to: localISO(end) };
+}
+function reviewPeriod(rtype) {
+  if (!rtype || rtype === 'weekly') return weeklyWindow(todayISO());
+  const days = (REVIEWS[rtype] || REVIEWS.weekly).days;
+  return { from: localISO(new Date(Date.now() - (days - 1) * 86400000)), to: localISO() };
+}
 function reviewTaskStats(from) {
   const fromT = new Date(from + 'T00:00:00').getTime();
   const done = state.tasks.filter((t) => t.props && t.props.done && t.updated_at && new Date(t.updated_at).getTime() >= fromT);
@@ -8736,8 +8760,9 @@ function reviewsBody() {
   const todayISO = localISO(new Date());
   // This week's review lands on its soonest reminder, else last review + 7.
   const eff = nextReviewReminder('weekly') || nextReviewDue('weekly') || todayISO;
-  const from = localISO(new Date(new Date(eff + 'T00:00').getTime() - 6 * 86400000));
-  const whenHtml = reviewWhenHtml({ rtype: 'weekly', from, to: eff });
+  // The period the review actually covers: the week just gone, per week-start.
+  const win = weeklyWindow(todayISO);
+  const whenHtml = reviewWhenHtml({ rtype: 'weekly', from: win.from, to: win.to });
   const dueDate = new Date(eff + 'T00:00');
   const dueLbl = dueDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
   const diff = Math.round((dueDate - new Date(todayISO + 'T00:00')) / 86400000);
@@ -10047,6 +10072,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('.acct-phone-cc, .acct-phone-num')) { clearTimeout(window.__acctPT); const cc = (document.querySelector('.acct-phone-cc') || {}).value; const number = (document.querySelector('.acct-phone-num') || {}).value; window.__acctPT = setTimeout(() => saveAccount({ phone: joinPhone({ cc, number }) }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
+  if (e.target.matches('[data-account-weekstart]')) { const w = Number(e.target.value); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
   if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
@@ -12707,6 +12733,8 @@ async function onbConnectGmail() {
     initPush();              // register the SW; refresh the push subscription if already granted
     registerMailHandler();   // offer Robski Life as the browser's mailto: handler
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
+    // Week-start preference, mirrored for pages (Reviews) that render before Settings.
+    api('/api/account').then((a) => { if (a) { state.account = a; try { localStorage.setItem('life.weekStart', String(a.weekStart)); } catch {} if (state.view && state.view.type === 'reviews') renderReviews(); } }).catch(() => {});
     maybeOnboard();          // first-run welcome guide, once per new account
   } catch (e) { toast(e.message); renderNav(); }
 })();
