@@ -657,6 +657,22 @@ button { cursor:pointer; background:none; border:0; }
 .rvg-m { font-size:12.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rvg-bar { flex:none; width:70px; height:6px; border-radius:999px; background:var(--paper-2); overflow:hidden; }
 .rvg-bar i { display:block; height:100%; background:var(--c); border-radius:999px; }
+/* Weekly focus goals: progress + a line on how each moved (interactive). */
+.rvg-goals { gap:12px; }
+.rvg-goal { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; gap:8px; padding:12px 14px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:12px; background:var(--card); box-shadow:var(--shadow); }
+.rvg-goal-h { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.rvg-t2 { border:0; background:none; padding:0; font:inherit; font-size:15.5px; font-weight:600; color:var(--ink); cursor:pointer; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rvg-t2:hover { color:var(--accent); }
+.rvg-pct { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+.rvg-goal-m { font-size:12.5px; color:var(--ink-3); margin-top:-2px; }
+.rvg-goal .rvg-bar { width:100%; }
+.rvg-note { width:100%; border:1px solid var(--line); border-radius:8px; background:var(--paper-2,var(--card)); padding:8px 10px; font:inherit; font-size:14px; color:var(--ink); }
+.rvg-note:focus { outline:none; border-color:var(--accent); }
+.rvg-note::placeholder { color:var(--ink-3); }
+/* Past-period timeline: a compact one-liner, no full-and-meaningless bar. */
+.rv-when.past { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.rv-when.past .rv-when-rel { font-family:inherit; font-size:15.5px; font-weight:600; color:var(--ink); }
+.rv-when.past .rv-when-detail { margin-top:0; font-size:13px; color:var(--ink-3); }
 /* P1s still open / Went quiet - clickable cards instead of a list. */
 .rv-cardsec { margin-top:16px; }
 .rv-cardsec-h { font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); margin-bottom:9px; }

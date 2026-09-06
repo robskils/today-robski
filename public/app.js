@@ -9383,8 +9383,13 @@ function reviewWhenHtml(p) {
   if (inRange) { const dayIn = Math.round((today - d0) / DAY) + 1; const left = len - dayIn; detail = `Day ${dayIn} of ${len} · ${left > 0 ? `${left} to go` : 'review day'}`; }
   else if (untilStart > 0) detail = `Starts in ${untilStart} day${untilStart === 1 ? '' : 's'}`;
   else detail = sinceEnd === 0 ? 'Ended today' : `Ended ${sinceEnd} day${sinceEnd === 1 ? '' : 's'} ago`;
-  // Short periods (a week) get a block per day that lights up as the week goes on;
-  // long periods keep a simple progress bar.
+  // A period you're reviewing is almost always finished, so a progress bar would
+  // just sit 100% full and say nothing - ugly, and a distraction from the period
+  // itself. So a past period is a compact one-liner; only a period you're still
+  // inside shows how far through it you are (week = day blocks, longer = a bar).
+  if (!inRange) {
+    return `<div class="rv-when past"><span class="rv-when-rel">${esc(rel)}</span><span class="rv-when-range">${esc(range)}</span><span class="rv-when-detail">${esc(detail)}</span></div>`;
+  }
   let track;
   if (len <= 10) {
     const todayISO = localISO(new Date());
@@ -9398,7 +9403,7 @@ function reviewWhenHtml(p) {
   } else {
     track = `<div class="rv-when-track"><span class="rv-when-fill" style="width:${pct}%"></span></div>`;
   }
-  return `<div class="rv-when ${inRange ? 'live' : 'past'}">
+  return `<div class="rv-when live">
     <div class="rv-when-head"><span class="rv-when-rel">${esc(rel)}</span><span class="rv-when-range">${esc(range)}</span></div>
     ${track}
     <div class="rv-when-detail">${esc(detail)}</div>
@@ -9600,14 +9605,19 @@ function weeklyGoalsGlance() {
   const focused = active.filter((g) => gp(g).focus);
   const list = (focused.length ? focused : active).slice(0, 5);
   if (!list.length) return '';
+  const r = state.review_open && state.review_open.review;
+  const gr = (r && r.props && r.props.goalReview) || {};   // reuse the goal-review note store
   const rows = list.map((g) => {
     const a = goalArea(g); const pct = Math.round(goalProgress(g) * 100);
-    return `<button class="rvg-row" data-open-goal="${g.id}" style="--h:${hueOf(a)}">
-      <span class="rvg-dot"></span>
-      <span class="rvg-b"><span class="rvg-t">${esc(g.title || 'Untitled')}</span><span class="rvg-m">${a ? esc(a.title) + ' · ' : ''}${esc(goalMeasure(g))}</span></span>
-      <span class="rvg-bar"><i style="width:${pct}%"></i></span></button>`;
+    const note = (gr[g.id] || {}).note || '';
+    return `<div class="rvg-goal" style="--h:${hueOf(a)}">
+      <div class="rvg-goal-h"><button class="rvg-t2" data-open-goal="${g.id}" title="Open ${esc(g.title || 'this goal')}">${esc(g.title || 'Untitled')}</button><span class="rvg-pct">${pct}%</span></div>
+      <div class="rvg-goal-m">${a ? esc(a.title) + ' · ' : ''}${esc(goalMeasure(g))}</div>
+      <span class="rvg-bar"><i style="width:${pct}%"></i></span>
+      <input class="rvg-note" data-goalrev-note="${esc(g.id)}" value="${esc(note)}" placeholder="A line on how this went this week…" autocomplete="off">
+    </div>`;
   }).join('');
-  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">a look at where you're aiming - tap one to update it</span></div><div class="rvg-list">${rows}</div></section>`;
+  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">where's each one at, and how did it move this week?</span></div><div class="rvg-list rvg-goals">${rows}</div></section>`;
 }
 function goalReviewSection(r) {
   const p = r.props || {};
