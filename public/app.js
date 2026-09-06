@@ -3347,8 +3347,35 @@ function renderSpirit() {
       <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-hint">Tap to draw</span></div>
       <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
     </div>
-    <button class="spirit-again" data-spirit-draw ${c ? '' : 'hidden'}>Draw another</button>
+    <div class="spirit-actions" id="spirit-actions">${spiritActionsHtml()}</div>
+    ${spiritHistoryHtml()}
   </div>`;
+}
+// After a draw you choose: keep it (Save - pins it and records it in your
+// history) or draw again. Nothing is saved until you say so.
+function spiritActionsHtml() {
+  const c = state.spirit && state.spirit.card;
+  if (!c) return '';
+  if (state.spirit.saved) return `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>`;
+  return `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
+}
+const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
+function spiritHistoryHtml() {
+  const h = state.spiritHistory || [];
+  if (!h.length) return '';
+  const rows = h.slice(0, 40).map((x) => `<div class="spirit-hrow"><span class="sh-sym">${esc(x.symbol || '✦')}</span><span class="sh-body"><span class="sh-name">${esc(x.name)}</span>${x.message ? `<span class="sh-msg">${esc(x.message)}</span>` : ''}</span><span class="sh-when">${esc(spiritWhen(x.at))}</span></div>`).join('');
+  return `<details class="spirit-hist"><summary>Cards you've taken · ${h.length}</summary><div class="spirit-hlist">${rows}</div></details>`;
+}
+function saveDrawnSpirit() {
+  const c = state.spirit && state.spirit.card; if (!c) return;
+  saveSpiritCard(c);   // pin it (Home/Reflect) and mirror to the account
+  state.spiritHistory = state.spiritHistory || [];
+  state.spiritHistory.unshift({ name: c[0], symbol: c[1], message: c[2], at: Date.now() });
+  state.spiritHistory = state.spiritHistory.slice(0, 200);
+  api('/api/kv/spirit_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.spiritHistory) }) }).catch(() => {});
+  state.spirit.saved = true;
+  renderSpirit();
+  toast('Card saved');
 }
 // The card you last drew, kept pinned on Home and Reflect. Held per-device in
 // localStorage for instant paint and mirrored to the account so it follows you.
@@ -3380,14 +3407,23 @@ function dismissSpirit() {
 }
 // Opening from Reflect or a pinned tile shows the current card (with "Draw
 // another"); the very first time there's nothing yet, so a blank back to tap.
-function openSpiritCards() { const s = currentSpirit(); state.spirit = { card: s ? [s.name, s.symbol, s.message] : null }; renderSpirit(); }
+async function openSpiritCards() {
+  const s = currentSpirit();
+  state.spirit = { card: s ? [s.name, s.symbol, s.message] : null, saved: !!s };
+  renderSpirit();
+  if (state.spiritHistory === undefined) {
+    try { const r = await api('/api/kv/spirit_history'); state.spiritHistory = (r && r.value) ? JSON.parse(r.value) : []; }
+    catch { state.spiritHistory = []; }
+    if (document.getElementById('spirit')) renderSpirit();
+  }
+}
 function drawSpiritCard() {
   const prev = state.spirit && state.spirit.card;
   let c; do { c = SPIRIT_CARDS[Math.floor(Math.random() * SPIRIT_CARDS.length)]; } while (prev && c[0] === prev[0]);
-  state.spirit = { card: c };
-  saveSpiritCard(c);
+  // A fresh draw is NOT saved - you decide with Save this card / Go again.
+  state.spirit = { card: c, saved: false };
+  const acts = document.getElementById('spirit-actions'); if (acts) acts.innerHTML = spiritActionsHtml();
   const card = document.querySelector('.spirit-card'); if (!card) { renderSpirit(); return; }
-  const again = document.querySelector('.spirit-again'); if (again) again.hidden = false;
   const setFront = () => { const f = document.querySelector('.sc-front'); if (f) f.innerHTML = scFront(c); };
   if (card.classList.contains('drawn')) { card.classList.remove('drawn'); setTimeout(() => { setFront(); card.classList.add('drawn'); }, 300); }
   else { setFront(); card.classList.add('drawn'); }
@@ -10651,6 +10687,7 @@ document.addEventListener('click', (e) => {
   { const as = t.closest('[data-admin-status]'); if (as) { setUserStatus(as.dataset.adminStatus, as.dataset.status); return; } }
   if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
+  if (t.closest('[data-spirit-save]')) { saveDrawnSpirit(); return; }
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }

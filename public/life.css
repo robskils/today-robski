@@ -1503,6 +1503,23 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .spirit-again { padding:11px 24px; border-radius:12px; background:var(--accent); color:#fff; border:0; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; box-shadow:0 10px 26px -12px var(--accent); }
 .spirit-again:hover { filter:brightness(1.06); }
 .spirit-again[hidden] { display:none; }
+/* Save this card / Go again, and the history of cards taken. */
+.spirit-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+.spirit-save { padding:11px 24px; border-radius:12px; background:#fff; color:var(--ink); border:0; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 10px 26px -12px rgba(0,0,0,.5); }
+.spirit-save:hover { filter:brightness(0.97); }
+.spirit-actions .spirit-again { background:transparent; color:#fff; box-shadow:none; border:1px solid rgba(255,255,255,.5); }
+.spirit-saved { color:#fff; font-weight:700; font-size:15px; }
+.spirit-hist { width:min(340px,86vw); color:#fff; }
+.spirit-hist > summary { cursor:pointer; font-size:13.5px; letter-spacing:.04em; text-transform:uppercase; opacity:.85; list-style:none; text-align:center; padding:4px; }
+.spirit-hist > summary::-webkit-details-marker { display:none; }
+.spirit-hlist { margin-top:10px; max-height:38vh; overflow:auto; display:flex; flex-direction:column; gap:2px; background:rgba(255,255,255,.08); border-radius:12px; padding:6px; }
+.spirit-hrow { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:9px; }
+.spirit-hrow:hover { background:rgba(255,255,255,.08); }
+.sh-sym { font-size:16px; flex:none; }
+.sh-body { flex:1; min-width:0; display:flex; flex-direction:column; }
+.sh-name { font-size:14.5px; font-weight:600; }
+.sh-msg { font-size:12.5px; opacity:.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sh-when { flex:none; font-size:11.5px; opacity:.7; font-variant-numeric:tabular-nums; }
 /* Settings: account. */
 .set-account { display:flex; flex-direction:column; gap:15px; }
 .set-field { display:flex; flex-direction:column; gap:6px; }
