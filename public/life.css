@@ -1657,6 +1657,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tf-cardrow { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
 .tf-cardrow > .tf-surface { flex:1 1 340px; min-width:0; }
 .tfs-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 6px; }
+/* Foldable card headers (Surface / Who can see this / Notes): click to collapse. */
+.tfs-fold { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:none; border:0; cursor:pointer; text-align:left; }
+.tfs-chev { font-family:system-ui,sans-serif; font-size:13px; font-weight:400; color:var(--ink-3); flex:none; }
+.tf-surface.folded, .focus-notes.folded { padding-bottom:6px; }
 .tfs-row { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:11px 0; border-top:1px solid var(--line); }
 .tfs-l { display:flex; flex-direction:column; gap:2px; font-size:14.5px; font-weight:600; color:var(--ink); }
 .tfs-l .tf-hint { font-weight:400; }

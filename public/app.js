@@ -3966,13 +3966,17 @@ function blockVisibilityHtml(kind, block, viewers) {
   if (priv) note = 'Private - only you can see this, even inside a shared life area.';
   else if (!list.length) note = "Only you can see this. Share it, or file it under a life area you've shared.";
   else { const n = list.length; const viaArea = list.some((v) => v.via === 'area'); note = `${n} ${n === 1 ? 'person' : 'people'} can see this${viaArea ? ' - through its life area and any direct shares' : ''}.`; }
-  return `<section class="tf-surface tf-visible">
-    <div class="tfs-h">Who can see this</div>
+  const open = tfCardOpen('visible');
+  const body = `<div class="tfs-cardbody">
     <div class="tf-vis-row">
       <span class="tf-face me ${priv ? 'is-priv' : ''}" title="You">${priv ? '🔒' : meInit}</span>${faces}${priv ? '' : shareBtnInline}
     </div>
     <p class="tfs-note">${esc(note)}</p>
     <label class="tfs-toggle tf-vis-toggle"><input type="checkbox" data-block-private="${kind}:${block.id}" ${priv ? 'checked' : ''}><span>Keep it private (only me)</span></label>
+  </div>`;
+  return `<section class="tf-surface tf-visible ${open ? '' : 'folded'}">
+    ${tfCardHead('visible', 'Who can see this')}
+    ${open ? body : ''}
   </section>`;
 }
 async function setBlockPrivate(kind, id, on) {
@@ -6904,9 +6908,16 @@ function rerenderCurrent() {
   else if (v === 'area') renderArea(); else if (v === 'taskcard') renderTaskCard();
   else if (v === 'goalcard') renderGoalCard(); else if (v === 'bucketcard') renderBucketCard();
   else if (v === 'reviewcard') renderReviewCard(); else if (v === 'goals') renderGoals();
+  else if (v === 'contactcard') renderContactCard();
   else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail();
   else if (v === 'today') renderToday(); else openHome();
 }
+// Collapsible card sections (Surface, Who can see this, Notes). Click a header to
+// fold it; the choice is remembered per section, across tasks. A universal habit.
+function tfCardOpen(k) { try { return localStorage.getItem('life.tfcard.' + k) !== '0'; } catch { return true; } }
+function toggleTfCard(k) { flushProse(); try { localStorage.setItem('life.tfcard.' + k, tfCardOpen(k) ? '0' : '1'); } catch {} rerenderCurrent(); }
+// A foldable card header: title on the left, chevron on the right.
+function tfCardHead(key, title) { const open = tfCardOpen(key); return `<button type="button" class="tfs-h tfs-fold" data-tf-fold="${key}"><span>${title}</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>`; }
 async function reorderFavs(draggedId, beforeId) {
   const favs = state.favs;
   const from = favs.findIndex((f) => f.id === draggedId); if (from < 0) return;
@@ -10980,6 +10991,7 @@ document.addEventListener('click', (e) => {
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Daybook` : 'No contacts on Daybook yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
+  { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
   if (t.closest('[data-share-close]')) { closeShare(); return; }
   if (t.closest('[data-share-invite]')) { closeShare(); openContacts().then(() => inviteToDaybook()).catch(() => {}); return; }
@@ -11938,8 +11950,8 @@ function taskSurfaceHtml(t) {
     if (!email && !sms) chanHint = 'No channel picked, so nothing will reach you - choose text, email, or both.';
     else { const bits = []; if (email) bits.push('email'); if (sms) bits.push(hasPhone ? 'text' : 'text (add a phone number in Settings first)'); chanHint = `A ${bits.join(' and a ')} on the morning it surfaces.`; }
   }
-  return `<section class="tf-surface">
-    <div class="tfs-h">Surface</div>
+  const open = tfCardOpen('surface');
+  const body = `<div class="tfs-cardbody">
     <label class="tfs-row"><span class="tfs-l">Surface on<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${clear}${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
     ${p.snooze ? `<div class="tfs-block">
       <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
@@ -11949,6 +11961,10 @@ function taskSurfaceHtml(t) {
     </div>` : ''}
     <label class="tfs-row"><span class="tfs-l">Repeat</span><span class="tfs-ctrl"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(p.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></label>
     ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">Next one is due<small class="tf-hint">keep to the calendar, or space it from when you do it</small></span><span class="tfs-ctrl"><select class="sel" data-repeatfrom-task="${id}"><option value="due" ${(p.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${p.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(p.repeat)}</option></select></span></label>` : ''}
+  </div>`;
+  return `<section class="tf-surface ${open ? '' : 'folded'}">
+    ${tfCardHead('surface', 'Surface')}
+    ${open ? body : ''}
   </section>`;
 }
 function renderTaskCard() {
@@ -11983,7 +11999,8 @@ function renderTaskCard() {
 // A prose Notes section, reused by the task card and the row card. Backed by
 // the block's `body`, edited inline via the shared rich-text editor.
 function notesSection(body, key, id, readOnly) {
-  return `<section class="focus-notes"><div class="fn-h">Notes</div>${proseEditor(body, key, id, readOnly)}${embedsHtml(body)}</section>`;
+  const open = tfCardOpen('notes');
+  return `<section class="focus-notes ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="notes"><span>Notes</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${proseEditor(body, key, id, readOnly)}${embedsHtml(body)}` : ''}</section>`;
 }
 
 // ── attachments (R2-backed files on a block) ─────────
