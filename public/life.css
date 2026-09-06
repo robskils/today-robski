@@ -755,9 +755,12 @@ button { cursor:pointer; background:none; border:0; }
 .rv-datehead { display:flex; flex-direction:column; gap:2px; margin:-4px 0 10px; }
 .rv-dh-day { font-family:'Cormorant Garamond',serif; font-size:23px; font-weight:600; color:var(--ink); }
 .rv-dh-range { font-size:13.5px; color:var(--ink-3); }
+.rv-dh-sub { font-size:13px; font-weight:700; color:#6f9f4a; margin-top:2px; }
 /* List-card period + status. */
+.rv-card-period { font-size:15px; font-weight:600; color:var(--ink); }
 .rv-card-range { font-size:12.5px; color:var(--ink-3); }
-.rv-card-badge { font-size:11.5px; font-weight:700; letter-spacing:.02em; }
+.rv-card-h { align-items:center; }
+.rv-card-badge { font-size:11.5px; font-weight:700; letter-spacing:.02em; white-space:nowrap; }
 .rv-card-badge.is-prog { color:var(--accent); }
 .rv-card-badge.is-done { color:#6f9f4a; }
 /* Analysis section: the data read + the AI brief, promoted to the top. */

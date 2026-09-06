@@ -8742,10 +8742,38 @@ function weeklyWindow(anchorISO) {
   const start = new Date(end.getTime() - 6 * 86400000);
   return { from: localISO(start), to: localISO(end) };
 }
-function reviewPeriod(rtype) {
-  if (!rtype || rtype === 'weekly') return weeklyWindow(todayISO());
-  const days = (REVIEWS[rtype] || REVIEWS.weekly).days;
-  return { from: localISO(new Date(Date.now() - (days - 1) * 86400000)), to: localISO() };
+// Monthly/quarterly/yearly reviews cover the most recently COMPLETED calendar
+// period (the one whose last day is on-or-before today) - so a September monthly
+// review is of August, a quarterly is of the quarter just gone, a yearly of last
+// year. Clean calendar boundaries, so "the period" is always legible.
+function periodWindow(rtype, anchorISO) {
+  if (!rtype || rtype === 'weekly') return weeklyWindow(anchorISO);
+  const a = new Date((anchorISO || todayISO()) + 'T00:00');
+  const Y = a.getFullYear(), M = a.getMonth(), D = a.getDate();
+  if (rtype === 'monthly') {
+    const lastThis = new Date(Y, M + 1, 0).getDate();
+    let y = Y, m = M; if (D < lastThis) { m -= 1; if (m < 0) { m = 11; y -= 1; } }
+    return { from: localISO(new Date(y, m, 1)), to: localISO(new Date(y, m + 1, 0)) };
+  }
+  if (rtype === 'quarterly') {
+    let q = Math.floor(M / 3), y = Y;
+    const curQEnd = new Date(Y, q * 3 + 3, 0);
+    if (a < curQEnd) { q -= 1; if (q < 0) { q = 3; y -= 1; } }
+    return { from: localISO(new Date(y, q * 3, 1)), to: localISO(new Date(y, q * 3 + 3, 0)) };
+  }
+  // yearly
+  const y = (a < new Date(Y, 11, 31)) ? Y - 1 : Y;
+  return { from: localISO(new Date(y, 0, 1)), to: localISO(new Date(y, 11, 31)) };
+}
+function reviewPeriod(rtype) { return periodWindow(rtype, todayISO()); }
+// A legible label for a review's period, by type.
+function periodTitle(rtype, from, to) {
+  if (!from || !to) return { main: '', range: '' };
+  const f = new Date(from + 'T00:00'), t = new Date(to + 'T00:00');
+  if (rtype === 'monthly') return { main: `${MONTHS_LONG[f.getMonth()]} ${f.getFullYear()}`, range: '' };
+  if (rtype === 'quarterly') return { main: `Q${Math.floor(f.getMonth() / 3) + 1} ${f.getFullYear()}`, range: `${MONTHS_LONG[f.getMonth()].slice(0, 3)} – ${MONTHS_LONG[t.getMonth()].slice(0, 3)} ${t.getFullYear()}` };
+  if (rtype === 'yearly') return { main: `${f.getFullYear()}`, range: `Jan – Dec ${f.getFullYear()}` };
+  return { main: `${prettyDate(to)} ${to.slice(0, 4)}`, range: `the week of ${prettyDate(from)} – ${prettyDate(to)}` };
 }
 function reviewTaskStats(from) {
   const fromT = new Date(from + 'T00:00:00').getTime();
@@ -8794,10 +8822,10 @@ function reviewsBody() {
   const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
   const trendHtml = trend.length >= 2 ? `<section class="home-sec rv-trend-sec"><div class="home-sec-h">Wheel of Life over time</div><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></section>` : '';
   // Compact, dashboard-y past-review cards, filterable by type.
-  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pword = { weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' }[p.rtype] || 'period'; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
-    <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-d">${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span></div>
-    ${p.from && p.to ? `<div class="rv-card-range">the ${pword} of ${esc(prettyDate(p.from))} – ${esc(prettyDate(p.to))}</div>` : ''}
-    <div class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : '✓ Submitted'}</div>
+  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pt = periodTitle(p.rtype, p.from, p.to); const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${shortD(p.from)} – ${shortD(p.to)}` : pt.main) : pt.main; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
+    <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(shortD(p.doneAt))}` : ''}`}</span></div>
+    <div class="rv-card-period">${esc(periodMain)}</div>
     <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5</span>` : ''}</div>
   </button>`; };
   // Anything you started but haven't finished sits up top, plainly labelled, so a
@@ -9046,7 +9074,7 @@ function renderReviewCard() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Submitted' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
-    ${p.to ? `<div class="rv-datehead"><span class="rv-dh-day">${esc(prettyDate(p.to))} ${esc(p.to.slice(0, 4))}</span>${p.from ? `<span class="rv-dh-range">the ${periodWord} of ${esc(prettyDate(p.from))} – ${esc(prettyDate(p.to))}</span>` : ''}</div>` : ''}
+    ${p.to ? (() => { const pt = periodTitle(p.rtype, p.from, p.to); return `<div class="rv-datehead"><span class="rv-dh-day">${esc(pt.main)}</span>${pt.range ? `<span class="rv-dh-range">${esc(pt.range)}</span>` : ''}${p.doneAt ? `<span class="rv-dh-sub">✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(p.doneAt.slice(0, 4))}</span>` : ''}</div>`; })() : ''}
     <div class="rv-period">
       ${reviewWhenHtml(p)}
       ${R.editDates ? `<div class="rv-period-dates">
