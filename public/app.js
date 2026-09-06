@@ -9359,7 +9359,7 @@ function reviewInsight(m, p) {
   return lines.slice(0, 5);
 }
 async function openReviewCard(id) {
-  const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id };
+  const r = await api(`/api/blocks/${id}`); state.review_open = { review: r, mode: (r.props || {}).status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview();
   // Load tasks so the wins strip can enrich each done task (age, goal, priority,
   // day) and the deeper reviews can map tasks onto goals.
@@ -9470,8 +9470,51 @@ function flushReviewAnswers() {
   clearTimeout(rvAreaT); rvAreaT = null;
   if (nChanged) { r.props = r.props || {}; r.props.areaNotes = notes; patchReview(r.id, { areaNotes: notes }, true); }
 }
+// A submitted review, laid out as a calm, read-only report: the period, the read,
+// the wins showcase, your area scores + notes, goals, and reflections - a document
+// you'd be happy to look back on. "Edit" flips to the working form.
+function renderReviewReport() {
+  const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
+  const pt = p.to ? periodTitle(p.rtype, p.from, p.to) : { main: cfg.label, range: '' };
+  const wAvg = wheelAvg(p.wheel) ? Math.min(wheelAvg(p.wheel), 5) : 0;
+  const hue = 40;
+  const sib = reviewSiblings(r);
+  const navHtml = sib.list.length > 1 ? `<span class="rv-cardnav"><button class="rv-navbtn" ${sib.prev ? `data-open-review="${sib.prev.id}"` : 'disabled'}>‹</button><span class="rv-navpos">${sib.i + 1} of ${sib.list.length}</span><button class="rv-navbtn" ${sib.next ? `data-open-review="${sib.next.id}"` : 'disabled'}>›</button></span>` : '';
+  // By life area: scores + the line you wrote, read-only.
+  const wheelAreas = state.areas.filter((a) => ((p.wheel || {})[a.id]) || ((p.areaNotes || {})[a.id] || '').trim());
+  const wheelRows = wheelAreas.map((a) => { const sc = Math.min((p.wheel || {})[a.id] || 0, 5); const note = (p.areaNotes || {})[a.id] || ''; const dots = Array.from({ length: 5 }, (_, i) => `<span class="rr-dot ${i < sc ? 'on' : ''}" style="--h:${hueOf(a)}"></span>`).join(''); return `<div class="rr-area" style="--h:${hueOf(a)}"><div class="rr-area-h"><button class="rr-area-n" data-open-area="${a.id}">${esc(a.title)}</button><span class="rr-dots">${dots}</span><span class="rr-sc">${sc ? sc + '/5' : '–'}</span></div>${note.trim() ? `<div class="rr-area-note">${esc(note)}</div>` : ''}</div>`; }).join('');
+  // Goals: scores + notes, read-only.
+  const gr = p.goalReview || {}; const snap = p.snapshot || [];
+  const goalRows = snap.filter((g) => gr[g.id] && ((gr[g.id].score) || (gr[g.id].note || '').trim())).map((g) => { const rv = gr[g.id] || {}; const sc = Math.min(rv.score || 0, 5); const a = g.area ? areaById(g.area) : null; return `<div class="rr-area" style="--h:${a ? hueOf(a) : 220}"><div class="rr-area-h"><button class="rr-area-n" data-open-goal="${g.id}">${esc(g.title)}</button>${sc ? `<span class="rr-sc">${sc}/5</span>` : ''}</div>${(rv.note || '').trim() ? `<div class="rr-area-note">${esc(rv.note)}</div>` : ''}</div>`; }).join('');
+  // Reflections: the prompt answers + freewrite, as read text.
+  const ans = p.answers || {};
+  const refl = cfg.prompts.map((q, i) => (ans[i] && ans[i].trim()) ? `<div class="rr-qa"><div class="rr-q">${esc(q)}</div><div class="rr-a">${esc(ans[i])}</div></div>` : '').join('');
+  const free = (r.body || '').trim() ? `<div class="rr-free">${decorateProse(bodyToHtml(r.body))}</div>` : '';
+  const readHtml = p.doneSummary
+    ? `<div class="rv-summary-body rr-read">${reviewSummaryHtml(p.doneSummary)}</div>`
+    : `<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>`;
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+      <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
+    <div class="rr-hero" style="--h:${hue}">
+      <div class="rr-hero-type">${esc(cfg.label)} review${navHtml ? ` <span class="rr-hero-nav">${navHtml}</span>` : ''}</div>
+      <h1 class="rr-hero-title">${esc(pt.main)}</h1>
+      ${pt.range ? `<div class="rr-hero-range">${esc(pt.range)}</div>` : ''}
+      <div class="rr-hero-meta">${p.doneAt ? `✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(String(p.doneAt).slice(0, 4))}` : ''}${wAvg ? ` · Wheel of Life <b>${wAvg}</b>/5` : ''}${(m.tasksDone || []).length ? ` · <b>${(m.tasksDone || []).length}</b> ticked off` : ''}</div>
+    </div>
+    <section class="rr-sec"><h2 class="rr-h">✦ The read</h2>${readHtml}</section>
+    ${(m.tasksDone || []).length ? `<section class="rr-sec"><h2 class="rr-h">What you did</h2>${reviewWinsHtml(m, p)}</section>` : ''}
+    ${wheelRows ? `<section class="rr-sec"><h2 class="rr-h">By life area</h2><div class="rr-areas">${wheelRows}</div></section>` : ''}
+    ${goalRows ? `<section class="rr-sec"><h2 class="rr-h">Goals</h2><div class="rr-areas">${goalRows}</div></section>` : ''}
+    ${(refl.trim() || free) ? `<section class="rr-sec"><h2 class="rr-h">Reflections</h2>${refl}${free}</section>` : ''}
+    <div class="rr-foot"><button class="add-btn wide" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">Everything above is saved. Open the editor to change any of it.</span></div>`;
+  loadThumbs();
+}
 function renderReviewCard() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
+  // A submitted review reads as a finished report, not the working form - unless
+  // you tap Edit (R.mode === 'edit'). In-progress reviews always open editable.
+  if ((p.status || 'active') === 'done' && R.mode !== 'edit') return renderReviewReport();
   // A re-render (a Wheel score, a goal note, the AI summary landing) rebuilds this
   // whole pane from r.body. Capture whatever is live in the reflection editor
   // first, so your writing is never thrown away by a click elsewhere on the card.
@@ -9562,7 +9605,7 @@ function renderReviewCard() {
     </section>
 
     <div class="rv-finish">${st === 'done'
-      ? `<span class="rv-done-badge">✓ Submitted${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="ghost rv-reopen" data-review-reopen="${r.id}">Reopen to edit</button>`
+      ? `<span class="rv-done-badge">✓ Submitted${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="add-btn wide" data-review-report>View report</button>`
       : `<button class="add-btn wide rv-markdone" data-review-submit="${r.id}">✓ Submit this review</button><span class="rv-finish-hint">Files it as done. Everything saves as you go, so there's no rush - and you can reopen it later.</span>`}</div>`;
 }
 async function patchReview(id, patch, isProps) {
@@ -10972,8 +11015,10 @@ document.addEventListener('click', (e) => {
   { const rs = t.closest('[data-rvsec]'); if (rs) { rvSecToggle(rs.dataset.rvsec); return; } }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
-  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review submitted ✓'); return; }
+  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review submitted ✓'); return; }
   const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
+  if (t.closest('[data-review-edit]')) { if (state.review_open) { state.review_open.mode = 'edit'; renderReviewCard(); } return; }
+  if (t.closest('[data-review-report]')) { if (state.review_open) { flushProse(); flushReviewAnswers(); state.review_open.mode = 'report'; renderReviewCard(); } return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
   const whx = t.closest('[data-wheel-hide]'); if (whx) { wheelHide(whx.dataset.wheelHide); return; }
   if (t.closest('[data-wheel-restore]')) { wheelRestore(); return; }

@@ -740,6 +740,36 @@ button { cursor:pointer; background:none; border:0; }
 .rv-didbig.rv-didnone { font-size:18px; color:var(--ink-3); }
 .rv-didbig.rv-didnone b { display:none; }
 .rv-didlist { margin-top:10px; }
+/* ── Submitted review, read as a report ─────────────────────────────── */
+.rr-hero { --c:hsl(var(--h,40) 45% 52%); margin:-4px 0 26px; padding:26px 26px 24px; border-radius:20px; background:linear-gradient(160deg,color-mix(in srgb,var(--c) 12%,var(--card)),var(--card)); border:1px solid color-mix(in srgb,var(--c) 26%,var(--line)); box-shadow:var(--shadow); }
+.rr-hero-type { font-size:12.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--c); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.rr-hero-nav { text-transform:none; letter-spacing:0; }
+.rr-hero-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:40px; font-weight:600; line-height:1.05; color:var(--ink); margin:6px 0 2px; }
+.rr-hero-range { font-size:14.5px; color:var(--ink-3); }
+.rr-hero-meta { margin-top:12px; font-size:14px; color:var(--ink-2); }
+.rr-hero-meta b { color:var(--ink); font-variant-numeric:tabular-nums; }
+.rr-sec { margin:26px 0; padding-top:22px; border-top:1px solid var(--line); }
+.rr-sec:first-of-type { border-top:0; padding-top:0; }
+.rr-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; color:var(--ink); margin:0 0 14px; }
+.rr-read p { font-size:16.5px; line-height:1.62; color:var(--ink); margin:0 0 12px; }
+.rr-read p:last-child { margin-bottom:0; }
+.rr-areas { display:flex; flex-direction:column; gap:10px; }
+.rr-area { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); padding:12px 14px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:12px; background:var(--card); }
+.rr-area-h { display:flex; align-items:center; gap:10px; }
+.rr-area-n { border:0; background:none; padding:0; font:inherit; font-size:15.5px; font-weight:600; color:var(--ink); cursor:pointer; text-align:left; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rr-area-n:hover { color:var(--accent); }
+.rr-dots { display:flex; gap:4px; flex:none; }
+.rr-dot { width:11px; height:11px; border-radius:50%; background:var(--paper-2,color-mix(in srgb,var(--ink) 12%,transparent)); }
+.rr-dot.on { background:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.rr-sc { flex:none; font-size:13.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; min-width:30px; text-align:right; }
+.rr-area-note { margin-top:7px; font-size:14.5px; color:var(--ink-2); line-height:1.5; font-style:italic; }
+.rr-qa { margin-bottom:16px; }
+.rr-q { font-size:13.5px; font-weight:600; color:var(--ink-3); margin-bottom:4px; }
+.rr-a { font-size:16px; line-height:1.6; color:var(--ink); white-space:pre-wrap; }
+.rr-free { font-size:16px; line-height:1.6; color:var(--ink); margin-top:6px; }
+.rr-foot { margin-top:28px; padding-top:20px; border-top:1px solid var(--line); display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.rr-foot-note { font-size:12.5px; color:var(--ink-3); }
+.rr-edit-btn { font-size:13.5px; }
 /* "What you did" showcase: metric chips, a by-area bar chart, standout wins. */
 .rvw-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:12px 0 4px; }
 .rvw-metric { --h:220; display:flex; flex-direction:column; gap:3px; align-items:flex-start; text-align:left; padding:13px 15px; border:1px solid var(--line); border-left:3px solid hsl(var(--h) var(--lane-s) var(--lane-l)); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:default; }
