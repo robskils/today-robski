@@ -4510,17 +4510,18 @@ function showCalForm(ev) {
       <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span>
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
-    <textarea id="ce-notes" class="sel ce-notes" placeholder="Notes (optional)" rows="2">${esc(notes)}</textarea>
+    <label class="ce-field"><span class="ce-flbl">Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
+    <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
+    ${ev ? '' : `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
+      <option value="none">Does not repeat</option>
+      <option value="daily">Daily</option>
+      <option value="weekdays">Every weekday (Mon-Fri)</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option></select></label>`}
     <div class="ce-foot">
-      <input id="ce-loc" class="sel ce-loc" placeholder="Location (optional)" autocomplete="off" value="${esc(loc)}">
-      ${ev ? (ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : '') : `<select id="ce-repeat" class="sel ce-repeat" title="Repeat">
-        <option value="none">Does not repeat</option>
-        <option value="daily">Daily</option>
-        <option value="weekdays">Every weekday (Mon-Fri)</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option></select>`}
+      ${ev && ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : ''}
       <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
       ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}
     </div></form>`;
@@ -6631,16 +6632,16 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <textarea id="qe-notes" class="sel ce-notes" placeholder="Notes (optional)" rows="2"></textarea>
+    <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
+    <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
+    <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
+      <option value="none">Does not repeat</option>
+      <option value="daily">Daily</option>
+      <option value="weekdays">Every weekday (Mon-Fri)</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option></select></label>
     <div class="ce-foot">
-      <input id="qe-loc" class="sel ce-loc" placeholder="Location (optional)" autocomplete="off">
-      <select id="qe-repeat" class="sel ce-repeat" title="Repeat">
-        <option value="none">Does not repeat</option>
-        <option value="daily">Daily</option>
-        <option value="weekdays">Every weekday (Mon-Fri)</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option></select>
       <button class="add-btn wide ce-submit" type="submit">Add to calendar</button>
     </div></form>`;
   $('#qe-title').focus();
@@ -8367,20 +8368,34 @@ function goalCardMini(g, drag) {
     <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
     <div class="gc-bar"><i style="width:${pct}%"></i></div></button>`;
 }
+const goalsView = () => state.goalsView || (state.goalsView = (() => { try { return localStorage.getItem('life.goals.view') || 'areas'; } catch { return 'areas'; } })());
 function renderGoals() {
+  const view = goalsView();
+  const focusN = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus).length;
+  const tabs = `<div class="goals-tabs">
+    <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By area</button>
+    <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">This quarter${focusN ? ` · ${focusN}` : ''}</button>
+  </div>`;
   $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Vision and Goals</h1></div>
+    ${tabs}
     <div class="goals-layout">
-      <div class="goals-main">${goalsByAreaBody()}</div>
+      <div class="goals-main">${view === 'focus' ? goalsFocusBody() : goalsByAreaBody()}</div>
       <aside class="goals-side">${bucketSideBox()}</aside>
     </div>`;
   loadVisionThumbs();
 }
+// "This quarter" tab: just the goals you've starred into focus, cross-area.
+function goalsFocusBody() {
+  const focus = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus);
+  return focus.length
+    ? `<section class="home-sec"><div class="home-sec-h">★ This quarter's focus · ${focus.length}</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>`
+    : '<div class="empty" style="padding:28px">Nothing in focus yet. On any goal, tap ★ to bring it into focus for this quarter.</div>';
+}
 // Goals organised the way Robin thinks: for each Life Area, its Vision then its
-// Goals. A compact "this quarter's focus" strip leads, cross-area.
+// Goals. ("This quarter's focus" is its own tab now, not the lead here.)
 function goalsByAreaBody() {
   const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
   const done = state.goals.filter((g) => gp(g).status === 'done');
-  const focus = active.filter((g) => gp(g).focus);
   const areaSections = state.areas.map((a) => {
     const p = a.props || {};
     const goals = active.filter((g) => gp(g).area === a.id);
@@ -8395,8 +8410,8 @@ function goalsByAreaBody() {
   }).join('');
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
   const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No life area</span></div><div class="goal-grid">${noArea.map(goalCardMini).join('')}</div></section>` : '';
-  return `${focus.length ? `<section class="home-sec"><div class="home-sec-h">★ This quarter's focus</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>` : ''}
-    ${areaSections}${noAreaSec}
+  // The "this quarter's focus" strip lives on its own tab now, not at the top here.
+  return `${areaSections}${noAreaSec}
     ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
 }
 // Bucket list: its own box, off to the side of Goals - collapsed by default so
@@ -10240,6 +10255,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
+  { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemEdit = state.reviewRemEdit === k ? null : k; reReviewRems(); return; }
   { const ra = t.closest('[data-rev-remadd]'); if (ra) { addReviewReminder(ra.dataset.revRemadd); return; } }

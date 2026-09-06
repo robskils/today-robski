@@ -206,6 +206,10 @@ button { cursor:pointer; background:none; border:0; }
 .seg-b.on { background:var(--card); color:var(--ink); box-shadow:var(--shadow); }
 .goals-actions { margin-bottom:18px; }
 /* Goals page: main column (per-area vision + goals) beside a bucket-list box. */
+.goals-tabs { display:flex; gap:8px; margin:0 0 18px; }
+.gtab { padding:7px 16px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
+.gtab:hover { border-color:var(--line-2); }
+.gtab.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .goals-layout { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
 @media (max-width:900px){ .goals-layout { grid-template-columns:1fr; } }
 /* An area's Vision → Goals as one connected flow: a tinted panel, the vision on
@@ -1256,7 +1260,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-when { display:flex; flex-direction:row; align-items:center; flex-wrap:wrap; gap:9px 12px; }
 .ce-wcell { display:inline-flex; align-items:center; gap:7px; }
 .ce-wlbl { flex:none; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
-.ce-wcell .date-field { min-width:120px; max-width:150px; }
+.ce-wcell .date-field { min-width:0; max-width:none; width:auto; }
 .ce-warrow { color:var(--ink-3); font-size:15px; }
 .ce-timefield { flex:none; width:auto; }
 /* legacy stacked rows (kept for any other caller) */
@@ -1277,13 +1281,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .add-event .ce-when-row { padding:2px 0; }
 .ce-allday { align-self:flex-start; }
 .ce-allday-hint { color:var(--ink-3); font-size:13.5px; font-weight:400; }
-.ce-foot { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding-top:3px; border-top:1px solid var(--line); }
-.ce-foot .ce-loc { flex:1; min-width:170px; margin:0; }
-.ce-foot .ce-repeat { flex:none; width:auto; margin:0; }
+/* A labelled field (Location, Notes, Repeat) - label above a full-width control. */
+.ce-field { display:flex; flex-direction:column; gap:6px; }
+.ce-flbl { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+.ce-field .sel { width:100%; max-width:none; margin:0; }
+.ce-repeat-field { max-width:280px; }
+/* The footer is just the actions now - Save on the left, Delete pushed right. */
+.ce-foot { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-top:14px; margin-top:2px; border-top:1px solid var(--line); }
 .ce-foot .ce-submit { flex:none; }
 .ce-foot .cal-del { flex:none; margin-left:auto; }
 .ce-recur-note { flex:1; min-width:150px; font-size:13.5px; color:var(--ink-3); }
-@media (max-width:560px){ .ce-foot .ce-loc, .ce-foot .ce-repeat, .ce-foot .ce-submit { flex:1 1 100%; } }
+@media (max-width:560px){ .ce-foot .ce-submit { flex:1 1 100%; } .ce-foot .cal-del { margin-left:0; } }
 /* Friends chat panel - slides in from the right. */
 #chat .chat-bg { position:fixed; inset:0; z-index:230; background:color-mix(in srgb,var(--ink) 30%,transparent); }
 /* Height in dvh, not top/bottom: with the keyboard up, a fixed bottom:0 anchors
