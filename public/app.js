@@ -3251,6 +3251,17 @@ function noteEntries() { return [...(state.noteTops || []), ...(state.tables || 
 const isTableNote = (n) => (n && n.kind) === 'table';
 function notesTypeMode() { return state.notesType || (state.notesType = localStorage.getItem('life.notesType') || 'all'); }
 const NOTE_TYPES = [['all', 'All'], ['note', 'Notes'], ['table', 'Tables']];
+function notesAreaMode() { return state.notesArea || (state.notesArea = ''); }
+// The Notes controls - type, life-area filter, sort - reused at the top (with the
+// search + New note) and repeated just above the main list so they're never out
+// of reach by the time you've scrolled past Starred and Recent.
+function notesControlsHtml(full) {
+  const type = notesTypeMode(); const mode = notesSortMode(); const fArea = notesAreaMode();
+  const typeChips = `<div class="note-type-chips">${NOTE_TYPES.map(([v, l]) => `<button class="ntype ${type === v ? 'on' : ''}" data-notes-type="${v}">${l}</button>`).join('')}</div>`;
+  const areaSel = `<select class="sel notes-area" data-notes-area title="Filter by life area"><option value="">All areas</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
+  const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  return `<div class="notes-toolbar${full ? '' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${full ? '<button class="add-btn wide notes-new" data-new-note>+ New note</button>' : ''}</div>`;
+}
 function noteCard(n) {
   const t = isTableNote(n);
   // Life area as a slim, colour-coded subtitle bar ABOVE the name (never a pill
@@ -3299,8 +3310,9 @@ function renderNotesList() {
   const q = (state.notesQuery || '').trim().toLowerCase();
   const mode = notesSortMode();
   const type = notesTypeMode();
+  const fArea = notesAreaMode();
   const typed = (list) => type === 'all' ? list : list.filter((n) => (isTableNote(n) ? 'table' : 'note') === type);
-  const base = typed(noteEntries());
+  const base = typed(noteEntries()).filter((n) => !fArea || blockAreas(n).includes(fArea));
   const favNotes = sortNotes(base.filter((n) => n.props && n.props.fav));
   // Recently opened notes/tables, newest first, mapped back to the live entries
   // (so a deleted or type-filtered-out one drops off). Capped for a tidy strip.
@@ -3311,8 +3323,7 @@ function renderNotesList() {
   const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
   const cards = (list) => list.map(noteCard).join('');
   const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
-  const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
-  const typeChips = `<div class="note-type-chips">${NOTE_TYPES.map(([v, l]) => `<button class="ntype ${type === v ? 'on' : ''}" data-notes-type="${v}">${l}</button>`).join('')}</div>`;
+  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this area')}` : '';
   // In "Life area" order (unfiltered), split into a section per area.
   let listHtml;
   if (mode === 'area' && !q) {
@@ -3323,15 +3334,18 @@ function renderNotesList() {
     const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
     listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life area') : 'No life area'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
   } else {
-    listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
+    listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun}${areaLbl} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
   }
+  // Repeat the controls just above the main list (only worth it when there's a
+  // Starred/Recent strip pushing the list down).
+  const repeat = (!q && (favNotes.length || recentNotes.length)) ? notesControlsHtml(false) : '';
   $('#pane').innerHTML = `
     ${pageCrumb('Notes')}
     <div class="pane-head home-head"><h1>Notes</h1></div>
-    <div class="notes-toolbar"><input class="list-search sel" data-notes-q placeholder="Search notes…" value="${esc(state.notesQuery || '')}" autocomplete="off">${typeChips}${sortSel}<button class="add-btn wide notes-new" data-new-note>+ New note</button></div>
+    ${notesControlsHtml(true)}
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     ${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}
-    ${listHtml}`;
+    ${repeat}${listHtml}`;
 }
 
 // ── Journal ──────────────────────────────────────────
@@ -9698,6 +9712,19 @@ function renderReviewReport() {
   const goalMoved = doneItems.filter((t) => t.goal).length;
   const figs = [doneN ? [doneN, 'ticked off'] : null, nAreas > 1 ? [nAreas, 'areas moved'] : null, practicesK ? [practicesK, 'practices kept'] : null, goalMoved ? [goalMoved, 'toward goals'] : null, wAvg ? [`${wAvg}/5`, 'wheel of life'] : null].filter(Boolean);
   const figsHtml = figs.length ? `<div class="rr-figs">${figs.map(([n, l]) => `<div class="rr-fig"><span class="rr-fig-n">${n}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
+  // The record - the fuel behind the report - as tabs (By life area / Goals / In
+  // your words), inside a collapsible section below the commentary.
+  const recTabs = [];
+  if (wheelRows) recTabs.push(['areas', 'By life area', `<div class="rr-areas">${wheelRows}</div>`]);
+  if (goalRows) recTabs.push(['goals', 'Goals', `<div class="rr-areas">${goalRows}</div>`]);
+  if (refl.trim() || free) recTabs.push(['words', 'In your words', `${refl}${free}`]);
+  let recordHtml = '';
+  if (recTabs.length) {
+    const active = recTabs.some((x) => x[0] === R.reportTab) ? R.reportTab : recTabs[0][0];
+    const tabBar = recTabs.length > 1 ? `<div class="rr-tabs">${recTabs.map(([id, label]) => `<button class="rr-tab ${active === id ? 'on' : ''}" data-rr-tab="${id}">${label}</button>`).join('')}</div>` : '';
+    const panel = (recTabs.find((x) => x[0] === active) || recTabs[0])[2];
+    recordHtml = rrSec('record', 'The record', `${tabBar}<div class="rr-tabpanel">${panel}</div>`);
+  }
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
@@ -9712,10 +9739,7 @@ function renderReviewReport() {
       ${rrSec('read', '✦ The read', `<div class="rr-article">${readHtml}</div>`)}
       ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
       ${doneN ? rrSec('moved', 'What moved', reviewWinsHtml(m, p, true)) : ''}
-      ${(wheelRows || goalRows || refl.trim() || free) ? rrSec('record', 'The record - your scores &amp; words', `
-        ${wheelRows ? `<div class="rr-recsub">Life areas</div><div class="rr-areas">${wheelRows}</div>` : ''}
-        ${goalRows ? `<div class="rr-recsub">Goals</div><div class="rr-areas">${goalRows}</div>` : ''}
-        ${(refl.trim() || free) ? `<div class="rr-recsub">In your words</div>${refl}${free}` : ''}`) : ''}
+      ${recordHtml}
       <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">The scores and words above are the fuel; the report reads them back to you. Open the editor to change any of it.</span></div>
     </article>`;
   loadThumbs();
@@ -11255,6 +11279,7 @@ document.addEventListener('click', (e) => {
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(() => { renderReviewCard(); reviewScrollTop(); }); toast('Filed ✓ - here is your report'); return; }
   const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
+  { const rt = t.closest('[data-rr-tab]'); if (rt) { if (state.review_open) { state.review_open.reportTab = rt.dataset.rrTab; renderReviewCard(); } return; } }
   if (t.closest('[data-review-edit]')) { if (state.review_open) { state.review_open.mode = 'edit'; renderReviewCard(); } return; }
   if (t.closest('[data-review-report]')) { if (state.review_open) { flushProse(); flushReviewAnswers(); state.review_open.mode = 'report'; renderReviewCard(); } return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
@@ -11715,6 +11740,7 @@ document.addEventListener('change', (e) => {
   { const tfo = e.target.closest('[data-tf-op]'); if (tfo) { loadTaskFilters(); const i = Number(tfo.dataset.tfOp); const c = state.taskFilters[i]; c.op = e.target.value; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
   { const tfv = e.target.closest('[data-tf-val]'); if (tfv) { loadTaskFilters(); const i = Number(tfv.dataset.tfVal); state.taskFilters[i].value = e.target.value; saveTaskFilters(); renderTasks(); return; } }
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
+  if (e.target.matches('[data-notes-area]')) { state.notesArea = e.target.value; renderNotesList(); }
   if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
   if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
