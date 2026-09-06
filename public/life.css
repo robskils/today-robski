@@ -822,6 +822,20 @@ button { cursor:pointer; background:none; border:0; }
 .rv-remitem-x { margin-left:auto; border:0; background:none; color:var(--ink-3); font-size:18px; cursor:pointer; padding:0 4px; line-height:1; }
 .rv-remitem-x:hover { color:var(--accent); }
 .rv-remadd { align-self:flex-start; font-size:13.5px; margin-top:4px; }
+/* Review cadence: the "when" rule + the count/next-due meta line. */
+.rv-rem-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:0 14px 12px; font-size:13px; color:var(--ink-2); }
+.rv-rem-stat b { color:var(--ink); font-weight:700; }
+.rv-rem-muted { color:var(--ink-3); }
+.rv-rem-dot { color:var(--line-2); }
+.rv-cad-toggle { display:flex; align-items:center; gap:10px; font-size:15px; color:var(--ink); cursor:pointer; padding-top:12px; }
+.rv-cad-toggle input { flex:none; width:19px; height:19px; accent-color:var(--accent); }
+.rv-cad-when { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; }
+.rv-cad-l { font-size:13.5px; color:var(--ink-3); }
+.rv-cad-chips { display:flex; gap:7px; flex-wrap:wrap; }
+.rv-cad-chip { padding:7px 13px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; }
+.rv-cad-chip.sm { padding:5px 10px; font-size:12.5px; }
+.rv-cad-chip:hover { border-color:var(--accent); color:var(--accent); }
+.rv-cad-chip.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--card)); }
 .rv-rep-i { color:var(--accent); font-size:11px; }
 .rv-card-stats { display:flex; flex-wrap:wrap; gap:6px 12px; }
 .rvc-stat { font-size:13px; color:var(--ink-3); }
