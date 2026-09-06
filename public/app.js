@@ -2702,7 +2702,21 @@ function practicesManageHtml() {
   return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
 }
 function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
-function practiceStreak(id) { if (!state.practices) return 0; let s = 0; const d = new Date(); for (;;) { if (state.practices.marks[`${id}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s; }
+function practiceStreak(id) {
+  if (!state.practices) return 0;
+  const a = (state.practices.activities || []).find((x) => String(x.id) === String(id));
+  if (a && a.avoid) return avoidStreak(a);
+  let s = 0; const d = new Date(); for (;;) { if (state.practices.marks[`${id}:${dayKey(d)}`]) { s++; d.setDate(d.getDate() - 1); } else break; } return s;
+}
+// An "avoiding" habit: the streak is consecutive CLEAN days (no slip) since you
+// started, ending the moment you log a slip. So the flame rewards staying off it.
+function avoidStreak(a) {
+  const P = state.practices; if (!P) return 0;
+  const since = a.avoid_since || null;
+  let s = 0; const d = new Date();
+  for (let i = 0; i < 3660; i++) { const k = dayKey(d); if (P.marks[`${a.id}:${k}`]) break; if (since && k < since) break; s++; d.setDate(d.getDate() - 1); }
+  return s;
+}
 async function practiceAdd(area, title) {
   title = (title || '').trim(); if (!title || !state.practices) return;
   try { const a = await api('/api/activities', { method: 'POST', body: JSON.stringify({ area: area || undefined, title: title.slice(0, 80), duration: 30 }) }); state.practices.activities.push(a); rerenderPractices(); }
@@ -2734,11 +2748,11 @@ function practicesGroups(withWeek) {
   return ordered.map((g) => {
     const rows = g.items.map((a) => {
       const len = (a.timed && a.duration) ? `<span class="prc-sched">${a.duration} min</span>` : '';
-      const badges = `${a.video ? '<span class="prc-badge">🎥</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
-      return `<div class="prc-row">
-        <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
+      const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? '<span class="prc-badge">🎥</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
+      return `<div class="prc-row ${a.avoid ? 't2-avoid' : ''}">
+        <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="prc-name">${esc(a.title)}${badges}${withWeek ? '' : len}</span>
-        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
+        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}${a.avoid ? ' clean' : ''}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
     }).join('');
@@ -2782,6 +2796,7 @@ function practiceEditorHtml() {
           <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
           <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></div>
           <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}></label>
+          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
           <div class="pe-mini-row"><span class="pe-mini-l">Aim to do it</span>${(() => {
             const cur = a.cadence || '';
             const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
@@ -2796,13 +2811,17 @@ function practiceEditorHtml() {
 }
 async function savePractice() {
   const pe = state.practiceEdit; if (!pe) return;
+  const cur = pe.id ? (state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) : null;
   const title = (($('#pe-title') || {}).value || '').trim(); if (!title) { toast('Give it a name'); return; }
+  const avoid = $('#pe-avoid') ? ($('#pe-avoid').checked ? 1 : 0) : 0;
   const body = {
+    avoid,
+    ...(avoid ? { avoidSince: (cur && cur.avoid_since) || todayISO() } : {}),
     title: title.slice(0, 80),
     area: ($('#pe-area') || {}).value || '',
     duration: Math.max(5, Math.min(720, Number(($('#pe-dur') || {}).value) || 30)),
-    timed: $('#pe-timed') ? $('#pe-timed').checked : true,
-    tracked: $('#pe-tracked') ? $('#pe-tracked').checked : true,
+    timed: avoid ? false : ($('#pe-timed') ? $('#pe-timed').checked : true),
+    tracked: avoid ? true : ($('#pe-tracked') ? $('#pe-tracked').checked : true),
     days: '',        // practices are a palette of options, not a timetable
     time_min: '',
     cadence: ($('#pe-cadence') || {}).value || '',
@@ -4771,7 +4790,7 @@ function renderToday() {
   // Always show the day + date; when it's today, lead with "Today" and set the date beside it.
   const h1 = T.tab === 'tracker' ? `Tracker <span class="t2-dsmall">${esc(todayLabel)}</span>` : (isToday ? `Today <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel));
   const nav = `<span class="t2-nav">${!isToday ? '<button class="t2-navbtn" data-t2-today>Today</button>' : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
-  const toTick = (state.practices && (state.practices.activities || []).filter((a) => a.tracked && !practiceMarked(a.id, dayKey(new Date()))).length) || 0;
+  const toTick = (state.practices && (state.practices.activities || []).filter((a) => a.tracked && !a.avoid && !practiceMarked(a.id, dayKey(new Date()))).length) || 0;
   const tabs = `<div class="t2-tabs">
     <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">Today</button>
     <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">Tracker${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
@@ -4832,12 +4851,12 @@ function t2TrackerHtml() {
       const marked = practiceMarked(a.id, today);
       const streak = practiceStreak(a.id);
       // The run of recent days - tap any dot to log it, the chain you don't want to break.
-      const week = days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? 'on' : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('');
-      return `<div class="trk-prow">
-        <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
-        <span class="trk-pname">${esc(a.title)}${a.cadence ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
+      const week = days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${a.avoid ? (practiceMarked(a.id, d) ? 'slipped' : 'clean') + ' · ' + d : d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('');
+      return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''}">
+        <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
+        <span class="trk-pname">${esc(a.title)}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         <span class="trk-week">${week}</span>
-        <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}</span>` : ''}<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span></span>
+        <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span>
       </div>`;
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
@@ -4962,11 +4981,11 @@ function t2PracticesHtml() {
     const marked = practiceMarked(a.id, today);
     const streak = practiceStreak(a.id);
     const len = (a.timed && a.duration) ? `<span class="t2-psched">${a.duration} min</span>` : '';
-    return `<div class="t2-prow ${a.timed ? 't2-draggable' : ''}" data-prc-open="${a.id}" ${a.timed ? `data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Drag onto your day, or click to open"` : 'title="Click to open"'} style="--h:${g.hue}">
-      <button class="t2-tick ${marked ? 'on' : ''}" data-prc-tick="${a.id}" title="Done today">✓</button>
-      <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${len}</span>
+    return `<div class="t2-prow ${a.timed ? 't2-draggable' : ''} ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" ${a.timed ? `data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Drag onto your day, or click to open"` : 'title="Click to open"'} style="--h:${g.hue}">
+      <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
+      <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${len}</span>
       ${a.priority ? `<span class="p-tag p-${a.priority}">${a.priority}</span>` : ''}
-      ${streak ? `<span class="t2-streak">🔥${streak}</span>` : ''}
+      ${streak ? `<span class="t2-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
   const body = acts.length ? (inner || '<div class="t2-emptycol">None match the filter.</div>') : '<div class="t2-emptycol">No practices yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add practices</button></div>';
@@ -5027,7 +5046,7 @@ async function t2AddTask() {
 }
 function t2HabitsHtml() {
   const P = state.practices; const today = dayKey(new Date());
-  const tracked = (P.activities || []).filter((a) => a.tracked);
+  const tracked = (P.activities || []).filter((a) => a.tracked && !a.avoid);
   if (!tracked.length) return '';
   const toTick = tracked.filter((a) => !practiceMarked(a.id, today)).length;
   const chips = tracked.map((a) => { const on = practiceMarked(a.id, today); const s = practiceStreak(a.id); return `<div class="t2-habit ${on ? 'done' : ''}">

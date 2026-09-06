@@ -124,7 +124,11 @@ CREATE TABLE IF NOT EXISTS activities (
   time_min INTEGER,                           -- default schedule time, mins from midnight; NULL = none
   cadence  TEXT,                              -- tracking target: "<n>d" every n days, "<n>w" n times/week; NULL = just log it
   -- optional P1-P4 on a rhythm, so the planner filters it like tasks; NULL = none
-  priority TEXT
+  priority TEXT,
+  -- a habit you're BREAKING (e.g. smoking): the streak counts clean days and a
+  -- tick marks a slip. avoid_since is the day the clean count starts from.
+  avoid INTEGER NOT NULL DEFAULT 0,
+  avoid_since TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_activities_lane ON activities(lane, position);
 

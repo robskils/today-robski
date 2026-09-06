@@ -2506,7 +2506,11 @@ async function practiceFields(env, b) {
   let cadence = null;
   if (b.cadence) { const m = String(b.cadence).trim().match(/^(\d{1,2})([dw])$/); if (m && Number(m[1]) >= 1) cadence = `${Number(m[1])}${m[2]}`; }
   const priority = ['P1', 'P2', 'P3', 'P4'].includes(b.priority) ? b.priority : null;
-  return { area, lane, note, video, timed, tracked, days, time_min, cadence, priority };
+  // A practice you're trying to AVOID (e.g. smoking): the streak counts clean days,
+  // and a tick marks a slip. avoidSince is the day the clean count starts from.
+  const avoid = (b.avoid === true || b.avoid === 1) ? 1 : 0;
+  const avoidSince = (b.avoidSince && /^\d{4}-\d{2}-\d{2}$/.test(String(b.avoidSince))) ? String(b.avoidSince) : null;
+  return { area, lane, note, video, timed, tracked, days, time_min, cadence, priority, avoid, avoidSince };
 }
 async function createActivity(request, env) {
   const b = await request.json().catch(() => ({}));
@@ -2528,10 +2532,11 @@ async function createActivity(request, env) {
   ).bind(lane, env.uid).first();
 
   const row = await env.DB.prepare(
-    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence, priority)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence, priority, avoid, avoid_since)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
   ).bind(lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid,
-    p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min, p.cadence, p.priority).first();
+    p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min, p.cadence, p.priority,
+    p.avoid, p.avoidSince || (p.avoid ? todayLisbon() : null)).first();
 
   return json(row, request, 201);
 }
@@ -2551,9 +2556,11 @@ async function updateActivity(request, env, id) {
   for (const k of ['lane', 'title', 'url', 'duration', 'position']) if (b[k] !== undefined) set[k] = b[k];
 
   // New practice fields. Changing the area re-derives the legacy lane too.
-  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence', 'priority'];
+  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence', 'priority', 'avoid', 'avoidSince'];
   if (newKeys.some((k) => b[k] !== undefined)) {
     const p = await practiceFields(env, b);
+    if (b.avoid !== undefined) { set.avoid = p.avoid; if (p.avoid && b.avoidSince === undefined) set.avoid_since = todayLisbon(); }
+    if (b.avoidSince !== undefined) set.avoid_since = p.avoidSince;
     if (b.area !== undefined) { set.area = p.area; if (p.lane && set.lane === undefined) set.lane = p.lane; }
     if (b.note !== undefined) set.note = p.note;
     if (b.video !== undefined) set.video = p.video;
