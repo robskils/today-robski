@@ -8865,10 +8865,14 @@ function connectedNotesPickerInner() {
   const go = state.goal_open; if (!go) return '';
   const q = (go.noteQuery || '').trim().toLowerCase();
   const linked = new Set((go.notes || []).map((n) => n.id));
+  // Only offer notes in the goal's own life area(s) - a goal's notes belong to its
+  // area, so we don't drown the picker in everything.
+  const gAreas = blockAreas(go.goal);
   let list = (go.allNotes || []).filter((n) => !linked.has(n.id));
+  if (gAreas.length) list = list.filter((n) => blockAreas(n).some((aid) => gAreas.includes(aid)));
   if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q));
   list = list.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}notes to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}notes${gAreas.length ? ' in this life area' : ''} to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
   return list.slice(0, 60).map((n) => `<div class="gal-row"><span class="ga-t" data-open-note="${n.id}">▤ ${esc(n.title || 'Untitled')}</span><button class="ghost gal-link" data-goal-link-note="${n.id}" title="Connect to this goal">＋ Link</button></div>`).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
