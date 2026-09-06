@@ -9306,7 +9306,7 @@ async function startReview(rtype) {
   const surfaced = state.tasks.filter((t) => t.props && t.props.snooze && t.props.snooze >= from && t.props.snooze <= to && !t.props.done).slice(0, 40).map((t) => ({ id: t.id, title: t.title, area: t.props.area }));
   const mirror = {
     practices: mir.practices || [],
-    tasksDone: s.done.slice(0, 60).map((t) => ({ id: t.id, title: t.title, area: t.props.area })),
+    tasksDone: s.done.slice(0, 200).map((t) => ({ id: t.id, title: t.title, area: t.props.area, goal: t.props.goal || null, priority: t.props.priority || null, created: t.created_at || null, at: t.updated_at || null })),
     openP1: s.openP1.slice(0, 60).map((t) => ({ id: t.id, title: t.title, area: t.props.area })),
     quietAreas: s.quiet.map((a) => a.id),
     surfaced,
@@ -9361,11 +9361,9 @@ function reviewInsight(m, p) {
 async function openReviewCard(id) {
   const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview();
-  // Deeper reviews (monthly and up) show which tasks fed each goal, so load tasks
-  // to map done/open ones onto the goals in the snapshot.
-  if ((r.props || {}).rtype && (r.props || {}).rtype !== 'weekly') {
-    api('/api/blocks?kind=task').then((tasks) => { if (state.review_open && state.review_open.review.id === id) { state.review_open.tasks = tasks; if (state.view.type === 'reviewcard') renderReviewCard(); } }).catch(() => {});
-  }
+  // Load tasks so the wins strip can enrich each done task (age, goal, priority,
+  // day) and the deeper reviews can map tasks onto goals.
+  api('/api/blocks?kind=task').then((tasks) => { if (state.review_open && state.review_open.review.id === id) { state.review_open.tasks = tasks; if (state.view.type === 'reviewcard') renderReviewCard(); } }).catch(() => {});
 }
 // The review's timeframe, shown in relation to NOW rather than as a dry range:
 // a relative headline (This week / Last week / 3 weeks ago), a bar with a "today"
@@ -9521,7 +9519,7 @@ function renderReviewCard() {
       ${rvSecH('record', 'What you did')}
       ${rvSecOpen('record') ? `${(m.tasksDone || []).length ? `<div class="rv-didbig"><b>${(m.tasksDone || []).length}</b> ticked off this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>` : '<div class="rv-didbig rv-didnone">Nothing ticked off on the record this time.</div>'}
       ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<div class="rv-stats"><button class="rv-stat good rv-stat-btn" data-open-today title="Open your practices"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button></div>` : ''}
-      ${(m.tasksDone || []).length ? `<div class="rv-summary rv-didlist">${reviewDoneCards(m)}</div>` : ''}
+      ${(m.tasksDone || []).length ? reviewWinsHtml(m, p) : ''}
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
       ${(m.surfaced || []).length ? `<div class="rv-surfaced">
         <div class="rv-surfaced-h">☀ Surfaced from snooze · ${(m.surfaced || []).length}</div>
@@ -9700,6 +9698,54 @@ function setGoalReviewScore(goalId, score) {
 function reviewSummaryHtml(text) {
   return String(text || '').split(/\n{2,}/).map((para) => para.trim()).filter(Boolean)
     .map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('');
+}
+// The "What you did" showcase: engaging metrics rather than a flat list - counts
+// by life area with a little bar chart, the standout area, your busiest day, work
+// that moved a goal, plus a few highlighted wins (a long-awaited one, a goal
+// mover, a P1), and the full list one tap away. Each done task is enriched from
+// the live task blocks (age, goal, priority, completion day) so it works on older
+// reviews whose frozen mirror didn't capture those.
+function reviewWinsHtml(m, p) {
+  const done = m.tasksDone || [];
+  if (!done.length) return '';
+  const byId = new Map(((state.review_open && state.review_open.tasks) || []).map((t) => [t.id, t]));
+  const items = done.map((d) => {
+    const live = byId.get(d.id) || null; const lp = (live && live.props) || {};
+    return { id: d.id, title: d.title, area: d.area || lp.area || null, goal: d.goal || lp.goal || null,
+      priority: d.priority || lp.priority || null, created: d.created || (live && live.created_at) || null, at: d.at || (live && live.updated_at) || null };
+  });
+  const areaCount = {}; items.forEach((t) => { const k = t.area || '_none'; areaCount[k] = (areaCount[k] || 0) + 1; });
+  const namedAreas = Object.entries(areaCount).filter(([k]) => k !== '_none' && areaById(k)).sort((a, b) => b[1] - a[1]);
+  const topArea = namedAreas[0] ? areaById(namedAreas[0][0]) : null;
+  const maxCount = namedAreas.length ? namedAreas[0][1] : 1;
+  const DOWN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayCount = {}; items.forEach((t) => { if (t.at) { const wd = new Date(t.at).getDay(); dayCount[wd] = (dayCount[wd] || 0) + 1; } });
+  const topDay = Object.entries(dayCount).sort((a, b) => b[1] - a[1])[0];
+  const goalDone = items.filter((t) => t.goal);
+  const withAge = items.filter((t) => t.created && t.at).map((t) => ({ ...t, age: Math.round((new Date(t.at) - new Date(t.created)) / 86400000) })).filter((t) => t.age >= 2).sort((a, b) => b.age - a.age);
+  const oldest = withAge[0];
+
+  const chips = [];
+  if (topArea) chips.push(`<button class="rvw-metric" data-open-area="${topArea.id}" style="--h:${hueOf(topArea)}"><span class="rvw-m-n">${maxCount}</span><span class="rvw-m-l">most in <b>${esc(topArea.title)}</b></span></button>`);
+  chips.push(`<div class="rvw-metric"><span class="rvw-m-n">${namedAreas.length || 1}</span><span class="rvw-m-l">life area${namedAreas.length === 1 ? '' : 's'} moved</span></div>`);
+  if (topDay) chips.push(`<div class="rvw-metric"><span class="rvw-m-n">${topDay[1]}</span><span class="rvw-m-l"><b>${DOWN[topDay[0]]}</b> was your busiest</span></div>`);
+  if (goalDone.length) chips.push(`<div class="rvw-metric rvw-metric-goal"><span class="rvw-m-n">${goalDone.length}</span><span class="rvw-m-l">moved a <b>goal</b> forward</span></div>`);
+  const metrics = `<div class="rvw-metrics">${chips.join('')}</div>`;
+
+  const bars = namedAreas.length > 1 ? `<div class="rvw-bars">${namedAreas.slice(0, 8).map(([k, n]) => { const a = areaById(k); return `<button class="rvw-bar-row" data-open-area="${k}" style="--h:${hueOf(a)}"><span class="rvw-bar-l">${esc(a.title)}</span><span class="rvw-bar-track"><i style="width:${Math.max(6, Math.round(n / maxCount * 100))}%"></i></span><span class="rvw-bar-n">${n}</span></button>`; }).join('')}</div>` : '';
+
+  const goalName = (gid) => { const g = (state.goals || []).find((x) => x.id === gid); return g ? g.title : null; };
+  const stand = [];
+  if (oldest) stand.push(`<button class="rvw-win" ${oldest.id ? `data-open-task="${oldest.id}"` : ''}><span class="rvw-win-tag">⏳ ${oldest.age} days in the making</span><span class="rvw-win-t">${esc(oldest.title || 'Untitled')}</span></button>`);
+  const gEx = goalDone.find((t) => goalName(t.goal));
+  if (gEx) stand.push(`<button class="rvw-win" ${gEx.id ? `data-open-task="${gEx.id}"` : ''}><span class="rvw-win-tag">🎯 toward ${esc(goalName(gEx.goal))}</span><span class="rvw-win-t">${esc(gEx.title || 'Untitled')}</span></button>`);
+  const usedIds = new Set([oldest && oldest.id, gEx && gEx.id].filter(Boolean));
+  const p1 = items.find((t) => t.priority === 'P1' && !usedIds.has(t.id));
+  if (p1) stand.push(`<button class="rvw-win" ${p1.id ? `data-open-task="${p1.id}"` : ''}><span class="rvw-win-tag">⭐ a P1, done</span><span class="rvw-win-t">${esc(p1.title || 'Untitled')}</span></button>`);
+  const standouts = stand.length ? `<div class="rvw-wins-h">Wins worth noting</div><div class="rvw-wins">${stand.join('')}</div>` : '';
+
+  const full = `<details class="rvw-all"><summary>See everything you ticked off · ${done.length}</summary><div class="rvw-all-body">${reviewDoneCards(m)}</div></details>`;
+  return `${metrics}${bars}${standouts}${full}`;
 }
 // Everything you ticked off, grouped by life area (the "type"), each a card you
 // can click straight through to. Shown under the ✦ summary when "ticked off" is open.
