@@ -910,16 +910,31 @@ export async function handleMail(request, env, url, json, err) {
         let invite = null;
         const calPart = (p.attachments || []).find((a) => /calendar/i.test(a.mimeType || '') || /\.ics$/i.test(a.filename || ''));
         if (calPart && calPart.content) { try { invite = parseIcs(typeof calPart.content === 'string' ? calPart.content : new TextDecoder().decode(calPart.content)); } catch {} }
-        const attachments = await Promise.all((p.attachments || []).map(async (a, i) => ({
+        // Inline images referenced by cid: embed them as data URLs (so the logo
+        // in a notification email actually shows), and drop them from the
+        // attachment chips - they're part of the body, not files to download.
+        let html = p.html || null; const embedded = new Set();
+        if (html) {
+          for (let i = 0; i < (p.attachments || []).length; i++) {
+            const a = p.attachments[i]; const cid = String(a.contentId || '').replace(/^<|>$/g, '');
+            if (!cid || !a.content || !html.includes(`cid:${cid}`)) continue;
+            const bytes = a.content instanceof Uint8Array ? a.content : new Uint8Array(a.content);
+            if (bytes.byteLength > 2000000) continue;   // don't inline a huge image
+            let bin = ''; for (const x of bytes) bin += String.fromCharCode(x);
+            html = html.split(`cid:${cid}`).join(`data:${a.mimeType || 'image/png'};base64,${btoa(bin)}`);
+            embedded.add(i);
+          }
+        }
+        const attachments = (await Promise.all((p.attachments || []).map(async (a, i) => (embedded.has(i) ? null : {
           idx: i, filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType,
           url: await signedAttUrl(env, url, acct.id, mailbox, uid, { idx: i }),
-        })));
+        })))).filter(Boolean);
         return json({
           uid, subject: p.subject || '(no subject)', from: p.from || null,
           to: (p.to || []).map((a) => ({ name: a.name, address: a.address })),
           cc: (p.cc || []).map((a) => ({ name: a.name, address: a.address })),
           date: (p.date ? new Date(p.date).toISOString() : ''),
-          messageId: p.messageId || null, html: p.html || null, text: p.text || '', invite, attachments,
+          messageId: p.messageId || null, html: html || null, text: p.text || '', invite, attachments,
         }, request);
       } finally { await im.logout(); }
     }
