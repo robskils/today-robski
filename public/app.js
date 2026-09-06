@@ -9253,6 +9253,7 @@ function reviewsBody() {
     <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(shortD(p.doneAt))}` : ''}`}</span></div>
     <div class="rv-card-period">${esc(periodMain)}</div>
     <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5</span>` : ''}</div>
+    <div class="rv-card-open">${prog ? 'Continue →' : 'Open report →'}</div>
   </button>`; };
   // Anything you started but haven't finished sits up top, plainly labelled, so a
   // half-written review is never mistaken for one that vanished.
@@ -9488,9 +9489,10 @@ function reviewInsight(m, p) {
   if (!lines.length) lines.push(`A quiet ${period} on the record. What would make the next one feel good?`);
   return lines.slice(0, 6);
 }
+function reviewScrollTop() { try { window.scrollTo(0, 0); const pane = document.getElementById('pane'); if (pane) pane.scrollTop = 0; const sc = document.querySelector('.app-main, .app-scroll, main'); if (sc) sc.scrollTop = 0; } catch {} }
 async function openReviewCard(id) {
   const r = await api(`/api/blocks/${id}`); state.review_open = { review: r, mode: (r.props || {}).status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
-  renderNav(); renderReviewCard(); maybeAutoReadReview();
+  renderNav(); renderReviewCard(); maybeAutoReadReview(); reviewScrollTop();
   // Load tasks so the wins strip can enrich each done task (age, goal, priority,
   // day) and the deeper reviews can map tasks onto goals.
   api('/api/blocks?kind=task').then((tasks) => { if (state.review_open && state.review_open.review.id === id) { state.review_open.tasks = tasks; if (state.view.type === 'reviewcard') renderReviewCard(); } }).catch(() => {});
@@ -11147,7 +11149,7 @@ document.addEventListener('click', (e) => {
   { const it = t.closest('[data-rv-inputtab]'); if (it) { flushProse(); flushReviewAnswers(); if (state.review_open) { state.review_open.inputTab = it.dataset.rvInputtab; renderReviewCard(); } return; } }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
-  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review submitted ✓'); return; }
+  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(() => { renderReviewCard(); reviewScrollTop(); }); toast('Filed ✓ - here is your report'); return; }
   const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
   if (t.closest('[data-review-edit]')) { if (state.review_open) { state.review_open.mode = 'edit'; renderReviewCard(); } return; }
   if (t.closest('[data-review-report]')) { if (state.review_open) { flushProse(); flushReviewAnswers(); state.review_open.mode = 'report'; renderReviewCard(); } return; }
