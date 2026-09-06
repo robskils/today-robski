@@ -11939,7 +11939,7 @@ function taskSurfaceHtml(t) {
     else { const bits = []; if (email) bits.push('email'); if (sms) bits.push(hasPhone ? 'text' : 'text (add a phone number in Settings first)'); chanHint = `A ${bits.join(' and a ')} on the morning it surfaces.`; }
   }
   return `<section class="tf-surface">
-    <div class="tfs-h">Surface &amp; reminders</div>
+    <div class="tfs-h">Surface</div>
     <label class="tfs-row"><span class="tfs-l">Surface on<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${clear}${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
     ${p.snooze ? `<div class="tfs-block">
       <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
@@ -11974,8 +11974,7 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
-    ${taskSurfaceHtml(t)}
-    ${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}
+    <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();

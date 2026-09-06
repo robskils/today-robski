@@ -1653,6 +1653,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tf-toggle .acw-chev { font-size:11px; color:var(--ink-3); }
 /* Task "Surface & reminders" section: a tidy grouped card. */
 .tf-surface { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
+/* Surface + Who-can-see-this sit side by side on a wide card, stack when narrow. */
+.tf-cardrow { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+.tf-cardrow > .tf-surface { flex:1 1 340px; min-width:0; }
 .tfs-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 6px; }
 .tfs-row { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:11px 0; border-top:1px solid var(--line); }
 .tfs-l { display:flex; flex-direction:column; gap:2px; font-size:14.5px; font-weight:600; color:var(--ink); }
