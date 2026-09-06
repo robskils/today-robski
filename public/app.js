@@ -8863,7 +8863,7 @@ function renderGoalCard() {
       ${goalAreaTasksHtml()}
     </section>
     ${connectedNotesHtml()}
-    ${notesSection(g.body, 'goal', g.id)}
+    ${(g.body || '').trim() ? notesSection(g.body, 'goal', g.id, false, 'Older notes') : ''}
     <details class="gc-settings">
       <summary>⚙ Goal settings</summary>
       <div class="tf-meta">
@@ -8912,19 +8912,20 @@ function renderGoalAreaList() { const el = $('.gal-list'); if (el) el.innerHTML 
 // the connected-tasks linker so the two read as a pair.
 function connectedNotesHtml() {
   const go = state.goal_open; if (!go) return '';
+  const a = areaById(gp(go.goal).area);
   const notes = go.notes || [];
-  const cards = notes.map((n) => `<div class="gc-note-card"><button class="gc-note-open" data-open-note="${n.id}"><span class="gc-note-ic">▤</span><span class="gc-note-t">${esc(n.title || 'Untitled')}</span></button><button class="gc-note-x" data-goal-unlink-note="${n.id}" title="Disconnect from this goal">×</button></div>`).join('');
-  return `<div class="goal-notes-sec">
-    <div class="tf-label gt-loose-h">Connected notes<span class="gt-hint">notes that belong to this goal - the same note, shown here too</span></div>
-    ${notes.length ? `<div class="gc-notes-grid">${cards}</div>` : ''}
+  const cards = notes.map((n) => `<div class="gc-note-card" style="--h:${a ? hueOf(a) : 220}"><button class="gc-note-open" data-open-note="${n.id}"><span class="gc-note-ic">▤</span><span class="gc-note-t">${esc(n.title || 'Untitled')}</span></button><button class="gc-note-x" data-goal-unlink-note="${n.id}" title="Disconnect from this goal">×</button></div>`).join('');
+  return `<section class="focus-notes gc-notes-sec">
+    <div class="fn-h">Notes${notes.length ? ` · ${notes.length}` : ''}</div>
+    ${notes.length ? `<div class="gc-notes-grid">${cards}</div>` : '<p class="gc-notes-empty">Jot your thinking as a note - it lives here and in Notes, ready to grow.</p>'}
     <div class="goal-notelist">
       <div class="gal-box">
         <input class="sel gal-search" data-goalnote-q placeholder="Connect an existing note…" value="${esc(go.noteQuery || '')}" autocomplete="off">
         <div class="gal-drop"><div class="gc-note-list">${connectedNotesPickerInner()}</div></div>
       </div>
-      <button class="ghost gc-note-new" data-goal-addnote>+ New note</button>
+      <button class="add-btn wide gc-note-new" data-goal-addnote>＋ New note</button>
     </div>
-  </div>`;
+  </section>`;
 }
 function connectedNotesPickerInner() {
   const go = state.goal_open; if (!go) return '';
@@ -9003,7 +9004,14 @@ function msDel(mid) { const g = state.goal_open.goal; g.props.milestones = goalM
 function msText(mid, v) { const m = goalMs().find((x) => x.id === mid); if (m) { m.text = v; saveMs(); } }
 // A goal's task = a real task (kind='task') tagged to the goal (and a milestone).
 // It shows here AND in Tasks/Today - the same task, in context, never a copy.
-const goalTaskRow = (t) => `<div class="ga-row ${t.props.done ? 'done' : ''}"><button class="check" data-check="${t.id}">✓</button><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span></div>`;
+const goalTaskRow = (t) => `<div class="ga-row ${t.props.done ? 'done' : ''}"><button class="check" data-check="${t.id}">✓</button><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span><button class="ga-x" data-goal-untask="${t.id}" title="Remove from this goal (keeps the task)">×</button></div>`;
+async function unlinkTaskFromGoal(taskId) {
+  const go = state.goal_open; if (!go) return;
+  go.tasks = (go.tasks || []).filter((t) => t.id !== taskId);
+  const at = (go.allTasks || []).find((x) => x.id === taskId); if (at) { at.props = at.props || {}; at.props.goal = null; }
+  renderGoalCard();
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: null, milestone: null } }) }); toast('Removed from this goal'); } catch (e) { toast(e.message); }
+}
 async function addGoalTask(goalId, milestoneId) {
   const title = await uiPrompt('Task for this ' + (milestoneId ? 'milestone' : 'goal') + ':', { placeholder: 'e.g. Draft the opening section' }); if (!title) return;
   const g = state.goal_open.goal;
@@ -11157,6 +11165,7 @@ document.addEventListener('click', (e) => {
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
   if (t.closest('[data-bucket-to-goal]')) { bucketToGoal().catch((x) => toast(x.message)); return; }
   const glink = t.closest('[data-goal-link]'); if (glink) { linkTaskToGoal(glink.dataset.goalLink); return; }
+  { const gut = t.closest('[data-goal-untask]'); if (gut) { unlinkTaskFromGoal(gut.dataset.goalUntask); return; } }
   const nlink = t.closest('[data-goal-link-note]'); if (nlink) { linkNoteToGoal(nlink.dataset.goalLinkNote); return; }
   const nunlink = t.closest('[data-goal-unlink-note]'); if (nunlink) { unlinkNoteFromGoal(nunlink.dataset.goalUnlinkNote); return; }
   if (t.closest('[data-goal-addnote]')) { addGoalNote(); return; }
@@ -12382,9 +12391,9 @@ function renderTaskCard() {
 
 // A prose Notes section, reused by the task card and the row card. Backed by
 // the block's `body`, edited inline via the shared rich-text editor.
-function notesSection(body, key, id, readOnly) {
+function notesSection(body, key, id, readOnly, title) {
   const open = tfCardOpen('notes');
-  return `<section class="focus-notes ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="notes"><span>Notes</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${proseEditor(body, key, id, readOnly)}${embedsHtml(body)}` : ''}</section>`;
+  return `<section class="focus-notes ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="notes"><span>${esc(title || 'Notes')}</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${proseEditor(body, key, id, readOnly)}${embedsHtml(body)}` : ''}</section>`;
 }
 
 // ── attachments (R2-backed files on a block) ─────────
