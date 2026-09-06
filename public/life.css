@@ -584,6 +584,11 @@ button { cursor:pointer; background:none; border:0; }
 .t2-reviewdue { width:100%; display:flex; align-items:center; gap:12px; text-align:left; margin:0 0 14px; padding:13px 16px; border-radius:14px; cursor:pointer;
   background:color-mix(in srgb,var(--accent) 8%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line)); box-shadow:var(--shadow); }
 .t2-reviewdue:hover { border-color:var(--accent); }
+/* Submitted-today: a calm green confirmation instead of the nag. */
+.t2-reviewdone { width:100%; display:flex; align-items:center; gap:12px; text-align:left; margin:0 0 14px; padding:13px 16px; border-radius:14px; cursor:pointer; background:color-mix(in srgb,var(--done) 9%,var(--card)); border:1px solid color-mix(in srgb,var(--done) 34%,var(--line)); box-shadow:var(--shadow); }
+.t2-reviewdone:hover { border-color:var(--done); }
+.t2-reviewdone .t2-rd-ic, .t2-reviewdone .t2-rd-go { color:var(--done); }
+.t2-reviewdone .t2-rd-body b { color:var(--ink); }
 .t2-rd-ic { flex:none; font-size:18px; color:var(--accent); }
 .t2-rd-body { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
 .t2-rd-body b { font-size:15.5px; color:var(--ink); }
@@ -688,6 +693,11 @@ button { cursor:pointer; background:none; border:0; }
 /* P1s still open / Went quiet - clickable cards instead of a list. */
 .rv-cardsec { margin-top:16px; }
 .rv-cardsec-h { font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); margin-bottom:9px; }
+/* Surfaced from snooze - a proper, respected section, not a buried details. */
+.rv-surfaced { margin-top:18px; padding:14px 16px; border-radius:14px; background:color-mix(in srgb,var(--accent) 5%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); }
+.rv-surfaced-h { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; color:var(--ink); }
+.rv-surfaced-note { font-size:13px; color:var(--ink-3); line-height:1.5; margin:3px 0 11px; }
+.rvm-sun { flex:none; color:var(--accent); font-size:14px; }
 .rvm-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; }
 .rvm-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:center; gap:9px; text-align:left; padding:11px 13px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:11px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; min-width:0; transition:border-color .12s; }
 .rvm-card:hover { border-color:var(--accent); }

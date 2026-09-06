@@ -4888,8 +4888,15 @@ async function loadToday(day) {
 function reviewsDueToday() {
   if (!state.reviewRem) return [];
   const t = localISO(new Date());
-  // Due today if the cadence's most recent occurrence is today.
-  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); return c.on && reviewCadRecent(k, t) === t; });
+  // Due today if the cadence's most recent occurrence is today. Each also carries
+  // whether this period's review is already submitted, so Today can show a green
+  // "done" note instead of nagging you to do what you've done.
+  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); return c.on && reviewCadRecent(k, t) === t; })
+    .map((k) => {
+      const win = periodWindow(k, t);
+      const ex = (state.reviews || []).find((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
+      return { k, submitted: !!(ex && (ex.props || {}).status === 'done'), id: ex ? ex.id : null };
+    });
 }
 function renderToday() {
   const T = state.today; const data = T.data;
@@ -4907,7 +4914,14 @@ function renderToday() {
     <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">Tracker${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
   </div>`;
   const dueReviews = (isToday && T.tab === 'today') ? reviewsDueToday() : [];
-  const dueBanner = dueReviews.map((k) => `<button class="t2-reviewdue" data-start-review="${k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
+  // If a review is due today but we haven't loaded reviews yet, fetch them once so
+  // the banner can tell "due" from "already submitted".
+  if (dueReviews.length && state.reviews === undefined) {
+    state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'today') renderToday(); }).catch(() => {});
+  }
+  const dueBanner = dueReviews.map((d) => d.submitted
+    ? `<button class="t2-reviewdone" ${d.id ? `data-open-review="${d.id}"` : ''}><span class="t2-rd-ic">✓</span><span class="t2-rd-body"><b>${esc(REVIEWS[d.k].label)} review submitted</b><small>Nicely done - tap to look back over it.</small></span><span class="t2-rd-go">→</span></button>`
+    : `<button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
   $('#pane').innerHTML = `
     ${pageCrumb('Today')}
     <div class="pane-head t2-head"><h1>${h1}</h1>${T.tab === 'today' ? nav : ''}</div>
@@ -9517,13 +9531,14 @@ function renderReviewCard() {
     <section class="rv-mirror">
       ${rvSecH('record', 'What you did')}
       ${rvSecOpen('record') ? `${(m.tasksDone || []).length ? `<div class="rv-didbig"><b>${(m.tasksDone || []).length}</b> ticked off this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>` : '<div class="rv-didbig rv-didnone">Nothing ticked off on the record this time.</div>'}
-      <div class="rv-stats">
-        ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<button class="rv-stat good rv-stat-btn" data-open-today title="Open your practices"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button>` : ''}
-        ${(m.surfaced || []).length ? pill('surfaced', (m.surfaced || []).length, '') : ''}
-      </div>
+      ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<div class="rv-stats"><button class="rv-stat good rv-stat-btn" data-open-today title="Open your practices"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button></div>` : ''}
       ${(m.tasksDone || []).length ? `<div class="rv-summary rv-didlist">${reviewDoneCards(m)}</div>` : ''}
       ${practiceStr ? `<div class="rv-line"><span class="rv-line-k">Practices</span> ${esc(practiceStr)}</div>` : ''}
-      ${(m.surfaced || []).length ? `<details class="rv-det"><summary>Surfaced from snooze · ${(m.surfaced || []).length}</summary><ul>${(m.surfaced || []).map((t) => `<li>${esc(t.title)}</li>`).join('')}</ul></details>` : ''}` : ''}
+      ${(m.surfaced || []).length ? `<div class="rv-surfaced">
+        <div class="rv-surfaced-h">☀ Surfaced from snooze · ${(m.surfaced || []).length}</div>
+        <div class="rv-surfaced-note">Tasks you'd parked that came back this ${periodWord} - did they land, or do they need re-parking?</div>
+        <div class="rvm-cards">${(m.surfaced || []).map((t) => { const a = t.area ? areaById(t.area) : null; return `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="rvm-sun">☀</span><span class="rvm-t">${esc(t.title || 'Untitled')}</span>${a ? `<span class="rvm-area"><span class="rvm-dot"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div>
+      </div>` : ''}` : ''}
     </section>
 
     <section class="rv-analysis">
