@@ -7272,7 +7272,9 @@ function contactCardHtml(c) {
   if (p.birthday) bits.push(`<span class="cc-row">🎂 ${esc(dpLabel(p.birthday))}</span>`);
   if (formatAddress(p.address)) bits.push(`<span class="cc-row">📍 ${esc(formatAddress(p.address))}</span>`);
   const tags = liveGroupsOf(c);
-  return `<button class="contact-card" data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}" title="Drag onto a group to add">
+  const sel = (state.contactSel instanceof Set) && state.contactSel.has(c.id);
+  return `<button class="contact-card ${sel ? 'selected' : ''}" data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}" title="Drag onto a group to add">
+    <span class="cc-check ${sel ? 'on' : ''}" data-contact-sel="${c.id}" role="checkbox" aria-checked="${sel}" title="Select (to merge)">${sel ? '✓' : ''}</span>
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${tags.length ? `<span class="contact-tags">${tags.map((g) => `<span class="contact-tag">${esc(g.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
@@ -7293,8 +7295,10 @@ function contactMenuHtml() {
   const inIds = new Set(groupsOf(c));
   const addable = (state.contactGroups || []).filter((g) => !inIds.has(g.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   const current = liveGroupsOf(c);
+  const selN = (state.contactSel instanceof Set) ? state.contactSel.size : 0;
   return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
     <div class="ctx-h">${esc(c.title || 'Contact')}</div>
+    ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
     ${addable.length ? `<div class="ctx-lbl">Add to group</div>${addable.map((g) => `<button class="ctx-item" data-ctx-add="${g.id}">${esc(g.title)}</button>`).join('')}` : ''}
     <button class="ctx-item ctx-new" data-ctx-newgroup>+ New group…</button>
     ${current.length ? `<div class="ctx-sep"></div>${current.map((g) => `<button class="ctx-item" data-ctx-remove="${g.id}">Remove from ${esc(g.title)}</button>`).join('')}` : ''}
@@ -7350,6 +7354,7 @@ function renderContacts() {
         <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
       ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
+      ${contactSelBarHtml()}
       ${state.contactAdding ? contactAddForm() : ''}
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>
@@ -7585,6 +7590,52 @@ async function patchContact(id, patch, isProps) {
   if (inList) { if (isProps) { inList.props = inList.props || {}; Object.assign(inList.props, patch); } else Object.assign(inList, patch); }
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(isProps ? { props: patch } : patch) }); }
   catch (e) { toast(e.message); }
+}
+// Multi-select for the occasional merge. A checkbox on each card toggles it into
+// the set; with 2+ picked you can merge them into one.
+function contactSelBarHtml() {
+  const n = (state.contactSel instanceof Set) ? state.contactSel.size : 0;
+  if (!n) return '';
+  return `<div class="contact-selbar"><span class="csb-n">${n} selected</span>${n >= 2 ? '<button class="add-btn wide csb-merge" data-contacts-merge>⤵ Merge into one</button>' : '<span class="csb-hint">select one more to merge</span>'}<button class="ghost" data-contacts-selclear>Clear</button></div>`;
+}
+function toggleContactSel(id) {
+  if (!(state.contactSel instanceof Set)) state.contactSel = new Set();
+  if (state.contactSel.has(id)) state.contactSel.delete(id); else state.contactSel.add(id);
+  renderContacts();
+}
+// Merge 2+ selected contacts into one: the fullest becomes primary, the others'
+// details fill its gaps (and anything that would clash is kept in its notes), then
+// the merged-in cards are removed. Deletes recreate via undo, so it's recoverable.
+async function mergeSelectedContacts() {
+  const ids = [...(state.contactSel || [])];
+  const list = ids.map((id) => findContact(id)).filter(Boolean);
+  if (list.length < 2) return;
+  const score = (c) => { const p = c.props || {}; return (p.email ? 1 : 0) + (p.phone ? 1 : 0) + (p.birthday ? 1 : 0) + (formatAddress(p.address) ? 1 : 0) + ((c.body || '').trim() ? 1 : 0); };
+  list.sort((a, b) => score(b) - score(a));
+  const primary = list[0]; const others = list.slice(1);
+  const names = others.map((c) => c.title || 'Unnamed').join(', ');
+  if (!(await uiConfirm(`Merge ${others.length} contact${others.length > 1 ? 's' : ''} (${names}) into “${esc(primary.title || 'Unnamed')}”? Their details fill any gaps, anything clashing is kept in the notes, and the merged-in cards are removed.`, { title: 'Merge contacts', okLabel: 'Merge' }))) return;
+  const pp = { ...(primary.props || {}) };
+  const groups = new Set(groupsOf(primary));
+  const bodyParts = [(primary.body || '').trim()].filter(Boolean);
+  for (const c of others) {
+    const p = c.props || {};
+    for (const k of ['email', 'phone', 'birthday', 'address', 'area', 'kitEvery']) { if (!pp[k] && p[k]) pp[k] = p[k]; }
+    groupsOf(c).forEach((gid) => groups.add(gid));
+    const extra = [];
+    if (p.email && p.email !== pp.email) extra.push(`✉ ${p.email}`);
+    if (p.phone && p.phone !== pp.phone) extra.push(`☎ ${p.phone}`);
+    if (extra.length) bodyParts.push(`${c.title || 'Contact'}: ${extra.join(' · ')}`);
+    const b = (c.body || '').trim(); if (b) bodyParts.push(b);
+  }
+  pp.groups = [...groups];
+  try {
+    await api(`/api/blocks/${primary.id}`, { method: 'PATCH', body: JSON.stringify({ props: pp, body: bodyParts.join('\n\n') }) });
+    for (const c of others) await api(`/api/blocks/${c.id}`, { method: 'DELETE' }).catch(() => {});
+    state.contactSel = new Set();
+    await openContacts();
+    toast(`Merged ${others.length + 1} into ${primary.title || 'one contact'}`);
+  } catch (e) { toast(e.message); }
 }
 async function delContact(id) {
   // No confirm: the Delete button is a deliberate press on an open contact.
@@ -10532,6 +10583,9 @@ document.addEventListener('click', (e) => {
   const mst = t.closest('[data-ms-toggle]'); if (mst) { msToggle(mst.dataset.msToggle); return; }
   const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
   const gat = t.closest('[data-goal-addtask]'); if (gat) { const [gid, mid] = gat.dataset.goalAddtask.split(':'); addGoalTask(gid, mid || null).catch((x) => toast(x.message)); return; }
+  { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
+  if (t.closest('[data-contacts-merge]')) { mergeSelectedContacts(); return; }
+  if (t.closest('[data-contacts-selclear]')) { state.contactSel = new Set(); renderContacts(); return; }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
   if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
@@ -10554,6 +10608,7 @@ document.addEventListener('click', (e) => {
   const ctxAdd = t.closest('[data-ctx-add]'); if (ctxAdd) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) addContactToGroup(id, ctxAdd.dataset.ctxAdd); else renderContacts(); return; }
   if (t.closest('[data-ctx-newgroup]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; renderContacts(); if (id) addContactViaNewGroup(id); return; }
   const ctxRm = t.closest('[data-ctx-remove]'); if (ctxRm) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) removeContactFromGroup(id, ctxRm.dataset.ctxRemove); else renderContacts(); return; }
+  if (t.closest('[data-ctx-merge]')) { state.contactMenu = null; mergeSelectedContacts(); return; }
   if (t.closest('[data-ctx-delete]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) delContact(id); else renderContacts(); return; }
   if (t.closest('[data-ctx-close]') && !t.closest('.ctx-menu')) { state.contactMenu = null; renderContacts(); return; }
   if (t.closest('[data-open-p1]')) { openP1Tasks(); return; }
