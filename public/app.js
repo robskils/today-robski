@@ -26,7 +26,7 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><pa
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -547,8 +547,8 @@ const HELP = {
       <li>An area page shows its starred notes, all its notes and tables, and its open tasks.</li>
       <li>Your <b>practices</b> group by area on the Today page, and a task or practice reads in its area's colour.</li></ul>
       <p>Rename, recolour or add areas any time - the whole app follows.</p>` },
-  reflect: { title: 'Reflection', tip: 'A journal with prompts, and a “dig deeper” question when you want to go further.',
-    body: `<p>Reflection is for journalling. Pick a prompt or write free; each entry is dated and yours to return to.</p>
+  reflect: { title: 'Well-being', tip: 'Journal, meditate, cast the I Ching, draw a card, read your horoscope - a quiet corner for reflection.',
+    body: `<p>Well-being gathers your reflective practices in one place: journalling (with a “dig deeper” question when you want to go further), a meditation timer with real bells, spirit cards, an I Ching reading, and a daily horoscope.</p>
       <p><b>Dig deeper</b> asks you one thoughtful follow-up question about what you’ve written, to take a thought further.</p>` },
   saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
     body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
@@ -583,7 +583,7 @@ const HELP = {
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
   'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Premium Plus where we handle it.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Well-being coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
     body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
@@ -711,7 +711,7 @@ function labelForView(v) {
     case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
-    case 'journal': return 'Reflection'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Reflection';
+    case 'journal': return 'Well-being'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Well-being';
     case 'readwatch': return 'Read & Watch';
     case 'settings': return 'Settings';
     case 'admin': return 'Admin';
@@ -967,6 +967,9 @@ async function syncAccentFromServer() {
 // ── Settings hub ──────────────────────────────────────────────────────
 function openSettings(tab) { state.view = { type: 'settings' }; state.settings = state.settings || {}; if (tab) state.settings.tab = tab; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
+// Whether AI features can run for this account: master switch on, and either the
+// owner (managed key) or a stored own key. Optimistic before the account loads.
+function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnthropicSet; }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 // Optional two-factor (TOTP). state.totp holds the transient enrolment view:
 // { setup:{secret,uri} } while enrolling, { recovery:[...] } right after turning
@@ -1607,7 +1610,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
 // Where AI actually gets used across Daybook, and which model powers each - so
 // the AI settings and the onboarding guide can say plainly what a key is for.
 const AI_USES = [
-  ['Reflection', 'gentle coaching and a "Dig deeper" question while you journal', 'Claude'],
+  ['Well-being', 'gentle coaching and a "Dig deeper" question while you journal', 'Claude'],
   ['Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
   ['Money advice', 'sums up what the channels you follow are saying', 'Gemini'],
   ['Statement import', 'turns a pasted bank statement into tidy transactions', 'Gemini'],
@@ -1758,7 +1761,7 @@ function renderSettings() {
           <div class="plan-h"><b>Bring your own keys</b>${badge(!managed)}</div>
           <div class="plan-price">Free &amp; Premium</div>
           <p class="plan-desc">Plug in your own keys and you control the cost. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> is pay-as-you-go, usually a few pennies.</p>
-          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflection &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
+          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Well-being &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
           <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a Claude key at console.anthropic.com ↗</a>
           ${aiKeyRow('gemini', 'Gemini (Google) &middot; money advice &amp; statement import', a.aiGeminiSet, 'AIza…')}
           <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini key at aistudio.google.com ↗</a>
@@ -1871,7 +1874,7 @@ function renderNav() {
     ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-lbl">Today</span></button>` : ''}
     ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
     ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
-    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Reflection</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
+    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Well-being</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-lbl">Reviews</span></button>` : ''}
     ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
     ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
@@ -3054,7 +3057,7 @@ function homeDiscoverHtml() {
     modOn('goals') ? ['🎯', 'Wheel of Life', 'Rate your areas, watch the trend', 'data-open-reviews-tool'] : null,
     modOn('goals') ? ['🖼', 'Vision board', "Picture where you're headed", 'data-open-vision-tab'] : null,
     modOn('saved') ? ['🔖', 'Read & Watch', 'Park a link, come back later', 'data-open-readwatch'] : null,
-    modOn('reflect') ? ['✎', 'Reflection', 'Journal with a prompt, or free', 'data-open-journal'] : null,
+    modOn('reflect') ? ['✎', 'Well-being', 'Journal, meditate, cast the I Ching, and more', 'data-open-journal'] : null,
   ].filter(Boolean);
   if (!feats.length) return '';
   let hidden = false, open = true;
@@ -3147,7 +3150,7 @@ function renderHome() {
           ${modOn('today') ? `<button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>` : ''}
           ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
           ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
-          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Reflection</span></button>` : ''}
+          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Well-being</span></button>` : ''}
           ${modOn('goals') ? `<button class="hl-btn" data-open-reviews-tool><span class="hl-ic">🔄</span><span class="hl-t">Reviews</span></button>` : ''}
           ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
           ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
@@ -3534,6 +3537,300 @@ function closeSpirit() {
   if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList();
 }
 
+// ── I Ching ──────────────────────────────────────────────────────────────
+// A real reading, cast the traditional way (three coins, six lines, from the
+// ground up). Changing lines transform the hexagram into a second one, so the
+// reading has a "now" and a "moving toward". The 64 readings below are our own
+// plain-English wording of each hexagram; the names and structure are the
+// classic King Wen sequence.
+const IC_TRI = { qian: '111', kun: '000', zhen: '100', kan: '010', gen: '001', xun: '011', li: '101', dui: '110' };
+const IC_HEX = [
+  { n: 1, low: 'qian', up: 'qian', name: 'The Creative', cn: '乾', py: 'Qián', text: 'Pure creative force. The moment is yours to shape - act with strength, clarity and integrity, and great things follow.' },
+  { n: 2, low: 'kun', up: 'kun', name: 'The Receptive', cn: '坤', py: 'Kūn', text: 'Yield and support rather than push. Strength here is in patience and devotion - be the ground others can stand on.' },
+  { n: 3, low: 'zhen', up: 'kan', name: 'Difficulty at the Start', cn: '屯', py: 'Zhūn', text: "Beginnings are tangled and slow. Don't force it; gather help, take small ordered steps, and the knot loosens." },
+  { n: 4, low: 'kan', up: 'gen', name: 'Youthful Folly', cn: '蒙', py: 'Méng', text: "You're new to this, and that's fine. Stay humble, ask, let experience teach you - don't pretend to know." },
+  { n: 5, low: 'qian', up: 'kan', name: 'Waiting', cn: '需', py: 'Xū', text: "The time isn't ripe. Wait with confidence, not anxiety - nourish yourself, stay ready, and act when it truly opens." },
+  { n: 6, low: 'kan', up: 'qian', name: 'Conflict', cn: '訟', py: 'Sòng', text: "Tension is real, but winning outright will cost you. Seek a fair middle and don't push the quarrel to its end." },
+  { n: 7, low: 'kan', up: 'kun', name: 'The Army', cn: '師', py: 'Shī', text: 'This needs discipline and a clear leader. Organise, commit to one aim, and move as one - order wins, not scattered force.' },
+  { n: 8, low: 'kun', up: 'kan', name: 'Holding Together', cn: '比', py: 'Bǐ', text: 'Draw close to the right people. Union and loyalty are the strength now - find your circle and truly belong to it.' },
+  { n: 9, low: 'qian', up: 'xun', name: 'Small Taming', cn: '小畜', py: 'Xiǎo Chù', text: 'Small forces gently restrain you. Progress is possible but only in modest steps - refine details and bide the larger move.' },
+  { n: 10, low: 'dui', up: 'qian', name: 'Treading', cn: '履', py: 'Lǚ', text: "You're walking a delicate path, close to something powerful. Proceed with courtesy and care and you pass safely." },
+  { n: 11, low: 'qian', up: 'kun', name: 'Peace', cn: '泰', py: 'Tài', text: 'Heaven and earth in harmony - an open, flourishing time. Things flow and bonds thrive; enjoy it and keep tending it.' },
+  { n: 12, low: 'kun', up: 'qian', name: 'Standstill', cn: '否', py: 'Pǐ', text: 'Things are blocked and out of tune. Withdraw, keep your integrity quietly, and wait - this stagnation will pass.' },
+  { n: 13, low: 'li', up: 'qian', name: 'Fellowship', cn: '同人', py: 'Tóng Rén', text: 'Strength comes through open, honest community. Join with others in a shared aim, in the open, not in cliques.' },
+  { n: 14, low: 'qian', up: 'li', name: 'Great Possession', cn: '大有', py: 'Dà Yǒu', text: 'Abundance is yours. Hold it generously and humbly - great means bring the responsibility to share the light.' },
+  { n: 15, low: 'gen', up: 'kun', name: 'Modesty', cn: '謙', py: 'Qiān', text: 'Stay modest, especially now you have something. Genuine humility draws respect and smooths every path.' },
+  { n: 16, low: 'kun', up: 'zhen', name: 'Enthusiasm', cn: '豫', py: 'Yù', text: 'Energy and inspiration are rising - rally it. Move with the momentum, bring others along, but stay grounded.' },
+  { n: 17, low: 'zhen', up: 'dui', name: 'Following', cn: '隨', py: 'Suí', text: "Adapt to what's true right now rather than clinging to old plans. Lead by being worth following." },
+  { n: 18, low: 'xun', up: 'gen', name: 'Work on What Has Spoiled', cn: '蠱', py: 'Gǔ', text: 'Something neglected has decayed and needs repair. Face the root cause, do the corrective work - it can be set right.' },
+  { n: 19, low: 'dui', up: 'kun', name: 'Approach', cn: '臨', py: 'Lín', text: "A promising time approaches and influence grows. Act with sincerity while the door is open - good times don't last forever." },
+  { n: 20, low: 'kun', up: 'xun', name: 'Contemplation', cn: '觀', py: 'Guān', text: 'Step back and observe - see the whole pattern before acting. Others are watching you too; be worth contemplating.' },
+  { n: 21, low: 'zhen', up: 'li', name: 'Biting Through', cn: '噬嗑', py: 'Shì Kè', text: 'An obstacle must be dealt with firmly and fairly. Bite through it - be decisive, meet the problem head on.' },
+  { n: 22, low: 'li', up: 'gen', name: 'Grace', cn: '賁', py: 'Bì', text: 'Beauty and form matter, but keep them honest. Grace the surface without hiding the truth beneath.' },
+  { n: 23, low: 'kun', up: 'gen', name: 'Splitting Apart', cn: '剝', py: 'Bō', text: "Something is wearing away from below. Don't prop up what's collapsing - conserve, wait, protect your base." },
+  { n: 24, low: 'zhen', up: 'kun', name: 'Return', cn: '復', py: 'Fù', text: 'The turning point. Light returns after the dark and a fresh cycle begins - move gently with the new energy.' },
+  { n: 25, low: 'zhen', up: 'qian', name: 'Innocence', cn: '無妄', py: 'Wú Wàng', text: 'Act from an honest place, without ulterior motive. Do the natural right thing and let the outcome be.' },
+  { n: 26, low: 'qian', up: 'gen', name: 'Great Taming', cn: '大畜', py: 'Dà Chù', text: 'Great energy, held and stored. Discipline and preparation now build real power - restrain, learn, then release it.' },
+  { n: 27, low: 'zhen', up: 'gen', name: 'Nourishment', cn: '頤', py: 'Yí', text: 'Watch what you take in and give out - food, words, company. Nourish yourself and others well.' },
+  { n: 28, low: 'xun', up: 'dui', name: 'Great Exceeding', cn: '大過', py: 'Dà Guò', text: "The load is too great for the structure - something's near breaking point. Act decisively to relieve the strain before it snaps." },
+  { n: 29, low: 'kan', up: 'kan', name: 'The Abysmal Water', cn: '坎', py: 'Kǎn', text: 'Danger repeated, like water in a ravine. Keep your heart steady and true; flow through rather than fight, and sincerity carries you.' },
+  { n: 30, low: 'li', up: 'li', name: 'The Clinging Fire', cn: '離', py: 'Lí', text: 'Fire clings to what it burns. Depend on what is good, stay clear and radiant, and hold to what gives you light.' },
+  { n: 31, low: 'gen', up: 'dui', name: 'Influence', cn: '咸', py: 'Xián', text: 'Mutual attraction and feeling. Stay open and receptive - genuine connection forms when you are sincere, not calculating.' },
+  { n: 32, low: 'xun', up: 'zhen', name: 'Duration', cn: '恆', py: 'Héng', text: 'Endurance and constancy. Commit for the long run - steady, consistent effort, not novelty, is what lasts.' },
+  { n: 33, low: 'gen', up: 'qian', name: 'Retreat', cn: '遯', py: 'Dùn', text: "A wise, timely withdrawal. Stepping back now isn't defeat, it's strategy - preserve your strength for a better moment." },
+  { n: 34, low: 'qian', up: 'zhen', name: 'Great Power', cn: '大壯', py: 'Dà Zhuàng', text: "Real strength is available - but power without restraint destroys. Use it justly and don't charge blindly ahead." },
+  { n: 35, low: 'kun', up: 'li', name: 'Progress', cn: '晉', py: 'Jìn', text: 'Steady advancement into the light. Rise openly and generously; your progress is seen and welcomed.' },
+  { n: 36, low: 'li', up: 'kun', name: 'Darkening of the Light', cn: '明夷', py: 'Míng Yí', text: "The light is hidden; it's a hard, dim time. Protect your inner light, keep a low profile, endure with patience." },
+  { n: 37, low: 'li', up: 'xun', name: 'The Family', cn: '家人', py: 'Jiā Rén', text: 'Tend your home and closest bonds. Clear roles, warmth and honesty within the inner circle set everything else right.' },
+  { n: 38, low: 'dui', up: 'li', name: 'Opposition', cn: '睽', py: 'Kuí', text: 'Views diverge and there is misunderstanding. Small steps toward each other help - find where difference still meets.' },
+  { n: 39, low: 'gen', up: 'kan', name: 'Obstruction', cn: '蹇', py: 'Jiǎn', text: "The path is blocked and going forward is hard. Pause, turn inward, seek allies - don't batter the obstacle alone." },
+  { n: 40, low: 'kan', up: 'zhen', name: 'Deliverance', cn: '解', py: 'Xiè', text: 'The tension breaks and relief comes. Clear away what is done, forgive, and return to ordinary life without dragging it out.' },
+  { n: 41, low: 'dui', up: 'gen', name: 'Decrease', cn: '損', py: 'Sǔn', text: 'Less is more now. Willingly let go of the excess - simple sincerity outweighs grand display.' },
+  { n: 42, low: 'zhen', up: 'xun', name: 'Increase', cn: '益', py: 'Yì', text: 'A time of growth and generosity. Give and it multiplies; seize this favourable moment to improve things for all.' },
+  { n: 43, low: 'qian', up: 'dui', name: 'Breakthrough', cn: '夬', py: 'Guài', text: 'A decisive resolution is at hand. Name the truth openly and act - firmly and fairly, not with reckless force.' },
+  { n: 44, low: 'xun', up: 'qian', name: 'Coming to Meet', cn: '姤', py: 'Gòu', text: "Something small and tempting arrives - stay alert. Don't let a minor lapse take root; meet it early." },
+  { n: 45, low: 'kun', up: 'dui', name: 'Gathering Together', cn: '萃', py: 'Cuì', text: 'People and resources gather around a shared centre. Unite around something true and lead the coming-together with sincerity.' },
+  { n: 46, low: 'xun', up: 'kun', name: 'Pushing Upward', cn: '升', py: 'Shēng', text: 'Steady upward growth, like a plant. Effort now yields real ascent - keep going, step by step, and rise.' },
+  { n: 47, low: 'kan', up: 'dui', name: 'Oppression', cn: '困', py: 'Kùn', text: 'Exhausted and hemmed in. Conserve energy, stay true inside, speak little - this too will ease.' },
+  { n: 48, low: 'xun', up: 'kan', name: 'The Well', cn: '井', py: 'Jǐng', text: 'The deep source that nourishes all. Return to what genuinely sustains you; keep the well clean and draw from it.' },
+  { n: 49, low: 'li', up: 'dui', name: 'Revolution', cn: '革', py: 'Gé', text: 'Radical change is due. When the old truly no longer fits, transform it - at the right time, for the right reasons.' },
+  { n: 50, low: 'xun', up: 'li', name: 'The Cauldron', cn: '鼎', py: 'Dǐng', text: 'Transformation and nourishment, refining the raw into the fine. Cultivate what is valuable; feed body and spirit well.' },
+  { n: 51, low: 'zhen', up: 'zhen', name: 'The Arousing Thunder', cn: '震', py: 'Zhèn', text: 'A shock, thunder upon thunder - startling but clarifying. Stay composed through the jolt and it wakes you up.' },
+  { n: 52, low: 'gen', up: 'gen', name: 'Keeping Still', cn: '艮', py: 'Gèn', text: 'Stillness, like a mountain. Stop, be quiet, be here - rest the restless mind and act only when settled.' },
+  { n: 53, low: 'gen', up: 'xun', name: 'Development', cn: '漸', py: 'Jiàn', text: 'Gradual, natural progress, like a tree growing. Advance in proper order, step by step - no shortcuts, but sure.' },
+  { n: 54, low: 'dui', up: 'zhen', name: 'The Marrying Maiden', cn: '歸妹', py: 'Guī Mèi', text: "An awkward, subordinate position. Be tactful and realistic about where you stand; don't overreach the role." },
+  { n: 55, low: 'li', up: 'zhen', name: 'Abundance', cn: '豐', py: 'Fēng', text: 'A peak of fullness and clarity - a bright, generous high. Make the most of it, knowing peaks pass; shine while it is noon.' },
+  { n: 56, low: 'gen', up: 'li', name: 'The Wanderer', cn: '旅', py: 'Lǚ', text: "You're a traveller, not at home here. Stay modest, adaptable and correct with strangers; keep light and cautious." },
+  { n: 57, low: 'xun', up: 'xun', name: 'The Gentle Wind', cn: '巽', py: 'Xùn', text: "Gentle, persistent influence, like wind. Small steady nudges in one direction achieve what force can't." },
+  { n: 58, low: 'dui', up: 'dui', name: 'The Joyous Lake', cn: '兌', py: 'Duì', text: 'Openness and shared joy. Genuine cheer and honest exchange lift everyone - let yourself and others be glad.' },
+  { n: 59, low: 'kan', up: 'xun', name: 'Dispersion', cn: '渙', py: 'Huàn', text: 'Rigid blocks dissolve; what was hardened melts. Let go of ego and division, reconnect, and let things flow again.' },
+  { n: 60, low: 'dui', up: 'kan', name: 'Limitation', cn: '節', py: 'Jié', text: 'Healthy limits give shape and freedom. Set sensible boundaries - not harsh ones - and life runs cleaner.' },
+  { n: 61, low: 'dui', up: 'xun', name: 'Inner Truth', cn: '中孚', py: 'Zhōng Fú', text: "Sincerity from the core. When you are truly honest and heartfelt, you reach even the hardest to reach." },
+  { n: 62, low: 'gen', up: 'zhen', name: 'Small Exceeding', cn: '小過', py: 'Xiǎo Guò', text: "A time for small things done carefully, not grand gestures. Stay modest, attend to detail, and don't overreach." },
+  { n: 63, low: 'li', up: 'kan', name: 'After Completion', cn: '既濟', py: 'Jì Jì', text: "Everything's in place - for now. The task is done, but balance is fragile; stay attentive, as things can slip." },
+  { n: 64, low: 'kan', up: 'li', name: 'Before Completion', cn: '未濟', py: 'Wèi Jì', text: 'Almost there, the crossing not yet finished. Order the final steps with care - success is close if you don\'t rush the end.' },
+];
+const IC_BY_LINES = (() => { const m = {}; for (const h of IC_HEX) m[IC_TRI[h.low] + IC_TRI[h.up]] = h; return m; })();
+// Cast one line the three-coin way: each coin is 2 or 3, summed to 6-9.
+// 6 = old yin (changing), 7 = young yang, 8 = young yin, 9 = old yang (changing).
+function icCastLine() { const v = [0, 0, 0].reduce((s) => s + (2 + Math.floor(Math.random() * 2)), 0); return { val: v, yin: (v === 6 || v === 8), changing: (v === 6 || v === 9) }; }
+function icHexFor(lines, transformed) {
+  const bin = lines.map((l) => { const yin = transformed && l.changing ? !l.yin : l.yin; return yin ? '0' : '1'; }).join('');
+  return IC_BY_LINES[bin];
+}
+// One line drawn: solid (yang) or broken (yin), with a mark when it's changing.
+function icLineHtml(l, transformed) {
+  const yin = transformed && l.changing ? !l.yin : l.yin;
+  const mark = (!transformed && l.changing) ? `<span class="ic-mark">${l.yin ? '×' : '○'}</span>` : '';
+  return `<div class="ic-line ${yin ? 'yin' : 'yang'} ${(!transformed && l.changing) ? 'chg' : ''}">${yin ? '<span class="ic-seg"></span><span class="ic-gap"></span><span class="ic-seg"></span>' : '<span class="ic-seg full"></span>'}${mark}</div>`;
+}
+// Lines cast from the ground up, so draw them top line first (reverse).
+function icHexGlyph(lines, transformed) { return `<div class="ic-hex">${lines.slice().reverse().map((l) => icLineHtml(l, transformed)).join('')}</div>`; }
+function renderIChing() {
+  let el = document.getElementById('iching'); if (!el) { el = document.createElement('div'); el.id = 'iching'; document.body.appendChild(el); }
+  const s = state.iching || {};
+  let body;
+  if (!s.lines) {
+    body = `<div class="ic-intro">
+      <div class="ic-coin-row"><span class="ic-coin">☯</span></div>
+      <h2 class="ic-h">Consult the I Ching</h2>
+      <p class="ic-lede">Hold a question in mind - open, not yes/no. Then cast the coins six times and read what the moment reflects back.</p>
+      <input class="sel ic-q" id="ic-q" placeholder="Your question (optional)" value="${esc(s.q || '')}" maxlength="200">
+      <button class="ic-cast" data-iching-cast>Cast the coins</button>
+    </div>`;
+  } else {
+    const hex = s.hex; const changing = s.lines.filter((l) => l.changing);
+    const moving = changing.length;
+    const transformed = moving ? icHexFor(s.lines, true) : null;
+    const lineNos = s.lines.map((l, i) => l.changing ? (i + 1) : null).filter(Boolean);
+    body = `<div class="ic-result ${s.casting ? 'casting' : ''}">
+      ${s.q ? `<div class="ic-yourq">"${esc(s.q)}"</div>` : ''}
+      <div class="ic-hexes">
+        <div class="ic-hexcol">
+          ${moving ? '<div class="ic-hexcap">Now</div>' : ''}
+          ${icHexGlyph(s.lines, false)}
+          <div class="ic-hexnum">${hex.n}</div>
+        </div>
+        ${transformed ? `<div class="ic-arrow">→</div><div class="ic-hexcol"><div class="ic-hexcap">Moving toward</div>${icHexGlyph(s.lines, true)}<div class="ic-hexnum">${transformed.n}</div></div>` : ''}
+      </div>
+      <div class="ic-name"><span class="ic-cn">${esc(hex.cn)}</span><span class="ic-en">${esc(hex.name)}</span><span class="ic-py">${esc(hex.py)} · Hexagram ${hex.n}</span></div>
+      <p class="ic-text">${esc(hex.text)}</p>
+      ${transformed ? `<div class="ic-change"><div class="ic-change-h">Changing ${moving > 1 ? `lines ${lineNos.join(', ')}` : `line ${lineNos[0]}`} - the situation is in motion</div><p class="ic-text ic-text-2"><b>${esc(transformed.cn)} ${esc(transformed.name)}</b> - ${esc(transformed.text)}</p></div>` : '<div class="ic-static">No changing lines - the reading is settled, not in flux.</div>'}
+      ${s.reflection ? `<div class="ic-reflect"><div class="ic-reflect-h">✦ Reflection on your question</div><p>${esc(s.reflection)}</p></div>` : ''}
+      <div class="ic-actions">
+        ${(s.q && aiClientOn()) ? `<button class="ic-btn" data-iching-reflect ${s.reflecting ? 'disabled' : ''}>${s.reflecting ? '✦ Reflecting…' : (s.reflection ? '✦ Reflect again' : '✦ Reflect on my question')}</button>` : ''}
+        ${s.saved ? '<span class="ic-saved">✓ Saved to your readings</span>' : '<button class="ic-btn ic-btn-primary" data-iching-save>✓ Save this reading</button>'}
+        <button class="ic-btn" data-iching-cast>↻ Cast again</button>
+      </div>
+    </div>`;
+  }
+  el.innerHTML = `<div class="ic-bg" data-iching-bgclose>
+    <button class="ic-x" data-iching-close title="Close">×</button>
+    <div class="ic-sheet">${body}${icHistoryHtml()}</div>
+  </div>`;
+}
+function icHistoryHtml() {
+  const h = state.ichingHistory || [];
+  if (!h.length) return '';
+  return `<details class="ic-hist"><summary>Past readings · ${h.length}</summary><div class="ic-hlist">${icHistRows(h)}</div></details>`;
+}
+function icHistRows(h) {
+  return h.slice(0, 40).map((x) => `<div class="ic-hrow"><span class="ic-hcn">${esc(x.cn || '')}</span><span class="ic-hbody"><span class="ic-hname">${esc(x.name)}${x.toName ? ` → ${esc(x.toName)}` : ''}</span>${x.q ? `<span class="ic-hq">"${esc(x.q)}"</span>` : ''}</span><span class="ic-hwhen">${esc(spiritWhen(x.at))}</span></div>`).join('');
+}
+async function openIChing() {
+  state.iching = state.iching || { q: '' };
+  renderIChing();
+  if (state.ichingHistory === undefined) {
+    try { const r = await api('/api/kv/iching_history'); state.ichingHistory = (r && r.value) ? JSON.parse(r.value) : []; }
+    catch { state.ichingHistory = []; }
+    if (document.getElementById('iching')) renderIChing();
+  }
+}
+function castIChing() {
+  const qEl = document.getElementById('ic-q'); const q = qEl ? qEl.value.trim() : (state.iching && state.iching.q) || '';
+  const lines = [0, 0, 0, 0, 0, 0].map(() => icCastLine());
+  const hex = icHexFor(lines, false);
+  state.iching = { q, lines, hex, saved: false, casting: true };
+  renderIChing();
+  // Reveal the lines from the ground up, then settle.
+  setTimeout(() => { const r = state.iching; if (r) { r.casting = false; renderIChing(); } }, 1500);
+}
+function saveIChing() {
+  const s = state.iching; if (!s || !s.lines) return;
+  const transformed = s.lines.some((l) => l.changing) ? icHexFor(s.lines, true) : null;
+  state.ichingHistory = state.ichingHistory || [];
+  state.ichingHistory.unshift({ n: s.hex.n, name: s.hex.name, cn: s.hex.cn, toName: transformed ? transformed.name : '', q: s.q || '', at: Date.now() });
+  state.ichingHistory = state.ichingHistory.slice(0, 200);
+  api('/api/kv/iching_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.ichingHistory) }) }).catch(() => {});
+  s.saved = true; renderIChing(); toast('Reading saved');
+}
+async function reflectIChing() {
+  const s = state.iching; if (!s || !s.lines || s.reflecting) return;
+  s.reflecting = true; renderIChing();
+  const transformed = s.lines.some((l) => l.changing) ? icHexFor(s.lines, true) : null;
+  try {
+    const r = await api('/api/wellbeing/iching', { method: 'POST', body: JSON.stringify({
+      question: s.q, hexagram: `${s.hex.n} ${s.hex.name} (${s.hex.py})`, reading: s.hex.text,
+      transformed: transformed ? `${transformed.n} ${transformed.name} - ${transformed.text}` : '',
+    }) });
+    s.reflection = (r && r.text) || ''; s.reflecting = false; renderIChing();
+  } catch (e) { s.reflecting = false; renderIChing(); toast(e.message || 'Could not reach Claude.'); }
+}
+function closeIChing() { const el = document.getElementById('iching'); if (el) el.remove(); state.iching = null; }
+
+// ── Horoscope ──────────────────────────────────────────────────────────────
+// Your birth details (date, and optionally time + place) are kept once, then a
+// personalised daily reading is written for today. The sun sign is worked out
+// here for instant identity; the reading itself comes from Claude when AI is on,
+// with a gentle sun-sign fallback otherwise.
+const ZODIAC = [
+  ['Capricorn', '♑', [12, 22], [1, 19], 'Earth', 'the disciplined mountain-goat - patient, ambitious, quietly determined'],
+  ['Aquarius', '♒', [1, 20], [2, 18], 'Air', 'the water-bearer - original, humane, a little ahead of the room'],
+  ['Pisces', '♓', [2, 19], [3, 20], 'Water', 'the two fish - dreamy, intuitive, deeply feeling'],
+  ['Aries', '♈', [3, 21], [4, 19], 'Fire', 'the ram - bold, direct, first through the door'],
+  ['Taurus', '♉', [4, 20], [5, 20], 'Earth', 'the bull - steady, sensual, devoted to what lasts'],
+  ['Gemini', '♊', [5, 21], [6, 20], 'Air', 'the twins - curious, quick, endlessly interested'],
+  ['Cancer', '♋', [6, 21], [7, 22], 'Water', 'the crab - tender, loyal, home at the centre'],
+  ['Leo', '♌', [7, 23], [8, 22], 'Fire', 'the lion - warm, generous, born to shine'],
+  ['Virgo', '♍', [8, 23], [9, 22], 'Earth', 'the maiden - precise, helpful, quietly excellent'],
+  ['Libra', '♎', [9, 23], [10, 22], 'Air', 'the scales - fair, gracious, forever seeking balance'],
+  ['Scorpio', '♏', [10, 23], [11, 21], 'Water', 'the scorpion - intense, perceptive, all or nothing'],
+  ['Sagittarius', '♐', [11, 22], [12, 21], 'Fire', 'the archer - free, honest, always aimed at the horizon'],
+];
+function zodiacFor(iso) {
+  if (!iso || !/^\d{4}-\d\d-\d\d$/.test(iso)) return null;
+  const m = Number(iso.slice(5, 7)), d = Number(iso.slice(8, 10));
+  for (const z of ZODIAC) { const [sm, sd] = z[2], [em, ed] = z[3]; if ((m === sm && d >= sd) || (m === em && d <= ed)) return z; }
+  return ZODIAC[0];
+}
+function loadBirth() { try { return JSON.parse(localStorage.getItem('life.birth')) || null; } catch { return null; } }
+function renderHoro() {
+  let el = document.getElementById('horo'); if (!el) { el = document.createElement('div'); el.id = 'horo'; document.body.appendChild(el); }
+  const b = state.birth; const editing = state.horoEdit || !b || !b.date;
+  let body;
+  if (editing) {
+    body = `<div class="ho-form">
+      <div class="ho-coin">✶</div>
+      <h2 class="ic-h">Your birth details</h2>
+      <p class="ic-lede">Kept privately on your account, used only to write your readings. Date is enough; time and place make it richer.</p>
+      <label class="ho-l">Date of birth<input type="date" class="sel" id="ho-date" value="${esc((b && b.date) || '')}"></label>
+      <label class="ho-l">Time of birth <span class="ho-opt">optional</span><input type="time" class="sel" id="ho-time" value="${esc((b && b.time) || '')}"></label>
+      <label class="ho-l">Place of birth <span class="ho-opt">optional</span><input type="text" class="sel" id="ho-place" placeholder="City, country" value="${esc((b && b.place) || '')}" maxlength="120"></label>
+      <div class="ic-actions"><button class="ic-btn ic-btn-primary" data-horo-save>Save</button>${(b && b.date) ? '<button class="ic-btn" data-horo-canceledit>Cancel</button>' : ''}</div>
+    </div>`;
+  } else {
+    const z = zodiacFor(b.date);
+    const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    body = `<div class="ho-read">
+      <div class="ho-sign"><span class="ho-glyph">${z ? z[1] : '✶'}</span><span class="ho-signname">${z ? esc(z[0]) : ''}</span>${z ? `<span class="ho-el">${esc(z[3] ? z[4] : '')} sign</span>` : ''}</div>
+      ${z ? `<p class="ho-arch">You are ${esc(z[5])}.</p>` : ''}
+      <div class="ho-date">${esc(today)}</div>
+      <div class="ho-body">${state.horoText ? esc(state.horoText).replace(/\n+/g, '</p><p>').replace(/^/, '<p>').replace(/$/, '</p>') : (state.horoLoading ? '<div class="ho-loading">✶ Reading the sky for today…</div>' : '<div class="ho-loading">Tap below for today\'s reading.</div>')}</div>
+      <div class="ic-actions">
+        <button class="ic-btn ic-btn-primary" data-horo-read ${state.horoLoading ? 'disabled' : ''}>${state.horoText ? '↻ Refresh' : '✶ Today\'s reading'}</button>
+        <button class="ic-btn" data-horo-edit>Edit birth details</button>
+      </div>
+      ${(b.time || b.place) ? `<div class="ho-meta">Born ${b.time ? esc(b.time) : ''}${b.time && b.place ? ' · ' : ''}${b.place ? esc(b.place) : ''}</div>` : ''}
+    </div>`;
+  }
+  el.innerHTML = `<div class="ic-bg" data-horo-bgclose><button class="ic-x" data-horo-close title="Close">×</button><div class="ic-sheet ho-sheet">${body}</div></div>`;
+}
+async function openHoroscope() {
+  if (state.birth === undefined) state.birth = loadBirth();
+  state.horoEdit = false;
+  renderHoro();
+  // No local profile yet? It may live on the account from another device.
+  if (!state.birth || !state.birth.date) {
+    try {
+      const r = await api('/api/kv/birth_profile');
+      if (r && r.value) { const b = JSON.parse(r.value); if (b && b.date) { state.birth = b; try { localStorage.setItem('life.birth', JSON.stringify(b)); } catch {} if (document.getElementById('horo')) renderHoro(); } }
+    } catch {}
+  }
+}
+function saveBirth() {
+  const date = (document.getElementById('ho-date') || {}).value || '';
+  if (!date) { toast('A date of birth is needed'); return; }
+  const time = (document.getElementById('ho-time') || {}).value || '';
+  const place = (document.getElementById('ho-place') || {}).value.trim() || '';
+  state.birth = { date, time, place };
+  try { localStorage.setItem('life.birth', JSON.stringify(state.birth)); } catch {}
+  api('/api/kv/birth_profile', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.birth) }) }).catch(() => {});
+  state.horoEdit = false; state.horoText = ''; renderHoro();
+}
+async function readHoroscope() {
+  const b = state.birth; if (!b || !b.date || state.horoLoading) return;
+  state.horoLoading = true; renderHoro();
+  const z = zodiacFor(b.date);
+  try {
+    const r = await api('/api/wellbeing/horoscope', { method: 'POST', body: JSON.stringify({ date: b.date, time: b.time || '', place: b.place || '', sign: z ? z[0] : '', today: todayISO() }) });
+    state.horoText = (r && r.text) || ''; state.horoLoading = false; renderHoro();
+  } catch (e) {
+    state.horoLoading = false;
+    // Gentle offline fallback keyed to the sign and the day, so it still says
+    // something rather than an error.
+    state.horoText = horoFallback(z); renderHoro();
+    if (!/needs a key|Use AI/i.test(e.message || '')) toast(e.message || 'Could not reach Claude.');
+  }
+}
+function horoFallback(z) {
+  const lines = [
+    'A steady day to tend what matters most - progress hides in the small, ordinary acts.',
+    'Notice where you are pushing against a closed door; the open one is nearby.',
+    'Your energy is best spent close to home today. Let the rest wait.',
+    'Someone is worth reaching out to. The bridge is built from your side too.',
+    'Rest is not idleness now - it is the ground the next move grows from.',
+    'Trust the quieter instinct over the loud one; it has been right lately.',
+    'Say the true thing gently. Clarity today saves confusion tomorrow.',
+  ];
+  const seed = Number(todayISO().replace(/-/g, '')) % lines.length;
+  return `${z ? `${z[0]}, ` : ''}${lines[seed]}`;
+}
+function closeHoro() { const el = document.getElementById('horo'); if (el) el.remove(); }
+
+// Meditation lives in the Toolbox already (real bells, breathing orb); the
+// Well-being button just opens it there rather than duplicating the tool.
+function openMeditationTool() { try { localStorage.setItem('life.toolbox.active', 'med'); } catch {} openToolbox(); }
+
 async function openJournal() {
   state.view = { type: 'journal' };
   renderNav();
@@ -3655,8 +3952,8 @@ function renderJournalList() {
       </div>
     </div>`;
   $('#pane').innerHTML = `
-    ${pageCrumb('Reflection')}
-    <div class="pane-head home-head"><h1>Reflection</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide j-mode-btn" data-journal-start><span class="jm-ic">📓</span><span class="jm-t">Journal</span></button><button class="add-btn wide j-mode-btn" data-journal-coaching><span class="jm-ic">🧭</span><span class="jm-t">Coaching</span></button><button class="add-btn wide j-mode-btn" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="jm-ic">💭</span><span class="jm-t">Dreams</span></button><button class="add-btn wide j-mode-btn" data-spirit-open title="Draw a card for a moment's reflection"><span class="jm-ic">🃏</span><span class="jm-t">Spirit Cards</span></button></div></div>`}</div>
+    ${pageCrumb('Well-being')}
+    <div class="pane-head home-head"><h1>Well-being</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide j-mode-btn" data-journal-start><span class="jm-ic">📓</span><span class="jm-t">Journal</span></button><button class="add-btn wide j-mode-btn" data-journal-coaching><span class="jm-ic">🧭</span><span class="jm-t">Coaching</span></button><button class="add-btn wide j-mode-btn" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="jm-ic">💭</span><span class="jm-t">Dreams</span></button><button class="add-btn wide j-mode-btn" data-open-medi title="A calm sit, with real bells"><span class="jm-ic">🧘</span><span class="jm-t">Meditation</span></button><button class="add-btn wide j-mode-btn" data-spirit-open title="Draw a card for a moment's reflection"><span class="jm-ic">🃏</span><span class="jm-t">Spirit Cards</span></button><button class="add-btn wide j-mode-btn" data-open-iching title="Cast an I Ching reading"><span class="jm-ic">☯</span><span class="jm-t">I Ching</span></button><button class="add-btn wide j-mode-btn" data-open-horo title="Your daily horoscope"><span class="jm-ic">✶</span><span class="jm-t">Horoscope</span></button></div></div>`}</div>
     ${j.picking ? '' : spiritPinnedHtml()}
     ${picker}
     ${insightsCard}
@@ -3692,7 +3989,7 @@ function renderJournalEntry() {
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Reflection</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Well-being</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ((n.props && n.props.mode) === 'coaching' ? '<span class="j-card-mode">🧭 Coaching session</span>' : '')}</div>
@@ -11619,6 +11916,18 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-spirit-save]')) { saveDrawnSpirit(); return; }
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
+  if (t.closest('[data-open-iching]')) { openIChing(); return; }
+  if (t.closest('[data-iching-cast]')) { castIChing(); return; }
+  if (t.closest('[data-iching-save]')) { saveIChing(); return; }
+  if (t.closest('[data-iching-reflect]')) { reflectIChing(); return; }
+  if (t.closest('[data-iching-close]') || t.closest('[data-iching-bgclose]') === t) { closeIChing(); return; }
+  if (t.closest('[data-open-horo]')) { openHoroscope(); return; }
+  if (t.closest('[data-horo-save]')) { saveBirth(); return; }
+  if (t.closest('[data-horo-read]')) { readHoroscope(); return; }
+  if (t.closest('[data-horo-edit]')) { state.horoEdit = true; renderHoro(); return; }
+  if (t.closest('[data-horo-canceledit]')) { state.horoEdit = false; renderHoro(); return; }
+  if (t.closest('[data-horo-close]') || t.closest('[data-horo-bgclose]') === t) { closeHoro(); return; }
+  if (t.closest('[data-open-medi]')) { openMeditationTool(); return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
@@ -13677,7 +13986,7 @@ function onbAi() {
     <p class="onb-p">Daybook has a few AI helpers. Bring your own key and you stay in control of the cost - or skip and add one later in Settings.</p>
     ${aiUsesHtml()}
     <div class="onb-provs">
-      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflection coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
+      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Well-being coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
       ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
     </div>
     <div class="ai-managed">Prefer not to deal with keys? <b>Premium Plus</b> runs the AI for you - no keys, nothing to set up. See Settings → Plan.</div>`;
