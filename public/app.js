@@ -753,7 +753,7 @@ function openView(v) {
 }
 // ── in-app history (Back) + breadcrumbs ──────────────
 let navHist = [], navLastKey = null, navLastView = null;
-const viewKey = (v) => `${v.type}:${v.id || ''}`;
+const viewKey = (v) => `${v.type}:${v.id || v.tile || ''}`;
 // Called from renderNav on every render; pushes the previous view when the view
 // actually changes, so Back returns to where you were.
 function recordHistory() {
@@ -768,6 +768,15 @@ function recordHistory() {
 function navBack() {
   if (!navHist.length) return;
   const prev = navHist.pop();
+  // Stepping back through the Home tiles you were looking at: switch the tile in
+  // place rather than leaving Home (so Back retraces your tiles, then the page).
+  if (prev.type === 'home' && state.view.type === 'home' && prev.tile) {
+    state.home = state.home || {}; state.home.tileOpen = prev.tile;
+    state.view = { type: 'home', tile: prev.tile };
+    navLastView = { ...state.view }; navLastKey = viewKey(state.view);
+    try { localStorage.setItem('life.home.tileOpen', prev.tile); } catch {}
+    renderHome(); return;
+  }
   navLastKey = null; navLastView = null;           // openView re-seeds without re-pushing
   Promise.resolve(openView(prev)).catch(() => openHome());
 }
@@ -3103,13 +3112,16 @@ function renderHome() {
           const todayRows = evRows + (off === 0 ? surfacedRows : '');
           const p1all = priorityTasks(); const p1total = alerts.p1 || p1all.length;
           const kit = alerts.keepInTouch || [];
+          const bdays = (off === 0 && alerts.birthdays) ? alerts.birthdays.filter((b) => !alertDismissed('bday:' + b.id)) : [];
+          const kitCount = kit.length + bdays.length;
+          const bdayRows = bdays.map((b) => `<div class="kit-hrow"><button class="kit-hopen" data-open-contact="${b.id}"><span class="contact-av kit-hav">🎂</span><span class="kit-hnm">${esc(b.name)}</span><span class="kit-hsub">Birthday today</span></button></div>`).join('');
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
             today: `<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (todayRows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 8).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 8 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: favAreas.length ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : '<div class="home-empty">Star a life area (the ★ on it) to pin it here.</div>',
-            keepintouch: kit.length ? `<div class="kit-hlist">${kit.map((k) => { const a = areaById(k.area); const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet'; return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}><button class="kit-hopen" data-open-contact="${k.id}"><span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span><span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span></button><button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button></div>`; }).join('')}</div>` : '<div class="home-empty">Nobody due a catch-up.</div>',
+            keepintouch: kitCount ? `<div class="kit-hlist">${bdayRows}${kit.map((k) => { const a = areaById(k.area); const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet'; return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}><button class="kit-hopen" data-open-contact="${k.id}"><span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span><span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span></button><button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button></div>`; }).join('')}</div>` : '<div class="home-empty">Nobody due a catch-up.</div>',
             mail: homeMailHtml(),
             favs: `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>`,
           };
@@ -3118,11 +3130,11 @@ function renderHome() {
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
             favareas: { ic: '◈', label: 'Life areas', count: favAreas.length || null },
-            keepintouch: { ic: '💬', label: 'Keep in touch', count: kit.length || null },
+            keepintouch: { ic: '💬', label: 'Keep in touch', count: kitCount || null },
             mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
           };
-          const order = ['today', 'priority', 'focus', 'favareas', 'keepintouch', ...(modOn('mail') ? ['mail'] : []), 'favs'];
+          const order = ['today', 'priority', 'favareas', ...(kitCount ? ['keepintouch'] : []), ...(modOn('mail') ? ['mail'] : []), 'favs'];
           let open = state.home.tileOpen || (() => { try { return localStorage.getItem('life.home.tileOpen'); } catch { return ''; } })();
           if (!order.includes(open)) open = 'today';
           const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
@@ -9010,7 +9022,7 @@ function reviewsBody() {
   const pastSection = finished.length
     ? `<section class="home-sec"><div class="home-sec-h">Past reviews · ${finished.length}</div>${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div></section>`
     : (inProgress.length ? '' : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>');
-  return `${hero}${inProgressHtml}${trendHtml}${reviewsListHtml()}${pastSection}`;
+  return `${hero}${inProgressHtml}${pastSection}${trendHtml}${reviewsListHtml()}`;
 }
 // When is a review of this type next due? The last one of that type + its
 // period. Null if none done yet. Used for the hero line and the reminder subs.
@@ -9051,9 +9063,9 @@ function reviewsListHtml() {
       <button class="rv-remhead" data-rev-rem-edit="${k}"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${sub}</small></span><span class="rv-remchev">${isOpen ? '▾' : '▸'}</span></button>
       ${editor}</div>`;
   }).join('');
-  return `<section class="home-sec"><div class="home-sec-h">Reviews</div>
+  return `<section class="home-sec"><div class="home-sec-h">Reminders &amp; cadence</div>
+    <p class="rv-rem-note2">Set when Daybook nudges you for each type of review - tap a type to add a reminder date, and choose whether it repeats.</p>
     <div class="rv-remcards">${cards}</div>
-    <p class="rv-rem-note2">Each review can carry one or more reminders. The first defaults to its next due day - edit the date, add another, or let it repeat.</p>
   </section>`;
 }
 function saveReviewRem() {
@@ -10512,7 +10524,14 @@ document.addEventListener('click', (e) => {
   // arrow would also collapse the section.
   { const ds = t.closest('[data-home-day-set]'); if (ds) { homeDaySet(Number(ds.dataset.homeDaySet)); return; } }
   { const dd = t.closest('[data-home-day]'); if (dd) { homeDaySet((state.home.dayOffset || 0) + Number(dd.dataset.homeDay)); return; } }
-  { const ht = t.closest('[data-htile]'); if (ht) { state.home.tileOpen = ht.dataset.htile; try { localStorage.setItem('life.home.tileOpen', ht.dataset.htile); } catch {} renderHome(); return; } }
+  { const ht = t.closest('[data-htile]'); if (ht) {
+    const cur = state.home.tileOpen || 'today'; const next = ht.dataset.htile;
+    if (next !== cur) { navHist.push({ type: 'home', tile: cur }); if (navHist.length > 60) navHist.shift(); }
+    state.home.tileOpen = next; state.view = { type: 'home', tile: next };
+    navLastView = { ...state.view }; navLastKey = viewKey(state.view);
+    try { localStorage.setItem('life.home.tileOpen', next); } catch {}
+    renderHome(); return;
+  } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
