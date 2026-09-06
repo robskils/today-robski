@@ -2241,6 +2241,20 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .spirit-pin-wrap .spirit-pin { margin-bottom:0; }
 .sp-x { position:absolute; bottom:10px; right:12px; width:26px; height:26px; border:none; background:none; color:var(--ink-3); font-size:18px; line-height:1; border-radius:8px; cursor:pointer; z-index:2; }
 .sp-x:hover { background:var(--surface-2); color:var(--ink); }
+/* Pinned reflective readings (I Ching, horoscope) - same shape as the spirit
+   card pin, so Well-being and Home read as one shelf of things to reopen. */
+.wb-pin-wrap { position:relative; margin:0 0 22px; }
+.wb-pin { display:flex; align-items:center; gap:16px; width:100%; text-align:left; padding:16px 46px 16px 20px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); position:relative; cursor:pointer; transition:border-color .12s, transform .12s, box-shadow .12s; }
+.wb-pin:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 8px 22px -12px rgba(0,0,0,.32); }
+.wb-pin-sym { font-size:34px; line-height:1; flex:none; color:var(--accent); }
+.wb-pin-cn { font-size:30px; color:var(--ink); font-weight:500; }
+.wb-pin-body { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.wb-pin-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-style:italic; color:var(--ink); line-height:1.1; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.wb-pin-tagi { font-family:system-ui,sans-serif; font-style:normal; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); border-radius:999px; padding:1px 7px; }
+.wb-pin-msg { font-size:14.5px; color:var(--ink-2); line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.wb-pin-kind { position:absolute; top:13px; right:15px; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
+.wb-pin-x { position:absolute; bottom:10px; right:12px; width:26px; height:26px; border:none; background:none; color:var(--ink-3); font-size:18px; line-height:1; border-radius:8px; cursor:pointer; z-index:2; }
+.wb-pin-x:hover { background:var(--surface-2); color:var(--ink); }
 /* Collapsible section header (chevron toggles hide/show). */
 .home-sec-toggle { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .home-sec-toggle .hs-chev { color:var(--ink-3); font-size:12px; }

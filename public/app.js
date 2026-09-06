@@ -3312,7 +3312,7 @@ function renderHome() {
       </div>
       ${alertsHtml()}
       ${homeQuoteHtml()}
-      ${modOn('reflect') ? spiritPinnedHtml() : ''}
+      ${modOn('reflect') ? spiritPinnedHtml() + reflectPinsHtml() : ''}
       <div id="qt-wrap"></div>
       <div class="home-body">
         <!-- Mobile-only launcher. On desktop the sidebar already lists every
@@ -3856,8 +3856,10 @@ function icHistoryHtml() {
 function icHistRows(h) {
   return h.slice(0, 40).map((x) => `<div class="ic-hrow"><span class="ic-hcn">${esc(x.cn || '')}</span><span class="ic-hbody"><span class="ic-hname">${esc(x.name)}${x.toName ? ` → ${esc(x.toName)}` : ''}</span>${x.q ? `<span class="ic-hq">"${esc(x.q)}"</span>` : ''}</span><span class="ic-hwhen">${esc(spiritWhen(x.at))}</span></div>`).join('');
 }
-async function openIChing() {
-  state.iching = state.iching || { q: '' };
+async function openIChing(reading) {
+  // Reopen a pinned reading (from the Well-being / Home tile), or a fresh cast.
+  if (reading && reading.lines) { const hex = icHexFor(reading.lines, false); state.iching = { q: reading.q || '', lines: reading.lines, hex, saved: true, reflection: reading.reflection || '' }; }
+  else state.iching = state.iching || { q: '' };
   renderIChing();
   if (state.ichingHistory === undefined) {
     try { const r = await api('/api/kv/iching_history'); state.ichingHistory = (r && r.value) ? JSON.parse(r.value) : []; }
@@ -3871,8 +3873,31 @@ function castIChing() {
   const hex = icHexFor(lines, false);
   state.iching = { q, lines, hex, saved: false, casting: true };
   renderIChing();
-  // Reveal the lines from the ground up, then settle.
-  setTimeout(() => { const r = state.iching; if (r) { r.casting = false; renderIChing(); } }, 1500);
+  // Reveal the lines from the ground up, settle, then pin it so you can reopen
+  // and reread it from Well-being or Home.
+  setTimeout(() => { const r = state.iching; if (r) { r.casting = false; renderIChing(); saveIchingCard(r); } }, 1500);
+}
+// The latest cast, pinned on Well-being (and Home) so you can reopen and reread
+// it. Held per-device for instant paint and mirrored to the account.
+const ICHING_TTL = 4 * 24 * 60 * 60 * 1000;
+const ichingFresh = (s) => ((s && s.lines && s.at && (Date.now() - s.at) < ICHING_TTL) ? s : null);
+function currentIching() { if (state.ichingCard === undefined) { try { state.ichingCard = JSON.parse(localStorage.getItem('life.ichingCard')); } catch { state.ichingCard = null; } } return ichingFresh(state.ichingCard); }
+function saveIchingCard(r) {
+  const saved = { q: r.q || '', lines: r.lines, reflection: r.reflection || '', at: Date.now() };
+  state.ichingCard = saved;
+  try { localStorage.setItem('life.ichingCard', JSON.stringify(saved)); } catch {}
+  api('/api/kv/iching_current', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(saved) }) }).catch(() => {});
+}
+function dismissIching() {
+  state.ichingCard = null; try { localStorage.removeItem('life.ichingCard'); } catch {}
+  api('/api/kv/iching_current', { method: 'PUT', body: JSON.stringify({ value: '' }) }).catch(() => {});
+  refreshReflectPins();
+}
+function ichingPinnedHtml() {
+  const s = currentIching(); if (!s) return '';
+  const hex = icHexFor(s.lines, false); const moving = s.lines.some((l) => l.changing);
+  const msg = s.q ? `"${s.q}"` : hex.text;
+  return `<div class="wb-pin-wrap"><button class="wb-pin" data-iching-reopen title="Reopen this reading"><span class="wb-pin-sym wb-pin-cn">${esc(hex.cn)}</span><span class="wb-pin-body"><span class="wb-pin-name">${esc(hex.name)}${moving ? ' <span class="wb-pin-tagi">changing</span>' : ''}</span><span class="wb-pin-msg">${esc(msg)}</span></span><span class="wb-pin-kind">I Ching</span></button><button class="wb-pin-x" data-iching-dismiss title="Dismiss">×</button></div>`;
 }
 function saveIChing() {
   const s = state.iching; if (!s || !s.lines) return;
@@ -3893,6 +3918,7 @@ async function reflectIChing() {
       transformed: transformed ? `${transformed.n} ${transformed.name} - ${transformed.text}` : '',
     }) });
     s.reflection = (r && r.text) || ''; s.reflecting = false; renderIChing();
+    if (currentIching()) saveIchingCard(s);   // keep the reflection on the pinned reading
   } catch (e) { s.reflecting = false; renderIChing(); toast(e.message || 'Could not reach Claude.'); }
 }
 function closeIChing() { const el = document.getElementById('iching'); if (el) el.remove(); state.iching = null; }
@@ -3957,6 +3983,8 @@ function renderHoro() {
 async function openHoroscope() {
   if (state.birth === undefined) state.birth = loadBirth();
   state.horoEdit = false;
+  // Reopening: if today's reading is pinned, show it straight away.
+  if (!state.horoText) { const h = currentHoro(); if (h) state.horoText = h.text; }
   renderHoro();
   // No local profile yet? It may live on the account from another device.
   if (!state.birth || !state.birth.date) {
@@ -3983,14 +4011,42 @@ async function readHoroscope() {
   try {
     const r = await api('/api/wellbeing/horoscope', { method: 'POST', body: JSON.stringify({ date: b.date, time: b.time || '', place: b.place || '', sign: z ? z[0] : '', today: todayISO() }) });
     state.horoText = (r && r.text) || ''; state.horoLoading = false; renderHoro();
+    saveHoroCard(z, state.horoText);   // pin today's reading
   } catch (e) {
     state.horoLoading = false;
     // Gentle offline fallback keyed to the sign and the day, so it still says
     // something rather than an error.
     state.horoText = horoFallback(z); renderHoro();
+    saveHoroCard(z, state.horoText);
     if (!/needs a key|Use AI/i.test(e.message || '')) toast(e.message || 'Could not reach Claude.');
   }
 }
+// Today's horoscope, pinned on Well-being (and Home). Valid for today only.
+function currentHoro() {
+  if (state.horoCard === undefined) { try { state.horoCard = JSON.parse(localStorage.getItem('life.horoCard')); } catch { state.horoCard = null; } }
+  const h = state.horoCard;
+  return (h && h.text && h.date === todayISO()) ? h : null;
+}
+function saveHoroCard(z, text) {
+  const saved = { sign: z ? z[0] : '', glyph: z ? z[1] : '✶', text: text || '', date: todayISO(), at: Date.now() };
+  state.horoCard = saved;
+  try { localStorage.setItem('life.horoCard', JSON.stringify(saved)); } catch {}
+  api('/api/kv/horo_current', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(saved) }) }).catch(() => {});
+}
+function dismissHoro() {
+  state.horoCard = null; try { localStorage.removeItem('life.horoCard'); } catch {}
+  api('/api/kv/horo_current', { method: 'PUT', body: JSON.stringify({ value: '' }) }).catch(() => {});
+  refreshReflectPins();
+}
+function horoPinnedHtml() {
+  const h = currentHoro(); if (!h) return '';
+  const snip = String(h.text || '').replace(/\s+/g, ' ').trim();
+  return `<div class="wb-pin-wrap"><button class="wb-pin" data-horo-reopen title="Read today's horoscope"><span class="wb-pin-sym">${esc(h.glyph || '✶')}</span><span class="wb-pin-body"><span class="wb-pin-name">${esc(h.sign || 'Today')}<span class="wb-pin-tagi">today</span></span><span class="wb-pin-msg">${esc(snip)}</span></span><span class="wb-pin-kind">Horoscope</span></button><button class="wb-pin-x" data-horo-dismiss title="Dismiss">×</button></div>`;
+}
+// Both reflective pins together, shown on Well-being and Home under the spirit
+// card. Refreshes the current page after a pin changes.
+function reflectPinsHtml() { return `${ichingPinnedHtml()}${horoPinnedHtml()}`; }
+function refreshReflectPins() { const v = state.view && state.view.type; if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList(); }
 function horoFallback(z) {
   const lines = [
     'A steady day to tend what matters most - progress hides in the small, ordinary acts.',
@@ -4133,7 +4189,7 @@ function renderJournalList() {
   $('#pane').innerHTML = `
     ${pageCrumb('Well-being')}
     <div class="pane-head home-head"><h1>Well-being</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide j-mode-btn" data-journal-start><span class="jm-ic">📓</span><span class="jm-t">Journal</span></button><button class="add-btn wide j-mode-btn" data-journal-coaching><span class="jm-ic">🧭</span><span class="jm-t">Coaching</span></button><button class="add-btn wide j-mode-btn" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="jm-ic">💭</span><span class="jm-t">Dreams</span></button><button class="add-btn wide j-mode-btn" data-open-medi title="A calm sit, with real bells"><span class="jm-ic">🧘</span><span class="jm-t">Meditation</span></button><button class="add-btn wide j-mode-btn" data-spirit-open title="Draw a card for a moment's reflection"><span class="jm-ic">🃏</span><span class="jm-t">Spirit Cards</span></button><button class="add-btn wide j-mode-btn" data-open-iching title="Cast an I Ching reading"><span class="jm-ic">☯</span><span class="jm-t">I Ching</span></button><button class="add-btn wide j-mode-btn" data-open-horo title="Your daily horoscope"><span class="jm-ic">✶</span><span class="jm-t">Horoscope</span></button></div></div>`}</div>
-    ${j.picking ? '' : spiritPinnedHtml()}
+    ${j.picking ? '' : spiritPinnedHtml() + reflectPinsHtml()}
     ${picker}
     ${insightsCard}
     <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
@@ -12167,11 +12223,15 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
   if (t.closest('[data-open-iching]')) { openIChing(); return; }
+  if (t.closest('[data-iching-reopen]')) { openIChing(currentIching()); return; }
+  if (t.closest('[data-iching-dismiss]')) { dismissIching(); return; }
   if (t.closest('[data-iching-cast]')) { castIChing(); return; }
   if (t.closest('[data-iching-save]')) { saveIChing(); return; }
   if (t.closest('[data-iching-reflect]')) { reflectIChing(); return; }
   if (t.closest('[data-iching-close]') || t.closest('[data-iching-bgclose]') === t) { closeIChing(); return; }
   if (t.closest('[data-open-horo]')) { openHoroscope(); return; }
+  if (t.closest('[data-horo-reopen]')) { openHoroscope(); return; }
+  if (t.closest('[data-horo-dismiss]')) { dismissHoro(); return; }
   if (t.closest('[data-horo-save]')) { saveBirth(); return; }
   if (t.closest('[data-horo-read]')) { readHoroscope(); return; }
   if (t.closest('[data-horo-edit]')) { state.horoEdit = true; renderHoro(); return; }
@@ -14428,6 +14488,10 @@ async function onbConnectGmail() {
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
     loadAccount();           // name, handle & contact details for the Daybook card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
+    // Pinned I Ching / horoscope readings follow the account, so they surface on
+    // Well-being and Home on any device.
+    api('/api/kv/iching_current').then((r) => { if (r && r.value) { try { const s = JSON.parse(r.value); if (s && s.lines) { state.ichingCard = s; try { localStorage.setItem('life.ichingCard', r.value); } catch {} refreshReflectPins(); } } catch {} } }).catch(() => {});
+    api('/api/kv/horo_current').then((r) => { if (r && r.value) { try { const s = JSON.parse(r.value); if (s && s.text) { state.horoCard = s; try { localStorage.setItem('life.horoCard', r.value); } catch {} refreshReflectPins(); } } catch {} } }).catch(() => {});
     // Week-start preference, mirrored for pages (Reviews) that render before Settings.
     api('/api/account').then((a) => { if (a) { state.account = a; try { localStorage.setItem('life.weekStart', String(a.weekStart)); } catch {} if (state.view && state.view.type === 'reviews') renderReviews(); } }).catch(() => {});
     maybeOnboard();          // first-run welcome guide, once per new account
