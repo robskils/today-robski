@@ -4903,8 +4903,9 @@ function reviewsDueToday() {
   return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); return c.on && reviewCadRecent(k, t) === t; })
     .map((k) => {
       const win = periodWindow(k, t);
-      const ex = (state.reviews || []).find((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
-      return { k, submitted: !!(ex && (ex.props || {}).status === 'done'), id: ex ? ex.id : null };
+      const exs = (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
+      const doneRev = exs.find((r) => (r.props || {}).status === 'done');
+      return { k, submitted: !!doneRev, id: (doneRev || exs[0]) ? (doneRev || exs[0]).id : null };
     });
 }
 function renderToday() {
@@ -9138,9 +9139,12 @@ function reviewsBody() {
   // is due ON the review day (today, if today is the week-end), NOT next week.
   const win = weeklyWindow(todayISO);
   const whenHtml = reviewWhenHtml({ rtype: 'weekly', from: win.from, to: win.to });
-  // Have we already got a review for this exact week? (in progress or submitted.)
-  const thisWeek = weeklies.find((r) => (r.props || {}).to === win.to);
-  const submittedThisWeek = thisWeek && (thisWeek.props || {}).status === 'done';
+  // Any review for this exact week? A submitted one wins over a stray in-progress
+  // duplicate, so once you've filed it the hero says so (not "continue").
+  const thisWeekAll = weeklies.filter((r) => (r.props || {}).to === win.to);
+  const submittedRev = thisWeekAll.find((r) => (r.props || {}).status === 'done');
+  const thisWeek = submittedRev || thisWeekAll[0];
+  const submittedThisWeek = !!submittedRev;
   // Due day: this week's review day, unless it's already submitted - then next week's.
   const eff = submittedThisWeek ? localISO(new Date(Date.parse(win.to + 'T00:00') + 7 * 86400000)) : win.to;
   const dueDate = new Date(eff + 'T00:00');
@@ -9229,7 +9233,6 @@ function reviewCad(k) {
 const alertBeforeLabel = (n) => n === 0 ? 'on the day' : n === 1 ? 'the day before' : `${n} days before`;
 function reviewCadWords(k) {
   const c = reviewCad(k);
-  if (!c.on) return 'No reminder yet - tap to set when';
   if (k === 'weekly') return `Every ${DOW_LONG[c.dow]}`;
   const per = REVIEW_PERIOD_WORD[k];
   if (c.mode === 'start') return `First day of the ${per}`;
@@ -9252,7 +9255,9 @@ function reviewCadOccForPeriod(k, c, y, m) {
   return reviewPeriodEnd(k, y, m);
 }
 function reviewCadNext(k, fromISO) {
-  const c = reviewCad(k); if (!c.on) return null;
+  // The official next date always exists from the cadence rule (defaults included);
+  // the on/off toggle only governs whether we ALERT you, not whether it's due.
+  const c = reviewCad(k);
   const fISO = fromISO || todayISO(); const from = new Date(fISO + 'T00:00');
   if (k === 'weekly') { const r = new Date(from); r.setDate(r.getDate() + ((c.dow - from.getDay() + 7) % 7)); return localISO(r); }
   let y = from.getFullYear(), m = from.getMonth();
@@ -9305,18 +9310,19 @@ function reviewCadEditor(k, c) {
 function reviewsListHtml() {
   const open = state.reviewRemEdit; const t0 = todayISO();
   const cards = RTYPE_ORDER.map((k) => {
-    const c = reviewCad(k); const isOpen = open === k;
+    const c = reviewCad(k);
+    // All open by default; tap a header to collapse just that one.
+    const isOpen = !((state.reviewRemClosed || {})[k]);
     const done = reviewDoneCount(k);
-    // The next date is the official cadence date (e.g. the coming Sunday), never
-    // "N days since the last one" - you may do it early or late, it still counts
-    // as that official date. With no cadence set there simply is no date yet.
-    const next = c.on ? reviewCadNext(k, t0) : null;
-    let nextBit = c.on ? '<span class="rv-rem-stat rv-rem-muted">no next date yet</span>' : '<span class="rv-rem-stat rv-rem-muted">tap to set when</span>';
-    if (next) { const nd = new Date(next + 'T00:00'); const diff = Math.round((nd - new Date(t0 + 'T00:00')) / 86400000); const rel = diff <= 0 ? 'due today' : diff === 1 ? 'tomorrow' : `in ${diff} days`; nextBit = `<span class="rv-rem-stat">officially <b>${esc(dpLabel(next))}</b> · ${rel}</span>`; }
+    // Every type has a due date - the official cadence date - whether or not you're
+    // alerted. The on/off toggle only governs the nudge.
+    const next = reviewCadNext(k, t0);
+    let nextBit = '<span class="rv-rem-stat rv-rem-muted">no date</span>';
+    if (next) { const nd = new Date(next + 'T00:00'); const diff = Math.round((nd - new Date(t0 + 'T00:00')) / 86400000); const rel = diff <= 0 ? 'due today' : diff === 1 ? 'tomorrow' : `in ${diff} days`; nextBit = `<span class="rv-rem-stat">due <b>${esc(dpLabel(next))}</b> · ${rel}</span>`; }
     const editor = isOpen ? reviewCadEditor(k, c) : '';
     return `<div class="rv-remcard ${isOpen ? 'open' : ''} ${c.on ? 'is-on' : ''}">
       <button class="rv-remhead" data-rev-rem-edit="${k}"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${esc(reviewCadWords(k))}</small></span><span class="rv-remchev">${isOpen ? '▾' : '▸'}</span></button>
-      <div class="rv-rem-meta"><span class="rv-rem-stat"><b>${done}</b> done</span><span class="rv-rem-dot">·</span>${nextBit}${c.on && next ? `<span class="rv-rem-dot">·</span><span class="rv-rem-stat rv-rem-muted">alert ${esc(alertBeforeLabel(c.alertBefore))}</span>` : ''}</div>
+      <div class="rv-rem-meta"><span class="rv-rem-stat"><b>${done}</b> done</span><span class="rv-rem-dot">·</span>${nextBit}<span class="rv-rem-dot">·</span><span class="rv-rem-stat rv-rem-muted">${c.on ? `alert ${esc(alertBeforeLabel(c.alertBefore))}` : 'no alert'}</span></div>
       ${editor}</div>`;
   }).join('');
   return `<section class="home-sec"><div class="home-sec-h">Reviews and cadence</div>
@@ -11067,7 +11073,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
-  const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemEdit = state.reviewRemEdit === k ? null : k; reReviewRems(); return; }
+  const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemClosed = state.reviewRemClosed || {}; state.reviewRemClosed[k] = !state.reviewRemClosed[k]; reReviewRems(); return; }
   { const cd = t.closest('[data-rev-cad-dow]'); if (cd) { const [k, d] = cd.dataset.revCadDow.split(':'); setReviewCadDow(k, +d); return; } }
   { const cm = t.closest('[data-rev-cad-mode]'); if (cm) { const [k, m] = cm.dataset.revCadMode.split(':'); setReviewCadMode(k, m); return; } }
   { const ca = t.closest('[data-rev-cad-alert]'); if (ca) { const [k, n] = ca.dataset.revCadAlert.split(':'); setReviewCadAlert(k, +n); return; } }
