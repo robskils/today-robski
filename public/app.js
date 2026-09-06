@@ -4207,6 +4207,14 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(k)}</span></label>`).join('')}</div>
       <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this page. Empty sections hide themselves.</div>
     </div>`;
+  // How this area figures in reviews: a "key" star (the wheel average is taken from
+  // key areas when you have any), and a switch to keep it out of reviews entirely.
+  const reviewsBlock = area.sharedBy ? '' : `<div class="ov-block ov-reviews">
+      <div class="ov-h"><span>In your reviews</span></div>
+      <label class="ov-revtog"><input type="checkbox" data-area-reviewstar ${(area.props && area.props.reviewStar) ? 'checked' : ''}><span><b>★ A key area</b> - one you really care about. Your Wheel of Life average is taken from your key areas.</span></label>
+      <label class="ov-revtog"><input type="checkbox" data-area-reviewon ${!(area.props && area.props.reviewOff) ? 'checked' : ''}><span>Track it in the <b>weekly review</b> &amp; Wheel of Life</span></label>
+      <div class="ov-muted" style="margin-top:6px">Turn tracking off for an area you don't review (like Tools) - it stays here as normal, just out of the wheel.</div>
+    </div>`;
   // A quiet lead that frames the area: where it's headed (vision), how it's
   // tracking (goals, sentiment) and who's here (access). Settings, understated.
   const visionSnip = area.props && area.props.vision ? String(area.props.vision).trim() : '';
@@ -4224,6 +4232,7 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-block"><div class="ov-h"><span>Who has access</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite</button>'}</div><div class="ov-people">${people}</div></div>
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
+    ${reviewsBlock}
     ${sectionsBlock}
   </section>`;
 }
@@ -9086,12 +9095,18 @@ function reviewTaskStats(from) {
 // most recent score per life area (denormalised onto each area by setWheel), with
 // a legend and the average over time. Collapsible; prominent, up top.
 function wheelOfLifeHtml() {
-  const areas = (state.areas || []).filter((a) => a && a.title);
+  // Areas turned off for reviews (props.reviewOff) don't appear in the wheel. The
+  // average is taken from your KEY areas (props.reviewStar) when you've marked any,
+  // otherwise from all tracked areas.
+  const areas = (state.areas || []).filter((a) => a && a.title && !(a.props && a.props.reviewOff));
   if (!areas.length) return '';
-  const data = areas.map((a) => ({ a, score: Math.min((a.props && a.props.wheelScore) || 0, 5) }));
+  const data = areas.map((a) => ({ a, score: Math.min((a.props && a.props.wheelScore) || 0, 5), star: !!(a.props && a.props.reviewStar) }));
   const scored = data.filter((d) => d.score > 0);
-  const avg = scored.length ? Math.round(scored.reduce((s, d) => s + d.score, 0) / scored.length * 10) / 10 : 0;
-  const head = rvSecH('wol', 'Wheel of Life', avg ? `<span class="wol-avg">${avg}/5 across ${scored.length} area${scored.length === 1 ? '' : 's'}</span>` : '');
+  const starScored = scored.filter((d) => d.star);
+  const avgSet = starScored.length ? starScored : scored;
+  const avg = avgSet.length ? Math.round(avgSet.reduce((s, d) => s + d.score, 0) / avgSet.length * 10) / 10 : 0;
+  const avgLabel = starScored.length ? `${avg}/5 across ${starScored.length} key area${starScored.length === 1 ? '' : 's'}` : `${avg}/5 across ${scored.length} area${scored.length === 1 ? '' : 's'}`;
+  const head = rvSecH('wol', 'Wheel of Life', avg ? `<span class="wol-avg">${avgLabel}</span>` : '');
   if (!rvSecOpen('wol')) return `<section class="home-sec wol-sec">${head}</section>`;
   if (!avg) return `<section class="home-sec wol-sec">${head}<div class="home-empty" style="padding:14px 0">Rate your life areas in a review and your wheel takes shape here.</div></section>`;
   const N = data.length, cx = 120, cy = 120, R = 100, seg = 2 * Math.PI / N;
@@ -9105,7 +9120,7 @@ function wheelOfLifeHtml() {
     return track + fill;
   }).join('');
   const svg = `<svg viewBox="0 0 240 240" class="wol-svg" role="img" aria-label="Wheel of Life">${rings}${wedges}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
-  const legend = data.map((d) => `<button class="wol-leg" data-open-area="${d.a.id}" style="--h:${hueOf(d.a)}"><span class="wol-leg-dot"></span><span class="wol-leg-n">${esc(d.a.title)}</span><span class="wol-leg-s">${d.score || '–'}</span></button>`).join('');
+  const legend = data.map((d) => `<button class="wol-leg" data-open-area="${d.a.id}" style="--h:${hueOf(d.a)}"><span class="wol-leg-dot"></span><span class="wol-leg-n">${d.star ? '<span class="wol-leg-star">★</span>' : ''}${esc(d.a.title)}</span><span class="wol-leg-s">${d.score || '–'}</span></button>`).join('');
   const revs = (state.reviews || []).filter((r) => (r.props || {}).wheel && wheelAvg(r.props.wheel) > 0).sort((a, b) => String((a.props && a.props.to) || a.created_at || '').localeCompare(String((b.props && b.props.to) || b.created_at || '')));
   const trend = revs.slice(-12).map((r) => Math.min(wheelAvg(r.props.wheel), 5));
   const trendHtml = trend.length >= 2 ? `<div class="wol-trend"><span class="wol-trend-h">Average over time</span><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></div>` : '';
@@ -9579,7 +9594,7 @@ function renderReviewCard() {
   const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
   const quiet = (m.quietAreas || []).map(areaName);
   const wheelHiddenSet = new Set(p.wheelHidden || []);
-  const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id));
+  const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id) && !(a.props && a.props.reviewOff));
   // By life area: a score /5 (draws the Wheel of Life) AND a line on how it went.
   const areaBlock = wheelAreas.map((a) => {
     const sc = Math.min((p.wheel || {})[a.id] || 0, 5);
@@ -11546,6 +11561,13 @@ document.addEventListener('change', (e) => {
     if (e.target.checked) hs = hs.filter((x) => x !== key); else if (!hs.includes(key)) hs.push(key);
     a.props.hiddenSecs = hs;
     api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs } }) }).catch((err) => toast(err.message));
+    renderArea(); return;
+  }
+  if (e.target.matches('[data-area-reviewstar]') || e.target.matches('[data-area-reviewon]')) {
+    const a = state.area_open && state.area_open.area; if (!a) return; a.props = a.props || {};
+    const patch = e.target.matches('[data-area-reviewstar]') ? { reviewStar: e.target.checked } : { reviewOff: !e.target.checked };
+    Object.assign(a.props, patch); const al = (state.areas || []).find((x) => x.id === a.id); if (al) { al.props = al.props || {}; Object.assign(al.props, patch); }
+    api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
     renderArea(); return;
   }
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });

@@ -3026,6 +3026,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ov-secgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:6px 14px; }
 .ov-sectog { display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:3px 0; }
 .ov-sectog input { width:17px; height:17px; accent-color:var(--accent); flex:none; }
+.ov-reviews { margin-top:14px; }
+.ov-revtog { display:flex; align-items:flex-start; gap:10px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:7px 0; line-height:1.45; }
+.ov-revtog input { width:18px; height:18px; accent-color:var(--accent); flex:none; margin-top:1px; }
+.ov-revtog b { color:var(--ink); font-weight:600; }
+.wol-leg-star { color:var(--accent); margin-right:3px; }
 .area-ov-att { margin:0; }
 /* Collapsible section headers on a life area page. */
 .area-sec-h { cursor:pointer; display:flex; align-items:center; gap:7px; user-select:none; }
