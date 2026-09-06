@@ -2775,10 +2775,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .note-type-chips .ntype:hover { color:var(--ink); }
 .note-type-chips .ntype.on { background:var(--card); color:var(--accent); box-shadow:var(--shadow); font-weight:500; }
 /* The Note · Table type switch in a note/table header. */
-.ntype-toggle { display:inline-flex; gap:2px; padding:2px; background:var(--paper-2); border:1px solid var(--line-2); border-radius:9px; vertical-align:middle; }
-.ntype-toggle .ntt { padding:5px 12px; border-radius:7px; font-size:13.5px; color:var(--ink-2); }
-.ntype-toggle .ntt:hover { color:var(--ink); }
-.ntype-toggle .ntt.on { background:var(--card); color:var(--accent); box-shadow:var(--shadow); font-weight:500; }
+/* A quiet 'Turn into table/note' action, not a view slider. */
+.ntt-conv { font-size:13px; color:var(--ink-3); }
+.ntt-conv:hover { color:var(--accent); border-color:var(--accent); }
 .list-head .add-btn.wide { flex:none; }
 .cal-search-h { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
 .cal-search-h h2 { margin:0; }

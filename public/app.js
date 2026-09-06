@@ -3181,10 +3181,13 @@ function noteCard(n) {
   </button>`;
 }
 // The Note · Table type switch shown in a note/table header.
+// A note is a note and a table is a table - no view slider (it read as two views
+// of one thing, which confused). Flipping one to the other is a rare, deliberate
+// action, so it's a single quiet button. (Robin, 2026-09.)
 function noteTypeToggle(id, current) {
-  return `<span class="ntype-toggle" role="group" aria-label="Note type">
-    <button class="ntt ${current === 'note' ? 'on' : ''}" data-set-note-type="${id}:note" title="Plain note">Note</button>
-    <button class="ntt ${current === 'table' ? 'on' : ''}" data-set-note-type="${id}:table" title="Table">Table</button></span>`;
+  const to = current === 'note' ? 'table' : 'note';
+  const label = current === 'note' ? 'Turn into table' : 'Turn into note';
+  return `<button class="ghost ntt-conv" data-set-note-type="${id}:${to}" title="${label}">⇄ ${label}</button>`;
 }
 // Flip a note ↔ table. Non-destructive: the flip only changes the block's kind
 // (a table gets a starter column if it has none). A note's prose and a table's
