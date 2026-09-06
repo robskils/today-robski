@@ -4506,9 +4506,18 @@ function areaOverviewHtml(area, c, blocks) {
   const metrics = [metric(c.notes, 'notes'), metric(c.goals, 'goals'), metric(c.tasks, 'open tasks'), metric(c.tables, 'tables'), metric(c.saved, 'saved'), metric(c.reflections, 'reflections')].join('');
   const shares = state.area_open && state.area_open.shares;
   const friends = (state.friends && state.friends.friends) || [];
-  const people = shares == null ? '<div class="ov-muted">Loading…</div>'
-    : (shares.length ? shares.map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''}><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('')
-      : '<div class="ov-muted">Just you so far.</div>');
+  // Your own Daybook card always shows here (unless this area was shared TO you
+  // by someone else): you are the first person who has access.
+  const meCard = (() => {
+    if (area.sharedBy) return '';
+    const a = state.account || {};
+    const name = a.name || (state.me && state.me.name) || 'You';
+    const sub = a.subdomain ? `${esc(a.subdomain)}.daybook.fyi` : 'owner';
+    return `<div class="ov-person ov-person-me"><span class="fr-av online">${esc(initial(name))}</span><span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></div>`;
+  })();
+  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''}><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
+  const people = shares == null ? `${meCard || '<div class="ov-muted">Loading…</div>'}`
+    : `${meCard}${shareRows}${(!meCard && !shareRows) ? '<div class="ov-muted">Just you so far.</div>' : ''}`;
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const recent = (blocks || []).map((b) => ({ b, t: new Date(b.updated_at || b.created_at || 0).getTime() })).filter((x) => x.t > 0).sort((a, b) => b.t - a.t).slice(0, 6);
   const activity = recent.length ? recent.map(({ b, t }) => `<div class="ov-act"><span class="ov-act-ic">${kIcon[b.kind] || '•'}</span><span class="ov-act-t">${esc(b.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(t)}</span></div>`).join('') : '<div class="ov-muted">No recent activity.</div>';
