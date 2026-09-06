@@ -503,6 +503,15 @@ button { cursor:pointer; background:none; border:0; }
 @media (max-width:600px){ .gtype-opts { grid-template-columns:1fr; } }
 .gnum { display:flex; align-items:center; gap:10px; }
 .gnum input { max-width:110px; } .gnum .gc-unit { max-width:120px; } .gnum span { color:var(--ink-3); }
+/* Goal progress bar (number goals) + the simple "mark achieved" block. */
+.goal-bar { height:8px; border-radius:999px; background:var(--paper-2,color-mix(in srgb,var(--ink) 8%,transparent)); overflow:hidden; margin:12px 0 4px; }
+.goal-bar i { display:block; height:100%; border-radius:999px; background:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.goal-bar-pct { font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+.goal-doneblock { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:8px 0 4px; }
+.goal-donebtn { padding:11px 20px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink); font-size:15px; font-weight:600; cursor:pointer; }
+.goal-donebtn:hover { border-color:var(--done); color:var(--done); }
+.goal-donebtn.on { background:color-mix(in srgb,var(--done) 14%,var(--card)); border-color:var(--done); color:var(--done); }
+.goal-done-note { font-size:13px; color:var(--ink-3); }
 .ms-block { margin-top:4px; }
 .ms-list { display:flex; flex-direction:column; gap:8px; margin:10px 0; }
 .ms-row { display:flex; align-items:center; gap:10px; }
@@ -682,6 +691,13 @@ button { cursor:pointer; background:none; border:0; }
 .rvg-t2:hover { color:var(--accent); }
 .rvg-pct { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .rvg-goal-m { font-size:12.5px; color:var(--ink-3); margin-top:-2px; }
+/* Editable focus controls: a number goal's current value, or a done tick. */
+.rvg-num { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.rvg-num-l { font-size:13px; color:var(--ink-3); }
+.rvg-cur { max-width:100px; text-align:center; font-variant-numeric:tabular-nums; }
+.rvg-of { font-size:13.5px; color:var(--ink-2); }
+.rvg-donerow { display:flex; align-items:center; gap:9px; font-size:14.5px; color:var(--ink); cursor:pointer; }
+.rvg-donerow input { width:18px; height:18px; accent-color:var(--done); flex:none; }
 .rvg-goal .rvg-bar { width:100%; }
 .rvg-note { width:100%; border:1px solid var(--line); border-radius:8px; background:var(--paper-2,var(--card)); padding:8px 10px; font:inherit; font-size:14px; color:var(--ink); }
 .rvg-note:focus { outline:none; border-color:var(--accent); }

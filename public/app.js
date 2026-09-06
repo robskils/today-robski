@@ -7980,7 +7980,10 @@ const contactsDatalist = () => `<datalist id="contacts-dl">${(state.contacts || 
 // Area (props.area). A goal is Milestones / Habit / Number. Everything rides the
 // same block core as notes and tasks.
 const HORIZONS = [['quarter', 'This quarter'], ['year', 'This year'], ['longterm', 'Long-term']];
-const GTYPES = [['achievement', 'Milestones'], ['number', 'Number']];
+// Two kinds of goal, kept deliberately simple: one you just mark done when you
+// get there, and one that tracks a number toward a target. (Milestones dropped
+// 2026-09 - too confusing; connect tasks straight to the goal instead.)
+const GTYPES = [['done', 'Just mark it done'], ['number', 'A number to reach']];
 const GSTATUS = [['active', 'Active'], ['done', 'Done'], ['onhold', 'On hold'], ['dropped', 'Dropped']];
 const BSTATUS = [['someday', 'Someday'], ['planning', 'Planning'], ['done', 'Done']];
 const gp = (g) => (g && g.props) || {};
@@ -8007,14 +8010,12 @@ function horizonDateLabel(horizon, iso) {
 function goalProgress(g) {
   const p = gp(g); if (p.status === 'done') return 1;
   if (p.gtype === 'number') { const t = +p.target || 0, c = +p.current || 0; return t > 0 ? Math.max(0, Math.min(1, c / t)) : 0; }
-  if (p.gtype === 'achievement') { const ms = Array.isArray(p.milestones) ? p.milestones : []; return ms.length ? ms.filter((m) => m.done).length / ms.length : 0; }
-  return 0;
+  return 0;   // a "mark it done" goal is 0% until achieved
 }
 function goalMeasure(g) {
   const p = gp(g);
   if (p.gtype === 'number') return `${p.current || 0} / ${p.target || 0}${p.unit ? ' ' + p.unit : ''}`;
-  if (p.gtype !== 'achievement') return '';
-  const ms = Array.isArray(p.milestones) ? p.milestones : []; return `${ms.filter((m) => m.done).length}/${ms.length} milestones`;
+  return p.status === 'done' ? 'Achieved' : '';
 }
 // ── Financial (Portfolio · Advice · Spending) ────────────────────────────
 // Portfolio moved across from portfolio.robski.uk: same data (shared D1), same
@@ -8750,7 +8751,7 @@ async function newGoal(area) {
   // No type up front: a new goal is just a goal. The card then asks how you want
   // to track it (milestones or a number) - milestones is a kind of goal, not the
   // starting point, so we don't drop you straight into the milestone editor.
-  const props = { area: area || null, why: '', horizon: 'quarter', gtype: '', status: 'active', focus: false, milestones: [] };
+  const props = { area: area || null, why: '', horizon: 'quarter', gtype: 'done', status: 'active', focus: false };
   // Start with no title so the "What do you want to achieve?" placeholder shows,
   // then drop the cursor into it - you can type your goal straight away.
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'goal', title: '', props }) });
@@ -8776,26 +8777,14 @@ async function openGoalCard(id) {
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
   const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
-  const ms = Array.isArray(p.milestones) ? p.milestones : [];
   const gtasks = state.goal_open.tasks || [];
-  const msIds = new Set(ms.map((m) => m.id));
-  const loose = gtasks.filter((t) => !t.props.milestone || !msIds.has(t.props.milestone));
-  const typeBody = !p.gtype
-    ? `<div class="gtype-choose"><div class="tf-label">How do you want to track this goal?</div>
-        <div class="gtype-opts">
-          <button class="gtype-opt" data-set-gtype="achievement"><span class="gto-ic">📋</span><b>Milestones</b><small>Steps to tick off along the way</small></button>
-          <button class="gtype-opt" data-set-gtype="number"><span class="gto-ic">🎯</span><b>Number</b><small>A target to reach, e.g. €2k/mo or 12kg</small></button>
-        </div></div>`
-    : p.gtype === 'number'
-    ? `<label class="tf-field"><span class="tf-label">Progress</span><div class="gnum"><input class="sel" id="gc-current" type="number" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div></label>`
-    : `<div class="ms-block"><div class="tf-label">Milestones &amp; tasks</div>
-        ${ms.map((m) => { const mt = gtasks.filter((t) => t.props.milestone === m.id); return `<div class="ms-group">
-          <div class="ms-row ${m.done ? 'done' : ''}"><button class="ms-check" data-ms-toggle="${m.id}">✓</button><input class="ms-text" data-ms-text="${m.id}" value="${esc(m.text || '')}" placeholder="Milestone…">${mt.length ? `<span class="ms-count">${mt.filter((t) => t.props.done).length}/${mt.length}</span>` : ''}<button class="ms-x" data-ms-del="${m.id}">×</button></div>
-          <div class="ms-tasks">${mt.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:${m.id}">+ task</button></div>
-        </div>`; }).join('')}
-        <button class="ghost ms-add" data-ms-add>+ Add milestone</button>
-        <div class="gt-loose"><div class="tf-label gt-loose-h">Tasks not under a milestone</div><div class="ms-tasks">${loose.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ task</button></div></div>
-      </div>`;
+  const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
+  const isDone = (p.status || 'active') === 'done';
+  const pctNum = Math.round(goalProgress(g) * 100);
+  const typeBody = gtype === 'number'
+    ? `<label class="tf-field"><span class="tf-label">Where it's at</span><div class="gnum"><input class="sel" id="gc-current" type="number" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="e.g. users"></div></label>
+       <div class="goal-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div><div class="goal-bar-pct">${pctNum}%</div>`
+    : `<div class="goal-doneblock"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? '✓ Achieved' : 'Mark as achieved'}</button><span class="goal-done-note">${isDone ? 'Nicely done.' : 'Just tick it off when you get there.'}</span></div>`;
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
@@ -8808,7 +8797,7 @@ function renderGoalCard() {
     <div class="tf-meta">
       <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('goal', g)}</div>
       <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype"><option value="" ${!p.gtype ? 'selected' : ''} disabled hidden>Choose…</option>${GTYPES.map(([v, l]) => `<option value="${v}" ${p.gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       ${(p.horizon === 'quarter' || p.horizon === 'year')
         ? `<div class="tf-field"><span class="tf-label">By when</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
@@ -8816,10 +8805,10 @@ function renderGoalCard() {
     </div>
     ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     <div class="goal-measure-block">${typeBody}</div>
-    ${p.gtype !== 'achievement' ? `<div class="goal-actions-sec">
-      <div class="tf-label gt-loose-h">Tasks<span class="gt-hint">real tasks to move this forward - they show up in Tasks &amp; Today too</span></div>
-      <div class="ms-tasks">${loose.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
-    </div>` : ''}
+    <div class="goal-actions-sec">
+      <div class="tf-label gt-loose-h">Tasks<span class="gt-hint">the real tasks that move this forward - they show up in Tasks &amp; Today too</span></div>
+      <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
+    </div>
     ${goalAreaTasksHtml()}
     ${connectedNotesHtml()}
     ${notesSection(g.body, 'goal', g.id)}`;
@@ -9008,7 +8997,7 @@ function bucketToggleDone(id) { const b = state.bucket_open.item; const done = (
 async function bucketToGoal() {
   const b = state.bucket_open && state.bucket_open.item; if (!b) return;
   const p = b.props || {};
-  const props = { area: p.area || null, why: '', horizon: 'longterm', gtype: '', status: 'active', focus: false, milestones: [], fromBucket: b.id };
+  const props = { area: p.area || null, why: '', horizon: 'longterm', gtype: 'done', status: 'active', focus: false, fromBucket: b.id };
   try {
     const goal = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'goal', title: b.title || 'New goal', props }) });
     if (state.goals) state.goals.push(goal);
@@ -9631,16 +9620,34 @@ function weeklyGoalsGlance() {
   const r = state.review_open && state.review_open.review;
   const gr = (r && r.props && r.props.goalReview) || {};   // reuse the goal-review note store
   const rows = list.map((g) => {
-    const a = goalArea(g); const pct = Math.round(goalProgress(g) * 100);
+    const p = gp(g); const a = goalArea(g); const pct = Math.round(goalProgress(g) * 100);
+    const gtype = p.gtype === 'number' ? 'number' : 'done';
     const note = (gr[g.id] || {}).note || '';
+    // Right here in the review you update where each goal is at - a number goal's
+    // current value, or ticking a "mark it done" goal off.
+    const control = gtype === 'number'
+      ? `<div class="rvg-num"><span class="rvg-num-l">Now at</span><input class="sel rvg-cur" type="number" inputmode="decimal" data-rvg-current="${g.id}" value="${esc(p.current ?? '')}" placeholder="0"><span class="rvg-of">of ${esc(p.target ?? '—')}${p.unit ? ' ' + esc(p.unit) : ''}</span></div>`
+      : `<label class="rvg-donerow"><input type="checkbox" data-rvg-done="${g.id}" ${p.status === 'done' ? 'checked' : ''}><span>${p.status === 'done' ? 'Achieved ✓' : 'Mark as achieved'}</span></label>`;
     return `<div class="rvg-goal" style="--h:${hueOf(a)}">
-      <div class="rvg-goal-h"><button class="rvg-t2" data-open-goal="${g.id}" title="Open ${esc(g.title || 'this goal')}">${esc(g.title || 'Untitled')}</button><span class="rvg-pct">${pct}%</span></div>
-      <div class="rvg-goal-m">${a ? esc(a.title) + ' · ' : ''}${esc(goalMeasure(g))}</div>
-      <span class="rvg-bar"><i style="width:${pct}%"></i></span>
+      <div class="rvg-goal-h"><button class="rvg-t2" data-open-goal="${g.id}" title="Open ${esc(g.title || 'this goal')}">${esc(g.title || 'Untitled')}</button><span class="rvg-pct" data-rvg-pct="${g.id}">${pct}%</span></div>
+      ${a ? `<div class="rvg-goal-m">${esc(a.title)}</div>` : ''}
+      <span class="rvg-bar"><i data-rvg-bar="${g.id}" style="width:${pct}%"></i></span>
+      ${control}
       <input class="rvg-note" data-goalrev-note="${esc(g.id)}" value="${esc(note)}" placeholder="A line on how this went this week…" autocomplete="off">
     </div>`;
   }).join('');
-  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">where's each one at, and how did it move this week?</span></div><div class="rvg-list rvg-goals">${rows}</div></section>`;
+  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'} <span class="wheel-hint">update where each one's at, right here</span></div><div class="rvg-list rvg-goals">${rows}</div></section>`;
+}
+// Update a goal's current number from inside a review: patch it (debounced) and
+// move its bar/percent live, without a re-render that would drop the input focus.
+let rvgCurT;
+function rvgSetCurrent(id, val) {
+  const g = (state.goals || []).find((x) => x.id === id); if (g) { g.props = g.props || {}; g.props.current = val === '' ? null : +val; }
+  const go = state.goal_open && state.goal_open.goal; if (go && go.id === id) { go.props = go.props || {}; go.props.current = val === '' ? null : +val; }
+  const pct = g ? Math.round(goalProgress(g) * 100) : 0;
+  const bar = document.querySelector(`[data-rvg-bar="${id}"]`); if (bar) bar.style.width = pct + '%';
+  const lbl = document.querySelector(`[data-rvg-pct="${id}"]`); if (lbl) lbl.textContent = pct + '%';
+  clearTimeout(rvgCurT); rvgCurT = setTimeout(() => patchGoal(id, { current: val === '' ? null : +val }, true), 500);
 }
 function goalReviewSection(r) {
   const p = r.props || {};
@@ -10646,6 +10653,7 @@ document.addEventListener('input', (e) => {
   if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); }
   if (e.target.matches && e.target.matches('[data-rv-answer]')) saveReviewAnswer(e.target.dataset.rvAnswer, e.target.value);
   if (e.target.matches && e.target.matches('[data-rv-areanote]')) saveReviewAreaNote(e.target.dataset.rvAreanote, e.target.value);
+  if (e.target.matches && e.target.matches('[data-rvg-current]')) rvgSetCurrent(e.target.dataset.rvgCurrent, e.target.value);
 });
 let proseT;
 // Save every open rich-text editor RIGHT NOW, without waiting for the 800ms
@@ -10940,6 +10948,7 @@ document.addEventListener('click', (e) => {
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
   const sgt = t.closest('[data-set-gtype]'); if (sgt) { const g = state.goal_open && state.goal_open.goal; if (g) { patchGoal(g.id, { gtype: sgt.dataset.setGtype }, true); renderGoalCard(); } return; }
+  const gdn = t.closest('[data-goal-done]'); if (gdn) { const g = state.goal_open && state.goal_open.goal; if (g) { const now = (gp(g).status || 'active') === 'done' ? 'active' : 'done'; patchGoal(g.id, { status: now }, true).then(renderGoalCard); toast(now === 'done' ? 'Goal achieved ✓' : 'Reopened'); } return; }
   if (t.closest('[data-ms-add]')) { msAdd(); return; }
   const mst = t.closest('[data-ms-toggle]'); if (mst) { msToggle(mst.dataset.msToggle); return; }
   const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
@@ -11384,6 +11393,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
+  if (e.target.matches('[data-rvg-done]')) { const id = e.target.dataset.rvgDone; patchGoal(id, { status: e.target.checked ? 'done' : 'active' }, true).then(() => { if (state.view.type === 'reviewcard') renderReviewCard(); }); return; }
   if (e.target.matches('[data-surface-hide]')) { patchTaskProps(e.target.dataset.surfaceHide, { hideUntil: e.target.checked }); if (state.view.type === 'tasks') renderTasks(); }
   if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') { renderGoalCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {}); } else if (k === 'task' && state.view.type === 'taskcard') { renderTaskCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {}); } }); return; }
   if (e.target.matches('[data-rev-cad-on]')) { toggleReviewCad(e.target.dataset.revCadOn, e.target.checked); return; }
