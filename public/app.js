@@ -3953,6 +3953,28 @@ function privateToggleHtml(kind, block) {
   const on = !!(block.props && block.props.private);
   return `<label class="tf-toggle pv-toggle ${on ? 'on' : ''}"><input type="checkbox" data-block-private="${kind}:${block.id}" ${on ? 'checked' : ''}><span class="pv-lbl">${on ? '🔒' : '🔓'} Keep this private<small class="tf-hint">Only you can see it - hidden from anyone you share with</small></span></label>`;
 }
+// "Who can see this": a white box with a face per person who has access (you,
+// plus anyone via a direct share or a shared life area), a Share/Manage button,
+// and a private switch. Replaces the bare "Keep this private" toggle.
+function blockVisibilityHtml(kind, block, viewers) {
+  const priv = !!(block.props && block.props.private);
+  const meInit = esc(initial(firstName() || 'You'));
+  const list = priv ? [] : (viewers || []);
+  const faces = list.slice(0, 14).map((v) => `<span class="tf-face" title="${esc(v.name)}${v.via === 'area' ? ' - via a shared life area' : ''}">${esc(initial(v.name || '?'))}</span>`).join('');
+  const shareBtnInline = `<button class="tf-vis-share" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}">${list.length ? 'Manage' : '＋ Share'}</button>`;
+  let note;
+  if (priv) note = 'Private - only you can see this, even inside a shared life area.';
+  else if (!list.length) note = "Only you can see this. Share it, or file it under a life area you've shared.";
+  else { const n = list.length; const viaArea = list.some((v) => v.via === 'area'); note = `${n} ${n === 1 ? 'person' : 'people'} can see this${viaArea ? ' - through its life area and any direct shares' : ''}.`; }
+  return `<section class="tf-surface tf-visible">
+    <div class="tfs-h">Who can see this</div>
+    <div class="tf-vis-row">
+      <span class="tf-face me ${priv ? 'is-priv' : ''}" title="You">${priv ? '🔒' : meInit}</span>${faces}${priv ? '' : shareBtnInline}
+    </div>
+    <p class="tfs-note">${esc(note)}</p>
+    <label class="tfs-toggle tf-vis-toggle"><input type="checkbox" data-block-private="${kind}:${block.id}" ${priv ? 'checked' : ''}><span>Keep it private (only me)</span></label>
+  </section>`;
+}
 async function setBlockPrivate(kind, id, on) {
   const upd = (b) => { if (b && b.id === id) { b.props = b.props || {}; b.props.private = on; } };
   upd(state.goal_open && state.goal_open.goal); upd((state.goals || []).find((x) => x.id === id));
@@ -11202,7 +11224,7 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-surface-hide]')) { patchTaskProps(e.target.dataset.surfaceHide, { hideUntil: e.target.checked }); if (state.view.type === 'tasks') renderTasks(); }
-  if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') renderGoalCard(); else if (k === 'task' && state.view.type === 'taskcard') renderTaskCard(); }); return; }
+  if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') renderGoalCard(); else if (k === 'task' && state.view.type === 'taskcard') { renderTaskCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {}); } }); return; }
   if (e.target.matches('[data-rev-cad-on]')) { toggleReviewCad(e.target.dataset.revCadOn, e.target.checked); return; }
   if (e.target.matches('[data-rv-date]')) { const k = e.target.dataset.rvDate; const v = e.target.value; if (v && state.review_open) { patchReview(state.review_open.review.id, { [k]: v }, true); toast('Review dates updated'); } return; }
   if (e.target.matches('[data-goalrev-note]')) { const id = e.target.dataset.goalrevNote; const v = e.target.value; clearTimeout(window.__grnT); window.__grnT = setTimeout(() => { const r = state.review_open && state.review_open.review; if (!r) return; const gr = { ...((r.props || {}).goalReview || {}) }; gr[id] = { ...(gr[id] || {}), note: v }; patchReview(r.id, { goalReview: gr }, true); }, 600); return; }
@@ -11892,6 +11914,8 @@ async function openTaskCard(id) {
   state.view = { type: 'taskcard', id };
   recordRecent('task', id, task.title, blockAreas(task)[0]);
   renderNav(); renderTaskCard();
+  // Who can see this task (direct shares + shared-area members). Owner only.
+  if (!task.sharedBy) api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {});
 }
 // Duration presets (minutes) for the task card. Free-form isn't needed - these
 // cover the useful range; '—' clears it.
@@ -11951,7 +11975,7 @@ function renderTaskCard() {
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
     ${taskSurfaceHtml(t)}
-    ${t.sharedBy ? '' : privateToggleHtml('task', t)}
+    ${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();

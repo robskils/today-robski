@@ -2,7 +2,7 @@ import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople, isOnline } from './friends.js';
-import { shareBlock, unshareBlock, listBlockShares, sharedWithMe } from './sharing.js';
+import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { openMeeting } from './meetings.js';
 import { aiKey, aiNeedsKey, logAiUsage, setAiKey } from './ai.js';
@@ -3383,6 +3383,10 @@ export default {
           if (request.method === 'POST') return json(await assignTask(env, tid, b.toId), request, 201);
           if (request.method === 'DELETE') return json(await unassign(env, tid, b.toId), request);
         } catch (e) { return err(e.message, request, 400); }
+      }
+      const viewersMatch = path.match(/^\/api\/blocks\/([\w-]+)\/viewers$/);
+      if (viewersMatch && request.method === 'GET') {
+        try { return json(await listBlockViewers(env, viewersMatch[1]), request); } catch (e) { return err(e.message, request, 400); }
       }
       const shareMatch = path.match(/^\/api\/blocks\/([\w-]+)\/shares?$/);
       if (shareMatch) {

@@ -55,6 +55,34 @@ export async function listBlockShares(env, blockId) {
   return { shares: rows.map((r) => ({ id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain, canEdit: !!r.can_edit })) };
 }
 
+// Everyone who can currently SEE a block you own: people you shared it with
+// directly, plus the members of any life area it's filed under (sharing an area
+// shares its children). Owner-only. props.private hides it from area members, so
+// then only direct shares remain - and even those don't see a private block, so
+// we report it as private with an empty list. The UI shows these as faces.
+export async function listBlockViewers(env, blockId) {
+  const row = await env.DB.prepare('SELECT props, user_id FROM blocks WHERE id = ?').bind(blockId).first().catch(() => null);
+  if (!row || row.user_id !== env.uid) throw new Error('That is not yours.');
+  let props = {}; try { props = row.props ? JSON.parse(row.props) : {}; } catch {}
+  if (props.private) return { viewers: [], private: true };
+  const map = new Map();
+  const direct = (await env.DB.prepare(
+    `SELECT s.friend_id AS id, u.name, u.subdomain FROM shares s JOIN users u ON u.id = s.friend_id
+      WHERE s.block_id = ? AND s.owner_id = ?`,
+  ).bind(blockId, env.uid).all().catch(() => ({ results: [] }))).results || [];
+  for (const r of direct) map.set(r.id, { id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain, via: 'direct' });
+  const areas = Array.isArray(props.areas) ? props.areas.filter(Boolean) : (props.area ? [props.area] : []);
+  if (areas.length) {
+    const ph = areas.map(() => '?').join(',');
+    const arows = (await env.DB.prepare(
+      `SELECT s.friend_id AS id, u.name, u.subdomain FROM shares s JOIN users u ON u.id = s.friend_id
+        WHERE s.owner_id = ? AND s.block_id IN (${ph})`,
+    ).bind(env.uid, ...areas).all().catch(() => ({ results: [] }))).results || [];
+    for (const r of arows) if (!map.has(r.id)) map.set(r.id, { id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain, via: 'area' });
+  }
+  return { viewers: [...map.values()], private: false };
+}
+
 // Notes & tasks other people have shared with me, newest share first, each
 // carrying who shared it so the UI can label it.
 export async function sharedWithMe(env) {

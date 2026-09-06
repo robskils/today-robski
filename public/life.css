@@ -1668,6 +1668,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .tfs-chip.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
 .tfs-chip-ic { font-size:15px; }
 .tfs-note { padding-left:29px; margin:0; font-size:12.5px; color:var(--ink-3); line-height:1.5; }
+/* "Who can see this": a row of faces + a share/manage button. */
+.tf-visible .tfs-note { padding-left:0; margin-top:2px; }
+.tf-vis-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:4px 0 10px; }
+.tf-face { display:inline-grid; place-items:center; width:34px; height:34px; border-radius:50%; background:color-mix(in srgb,var(--accent) 14%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line)); color:var(--ink); font-size:14px; font-weight:600; flex:none; }
+.tf-face.me { background:var(--accent); border-color:var(--accent); color:#fff; }
+.tf-face.me.is-priv { background:var(--card); border-color:var(--line-2); }
+.tf-vis-share { margin-left:4px; padding:8px 15px; border-radius:999px; border:1px dashed var(--line-2); background:none; color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; }
+.tf-vis-share:hover { border-color:var(--accent); color:var(--accent); border-style:solid; }
+.tf-vis-toggle { padding-top:4px; }
 .tf-count { display:inline-grid; place-items:center; min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:var(--accent); color:#fff; font-size:12px; font-weight:600; }
 .tf-chips { display:flex; gap:6px; flex-wrap:wrap; flex:1; min-width:0; }
 .tf-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 6px 5px 12px; border:1px solid color-mix(in srgb,var(--accent) 25%,var(--line)); background:color-mix(in srgb,var(--accent) 7%,transparent); border-radius:999px; font-size:13.5px; color:var(--ink); }
@@ -4037,8 +4046,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-addr-row { display:flex; flex-wrap:wrap; gap:8px; }
 .cc-addr-row input { flex:1 1 130px; min-width:0; }
 .cc-addr-row .cc-addr-street { flex:2 1 200px; }
-.focus-notes { margin-top:26px; }
-.fn-h { font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin-bottom:10px; }
+.focus-notes { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
+.fn-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 8px; margin:0; }
+.focus-notes .prose { min-height:96px; }
 
 /* ── inline-editable task cells ──────────────────────── */
 .tc-prio, .tc-area { cursor:pointer; }
