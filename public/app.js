@@ -8778,9 +8778,10 @@ function reviewsBody() {
   const trend = weeklies.slice(0, 10).reverse().map((r) => Math.min(wheelAvg((r.props || {}).wheel), 5)).filter((v) => v > 0);
   const trendHtml = trend.length >= 2 ? `<section class="home-sec rv-trend-sec"><div class="home-sec-h">Wheel of Life over time</div><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></section>` : '';
   // Compact, dashboard-y past-review cards, filterable by type.
-  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
+  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pword = { weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' }[p.rtype] || 'period'; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
     <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-d">${esc(dpLabel(p.to || localISO(new Date(r.created_at))))}</span></div>
-    ${prog ? '<div class="rv-card-prog-badge">● In progress</div>' : ''}
+    ${p.from && p.to ? `<div class="rv-card-range">the ${pword} of ${esc(prettyDate(p.from))} – ${esc(prettyDate(p.to))}</div>` : ''}
+    <div class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : '✓ Submitted'}</div>
     <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5</span>` : ''}</div>
   </button>`; };
   // Anything you started but haven't finished sits up top, plainly labelled, so a
@@ -9025,7 +9026,8 @@ function renderReviewCard() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
-    <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Done' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
+    <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Submitted' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
+    ${p.to ? `<div class="rv-datehead"><span class="rv-dh-day">${esc(prettyDate(p.to))} ${esc(p.to.slice(0, 4))}</span>${p.from ? `<span class="rv-dh-range">the ${periodWord} of ${esc(prettyDate(p.from))} – ${esc(prettyDate(p.to))}</span>` : ''}</div>` : ''}
     <div class="rv-period">
       ${reviewWhenHtml(p)}
       ${R.editDates ? `<div class="rv-period-dates">
@@ -9083,8 +9085,8 @@ function renderReviewCard() {
     </section>
 
     <div class="rv-finish">${st === 'done'
-      ? `<span class="rv-done-badge">✓ Review done${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="ghost rv-reopen" data-review-reopen="${r.id}">Reopen</button>`
-      : `<button class="add-btn wide rv-markdone" data-review-done="${r.id}">✓ Mark this review done</button><span class="rv-finish-hint">Everything you write saves as you go - come back any time.</span>`}</div>`;
+      ? `<span class="rv-done-badge">✓ Submitted${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="ghost rv-reopen" data-review-reopen="${r.id}">Reopen to edit</button>`
+      : `<button class="add-btn wide rv-markdone" data-review-submit="${r.id}">✓ Submit this review</button><span class="rv-finish-hint">Files it as done. Everything saves as you go, so there's no rush - and you can reopen it later.</span>`}</div>`;
 }
 async function patchReview(id, patch, isProps) {
   const r = state.review_open && state.review_open.review;
@@ -10359,7 +10361,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-wheel-toggle]')) { toggleReviewWheel(); return; }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
-  const rvd = t.closest('[data-review-done]'); if (rvd) { flushProse(); patchReview(rvd.dataset.reviewDone, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review marked done'); return; }
+  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review submitted ✓'); return; }
   const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
   const whx = t.closest('[data-wheel-hide]'); if (whx) { wheelHide(whx.dataset.wheelHide); return; }
