@@ -9649,23 +9649,45 @@ function renderReviewReport() {
   const free = (r.body || '').trim() ? `<div class="rr-free">${decorateProse(bodyToHtml(r.body))}</div>` : '';
   const readHtml = p.doneSummary
     ? `<div class="rv-summary-body rr-read">${reviewSummaryHtml(p.doneSummary)}</div>`
-    : `<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>`;
+    : `<ul class="rv-insight-list rr-read-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>`;
+  // Standfirst: a punchy one-line summary composed from the record.
+  const doneItems = m.tasksDone || []; const doneN = doneItems.length;
+  const byA = {}; doneItems.forEach((t) => { if (t.area && areaById(t.area)) byA[t.area] = (byA[t.area] || 0) + 1; });
+  const topA = Object.entries(byA).sort((a, b) => b[1] - a[1])[0];
+  const topAName = topA ? (areaById(topA[0]) || {}).title : '';
+  const nAreas = Object.keys(byA).length;
+  const sBits = [];
+  if (doneN) sBits.push(`<b>${doneN}</b> ticked off${nAreas > 1 ? ` across <b>${nAreas}</b> areas` : ''}`); else sBits.push('a quiet one on the record');
+  if (topAName) sBits.push(`led by ${esc(topAName)}`);
+  if (wAvg) sBits.push(`the wheel at <b>${wAvg}</b>/5`);
+  const standfirst = sBits.join(' · ') + '.';
+  const sent = reviewSentiment(p, r);
+  // Featured win: the week's standout, as a magazine feature line.
+  const top = reviewTopWin(m);
+  const feature = top ? `<button class="rr-feature" ${top.id ? `data-open-task="${top.id}"` : ''}><span class="rr-feature-tag">The win of the ${esc(PERIOD_WORD[p.rtype] || 'period')}</span><span class="rr-feature-t">${esc(top.title || 'Untitled')}</span><span class="rr-feature-sub">${esc(top.tag)} →</span></button>` : '';
+  // Figures strip - the numbers, magazine-infographic style.
+  const practicesK = (m.practices || []).reduce((a, x) => a + x.count, 0);
+  const goalMoved = doneItems.filter((t) => t.goal).length;
+  const figs = [doneN ? [doneN, 'ticked off'] : null, nAreas > 1 ? [nAreas, 'areas moved'] : null, practicesK ? [practicesK, 'practices kept'] : null, goalMoved ? [goalMoved, 'toward goals'] : null, wAvg ? [`${wAvg}/5`, 'wheel of life'] : null].filter(Boolean);
+  const figsHtml = figs.length ? `<div class="rr-figs">${figs.map(([n, l]) => `<div class="rr-fig"><span class="rr-fig-n">${n}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
-    <div class="rr-hero" style="--h:${hue}">
-      <div class="rr-hero-type">${esc(cfg.label)} review${navHtml ? ` <span class="rr-hero-nav">${navHtml}</span>` : ''}</div>
-      <h1 class="rr-hero-title">${esc(pt.main)}</h1>
-      ${pt.range ? `<div class="rr-hero-range">${esc(pt.range)}</div>` : ''}
-      <div class="rr-hero-meta">${p.doneAt ? `✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(String(p.doneAt).slice(0, 4))}` : ''}${wAvg ? ` · Wheel of Life <b>${wAvg}</b>/5` : ''}${(m.tasksDone || []).length ? ` · <b>${(m.tasksDone || []).length}</b> ticked off` : ''}</div>
-    </div>
-    ${reviewSentimentHtml(p, r)}
-    <section class="rr-sec"><h2 class="rr-h">✦ The read</h2>${readHtml}</section>
-    ${(m.tasksDone || []).length ? `<section class="rr-sec"><h2 class="rr-h">What you did</h2>${reviewWinsHtml(m, p)}</section>` : ''}
-    ${wheelRows ? `<section class="rr-sec"><h2 class="rr-h">By life area</h2><div class="rr-areas">${wheelRows}</div></section>` : ''}
-    ${goalRows ? `<section class="rr-sec"><h2 class="rr-h">Goals</h2><div class="rr-areas">${goalRows}</div></section>` : ''}
-    ${(refl.trim() || free) ? `<section class="rr-sec"><h2 class="rr-h">Reflections</h2>${refl}${free}</section>` : ''}
-    <div class="rr-foot"><button class="add-btn wide" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">Everything above is saved. Open the editor to change any of it.</span></div>`;
+    <article class="rr" style="--h:${hue}">
+      <div class="rr-eyebrow"><span>${esc(cfg.label)} review${p.doneAt ? ` · ${esc(prettyDate(p.doneAt))}` : ''}</span>${navHtml}</div>
+      <h1 class="rr-headline">${esc(pt.main)}</h1>
+      ${pt.range ? `<div class="rr-kicker">${esc(pt.range)}</div>` : ''}
+      <p class="rr-standfirst">${standfirst}</p>
+      ${sent ? `<div class="rr-byline"><span class="rr-byline-emoji">${sent.emoji}</span> The mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
+      ${figsHtml}
+      ${feature}
+      <div class="rr-article">${readHtml}</div>
+      ${doneN ? `<section class="rr-sec"><h2 class="rr-h">What moved</h2>${reviewWinsHtml(m, p, true)}</section>` : ''}
+      ${wheelRows ? `<section class="rr-sec"><h2 class="rr-h">By life area</h2><div class="rr-areas">${wheelRows}</div></section>` : ''}
+      ${goalRows ? `<section class="rr-sec"><h2 class="rr-h">Goals</h2><div class="rr-areas">${goalRows}</div></section>` : ''}
+      ${(refl.trim() || free) ? `<section class="rr-sec"><h2 class="rr-h">In your words</h2>${refl}${free}</section>` : ''}
+      <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">Everything here is saved - open the editor to change any of it.</span></div>
+    </article>`;
   loadThumbs();
 }
 function renderReviewCard() {
@@ -9907,7 +9929,30 @@ function reviewSummaryHtml(text) {
 // mover, a P1), and the full list one tap away. Each done task is enriched from
 // the live task blocks (age, goal, priority, completion day) so it works on older
 // reviews whose frozen mirror didn't capture those.
-function reviewWinsHtml(m, p) {
+// Enrich the period's done tasks from live task blocks (age, goal, priority, day).
+function reviewWinItems(m) {
+  const done = m.tasksDone || [];
+  const byId = new Map(((state.review_open && state.review_open.tasks) || []).map((t) => [t.id, t]));
+  return done.map((d) => {
+    const live = byId.get(d.id) || null; const lp = (live && live.props) || {};
+    return { id: d.id, title: d.title, area: d.area || lp.area || null, goal: d.goal || lp.goal || null,
+      priority: d.priority || lp.priority || null, created: d.created || (live && live.created_at) || null, at: d.at || (live && live.updated_at) || null };
+  });
+}
+// The single most notable win of the period, to feature. Prefers the longest-
+// awaited, then one that moved a goal, then a P1, then the first done.
+function reviewTopWin(m) {
+  const items = reviewWinItems(m); if (!items.length) return null;
+  const withAge = items.filter((t) => t.created && t.at).map((t) => ({ ...t, age: Math.round((new Date(t.at) - new Date(t.created)) / 86400000) })).filter((t) => t.age >= 3).sort((a, b) => b.age - a.age);
+  if (withAge[0]) return { ...withAge[0], tag: `${withAge[0].age} days in the making` };
+  const goalName = (gid) => { const g = (state.goals || []).find((x) => x.id === gid); return g ? g.title : null; };
+  const gEx = items.find((t) => t.goal && goalName(t.goal));
+  if (gEx) return { ...gEx, tag: `moved ${goalName(gEx.goal)} forward` };
+  const p1 = items.find((t) => t.priority === 'P1');
+  if (p1) return { ...p1, tag: 'a P1, cleared' };
+  return { ...items[0], tag: 'ticked off' };
+}
+function reviewWinsHtml(m, p, compact) {
   const done = m.tasksDone || [];
   if (!done.length) return '';
   const byId = new Map(((state.review_open && state.review_open.tasks) || []).map((t) => [t.id, t]));
@@ -9947,7 +9992,7 @@ function reviewWinsHtml(m, p) {
   const standouts = stand.length ? `<div class="rvw-wins-h">Wins worth noting</div><div class="rvw-wins">${stand.join('')}</div>` : '';
 
   const full = `<details class="rvw-all"><summary>See everything you ticked off · ${done.length}</summary><div class="rvw-all-body">${reviewDoneCards(m)}</div></details>`;
-  return `${metrics}${bars}${standouts}${full}`;
+  return compact ? `${standouts}${full}` : `${metrics}${bars}${standouts}${full}`;
 }
 // Everything you ticked off, grouped by life area (the "type"), each a card you
 // can click straight through to. Shown under the ✦ summary when "ticked off" is open.

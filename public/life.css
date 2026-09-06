@@ -798,13 +798,30 @@ button { cursor:pointer; background:none; border:0; }
 .rv-didbig.rv-didnone b { display:none; }
 .rv-didlist { margin-top:10px; }
 /* ── Submitted review, read as a report ─────────────────────────────── */
-.rr-hero { --c:hsl(var(--h,40) 45% 52%); margin:-4px 0 26px; padding:26px 26px 24px; border-radius:20px; background:linear-gradient(160deg,color-mix(in srgb,var(--c) 12%,var(--card)),var(--card)); border:1px solid color-mix(in srgb,var(--c) 26%,var(--line)); box-shadow:var(--shadow); }
-.rr-hero-type { font-size:12.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--c); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.rr-hero-nav { text-transform:none; letter-spacing:0; }
-.rr-hero-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:40px; font-weight:600; line-height:1.05; color:var(--ink); margin:6px 0 2px; }
-.rr-hero-range { font-size:14.5px; color:var(--ink-3); }
-.rr-hero-meta { margin-top:12px; font-size:14px; color:var(--ink-2); }
-.rr-hero-meta b { color:var(--ink); font-variant-numeric:tabular-nums; }
+/* The report reads like a short magazine article. */
+.rr { --c:hsl(var(--h,40) 45% 50%); max-width:680px; }
+.rr-eyebrow { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--c); }
+.rr-headline { font-family:'Cormorant Garamond',Georgia,serif; font-size:46px; font-weight:600; line-height:1.03; letter-spacing:-.01em; color:var(--ink); margin:8px 0 2px; text-wrap:balance; }
+.rr-kicker { font-size:14.5px; color:var(--ink-3); }
+.rr-standfirst { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; line-height:1.45; color:var(--ink-2); margin:12px 0 0; }
+.rr-standfirst b { color:var(--ink); font-weight:600; }
+.rr-byline { margin-top:12px; font-size:13.5px; color:var(--ink-3); } .rr-byline b { color:var(--ink-2); }
+.rr-byline-emoji { font-size:16px; }
+/* Figures strip: the numbers as an infographic band. */
+.rr-figs { display:flex; flex-wrap:wrap; gap:10px 28px; margin:22px 0; padding:18px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.rr-fig { display:flex; flex-direction:column; gap:2px; }
+.rr-fig-n { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:600; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
+.rr-fig-l { font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
+/* Featured win: a pull-out. */
+.rr-feature { display:block; width:100%; text-align:left; margin:6px 0 24px; padding:18px 20px; border:0; border-left:4px solid var(--c); border-radius:0 14px 14px 0; background:color-mix(in srgb,var(--c) 9%,var(--card)); cursor:pointer; }
+.rr-feature:hover { background:color-mix(in srgb,var(--c) 14%,var(--card)); }
+.rr-feature-tag { display:block; font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--c); }
+.rr-feature-t { display:block; font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; line-height:1.2; color:var(--ink); margin:4px 0 2px; }
+.rr-feature-sub { font-size:13px; color:var(--ink-3); }
+.rr-article { margin:6px 0 4px; }
+.rr-article .rr-read p { font-size:17px; line-height:1.66; }
+.rr-article .rr-read p:first-child::first-letter { font-family:'Cormorant Garamond',serif; font-size:52px; font-weight:600; float:left; line-height:.8; padding:6px 10px 0 0; color:var(--c); }
+.rr-read-list { margin:0; padding-left:20px; } .rr-read-list li { font-size:16px; line-height:1.55; padding:4px 0; color:var(--ink); }
 .rr-sec { margin:26px 0; padding-top:22px; border-top:1px solid var(--line); }
 .rr-sec:first-of-type { border-top:0; padding-top:0; }
 .rr-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; color:var(--ink); margin:0 0 14px; }
