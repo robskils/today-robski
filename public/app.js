@@ -9585,6 +9585,7 @@ function renderReviewCard() {
   if (liveProse && document.activeElement === liveProse) saveProse('review', liveProse.innerHTML, r.id);
   flushReviewAnswers();
   const periodWord = PERIOD_WORD[p.rtype] || 'period';
+  const inputTab = R.inputTab || 'questions';   // the "Your input" section's tab
   // Reviews made before this field existed are treated as finished; a newly
   // started one is 'inprogress' until you mark it done, so an unfinished review is
   // never mistaken for a lost one - it's waiting for you, clearly labelled.
@@ -9646,26 +9647,24 @@ function renderReviewCard() {
             : `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`}` : ''}
     </section>
 
-    <section class="rv-byarea">
-      ${rvSecH('wheel', 'By life area', `<span class="wheel-avg">${wheelAvg(p.wheel) ? `avg ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</span>`)}
-      ${rvSecOpen('wheel') ? `<p class="rva-intro">A line on how each area went, and a score out of 5 - your scores draw the <b>Wheel of Life</b> and its trend.</p>
-      <div class="rva-rows">${areaBlock || `<div class="muted">Every area skipped for this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to reflect on them here.'}</div>`}</div>
-      ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} skipped · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}` : ''}
+    <section class="rv-input">
+      <div class="home-sec-h">Your bit</div>
+      <div class="rv-input-tabs">
+        <button class="rv-input-tab ${inputTab === 'questions' ? 'on' : ''}" data-rv-inputtab="questions">Reflect</button>
+        <button class="rv-input-tab ${inputTab === 'wheel' ? 'on' : ''}" data-rv-inputtab="wheel">Wheel of Life${wheelAvg(p.wheel) ? ` · ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</button>
+      </div>
+      <div class="rv-input-panel">${inputTab === 'wheel'
+        ? `<p class="rva-intro">A line on how each area went, and a score out of 5 - your scores draw the <b>Wheel of Life</b>. Tap the × to leave an area out of this review.</p>
+           <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to reflect on them here.'}</div>`}</div>
+           ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} left out · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}`
+        : `<div class="rv-qa">${cfg.prompts.map((q, i) => `<div class="rv-q">
+             <label class="rv-q-label" for="rv-ans-${i}">${esc(q)}</label>
+             <textarea class="rv-ans" id="rv-ans-${i}" data-rv-answer="${i}" rows="2" placeholder="Write your answer…" autocomplete="off">${esc((p.answers || {})[i] || '')}</textarea>
+           </div>`).join('')}</div>
+           <div class="rv-freewrite"><div class="rv-freewrite-h">Anything else on your mind</div>${notesSection(r.body, 'review', r.id)}</div>`}</div>
     </section>
 
     ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
-
-    <section class="rv-prompts">
-      ${rvSecH('reflect', 'Reflect')}
-      ${rvSecOpen('reflect') ? `<div class="rv-qa">${cfg.prompts.map((q, i) => `<div class="rv-q">
-        <label class="rv-q-label" for="rv-ans-${i}">${esc(q)}</label>
-        <textarea class="rv-ans" id="rv-ans-${i}" data-rv-answer="${i}" rows="2" placeholder="Write your answer…" autocomplete="off">${esc((p.answers || {})[i] || '')}</textarea>
-      </div>`).join('')}</div>
-      <div class="rv-freewrite">
-        <div class="rv-freewrite-h">Anything else on your mind</div>
-        ${notesSection(r.body, 'review', r.id)}
-      </div>` : ''}
-    </section>
 
     <div class="rv-finish">${st === 'done'
       ? `<span class="rv-done-badge">✓ Submitted${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="add-btn wide" data-review-report>View report</button>`
@@ -11078,6 +11077,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rv-analyse]')) { reviewDoneSummary(false); return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
   { const rs = t.closest('[data-rvsec]'); if (rs) { rvSecToggle(rs.dataset.rvsec); return; } }
+  { const it = t.closest('[data-rv-inputtab]'); if (it) { flushProse(); flushReviewAnswers(); if (state.review_open) { state.review_open.inputTab = it.dataset.rvInputtab; renderReviewCard(); } return; } }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
   const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(renderReviewCard); toast('Review submitted ✓'); return; }
