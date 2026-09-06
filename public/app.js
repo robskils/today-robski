@@ -9355,7 +9355,15 @@ function reviewInsight(m, p) {
   if (!lines.length) lines.push(`A quiet ${period} on the record. What would make the next one feel good?`);
   return lines.slice(0, 5);
 }
-async function openReviewCard(id) { const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id }; renderNav(); renderReviewCard(); maybeAutoReadReview(); }
+async function openReviewCard(id) {
+  const r = await api(`/api/blocks/${id}`); state.review_open = { review: r }; state.view = { type: 'reviewcard', id };
+  renderNav(); renderReviewCard(); maybeAutoReadReview();
+  // Deeper reviews (monthly and up) show which tasks fed each goal, so load tasks
+  // to map done/open ones onto the goals in the snapshot.
+  if ((r.props || {}).rtype && (r.props || {}).rtype !== 'weekly') {
+    api('/api/blocks?kind=task').then((tasks) => { if (state.review_open && state.review_open.review.id === id) { state.review_open.tasks = tasks; if (state.view.type === 'reviewcard') renderReviewCard(); } }).catch(() => {});
+  }
+}
 // The review's timeframe, shown in relation to NOW rather than as a dry range:
 // a relative headline (This week / Last week / 3 weeks ago), a bar with a "today"
 // marker so you see how far through the period we are, and a plain-English detail.
@@ -9624,6 +9632,14 @@ function goalReviewSection(r) {
   const goals = p.snapshot || [];
   if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Life Areas and they'll appear here next time.</div></section>`;
   const gr = p.goalReview || {};
+  // Map the tasks that fed each goal: done ones from the period's record, plus the
+  // ones still open now - so a goal shows what actually moved it and what's left.
+  const allTasks = (state.review_open && state.review_open.tasks) || [];
+  const byId = new Map(allTasks.map((t) => [t.id, t]));
+  const doneIds = ((p.mirror || {}).tasksDone || []).map((t) => t.id).filter(Boolean);
+  const doneForGoal = (gid) => doneIds.map((id) => byId.get(id)).filter((t) => t && t.props && t.props.goal === gid);
+  const openForGoal = (gid) => allTasks.filter((t) => t.props && t.props.goal === gid && !t.props.done);
+  const chip = (t, done) => `<button class="gr-task-chip ${done ? 'done' : ''}" data-open-task="${t.id}">${done ? '✓ ' : ''}${esc(t.title || 'Untitled')}</button>`;
   const byArea = new Map();
   goals.forEach((g) => { const k = g.area || '_none'; if (!byArea.has(k)) byArea.set(k, []); byArea.get(k).push(g); });
   const groups = [...byArea.entries()].map(([aid, gs]) => {
@@ -9633,9 +9649,17 @@ function goalReviewSection(r) {
     const rows = gs.map((g) => {
       const rv = gr[g.id] || {}; const sc = Math.min(rv.score || 0, 5);
       const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-goalrev="${esc(g.id)}:${i + 1}" style="--h:${a ? hueOf(a) : 220}"></button>`).join('');
+      const dn = doneForGoal(g.id); const op = openForGoal(g.id);
+      const pct = g.progress != null ? g.progress : null;
+      const tasksBlock = (dn.length || op.length) ? `<div class="gr-tasks">
+        ${dn.length ? `<div class="gr-taskline"><span class="gr-taskline-k">Moved it · ${dn.length}</span><div class="gr-chips">${dn.slice(0, 8).map((t) => chip(t, true)).join('')}</div></div>` : ''}
+        ${op.length ? `<div class="gr-taskline"><span class="gr-taskline-k">Still open · ${op.length}</span><div class="gr-chips">${op.slice(0, 8).map((t) => chip(t, false)).join('')}</div></div>` : ''}
+      </div>` : '';
       return `<div class="gr-goal">
-        <div class="gr-goal-h"><span class="gr-goal-t">${esc(g.title)}</span><span class="gr-goal-m">${esc(g.measure || '')}${g.progress != null ? ` · ${g.progress}%` : ''}</span></div>
-        <div class="gr-goal-rate"><span class="gr-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span></div>
+        <div class="gr-goal-h"><button class="gr-goal-t" data-open-goal="${esc(g.id)}" title="Open this goal">${esc(g.title)}</button><span class="gr-goal-m">${esc(g.measure || '')}${pct != null ? ` · ${pct}%` : ''}</span></div>
+        ${pct != null ? `<span class="rvg-bar" style="--h:${a ? hueOf(a) : 220}"><i style="width:${pct}%"></i></span>` : ''}
+        ${tasksBlock}
+        <div class="gr-goal-rate"><span class="gr-rate-l">How's it going?</span><span class="gr-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span></div>
         <input class="sel gr-note" data-goalrev-note="${esc(g.id)}" value="${esc(rv.note || '')}" placeholder="Where does it stand, against the vision?">
       </div>`;
     }).join('');
