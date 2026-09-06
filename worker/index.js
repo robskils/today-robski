@@ -2896,7 +2896,7 @@ function reviewCadNextW(k, c, todayISO) {
   return null;
 }
 const shiftISO = (iso, days) => { const d = utcNoon(iso); d.setUTCDate(d.getUTCDate() + days); return toISO(d); };
-function reviewRemDefaults() { const o = {}; for (const k of REVIEW_TYPES) o[k] = { on: false, mode: 'end', dow: 0, last: null, alertBefore: 0 }; return o; }
+function reviewRemDefaults() { const o = {}; for (const k of REVIEW_TYPES) o[k] = { on: false, mode: 'end', dow: 0, last: null, alertBefore: 0, pausedUntil: null }; return o; }
 function reviewRemConfig(value) {
   let o; try { o = value ? JSON.parse(value) : null; } catch { o = null; }
   const cfg = reviewRemDefaults();
@@ -2908,7 +2908,7 @@ function reviewRemConfig(value) {
     for (const rt of REVIEW_TYPES) {
       const s = o[rt]; if (!s || typeof s !== 'object') continue;
       if ('on' in s && !Array.isArray(s.reminders)) {        // current cadence shape
-        cfg[rt] = { on: !!s.on, mode: mode(s.mode), dow: clampInt(s.dow, 0, 6), last: isISODate(s.last) ? s.last : null, alertBefore: clampInt(s.alertBefore, 0, 14) };
+        cfg[rt] = { on: !!s.on, mode: mode(s.mode), dow: clampInt(s.dow, 0, 6), last: isISODate(s.last) ? s.last : null, alertBefore: clampInt(s.alertBefore, 0, 14), pausedUntil: isISODate(s.pausedUntil) ? s.pausedUntil : null };
       } else if (Array.isArray(s.reminders) && s.reminders.length) {   // legacy dated reminders
         const first = s.reminders.find((r) => r && isISODate(r.at));
         cfg[rt] = { on: true, mode: 'end', dow: (rt === 'weekly' && first) ? utcNoon(first.at).getUTCDay() : 0, last: null };
@@ -2959,6 +2959,7 @@ async function reviewRemindersForUser(env, uid) {
   let changed = false;
   for (const rt of REVIEW_TYPES) {
     const c = cfg[rt]; if (!c.on) continue;
+    if (c.pausedUntil && today < c.pausedUntil) continue;   // paused - no nudges until then
     // Fire at (official date - alertBefore days): the next occurrence whose alert
     // day has arrived, deduped by the occurrence date so it nudges once.
     const occ = reviewCadNextW(rt, c, today);

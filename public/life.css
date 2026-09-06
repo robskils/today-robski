@@ -827,6 +827,9 @@ button { cursor:pointer; background:none; border:0; }
 .rr-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; color:var(--ink); margin:0 0 14px; }
 .rr-read p { font-size:16.5px; line-height:1.62; color:var(--ink); margin:0 0 12px; }
 .rr-read p:last-child { margin-bottom:0; }
+.rr-wheel { display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin:2px 0 16px; }
+.rr-wheel-chart { flex:none; width:180px; max-width:60vw; }
+.rr-wheel-comm { flex:1 1 220px; min-width:0; font-size:15px; line-height:1.55; color:var(--ink-2); } .rr-wheel-comm b { color:var(--ink); }
 .rr-areas { display:flex; flex-direction:column; gap:10px; }
 .rr-area { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); padding:12px 14px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:12px; background:var(--card); }
 .rr-area-h { display:flex; align-items:center; gap:10px; }

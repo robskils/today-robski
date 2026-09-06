@@ -4903,7 +4903,7 @@ function reviewsDueToday() {
   // Due today if the cadence's most recent occurrence is today. Each also carries
   // whether this period's review is already submitted, so Today can show a green
   // "done" note instead of nagging you to do what you've done.
-  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); return c.on && reviewCadRecent(k, t) === t; })
+  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); if (c.pausedUntil && c.pausedUntil > t) return false; return c.on && reviewCadRecent(k, t) === t; })
     .map((k) => {
       const win = periodWindow(k, t);
       const exs = (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
@@ -9295,7 +9295,7 @@ const dowOrder = () => Array.from({ length: 7 }, (_, i) => (weekStart() + i) % 7
 function reviewCad(k) {
   const s = (state.reviewRem || {})[k] || {};
   const dowDef = k === 'weekly' ? (weekStart() + 6) % 7 : 0;   // weekly defaults to your review day
-  return { on: !!s.on, mode: s.mode || 'end', dow: (s.dow == null ? dowDef : Number(s.dow)), last: s.last || null, alertBefore: Math.max(0, Math.min(14, Number(s.alertBefore) || 0)) };
+  return { on: !!s.on, mode: s.mode || 'end', dow: (s.dow == null ? dowDef : Number(s.dow)), last: s.last || null, alertBefore: Math.max(0, Math.min(14, Number(s.alertBefore) || 0)), pausedUntil: (typeof s.pausedUntil === 'string' && /^\d{4}-\d\d-\d\d$/.test(s.pausedUntil)) ? s.pausedUntil : null };
 }
 const alertBeforeLabel = (n) => n === 0 ? 'on the day' : n === 1 ? 'the day before' : `${n} days before`;
 function reviewCadWords(k) {
@@ -9368,9 +9368,12 @@ function reviewCadEditor(k, c) {
   }
   const onRow = `<label class="rv-cad-toggle"><input type="checkbox" data-rev-cad-on="${k}" ${c.on ? 'checked' : ''}><span>Remind me for ${REVIEWS[k].label.toLowerCase()} reviews</span></label>`;
   const alertRow = c.on ? `<div class="rv-cad-when"><span class="rv-cad-l">Alert me</span><div class="rv-cad-chips">${[[0, 'On the day'], [1, 'Day before'], [2, '2 days before'], [3, '3 days before']].map(([v, l]) => `<button class="rv-cad-chip sm ${c.alertBefore === v ? 'on' : ''}" data-rev-cad-alert="${k}:${v}">${l}</button>`).join('')}</div></div>` : '';
+  // Pause: hide this review until a date, then it surfaces again.
+  const paused = c.pausedUntil && c.pausedUntil > todayISO();
+  const pauseRow = c.on ? `<div class="rv-cad-when"><span class="rv-cad-l">Pause until</span><input type="date" class="sel rv-cad-pause" data-rev-cad-pause="${k}" value="${esc(c.pausedUntil || '')}">${paused ? `<button class="linkish" data-rev-cad-resume="${k}">Resume now</button>` : ''}</div>` : '';
   const nx = reviewCadNext(k, todayISO());
-  const note = `<div class="rv-remedit-note">${nx ? `Due <b>${esc(dpLabel(nx))}</b>` : ''}${c.on ? `${nx ? ', ' : ''}a text and email ${esc(alertBeforeLabel(c.alertBefore))}, plus a link in your Today.` : `${nx ? ' · ' : ''}no reminder set - you can still start it any time.`}</div>`;
-  return `<div class="rv-remedit"><span class="rv-cad-whenl">When it lands</span>${when}${onRow}${alertRow}${note}</div>`;
+  const note = `<div class="rv-remedit-note">${paused ? `⏸ Paused until <b>${esc(dpLabel(c.pausedUntil))}</b> - no nudges until then.` : `${nx ? `Due <b>${esc(dpLabel(nx))}</b>` : ''}${c.on ? `${nx ? ', ' : ''}a text and email ${esc(alertBeforeLabel(c.alertBefore))}, plus a link in your Today.` : `${nx ? ' · ' : ''}no reminder set - you can still start it any time.`}`}</div>`;
+  return `<div class="rv-remedit"><span class="rv-cad-whenl">When it lands</span>${when}${onRow}${alertRow}${pauseRow}${note}</div>`;
 }
 function reviewsListHtml() {
   const open = state.reviewRemEdit; const t0 = todayISO();
@@ -9387,7 +9390,7 @@ function reviewsListHtml() {
     const editor = isOpen ? reviewCadEditor(k, c) : '';
     return `<div class="rv-remcard ${isOpen ? 'open' : ''} ${c.on ? 'is-on' : ''}">
       <button class="rv-remhead" data-rev-rem-edit="${k}"><span class="rv-remtog-b"><b>${REVIEWS[k].label}</b><small>${esc(reviewCadWords(k))}</small></span><span class="rv-remchev">${isOpen ? '▾' : '▸'}</span></button>
-      <div class="rv-rem-meta"><span class="rv-rem-stat"><b>${done}</b> done</span><span class="rv-rem-dot">·</span>${nextBit}<span class="rv-rem-dot">·</span><span class="rv-rem-stat rv-rem-muted">${c.on ? `alert ${esc(alertBeforeLabel(c.alertBefore))}` : 'no alert'}</span></div>
+      <div class="rv-rem-meta"><span class="rv-rem-stat"><b>${done}</b> done</span><span class="rv-rem-dot">·</span>${(c.pausedUntil && c.pausedUntil > t0) ? `<span class="rv-rem-stat rv-rem-muted">⏸ paused until ${esc(dpLabel(c.pausedUntil))}</span>` : `${nextBit}<span class="rv-rem-dot">·</span><span class="rv-rem-stat rv-rem-muted">${c.on ? `alert ${esc(alertBeforeLabel(c.alertBefore))}` : 'no alert'}</span>`}</div>
       ${editor}</div>`;
   }).join('');
   return `<section class="home-sec"><div class="home-sec-h">Reviews and cadence</div>
@@ -9401,7 +9404,7 @@ function saveReviewRem() {
 function reReviewRems() { if (state.view.type === 'reviews') renderReviews(); else renderGoals(); }
 // Materialise a type's cadence into state (resolving defaults), so a mutation
 // starts from concrete values rather than undefined.
-function ensureCad(k) { state.reviewRem = state.reviewRem || {}; const c = reviewCad(k); state.reviewRem[k] = { on: c.on, mode: c.mode, dow: c.dow, last: c.last, alertBefore: c.alertBefore }; return state.reviewRem[k]; }
+function ensureCad(k) { state.reviewRem = state.reviewRem || {}; const c = reviewCad(k); state.reviewRem[k] = { on: c.on, mode: c.mode, dow: c.dow, last: c.last, alertBefore: c.alertBefore, pausedUntil: c.pausedUntil }; return state.reviewRem[k]; }
 // After any change, mark the current occurrence as already handled so a fresh
 // cadence doesn't fire the very same day you set it - only the next one nudges.
 function reviewCadSettle(k) { const c = state.reviewRem[k]; c.last = c.on ? reviewCadRecent(k, todayISO()) : null; }
@@ -9412,6 +9415,7 @@ function toggleReviewCad(k, on) {
 function setReviewCadDow(k, dow) { const c = ensureCad(k); c.dow = dow; if (k !== 'weekly') c.mode = 'neardow'; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadMode(k, mode) { const c = ensureCad(k); c.mode = mode; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadAlert(k, n) { const c = ensureCad(k); c.alertBefore = Math.max(0, Math.min(14, n)); c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
+function setReviewCadPause(k, dateISO) { const c = ensureCad(k); c.pausedUntil = (dateISO && /^\d{4}-\d\d-\d\d$/.test(dateISO)) ? dateISO : null; saveReviewRem(); reReviewRems(); }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 async function startReview(rtype) {
   const { from, to } = reviewPeriod(rtype);
@@ -9623,6 +9627,25 @@ function reviewSentiment(p, r) {
   if (s <= -1) return { emoji: '🌥', label: 'Mixed', note: 'Some weight in there this week.' };
   return { emoji: '😌', label: 'Even', note: 'A fairly level week.' };
 }
+// A little wheel drawn from THIS review's scores, plus a line reading it.
+function reviewWheelHtml(p) {
+  const areas = (state.areas || []).filter((a) => a && a.title && (p.wheel || {})[a.id]);
+  if (areas.length < 3) return '';
+  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5) }));
+  const N = data.length, cx = 110, cy = 110, R = 92, seg = 2 * Math.PI / N;
+  const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`;
+  const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
+  const wedges = data.map((d, i) => { const a0 = -Math.PI / 2 + i * seg, a1 = a0 + seg, large = seg > Math.PI ? 1 : 0, rr = R * d.score / 5; return `<path d="M${cx},${cy} L${P(R, a0)} A${R},${R} 0 ${large} 1 ${P(R, a1)} Z" class="wol-track"/><path d="M${cx},${cy} L${P(rr, a0)} A${rr.toFixed(1)},${rr.toFixed(1)} 0 ${large} 1 ${P(rr, a1)} Z" fill="hsl(${hueOf(d.a)} 58% 55%)" fill-opacity="0.9" stroke="var(--card)" stroke-width="1.5"/>`; }).join('');
+  const svg = `<svg viewBox="0 0 220 220" class="wol-svg" role="img" aria-label="Wheel of Life">${rings}${wedges}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
+  const sorted = data.slice().sort((x, y) => y.score - x.score);
+  const top = sorted[0], low = sorted[sorted.length - 1];
+  const avg = Math.round(data.reduce((s, d) => s + d.score, 0) / data.length * 10) / 10;
+  const spread = top.score - low.score;
+  let comm = `Averaging <b>${avg}/5</b>. <b>${esc(top.a.title)}</b> leads at ${top.score}/5`;
+  if (low.a.id !== top.a.id) comm += `; <b>${esc(low.a.title)}</b> is quietest at ${low.score}/5`;
+  comm += spread >= 3 ? ' - an uneven picture, worth steering some energy to the lower spokes.' : ' - a nicely balanced spread.';
+  return `<div class="rr-wheel"><div class="rr-wheel-chart">${svg}</div><p class="rr-wheel-comm">${comm}</p></div>`;
+}
 function reviewSentimentHtml(p, r) {
   const s = reviewSentiment(p, r); if (!s) return '';
   return `<div class="rv-sentiment"><span class="rv-sent-emoji">${s.emoji}</span><span class="rv-sent-body"><span class="rv-sent-l">The mood: ${s.label}</span><span class="rv-sent-note">${esc(s.note)}</span></span></div>`;
@@ -9683,7 +9706,7 @@ function renderReviewReport() {
       ${feature}
       <div class="rr-article">${readHtml}</div>
       ${doneN ? `<section class="rr-sec"><h2 class="rr-h">What moved</h2>${reviewWinsHtml(m, p, true)}</section>` : ''}
-      ${wheelRows ? `<section class="rr-sec"><h2 class="rr-h">By life area</h2><div class="rr-areas">${wheelRows}</div></section>` : ''}
+      ${wheelRows ? `<section class="rr-sec"><h2 class="rr-h">By life area</h2>${reviewWheelHtml(p)}<div class="rr-areas">${wheelRows}</div></section>` : ''}
       ${goalRows ? `<section class="rr-sec"><h2 class="rr-h">Goals</h2><div class="rr-areas">${goalRows}</div></section>` : ''}
       ${(refl.trim() || free) ? `<section class="rr-sec"><h2 class="rr-h">In your words</h2>${refl}${free}</section>` : ''}
       <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">Everything here is saved - open the editor to change any of it.</span></div>
@@ -11213,6 +11236,7 @@ document.addEventListener('click', (e) => {
   { const cd = t.closest('[data-rev-cad-dow]'); if (cd) { const [k, d] = cd.dataset.revCadDow.split(':'); setReviewCadDow(k, +d); return; } }
   { const cm = t.closest('[data-rev-cad-mode]'); if (cm) { const [k, m] = cm.dataset.revCadMode.split(':'); setReviewCadMode(k, m); return; } }
   { const ca = t.closest('[data-rev-cad-alert]'); if (ca) { const [k, n] = ca.dataset.revCadAlert.split(':'); setReviewCadAlert(k, +n); return; } }
+  { const cr = t.closest('[data-rev-cad-resume]'); if (cr) { setReviewCadPause(cr.dataset.revCadResume, ''); toast('Resumed'); return; } }
   { const rf = t.closest('[data-reviews-filter]'); if (rf) { state.reviewsFilter = rf.dataset.reviewsFilter || ''; if (state.view.type === 'reviews') renderReviews(); else renderGoals(); return; } }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R) { R.summaryOpen = !R.summaryOpen; renderReviewCard(); } return; }
@@ -11713,6 +11737,7 @@ document.addEventListener('change', (e) => {
     api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
     renderArea(); return;
   }
+  if (e.target.matches('[data-rev-cad-pause]')) { setReviewCadPause(e.target.dataset.revCadPause, e.target.value); return; }
   if (e.target.matches('[data-glist-status]')) { state.goalsListStatus = e.target.value; renderGoals(); return; }
   if (e.target.matches('[data-glist-area]')) { state.goalsListArea = e.target.value; renderGoals(); return; }
   if (e.target.matches('[data-glist-sort]')) { state.goalsListSort = e.target.value; renderGoals(); return; }
