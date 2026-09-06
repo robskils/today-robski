@@ -2197,6 +2197,11 @@ const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life 
 
 async function openHome() {
   state.view = { type: 'home' };
+  // Always close the mobile tools drawer on the way home, and give an instant
+  // nav re-render, so tapping the wordmark never leaves the drawer open over
+  // Home (which read as "it didn't take me back").
+  state.navUtilOpen = false;
+  renderNav();
   const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
@@ -5965,10 +5970,28 @@ async function mailToArea(areaId) {
   const src = (o.text || '').replace(/\r\n/g, '\n').trim();
   const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
   try {
-    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, props: { area: areaId, areas: [areaId], fromEmail: true } }) });
-    toast(`Filed in ${area ? esc(area.title) : 'life area'}`);
+    const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, props: { area: areaId, areas: [areaId], fromEmail: true } }) });
+    // Remember that this email is filed here, so the reader can show it later.
+    const k = mailFileKey(o);
+    if (k) {
+      state.mailAreas = state.mailAreas || {};
+      const list = state.mailAreas[k] || [];
+      if (!list.some((e) => e.a === areaId)) list.push({ a: areaId, n: (note && note.id) || null, at: Date.now() });
+      state.mailAreas[k] = list;
+      api('/api/kv/mail_areas', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailAreas) }) }).catch(() => {});
+    }
+    toast(`Filed in ${area ? area.title : 'life area'}`);
   } catch (e) { toast(e.message); }
   renderMail();
+}
+// The stable key for an email: its Message-ID if present, else account:uid.
+function mailFileKey(o) { return (o && (o.messageId || o._key)) || ''; }
+// "Filed in <area>" chips for the open email, each opening that life area.
+function mailFiledHtml(o) {
+  const list = (o && state.mailAreas && state.mailAreas[mailFileKey(o)]) || [];
+  if (!list.length) return '';
+  const chips = list.map((e) => { const a = areaById(e.a); return a ? `<button class="mail-filed-chip" data-open-area="${e.a}" title="Open ${esc(a.title)}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title)}</button>` : ''; }).filter(Boolean).join('');
+  return chips ? `<div class="mail-filed"><span class="mail-filed-l">📂 Filed in</span>${chips}</div>` : '';
 }
 async function mailMoveTargets(keys, target) {
   const list = [...keys]; state.mail.moveMenu = null;
@@ -6160,6 +6183,12 @@ async function openMail(openKey) {
   if (!state.mailTrust) {
     state.mailTrust = new Set();
     api('/api/kv/mail_trusted').then((r) => { try { (JSON.parse(r.value || '[]') || []).forEach((a) => state.mailTrust.add(String(a).toLowerCase())); } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
+  }
+  // Which emails you've filed into a life area, so the reader can say so. Keyed
+  // by the stable Message-ID (falling back to the account:uid key).
+  if (!state.mailAreas) {
+    state.mailAreas = {};
+    api('/api/kv/mail_areas').then((r) => { try { state.mailAreas = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
   }
   renderNav();
   // Instant cold open: if we have a cached inbox, paint it now and refresh behind
@@ -7092,6 +7121,7 @@ function renderMail(loading) {
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
         ${o.from && o.from.address ? (haveContact(o.from.address) ? '<span class="mail-contact-have" title="In your contacts">👤 Contact</span>' : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`) : ''}
         ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
+      ${mailFiledHtml(o)}
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<a class="mail-att-chip mail-att-dl" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open attachment in your browser">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↗</a>`).join('')}</div>` : ''}
       ${o.invite ? inviteCardHtml(o.invite) : ''}
       ${(() => { const ml = mailMeetingLink(o); return ml ? `<div class="mail-join-bar"><button class="add-btn wide" data-mail-join="${esc(ml)}">🎥 Join meeting</button><span class="mail-join-url">${esc(ml)}</span></div>` : ''; })()}
@@ -10018,6 +10048,21 @@ function reviewKeyPoints(m, p, r) {
   const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
   const prevDone = prev ? (prev.tasksDone != null ? prev.tasksDone : ((prev.mirror || {}).tasksDone || []).length) : null;
   if (done.length) { const d = prevDone != null ? done.length - prevDone : null; pts.push(['✓', `<b>${done.length}</b> ticked off${ranked[0] ? `, most in ${nmLink(ranked[0][0])}` : ''}${d ? ` <span class="rr-key-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)} vs last ${period}</span>` : ''}`]); }
+  // Spread: how many areas you actually touched this period.
+  if (ranked.length >= 3) pts.push(['🧭', `Active across <b>${ranked.length}</b> life areas`]);
+  // The standout win, in a line.
+  const win = reviewTopWin(m);
+  if (win && win.title) pts.push(['⭐', `Highlight: <b>${esc(String(win.title).slice(0, 60))}</b>${win.tag ? ` <span class="rr-key-sub">- ${esc(win.tag)}</span>` : ''}`]);
+  // Overall balance (Wheel of Life average) vs last time.
+  if (p.wheel) {
+    const vals = Object.keys(p.wheel).map((a) => Math.min(p.wheel[a] || 0, 5)).filter((v) => v > 0);
+    if (vals.length) {
+      const avg = Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
+      let pd = null;
+      if (prev && prev.wheel) { const pv = Object.keys(prev.wheel).map((a) => Math.min(prev.wheel[a] || 0, 5)).filter((v) => v > 0); if (pv.length) pd = Math.round((avg - pv.reduce((s, v) => s + v, 0) / pv.length) * 10) / 10; }
+      pts.push(['📊', `Life balance sitting at <b>${avg}/5</b>${pd ? ` <span class="rr-key-d ${pd > 0 ? 'up' : 'down'}">${pd > 0 ? '▲' : '▼'}${Math.abs(pd)} vs last ${period}</span>` : ''}`]);
+    }
+  }
   // Wheel mover vs last time.
   if (p.wheel && prev && prev.wheel) {
     const deltas = [];
@@ -10027,16 +10072,19 @@ function reviewKeyPoints(m, p, r) {
     const dn = deltas[deltas.length - 1];
     if (dn && dn.d < 0) pts.push(['📉', `${nmLink(dn.aid)} slipped to <b>${dn.now}/5</b>`]);
   }
-  const pk = (m.practices || []).reduce((a, x) => a + x.count, 0);
-  if (pk) pts.push(['🔥', `<b>${pk}</b> practice${pk > 1 ? 's' : ''} kept going`]);
+  // Practices: name the most consistent one, not just the total.
+  const prc = (m.practices || []).slice().sort((a, b) => b.count - a.count);
+  const pk = prc.reduce((a, x) => a + x.count, 0);
+  if (prc[0] && prc[0].title) pts.push(['🔥', `<b>${esc(prc[0].title)}</b> kept ${prc[0].count}×${prc.length > 1 ? `, ${pk} practice sessions in all` : ''}`]);
+  else if (pk) pts.push(['🔥', `<b>${pk}</b> practice session${pk > 1 ? 's' : ''} kept going`]);
   const gm = done.filter((t) => t.goal).length;
   if (gm) pts.push(['🎯', `<b>${gm}</b> moved a goal forward`]);
   const quietIds = (m.quietAreas || []).filter((id) => nm(id));
   if (quietIds.length) pts.push(['🌥', `Quiet in ${quietIds.slice(0, 2).map(nmLink).join(', ')}`]);
   if ((m.openP1 || []).length) pts.push(['⚑', `<b>${m.openP1.length}</b> P1 still open`]);
   const s = reviewSentiment(p, r);
-  if (s && pts.length < 5) pts.push([s.emoji, `The mood: <b>${esc(s.label)}</b>`]);
-  return pts.slice(0, 5);
+  if (s && pts.length < 8) pts.push([s.emoji, `The mood: <b>${esc(s.label)}</b>`]);
+  return pts.slice(0, 8);
 }
 function reviewKeyPointsHtml(m, p, r) {
   const pts = reviewKeyPoints(m, p, r); if (!pts.length) return '';
@@ -11484,6 +11532,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-tab-new]')) { newTab(); return; }
   if (t.closest('[data-util-toggle]')) { toggleNavUtil(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
+  // Any main nav link (wordmark, a tool, a favourite) closes the mobile tools
+  // drawer as it navigates - the destination's renderNav() then paints it shut.
+  if (state.navUtilOpen && (t.closest('.nav-brand') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
