@@ -3097,12 +3097,15 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-notepad::placeholder { color:var(--ink-3); }
 .home-notepad:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
 /* Recently viewed: a compact tap-list of the last things you opened. */
-.recent-list { display:flex; flex-direction:column; gap:2px; }
-.recent-item { display:flex; align-items:center; gap:10px; width:100%; min-width:0; padding:9px 11px; border-radius:10px; color:var(--ink); font-size:15.5px; text-align:left; transition:background .12s,color .12s; }
-.recent-item:hover { background:var(--paper-2); color:var(--accent); }
+/* Recently viewed reads as cards (matching the Starred section next to it), not
+   a plain word list: bordered chips on the card ground, wrapping across the row,
+   each carrying its life-area colour as a left edge. */
+.recent-list { display:flex; flex-wrap:wrap; gap:8px; }
+.recent-item { display:inline-flex; align-items:center; gap:9px; min-width:0; max-width:100%; padding:11px 15px; border-radius:11px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink); font-size:15.5px; text-align:left; transition:border-color .12s,color .12s; }
+.recent-item:hover { border-color:var(--accent); color:var(--accent); }
+.recent-item.has-area { border-left:3px solid hsl(var(--h,4) 60% 52%); }
 /* Icon tint: the item's life-area colour, or the accent (terracotta) with none. */
 .recent-ic { flex:none; width:18px; text-align:center; color:var(--accent); font-size:14px; }
-.recent-item:hover .recent-ic { color:var(--accent); }
 .recent-item.has-area .recent-ic { color:hsl(var(--h,4) 55% 55%); }
 /* The note/table glyphs carry their own colour; in this list they follow the
    tint instead, so a note reads in its life-area colour like everything else. */
