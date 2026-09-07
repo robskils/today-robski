@@ -14,7 +14,7 @@ import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStat
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
-import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams } from './feeds.js';
+import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn } from './feeds.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -294,8 +294,8 @@ async function handleCalendar(request, env, url) {
   const events = applyEventAreas([...(g.events || []), ...native], await getEventAreas(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) merged in as read-only overlays.
   const feeds = await getFeeds(env);
-  if (feeds.pt || feeds.uk || feedTeams(feeds).length) {
-    events.push(...feedRangeEvents(feeds, await userFixtures(env, feeds), from, to));
+  if (feedCountries(feeds).length || feedTeams(feeds).length) {
+    events.push(...feedRangeEvents(await userHolidays(env, feeds, from, to), await userFixtures(env, feeds), from, to));
   }
   return json({ events, error: g.error || null }, request);
 }
@@ -793,6 +793,34 @@ async function userFixtures(env, feeds) {
   const cache = await getTeamCache(env);
   const out = [];
   for (const t of teams) { const c = cache[String(t.id)]; if (c && Array.isArray(c.fixtures)) out.push(...c.fixtures); }
+  return out;
+}
+// The countries a user subscribes to (list model), with back-compat for the old
+// pt/uk boolean flags.
+function feedCountries(feeds) {
+  const list = (feeds && Array.isArray(feeds.countries)) ? feeds.countries : [];
+  if (list.length) return list;
+  const legacy = [];
+  if (feeds && feeds.pt) legacy.push({ code: 'PT', name: 'Portugal' });
+  if (feeds && feeds.uk) legacy.push({ code: 'GB', name: 'United Kingdom' });
+  return legacy;
+}
+// This user's public holidays across a date range: cached per country+year
+// under the owner (holidays are the same for everyone), fetched on a miss.
+async function userHolidays(env, feeds, from, to) {
+  const countries = feedCountries(feeds); if (!countries.length) return [];
+  const years = yearsIn(from, to);
+  let cache = {}; try { const v = await getSetting(env, 'kv_holidays', 1); cache = v ? JSON.parse(v) : {}; } catch { cache = {}; }
+  let dirty = false; const out = [];
+  for (const c of countries) {
+    for (const y of years) {
+      const key = `${c.code}:${y}`;
+      let hs = cache[key];
+      if (!hs) { hs = await fetchHolidays(c.code, y); cache[key] = hs; dirty = true; }
+      for (const h of hs) out.push({ code: c.code, date: h.date, name: h.name });
+    }
+  }
+  if (dirty) await setSetting(env, 'kv_holidays', JSON.stringify(cache), 1);
   return out;
 }
 async function setSetting(env, key, value, uid = env.uid) {
@@ -2282,8 +2310,8 @@ async function handleDay(request, env, url) {
   applyEventAreas(cal.events, await getEventAreas(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) for this day, read-only overlays.
   const feeds = await getFeeds(env);
-  if (feeds.pt || feeds.uk || feedTeams(feeds).length) {
-    cal.events.push(...feedDayEvents(feeds, await userFixtures(env, feeds), day));
+  if (feedCountries(feeds).length || feedTeams(feeds).length) {
+    cal.events.push(...feedDayEvents(await userHolidays(env, feeds, day, day), await userFixtures(env, feeds), day));
   }
 
   const byslot = new Map();
@@ -3634,6 +3662,13 @@ export default {
           await setSetting(env, 'kv_' + kv[1], String(b.value ?? ''));
           return json({ ok: true }, request);
         }
+      }
+      // The list of countries you can subscribe to holidays for (cached ~30d
+      // under the owner, since the list is essentially static).
+      if (path === '/api/feeds/countries' && request.method === 'GET') {
+        let list = []; try { const v = await getSetting(env, 'kv_countries', 1); list = v ? JSON.parse(v) : []; } catch { list = []; }
+        if (!list.length) { list = await fetchCountries(); if (list.length) await setSetting(env, 'kv_countries', JSON.stringify(list), 1); }
+        return json({ countries: list }, request);
       }
       // Search TheSportsDB for a team to follow.
       if (path === '/api/feeds/search' && request.method === 'GET') {

@@ -1049,15 +1049,47 @@ async function syncAccentFromServer() {
 
 // ── Settings hub ──────────────────────────────────────────────────────
 function openSettings(tab) { state.view = { type: 'settings' }; state.settings = state.settings || {}; if (tab) state.settings.tab = tab; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
-// Turn a calendar feed (Portugal/UK holidays, Fulham fixtures) on or off. Saved
-// per account; enabling fixtures kicks a fetch so the games appear right away.
-async function toggleFeed(name, on) {
-  state.feeds = { ...(state.feeds || {}), [name]: on };
-  try {
-    await api('/api/kv/cal_feeds', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.feeds) }) });
-    if (name === 'fulham' && on) { toast('Fetching fixtures…'); await api('/api/feeds/refresh', { method: 'POST' }).catch(() => {}); }
-    toast(on ? 'Added to your calendar ✓' : 'Removed from your calendar');
-  } catch (e) { toast(e.message); state.feeds[name] = !on; renderSettings(); }
+// 🇵🇹 from "PT" - two regional-indicator symbols (client mirror of the worker's).
+function flagEmoji(code) {
+  const c = String(code || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return '📅';
+  return String.fromCodePoint(...[...c].map((ch) => 127397 + ch.charCodeAt(0)));
+}
+// The countries a user follows (list model, back-compat with old pt/uk flags).
+function feedCountriesOf(f) {
+  const list = (f && Array.isArray(f.countries)) ? f.countries : [];
+  if (list.length) return list;
+  const legacy = [];
+  if (f && f.pt) legacy.push({ code: 'PT', name: 'Portugal' });
+  if (f && f.uk) legacy.push({ code: 'GB', name: 'United Kingdom' });
+  return legacy;
+}
+async function addCountry(c) {
+  state.feeds = state.feeds || {};
+  const list = feedCountriesOf(state.feeds).slice();
+  if (list.some((x) => x.code === c.code)) { toast('Already added'); return; }
+  list.push({ code: c.code, name: c.name });
+  state.feeds.countries = list; delete state.feeds.pt; delete state.feeds.uk;
+  const q = document.getElementById('feed-country-q'); if (q) q.value = '';
+  const res = document.getElementById('feed-country-results'); if (res) res.innerHTML = '';
+  try { await saveFeeds(); toast(`${c.name} holidays added ✓`); renderSettings(); } catch (e) { toast(e.message); }
+}
+async function removeCountry(code) {
+  if (!state.feeds) return;
+  state.feeds.countries = feedCountriesOf(state.feeds).filter((x) => x.code !== code);
+  delete state.feeds.pt; delete state.feeds.uk;
+  try { await saveFeeds(); toast('Removed'); renderSettings(); } catch (e) { toast(e.message); }
+}
+// Country search filters the fetched list locally (it's a fixed ~200-long list).
+function feedCountrySearchInput(q) {
+  const res = document.getElementById('feed-country-results'); if (!res) return;
+  const s = (q || '').trim().toLowerCase();
+  if (s.length < 1) { res.innerHTML = ''; return; }
+  const have = new Set(feedCountriesOf(state.feeds).map((c) => c.code));
+  const hits = (state.availCountries || []).filter((c) => !have.has(c.code) && c.name.toLowerCase().includes(s)).slice(0, 8);
+  res.innerHTML = hits.length
+    ? hits.map((c) => `<button class="feed-res" data-feed-country-add data-cc="${esc(c.code)}" data-cn="${esc(c.name)}"><span class="fr-t">${flagEmoji(c.code)} ${esc(c.name)}</span></button>`).join('')
+    : (state.availCountries && state.availCountries.length ? '<div class="feed-res-note">No country matches.</div>' : '<div class="feed-res-note">Loading countries…</div>');
 }
 // The followed teams (new list model, with back-compat for the old fulham flag).
 function feedTeamsOf(f) {
@@ -2087,6 +2119,11 @@ function renderSettings() {
     state.feeds = {};
     api('/api/kv/cal_feeds').then((r) => { if (r && r.value) { try { state.feeds = JSON.parse(r.value) || {}; } catch {} } if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {});
   }
+  // The country list for the holiday picker - fetched once, filtered locally.
+  if (state.availCountries === undefined && state.settings.tab === 'feeds') {
+    state.availCountries = [];
+    api('/api/feeds/countries').then((r) => { state.availCountries = (r && r.countries) || []; }).catch(() => {});
+  }
   // The Card tab (and the Account tab's card preview) need the card data loaded.
   if (state.card === undefined) {
     state.card = {};
@@ -2193,8 +2230,12 @@ function renderSettings() {
   const feedsPane = `<div class="set-card set-notifs">
         <p class="inv-hint" style="margin:0 0 14px">Add public holidays and your team's fixtures onto your calendar. They appear as read-only entries (you can't edit or delete a single one) - untick a feed to remove them all.</p>
         <div class="set-notif-group"><div class="set-notif-h">Public holidays</div>
-          <label class="set-mod"><span>🇵🇹 Portugal<small>National public holidays</small></span><input type="checkbox" data-feed="pt" ${f.pt ? 'checked' : ''}></label>
-          <label class="set-mod"><span>🇬🇧 United Kingdom<small>England &amp; Wales bank holidays</small></span><input type="checkbox" data-feed="uk" ${f.uk ? 'checked' : ''}></label>
+          <p class="feed-teams-lead">Add any country and its public holidays appear on your calendar.</p>
+          <div class="feed-teams">${feedCountriesOf(f).map((c) => `<span class="feed-team"><span class="ft-name">${flagEmoji(c.code)} ${esc(c.name)}</span><button class="ft-x" data-feed-country-rm="${esc(c.code)}" title="Remove">×</button></span>`).join('') || '<span class="feed-teams-empty">No countries yet.</span>'}</div>
+          <div class="feed-search">
+            <input class="sel feed-team-q" id="feed-country-q" placeholder="Search a country (Portugal, Japan, Brazil…)" autocomplete="off" spellcheck="false">
+            <div class="feed-results" id="feed-country-results"></div>
+          </div>
         </div>
         <div class="set-notif-group"><div class="set-notif-h">Sports teams</div>
           <p class="feed-teams-lead">Follow any team and its upcoming fixtures land on your calendar, kick-off in your local time.</p>
@@ -12095,6 +12136,7 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('input', (e) => {
   if (e.target && e.target.id === 'feed-team-q') feedTeamSearchInput(e.target.value);
+  if (e.target && e.target.id === 'feed-country-q') feedCountrySearchInput(e.target.value);
 });
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
@@ -12324,6 +12366,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   { const fa = t.closest('[data-feed-add]'); if (fa) { addTeam({ id: fa.dataset.teamId, name: fa.dataset.teamName }); return; } }
   { const fr = t.closest('[data-feed-team-rm]'); if (fr) { removeTeam(fr.dataset.feedTeamRm); return; } }
+  { const ca = t.closest('[data-feed-country-add]'); if (ca) { addCountry({ code: ca.dataset.cc, name: ca.dataset.cn }); return; } }
+  { const cr = t.closest('[data-feed-country-rm]'); if (cr) { removeCountry(cr.dataset.feedCountryRm); return; } }
   if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
   { const ax = t.closest('[data-alert-x]'); if (ax) { try { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, todayISO()); } catch {} renderHome(); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
@@ -12903,7 +12947,6 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
-  if (e.target.matches('[data-feed]')) { toggleFeed(e.target.dataset.feed, e.target.checked); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
   if (e.target.matches('[data-card-email]')) {
