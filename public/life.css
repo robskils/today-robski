@@ -2711,6 +2711,13 @@ select.sel { appearance:none; -webkit-appearance:none; padding-right:34px;
   background-repeat:no-repeat; background-position:right 13px center; }
 /* Today/Tracker tabs. */
 .t2-tabs { display:flex; gap:6px; margin:-2px 0 14px; }
+/* Quick add on the Today page: one tap to add an event or a task for the day. */
+.t2-quickadd { display:flex; gap:8px; margin:0 0 14px; }
+.t2-qa-btn { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:15px; font-weight:600; box-shadow:var(--shadow); cursor:pointer; touch-action:manipulation; transition:border-color .12s, color .12s; }
+.t2-qa-btn:hover { border-color:var(--accent); color:var(--accent); }
+.t2-qa-ic { color:var(--accent); font-size:16px; font-weight:700; }
+.t2-qa-btn:hover .t2-qa-ic { color:var(--accent); }
+@media (max-width:560px){ .t2-quickadd .t2-qa-btn { flex:1 1 0; justify-content:center; } }
 /* Keep the Today/Tracker switch pinned just under the breadcrumb as the day
    scrolls beneath it. --t2-crumbh is the breadcrumb's measured height (set in
    renderToday); the base offset matches where .crumbbar itself pins. */

@@ -5670,6 +5670,7 @@ function renderToday() {
     <p class="t2-sub">Plan your day, track your day</p>
     ${tabs}
     ${dueBanner}
+    ${T.tab === 'today' ? `<div class="t2-quickadd"><button class="t2-qa-btn" data-quick-event><span class="t2-qa-ic">＋</span> Event</button><button class="t2-qa-btn" data-quick-task><span class="t2-qa-ic">＋</span> Task</button></div><div id="qt-wrap"></div>` : ''}
     ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>'
       : (T.tab === 'tracker' ? t2TrackerHtml() : `
     <div class="t2-grid" style="--t2h:${t2Height}px">
@@ -7704,8 +7705,14 @@ async function homeAddTask(o) {
   if (o.repeat) props.repeat = o.repeat;
   if (o.repeat && o.repeatFrom === 'done') props.repeatFrom = 'done';
   const body = textToProse(o.notes);
-  try { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props, ...(body ? { body } : {}) }) }); toast('Task added'); }
-  catch (e) { toast(e.message); }
+  try {
+    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props, ...(body ? { body } : {}) }) }); toast('Task added');
+    // On the Today page, pull the new task into its Tasks column right away.
+    if (state.view && state.view.type === 'today' && state.today) {
+      state.today.tasks = await api('/api/tasks').then((r) => r.tasks || []).catch(() => state.today.tasks);
+      renderToday();
+    }
+  } catch (e) { toast(e.message); }
 }
 const pad2 = (n) => String(n).padStart(2, '0');
 // Event lengths, from 15 minutes up to a full day. Shared by both event forms.
@@ -7714,7 +7721,9 @@ const durLabel = (n) => n === 1440 ? 'All day (24h)' : n < 60 ? `${n} min` : n %
 const durationOptions = (sel) => DURATIONS.map((n) => `<option value="${n}" ${n === sel ? 'selected' : ''}>${durLabel(n)}</option>`).join('');
 function showQuickEvent() {
   const d = new Date();
-  const today = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  // On the Today page, default the event to the day being viewed (not always the
+  // real today), so adding an event while looking at tomorrow lands on tomorrow.
+  const today = (state.view && state.view.type === 'today' && state.today && state.today.day) ? state.today.day : `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   // Default to the next quarter-hour, an hour long - same as the calendar form.
   const mins = Math.ceil((d.getHours() * 60 + d.getMinutes() + 5) / 15) * 15;
   const start = `${pad2(Math.floor(mins / 60) % 24)}:${pad2(mins % 60)}`;
@@ -7750,6 +7759,8 @@ async function homeAddEvent(body) {
     await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
     toast('Added to your calendar');
     $('#qt-wrap').innerHTML = '';
+    // On the Today page, reload so the new event draws on the timeline at once.
+    if (state.view.type === 'today') { await loadToday(); return; }
     // Pull it straight into the Today panel if it lands today.
     const dres = await api('/api/day').catch(() => null);
     if (dres && state.view.type === 'home') { state.home.events = dres.events || []; renderHome(); }
@@ -13026,7 +13037,9 @@ document.addEventListener('submit', (e) => {
     const i = $('#qt-title'); const v = i.value.trim();
     if (v) {
       homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, repeatFrom: ($('#qt-repeatfrom') || {}).value, notes: ($('#qt-notes') || {}).value });
-      if (matchMedia('(max-width:820px)').matches) {
+      if (state.view && state.view.type === 'today') {
+        // homeAddTask re-renders the Today view, which closes this form for us.
+      } else if (matchMedia('(max-width:820px)').matches) {
         // On mobile, act like "Done" too: drop focus so the keyboard dismisses,
         // then close the form - one task, done, out of the way.
         try { i.blur(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch {}
