@@ -948,7 +948,11 @@ function navSection(key, v) {
     // actually read them.
     rows = state.favs.map((f) => {
       const wide = (f.title || '').length > 15 ? ' nav-sub-wide' : '';
-      return `<button class="nav-sub${wide}" data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"><span class="i">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="t">${esc(f.title || 'Untitled')}</span></button>`;
+      // Carry the item's life-area colour as a left edge, so you can see at a
+      // glance which part of life a starred note or table belongs to.
+      const a = areaById(blockAreas(f)[0]);
+      const hue = a ? hueOf(a) : null;
+      return `<button class="nav-sub${wide}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="t">${esc(f.title || 'Untitled')}</span></button>`;
     }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // Notes and tables are one list now; a table note carries the grid icon.

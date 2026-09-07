@@ -1660,6 +1660,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-sec-body.nav-2col { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
 .nav-2col .nav-sub { min-width:0; padding:8px 10px; background:var(--card); border:1px solid var(--line); border-radius:9px; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
+/* Starred chips carry their life-area colour: a left edge + a tinted icon, so
+   you can tell at a glance which part of life each pinned item is from. */
+.nav-2col .nav-sub.has-area { border-left:3px solid hsl(var(--h,4) 60% 52%); }
+.nav-2col .nav-sub.has-area .i { color:hsl(var(--h,4) 55% 55%); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
 /* Calendar event: start + end date side by side (multi-day events). */
