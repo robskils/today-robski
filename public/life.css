@@ -1069,6 +1069,26 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .wol-trend { margin-top:18px; }
 .wol-trend-h { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
 .wol-trend .rv-spark { display:flex; align-items:flex-end; gap:5px; height:56px; padding:8px 2px 0; }
+/* Wheel of Life full page */
+.wol-more { margin-top:16px; border:0; background:none; color:var(--accent); font-size:14px; font-weight:600; cursor:pointer; padding:0; }
+.wol-more:hover { text-decoration:underline; }
+.wol-svg-big { max-width:260px; }
+.wheelpage-hero { display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap; margin:6px 0 10px; }
+.wheelpage-hero .wol-chart { flex:none; width:260px; max-width:100%; }
+.wheelpage-side { flex:1; min-width:280px; display:flex; flex-direction:column; gap:20px; }
+.wheel-keys { margin:0; }
+.wheel-avgtrend { margin-top:0; }
+.wheel-avgtrend .rv-spark { display:flex; align-items:flex-end; gap:5px; height:56px; padding:8px 2px 0; }
+.wheelpage-trends { margin-top:26px; }
+.wheeltrend-list { display:flex; flex-direction:column; gap:2px; margin-top:8px; }
+.wheeltrend-row { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--line); padding:12px 4px; cursor:pointer; }
+.wheeltrend-row:hover .wheeltrend-n { color:var(--accent); }
+.wheeltrend-dot { flex:none; width:10px; height:10px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); }
+.wheeltrend-n { flex:1; min-width:0; font-size:15px; color:var(--ink); display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wheeltrend-spark { flex:none; width:130px; }
+.wheeltrend-spark .rv-spark { display:flex; align-items:flex-end; gap:3px; height:34px; }
+.wheeltrend-flat { color:var(--ink-3); font-size:13px; }
+.wheeltrend-now { flex:none; font-size:14px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:6px; min-width:66px; justify-content:flex-end; }
 .rv-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 @media (max-width:640px) { .rv-cards { grid-template-columns:1fr; } }
 .rv-card { text-align:left; padding:11px 13px; border:1px solid var(--line); border-left:3px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; display:flex; flex-direction:column; gap:6px; transition:border-color .12s, transform .08s; }

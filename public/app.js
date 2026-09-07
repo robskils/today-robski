@@ -786,6 +786,7 @@ function labelForView(v) {
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
+    case 'wheel': return 'Wheel of Life';
     case 'toolbox': return t('nav.timer');
     case 'visioncard': return (state.vision_open && `${state.vision_open.area.title} · Vision`) || 'Vision'; case 'visionwall': return 'The wall';
     default: return 'Home';
@@ -810,6 +811,7 @@ function openView(v) {
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
     case 'reviews': return openReviews(); case 'reviewcard': return openReviewCard(v.id);
+    case 'wheel': return openWheel();
     case 'toolbox': return openToolbox();
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
     case 'help': return openHelp(v.tool);
@@ -9990,7 +9992,93 @@ function wheelOfLifeHtml() {
   const trendHtml = trend.length >= 2 ? `<div class="wol-trend"><span class="wol-trend-h">Average over time</span><div class="rv-spark">${trend.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${v}/5"></span>`).join('')}<span class="rv-trend-now">${trend[trend.length - 1]}/5</span></div></div>` : '';
   return `<section class="home-sec wol-sec">${head}
     <div class="wol-wrap"><div class="wol-chart">${svg}<div class="wol-cap">Average <b>${avg}</b> / 5</div></div>
-      <div class="wol-side"><div class="wol-legend">${legend}</div>${trendHtml}</div></div></section>`;
+      <div class="wol-side"><div class="wol-legend">${legend}</div>${trendHtml}
+        <button class="wol-more" data-open-wheel>See trends &amp; insights →</button></div></div></section>`;
+}
+// The dedicated Wheel of Life page: the wheel large, the average over time, a
+// per-area trend for each life area, and an auto-written "what to know" read.
+function wheelData() {
+  return (state.areas || []).filter((a) => a && a.title && !(a.props && a.props.reviewOff))
+    .map((a) => ({ a, score: Math.min((a.props && a.props.wheelScore) || 0, 5), star: !!(a.props && a.props.reviewStar) }));
+}
+function wheelSvgHtml(data, size) {
+  const N = data.length || 1, cx = size / 2, cy = size / 2, R = size / 2 - 10, seg = 2 * Math.PI / N;
+  const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
+  const wedges = data.map((d, i) => {
+    const a0 = -Math.PI / 2 + i * seg, a1 = a0 + seg, large = seg > Math.PI ? 1 : 0;
+    const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`;
+    const track = `<path d="M${cx},${cy} L${P(R, a0)} A${R},${R} 0 ${large} 1 ${P(R, a1)} Z" class="wol-track"/>`;
+    let fill = '';
+    if (d.score > 0) { const rr = R * d.score / 5; fill = `<path d="M${cx},${cy} L${P(rr, a0)} A${rr.toFixed(1)},${rr.toFixed(1)} 0 ${large} 1 ${P(rr, a1)} Z" fill="hsl(${hueOf(d.a)} 58% 55%)" fill-opacity="0.9" stroke="var(--card)" stroke-width="1.5"/>`; }
+    return track + fill;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" class="wol-svg wol-svg-big" role="img" aria-label="Wheel of Life">${rings}${wedges}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
+}
+async function openWheel() {
+  state.view = { type: 'wheel' };
+  state.navUtilOpen = false; renderNav();
+  if (state.reviews === undefined) { try { state.reviews = await api('/api/blocks?kind=review'); } catch { state.reviews = []; } }
+  if (!state.areas || !state.areas.length) { try { state.areas = await api('/api/blocks?kind=area'); } catch {} }
+  renderWheel();
+}
+function renderWheel() {
+  const data = wheelData();
+  const scored = data.filter((d) => d.score > 0);
+  const avg = scored.length ? Math.round(scored.reduce((s, d) => s + d.score, 0) / scored.length * 10) / 10 : 0;
+  const revs = (state.reviews || []).filter((r) => (r.props || {}).wheel && wheelAvg(r.props.wheel) > 0)
+    .sort((a, b) => String((a.props && a.props.to) || a.created_at || '').localeCompare(String((b.props && b.props.to) || b.created_at || '')));
+  const spark = (vals, fmt) => `<div class="rv-spark">${vals.map((v) => `<span class="rv-bar" style="height:${Math.max(10, Math.round(v / 5 * 100))}%" title="${fmt ? fmt(v) : v}"></span>`).join('')}</div>`;
+  const dTag = (d) => d ? `<span class="rr-key-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(Math.round(d * 10) / 10)}</span>` : '';
+  // Average over time.
+  const avgVals = revs.slice(-12).map((r) => Math.min(wheelAvg(r.props.wheel), 5));
+  const avgDelta = avgVals.length >= 2 ? Math.round((avgVals[avgVals.length - 1] - avgVals[avgVals.length - 2]) * 10) / 10 : 0;
+  // Per-area series across reviews.
+  const areaVals = (aid) => revs.map((r) => Math.min((r.props.wheel || {})[aid] || 0, 5)).filter((v) => v > 0);
+  // "What to know": highest/lowest, biggest mover vs last review, balance, quiet.
+  const sortedScored = scored.slice().sort((a, b) => b.score - a.score);
+  const highest = sortedScored[0], lowest = sortedScored[sortedScored.length - 1];
+  const last = revs[revs.length - 1], prev = revs[revs.length - 2];
+  const nmLink = (a) => `<button class="rvi-link" data-open-area="${a.id}">${esc(a.title)}</button>`;
+  let mover = null, dropper = null;
+  if (last && prev) {
+    const lw = last.props.wheel || {}, pw = prev.props.wheel || {}; const deltas = [];
+    data.forEach((d) => { const now = Math.min(lw[d.a.id] || 0, 5), was = Math.min(pw[d.a.id] || 0, 5); if (now && was && now !== was) deltas.push({ a: d.a, d: now - was, now }); });
+    deltas.sort((x, y) => y.d - x.d);
+    if (deltas[0] && deltas[0].d > 0) mover = deltas[0];
+    const dn = deltas[deltas.length - 1]; if (dn && dn.d < 0) dropper = dn;
+  }
+  const quiet = data.filter((d) => !d.score);
+  const keys = [];
+  if (highest) keys.push(['🌟', `<b>${nmLink(highest.a)}</b> is your brightest at <b>${highest.score}/5</b> - ${AREA_SENTIMENT[highest.score].toLowerCase()}`]);
+  if (lowest && lowest !== highest) keys.push(['🌥', `<b>${nmLink(lowest.a)}</b> needs the most love at <b>${lowest.score}/5</b>`]);
+  if (mover) keys.push(['📈', `${nmLink(mover.a)} rose to <b>${mover.now}/5</b> since last review`]);
+  if (dropper) keys.push(['📉', `${nmLink(dropper.a)} slipped to <b>${dropper.now}/5</b>`]);
+  if (avgVals.length >= 2) keys.push([avgDelta >= 0 ? '☀' : '🌧', `Your overall balance is <b>${avg}/5</b> and ${avgDelta > 0 ? 'trending up' : avgDelta < 0 ? 'dipping' : 'holding steady'}${avgDelta ? ` ${dTag(avgDelta)}` : ''}`]);
+  if (highest && lowest && highest !== lowest) { const spread = highest.score - lowest.score; keys.push([spread >= 3 ? '⚖️' : '🟰', spread >= 3 ? `A wide spread (${spread} points) between your best and hardest areas - life feels lopsided right now` : `Fairly even across areas (a ${spread}-point spread) - nicely balanced`]); }
+  if (quiet.length) keys.push(['◻️', `${quiet.length} area${quiet.length === 1 ? '' : 's'} not yet rated: ${quiet.slice(0, 4).map((d) => esc(d.a.title)).join(', ')}`]);
+  const keysHtml = keys.length ? `<div class="rr-keys wheel-keys"><div class="rr-keys-h">What to know</div><ul class="rr-keys-list">${keys.map(([ic, h]) => `<li><span class="rr-key-ic">${ic}</span><span class="rr-key-t">${h}</span></li>`).join('')}</ul></div>` : '';
+  // Per-area trend rows.
+  const rows = data.map((d) => {
+    const vals = areaVals(d.a.id);
+    const now = d.score, was = vals.length >= 2 ? vals[vals.length - 2] : null;
+    const delta = (now && was) ? now - was : 0;
+    return `<button class="wheeltrend-row" data-open-area="${d.a.id}" style="--h:${hueOf(d.a)}">
+      <span class="wheeltrend-dot"></span>
+      <span class="wheeltrend-n">${d.star ? '<span class="wol-leg-star">★</span>' : ''}${esc(d.a.title)}</span>
+      <span class="wheeltrend-spark">${vals.length >= 2 ? spark(vals, (v) => `${v}/5`) : '<span class="wheeltrend-flat">–</span>'}</span>
+      <span class="wheeltrend-now">${now ? `${now}/5` : '–'}${dTag(delta)}</span>
+    </button>`;
+  }).join('');
+  const avgTrendHtml = avgVals.length >= 2 ? `<div class="wol-trend wheel-avgtrend"><span class="wol-trend-h">Average over time</span>${spark(avgVals, (v) => `${v}/5`)}<span class="rv-trend-now">${avgVals[avgVals.length - 1]}/5 ${dTag(avgDelta)}</span></div>` : '';
+  const body = !scored.length
+    ? '<div class="home-empty" style="padding:30px 0">Rate your life areas in a review and your Wheel of Life takes shape here.</div>'
+    : `<div class="wheelpage-hero"><div class="wol-chart">${wheelSvgHtml(data, 260)}<div class="wol-cap">Average <b>${avg}</b> / 5 · ${scored.length} area${scored.length === 1 ? '' : 's'} rated across ${revs.length} review${revs.length === 1 ? '' : 's'}</div></div>
+        <div class="wheelpage-side">${keysHtml}${avgTrendHtml}</div></div>
+      <section class="wheelpage-trends"><div class="home-sec-h">Each area over time</div><div class="wheeltrend-list">${rows}</div></section>`;
+  $('#pane').innerHTML = `
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
+    <div class="pane-head"><h1>Wheel of Life</h1></div>
+    ${body}`;
 }
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
@@ -12188,6 +12276,7 @@ document.addEventListener('click', (e) => {
   const tcr = t.closest('[data-trk-cat-rename]'); if (tcr) { renameTrkCat(tcr.dataset.trkCatRename); return; }
   const tcx = t.closest('[data-trk-cat-del]'); if (tcx) { delTrkCat(tcx.dataset.trkCatDel); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-wheel]')) { openWheel().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews-tool]') || t.closest('[data-open-reviews]')) { openReviews().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
