@@ -3062,6 +3062,17 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-hi { min-width:0; }
 .home-date { margin-top:4px; font-size:16px; color:var(--accent); font-weight:600; letter-spacing:.01em; }
 .home-actions { display:flex; gap:10px; }
+/* Mobile: the three quick actions share the row as equal thirds so longer
+   labels (e.g. Portuguese "+ Tarefa" / "+ Evento") never overflow the screen
+   or get clipped. Equal widths keep it tidy in any language. */
+@media (max-width:640px){
+  .home-actions { gap:8px; }
+  /* flex:1 1 0 + min-width:0 = equal thirds that shrink to fit, so the row can
+     never overflow; padding is trimmed so the label keeps its size (kept large
+     for legibility) rather than the text. Ellipsis only ever bites on very
+     narrow (~320px) legacy phones, and gracefully. */
+  .home-actions .add-btn.wide { flex:1 1 0; min-width:0; padding-left:6px; padding-right:6px; font-size:16px; letter-spacing:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+}
 .home-sec { margin:26px 0; }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
 .home-body { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:26px; align-items:start; }
