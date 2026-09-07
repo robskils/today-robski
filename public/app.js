@@ -580,7 +580,8 @@ const HELP = {
       <ul><li><b>Add</b> an event with a title, a start date and time (or All day), and a length. All-day events can span several days.</li>
       <li>Set a start date and the end follows to the same day - an event can never end before it begins.</li>
       <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
-      <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>` },
+      <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>
+      <p><b>Add holidays &amp; sport.</b> Tap <b>＋ Holidays &amp; sport</b> (or the ⚙ on this page) to open <b>Settings › Calendar</b>. Search for any <b>country</b> and its national public holidays appear on your calendar, and search for your <b>football team</b> (or any club) to add its upcoming fixtures with kick-off in your local time. These are read-only - untick a country or team to remove them.</p>` },
   mail: { title: 'Mail', tip: 'All your inboxes in one place. Read, reply, and search across every account.',
     body: `<p>Mail merges your real mailboxes (IMAP/SMTP) into one inbox. Add an account in <b>Settings › Mail accounts</b>.</p>
       <ul><li>Read, reply, forward and compose, choosing which account you send from.</li>
