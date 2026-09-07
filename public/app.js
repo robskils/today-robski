@@ -38,8 +38,8 @@ const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
-  'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more',
+  'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
@@ -58,8 +58,8 @@ const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
-  'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais',
+  'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
@@ -1049,6 +1049,16 @@ async function syncAccentFromServer() {
 
 // ── Settings hub ──────────────────────────────────────────────────────
 function openSettings(tab) { state.view = { type: 'settings' }; state.settings = state.settings || {}; if (tab) state.settings.tab = tab; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
+// Turn a calendar feed (Portugal/UK holidays, Fulham fixtures) on or off. Saved
+// per account; enabling fixtures kicks a fetch so the games appear right away.
+async function toggleFeed(name, on) {
+  state.feeds = { ...(state.feeds || {}), [name]: on };
+  try {
+    await api('/api/kv/cal_feeds', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.feeds) }) });
+    if (name === 'fulham' && on) { toast('Fetching fixtures…'); await api('/api/feeds/refresh', { method: 'POST' }).catch(() => {}); }
+    toast(on ? 'Added to your calendar ✓' : 'Removed from your calendar');
+  } catch (e) { toast(e.message); state.feeds[name] = !on; renderSettings(); }
+}
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 // Whether AI features can run for this account: master switch on, and either the
 // owner (managed key) or a stored own key. Optimistic before the account loads.
@@ -2018,11 +2028,17 @@ function renderSettings() {
     ['ai', t('set.tab.ai')],
     ['appearance', t('set.tab.appearance')],
     ['mobile', t('set.tab.mobile')],
+    ['feeds', t('set.tab.feeds')],
     ['notifications', t('set.tab.notifications')],
     ['sections', t('set.tab.sections')],
     ['invites', t('set.tab.invites')],
     ['manage', t('set.tab.manage')],
   ];
+  // Calendar feed subscriptions (holidays, fixtures) - load once.
+  if (state.feeds === undefined) {
+    state.feeds = {};
+    api('/api/kv/cal_feeds').then((r) => { if (r && r.value) { try { state.feeds = JSON.parse(r.value) || {}; } catch {} } if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {});
+  }
   // The Card tab (and the Account tab's card preview) need the card data loaded.
   if (state.card === undefined) {
     state.card = {};
@@ -2125,8 +2141,20 @@ function renderSettings() {
 
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
-  const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
+  const f = state.feeds || {};
+  const feedsPane = `<div class="set-card set-notifs">
+        <p class="inv-hint" style="margin:0 0 14px">Add public holidays and your team's fixtures onto your calendar. They appear as read-only entries (you can't edit or delete a single one) - untick a feed to remove them all.</p>
+        <div class="set-notif-group"><div class="set-notif-h">Public holidays</div>
+          <label class="set-mod"><span>🇵🇹 Portugal<small>National public holidays</small></span><input type="checkbox" data-feed="pt" ${f.pt ? 'checked' : ''}></label>
+          <label class="set-mod"><span>🇬🇧 United Kingdom<small>England &amp; Wales bank holidays</small></span><input type="checkbox" data-feed="uk" ${f.uk ? 'checked' : ''}></label>
+        </div>
+        <div class="set-notif-group"><div class="set-notif-h">Sport</div>
+          <label class="set-mod"><span>⚽ Fulham FC fixtures<small>Upcoming matches, kick-off in your local time</small></span><input type="checkbox" data-feed="fulham" ${f.fulham ? 'checked' : ''}></label>
+        </div>
+      </div>`;
+
+  const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
 
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
@@ -5364,13 +5392,13 @@ function renderCalendar() {
       const evs = byDay[d.iso] || [];
       return `<div class="cw-day ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
         <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span></div>
-        <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
+        <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
     }).join('')}</div>`;
   } else {
     title = `${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span>`;
     const cell = (d) => {
       const evs = byDay[d.iso] || [];
-      const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
+      const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
       const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : '';
       const dots = evs.slice(0, 5).map((e) => `<span class="cal-dot ${e.allDay ? 'allday' : ''}"></span>`).join('');
       return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
@@ -5821,6 +5849,13 @@ function t2DayHtml() {
   // Events already counted as a practice (a slot carries the event id).
   const evSlots = {}; (data.slots || []).forEach((s) => { if (s.event_id) evSlots[String(s.event_id)] = s; });
   const evBlocks = timed.map((e) => {
+    // Feed events (fixtures) are read-only overlays: no drag, resize, edit or
+    // delete - just a quiet block showing the time and title.
+    if (e.feed) {
+      const evDur = e.duration || ((e.end_min != null && e.end_min > e.start_min) ? e.end_min - e.start_min : 120);
+      return `<div class="t2-block t2-event t2-feed t2-feed-${esc(e.feed)}" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round(evDur * T2_PPM))}px">
+        <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '')}</span></div></div>`;
+    }
     const link = evSlots[String(e.id)];
     const act = link && link.activity_id ? (state.practices.activities || []).find((a) => String(a.id) === String(link.activity_id)) : null;
     if (link) {
@@ -12560,7 +12595,7 @@ document.addEventListener('click', (e) => {
   const sigs = t.closest('[data-sig-save]'); if (sigs) { saveSignature(sigs.dataset.sigSave); return; }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
-  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; state.cal.editing = e; state.cal.adding = false; renderCalendar(); } return; }
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.adding = false; } renderCalendar(); } return; }
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
@@ -12810,6 +12845,7 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-feed]')) { toggleFeed(e.target.dataset.feed, e.target.checked); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
   if (e.target.matches('[data-card-email]')) {

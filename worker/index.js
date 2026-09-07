@@ -14,6 +14,7 @@ import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStat
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
+import { feedRangeEvents, feedDayEvents, fetchFulham } from './feeds.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -291,6 +292,12 @@ async function handleCalendar(request, env, url) {
   const native = await nativeRangeEvents(env, from, to).catch(() => []);
   const g = await calendarRange(env, from, to);
   const events = applyEventAreas([...(g.events || []), ...native], await getEventAreas(env).catch(() => ({})));
+  // Subscribed feeds (holidays + fixtures) merged in as read-only overlays.
+  const feeds = await getFeeds(env);
+  if (feeds.pt || feeds.uk || feeds.fulham) {
+    const fixtures = feeds.fulham ? await getFulhamCache(env) : [];
+    events.push(...feedRangeEvents(feeds, fixtures, from, to));
+  }
   return json({ events, error: g.error || null }, request);
 }
 
@@ -769,6 +776,15 @@ async function getSetting(env, key, uid = env.uid) {
   const row = await env.DB.prepare('SELECT value FROM settings WHERE user_id = ? AND key = ?')
     .bind(uid, key).first().catch(() => null);
   return row && row.value != null ? row.value : null;
+}
+// Calendar feed subscriptions (Portugal/UK holidays, Fulham fixtures) for this
+// user, and the shared fixtures cache (fetched by the cron, kept under the
+// owner's settings since the fixtures are the same for everyone).
+async function getFeeds(env, uid = env.uid) {
+  try { const v = await getSetting(env, 'kv_cal_feeds', uid); return v ? JSON.parse(v) : {}; } catch { return {}; }
+}
+async function getFulhamCache(env) {
+  try { const v = await getSetting(env, 'kv_fulham_fixtures', 1); return v ? JSON.parse(v) : []; } catch { return []; }
 }
 async function setSetting(env, key, value, uid = env.uid) {
   await env.DB.prepare(
@@ -2255,6 +2271,12 @@ async function handleDay(request, env, url) {
   const nativeDay = await nativeDayEvents(env, day).catch(() => []);
   cal.events = [...(cal.events || []), ...nativeDay];
   applyEventAreas(cal.events, await getEventAreas(env).catch(() => ({})));
+  // Subscribed feeds (holidays + fixtures) for this day, read-only overlays.
+  const feeds = await getFeeds(env);
+  if (feeds.pt || feeds.uk || feeds.fulham) {
+    const fixtures = feeds.fulham ? await getFulhamCache(env) : [];
+    cal.events.push(...feedDayEvents(feeds, fixtures, day));
+  }
 
   const byslot = new Map();
   for (const r of linksRes.results) {
@@ -3124,6 +3146,19 @@ async function maybeSnapshotPortfolio(env) {
   await recordSnapshot(env, data.total, 0);
 }
 
+// Refresh the shared Fulham fixtures cache (under the owner) ~twice a day. The
+// fixtures are the same for everyone, so one cache serves all subscribers. A
+// failed fetch keeps the last good cache; the timestamp still advances so a
+// hiccup doesn't hammer the source every minute.
+async function maybeRefreshFixtures(env) {
+  const last = await getSetting(env, 'kv_fulham_fetched', 1);
+  const now = Date.now();
+  if (last && (now - Number(last)) < 12 * 3600 * 1000) return;
+  const fx = await fetchFulham();
+  if (fx.length) await setSetting(env, 'kv_fulham_fixtures', JSON.stringify(fx), 1);
+  await setSetting(env, 'kv_fulham_fetched', String(now), 1);
+}
+
 export default {
   // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
   // keeps the isolate alive until the sends finish.
@@ -3144,6 +3179,8 @@ export default {
     ctx.waitUntil(maybePollChannels(env).catch((e) => console.error('advicePoll:', e.message)));
     // Review reminders: push a nudge when one the user set falls due.
     ctx.waitUntil(maybeReviewReminders(env).catch((e) => console.error('reviewReminders:', e.message)));
+    // Keep the Fulham fixtures cache fresh (self-gated to ~12h).
+    ctx.waitUntil(maybeRefreshFixtures(env).catch((e) => console.error('fixtures:', e.message)));
   },
 
   async fetch(request, env, ctx) {
@@ -3578,6 +3615,13 @@ export default {
           await setSetting(env, 'kv_' + kv[1], String(b.value ?? ''));
           return json({ ok: true }, request);
         }
+      }
+      // Force a Fulham fixtures refresh now (used when a feed is first enabled,
+      // so the games appear without waiting for the twice-daily cron).
+      if (path === '/api/feeds/refresh' && request.method === 'POST') {
+        const fx = await fetchFulham();
+        if (fx.length) { await setSetting(env, 'kv_fulham_fixtures', JSON.stringify(fx), 1); await setSetting(env, 'kv_fulham_fetched', String(Date.now()), 1); }
+        return json({ ok: true, count: fx.length }, request);
       }
       if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
       if (path === '/api/blocks/bulk' && request.method === 'POST') return createBlocksBulk(request, env);
