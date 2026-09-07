@@ -12157,8 +12157,11 @@ document.addEventListener('paste', (e) => {
   const text = cd.getData('text/plain');
   if (!text) return;
   e.preventDefault();
-  if (looksMarkdown(text)) document.execCommand('insertHTML', false, mdPasteHtml(text));
-  else document.execCommand('insertText', false, text);
+  // Silently tidy on the way in - collapse the blank lines that would otherwise
+  // land as stray empty paragraphs (the double-spacing you'd have to fix by
+  // hand). The manual Tidy button does the same for anything already pasted.
+  if (looksMarkdown(text)) document.execCommand('insertHTML', false, tidyProseHtml(mdPasteHtml(text)));
+  else document.execCommand('insertText', false, tidyPasteText(text));
   prose.dispatchEvent(new Event('input', { bubbles: true }));   // trigger the debounced save
 });
 document.addEventListener('input', (e) => {
@@ -14246,18 +14249,28 @@ function closeScanner() { stopCam(); const el = document.getElementById('scanner
 // blank block elements and collapses runs of <br>, so real paragraph breaks
 // stay but the extra blank lines go - evening the whole note out. One tap, and
 // it's editable/undoable like any change.
+// Remove empty block elements and collapse runs of <br> in a prose HTML string.
+// A block counts as empty only if it holds no text and no real content (an
+// image, list, table, quote, rule or a collapsible section is content). Shared
+// by the Tidy button and the silent tidy-on-paste.
+function tidyProseHtml(html) {
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const hasContent = (el) => el.querySelector('img,table,ul,ol,blockquote,details,hr') || (el.textContent || '').replace(/\s/g, "") !== "";
+  tmp.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6').forEach((el) => { if (!hasContent(el)) el.remove(); });
+  tmp.querySelectorAll('br + br').forEach((br) => br.remove());
+  return tmp.innerHTML;
+}
+// Collapse blank lines out of pasted plain text (the usual source of stray empty
+// paragraphs), so a pasted block lands evenly single-spaced instead of double.
+function tidyPasteText(text) {
+  return String(text || '').replace(/\r\n/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{2,}/g, '\n').replace(/^\n+|\n+$/g, '');
+}
 function tidyNoteFormatting() {
   const pr = document.querySelector('.note-main .prose[data-prose="note"]') || document.querySelector('.prose[data-prose="note"]');
   if (!pr) { toast('Open a note first'); return; }
   flushProse();
   const before = pr.innerHTML;
-  const tmp = document.createElement('div'); tmp.innerHTML = before;
-  // A block is "empty" only if it holds no text and no real content (an image,
-  // list, table, quote or a collapsible section counts as content).
-  const hasContent = (el) => el.querySelector('img,table,ul,ol,blockquote,details,hr') || el.textContent.replace(/\u00a0/g, " ").trim() !== '';
-  tmp.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6').forEach((el) => { if (!hasContent(el)) el.remove(); });
-  tmp.querySelectorAll('br + br').forEach((br) => br.remove());   // collapse runs of line breaks
-  const cleaned = tmp.innerHTML;
+  const cleaned = tidyProseHtml(before);
   if (cleaned === before) { toast('Already tidy - nothing to change'); return; }
   pr.innerHTML = cleaned;
   saveProse(pr.dataset.prose, pr.innerHTML, pr.dataset.blockId);
