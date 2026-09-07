@@ -64,7 +64,7 @@ const T_PT = {
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas e tabelas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
-  'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Cartas', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
+  'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
@@ -2005,8 +2005,8 @@ function renderSettings() {
     ['invites', t('set.tab.invites')],
     ['manage', t('set.tab.manage')],
   ];
-  // The Card tab shows the Daybook-card editor; make sure its data is loaded.
-  if (state.settings.tab === 'card' && state.card === undefined) {
+  // The Card tab (and the Account tab's card preview) need the card data loaded.
+  if (state.card === undefined) {
     state.card = {};
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} } if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {});
   }
@@ -2014,7 +2014,10 @@ function renderSettings() {
   const tab = state.settings.tab;
   const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
-  const accountPane = state.account ? `<button class="set-card set-cardlink" data-set-tab="card"><span class="set-cardlink-ic">🪪</span><span class="set-cardlink-body"><span class="set-cardlink-t">Your Daybook card</span><span class="set-cardlink-s">Photo, tagline, colour and the contact details you show</span></span><span class="set-cardlink-go">›</span></button>
+  const accountPane = state.account ? `<div class="set-card set-cardpreview">
+        <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Daybook card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
+        <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
+      </div>
       <div class="set-card set-account">
         <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
         <label class="set-field"><span>Username</span>
