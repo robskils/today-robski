@@ -7760,7 +7760,9 @@ function renderMail(loading) {
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}`}
-    ${(!m.open && !m.composing && strayUnread && m.strayHidden !== strayUnread) ? `<div class="mail-stray"><span>${strayUnread} older unread email${strayUnread > 1 ? 's sit' : ' sits'} further down, below the newest ${m.limit || 40} shown here.</span><span class="mail-stray-act"><button class="ghost" data-mail-more title="Load older mail to reach them">Show</button><button class="ghost" data-mail-reconcile title="Flag those older ones as read">Mark read</button><button class="ghost mail-stray-x" data-mail-stray-hide title="Hide">×</button></span></div>` : ''}
+${''/* The "older unread sits further down" banner is retired: the background
+       cache sync and the auto-reconcile keep the counts honest, so this nudge
+       was just noise. Left as a no-op rather than reflowing the template. */}
     ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
     <div class="mail-layout ${m.open || m.composing ? 'reading' : ''} ${(m.selected && m.selected.size) ? 'selecting' : ''}">
       <div class="mail-list-col">${list}</div>
@@ -7791,7 +7793,7 @@ function showQuickTask() {
       <label class="atf" id="qt-repeatfrom-wrap" hidden><span>Next one is due</span><select id="qt-repeatfrom" class="sel"><option value="due">On its schedule</option><option value="done">After I tick it off</option></select></label>
     </div>
     <label class="atf atf-full"><span>Notes</span><textarea id="qt-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
-    <button class="add-btn wide" type="submit">Add task</button></form>`;
+    <div class="atf-actions"><button class="add-btn wide" type="submit">Add task</button><button type="button" class="ghost" data-qt-close>Done</button></div></form>`;
   $('#qt-title').focus();
 }
 // Turn the open email into a Robski Life task: subject becomes the title, and
@@ -12734,6 +12736,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-task-add]')) { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); return; }
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
+  if (t.closest('[data-qt-close]')) { const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
   if (t.closest('[data-home-cal]')) { openCalendar(todayISO()).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
@@ -13204,14 +13207,12 @@ document.addEventListener('submit', (e) => {
       homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, repeatFrom: ($('#qt-repeatfrom') || {}).value, notes: ($('#qt-notes') || {}).value });
       if (state.view && state.view.type === 'today') {
         // homeAddTask re-renders the Today view, which closes this form for us.
-      } else if (matchMedia('(max-width:820px)').matches) {
-        // On mobile, act like "Done" too: drop focus so the keyboard dismisses,
-        // then close the form - one task, done, out of the way.
+      } else {
+        // Task added (a toast confirms) - close the form so it's out of the way.
+        // Open +Task again for another. (Was: stayed open on desktop; Robin
+        // preferred it disappear.)
         try { i.blur(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch {}
         $('#qt-wrap').innerHTML = '';
-      } else {
-        // On desktop, keep the form open for a run of tasks; clear only the per-task fields.
-        i.value = ''; const n = $('#qt-notes'); if (n) n.value = ''; const s = $('#qt-snooze'); if (s) s.value = ''; i.focus();
       }
     }
   }
