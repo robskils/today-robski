@@ -1966,8 +1966,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .dbc-chips { display:flex; flex-wrap:wrap; gap:8px; margin:14px 22px 0; }
 .dbc-chip { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); text-decoration:none; }
 a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
-.dbc-mark { display:flex; align-items:center; gap:6px; margin:18px 22px 18px; padding-top:14px; border-top:1px solid var(--line); color:var(--ink-3); font-size:12.5px; font-weight:600; letter-spacing:.02em; }
+.dbc-foot { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin:18px 22px 18px; padding-top:14px; border-top:1px solid var(--line); }
+.dbc-mark { display:flex; align-items:center; gap:6px; color:var(--ink-3); font-size:12.5px; font-weight:600; letter-spacing:.02em; }
 .dbc-mark .brand-mark { width:18px; height:18px; color:var(--dbc); }
+.dbc-qr-mini { display:flex; flex-direction:column; align-items:center; gap:3px; flex:none; }
+.dbc-qr-mini .dbc-qr { width:64px; height:64px; border:1px solid var(--line); border-radius:8px; }
+.dbc-qr-mini-cap { font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); }
 /* The editor */
 .dbc-field { display:flex; flex-direction:column; gap:7px; }
 .dbc-l { font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
@@ -4329,6 +4333,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Internal links (to another Robski Life page) read as a subtle dotted underline. */
 .prose a.rl-link { text-decoration:none; border-bottom:1px dashed color-mix(in srgb,var(--accent) 55%,transparent); cursor:pointer; }
 .prose a.rl-link:hover { border-bottom-style:solid; }
+
+/* ── Well-being hub tiles (two rows of four) ─────────── */
+.wb-tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:4px 0 22px; }
+.wb-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; padding:18px 10px; min-height:96px; border:1px solid var(--line); border-radius:16px; background:var(--card); color:var(--ink); cursor:pointer; box-shadow:var(--shadow); transition:border-color .12s, transform .12s, box-shadow .12s; }
+.wb-tile:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 12px 26px -16px rgba(0,0,0,.45); }
+.wb-tile-ic { font-size:27px; line-height:1; }
+.wb-tile-t { font-size:14.5px; font-weight:600; letter-spacing:.01em; }
+@media (max-width:640px){ .wb-tiles { grid-template-columns:repeat(2,1fr); gap:10px; } .wb-tile { min-height:84px; padding:14px 8px; } }
 
 /* ── Journal ─────────────────────────────────────────── */
 .j-head-act { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }

@@ -1027,12 +1027,13 @@ function cardHtml(d, full) {
   const accent = d.accent || '#c4412e';
   const photo = d.photo ? `<span class="dbc-photo" style="background-image:url('${d.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(d.name || 'You'))}</span>`;
   const chips = cardChipsHtml(d);
+  const qr = d.subdomain ? qrSvg('https://daybook.fyi/u/' + d.subdomain, 74) : '';
   return `<div class="dbc-card dbc-pat-${esc(d.pattern || 'none')}" style="--dbc:${esc(accent)}">
     <div class="dbc-band"></div>
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
     ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
     ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
-    <div class="dbc-mark">${MARK}<span>Daybook</span></div>
+    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Daybook</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Daybook">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
   </div>`;
 }
 async function openCard() {
@@ -1075,7 +1076,7 @@ async function cardSetPhoto(file) {
 function myCardData() {
   const a = state.account || {}; const c = cardProfile();
   return {
-    name: a.name || firstName() || 'You', handle: a.subdomain ? `${a.subdomain}.daybook.fyi` : '',
+    name: a.name || firstName() || 'You', handle: a.subdomain ? `${a.subdomain}.daybook.fyi` : '', subdomain: a.subdomain || '',
     photo: c.photo || '', accent: c.accent || savedAccent() || '#c4412e', pattern: c.pattern || 'none',
     tagline: c.tagline || '', location: c.location || '', website: c.website || '', links: c.links || [],
     emails: cardChosenEmails(c), phone: c.showPhone ? (a.phone || '') : '',
@@ -4254,7 +4255,17 @@ function renderJournalList() {
     </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Well-being')}
-    <div class="pane-head home-head"><h1>Well-being</h1>${j.picking ? '' : `<div class="j-head-act"><div class="j-head-primary"><button class="add-btn wide j-mode-btn" data-journal-start><span class="jm-ic">📓</span><span class="jm-t">Journal</span></button><button class="add-btn wide j-mode-btn" data-journal-coaching><span class="jm-ic">🧭</span><span class="jm-t">Coaching</span></button><button class="add-btn wide j-mode-btn" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="jm-ic">💭</span><span class="jm-t">Dreams</span></button><button class="add-btn wide j-mode-btn" data-open-medi title="A calm sit, with real bells"><span class="jm-ic">🧘</span><span class="jm-t">Meditation</span></button><button class="add-btn wide j-mode-btn" data-spirit-open title="Draw a card for a moment's reflection"><span class="jm-ic">🃏</span><span class="jm-t">Spirit Cards</span></button><button class="add-btn wide j-mode-btn" data-open-iching title="Cast an I Ching reading"><span class="jm-ic">☯</span><span class="jm-t">I Ching</span></button><button class="add-btn wide j-mode-btn" data-open-horo title="Your daily horoscope"><span class="jm-ic">✶</span><span class="jm-t">Horoscope</span></button></div></div>`}</div>
+    <div class="pane-head home-head"><h1>Well-being</h1></div>
+    ${j.picking ? '' : `<div class="wb-tiles">
+      <button class="wb-tile" data-journal-start title="Write freely, or from a prompt"><span class="wb-tile-ic">📓</span><span class="wb-tile-t">Journal</span></button>
+      <button class="wb-tile" data-journal-coaching title="A running coaching conversation"><span class="wb-tile-ic">🧭</span><span class="wb-tile-t">Coaching</span></button>
+      <button class="wb-tile" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="wb-tile-ic">💭</span><span class="wb-tile-t">Dreams</span></button>
+      <button class="wb-tile" data-open-medi title="A calm sit, with real bells"><span class="wb-tile-ic">🧘</span><span class="wb-tile-t">Meditation</span></button>
+      <button class="wb-tile" data-spirit-open title="Draw a card for a moment's reflection"><span class="wb-tile-ic">🃏</span><span class="wb-tile-t">Spirit Cards</span></button>
+      <button class="wb-tile" data-open-iching title="Cast an I Ching reading"><span class="wb-tile-ic">☯</span><span class="wb-tile-t">I Ching</span></button>
+      <button class="wb-tile" data-open-horo title="Your daily horoscope"><span class="wb-tile-ic">✶</span><span class="wb-tile-t">Horoscope</span></button>
+      <button class="wb-tile" data-open-insights title="What your entries reveal - themes, lifts and drains"><span class="wb-tile-ic">✨</span><span class="wb-tile-t">Insights</span></button>
+    </div>`}
     ${j.picking ? '' : spiritPinnedHtml() + reflectPinsHtml()}
     ${picker}
     ${insightsCard}
@@ -4839,7 +4850,7 @@ function areaOverviewHtml(area, c, blocks) {
   // key areas when you have any), and a switch to keep it out of reviews entirely.
   const reviewsBlock = area.sharedBy ? '' : `<div class="ov-block ov-reviews">
       <div class="ov-h"><span>In your reviews</span></div>
-      <label class="ov-revtog"><input type="checkbox" data-area-reviewstar ${(area.props && area.props.reviewStar) ? 'checked' : ''}><span><b>★ A key area</b> - one you really care about. Your Wheel of Life average is taken from your key areas.</span></label>
+      <label class="ov-revtog"><input type="checkbox" data-area-reviewstar ${(area.props && area.props.reviewStar) ? 'checked' : ''}><span><b>★ A key area</b> - one you really care about. It's starred in your Wheel of Life so it stands out.</span></label>
       <label class="ov-revtog"><input type="checkbox" data-area-reviewon ${!(area.props && area.props.reviewOff) ? 'checked' : ''}><span>Track it in the <b>weekly review</b> &amp; Wheel of Life</span></label>
       <div class="ov-muted" style="margin-top:6px">Turn tracking off for an area you don't review (like Tools) - it stays here as normal, just out of the wheel.</div>
     </div>`;
@@ -7430,8 +7441,12 @@ function renderMail(loading) {
   } else {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
   }
+  // Reading a message: the crumb's back arrow returns to the inbox, not Home.
+  const mailCrumb = (m.open || m.composing)
+    ? `<div class="note-crumbs"><button class="crumb-back" data-mail-back title="Back to inbox">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-mail-back>Mail</button><span class="crumb-sep">›</span><span class="crumb cur">${m.composing ? 'Compose' : 'Message'}</span></div>`
+    : pageCrumb('Mail');
   $('#pane').innerHTML = `
-    ${pageCrumb('Mail')}
+    ${mailCrumb}
     <div class="pane-head home-head"><h1>Mail</h1>
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
     ${(m.open || m.composing) ? '' : `
@@ -9840,10 +9855,10 @@ function wheelOfLifeHtml() {
   if (!areas.length) return '';
   const data = areas.map((a) => ({ a, score: Math.min((a.props && a.props.wheelScore) || 0, 5), star: !!(a.props && a.props.reviewStar) }));
   const scored = data.filter((d) => d.score > 0);
-  const starScored = scored.filter((d) => d.star);
-  const avgSet = starScored.length ? starScored : scored;
-  const avg = avgSet.length ? Math.round(avgSet.reduce((s, d) => s + d.score, 0) / avgSet.length * 10) / 10 : 0;
-  const avgLabel = starScored.length ? `${avg}/5 across ${starScored.length} key area${starScored.length === 1 ? '' : 's'}` : `${avg}/5 across ${scored.length} area${scored.length === 1 ? '' : 's'}`;
+  // The average is the honest mean of every rated area - a star just flags an
+  // area you care about (highlighted in the legend), it doesn't skew the number.
+  const avg = scored.length ? Math.round(scored.reduce((s, d) => s + d.score, 0) / scored.length * 10) / 10 : 0;
+  const avgLabel = `${avg}/5 across ${scored.length} area${scored.length === 1 ? '' : 's'}`;
   const head = rvSecH('wol', 'Wheel of Life', avg ? `<span class="wol-avg">${avgLabel}</span>` : '');
   if (!rvSecOpen('wol')) return `<section class="home-sec wol-sec">${head}</section>`;
   if (!avg) return `<section class="home-sec wol-sec">${head}<div class="home-empty" style="padding:14px 0">Rate your life areas in a review and your wheel takes shape here.</div></section>`;
@@ -11888,6 +11903,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-insights-close]')) { if (state.journal) { state.journal.readingInsight = null; renderJournalList(); } return; }
   if (t.closest('[data-journal-insights]')) { journalInsights(); return; }
   if (t.closest('[data-journal-insights-toggle]')) { if (state.journal) { state.journal.insightsOpen = !state.journal.insightsOpen; renderJournalList(); } return; }
+  if (t.closest('[data-open-insights]')) { if (state.journal) { state.journal.insightsOpen = true; renderJournalList(); const el = document.querySelector('.j-insights'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
