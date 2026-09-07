@@ -5506,7 +5506,7 @@ function renderCalendar() {
     : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}-${minToLabel(e.end_min)}` : minToLabel(e.start_min));
   const agendaRows = dayEvents.length ? dayEvents.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}">
       <span class="cal-ag-time">${agTime(e)}</span>
-      <span class="cal-ag-t">${esc(e.title)}${e.url ? '<span class="cal-ag-join" title="Has a video meeting link">🎥</span>' : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
+      <span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${e.url ? '<span class="cal-ag-join" title="Has a video meeting link">🎥</span>' : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
     : '<div class="home-empty">Nothing on this day.</div>';
   const cq = (state.calQuery || '').trim().toLowerCase();
   const matches = cq ? state.cal.events
@@ -5514,7 +5514,7 @@ function renderCalendar() {
     .sort((a, b) => `${a.date}${a.allDay ? '' : p2(Math.floor((a.start_min || 0) / 60))}`.localeCompare(`${b.date}${b.allDay ? '' : p2(Math.floor((b.start_min || 0) / 60))}`)) : [];
   const searchBlock = `<section class="cal-search">
       <div class="cal-search-h"><h2>Results · ${matches.length}</h2><span class="cal-search-note">in the loaded range</span></div>
-      ${matches.length ? matches.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}"><span class="cal-ag-time">${esc(prettyDate(e.date))}${e.allDay ? '' : ` · ${minToLabel(e.start_min)}`}</span><span class="cal-ag-t">${esc(e.title)}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('') : '<div class="home-empty">No events match. Move to another month to search it.</div>'}</section>`;
+      ${matches.length ? matches.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}"><span class="cal-ag-time">${esc(prettyDate(e.date))}${e.allDay ? '' : ` · ${minToLabel(e.start_min)}`}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('') : '<div class="home-empty">No events match. Move to another month to search it.</div>'}</section>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Calendar')}
     <div class="cal-head">

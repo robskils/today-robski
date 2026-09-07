@@ -4741,6 +4741,8 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-head h1 { font-size:clamp(28px,4vw,38px); }
 .cal-yr { color:var(--ink-3); font-weight:400; }
 .cal-nav { display:flex; gap:8px; flex-wrap:wrap; }
+/* Recurrence marker on a calendar event - tells a repeating event from a one-off. */
+.cal-recur { color:var(--accent); font-size:.85em; margin-left:6px; opacity:.8; }
 /* Discoverable entry to the feed subscriptions (holidays + fixtures). */
 .cal-feeds-btn { border-color:color-mix(in srgb,var(--accent) 45%,var(--line-2)); color:var(--accent); font-weight:600; }
 .cal-feeds-btn:hover { background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
