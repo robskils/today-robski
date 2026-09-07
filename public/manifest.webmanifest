@@ -18,5 +18,10 @@
     { "name": "Mail", "url": "/mail", "icons": [{ "src": "/icon-192.v3.png", "sizes": "192x192" }] },
     { "name": "Tasks", "url": "/tasks", "icons": [{ "src": "/icon-192.v3.png", "sizes": "192x192" }] },
     { "name": "Well-being", "url": "/journal", "icons": [{ "src": "/icon-192.v3.png", "sizes": "192x192" }] }
-  ]
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
 }

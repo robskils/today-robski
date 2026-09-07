@@ -3218,7 +3218,7 @@ export default {
       // The Life app is a single page; its in-app routes must serve the app shell
       // so a link or a pinned icon can deep-link straight into one (e.g. a surface
       // alert emails ${sub}.daybook.fyi/task/<id> to open that task).
-      if (path === '/' || (isLife && /^\/(calendar|mail|task|tasks|goals|journal|dreams|saved|read|reviews|areas|contacts|financial|toolbox|settings)(\/|$)/.test(path))) {
+      if (path === '/' || (isLife && /^\/(calendar|mail|task|tasks|goals|journal|dreams|saved|read|reviews|areas|contacts|financial|toolbox|settings|share)(\/|$)/.test(path))) {
         const file = isLife ? '/app.html' : '/index.html';
         return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
       }

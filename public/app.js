@@ -2016,7 +2016,8 @@ function renderSettings() {
   const tab = state.settings.tab;
   const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
-  const accountPane = state.account ? `<div class="set-card set-cardpreview">
+  const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
+      <div class="set-card set-cardpreview">
         <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Daybook card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
         <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
       </div>
@@ -6495,6 +6496,44 @@ function urlB64ToUint8(b64) {
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   try { await navigator.serviceWorker.register('/sw.js'); } catch { /* blocked - app still works online */ }
+}
+// PWA install: browsers (Android/desktop Chrome/Brave) fire beforeinstallprompt;
+// we stash it and offer an Install button in Settings. iOS has no such event, so
+// there we show the "Add to Home Screen" steps instead.
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; if (state.view && state.view.type === 'settings') renderSettings(); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; if (state.view && state.view.type === 'settings') renderSettings(); });
+const isStandalone = () => { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch { return false; } };
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+function installRowHtml() {
+  if (isStandalone()) return '';   // already installed as an app
+  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Daybook</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
+  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Daybook</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Daybook opens full-screen and works offline.</div></div></div>`;
+  return '';
+}
+async function promptInstall() {
+  if (!deferredInstall) return;
+  try { deferredInstall.prompt(); await deferredInstall.userChoice; } catch {}
+  deferredInstall = null; if (state.view && state.view.type === 'settings') renderSettings();
+}
+// PWA share target: another app shared a link/text to Daybook (via /share). A URL
+// becomes a Read & Watch bookmark; plain text becomes a note. Then land on it.
+async function handleShareTarget() {
+  const q = new URLSearchParams(location.search);
+  const title = (q.get('title') || '').trim();
+  const text = (q.get('text') || '').trim();
+  let url = (q.get('url') || '').trim();
+  if (!url) { const m = text.match(/https?:\/\/\S+/); if (m) url = m[0]; }   // some apps put the link in text
+  history.replaceState(null, '', '/');
+  try {
+    if (url) {
+      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: title || url, props: { url, status: 'todo' } }) });
+      await openReadwatch(); toast('Saved to Saved ✓');
+    } else if (title || text) {
+      const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: title || (text.slice(0, 60) || 'Shared note'), body: `<p>${esc(text || title)}</p>` }) });
+      await openNote(n.id); toast('Saved as a note ✓');
+    } else { await openHome(); }
+  } catch (e) { await openHome().catch(() => {}); toast('Could not save the shared item'); }
 }
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 // Register the SW (idempotent) and, if permission is already granted, make sure
@@ -12276,6 +12315,7 @@ document.addEventListener('click', (e) => {
   const tcr = t.closest('[data-trk-cat-rename]'); if (tcr) { renameTrkCat(tcr.dataset.trkCatRename); return; }
   const tcx = t.closest('[data-trk-cat-del]'); if (tcx) { delTrkCat(tcx.dataset.trkCatDel); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-install-app]')) { promptInstall(); return; }
   if (t.closest('[data-open-wheel]')) { openWheel().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews-tool]') || t.closest('[data-open-reviews]')) { openReviews().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
@@ -14834,6 +14874,7 @@ async function onbConnectGmail() {
     else if (route === '/settings' || route.startsWith('/settings/')) { const tab = route.slice(10); history.replaceState(null, '', '/'); await openSettings(tab || undefined); }
     else if (route === '/tasks') { if (new URLSearchParams(location.search).get('p1') === '1') openP1Tasks(); else await openTasks(); }
     else if (route === '/saved' || route === '/read') await openReadwatch();
+    else if (route === '/share') await handleShareTarget();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     startPresence();         // heartbeat so friends can see you're online
