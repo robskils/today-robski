@@ -52,7 +52,7 @@ const T_EN = {
   'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Life area', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -72,7 +72,7 @@ const T_PT = {
   'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Área da vida', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -8217,12 +8217,12 @@ function contactCardHtml(c) {
 // always there (can't be deleted, only hidden) and ties to your Daybook card -
 // it's how you appear to others. Tapping it opens the card editor.
 function selfContactHtml() {
-  try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return '<div class="cts-self-hidden"><button class="linkish" data-self-show>Show your Daybook card</button></div>'; } catch {}
+  try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return `<div class="cts-self-hidden"><button class="linkish" data-self-show>${t('ct.self.show')}</button></div>`; } catch {}
   const a = state.account || {}; const name = a.name || firstName() || 'You';
-  const sub = a.subdomain ? `${a.subdomain}.daybook.fyi` : 'Your window on Daybook';
+  const sub = a.subdomain ? `${a.subdomain}.daybook.fyi` : t('ct.self.sub');
   const photo = state.card && state.card.photo;
   const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
-  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Daybook card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">Daybook card ›</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
+  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Daybook card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
 }
 // The row of group chips: All, then each group (droppable + count), then + New.
 function groupBarHtml() {
@@ -8290,7 +8290,7 @@ function renderContacts() {
     <div class="pane-head"><h1>${t('nav.contacts')}</h1></div>
     ${searching ? `
     <div class="list-head">
-      <input class="list-search sel" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
+      <input class="list-search sel" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
     </div>
     <section class="home-sec">
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
@@ -8298,9 +8298,9 @@ function renderContacts() {
     <section class="home-sec contacts-mine">
       ${selfContactHtml()}
       <div class="cts-head">
-        <input class="list-search sel cts-search" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
+        <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
         ${groupBarHtml()}
-        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>+ Add</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">⤓ Import</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">${t('ct.import')}</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
       ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
       ${contactSelBarHtml()}
@@ -8316,7 +8316,7 @@ function renderContacts() {
     </section>
 
     <section class="home-sec ppl-sec">
-      <div class="home-sec-h">Daybook friends<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
+      <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       <p class="fr-intro">Invite your friends to Daybook so you can share with them - a whole Life Area, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
       ${(d.suggestions && d.suggestions.length) ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
@@ -8340,19 +8340,19 @@ function renderContacts() {
 function alignConnectRow() { const find = document.querySelector('.fr-connect'); if (find) find.style.width = ''; }
 function contactAddForm() {
   return `<form id="contact-form" class="add-task expanded">
-    <input id="ct-name" type="text" placeholder="Name" autocomplete="off" required>
+    <input id="ct-name" type="text" placeholder="${t('ct.name')}" autocomplete="off" required>
     <div class="atf-grid">
-      <label class="atf"><span>Email</span><input id="ct-email" type="email" class="sel" placeholder="name@example.com" autocomplete="off"></label>
-      <label class="atf"><span>Phone</span><input id="ct-phone" type="tel" class="sel" placeholder="+351…" autocomplete="off"></label>
-      <label class="atf"><span>Birthday</span>${dateFieldHtml('ct-bday', '')}</label>
+      <label class="atf"><span>${t('field.email')}</span><input id="ct-email" type="email" class="sel" placeholder="name@example.com" autocomplete="off"></label>
+      <label class="atf"><span>${t('field.phone')}</span><input id="ct-phone" type="tel" class="sel" placeholder="+351…" autocomplete="off"></label>
+      <label class="atf"><span>${t('ct.birthday')}</span>${dateFieldHtml('ct-bday', '')}</label>
     </div>
     <div class="atf-grid">
-      <label class="atf"><span>Street</span><input id="ct-street" class="sel" autocomplete="off"></label>
-      <label class="atf"><span>City</span><input id="ct-city" class="sel" autocomplete="off"></label>
-      <label class="atf"><span>Postcode</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
-      <label class="atf"><span>Country</span>${countrySelect('ct-country', '', 'sel')}</label>
+      <label class="atf"><span>${t('ct.street')}</span><input id="ct-street" class="sel" autocomplete="off"></label>
+      <label class="atf"><span>${t('ct.city')}</span><input id="ct-city" class="sel" autocomplete="off"></label>
+      <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
+      <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    <div class="atf-actions"><button class="add-btn wide" type="submit">Add contact</button><button type="button" class="ghost" data-contact-add-close>Done</button></div>
+    <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
   </form>`;
 }
 async function addContact(o) {
