@@ -938,7 +938,6 @@ function closeTab(id) {
 function navSection(key, v) {
   const collapsed = !!state.nav.collapsed[key];
   const chev = collapsed ? '▸' : '▾';
-  const sub = (on, attr, ic, title) => `<button class="nav-sub ${on ? 'on' : ''}" ${attr}><span class="i">${ic}</span><span class="t">${esc(title || 'Untitled')}</span></button>`;
   // The whole header (chevron + word) toggles the section. Index pages live on
   // the top-level nav items instead, so the word here is purely expand/collapse.
   let title, add = '', rows;
@@ -948,11 +947,13 @@ function navSection(key, v) {
     // actually read them.
     rows = state.favs.map((f) => {
       const wide = (f.title || '').length > 15 ? ' nav-sub-wide' : '';
-      // Carry the item's life-area colour as a left edge, so you can see at a
-      // glance which part of life a starred note or table belongs to.
-      const a = areaById(blockAreas(f)[0]);
-      const hue = a ? hueOf(a) : null;
-      return `<button class="nav-sub${wide}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="t">${esc(f.title || 'Untitled')}</span></button>`;
+      // Carry the item's life-area colour as a left edge. A starred AREA is its
+      // own colour (it doesn't belong to another area); a note/table takes the
+      // hue of the area it sits in.
+      const area = f.kind === 'area' ? f : areaById(blockAreas(f)[0]);
+      const hue = area ? hueOf(area) : null;
+      const titleAttr = (f.kind !== 'area' && area) ? ` title="${esc(area.title)}"` : '';
+      return `<button class="nav-sub${wide}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"${titleAttr}><span class="i">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="t">${esc(f.title || 'Untitled')}</span></button>`;
     }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // Notes and tables are one list now; a table note carries the grid icon.
@@ -962,7 +963,13 @@ function navSection(key, v) {
       const isT = n.kind === 'table';
       const active = isT ? (v.type === 'table' && state.tables_open && state.tables_open.id === n.id)
         : (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id);
-      return sub(active, isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`, isT ? TBL_ICO : NOTE_ICO, n.title);
+      // Same colour principle as Starred/areas: the note's life-area hue as a
+      // left edge + tinted glyph. Older recents predate the stored area, so
+      // recover it from whatever's loaded.
+      const aid = n.area || (() => { const b = (state.noteTops || []).find((x) => x.id === n.id) || (state.tables || []).find((x) => x.id === n.id); return b ? blockAreas(b)[0] : null; })();
+      const a = aid ? areaById(aid) : null;
+      const hue = a ? hueOf(a) : null;
+      return `<button class="nav-sub${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} ${isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`}${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${isT ? TBL_ICO : NOTE_ICO}</span><span class="t">${esc(n.title || 'Untitled')}</span></button>`;
     }).join('') || '<div class="nav-sub muted">Notes you open appear here</div>';
   } else {
     title = 'Life areas'; add = '<button class="nav-add" data-new-area title="New life area">+</button>';
@@ -979,7 +986,7 @@ function navSection(key, v) {
       <span class="nav-sec-title">${title}</span>
       ${add}<span class="nav-grip" title="Drag to reorder">⠿</span>
     </div>
-    ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}${key === 'areas' ? ' nav-cards' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
+    ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}${(key === 'areas' || key === 'notes') ? ' nav-cards' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
   </div>`;
 }
 // ── theme: automatic by local sunrise/sunset, overridable by the button ──
