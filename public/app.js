@@ -11505,6 +11505,7 @@ function renderNote() {
       <span class="crumb-tools">${noteAreasControl(n)}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       ${noteTypeToggle(n.id, 'note')}
+      ${n.sharedBy ? '' : '<button class="note-tidy ghost" data-note-tidy title="Tidy the spacing - remove blank lines and even out the paragraphs">Tidy</button>'}
       ${shareBtn(n, 'note')}
       ${n.sharedBy ? '' : `<button class="note-lock ghost ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" title="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
       <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
@@ -12811,6 +12812,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-card-photo-x]')) { if (state.card) { delete state.card.photo; saveCard(); rerenderCard(); } return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
+  if (t.closest('[data-note-tidy]')) { tidyNoteFormatting(); return; }
 
   // tasks
   const sh = t.closest('[data-sort]');
@@ -14239,6 +14241,28 @@ async function scanSave() {
 }
 function closeScanner() { stopCam(); const el = document.getElementById('scanner'); if (el) el.remove(); scan.src = null; scan.pages = []; }
 
+// Tidy a note's spacing: the usual cause of "some lines double-spaced, some
+// single" is stray empty paragraphs (a double Enter, or a paste). This removes
+// blank block elements and collapses runs of <br>, so real paragraph breaks
+// stay but the extra blank lines go - evening the whole note out. One tap, and
+// it's editable/undoable like any change.
+function tidyNoteFormatting() {
+  const pr = document.querySelector('.note-main .prose[data-prose="note"]') || document.querySelector('.prose[data-prose="note"]');
+  if (!pr) { toast('Open a note first'); return; }
+  flushProse();
+  const before = pr.innerHTML;
+  const tmp = document.createElement('div'); tmp.innerHTML = before;
+  // A block is "empty" only if it holds no text and no real content (an image,
+  // list, table, quote or a collapsible section counts as content).
+  const hasContent = (el) => el.querySelector('img,table,ul,ol,blockquote,details,hr') || el.textContent.replace(/\u00a0/g, " ").trim() !== '';
+  tmp.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6').forEach((el) => { if (!hasContent(el)) el.remove(); });
+  tmp.querySelectorAll('br + br').forEach((br) => br.remove());   // collapse runs of line breaks
+  const cleaned = tmp.innerHTML;
+  if (cleaned === before) { toast('Already tidy - nothing to change'); return; }
+  pr.innerHTML = cleaned;
+  saveProse(pr.dataset.prose, pr.innerHTML, pr.dataset.blockId);
+  toast('Spacing tidied ✓');
+}
 // Save a rich-text region back to whichever block it belongs to.
 async function saveProse(key, rawHtml, blockId) {
   const html = linkifyHtml(sanitizeProse(rawHtml));
