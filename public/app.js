@@ -2102,6 +2102,7 @@ function renderNav() {
       <div class="nav-brand">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></div>
       <button class="nav-util-toggle" data-util-toggle aria-label="Show tools" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
     </div>
+    <button class="nav-msearch" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
@@ -2443,6 +2444,9 @@ async function openHome() {
   // Home (which read as "it didn't take me back").
   state.navUtilOpen = false;
   renderNav();
+  // Instant paint: if we already have Home data from a previous visit, show it
+  // right away so tapping the wordmark feels immediate, then refresh behind it.
+  if (state.home) renderHome();
   const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),

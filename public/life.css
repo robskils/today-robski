@@ -1563,6 +1563,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-brand em { font-style:italic; color:var(--accent); }
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
 .nav-brand .brand-mark { margin:0 .16em 0 .2em; }
+.nav-msearch { display:none; }   /* mobile-only sticky search (see media query) */
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
   padding:10px 12px; margin-bottom:8px; border-radius:10px; border:1px solid var(--line-2);
@@ -4108,21 +4109,25 @@ table.ttable tr:last-child td { border-bottom:0; }
   .crumb-tools { margin-left:0; max-width:100%; min-width:0; }
   .crumb-tools .area-sel, .tbl-head .area-sel { max-width:100%; }
   .nav-item, .nav-grid, .nav-secs, .nav-spacer, .foot-search { display:none; }
+  /* A persistent search bar under the wordmark, part of the sticky header, so it
+     stays put on every page while the content scrolls. Opens the ⌘K palette. */
+  .nav-msearch {
+    display:flex; order:3; flex-basis:100%; align-items:center; gap:11px; width:100%; margin:2px 0 0;
+    padding:12px 15px; font-size:16px; color:var(--ink-3); text-align:left;
+    background:var(--card); border:1px solid var(--line-2); border-radius:12px; cursor:pointer;
+  }
+  .nav-msearch .hs-ic { font-size:19px; line-height:1; color:var(--accent); }
+  .nav-msearch:active { transform:scale(.99); }
+  /* Mail has its own inbox search; the reader is full-screen (nav hidden). */
+  body[data-view="mail"] .nav-msearch { display:none; }
   /* The home launcher stands in for the hidden sidebar: a tap-grid to every
      section, Today included (the planner is now responsive). Big targets and
      big labels, comfortable for thumbs and eyes. */
   .home-launch {
     display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:0;
   }
-  /* The scrolling search pill: shown on mobile, at the top of the page flow. */
-  .home-search {
-    display:flex; align-items:center; gap:11px; width:100%; margin:0 0 20px;
-    padding:14px 16px; font-size:16px; color:var(--ink-3); text-align:left;
-    background:var(--card); border:1px solid var(--line-2); border-radius:14px;
-    box-shadow:var(--shadow);
-  }
-  .home-search .hs-ic { font-size:20px; line-height:1; color:var(--accent); }
-  .home-search:active { transform:scale(.99); }
+  /* Home's in-flow search pill is replaced by the sticky .nav-msearch header. */
+  .home-search { display:none; }
   .hl-btn {
     position:relative; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:9px; min-height:96px; padding:20px 12px;
@@ -4168,11 +4173,10 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-settings .ns-lbl, .nav-adminlink .ns-lbl, .nav-signout .ns-lbl { display:inline; }
   .nav-settings, .nav-adminlink, .nav-signout { width:auto; font-size:15px; padding:8px 12px; border:1px solid var(--line); background:var(--card); border-radius:10px; }
   /* A real, tappable search box (opens the universal palette), inside the tools bar. */
+  /* The ⌘K box in the tools drawer is redundant now the sticky .nav-msearch is
+     always on screen, so keep it hidden on mobile. */
   .nav-k { display:none; }
-  body.util-open .nav-k { display:flex; order:5; flex-basis:100%; margin:8px 0 0; font-size:16px; padding:12px 14px; }
-  /* On Home the search lives at the top of the page instead (.home-search), so
-     it's dropped from the ⋯ tools menu to avoid two search boxes. */
-  body[data-view="home"].util-open .nav-k { display:none; }
+  body.util-open .nav-k { display:none; }
   .pane { padding:20px 18px 96px; }
   /* The breadcrumb pins just below the fixed brand header (--navh tracks the
      header's height, so it sits correctly whether the tools bar is open or shut).
