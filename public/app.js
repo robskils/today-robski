@@ -8563,11 +8563,12 @@ function renderContacts() {
 // flexes to fill via CSS - no cross-section width alignment needed any more.
 function alignConnectRow() { const find = document.querySelector('.fr-connect'); if (find) find.style.width = ''; }
 function contactAddForm() {
+  const areas = state.areas || [];
   return `<form id="contact-form" class="add-task expanded">
     <input id="ct-name" type="text" placeholder="${t('ct.name')}" autocomplete="off" required>
     <div class="atf-grid">
       <label class="atf"><span>${t('field.email')}</span><input id="ct-email" type="email" class="sel" placeholder="name@example.com" autocomplete="off"></label>
-      <label class="atf"><span>${t('field.phone')}</span><input id="ct-phone" type="tel" class="sel" placeholder="+351…" autocomplete="off"></label>
+      <label class="atf"><span>${t('field.phone')}</span><span class="ctf-phone"><input id="ct-phone-cc" class="sel ctf-phone-cc" type="tel" list="cc-dial-list" placeholder="+351" title="Country code - type or pick" autocomplete="off"><input id="ct-phone-num" class="sel ctf-phone-num" type="tel" placeholder="211 234 400" autocomplete="off"></span></label>
       <label class="atf"><span>${t('ct.birthday')}</span>${dateFieldHtml('ct-bday', '')}</label>
     </div>
     <div class="atf-grid">
@@ -8576,13 +8577,19 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
+    ${areas.length ? `<label class="atf atf-full"><span>Life area</span><select id="ct-area" class="sel"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
+    ${ccDatalist()}
   </form>`;
 }
 async function addContact(o) {
   const props = { email: o.email || null, phone: o.phone || null, birthday: o.birthday || null, address: o.address || null };
   if (props.address && typeof props.address === 'object' && !Object.keys(props.address).length) props.address = null;
-  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: o.name, props }) });
+  if (o.area) { props.area = o.area; props.areas = [o.area]; }   // life area, read by blockAreas
+  const notes = (o.notes || '').trim();
+  const body = notes ? `<p>${esc(notes)}</p>` : '';   // the contact's notes live in its body prose
+  const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: o.name, props, ...(body ? { body } : {}) }) });
   state.contacts.push(b); renderContacts();
   if (state.contactAdding) { const i = $('#ct-name'); if (i) i.focus(); }
 }
@@ -13190,7 +13197,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
-  if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) addContact({ name: v, email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }) }); }
+  if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
   if (e.target.id === 'qt-form') {
     const i = $('#qt-title'); const v = i.value.trim();
     if (v) {

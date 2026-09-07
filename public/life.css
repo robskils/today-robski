@@ -4699,6 +4699,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .acct-phone { display:flex; align-items:center; gap:6px; }
 .acct-phone .acct-phone-cc { flex:0 0 104px; width:104px; text-align:center; }
 .acct-phone .acct-phone-num { flex:1 1 auto; min-width:0; }
+/* Add-contact phone: country code + number side by side. */
+.ctf-phone { display:flex; align-items:center; gap:6px; }
+.ctf-phone .ctf-phone-cc { flex:0 0 78px; width:78px; text-align:center; max-width:78px; }
+.ctf-phone .ctf-phone-num { flex:1 1 auto; min-width:0; max-width:none; }
 .cc-multi-x { flex:0 0 auto; width:30px; height:30px; border:none; background:none; color:var(--ink-3); font-size:20px; line-height:1; cursor:pointer; border-radius:8px; }
 .cc-multi-x:hover { background:var(--surface-2); color:var(--danger,#c4412e); }
 .cc-multi-add { align-self:flex-start; border:none; background:none; color:var(--accent); font-size:13.5px; font-weight:600; cursor:pointer; padding:2px 0; }
