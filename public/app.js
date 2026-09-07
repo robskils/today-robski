@@ -982,6 +982,18 @@ async function saveAccount(patch) { try { state.account = await api('/api/accoun
 const CARD_COLOURS = ['#c4412e', '#b8863b', '#4d7c4d', '#2f6f7e', '#3a5a97', '#6d5399', '#a3466f', '#5b5b64'];
 // A few subtle background textures for the card's colour band (CSS in life.css).
 const CARD_PATTERNS = [['none', 'Plain'], ['dots', 'Dots'], ['grid', 'Grid'], ['diagonal', 'Lines'], ['waves', 'Waves']];
+
+// ── QR codes ── rendered via the vendored qrcode-generator lib (public/
+// qrcode.min.js, loaded in app.html; global `qrcode`). Kept as an SVG so it
+// stays crisp and needs no canvas.
+function qrSvg(text, px) {
+  if (typeof qrcode !== 'function') return '';
+  let qr; try { qr = qrcode(0, 'M'); qr.addData(text); qr.make(); } catch { return ''; }
+  const n = qr.getModuleCount(), quiet = 4, total = n + quiet * 2, cell = px / total;
+  let rects = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) rects += `<rect x="${((c + quiet) * cell).toFixed(2)}" y="${((r + quiet) * cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}"/>`;
+  return `<svg class="dbc-qr" viewBox="0 0 ${px} ${px}" width="${px}" height="${px}" xmlns="http://www.w3.org/2000/svg"><rect width="${px}" height="${px}" rx="8" fill="#ffffff"/><g fill="#141018">${rects}</g></svg>`;
+}
 function cardProfile() { return state.card || {}; }
 // Known link platforms get an icon; anything else falls back to a link glyph.
 function cardLinkMeta(url) {
@@ -1124,6 +1136,9 @@ function cardEditorHtml() {
         <div class="dbc-field"><span class="dbc-l">Show my phone</span>
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
+        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Daybook</small></span>
+          <div class="dbc-qrwrap">${qrSvg('https://daybook.fyi/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">daybook.fyi/u/${esc(a.subdomain)}</span></div>
+        </div>` : ''}
         <p class="dbc-note">Your handle <b>${a.subdomain ? esc(a.subdomain) + '.daybook.fyi' : 'is set in Settings'}</b>${a.subdomain ? ' - change it in Settings › Account.' : '.'}</p>
       </div>
     </div>`;
@@ -1160,11 +1175,33 @@ function renderPublicCard() {
   let el = document.getElementById('viewcard'); if (!el) { el = document.createElement('div'); el.id = 'viewcard'; document.body.appendChild(el); }
   const v = state.viewCard || {}; const d = v.data;
   const card = d ? cardHtml({ ...d, handle: d.subdomain ? `${d.subdomain}.daybook.fyi` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
-  const connected = d && d.id && ((state.friends && state.friends.friends) || []).some((f) => f.id === d.id);
-  const chat = connected ? `<button class="ic-btn ic-btn-primary dbc-view-msg" data-friend-chat="${d.id}" data-friend-name="${esc(d.name || '')}">Message</button>` : '';
-  el.innerHTML = `<div class="ic-bg" data-viewcard-bgclose><button class="ic-x" data-viewcard-close title="Close">×</button><div class="dbc-viewwrap">${card}${chat ? `<div class="dbc-view-acts">${chat}</div>` : ''}</div></div>`;
+  const isMe = d && state.me && d.id === state.me.id;
+  const friends = (state.friends && state.friends.friends) || [];
+  const connected = d && d.id && friends.some((f) => f.id === d.id);
+  const outgoing = d && d.id && ((state.friends && state.friends.outgoing) || []).some((f) => f.id === d.id);
+  let act = '';
+  if (d && d.id && !isMe) {
+    if (connected) act = `<button class="ic-btn ic-btn-primary dbc-view-msg" data-friend-chat="${d.id}" data-friend-name="${esc(d.name || '')}">Message</button>`;
+    else if (outgoing) act = '<span class="dbc-view-pending">Request sent ✓</span>';
+    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Daybook</button>`;
+  }
+  el.innerHTML = `<div class="ic-bg" data-viewcard-bgclose><button class="ic-x" data-viewcard-close title="Close">×</button><div class="dbc-viewwrap">${card}${act ? `<div class="dbc-view-acts">${act}</div>` : ''}</div></div>`;
+}
+// Open someone's card from their handle (a scanned /u/<handle> link), with a
+// Connect button. Loads the viewer's friend list so the button state is right.
+async function openConnectBySub(sub) {
+  if (!state.friends) { try { state.friends = await api('/api/friends'); } catch {} }
+  try {
+    const d = await api('/api/card/by/' + encodeURIComponent(sub));
+    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Daybook card was not found'); }
+  } catch (e) { openHome(); toast(e.message || 'Could not open that card'); }
 }
 function closePublicCard() { const el = document.getElementById('viewcard'); if (el) el.remove(); state.viewCard = null; }
+// Send a connect request from the card viewer, and refresh the overlay in place.
+async function connectFromCard(id) {
+  try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id: Number(id) }) }); toast('Request sent'); if (document.getElementById('viewcard')) renderPublicCard(); }
+  catch (e) { toast(e.message); }
+}
 // Optional two-factor (TOTP). state.totp holds the transient enrolment view:
 // { setup:{secret,uri} } while enrolling, { recovery:[...] } right after turning
 // it on (shown once), else null. a.totpEnabled is the persisted truth.
@@ -12292,6 +12329,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-medi]')) { openMeditationTool(); return; }
   if (t.closest('[data-open-card]')) { openCard(); return; }
   { const oc = t.closest('[data-open-personcard]'); if (oc) { openPublicCard(oc.dataset.openPersoncard); return; } }
+  { const cc = t.closest('[data-card-connect]'); if (cc) { connectFromCard(cc.dataset.cardConnect); return; } }
   if (t.closest('[data-viewcard-close]') || t.closest('[data-viewcard-bgclose]') === t) { closePublicCard(); return; }
   { const sw = t.closest('[data-card-accent]'); if (sw) { state.card = state.card || {}; state.card.accent = sw.dataset.cardAccent; saveCard(); rerenderCard(); return; } }
   { const pat = t.closest('[data-card-pattern]'); if (pat) { state.card = state.card || {}; state.card.pattern = pat.dataset.cardPattern; saveCard(); rerenderCard(); return; } }
@@ -14542,6 +14580,7 @@ async function onbConnectGmail() {
     else if (route === '/dreams') { await openJournal(); if (state.journal) { state.journal.picking = true; renderJournalList(); } }
     else if (route === '/goals') await openGoals();
     else if (route === '/today') await openToday();
+    else if (/^\/u\/[A-Za-z0-9-]{1,30}$/.test(route)) { const sub = route.slice(3); history.replaceState(null, '', '/'); await openHome().catch(() => {}); openConnectBySub(sub); }
     else if (route.startsWith('/task/')) { const id = route.slice(6); history.replaceState(null, '', '/'); await openTaskCard(id).catch(() => openHome()); }
     else if (route === '/settings' || route.startsWith('/settings/')) { const tab = route.slice(10); history.replaceState(null, '', '/'); await openSettings(tab || undefined); }
     else if (route === '/tasks') { if (new URLSearchParams(location.search).get('p1') === '1') openP1Tasks(); else await openTasks(); }

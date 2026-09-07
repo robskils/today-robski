@@ -3183,6 +3183,11 @@ export default {
       if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path) || path === '/signin') {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }
+      // A Daybook-card connect link: /u/<handle> (from someone's QR code). Serve
+      // the app shell so the SPA can open that person's card + a Connect button.
+      if (/^\/u\/[A-Za-z0-9-]{1,30}$/.test(path)) {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
+      }
       // Only the marketing apex may be indexed; the private apps and per-user
       // tenant subdomains must not be.
       if (path === '/robots.txt') {
@@ -3420,6 +3425,7 @@ export default {
       // Friends on Daybook: presence + connections.
       if (path === '/api/presence' && request.method === 'POST') return json(await touchPresence(env), request);
       { const cm = path.match(/^\/api\/card\/(\d{1,12})$/); if (cm && request.method === 'GET') { const c = await getPublicCard(env, cm[1]); return c ? json(c, request) : err('No such card.', request, 404); } }
+      { const cs = path.match(/^\/api\/card\/by\/([A-Za-z0-9-]{1,30})$/); if (cs && request.method === 'GET') { const u = await env.DB.prepare("SELECT id FROM users WHERE subdomain = ? AND status = 'active'").bind(cs[1].toLowerCase()).first().catch(() => null); const c = u ? await getPublicCard(env, u.id) : null; return c ? json(c, request) : err('No such card.', request, 404); } }
       if (path === '/api/cards' && request.method === 'GET') { const ids = (url.searchParams.get('ids') || '').split(',').map((x) => x.trim()).filter(Boolean); return json(await getPublicCards(env, ids), request); }
       if (path === '/api/friends' && request.method === 'GET') return json(await getFriends(env), request);
       if (path === '/api/friends/status' && request.method === 'GET') return json(await friendStatus(env), request);
