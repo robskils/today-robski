@@ -4837,6 +4837,10 @@ function areaOverviewHtml(area, c, blocks) {
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const recent = (blocks || []).map((b) => ({ b, t: new Date(b.updated_at || b.created_at || 0).getTime() })).filter((x) => x.t > 0).sort((a, b) => b.t - a.t).slice(0, 6);
   const activity = recent.length ? recent.map(({ b, t }) => `<div class="ov-act"><span class="ov-act-ic">${kIcon[b.kind] || '•'}</span><span class="ov-act-t">${esc(b.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(t)}</span></div>`).join('') : '<div class="ov-muted">No recent activity.</div>';
+  // Recently viewed: things YOU opened lately that belong to this area (from the
+  // recent-views list, filtered to this area).
+  const rv = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
+  const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
   const AREA_SECS = ['Vision', 'Goals', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall', 'Tasks'];
@@ -4869,6 +4873,7 @@ function areaOverviewHtml(area, c, blocks) {
     <div class="ov-metrics">${metrics}</div>
     <div class="ov-cols">
       <div class="ov-block"><div class="ov-h"><span>Who has access</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite</button>'}</div><div class="ov-people">${people}</div></div>
+      <div class="ov-block"><div class="ov-h"><span>Recently viewed</span></div><div class="ov-acts">${viewedHtml}</div></div>
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
     ${reviewsBlock}
@@ -8133,6 +8138,17 @@ function contactCardHtml(c) {
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${tags.length ? `<span class="contact-tags">${tags.map((g) => `<span class="contact-tag">${esc(g.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
+// Your own Daybook card, shown as a "You" card at the top of Contacts. It's
+// always there (can't be deleted, only hidden) and ties to your Daybook card -
+// it's how you appear to others. Tapping it opens the card editor.
+function selfContactHtml() {
+  try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return '<div class="cts-self-hidden"><button class="linkish" data-self-show>Show your Daybook card</button></div>'; } catch {}
+  const a = state.account || {}; const name = a.name || firstName() || 'You';
+  const sub = a.subdomain ? `${a.subdomain}.daybook.fyi` : 'Your window on Daybook';
+  const photo = state.card && state.card.photo;
+  const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
+  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Daybook card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">Daybook card ›</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
+}
 // The row of group chips: All, then each group (droppable + count), then + New.
 function groupBarHtml() {
   const gs = (state.contactGroups || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
@@ -8205,6 +8221,7 @@ function renderContacts() {
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>` : `
     <section class="home-sec contacts-mine">
+      ${selfContactHtml()}
       <div class="cts-head">
         <input class="list-search sel cts-search" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
         ${groupBarHtml()}
@@ -11053,6 +11070,27 @@ function noteWallHtml(n) {
     ${open ? `<textarea class="home-notepad note-wall-ta" data-note-wall placeholder="A shared space for this note - everyone with access can see it." ${ro ? 'readonly' : ''}>${esc(wall)}</textarea>` : ''}
   </section>`;
 }
+// Connected notes: the note-page panel lets you both create a note that lives
+// under this one and connect an existing note to it (both via parent_id).
+function noteConnListRows() {
+  const cur = state.note.current; const childIds = new Set((state.note.children || []).map((c) => c.id));
+  const q = (state.note.connQuery || '').trim().toLowerCase();
+  let list = (state.noteTops || []).filter((x) => x.id !== cur.id && !childIds.has(x.id));
+  if (q) list = list.filter((x) => (x.title || '').toLowerCase().includes(q));
+  list = list.slice(0, 8);
+  return list.length ? list.map((x) => `<button class="nconn-item" data-note-connect="${x.id}"><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span></button>`).join('') : '<div class="ov-muted" style="padding:6px 2px">No other notes to connect.</div>';
+}
+function noteConnectPickerHtml() {
+  return `<details class="nconn"><summary>🔗 Connect an existing note</summary><input class="sel nconn-q" data-note-conn-q placeholder="Search your notes…" value="${esc(state.note.connQuery || '')}" autocomplete="off"><div class="nconn-list" id="nconn-list">${noteConnListRows()}</div></details>`;
+}
+async function connectExistingNote(id) {
+  const cur = state.note && state.note.current; if (!cur || id === cur.id) return;
+  try {
+    await api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ parent_id: cur.id }) });
+    state.note.children = (await api('/api/blocks?parent_id=' + cur.id)).filter((b) => b.kind === 'note' || b.kind === 'table');
+    state.note.connQuery = ''; renderNote(); toast('Note connected');
+  } catch (e) { toast(e.message); }
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -11080,8 +11118,8 @@ function renderNote() {
         ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
-        <div class="subpages" data-subpages><div class="sub-h">Notes inside${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
-          ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note inside</span></button></div>
+        <div class="subpages" data-subpages><div class="sub-h">Connected notes${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
+          ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New connected note</span></button>${noteConnectPickerHtml()}</div>
         ${noteTasksHtml(n.id)}
         ${relatedNotesHtml(n)}
       </aside>
@@ -11743,6 +11781,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-card-tagline]')) { state.card = state.card || {}; state.card.tagline = e.target.value; cardLivePreview(); clearTimeout(window.__cardTg); window.__cardTg = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-website]')) { state.card = state.card || {}; state.card.website = e.target.value; cardLivePreview(); clearTimeout(window.__cardWs); window.__cardWs = setTimeout(saveCard, 500); return; }
+  if (e.target.matches('[data-note-conn-q]') && state.note) { state.note.connQuery = e.target.value; const el = document.getElementById('nconn-list'); if (el) el.innerHTML = noteConnListRows(); return; }
   if (e.target.matches('[data-card-link-url]') || e.target.matches('[data-card-link-label]')) {
     const i = Number(e.target.dataset.cardLinkUrl != null ? e.target.dataset.cardLinkUrl : e.target.dataset.cardLinkLabel);
     state.card = state.card || {}; state.card.links = state.card.links || [];
@@ -12108,6 +12147,8 @@ document.addEventListener('click', (e) => {
   const gat = t.closest('[data-goal-addtask]'); if (gat) { const [gid, mid] = gat.dataset.goalAddtask.split(':'); addGoalTask(gid, mid || null).catch((x) => toast(x.message)); return; }
   { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
   { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
+  if (t.closest('[data-self-hide]')) { try { localStorage.setItem('life.contacts.selfHidden', '1'); } catch {} renderContacts(); return; }
+  if (t.closest('[data-self-show]')) { try { localStorage.removeItem('life.contacts.selfHidden'); } catch {} renderContacts(); return; }
   if (t.closest('[data-contacts-merge]')) { mergeSelectedContacts(); return; }
   if (t.closest('[data-contacts-selclear]')) { state.contactSel = new Set(); renderContacts(); return; }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
@@ -12283,6 +12324,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
+  { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
   if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }

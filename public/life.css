@@ -166,6 +166,17 @@ button { cursor:pointer; background:none; border:0; }
 .cc-star:hover { color:var(--gold); transform:scale(1.15); }
 .cts-sec-h { font-size:12.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); margin:18px 0 2px; display:flex; align-items:center; gap:8px; }
 .cts-sec-h .muted { font-weight:600; }
+.cts-self { position:relative; margin:0 0 16px; }
+.cts-self-card { display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:14px 44px 14px 16px; border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line)); border-radius:14px; background:color-mix(in srgb,var(--accent) 6%,var(--card)); color:var(--ink); cursor:pointer; box-shadow:var(--shadow); transition:border-color .12s, transform .12s; }
+.cts-self-card:hover { border-color:var(--accent); transform:translateY(-1px); }
+.cts-self-card .fr-av { flex:none; }
+.cts-self-body { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.cts-self-name { font-size:15.5px; font-weight:600; color:var(--ink); }
+.cts-self-sub { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:12.5px; color:var(--ink-3); }
+.cts-self-tag { margin-left:auto; font-size:12px; color:var(--accent); font-weight:600; white-space:nowrap; }
+.cts-self-x { position:absolute; top:10px; right:12px; width:26px; height:26px; border:0; background:none; color:var(--ink-3); font-size:18px; line-height:1; border-radius:8px; cursor:pointer; z-index:2; }
+.cts-self-x:hover { background:var(--paper-2); color:var(--ink); }
+.cts-self-hidden { margin:0 0 12px; }
 .contact-selbar { display:flex; align-items:center; gap:12px; padding:10px 14px; margin:0 0 12px; border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); border-radius:12px; background:color-mix(in srgb,var(--accent) 7%,var(--card)); }
 .csb-n { font-weight:700; }
 .csb-hint { color:var(--ink-3); font-size:13.5px; }
@@ -1510,6 +1521,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .note-starred, .note-related { display:none; }
 }
 .subpages { margin-top:36px; border-top:1px solid var(--line); padding-top:20px; }
+.nconn { margin-top:8px; }
+.nconn > summary { cursor:pointer; font-size:13px; color:var(--ink-3); font-weight:600; list-style:none; padding:6px 2px; }
+.nconn > summary::-webkit-details-marker { display:none; }
+.nconn > summary:hover { color:var(--accent); }
+.nconn-q { width:100%; max-width:none; margin:6px 0; font-size:14px; }
+.nconn-list { display:flex; flex-direction:column; gap:2px; max-height:220px; overflow:auto; }
+.nconn-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:none; border:0; padding:7px 6px; border-radius:8px; cursor:pointer; color:var(--ink); font-size:14px; }
+.nconn-item:hover { background:var(--paper); color:var(--accent); }
+.nconn-item .sp-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sub-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:10px; font-weight:600; }
 .subpage { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; border-radius:10px; color:var(--ink); font-size:16.5px; transition:background .12s; }
 .subpage:hover { background:var(--paper-2); }
@@ -3347,6 +3367,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ov-act-ic { flex:none; width:20px; text-align:center; color:var(--ink-3); font-size:14px; }
 .ov-act-t { flex:1; min-width:0; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ov-act-time { flex:none; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+.ov-act-btn { width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--line); cursor:pointer; }
+.ov-act-btn:last-child { border-bottom:0; }
+.ov-act-btn:hover .ov-act-t { color:var(--accent); }
 .ov-muted { color:var(--ink-3); font-size:14px; padding:4px 0; }
 .ov-sections { margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
 .ov-secgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:6px 14px; }
