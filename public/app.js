@@ -50,6 +50,8 @@ const T_EN = {
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Vision and Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
+  'field.area': 'Life area', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
+  'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -67,6 +69,8 @@ const T_PT = {
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Visão e Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
+  'field.area': 'Área da vida', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
+  'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -7888,7 +7892,7 @@ function taskTableHtml(list, emptyMsg) {
   }).join('');
   return `<div class="tbl-scroll tasks-scroll"><table class="ttable">
       <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">${emptyMsg || 'No tasks here yet.'}</td></tr>`}</tbody>
+      <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">${emptyMsg || t('task.empty.here')}</td></tr>`}</tbody>
     </table></div>`;
 }
 // ── Tasks: a build-your-own filter (by priority, area, date, duration…) ──
@@ -8018,36 +8022,36 @@ function renderTasks() {
         <div class="completed-head"><h2>Completed · ${completed.length}</h2><button class="ghost" data-hide-completed>Hide</button></div>
         <input class="completed-q sel" data-completed-q placeholder="Search completed…" value="${esc(state.completedQuery || '')}" autocomplete="off">
         ${taskTableHtml(completedShown, cq ? 'No completed tasks match.' : 'Nothing completed yet.')}</section>`
-    : (completed.length ? `<button class="ghost show-completed" data-show-completed>Show completed · ${completed.length}</button>` : '');
+    : (completed.length ? `<button class="ghost show-completed" data-show-completed>${t('task.showcompleted')} · ${completed.length}</button>` : '');
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.tasks'))}
     <div class="pane-head"><h1>${t('nav.tasks')}</h1></div>
     <div class="list-head">
-      <input class="list-search sel" data-task-q placeholder="Search tasks…" value="${esc(state.taskQuery || '')}" autocomplete="off">
-      ${state.taskAdding ? '' : `<button class="add-btn wide" data-task-add>+ Add task</button>`}
+      <input class="list-search sel" data-task-q placeholder="${t('task.search')}" value="${esc(state.taskQuery || '')}" autocomplete="off">
+      ${state.taskAdding ? '' : `<button class="add-btn wide" data-task-add>${t('task.add')}</button>`}
     </div>
     ${state.taskAdding
       ? `<form id="task-form" class="add-task expanded">
-      <input id="task-title" type="text" placeholder="What needs doing?" autocomplete="off" required>
+      <input id="task-title" type="text" placeholder="${t('task.whatneeds')}" autocomplete="off" required>
       <div class="atf-grid">
-        <label class="atf"><span>Life area</span><select id="task-area" class="sel">${opts}</select></label>
-        <label class="atf"><span>Priority</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
-        <label class="atf"><span>Duration</span><select id="task-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
-        <label class="atf"><span>Surface on</span>${dateFieldHtml('task-snooze', '')}</label>
-        <label class="atf"><span>Repeat</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
-        <label class="atf" id="task-repeatfrom-wrap" hidden><span>Next one is due</span><select id="task-repeatfrom" class="sel"><option value="due">On its schedule</option><option value="done">After I tick it off</option></select></label>
+        <label class="atf"><span>${t('field.area')}</span><select id="task-area" class="sel">${opts}</select></label>
+        <label class="atf"><span>${t('field.priority')}</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
+        <label class="atf"><span>${t('field.duration')}</span><select id="task-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+        <label class="atf"><span>${t('task.surfaceon')}</span>${dateFieldHtml('task-snooze', '')}</label>
+        <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+        <label class="atf" id="task-repeatfrom-wrap" hidden><span>${t('task.nextdue')}</span><select id="task-repeatfrom" class="sel"><option value="due">${t('task.onschedule')}</option><option value="done">${t('task.aftertick')}</option></select></label>
       </div>
-      <label class="atf atf-full"><span>Notes</span><textarea id="task-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
+      <label class="atf atf-full"><span>${t('field.notes')}</span><textarea id="task-notes" class="sel" rows="3" placeholder="${t('task.notesph')}" autocomplete="off"></textarea></label>
       <div class="atf-actions">
-        <button class="add-btn wide" type="submit">Add task</button>
-        <button type="button" class="ghost" data-task-add-close>Done</button>
+        <button class="add-btn wide" type="submit">${t('task.addtask')}</button>
+        <button type="button" class="ghost" data-task-add-close>${t('task.done')}</button>
       </div>
     </form>`
       : ''}
     ${assignedSectionHtml()}
     ${quickBar}
     ${filterBar}
-    ${taskTableHtml(open, (conds.length || tq || qp.size || qa) ? 'No tasks match these filters.' : 'No open tasks here.')}
+    ${taskTableHtml(open, (conds.length || tq || qp.size || qa) ? t('task.empty.filters') : t('task.empty.open'))}
     ${snoozedSection}
     ${completedSection}`;
   // Put the cursor in the new-task title whenever the add form is freshly opened -
