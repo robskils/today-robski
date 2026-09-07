@@ -2951,6 +2951,9 @@ if (medState.running) medEnsureTicker();
 // vice-versa. The daily ticks are ours, kept per-user in a kv setting.
 const dayKey = (d) => d.toISOString().slice(0, 10);
 function trackerLast7() { const out = []; const d = new Date(); for (let i = 6; i >= 0; i--) { const x = new Date(d); x.setDate(d.getDate() - i); out.push(dayKey(x)); } return out; }
+// A 7-day window ENDING on endISO (inclusive), so the Tracker can step back and
+// forward through past weeks rather than being pinned to the last seven days.
+function trackerWindow(endISO) { const out = []; const e = new Date(endISO + 'T00:00'); for (let i = 6; i >= 0; i--) { const x = new Date(e); x.setDate(e.getDate() - i); out.push(dayKey(x)); } return out; }
 let practicesLoaded = false;
 async function loadPractices(force) {
   if (practicesLoaded && !force && state.practices) return state.practices;
@@ -5691,7 +5694,7 @@ window.addEventListener('resize', () => { if (state.view && state.view.type === 
 // counts a day done if you did ANY of its practices. Each practice shows its own
 // run + status against its own aim.
 function t2TrackerHtml() {
-  const P = state.practices;
+  const P = state.practices; const T = state.today;
   const tracked = (P.activities || []).filter((a) => a.tracked);
   if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a practice with <b>Track it</b> on and its run of days appears here.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
   const today = dayKey(new Date());
@@ -5699,7 +5702,21 @@ function t2TrackerHtml() {
   const groups = new Map();
   tracked.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, area: ar, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
   const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
-  const days = trackerLast7();
+  // The visible 7-day window. It ends today by default; the prev/next controls
+  // step it back and forth a week at a time (never past today - you can't tick
+  // the future). Ticking a dot still logs that exact day, so past weeks are
+  // fillable retroactively.
+  const winEnd = (T && T.trackerEnd && T.trackerEnd <= today) ? T.trackerEnd : today;
+  const days = trackerWindow(winEnd);
+  const atNow = winEnd === today;
+  const fmtD = (iso) => new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const rangeLabel = `${fmtD(days[0])} - ${fmtD(days[6])}`;
+  const trkNav = `<div class="trk-nav">
+    <button class="trk-arw" data-trk-week="-1" aria-label="Earlier week">‹</button>
+    <span class="trk-range">${esc(rangeLabel)}</span>
+    <button class="trk-arw" data-trk-week="1" aria-label="Later week"${atNow ? ' disabled' : ''}>›</button>
+    ${atNow ? '' : '<button class="trk-nav-now" data-trk-now>Today</button>'}
+  </div>`;
   const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   // A short, plain list - just the cadence, no "check in" prefix.
   const body = ordered.map((g) => {
@@ -5733,7 +5750,7 @@ function t2TrackerHtml() {
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
-  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p><div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
+  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p>${trkNav}<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
@@ -12209,6 +12226,8 @@ document.addEventListener('click', (e) => {
   { const mg = t.closest('[data-med-gongs]'); if (mg) { medSetGongs(Number(mg.dataset.medGongs)); return; } }
   { const tk = t.closest('[data-prc-tick]'); if (tk) { practiceToggle(tk.dataset.prcTick, dayKey(new Date())); return; } }
   { const td = t.closest('[data-prc-day]'); if (td) { const [pid, day] = td.dataset.prcDay.split(':'); practiceToggle(pid, day); return; } }
+  { const tw = t.closest('[data-trk-week]'); if (tw) { const T = state.today; const today = dayKey(new Date()); const base = (T.trackerEnd && T.trackerEnd <= today) ? T.trackerEnd : today; const e = new Date(base + 'T00:00'); e.setDate(e.getDate() + 7 * Number(tw.dataset.trkWeek)); let end = dayKey(e); if (end > today) end = today; T.trackerEnd = end; renderToday(); return; } }
+  { if (t.closest('[data-trk-now]')) { state.today.trackerEnd = dayKey(new Date()); renderToday(); return; } }
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
   { const na = t.closest('[data-prc-new-area]'); if (na) { openPracticeEditor(null, na.dataset.prcNewArea); return; } }
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }

@@ -2644,6 +2644,14 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 /* ── Tracker dashboard (keep your life alive, by area) ── */
 .t2-sub { margin:-2px 0 14px; font-family:'Cormorant Garamond',serif; font-style:italic; font-size:20px; color:var(--ink-3); }
 .trk-intro { margin:2px 0 16px; }
+/* Week stepper for the Tracker dot rows - move back/forward through past weeks. */
+.trk-nav { display:flex; align-items:center; gap:10px; margin:0 0 14px; }
+.trk-arw { width:36px; height:36px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:20px; line-height:1; touch-action:manipulation; }
+.trk-arw:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+.trk-arw:disabled { opacity:.32; cursor:default; }
+.trk-range { font-size:15px; font-weight:600; color:var(--ink-2); min-width:132px; text-align:center; font-variant-numeric:tabular-nums; }
+.trk-nav-now { margin-left:2px; padding:8px 14px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; touch-action:manipulation; }
+.trk-nav-now:hover { border-color:var(--accent); color:var(--accent); }
 .trk-newbtn { margin-top:16px; }
 /* A quiet "add a practice" row at the foot of each area card. */
 .trk-addp { width:100%; margin-top:6px; padding:8px; border:1px dashed var(--line-2); border-radius:10px; background:transparent; color:var(--ink-3); font-size:13.5px; font-weight:600; cursor:pointer; }
