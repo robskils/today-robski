@@ -45,6 +45,7 @@ const T_EN = {
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
   'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes & Tables', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
+  'today.tracker': 'Tracker',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -57,6 +58,7 @@ const T_PT = {
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas e tabelas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Cartas', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
+  'today.tracker': 'Registo',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -5612,12 +5614,12 @@ function renderToday() {
   const dateLabel = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   // Always show the day + date; when it's today, lead with "Today" and set the date beside it.
-  const h1 = T.tab === 'tracker' ? `Tracker <span class="t2-dsmall">${esc(todayLabel)}</span>` : (isToday ? `Today <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel));
-  const nav = `<span class="t2-nav">${!isToday ? '<button class="t2-navbtn" data-t2-today>Today</button>' : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
+  const h1 = T.tab === 'tracker' ? `${t('today.tracker')} <span class="t2-dsmall">${esc(todayLabel)}</span>` : (isToday ? `${t('nav.today')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel));
+  const nav = `<span class="t2-nav">${!isToday ? `<button class="t2-navbtn" data-t2-today>${t('nav.today')}</button>` : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
   const toTick = (state.practices && (state.practices.activities || []).filter((a) => a.tracked && !a.avoid && !practiceMarked(a.id, dayKey(new Date()))).length) || 0;
   const tabs = `<div class="t2-tabs">
-    <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">Today</button>
-    <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">Tracker${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
+    <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">${t('nav.today')}</button>
+    <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">${t('today.tracker')}${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
   </div>`;
   const dueReviews = (isToday && T.tab === 'today') ? reviewsDueToday() : [];
   // If a review is due today but we haven't loaded reviews yet, fetch them once so
