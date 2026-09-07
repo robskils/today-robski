@@ -2169,7 +2169,7 @@ function renderSettings() {
         </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
         ${state.account ? `<label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>` : ''}
-        ${modOn('contacts') ? `<label class="set-mod"><span>People on Home<small>Show who's online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
+        ${modOn('contacts') ? `<label class="set-mod"><span>See online contacts on Home<small>Show which of your contacts are online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
       </div>`;
 
   const aiPane = state.account ? (() => {
