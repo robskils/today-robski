@@ -1,9 +1,94 @@
-// Robski Life service worker. Its only job is push: when the worker sends a
-// "new mail" push, badge the app icon and show a notification. No offline
-// caching - the app is online-only and we don't want stale assets.
+// Daybook service worker: push notifications + offline / instant-open caching.
+//
+// Caching rules, chosen to be safe:
+//   - /api/* and /auth/* are NEVER cached - always straight to the network, so
+//     data is fresh and the session token is honoured.
+//   - Navigations (the app shell) are network-first, falling back to the cached
+//     shell when offline, so the app still opens on the tube.
+//   - Static assets (js/css/fonts/images) are stale-while-revalidate: served
+//     from cache instantly, refreshed behind the scenes. Safe because every
+//     asset URL carries a ?v=<cacheversion> stamp, so a new deploy is a new URL
+//     (cache miss -> network) and a cached URL is byte-identical to its network
+//     copy - no version can go stale under the same URL.
+//
+// Bump CACHE when this file's logic changes, to purge older caches on activate.
 
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+const CACHE = 'daybook-cache-v1';
+const SHELL = ['/app.html', '/qrcode.min.js', '/icon-192.png'];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    try { const c = await caches.open(CACHE); await c.addAll(SHELL); } catch {}
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+
+const STATIC_RE = /\.(?:js|mjs|css|woff2?|ttf|otf|png|svg|webmanifest|ico|jpe?g|webp|gif)$/i;
+const isFontHost = (u) => u.hostname === 'fonts.googleapis.com' || u.hostname === 'fonts.gstatic.com';
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;   // only GETs are cacheable
+  let url;
+  try { url = new URL(req.url); } catch { return; }
+  const sameOrigin = url.origin === self.location.origin;
+
+  // Never touch the API or auth: always network, fresh and authenticated.
+  if (sameOrigin && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/'))) return;
+
+  // The app shell (navigations): network-first, offline-fallback to cache.
+  if (req.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const res = await fetch(req);
+        // Keep the latest shell for offline. The SPA serves /app.html for every
+        // in-app route, so one cached copy covers them all.
+        try { if (res && res.ok) { const c = await caches.open(CACHE); c.put('/app.html', res.clone()); } } catch {}
+        return res;
+      } catch {
+        return (await caches.match('/app.html')) || Response.error();
+      }
+    })());
+    return;
+  }
+
+  // Google Fonts: cache-first (immutable once fetched).
+  if (isFontHost(url)) {
+    event.respondWith((async () => {
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      try {
+        const res = await fetch(req);
+        if (res && (res.ok || res.type === 'opaque')) { const c = await caches.open(CACHE); c.put(req, res.clone()); }
+        return res;
+      } catch { return cached || Response.error(); }
+    })());
+    return;
+  }
+
+  // Same-origin static assets: stale-while-revalidate.
+  if (sameOrigin && STATIC_RE.test(url.pathname)) {
+    event.respondWith((async () => {
+      const cached = await caches.match(req);
+      const net = fetch(req).then((res) => {
+        if (res && res.ok && res.type === 'basic') { caches.open(CACHE).then((c) => c.put(req, res.clone())); }
+        return res;
+      }).catch(() => null);
+      return cached || (await net) || Response.error();
+    })());
+    return;
+  }
+
+  // Everything else: leave it to the network (default behaviour).
+});
 
 self.addEventListener('push', (event) => {
   event.waitUntil((async () => {

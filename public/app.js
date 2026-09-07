@@ -6420,6 +6420,13 @@ function urlB64ToUint8(b64) {
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
 }
+// Register the service worker for offline / instant-open caching. Idempotent and
+// independent of push, so the app is cached even where notifications aren't
+// supported. The SW itself never caches /api or /auth (always network).
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try { await navigator.serviceWorker.register('/sw.js'); } catch { /* blocked - app still works online */ }
+}
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 // Register the SW (idempotent) and, if permission is already granted, make sure
 // the server has our current subscription. Called on boot; never prompts.
@@ -14670,6 +14677,7 @@ async function onbConnectGmail() {
     startFriendStatusPoll(); // Contacts badge + Home "People" section
     // The "People on Home" preference follows the account across devices.
     api('/api/kv/home_people').then((r) => { if (r && (r.value === '0' || r.value === '1')) { try { localStorage.setItem('life.home.people', r.value); } catch {} if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+    registerSW();            // offline / instant-open caching (works even where push isn't supported)
     initPush();              // register the SW; refresh the push subscription if already granted
     registerMailHandler();   // offer Robski Life as the browser's mailto: handler
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
