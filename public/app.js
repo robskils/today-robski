@@ -48,6 +48,8 @@ const T_EN = {
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify',
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
+  'goals.title': 'Vision and Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
+  'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -63,6 +65,8 @@ const T_PT = {
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
+  'goals.title': 'Visão e Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
+  'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -2729,7 +2733,7 @@ function renderToolbox() {
       ${badge || ''}
     </button>`; }).join('');
   const open = TBX_TOOLS.find((t) => t.k === active);
-  $('#pane').innerHTML = `${pageCrumb('Toolbox')}<div class="pane-head"><h1>🧰 Toolbox</h1></div>
+  $('#pane').innerHTML = `${pageCrumb(t('nav.timer'))}<div class="pane-head"><h1>🧰 ${t('nav.timer')}</h1></div>
     <div class="tbx-grid">${cards}</div>
     ${open ? `<div class="tbx-panel tbx-${open.k}"><div class="tbx-panel-h"><span class="tbx-ic">${open.ic}</span>${open.label}</div>${open.panel()}</div>` : '<p class="tbx-hint">Pick a tool to open it.</p>'}`;
 }
@@ -3040,7 +3044,7 @@ function renderPractices() {
   if (!state.practices) return;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Practices' }])}
-    <div class="pane-head home-head"><h1>Practices</h1></div>
+    <div class="pane-head home-head"><h1>${t('title.practices')}</h1></div>
     <p class="t2-sub">Activities you want to repeat</p>
     <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by life area. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it on the <b>Tracker</b>.</p>
     ${practicesManageHtml()}`;
@@ -3525,8 +3529,8 @@ function openTablesList() {
   const favTables = state.tables.filter((t) => t.props && t.props.fav);
   const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
-    ${pageCrumb('Tables')}
-    <div class="pane-head home-head"><h1>Tables</h1><button class="add-btn wide" data-new-table>+ New table</button></div>
+    ${pageCrumb(t('title.tables'))}
+    <div class="pane-head home-head"><h1>${t('title.tables')}</h1><button class="add-btn wide" data-new-table>${t('btn.newtable')}</button></div>
     ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">All tables · ${state.tables.length}</div><div class="tbl-cards">${cards(state.tables) || '<div class="empty">No tables yet.</div>'}</div></section>`;
 }
@@ -3647,8 +3651,8 @@ function renderNotesList() {
   // Starred/Recent strip pushing the list down).
   const repeat = (!q && (favNotes.length || recentNotes.length)) ? notesControlsHtml(false) : '';
   $('#pane').innerHTML = `
-    ${pageCrumb('Notes')}
-    <div class="pane-head home-head"><h1>Notes</h1></div>
+    ${pageCrumb(t('nav.notes'))}
+    <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
     ${notesControlsHtml(true)}
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     ${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}
@@ -4312,8 +4316,8 @@ function renderJournalList() {
       </div>
     </div>`;
   $('#pane').innerHTML = `
-    ${pageCrumb('Well-being')}
-    <div class="pane-head home-head"><h1>Well-being</h1></div>
+    ${pageCrumb(t('nav.reflect'))}
+    <div class="pane-head home-head"><h1>${t('nav.reflect')}</h1></div>
     ${j.picking ? '' : `<div class="wb-tiles">
       <button class="wb-tile" data-journal-start title="Write freely, or from a prompt"><span class="wb-tile-ic">📓</span><span class="wb-tile-t">${t('wb.journal')}</span></button>
       <button class="wb-tile" data-journal-coaching title="A running coaching conversation"><span class="wb-tile-ic">🧭</span><span class="wb-tile-t">${t('wb.coaching')}</span></button>
@@ -4498,8 +4502,8 @@ function renderReadwatch() {
   };
   const section = (label, list, empty) => `<section class="rw-sec"><div class="home-sec-h rw-sec-h">${label}<span class="muted">${list.length}</span></div><div class="rw-list">${list.map(card).join('') || (empty ? `<div class="empty">${empty}</div>` : '')}</div></section>`;
   $('#pane').innerHTML = `
-    ${pageCrumb('Read & Watch')}
-    <div class="pane-head home-head"><h1>Read &amp; Watch</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
+    ${pageCrumb(t('saved.title'))}
+    <div class="pane-head home-head"><h1>${t('saved.title')}</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
     <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
     <div class="rw-type" title="Daybook works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
@@ -4642,8 +4646,8 @@ function renderAreasList() {
     <button class="cg-chip areas-sharedchip ${sharedOnly ? 'on' : ''}" data-areas-shared title="Only areas you share with someone">👥 Shared</button>
   </div>`;
   $('#pane').innerHTML = `
-    ${pageCrumb('Life areas')}
-    <div class="pane-head home-head"><h1>Life areas</h1><button class="add-btn wide" data-new-area>+ New area</button></div>
+    ${pageCrumb(t('nav.areas'))}
+    <div class="pane-head home-head"><h1>${t('nav.areas')}</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
     <p class="t2-sub" style="font-style:normal">The few domains your life orbits. Open one for its whole dashboard.</p>
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
@@ -7085,7 +7089,7 @@ function renderMailAccounts(note) {
     ${(a.blocked && a.blocked.length) ? `<div class="mail-blocked"><span class="mail-blocked-h">Blocked senders · ${a.blocked.length}</span><div class="mail-blocked-chips">${a.blocked.map((addr) => `<span class="mail-blocked-chip">${esc(addr)}<button data-mail-unblock="${esc(addr)}" data-mail-unblock-acct="${a.id}" title="Unblock">×</button></span>`).join('')}</div></div>` : ''}
     </div>`).join('');
   $('#pane').innerHTML = `${acctCrumbHtml(false)}
-    <div class="pane-head home-head"><h1>Accounts</h1><button class="add-btn wide" data-mail-add-acct>+ Add mailbox</button></div>
+    <div class="pane-head home-head"><h1>${t('title.mailaccounts')}</h1><button class="add-btn wide" data-mail-add-acct>${t('btn.addmailbox')}</button></div>
     <p class="scope">${note ? esc(note) + ' ' : ''}Connect as many mailboxes as you like - adding one never removes another.</p>
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>
@@ -7514,11 +7518,11 @@ function renderMail(loading) {
   // Reading a message: the crumb's back arrow returns to the inbox, not Home.
   const mailCrumb = (m.open || m.composing)
     ? `<div class="note-crumbs"><button class="crumb-back" data-mail-back title="Back to inbox">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-mail-back>Mail</button><span class="crumb-sep">›</span><span class="crumb cur">${m.composing ? 'Compose' : 'Message'}</span></div>`
-    : pageCrumb('Mail');
+    : pageCrumb(t('nav.mail'));
   $('#pane').innerHTML = `
     ${mailCrumb}
-    <div class="pane-head home-head"><h1>Mail</h1>
-      <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="Accounts">Accounts</button><button class="add-btn wide" data-mail-compose>+ Compose</button></div></div>
+    <div class="pane-head home-head"><h1>${t('nav.mail')}</h1>
+      <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
@@ -8016,8 +8020,8 @@ function renderTasks() {
         ${taskTableHtml(completedShown, cq ? 'No completed tasks match.' : 'Nothing completed yet.')}</section>`
     : (completed.length ? `<button class="ghost show-completed" data-show-completed>Show completed · ${completed.length}</button>` : '');
   $('#pane').innerHTML = `
-    ${pageCrumb('Tasks')}
-    <div class="pane-head"><h1>Tasks</h1></div>
+    ${pageCrumb(t('nav.tasks'))}
+    <div class="pane-head"><h1>${t('nav.tasks')}</h1></div>
     <div class="list-head">
       <input class="list-search sel" data-task-q placeholder="Search tasks…" value="${esc(state.taskQuery || '')}" autocomplete="off">
       ${state.taskAdding ? '' : `<button class="add-btn wide" data-task-add>+ Add task</button>`}
@@ -8276,8 +8280,8 @@ function renderContacts() {
   // contacts - no Add/Import, no "Contacts on Daybook", no group bar. Just results.
   const searching = !!q;
   $('#pane').innerHTML = `
-    ${pageCrumb('Contacts')}
-    <div class="pane-head"><h1>Contacts</h1></div>
+    ${pageCrumb(t('nav.contacts'))}
+    <div class="pane-head"><h1>${t('nav.contacts')}</h1></div>
     ${searching ? `
     <div class="list-head">
       <input class="list-search sel" data-contacts-q placeholder="Search your contacts…" value="${esc(state.contactsQuery || '')}" autocomplete="off">
@@ -8910,7 +8914,7 @@ function renderFinancial() {
     : f.tab === 'spending' ? spendingBody()
     : f.tab === 'tracker' ? trackerBody()
     : portfolioBody();
-  $('#pane').innerHTML = `${pageCrumb('Money')}<div class="pane-head"><h1>Money</h1></div>${seg}${body}`;
+  $('#pane').innerHTML = `${pageCrumb(t('nav.financial'))}<div class="pane-head"><h1>${t('nav.financial')}</h1></div>${seg}${body}`;
 }
 const finSoon = (ic, title, body, note) => `<div class="fin-soon"><div class="fin-soon-ic">${ic}</div><h2>${esc(title)}</h2><p>${esc(body)}</p><p class="fin-soon-note">${esc(note)}</p></div>`;
 function portfolioBody() {
@@ -9437,7 +9441,7 @@ async function openReviews() {
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
 }
 function renderReviews() {
-  $('#pane').innerHTML = `${pageCrumb('Reviews')}<div class="pane-head"><h1>Reviews</h1></div>
+  $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
     <p class="t2-sub" style="font-style:normal">Weekly, monthly, quarterly and yearly check-ins.</p>${reviewsBody()}`;
 }
 // Focus-list order (per device) and helpers, so you can drag the cards around.
@@ -9469,7 +9473,7 @@ function renderGoals() {
     <button class="gtab ${view === 'list' ? 'on' : ''}" data-goals-view="list">Goals${allN ? ` · ${allN}` : ''}</button>
   </div>`;
   const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : goalsByAreaBody();
-  $('#pane').innerHTML = `${pageCrumb('Goals')}<div class="pane-head"><h1>Vision and Goals</h1></div>
+  $('#pane').innerHTML = `${pageCrumb(t('nav.goals'))}<div class="pane-head"><h1>${t('goals.title')}</h1></div>
     ${tabs}
     ${view === 'list'
       ? `<div class="goals-main goals-main-full">${body}</div>`
