@@ -9432,6 +9432,7 @@ function goalsListBody() {
   if (fStatus !== 'all') goals = goals.filter((g) => (gp(g).status || 'active') === fStatus);
   if (fArea) goals = goals.filter((g) => gp(g).area === fArea);
   const cmp = {
+    focus: (a, b) => ((gp(b).focus ? 1 : 0) - (gp(a).focus ? 1 : 0)) || areaName(a).localeCompare(areaName(b)) || (a.title || '').localeCompare(b.title || ''),
     area: (a, b) => areaName(a).localeCompare(areaName(b)) || (a.title || '').localeCompare(b.title || ''),
     progress: (a, b) => goalProgress(b) - goalProgress(a),
     due: (a, b) => String(gp(a).targetDate || '9999').localeCompare(String(gp(b).targetDate || '9999')),
@@ -9443,7 +9444,7 @@ function goalsListBody() {
   const controls = `<div class="glist-controls">
     <select class="sel" data-glist-status><option value="all" ${fStatus === 'all' ? 'selected' : ''}>All statuses</option>${GSTATUS.map(([v, l]) => `<option value="${v}" ${fStatus === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
     <select class="sel" data-glist-area>${areaOpts}</select>
-    <select class="sel" data-glist-sort>${[['area', 'Area'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
+    <select class="sel" data-glist-sort>${[['focus', 'Starred first'], ['area', 'Area'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
   </div>`;
   if (!goals.length) return `${controls}<div class="empty" style="padding:28px">No goals match these filters.</div>`;
   const rows = goals.map((g) => {
@@ -9466,7 +9467,7 @@ function goalsByAreaBody() {
   const done = state.goals.filter((g) => gp(g).status === 'done');
   const areaSections = state.areas.map((a) => {
     const p = a.props || {};
-    const goals = active.filter((g) => gp(g).area === a.id);
+    const goals = active.filter((g) => gp(g).area === a.id).sort((x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (x.title || '').localeCompare(y.title || ''));
     const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
     const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${(p.vision || '').trim() ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
     return `<section class="goal-area" style="--h:${hueOf(a)}">
@@ -9566,6 +9567,7 @@ function renderGoalCard() {
       <div class="gc-areas"><span class="gc-areas-l">Life areas</span>${blockAreasControl('goal', g)}</div>
       ${progressBlock}
       <label class="gc-why"><span class="gc-why-l">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
+      <label class="gc-why"><span class="gc-why-l">How I'll get there</span><textarea class="sel" id="goalcard-how" rows="2" placeholder="The plan, the approach, the first steps…">${esc(p.how || '')}</textarea></label>
       ${(doneN || focusMins) ? `<div class="gc-hero-stats">${doneN ? `<span>✓ ${doneN} task${doneN === 1 ? '' : 's'} done</span>` : ''}${focusMins ? `<span>🍅 ${fmtMins(focusMins)} focused</span>` : ''}</div>` : ''}
     </div>
     <section class="focus-notes gc-tasks-sec">
@@ -9575,8 +9577,8 @@ function renderGoalCard() {
     </section>
     ${connectedNotesHtml()}
     ${notesSection(g.body, 'goal', g.id, false, 'Notes wall')}
-    <details class="gc-settings">
-      <summary>⚙ Goal settings</summary>
+    <details class="gc-settings" open>
+      <summary>⚙ Timing &amp; settings</summary>
       <div class="tf-meta">
         <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -12686,6 +12688,7 @@ document.addEventListener('change', (e) => {
     const gid = state.goal_open.goal.id; const id = e.target.id;
     if (id === 'goalcard-title') { const v = e.target.value.trim(); if (v) patchGoal(gid, { title: v }, false); }
     else if (id === 'goalcard-why') patchGoal(gid, { why: e.target.value }, true);
+    else if (id === 'goalcard-how') patchGoal(gid, { how: e.target.value }, true);
     else if (id === 'goalcard-area') patchGoal(gid, { area: e.target.value || null }, true);
     else if (id === 'goalcard-horizon') { const hz = e.target.value; const patch = { horizon: hz }; const td = horizonTargetDate(hz); if (td) patch.targetDate = td; patchGoal(gid, patch, true); renderGoalCard(); }
     else if (id === 'goalcard-gtype') patchGoal(gid, { gtype: e.target.value }, true).then(renderGoalCard);
