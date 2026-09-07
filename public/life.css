@@ -2019,7 +2019,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .set-cardpreview-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
 .set-cardpreview-head .set-cardlink-t { font-size:16px; font-weight:600; }
 .set-cardpreview-edit { flex:none; padding:8px 16px; font-size:14px; min-height:auto; }
-.set-cardpreview-card { max-width:200px; }
+/* Scale the whole card down uniformly (a true miniature, same proportions) with
+   zoom - constraining width alone reflowed the internals and looked chopped. */
+.set-cardpreview-card { width:360px; max-width:100%; zoom:.55; }
 .dbc-lede { font-size:15px; color:var(--ink-2); line-height:1.55; margin:0 0 18px; max-width:560px; }
 .dbc-wrap { display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap; }
 .dbc-preview { flex:none; width:340px; max-width:100%; position:sticky; top:12px; }
@@ -4738,7 +4740,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cal-head { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
 .cal-head h1 { font-size:clamp(28px,4vw,38px); }
 .cal-yr { color:var(--ink-3); font-weight:400; }
-.cal-nav { display:flex; gap:8px; }
+.cal-nav { display:flex; gap:8px; flex-wrap:wrap; }
+/* Discoverable entry to the feed subscriptions (holidays + fixtures). */
+.cal-feeds-btn { border-color:color-mix(in srgb,var(--accent) 45%,var(--line-2)); color:var(--accent); font-weight:600; }
+.cal-feeds-btn:hover { background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .cal-btn { padding:9px 15px; border-radius:11px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; background:var(--card); box-shadow:var(--shadow); transition:border-color .15s,color .15s; }
 .cal-btn:hover { border-color:var(--accent); color:var(--accent); }
 .cal-btn.ic { width:42px; padding:9px 0; font-size:20px; line-height:1; }

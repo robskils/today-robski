@@ -5519,6 +5519,7 @@ function renderCalendar() {
     <div class="cal-head">
       <h1>${title}</h1>
       <div class="cal-nav">
+        <button class="cal-btn cal-feeds-btn" data-open-feeds title="Add public holidays and your team's fixtures">＋ Holidays &amp; sport</button>
         <div class="cal-modes"><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button><button class="cal-mode ${c.mode === 'week' ? 'on' : ''}" data-cal-mode="week">Week</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         <button class="cal-btn ic" data-cal-prev title="Previous">‹</button>
@@ -12364,6 +12365,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
+  if (t.closest('[data-open-feeds]')) { openSettings('feeds'); return; }
   { const fa = t.closest('[data-feed-add]'); if (fa) { addTeam({ id: fa.dataset.teamId, name: fa.dataset.teamName }); return; } }
   { const fr = t.closest('[data-feed-team-rm]'); if (fr) { removeTeam(fr.dataset.feedTeamRm); return; } }
   { const ca = t.closest('[data-feed-country-add]'); if (ca) { addCountry({ code: ca.dataset.cc, name: ca.dataset.cn }); return; } }
