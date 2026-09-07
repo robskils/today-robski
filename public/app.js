@@ -46,6 +46,8 @@ const T_EN = {
   'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes & Tables', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
+  'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify',
+  'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -59,6 +61,8 @@ const T_PT = {
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas e tabelas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Cartas', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
+  'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar',
+  'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -14320,12 +14324,12 @@ const onApex = () => location.hostname === 'daybook.fyi' || location.hostname ==
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span><span class="gate2-tag">For a life well lived</span></div>
-      <p class="gate2-sub" id="gate-sub">${sub || "New here or coming back? Enter your email and we'll send you a sign-in code."}</p>
-      <input class="gate2-input" id="gate-email" type="email" placeholder="you@example.com" autocomplete="email" required>
-      <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" hidden>
-      <button class="gate2-btn" id="gate-btn" type="submit">Email me a code</button>
-      <button class="gate2-smslink" id="gate-sms" type="button" title="For when your email lives inside Daybook and you can't open it to read the code">Use Daybook for your email? <b>Text me the code instead</b></button>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span><span class="gate2-tag">${t('gate.tag')}</span></div>
+      <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
+      <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
+      <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="${t('gate.code.ph')}" hidden>
+      <button class="gate2-btn" id="gate-btn" type="submit">${t('gate.emailme')}</button>
+      <button class="gate2-smslink" id="gate-sms" type="button" title="For when your email lives inside Daybook and you can't open it to read the code">${t('gate.smslink')}</button>
       <p class="gate2-err" id="gate-err" hidden></p>
     </form></div>`);
   $('#gate-email').focus();
@@ -14350,17 +14354,17 @@ function showSignup(email, inviteRequired, invited) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><em>${esc(BRAND.app)}</em><span class="gate2-tag">For a life well lived</span></div>
-      <p class="gate2-sub">${invited || preInvite ? 'Your invitation is accepted - now make it yours.' : "Welcome - let's set up your Daybook."}</p>
-      <label class="signup-l">Your name<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
-      <label class="signup-l">Choose a username
+      <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
+      <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
+      <label class="signup-l">${t('signup.username')}
         <span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" value="${esc(presub)}" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span>
-        <span class="su-username-note">Your Daybook will live at <b><span id="su-preview">${esc(presub || 'username')}</span>.daybook.fyi</b></span>
+        <span class="su-username-note">${t('signup.livesat')} <b><span id="su-preview">${esc(presub || 'username')}</span>.daybook.fyi</b></span>
       </label>
-      ${needCode ? `<label class="signup-l">Invite code<input class="gate2-input" id="su-invite" placeholder="From your invitation" autocomplete="off" spellcheck="false" required>
-        <span class="su-username-note">The code in the email that invited you.</span></label>` : ''}
-      <button class="gate2-btn" id="su-btn" type="submit">Create my Daybook</button>
+      ${needCode ? `<label class="signup-l">${t('signup.invitecode')}<input class="gate2-input" id="su-invite" placeholder="${t('signup.invitecode.ph')}" autocomplete="off" spellcheck="false" required>
+        <span class="su-username-note">${t('signup.invitecode.note')}</span></label>` : ''}
+      <button class="gate2-btn" id="su-btn" type="submit">${t('signup.create')}</button>
       <p class="gate2-err" id="su-err" hidden></p>
-      <p class="gate2-alt su-foot">Signed in as ${esc(email)} · <button type="button" class="su-signout" id="su-signout">sign out</button></p>
+      <p class="gate2-alt su-foot">${t('signup.signedinas', { email: esc(email) })} · <button type="button" class="su-signout" id="su-signout">${t('signup.signout')}</button></p>
     </form></div>`);
   $('#signup-form').addEventListener('submit', signupSubmit);
   $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); });
@@ -14391,28 +14395,28 @@ async function signupSubmit(e) {
       invite: inv ? inv.value.trim() : storedInvite(),
     }) });
     if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} goToMyDaybook(d.user.subdomain); return; }
-    throw new Error('Could not create your account.');
-  } catch (e2) { err.textContent = e2.message || 'Could not create your account.'; err.hidden = false; btn.disabled = false; }
+    throw new Error(t('signup.createfail'));
+  } catch (e2) { err.textContent = e2.message || t('signup.createfail'); err.hidden = false; btn.disabled = false; }
 }
 // Ask for a code by email (default) or SMS. SMS is the way in once the mailbox
 // you would fetch the email from lives behind this very gate.
 async function gateSend(channel) {
   const err = $('#gate-err'), btn = $('#gate-btn'), sms = $('#gate-sms');
   gateEmail = $('#gate-email').value.trim();
-  if (!gateEmail) { err.textContent = 'Enter your email first.'; err.hidden = false; return; }
+  if (!gateEmail) { err.textContent = t('gate.enteremail'); err.hidden = false; return; }
   err.hidden = true; btn.disabled = true; if (sms) sms.disabled = true;
   try {
     const r = await fetch('/auth/request-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, channel }) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error('Could not send a code. Try again.');
+    if (!r.ok) throw new Error(t('gate.sendfail'));
     gateStep = 'code';
-    $('#gate-sub').textContent = d.channel === 'sms' ? 'Code texted to your phone.'
-      : (channel === 'sms' && d.smsUnavailable) ? `No phone saved on your account, so we've emailed your code to ${gateEmail}. Add a phone in Settings to get it by text next time.`
-      : `Code sent to ${gateEmail}.`;
+    $('#gate-sub').textContent = d.channel === 'sms' ? t('gate.texted')
+      : (channel === 'sms' && d.smsUnavailable) ? t('gate.smsunavail', { email: gateEmail })
+      : t('gate.codesent', { email: gateEmail });
     $('#gate-email').hidden = true; if (sms) sms.hidden = true;
     { const or = $('.gate2-or'); if (or) or.hidden = true; }
     $('#gate-code').hidden = false; $('#gate-code').focus();
-    btn.textContent = 'Sign in';
+    btn.textContent = t('gate.signin');
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
   btn.disabled = false; if (sms) sms.disabled = false;
 }
@@ -14426,7 +14430,7 @@ async function gateSubmit(e) {
     if (gateStep === 'totp') {
       const r = await fetch('/auth/verify-totp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mfaToken: gateMfaToken, code: $('#gate-code').value.trim() }) });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok || !d.token) throw new Error(d.error || 'That code did not work.');
+      if (!r.ok || !d.token) throw new Error(d.error || t('gate.badcode'));
       localStorage.setItem(KEY, d.token); location.reload(); return;
     }
     const r = await fetch('/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, code: $('#gate-code').value.trim() }) });
@@ -14434,12 +14438,12 @@ async function gateSubmit(e) {
     // 2FA on: step up to the authenticator code before a session is issued.
     if (r.ok && d.mfa && d.mfaToken) {
       gateMfaToken = d.mfaToken; gateStep = 'totp';
-      $('#gate-sub').textContent = 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).';
+      $('#gate-sub').textContent = t('gate.totp');
       const c = $('#gate-code'); c.value = ''; c.placeholder = '000000'; c.focus();
       const sms = $('#gate-sms'); if (sms) sms.hidden = true;
-      btn.textContent = 'Verify'; btn.disabled = false; return;
+      btn.textContent = t('gate.verify'); btn.disabled = false; return;
     }
-    if (!r.ok || !d.token) throw new Error(d.error || 'That code did not work.');
+    if (!r.ok || !d.token) throw new Error(d.error || t('gate.badcode'));
     localStorage.setItem(KEY, d.token); location.reload();
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
   btn.disabled = false;
