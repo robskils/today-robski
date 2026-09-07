@@ -3602,14 +3602,16 @@ function noteCard(n) {
     <span class="nt-name">${t ? '<span class="tc-ic ico-tbl">▦</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span></span>
   </button>`;
 }
-// The Note · Table type switch shown in a note/table header.
-// A note is a note and a table is a table - no view slider (it read as two views
-// of one thing, which confused). Flipping one to the other is a rare, deliberate
-// action, so it's a single quiet button. (Robin, 2026-09.)
+// Make-a-table-from-this-note, offered only on notes and only as a small, quiet
+// icon in the tools row - it is a rare action, not a headline feature. It runs
+// noteToTable(), which actually parses the note's lines into a real table (and
+// keeps the note). The old kind-flip button is gone: flipping kind left the
+// prose behind and produced an empty table, i.e. it looked broken. On a table
+// there is nothing to offer (no working table -> note), so it renders nothing.
+// (Robin, 2026-09.)
 function noteTypeToggle(id, current) {
-  const to = current === 'note' ? 'table' : 'note';
-  const label = current === 'note' ? 'Turn into table' : 'Turn into note';
-  return `<button class="ghost ntt-conv" data-set-note-type="${id}:${to}" title="${label}">⇄ ${label}</button>`;
+  if (current !== 'note') return '';
+  return `<button class="ghost ntt-conv" data-note-to-table title="Make a table from this note's lines">▦</button>`;
 }
 // Flip a note ↔ table. Non-destructive: the flip only changes the block's kind
 // (a table gets a starter column if it has none). A note's prose and a table's

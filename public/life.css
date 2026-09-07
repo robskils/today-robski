@@ -3066,12 +3066,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    labels (e.g. Portuguese "+ Tarefa" / "+ Evento") never overflow the screen
    or get clipped. Equal widths keep it tidy in any language. */
 @media (max-width:640px){
-  .home-actions { gap:8px; }
-  /* flex:1 1 0 + min-width:0 = equal thirds that shrink to fit, so the row can
-     never overflow; padding is trimmed so the label keeps its size (kept large
-     for legibility) rather than the text. Ellipsis only ever bites on very
-     narrow (~320px) legacy phones, and gracefully. */
-  .home-actions .add-btn.wide { flex:1 1 0; min-width:0; padding-left:6px; padding-right:6px; font-size:16px; letter-spacing:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* .home-actions is a flex ITEM of .home-head; on its own it only claims its
+     content width, so its buttons had nothing to divide and overflowed. Force
+     it to take the whole row (flex-basis:100% + box-sizing) - THEN the three
+     equal-thirds buttons below fill exactly the pane width, never cropping. */
+  .home-actions { gap:8px; flex:1 1 100%; width:100%; max-width:100%; box-sizing:border-box; }
+  .home-actions .add-btn.wide { flex:1 1 0; min-width:0; padding-left:6px; padding-right:6px; font-size:16px; letter-spacing:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; }
 }
 .home-sec { margin:26px 0; }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
