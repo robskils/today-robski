@@ -5486,7 +5486,7 @@ function renderCalendar() {
     body = `<div class="cal-week">${wk.map((d) => {
       const evs = byDay[d.iso] || [];
       return `<div class="cw-day ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
-        <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span></div>
+        <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span><button class="cal-add-day cw-add" data-cal-add-day="${d.iso}" title="Add an event on this day" aria-label="Add an event on this day">＋</button></div>
         <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
     }).join('')}</div>`;
   } else {
@@ -5497,7 +5497,7 @@ function renderCalendar() {
       const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : '';
       const dots = evs.slice(0, 5).map((e) => `<span class="cal-dot ${e.allDay ? 'allday' : ''}"></span>`).join('');
       return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
-        <div class="cal-daynum">${d.day}</div><div class="cal-evs">${shown}${more}</div><div class="cal-dots">${dots}</div></div>`;
+        <div class="cal-cell-top"><span class="cal-daynum">${d.day}</span><button class="cal-add-day" data-cal-add-day="${d.iso}" title="Add an event on this day" aria-label="Add an event on this day">＋</button></div><div class="cal-evs">${shown}${more}</div><div class="cal-dots">${dots}</div></div>`;
     };
     body = `<div class="cal-grid">${WEEKDAYS.map((w) => `<div class="cal-dow">${w}</div>`).join('')}${monthWeeks(c.y, c.m).map((w) => w.map(cell).join('')).join('')}</div>`;
   }
@@ -12708,6 +12708,9 @@ document.addEventListener('click', (e) => {
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
   const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.adding = false; } renderCalendar(); } return; }
+  // The per-day + (inside the day cell) must be checked before the day-cell
+  // itself, or the cell's own click would swallow it.
+  { const cad = t.closest('[data-cal-add-day]'); if (cad) { state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); return; } }
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
