@@ -1955,7 +1955,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       // for a month deserves reading. The email shows seven and links to the rest,
       // so the limit is only here to stop a runaway list, not to shape the page.
       env.DB.prepare(
-        `SELECT title, props, created_at FROM blocks
+        `SELECT id, title, props, created_at FROM blocks
           WHERE user_id = ? AND kind = 'task' AND archived = 0
             AND json_extract(props, '$.priority') = 'P1'
             AND IFNULL(json_extract(props, '$.done'), 0) != 1
@@ -1976,7 +1976,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     const tasks = (tasksRes.results || []).map((t) => {
       let p = {}; try { p = JSON.parse(t.props || '{}'); } catch {}
       const aid = p.area || (Array.isArray(p.areas) ? p.areas[0] : null);
-      return { title: t.title, area_label: (aid && areaTitle[aid]) || null };
+      return { id: t.id, title: t.title, area_label: (aid && areaTitle[aid]) || null };
     });
 
     // A member with no calendar and no P1s would get a quote-only email every
@@ -1992,7 +1992,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     if (!to) return { sent: false, reason: 'no recipient' };
     const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
 
-    const payload = { day: now.date, events: cal.events, tasks, quote };
+    const payload = { day: now.date, events: cal.events, tasks, quote, siteUrl: home };
     const subject = briefSubject(payload);
     const html = briefEmail(payload);
     if (env.BRIEF_SMTP_PASS) {
@@ -3103,7 +3103,7 @@ async function reviewRemindersForUser(env, uid) {
     for (const rt of due) {
       const label = REVIEW_LABELS[rt] || 'review';
       await pushAll(env, { title: `Your ${label} review is due`, body: 'Open Daybook → Reviews to do it.', type: 'review' }, uid).catch(() => {});
-      if (phone) await sendSms(env, `Your ${label} review is due - open Daybook to do it.`, phone).catch(() => {});
+      if (phone) await sendSms(env, `Your ${label} review is due. Open it: ${home}/reviews`, phone).catch(() => {});
       if (to) await sendReviewMail(env, { to, label, home }).catch(() => {});
     }
   }

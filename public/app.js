@@ -14899,6 +14899,7 @@ async function onbConnectGmail() {
     else if (route.startsWith('/task/')) { const id = route.slice(6); history.replaceState(null, '', '/'); await openTaskCard(id).catch(() => openHome()); }
     else if (route === '/settings' || route.startsWith('/settings/')) { const tab = route.slice(10); history.replaceState(null, '', '/'); await openSettings(tab || undefined); }
     else if (route === '/tasks') { if (new URLSearchParams(location.search).get('p1') === '1') openP1Tasks(); else await openTasks(); }
+    else if (route === '/reviews') await openReviews();
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else if (route === '/share') await handleShareTarget();
     else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());

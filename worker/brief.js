@@ -115,16 +115,21 @@ function eventRow(e) {
           </table>`;
 }
 
-function taskRow(t) {
+function taskRow(t, siteUrl = 'https://robski.daybook.fyi') {
   const lane = t.area_label
     ? `<div style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:${MIST};margin:4px 0 0">${esc(t.area_label)}</div>`
     : '';
+  // Link the title straight to the task on Daybook (/task/<id> opens that card).
+  // Fall back to plain text if an id is somehow missing, so a row never breaks.
+  const title = t.id
+    ? `<a href="${siteUrl}/task/${encodeURIComponent(t.id)}" style="color:${INK};text-decoration:none">${esc(t.title)}</a>`
+    : esc(t.title);
   return `
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td width="22" valign="top" style="font-family:${SANS};font-size:17px;color:${RED};padding:11px 0 11px 0;line-height:1.4">&bull;</td>
               <td valign="top" style="font-family:${SANS};font-size:17px;line-height:1.45;color:${INK};padding:10px 0;border-top:1px solid ${RULE}">
-                ${esc(t.title)}${lane}
+                ${title}${lane}
               </td>
             </tr>
           </table>`;
@@ -147,7 +152,7 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
     : empty('Nothing scheduled. The day is yours.');
 
   const p1 = shown.length
-    ? shown.map(taskRow).join('') + (moreCount > 0
+    ? shown.map((t) => taskRow(t, siteUrl)).join('') + (moreCount > 0
       ? `<p style="margin:16px 0 0"><a href="${siteUrl}/tasks?p1=1" style="font-family:${SANS};font-size:15px;color:${GOLD};text-decoration:none">${moreCount} more &#8594;</a></p>`
       : '')
     : empty('No P1s open. Nothing is on fire.');
