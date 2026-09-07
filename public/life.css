@@ -511,6 +511,8 @@ button { cursor:pointer; background:none; border:0; }
 .gc-status { flex:none; font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; background:var(--paper-2); color:var(--ink-3); white-space:nowrap; }
 .gc-status.s-active { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
 .gc-status.s-done { color:var(--done); background:color-mix(in srgb,var(--done) 16%,transparent); }
+.gc-status.s-onhold { color:var(--gold); background:color-mix(in srgb,var(--gold) 15%,transparent); }
+.gc-status.s-dropped { color:var(--ink-3); background:var(--paper-2); text-decoration:line-through; }
 .gc-meta { display:flex; flex-wrap:wrap; gap:6px 12px; font-size:13px; color:var(--ink-3); }
 .gc-area { color:var(--c); font-weight:600; }
 .gc-bar { height:6px; border-radius:99px; background:var(--paper-2); overflow:hidden; }
@@ -557,6 +559,8 @@ button { cursor:pointer; background:none; border:0; }
 .gc-status { font-size:12px; font-weight:700; letter-spacing:.03em; padding:3px 10px; border-radius:999px; background:var(--paper-2,color-mix(in srgb,var(--ink) 7%,transparent)); color:var(--ink-2); text-transform:uppercase; }
 .gc-status.s-active { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
 .gc-status.s-done { color:var(--done); background:color-mix(in srgb,var(--done) 14%,transparent); }
+.gc-status.s-onhold { color:var(--gold); background:color-mix(in srgb,var(--gold) 15%,transparent); }
+.gc-status.s-dropped { color:var(--ink-3); background:var(--paper-2); }
 .gc-due { font-size:13px; color:var(--ink-3); }
 .gc-title { width:100%; border:0; background:none; resize:none; font-family:'Cormorant Garamond',Georgia,serif; font-size:30px; font-weight:600; line-height:1.12; color:var(--ink); margin:10px 0 4px; padding:0; }
 .gc-title:focus { outline:none; }
