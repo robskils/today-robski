@@ -966,7 +966,12 @@ function navSection(key, v) {
     }).join('') || '<div class="nav-sub muted">Notes you open appear here</div>';
   } else {
     title = 'Life areas'; add = '<button class="nav-add" data-new-area title="New life area">+</button>';
-    rows = state.areas.map((a) => sub(v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id, `data-open-area="${a.id}"`, '◈', a.title)).join('') || '<div class="nav-sub muted">No life areas yet</div>';
+    // Each area carries its own colour - show it as a left edge + tinted marker,
+    // so the sidebar reads at a glance like the rest of the app.
+    rows = state.areas.map((a) => {
+      const on = v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id;
+      return `<button class="nav-sub has-area${on ? ' on' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="i">◈</span><span class="t">${esc(a.title || 'Untitled')}</span></button>`;
+    }).join('') || '<div class="nav-sub muted">No life areas yet</div>';
   }
   return `<div class="nav-sec" data-nav-sec="${key}">
     <div class="nav-sec-h" draggable="true" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">
@@ -4881,8 +4886,8 @@ function renderArea() {
   $('#pane').innerHTML = `
     <div class="area-hero" style="--h:${h}">
       <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button>
-        ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-gear" data-area-color title="Area colour">⚙</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
-      <h1><span class="ac-dot"></span><input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></h1>
+        ${shareBtn(area, 'area')}${area.sharedBy ? '' : '<button class="area-colorbtn" data-area-color title="Change this area colour"><span class="acb-sw"></span>Colour</button>'}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button></div>
+      <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></h1>
       <p class="area-meta">${notes.length + tables.length} note${(notes.length + tables.length) === 1 ? '' : 's'} &amp; table${(notes.length + tables.length) === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}

@@ -1660,10 +1660,6 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-sec-body.nav-2col { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
 .nav-2col .nav-sub { min-width:0; padding:8px 10px; background:var(--card); border:1px solid var(--line); border-radius:9px; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
-/* Starred chips carry their life-area colour: a left edge + a tinted icon, so
-   you can tell at a glance which part of life each pinned item is from. */
-.nav-2col .nav-sub.has-area { border-left:3px solid hsl(var(--h,4) 60% 52%); }
-.nav-2col .nav-sub.has-area .i { color:hsl(var(--h,4) 55% 55%); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
 /* Calendar event: start + end date side by side (multi-day events). */
@@ -2789,6 +2785,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .nav-sub.on { background:var(--card); color:var(--ink); font-weight:500; }
 .nav-sub .i { color:var(--ink-3); font-size:12px; flex:none; }
 .nav-sub .t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Life-area colour on any sidebar row (areas, and starred items in their area):
+   a left edge + a tinted marker in the area's hue. The note/table glyphs carry
+   their own colour, so make them inherit the tint here too. */
+.nav-sub.has-area { border-left:3px solid hsl(var(--h,4) 60% 52%); padding-left:11px; }
+.nav-sub.has-area .i { color:hsl(var(--h,4) 55% 55%); }
+.nav-sub.has-area .i .ico-note, .nav-sub.has-area .i .ico-tbl { color:inherit; }
 .nav-spacer { flex:1; }
 .nav-foot { display:flex; gap:6px; padding:0 6px; margin:2px 0 12px; }
 .nav-foot a, .nav-foot button { font-size:13px; color:var(--ink-3); padding:6px 8px; border-radius:7px; text-decoration:none; }
@@ -3399,7 +3401,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-tilepanel .vision-card { box-shadow:none; }
 .area-tilepanel .area-wall-ta { min-height:200px; }
 .area-hero h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(30px,4.5vw,44px); font-weight:500; display:flex; align-items:center; gap:12px; margin-top:4px; }
-.area-hero h1 .ac-dot { width:15px; height:15px; }
+.area-hero h1 .ac-dot { width:15px; height:15px; background:hsl(var(--h,220) 60% 52%); }
 /* The area title is editable in place — click to rename. */
 .area-title-edit { flex:1; min-width:0; font:inherit; color:inherit; background:transparent; border:0; padding:2px 6px; margin:-2px -6px; border-radius:8px; transition:background .12s,box-shadow .12s; }
 .area-title-edit:hover { background:var(--paper-2); }
@@ -3651,8 +3653,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 .ui-btn.danger { background:var(--danger,#c4412e); border-color:var(--danger,#c4412e); color:#fff; }
 .ui-btn.danger:hover { opacity:.9; }
 /* Life-area colour: the gear in the hero, and the picker it opens. */
-.area-gear { flex:none; color:var(--ink-3); font-size:16px; padding:0 5px; background:none; cursor:pointer; transition:color .12s; }
-.area-gear:hover { color:var(--accent); }
+/* Change-colour affordances. The old ⚙ gear read as generic settings; a
+   labelled swatch pill makes "change this area's colour" obvious, and the dot
+   beside the title is clickable for the same. Both open the colour picker. */
+.area-colorbtn { flex:none; display:inline-flex; align-items:center; gap:7px; padding:5px 12px 5px 8px; border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--ink-2); font-size:14px; cursor:pointer; transition:border-color .12s,color .12s; }
+.area-colorbtn:hover { border-color:hsl(var(--h,220) 60% 52%); color:var(--ink); }
+.area-colorbtn .acb-sw { width:15px; height:15px; border-radius:50%; background:hsl(var(--h,220) 60% 52%); flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,.10); }
+.ac-dot-btn { border:0; padding:0; cursor:pointer; transition:transform .1s, box-shadow .15s; }
+.ac-dot-btn:hover { transform:scale(1.14); box-shadow:0 0 0 4px hsl(var(--h,220) 60% 52% / .22); }
 .areacol-swatches { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin:0 0 16px; }
 .areacol-sw { height:30px; border-radius:8px; border:2px solid transparent; background:hsl(var(--h) 55% 55%); cursor:pointer; transition:transform .1s; }
 .areacol-sw:hover { transform:translateY(-1px); }
