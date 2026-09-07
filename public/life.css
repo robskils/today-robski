@@ -1661,6 +1661,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-2col .nav-sub { min-width:0; padding:8px 10px; background:var(--card); border:1px solid var(--line); border-radius:9px; }
 .nav-2col .nav-sub:hover { border-color:var(--line-2); }
 .nav-2col .nav-sub.muted { grid-column:1 / -1; background:none; border:0; padding:7px 12px; }
+/* Life areas as full-width cards, each with its colour highlight (the has-area
+   left edge + tinted marker). The active area's card takes its own hue border. */
+.nav-cards { display:flex; flex-direction:column; gap:6px; }
+.nav-cards .nav-sub { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); }
+.nav-cards .nav-sub:hover { border-color:var(--line-2); background:var(--card); }
+.nav-cards .nav-sub.has-area:hover { border-color:hsl(var(--h,220) 60% 52%); }
+.nav-cards .nav-sub.on { border-color:hsl(var(--h,220) 60% 52%); box-shadow:0 0 0 1px hsl(var(--h,220) 60% 52% / .35), var(--shadow); }
+.nav-cards .nav-sub.muted { background:none; border:0; box-shadow:none; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
 /* Calendar event: start + end date side by side (multi-day events). */
 .ce-dates { display:flex; gap:12px; flex-wrap:wrap; }

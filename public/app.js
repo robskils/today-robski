@@ -979,7 +979,7 @@ function navSection(key, v) {
       <span class="nav-sec-title">${title}</span>
       ${add}<span class="nav-grip" title="Drag to reorder">⠿</span>
     </div>
-    ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
+    ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}${key === 'areas' ? ' nav-cards' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
   </div>`;
 }
 // ── theme: automatic by local sunrise/sunset, overridable by the button ──
