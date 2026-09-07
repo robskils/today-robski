@@ -439,9 +439,18 @@ async function updateEvent(request, env, id) {
     if (!title) return err('title required', request);
     const p = eventPropsFromBody({ ...b, title });
     if (!p) return err('bad event', request);
-    if (native.p.repeat) p.repeat = native.p.repeat;
-    if (native.p.until) p.until = native.p.until;
-    if (native.p.exdates) p.exdates = native.p.exdates;
+    // Repeat: an explicit value from the editor wins (so you can add, change or
+    // stop recurrence on an existing event) - 'none'/empty clears it and drops
+    // the old until/exdates. When the body doesn't carry repeat (e.g. a drag to
+    // reschedule), keep whatever's stored.
+    if (b.repeat !== undefined) {
+      const rp = String(b.repeat || 'none');
+      if (rp && rp !== 'none') p.repeat = rp;
+    } else {
+      if (native.p.repeat) p.repeat = native.p.repeat;
+      if (native.p.until) p.until = native.p.until;
+      if (native.p.exdates) p.exdates = native.p.exdates;
+    }
     // Notes and a carried-in meeting link aren't always resent (a drag-to-
     // reschedule sends only timing). Keep what's stored unless the body carries
     // the field at all - an empty string means the editor cleared it on purpose.
@@ -460,6 +469,8 @@ async function updateEvent(request, env, id) {
   // Notes edited (or a link carried in) -> rewrite the description. A drag-to-
   // reschedule sends neither, so the description is left untouched.
   if (b.notes !== undefined || b.url !== undefined) patch.description = eventDescription(b.url, b.notes);
+  // Repeat: set the recurrence rule, or [] to clear it (make a series one-off).
+  if (b.repeat !== undefined) patch.recurrence = rruleFor(b.repeat) || [];
   if (b.day !== undefined) {
     if (!isValidDay(b.day)) return err('bad date', request);
     if (b.allDay) {
@@ -1302,14 +1313,15 @@ function nativeRangeShape(blockId, title, p, occDate) {
   const recurring = !!(p.repeat && p.repeat !== 'none');
   const id = recurring ? `${blockId}${NATIVE_SEP}${occDate}` : blockId;
   const recurringId = recurring ? blockId : null;
+  const repeat = p.repeat || 'none';
   if (p.allDay) {
     const span = (p.end_date && p.end_date > p.date) ? Math.round((Date.parse(`${p.end_date}T00:00:00Z`) - Date.parse(`${p.date}T00:00:00Z`)) / 86400000) : 1;
-    return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId };
+    return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId, repeat };
   }
   const startMin = Math.max(0, Number(p.start_min) || 0);
   const duration = Math.max(15, Number(p.duration) || 60);
   const total = startMin + duration;
-  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId };
+  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId, repeat };
 }
 async function nativeEventBlocks(env) {
   const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(env.uid).all();

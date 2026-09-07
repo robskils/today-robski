@@ -5582,13 +5582,13 @@ function showCalForm(ev) {
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
-    ${ev ? '' : `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
-      <option value="none">Does not repeat</option>
-      <option value="daily">Daily</option>
-      <option value="weekdays">Every weekday (Mon-Fri)</option>
-      <option value="weekly">Weekly</option>
-      <option value="monthly">Monthly</option>
-      <option value="yearly">Yearly</option></select></label>`}
+    ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
+      ${opt('none', 'Does not repeat')}
+      ${opt('daily', 'Daily')}
+      ${opt('weekdays', 'Every weekday (Mon-Fri)')}
+      ${opt('weekly', 'Weekly')}
+      ${opt('monthly', 'Monthly')}
+      ${opt('yearly', 'Yearly')}</select></label>`; })()}
     <div class="ce-foot">
       ${ev && ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : ''}
       <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
@@ -5622,7 +5622,9 @@ const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.par
 function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
-  const rep = isNew && repeat && repeat !== 'none' ? { repeat } : {};
+  // Send the repeat whenever the form supplied one (create OR edit) so you can
+  // add, change or stop recurrence on an existing event; 'none' clears it.
+  const rep = (repeat !== undefined && repeat !== null && repeat !== '') ? { repeat } : {};
   const nt = (notes && String(notes).trim()) ? { notes: String(notes).trim() } : { notes: '' };
   const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a life area
   if (allDay) {
