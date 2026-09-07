@@ -38,8 +38,8 @@ const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
-  'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar',
+  'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
@@ -58,8 +58,8 @@ const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
-  'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário',
+  'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
@@ -2105,6 +2105,7 @@ function renderSettings() {
   // collapsing scroll, so the settings you reach for most are one tap in.
   const TABS = [
     ['account', t('set.tab.account')],
+    ['security', t('set.tab.security')],
     ['card', t('set.tab.card')],
     ['ai', t('set.tab.ai')],
     ['appearance', t('set.tab.appearance')],
@@ -2155,7 +2156,6 @@ function renderSettings() {
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
-        ${twoFactorHtml()}
         <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
         <p class="acct-privacy">Your Daybook is private to you - never sold, never used to train a model. It's yours to download any time, and you can bring your own AI, or your own storage. <a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></p>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -2248,8 +2248,10 @@ function renderSettings() {
         </div>
       </div>`;
 
-  const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
+  const securityPane = state.account ? `<div class="set-card">${twoFactorHtml()}</div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
+
+  const panes = { account: accountPane, security: securityPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: t('set.sub.account'), security: t('set.sub.security'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
 
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
