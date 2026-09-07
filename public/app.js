@@ -5582,7 +5582,7 @@ function showCalForm(ev) {
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
-    ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
+    ${(ev && ev.recurringId) ? (() => { const REP = { daily: 'daily', weekdays: 'every weekday', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' }; const cad = (ev.repeat && REP[ev.repeat]) ? ` ${REP[ev.repeat]}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ Repeats${cad}</span><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
       ${opt('none', 'Does not repeat')}
       ${opt('daily', 'Daily')}
       ${opt('weekdays', 'Every weekday (Mon-Fri)')}
@@ -5590,7 +5590,6 @@ function showCalForm(ev) {
       ${opt('monthly', 'Monthly')}
       ${opt('yearly', 'Yearly')}</select></label>`; })()}
     <div class="ce-foot">
-      ${ev && ev.recurringId ? '<span class="ce-recur-note">↻ Part of a repeating series</span>' : ''}
       <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
       ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}
     </div></form>`;
@@ -5663,8 +5662,8 @@ async function calDeleteEvent(id) {
     scope = choice;
   } else if (!(await uiConfirm('Delete this event?', { title: 'Delete event', okLabel: 'Delete', danger: true }))) return;
   try {
-    await api(`/api/events/${id}${scope === 'future' ? '?scope=future' : ''}`, { method: 'DELETE' });
-    toast(scope === 'future' ? 'This and following events deleted' : 'Event deleted');
+    await api(`/api/events/${id}${scope !== 'single' ? `?scope=${scope}` : ''}`, { method: 'DELETE' });
+    toast(scope === 'future' ? 'This and following removed' : scope === 'all' ? 'Whole series removed' : 'Event deleted');
     state.cal.editing = null; state.cal.adding = false; await loadCalendar();
   } catch (e) { toast(e.message); }
 }
@@ -5675,10 +5674,11 @@ function recurDeleteChoice() {
     let el = document.getElementById('recur-overlay');
     if (!el) { el = document.createElement('div'); el.id = 'recur-overlay'; document.body.appendChild(el); }
     el.innerHTML = `<div class="pal-bg"><div class="recur-dialog">
-      <div class="recur-h">Delete repeating event</div>
-      <p class="recur-p">This event is part of a repeating series. What should be removed?</p>
-      <button class="recur-opt" data-rc="single">Just this event</button>
-      <button class="recur-opt" data-rc="future">This and all following</button>
+      <div class="recur-h">Repeating event</div>
+      <p class="recur-p">This event repeats. What should be removed?</p>
+      <button class="recur-opt" data-rc="single">Just this one</button>
+      <button class="recur-opt" data-rc="future">This and everything after</button>
+      <button class="recur-opt" data-rc="all">The whole series</button>
       <button class="recur-opt cancel" data-rc="">Cancel</button>
     </div></div>`;
     const close = (v) => { el.innerHTML = ''; resolve(v || null); };

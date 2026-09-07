@@ -1167,11 +1167,12 @@ async function deleteEvent(request, env, id) {
       native.p.until = addDaysStr(occ, -1);
       await env.DB.prepare("UPDATE blocks SET props=?, updated_at=? WHERE id=? AND user_id=?")
         .bind(JSON.stringify(native.p), new Date().toISOString(), native.id, env.uid).run();
-    } else if (recurring && occ) {
+    } else if (recurring && occ && scope !== 'all') {
       native.p.exdates = [...new Set([...(native.p.exdates || []), occ])];
       await env.DB.prepare("UPDATE blocks SET props=?, updated_at=? WHERE id=? AND user_id=?")
         .bind(JSON.stringify(native.p), new Date().toISOString(), native.id, env.uid).run();
     } else {
+      // scope 'all' (or a plain non-recurring event): archive the whole block.
       await env.DB.prepare("UPDATE blocks SET archived=1, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
         .bind(new Date().toISOString(), native.id, env.uid).run();
     }
@@ -1185,6 +1186,24 @@ async function deleteEvent(request, env, id) {
     const calId = env.GOOGLE_CALENDAR_ID || 'primary';
     const evUrl = (eid) => `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(eid)}`;
     const authH = { Authorization: `Bearer ${token}` };
+
+    // "The whole series": delete the master event, which removes every
+    // occurrence. Resolve the master from this instance first; fall through to a
+    // plain delete if it turns out not to be recurring.
+    if (scope === 'all') {
+      const iRes = await fetch(evUrl(id), { headers: authH });
+      if (iRes.status === 401 || iRes.status === 403) return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
+      if (iRes.ok) {
+        const masterId = (await iRes.json()).recurringEventId;
+        if (masterId) {
+          const dRes = await fetch(`${evUrl(masterId)}?sendUpdates=none`, { method: 'DELETE', headers: authH });
+          if (dRes.ok || dRes.status === 410) return json({ ok: true }, request);
+          console.error('google delete series:', dRes.status, await dRes.text());
+          return err('Google would not delete that series.', request, 502);
+        }
+      }
+      // Not recurring (or instance lookup failed): fall through to a single delete.
+    }
 
     // "This and all following": trim the recurring series by setting the master
     // RRULE's UNTIL to just before this instance, rather than deleting anything.
