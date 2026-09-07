@@ -52,6 +52,7 @@ const T_EN = {
   'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Life area', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -71,6 +72,7 @@ const T_PT = {
   'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Área da vida', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -9620,9 +9622,9 @@ function renderGoalCard() {
     ? `<div class="gc-prog">
         <div class="gc-prog-nums"><span class="gc-prog-cur"><b>${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${p.unit ? ` ${esc(p.unit)}` : ''}</span><span class="gc-prog-pct">${pctNum}%</span></div>
         <div class="goal-bar gc-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div>
-        <div class="gc-prog-edit"><span class="gc-prog-l">Update</span><input class="sel" id="gc-current" type="number" inputmode="decimal" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div>
+        <div class="gc-prog-edit"><span class="gc-prog-l">${t('goal.update')}</span><input class="sel" id="gc-current" type="number" inputmode="decimal" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div>
       </div>`
-    : `<div class="gc-prog gc-prog-done"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? '✓ Achieved' : 'Mark as achieved'}</button><span class="goal-done-note">${isDone ? 'Nicely done.' : 'Tick it off when you get there.'}</span></div>`;
+    : `<div class="gc-prog gc-prog-done"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? t('goal.achieved') : t('goal.markachieved')}</button><span class="goal-done-note">${isDone ? t('goal.nicelydone') : t('goal.tickwhen')}</span></div>`;
   const focusMins = focusMinsFor('goal', g.id);
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
@@ -9632,28 +9634,28 @@ function renderGoalCard() {
         <div class="gc-chips"><span class="gc-status s-${st}">${esc(stLabel)}</span>${dueLbl ? `<span class="gc-due">🎯 by ${esc(dueLbl)}</span>` : ''}</div>
         <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="Focus this quarter">${p.focus ? '★' : '☆'}</button>
       </div>
-      <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="What do you want to achieve?">${esc(g.title || '')}</textarea>
-      <div class="gc-areas"><span class="gc-areas-l">Life areas</span>${blockAreasControl('goal', g)}</div>
+      <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
+      <div class="gc-areas"><span class="gc-areas-l">${t('nav.areas')}</span>${blockAreasControl('goal', g)}</div>
       ${progressBlock}
-      <label class="gc-why"><span class="gc-why-l">Why this matters</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="The reason that carries it through the hard weeks…">${esc(p.why || '')}</textarea></label>
-      <label class="gc-why"><span class="gc-why-l">How I'll get there</span><textarea class="sel" id="goalcard-how" rows="2" placeholder="The plan, the approach, the first steps…">${esc(p.how || '')}</textarea></label>
+      <label class="gc-why"><span class="gc-why-l">${t('goal.why')}</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea></label>
+      <label class="gc-why"><span class="gc-why-l">${t('goal.how')}</span><textarea class="sel" id="goalcard-how" rows="2" placeholder="${t('goal.howph')}">${esc(p.how || '')}</textarea></label>
       ${(doneN || focusMins) ? `<div class="gc-hero-stats">${doneN ? `<span>✓ ${doneN} task${doneN === 1 ? '' : 's'} done</span>` : ''}${focusMins ? `<span>🍅 ${fmtMins(focusMins)} focused</span>` : ''}</div>` : ''}
     </div>
     <section class="focus-notes gc-tasks-sec">
-      <div class="fn-h">Tasks${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
+      <div class="fn-h">${t('goal.tasks')}${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
       <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
       ${goalAreaTasksHtml()}
     </section>
     ${connectedNotesHtml()}
-    ${notesSection(g.body, 'goal', g.id, false, 'Notes wall')}
+    ${notesSection(g.body, 'goal', g.id, false, t('goal.noteswall'))}
     <details class="gc-settings" open>
-      <summary>⚙ Timing &amp; settings</summary>
+      <summary>${t('goal.timing')}</summary>
       <div class="tf-meta">
-        <label class="tf-field"><span class="tf-label">Type</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-        <label class="tf-field"><span class="tf-label">Horizon</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-        <label class="tf-field"><span class="tf-label">Status</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="tf-field"><span class="tf-label">${t('goal.type')}</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="tf-field"><span class="tf-label">${t('goal.horizon')}</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="tf-field"><span class="tf-label">${t('goal.status')}</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         ${(p.horizon === 'quarter' || p.horizon === 'year')
-          ? `<div class="tf-field"><span class="tf-label">By when</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
+          ? `<div class="tf-field"><span class="tf-label">${t('goal.bywhen')}</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
           : `<label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>`}
       </div>
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
@@ -9697,7 +9699,7 @@ function connectedNotesHtml() {
   const notes = go.notes || [];
   const cards = notes.map((n) => `<div class="gc-note-card" style="--h:${a ? hueOf(a) : 220}"><button class="gc-note-open" data-open-note="${n.id}"><span class="gc-note-ic">▤</span><span class="gc-note-t">${esc(n.title || 'Untitled')}</span></button><button class="gc-note-x" data-goal-unlink-note="${n.id}" title="Disconnect from this goal">×</button></div>`).join('');
   return `<section class="focus-notes gc-notes-sec">
-    <div class="fn-h">Connected notes${notes.length ? ` · ${notes.length}` : ''}</div>
+    <div class="fn-h">${t('goal.connectednotes')}${notes.length ? ` · ${notes.length}` : ''}</div>
     ${notes.length ? `<div class="gc-notes-grid">${cards}</div>` : '<p class="gc-notes-empty">Jot your thinking as a note - it lives here and in Notes, ready to grow.</p>'}
     <div class="goal-notelist">
       <div class="gal-box">
