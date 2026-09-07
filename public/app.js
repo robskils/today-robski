@@ -41,6 +41,10 @@ const T_EN = {
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage',
   'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
+  'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
+  'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes & Tables', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'wb.journal': 'Journal', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -49,6 +53,10 @@ const T_PT = {
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir',
   'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
+  'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
+  'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas e tabelas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Cartas', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -1943,7 +1951,7 @@ function mobileSettingsHtml() {
   const cfg = mobileHomeCfg(); const hidden = new Set(cfg.hidden);
   const rows = cfg.order.map((key) => `<div class="msec-row" data-msec="${key}">
     <button type="button" class="msec-grip" data-msec-grip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</button>
-    <span class="msec-name">${esc(MSEC_NAME[key])}</span>
+    <span class="msec-name">${esc(t('home.sec.'+key))}</span>
     <label class="switch msec-switch" title="Show on mobile Home"><input type="checkbox" data-msec-show="${key}" ${hidden.has(key) ? '' : 'checked'}><span class="switch-sl"></span></label>
   </div>`).join('');
   return `<div class="set-card">
@@ -2456,7 +2464,7 @@ async function addTableEntry(id) {
 const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
-const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
+const greeting = () => { const h = new Date().getHours(); return t(h < 12 ? 'home.greeting.morning' : h < 18 ? 'home.greeting.afternoon' : 'home.greeting.evening'); };
 // The name to be greeted by: the first word of your full name, and failing that
 // your username. "Good afternoon" is a person speaking, so it uses what you'd
 // actually be called - not "Robin Lumley-Savile", and certainly not "Robski",
@@ -3292,7 +3300,7 @@ function kitHomeHtml() {
       <button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button>
     </div>`;
   }).join('');
-  return `<section class="home-sec home-sec-kit" data-hsec="keepintouch">${secH('keepintouch', 'Keep in touch', `<span class="muted">${due.length}</span>`, true)}${secOpen('keepintouch') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
+  return `<section class="home-sec home-sec-kit" data-hsec="keepintouch">${secH('keepintouch', t('home.sec.keepintouch'), `<span class="muted">${due.length}</span>`, true)}${secOpen('keepintouch') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
 }
 function p1Html() {
   const all = priorityTasks();
@@ -3300,7 +3308,7 @@ function p1Html() {
   const total = (state.home && state.home.alerts && state.home.alerts.p1) || all.length;
   const shown = all.slice(0, 8);
   const more = total - shown.length;
-  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', 'Priority Tasks', `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
+  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', t('home.sec.priority'), `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
 }
 // A few of the newest inbox messages on Home, from the warm server-side cache
 // (the same one the cron keeps fresh) - instant, no slow IMAP round-trip. Loaded
@@ -3419,7 +3427,7 @@ function renderHome() {
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="home-head">
         <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1><div class="home-date">${homeDate()}</div></div>
-        <div class="home-actions"><button class="add-btn wide" data-new-note>+ Note</button><button class="add-btn wide" data-quick-task>+ Task</button><button class="add-btn wide" data-quick-event>+ Event</button></div>
+        <div class="home-actions"><button class="add-btn wide" data-new-note>${t('home.newnote')}</button><button class="add-btn wide" data-quick-task>${t('home.newtask')}</button><button class="add-btn wide" data-quick-event>${t('home.newevent')}</button></div>
       </div>
       ${alertsHtml()}
       ${homeQuoteHtml()}
@@ -3491,9 +3499,9 @@ function renderHome() {
           // The right column is drag-reorderable too (grips on desktop), each
           // section carrying data-hsec so the drop logic can read the order.
           const sideSec = {
-            recent: `<section class="home-sec home-sec-recent" data-hsec="recent">${secH('recent', 'Recently viewed', '', true)}${secOpen('recent') ? recentHtml : ''}</section>`,
-            notepad: modOn('notepad') ? `<section class="home-sec home-sec-notepad" data-hsec="notepad">${secH('notepad', 'Notepad', '', true)}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
-            people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-people" data-hsec="people">${secH('people', 'People', '', true)}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
+            recent: `<section class="home-sec home-sec-recent" data-hsec="recent">${secH('recent', t('home.sec.recent'), '', true)}${secOpen('recent') ? recentHtml : ''}</section>`,
+            notepad: modOn('notepad') ? `<section class="home-sec home-sec-notepad" data-hsec="notepad">${secH('notepad', t('home.sec.notepad'), '', true)}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
+            people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-people" data-hsec="people">${secH('people', t('home.sec.people'), '', true)}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
           };
           const sdef = ['recent', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
@@ -4301,14 +4309,14 @@ function renderJournalList() {
     ${pageCrumb('Well-being')}
     <div class="pane-head home-head"><h1>Well-being</h1></div>
     ${j.picking ? '' : `<div class="wb-tiles">
-      <button class="wb-tile" data-journal-start title="Write freely, or from a prompt"><span class="wb-tile-ic">📓</span><span class="wb-tile-t">Journal</span></button>
-      <button class="wb-tile" data-journal-coaching title="A running coaching conversation"><span class="wb-tile-ic">🧭</span><span class="wb-tile-t">Coaching</span></button>
-      <button class="wb-tile" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="wb-tile-ic">💭</span><span class="wb-tile-t">Dreams</span></button>
-      <button class="wb-tile" data-open-medi title="A calm sit, with real bells"><span class="wb-tile-ic">🧘</span><span class="wb-tile-t">Meditation</span></button>
-      <button class="wb-tile" data-spirit-open title="Draw a card for a moment's reflection"><span class="wb-tile-ic">🃏</span><span class="wb-tile-t">Spirit Cards</span></button>
-      <button class="wb-tile" data-open-iching title="Cast an I Ching reading"><span class="wb-tile-ic">☯</span><span class="wb-tile-t">I Ching</span></button>
-      <button class="wb-tile" data-open-horo title="Your daily horoscope"><span class="wb-tile-ic">✶</span><span class="wb-tile-t">Horoscope</span></button>
-      <button class="wb-tile" data-open-insights title="What your entries reveal - themes, lifts and drains"><span class="wb-tile-ic">✨</span><span class="wb-tile-t">Insights</span></button>
+      <button class="wb-tile" data-journal-start title="Write freely, or from a prompt"><span class="wb-tile-ic">📓</span><span class="wb-tile-t">${t('wb.journal')}</span></button>
+      <button class="wb-tile" data-journal-coaching title="A running coaching conversation"><span class="wb-tile-ic">🧭</span><span class="wb-tile-t">${t('wb.coaching')}</span></button>
+      <button class="wb-tile" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="wb-tile-ic">💭</span><span class="wb-tile-t">${t('wb.dreams')}</span></button>
+      <button class="wb-tile" data-open-medi title="A calm sit, with real bells"><span class="wb-tile-ic">🧘</span><span class="wb-tile-t">${t('wb.meditation')}</span></button>
+      <button class="wb-tile" data-spirit-open title="Draw a card for a moment's reflection"><span class="wb-tile-ic">🃏</span><span class="wb-tile-t">${t('wb.spirit')}</span></button>
+      <button class="wb-tile" data-open-iching title="Cast an I Ching reading"><span class="wb-tile-ic">☯</span><span class="wb-tile-t">${t('wb.iching')}</span></button>
+      <button class="wb-tile" data-open-horo title="Your daily horoscope"><span class="wb-tile-ic">✶</span><span class="wb-tile-t">${t('wb.horoscope')}</span></button>
+      <button class="wb-tile" data-open-insights title="What your entries reveal - themes, lifts and drains"><span class="wb-tile-ic">✨</span><span class="wb-tile-t">${t('wb.insights')}</span></button>
     </div>`}
     ${j.picking ? '' : spiritPinnedHtml() + reflectPinsHtml()}
     ${picker}
