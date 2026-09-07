@@ -3325,6 +3325,10 @@ export default {
       if (isApex && (path === '/terms' || path === '/terms/')) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/terms.html', url.origin), request)));
       }
+      // Support page (App Store / Play require a support URL).
+      if (isApex && (path === '/support' || path === '/support/')) {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/support.html', url.origin), request)));
+      }
       // <subdomain>.daybook.fyi/today opens Today INSIDE the app now: the day
       // planner is a native SPA view (openToday on the /today boot route), not
       // the retired standalone index.html/today.js. Serve the app shell so the
