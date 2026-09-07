@@ -9928,9 +9928,8 @@ function renderGoalAreaList() { const el = $('.gal-list'); if (el) el.innerHTML 
 // the connected-tasks linker so the two read as a pair.
 function connectedNotesHtml() {
   const go = state.goal_open; if (!go) return '';
-  const a = areaById(gp(go.goal).area);
   const notes = go.notes || [];
-  const cards = notes.map((n) => `<div class="gc-note-card" style="--h:${a ? hueOf(a) : 220}"><button class="gc-note-open" data-open-note="${n.id}"><span class="gc-note-ic">▤</span><span class="gc-note-t">${esc(n.title || 'Untitled')}</span></button><button class="gc-note-x" data-goal-unlink-note="${n.id}" title="Disconnect from this goal">×</button></div>`).join('');
+  const cards = notes.map((n) => { const na = areaById(blockAreas(n)[0]); const nh = na ? hueOf(na) : 220; return `<div class="gc-note-card${na ? ' has-area' : ''}" style="--h:${nh}"${na ? ` title="${esc(na.title)}"` : ''}><button class="gc-note-open" data-open-note="${n.id}"><span class="gc-note-ic">▤</span><span class="gc-note-t">${esc(n.title || 'Untitled')}</span></button><button class="gc-note-x" data-goal-unlink-note="${n.id}" title="Disconnect from this goal">×</button></div>`; }).join('');
   return `<section class="focus-notes gc-notes-sec">
     <div class="fn-h">${t('goal.connectednotes')}${notes.length ? ` · ${notes.length}` : ''}</div>
     ${notes.length ? `<div class="gc-notes-grid">${cards}</div>` : '<p class="gc-notes-empty">Jot your thinking as a note - it lives here and in Notes, ready to grow.</p>'}
@@ -11508,7 +11507,7 @@ function renderNote() {
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
-  const kids = state.note.children.map((c) => { const isT = isTableNote(c); return `<button class="subpage" data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
+  const kids = state.note.children.map((c) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${noteAreasControl(n)}

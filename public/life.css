@@ -1570,11 +1570,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nconn-item:hover { background:var(--paper); color:var(--accent); }
 .nconn-item .sp-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sub-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:10px; font-weight:600; }
-.subpage { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; border-radius:10px; color:var(--ink); font-size:16.5px; transition:background .12s; }
-.subpage:hover { background:var(--paper-2); }
+/* Connected notes as little cards, each in its own life-area colour. */
+.subpages { display:flex; flex-direction:column; gap:8px; }
+.subpage { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; border-radius:10px; color:var(--ink); font-size:16.5px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:border-color .12s; }
+.subpage:hover { border-color:var(--accent); }
 .subpage .sp-ico { color:var(--ink-3); font-size:14px; flex:none; }
 .subpage .sp-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.subpage.add { color:var(--ink-3); } .subpage.add:hover { color:var(--accent); }
+.subpage.has-area { border-left:3px solid hsl(var(--h,220) 60% 52%); padding-left:9px; }
+.subpage.has-area .sp-ico { color:hsl(var(--h,220) 55% 55%); }
+.subpage.has-area .sp-ico .ico-note, .subpage.has-area .sp-ico .ico-tbl { color:inherit; }
+.subpage.add { background:transparent; border:1px dashed var(--line); box-shadow:none; color:var(--ink-3); }
+.subpage.add:hover { color:var(--accent); border-color:var(--accent); }
 .subpage { position:relative; }
 .sp-grip { color:var(--ink-3); opacity:0; font-size:12px; line-height:1; flex:none; cursor:grab; transition:opacity .12s; margin-left:-4px; }
 .subpage:hover .sp-grip { opacity:.55; }
