@@ -1059,6 +1059,54 @@ async function toggleFeed(name, on) {
     toast(on ? 'Added to your calendar ✓' : 'Removed from your calendar');
   } catch (e) { toast(e.message); state.feeds[name] = !on; renderSettings(); }
 }
+// The followed teams (new list model, with back-compat for the old fulham flag).
+function feedTeamsOf(f) {
+  const teams = (f && Array.isArray(f.teams)) ? f.teams : [];
+  if ((!teams || !teams.length) && f && f.fulham) return [{ id: '133600', name: 'Fulham FC' }];
+  return teams;
+}
+async function saveFeeds() {
+  await api('/api/kv/cal_feeds', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.feeds) }) });
+}
+async function addTeam(team) {
+  state.feeds = state.feeds || {};
+  const teams = feedTeamsOf(state.feeds).slice();
+  if (teams.some((t) => String(t.id) === String(team.id))) { toast('Already following that team'); return; }
+  teams.push({ id: String(team.id), name: team.name });
+  state.feeds.teams = teams; delete state.feeds.fulham;   // teams list supersedes the old flag
+  const q = document.getElementById('feed-team-q'); if (q) q.value = '';
+  const res = document.getElementById('feed-team-results'); if (res) res.innerHTML = '';
+  try {
+    await saveFeeds();
+    toast('Fetching fixtures…');
+    await api('/api/feeds/refresh', { method: 'POST' }).catch(() => {});
+    toast(`Following ${team.name} ✓`);
+    renderSettings();
+  } catch (e) { toast(e.message); }
+}
+async function removeTeam(id) {
+  if (!state.feeds) return;
+  state.feeds.teams = feedTeamsOf(state.feeds).filter((t) => String(t.id) !== String(id));
+  delete state.feeds.fulham;
+  try { await saveFeeds(); toast('Stopped following'); renderSettings(); } catch (e) { toast(e.message); }
+}
+let __feedSearchT;
+function feedTeamSearchInput(q) {
+  clearTimeout(__feedSearchT);
+  const res = document.getElementById('feed-team-results');
+  if (!q || q.trim().length < 2) { if (res) res.innerHTML = ''; return; }
+  __feedSearchT = setTimeout(async () => {
+    if (res) res.innerHTML = '<div class="feed-res-note">Searching…</div>';
+    try {
+      const r = await api('/api/feeds/search?q=' + encodeURIComponent(q.trim()));
+      const teams = (r && r.teams) || [];
+      if (!res) return;
+      res.innerHTML = teams.length
+        ? teams.map((t) => `<button class="feed-res" data-feed-add data-team-id="${esc(String(t.id))}" data-team-name="${esc(t.name)}"><span class="fr-t">${esc(t.name)}</span><span class="fr-sub">${esc([t.sport, t.league, t.country].filter(Boolean).join(' · '))}</span></button>`).join('')
+        : '<div class="feed-res-note">No teams found. Try the full club name.</div>';
+    } catch { if (res) res.innerHTML = '<div class="feed-res-note">Search failed - try again.</div>'; }
+  }, 350);
+}
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 // Whether AI features can run for this account: master switch on, and either the
 // owner (managed key) or a stored own key. Optimistic before the account loads.
@@ -2148,8 +2196,13 @@ function renderSettings() {
           <label class="set-mod"><span>🇵🇹 Portugal<small>National public holidays</small></span><input type="checkbox" data-feed="pt" ${f.pt ? 'checked' : ''}></label>
           <label class="set-mod"><span>🇬🇧 United Kingdom<small>England &amp; Wales bank holidays</small></span><input type="checkbox" data-feed="uk" ${f.uk ? 'checked' : ''}></label>
         </div>
-        <div class="set-notif-group"><div class="set-notif-h">Sport</div>
-          <label class="set-mod"><span>⚽ Fulham FC fixtures<small>Upcoming matches, kick-off in your local time</small></span><input type="checkbox" data-feed="fulham" ${f.fulham ? 'checked' : ''}></label>
+        <div class="set-notif-group"><div class="set-notif-h">Sports teams</div>
+          <p class="feed-teams-lead">Follow any team and its upcoming fixtures land on your calendar, kick-off in your local time.</p>
+          <div class="feed-teams">${feedTeamsOf(f).map((tm) => `<span class="feed-team"><span class="ft-name">⚽ ${esc(tm.name)}</span><button class="ft-x" data-feed-team-rm="${esc(String(tm.id))}" title="Stop following">×</button></span>`).join('') || '<span class="feed-teams-empty">No teams followed yet.</span>'}</div>
+          <div class="feed-search">
+            <input class="sel feed-team-q" id="feed-team-q" placeholder="Search your team (Fulham, Benfica, Lakers…)" autocomplete="off" spellcheck="false">
+            <div class="feed-results" id="feed-team-results"></div>
+          </div>
         </div>
       </div>`;
 
@@ -12040,6 +12093,9 @@ document.addEventListener('input', (e) => {
   const ed = e.target && e.target.closest && e.target.closest('.prose[data-block-id][contenteditable="true"]');
   if (ed) applyProseIndent(ed);
 });
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.id === 'feed-team-q') feedTeamSearchInput(e.target.value);
+});
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!prose) return;
@@ -12266,6 +12322,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
+  { const fa = t.closest('[data-feed-add]'); if (fa) { addTeam({ id: fa.dataset.teamId, name: fa.dataset.teamName }); return; } }
+  { const fr = t.closest('[data-feed-team-rm]'); if (fr) { removeTeam(fr.dataset.feedTeamRm); return; } }
   if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
   { const ax = t.closest('[data-alert-x]'); if (ax) { try { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, todayISO()); } catch {} renderHome(); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }

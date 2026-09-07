@@ -14,7 +14,7 @@ import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStat
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
-import { feedRangeEvents, feedDayEvents, fetchFulham } from './feeds.js';
+import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams } from './feeds.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -294,9 +294,8 @@ async function handleCalendar(request, env, url) {
   const events = applyEventAreas([...(g.events || []), ...native], await getEventAreas(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) merged in as read-only overlays.
   const feeds = await getFeeds(env);
-  if (feeds.pt || feeds.uk || feeds.fulham) {
-    const fixtures = feeds.fulham ? await getFulhamCache(env) : [];
-    events.push(...feedRangeEvents(feeds, fixtures, from, to));
+  if (feeds.pt || feeds.uk || feedTeams(feeds).length) {
+    events.push(...feedRangeEvents(feeds, await userFixtures(env, feeds), from, to));
   }
   return json({ events, error: g.error || null }, request);
 }
@@ -783,8 +782,18 @@ async function getSetting(env, key, uid = env.uid) {
 async function getFeeds(env, uid = env.uid) {
   try { const v = await getSetting(env, 'kv_cal_feeds', uid); return v ? JSON.parse(v) : {}; } catch { return {}; }
 }
-async function getFulhamCache(env) {
-  try { const v = await getSetting(env, 'kv_fulham_fixtures', 1); return v ? JSON.parse(v) : []; } catch { return []; }
+// The shared fixtures cache: a map of teamId -> { name, fixtures[], fetched }.
+// Kept under the owner (user 1) since fixtures are the same for every subscriber.
+async function getTeamCache(env) {
+  try { const v = await getSetting(env, 'kv_team_fixtures', 1); return v ? JSON.parse(v) : {}; } catch { return {}; }
+}
+// This user's fixtures: the cached games for each team they follow, flattened.
+async function userFixtures(env, feeds) {
+  const teams = feedTeams(feeds); if (!teams.length) return [];
+  const cache = await getTeamCache(env);
+  const out = [];
+  for (const t of teams) { const c = cache[String(t.id)]; if (c && Array.isArray(c.fixtures)) out.push(...c.fixtures); }
+  return out;
 }
 async function setSetting(env, key, value, uid = env.uid) {
   await env.DB.prepare(
@@ -2273,9 +2282,8 @@ async function handleDay(request, env, url) {
   applyEventAreas(cal.events, await getEventAreas(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) for this day, read-only overlays.
   const feeds = await getFeeds(env);
-  if (feeds.pt || feeds.uk || feeds.fulham) {
-    const fixtures = feeds.fulham ? await getFulhamCache(env) : [];
-    cal.events.push(...feedDayEvents(feeds, fixtures, day));
+  if (feeds.pt || feeds.uk || feedTeams(feeds).length) {
+    cal.events.push(...feedDayEvents(feeds, await userFixtures(env, feeds), day));
   }
 
   const byslot = new Map();
@@ -3146,17 +3154,28 @@ async function maybeSnapshotPortfolio(env) {
   await recordSnapshot(env, data.total, 0);
 }
 
-// Refresh the shared Fulham fixtures cache (under the owner) ~twice a day. The
-// fixtures are the same for everyone, so one cache serves all subscribers. A
-// failed fetch keeps the last good cache; the timestamp still advances so a
+// Refresh the shared fixtures cache (under the owner) ~twice a day. It holds
+// every team ANY active user follows, so one cache serves all subscribers. A
+// failed fetch keeps the last good games; the timestamp still advances so a
 // hiccup doesn't hammer the source every minute.
 async function maybeRefreshFixtures(env) {
-  const last = await getSetting(env, 'kv_fulham_fetched', 1);
+  const last = await getSetting(env, 'kv_team_fetched', 1);
   const now = Date.now();
   if (last && (now - Number(last)) < 12 * 3600 * 1000) return;
-  const fx = await fetchFulham();
-  if (fx.length) await setSetting(env, 'kv_fulham_fixtures', JSON.stringify(fx), 1);
-  await setSetting(env, 'kv_fulham_fetched', String(now), 1);
+  const wanted = new Map();   // teamId -> name
+  for (const u of await activeUsers(env)) {
+    for (const t of feedTeams(await getFeeds(env, u.id))) if (t && t.id) wanted.set(String(t.id), t.name || 'Team');
+  }
+  await setSetting(env, 'kv_team_fetched', String(now), 1);
+  if (!wanted.size) return;
+  const cache = await getTeamCache(env);
+  for (const [id, name] of wanted) {
+    const fx = await fetchTeamFixtures(id);
+    if (fx.length) cache[id] = { name, fixtures: fx, fetched: now };
+    else if (!cache[id]) cache[id] = { name, fixtures: [], fetched: now };
+  }
+  for (const id of Object.keys(cache)) if (!wanted.has(id)) delete cache[id];   // drop unfollowed teams
+  await setSetting(env, 'kv_team_fixtures', JSON.stringify(cache), 1);
 }
 
 export default {
@@ -3616,12 +3635,22 @@ export default {
           return json({ ok: true }, request);
         }
       }
-      // Force a Fulham fixtures refresh now (used when a feed is first enabled,
-      // so the games appear without waiting for the twice-daily cron).
+      // Search TheSportsDB for a team to follow.
+      if (path === '/api/feeds/search' && request.method === 'GET') {
+        return json({ teams: await searchTeams(url.searchParams.get('q') || '') }, request);
+      }
+      // Fetch fixtures for the user's followed teams now (used when a team is
+      // just added, so its games appear without waiting for the cron).
       if (path === '/api/feeds/refresh' && request.method === 'POST') {
-        const fx = await fetchFulham();
-        if (fx.length) { await setSetting(env, 'kv_fulham_fixtures', JSON.stringify(fx), 1); await setSetting(env, 'kv_fulham_fetched', String(Date.now()), 1); }
-        return json({ ok: true, count: fx.length }, request);
+        const teams = feedTeams(await getFeeds(env));
+        const cache = await getTeamCache(env);
+        let count = 0;
+        for (const t of teams) {
+          const fx = await fetchTeamFixtures(t.id);
+          if (fx.length) { cache[String(t.id)] = { name: t.name || 'Team', fixtures: fx, fetched: Date.now() }; count += fx.length; }
+        }
+        await setSetting(env, 'kv_team_fixtures', JSON.stringify(cache), 1);
+        return json({ ok: true, count }, request);
       }
       if (path === '/api/blocks' && request.method === 'POST') return createBlock(request, env);
       if (path === '/api/blocks/bulk' && request.method === 'POST') return createBlocksBulk(request, env);

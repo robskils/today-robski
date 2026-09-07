@@ -115,11 +115,12 @@ function holidaysInRange(feeds, from, to) {
   return out;
 }
 
-// ── Fulham fixtures ──────────────────────────────────────────────────────────
-// TheSportsDB free tier (test key "3"); Fulham FC is team 133600. eventsnext
-// gives the next ~15 games with a UTC-ish timestamp. We normalise to a Lisbon
-// wall-clock {date, min} and cache the lot; the cron refreshes it daily.
-const FULHAM_ID = '133600';
+// ── Team fixtures (any team) ─────────────────────────────────────────────────
+// TheSportsDB free tier (test key "3"). The user searches for their team; we
+// store its id + name and fetch its next ~15 games (eventsnext) with a UTC
+// timestamp, normalised to a Lisbon wall-clock {date, min}. Portugal and the UK
+// share the same clock all year, so no cross-zone shift is needed for either.
+const SDB = 'https://www.thesportsdb.com/api/v1/json/3';
 // Format a UTC instant as Europe/Lisbon local {date:'YYYY-MM-DD', min}.
 function toLisbon(dateUTC) {
   try {
@@ -132,7 +133,7 @@ function toLisbon(dateUTC) {
   } catch { return null; }
 }
 // Turn the raw API payload into our compact fixture rows.
-export function parseFulham(apiJson) {
+export function parseTeamFixtures(apiJson) {
   const evs = (apiJson && apiJson.events) || [];
   const out = [];
   for (const e of evs) {
@@ -142,42 +143,63 @@ export function parseFulham(apiJson) {
     const utc = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(ts) ? ts : ts + 'Z');
     if (isNaN(utc)) continue;
     const loc = toLisbon(utc); if (!loc) continue;
-    out.push({ id: String(e.idEvent), title: e.strEvent || 'Fulham', date: loc.date, min: loc.min, league: e.strLeague || '' });
+    out.push({ id: String(e.idEvent), title: e.strEvent || 'Match', date: loc.date, min: loc.min, league: e.strLeague || '' });
   }
   return out;
 }
-// Fetch + normalise the upcoming fixtures. Returns [] on any failure so a feed
-// hiccup never breaks the calendar.
-export async function fetchFulham() {
+// Search for a team by name. Returns a short, safe list for the picker.
+export async function searchTeams(q) {
+  const query = String(q || '').trim();
+  if (query.length < 2) return [];
   try {
-    const r = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsnext.php?id=${FULHAM_ID}`, {
-      headers: { 'User-Agent': 'Daybook/1.0' },
-    });
+    const r = await fetch(`${SDB}/searchteams.php?t=${encodeURIComponent(query)}`, { headers: { 'User-Agent': 'Daybook/1.0' } });
     if (!r.ok) return [];
-    return parseFulham(await r.json().catch(() => ({})));
-  } catch { return [] }
+    const j = await r.json().catch(() => ({}));
+    return ((j && j.teams) || []).slice(0, 12).map((t) => ({
+      id: String(t.idTeam), name: t.strTeam || 'Team',
+      sport: t.strSport || '', league: t.strLeague || '', country: t.strCountry || '',
+      badge: t.strTeamBadge || t.strBadge || '',
+    })).filter((t) => t.id && t.name);
+  } catch { return []; }
 }
-function fulhamInRange(fixtures, from, to) {
-  return (fixtures || []).filter((f) => f.date >= from && f.date <= to)
-    .map((f) => ({ id: `feed:fulham:${f.id}`, title: `⚽ ${f.title}`, feed: 'fulham', min: f.min, date: f.date }));
+// Fetch + normalise a team's upcoming fixtures. [] on any failure so a feed
+// hiccup never breaks the calendar.
+export async function fetchTeamFixtures(teamId) {
+  const id = String(teamId || '').replace(/[^0-9]/g, '');
+  if (!id) return [];
+  try {
+    const r = await fetch(`${SDB}/eventsnext.php?id=${id}`, { headers: { 'User-Agent': 'Daybook/1.0' } });
+    if (!r.ok) return [];
+    return parseTeamFixtures(await r.json().catch(() => ({})));
+  } catch { return []; }
+}
+// The user's subscribed teams (new model). Back-compat: an old fulham:true feed
+// reads as a Fulham subscription.
+export function feedTeams(feeds) {
+  const teams = (feeds && Array.isArray(feeds.teams)) ? feeds.teams : [];
+  if ((!teams || !teams.length) && feeds && feeds.fulham) return [{ id: '133600', name: 'Fulham FC' }];
+  return teams;
+}
+function fixturesInRange(fixtures, from, to) {
+  return (fixtures || []).filter((f) => f.date >= from && f.date <= to);
 }
 
 // ── merge helpers the worker calls ───────────────────────────────────────────
-// Range shape (month/week view). Holidays are all-day; fixtures are timed (2h).
+// `fixtures` is the flat list for the user's subscribed teams (index.js gathers
+// it from the shared cache). Titles already read "A vs B", so no team prefix.
+// Range shape (month/week view). Holidays all-day; fixtures timed (2h).
 export function feedRangeEvents(feeds, fixtures, from, to) {
   const out = holidaysInRange(feeds, from, to).map((h) => ({
     id: h.id, title: h.title, location: null, url: null, notes: null,
     allDay: true, date: h.id.split(':')[2], end_date: null, start_min: null, end_min: null,
     recurringId: null, feed: h.feed, readonly: true,
   }));
-  if (feeds && feeds.fulham) {
-    for (const f of fulhamInRange(fixtures, from, to)) {
-      out.push({
-        id: f.id, title: f.title, location: null, url: null, notes: null,
-        allDay: false, date: f.date, start_min: f.min, end_date: f.date, end_min: Math.min(f.min + 120, 1439),
-        recurringId: null, feed: 'fulham', readonly: true,
-      });
-    }
+  for (const f of fixturesInRange(fixtures, from, to)) {
+    out.push({
+      id: `feed:team:${f.id}`, title: `⚽ ${f.title}`, location: null, url: null, notes: null,
+      allDay: false, date: f.date, start_min: f.min, end_date: f.date, end_min: Math.min(f.min + 120, 1439),
+      recurringId: null, feed: 'team', readonly: true,
+    });
   }
   return out;
 }
@@ -187,13 +209,11 @@ export function feedDayEvents(feeds, fixtures, day) {
     id: h.id, title: h.title, location: null, url: null, notes: null,
     allDay: true, start_min: 0, duration: 1440, feed: h.feed, readonly: true,
   }));
-  if (feeds && feeds.fulham) {
-    for (const f of (fixtures || []).filter((x) => x.date === day)) {
-      out.push({
-        id: `feed:fulham:${f.id}`, title: `⚽ ${f.title}`, location: null, url: null, notes: null,
-        allDay: false, start_min: f.min, duration: 120, feed: 'fulham', readonly: true,
-      });
-    }
+  for (const f of (fixtures || []).filter((x) => x.date === day)) {
+    out.push({
+      id: `feed:team:${f.id}`, title: `⚽ ${f.title}`, location: null, url: null, notes: null,
+      allDay: false, start_min: f.min, duration: 120, feed: 'team', readonly: true,
+    });
   }
   return out;
 }

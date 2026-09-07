@@ -2154,6 +2154,21 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .set-notif-group { display:flex; flex-direction:column; gap:10px; }
 .set-notif-h { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; }
 @media (max-width:560px){ .set-mods { grid-template-columns:1fr; } }
+/* Calendar feeds: follow-a-team search + followed chips. */
+.feed-teams-lead { font-size:13.5px; color:var(--ink-3); margin:-2px 0 2px; line-height:1.4; }
+.feed-teams { display:flex; flex-wrap:wrap; gap:8px; }
+.feed-teams-empty { font-size:14px; color:var(--ink-3); font-style:italic; }
+.feed-team { display:inline-flex; align-items:center; gap:4px; padding:6px 6px 6px 12px; background:var(--card); border:1px solid var(--line); border-radius:999px; font-size:14.5px; color:var(--ink); }
+.feed-team .ft-x { flex:none; width:22px; height:22px; border-radius:50%; border:0; background:none; color:var(--ink-3); font-size:17px; line-height:1; cursor:pointer; }
+.feed-team .ft-x:hover { color:var(--accent); background:var(--paper); }
+.feed-search { position:relative; }
+.feed-team-q { width:100%; max-width:none; }
+.feed-results { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.feed-res { display:flex; flex-direction:column; gap:1px; text-align:left; padding:10px 13px; background:var(--card); border:1px solid var(--line); border-radius:10px; cursor:pointer; transition:border-color .12s; }
+.feed-res:hover { border-color:var(--accent); }
+.feed-res .fr-t { font-size:15px; font-weight:600; color:var(--ink); }
+.feed-res .fr-sub { font-size:12.5px; color:var(--ink-3); }
+.feed-res-note { font-size:14px; color:var(--ink-3); padding:8px 2px; }
 /* Notes: linked tasks in the sidebar. */
 .note-tasks { margin-top:22px; }
 .nt-linked { display:flex; flex-direction:column; gap:1px; margin:8px 0; }
