@@ -5524,6 +5524,7 @@ function renderCalendar() {
         <button class="cal-btn" data-cal-today>Today</button>
         <button class="cal-btn ic" data-cal-prev title="Previous">‹</button>
         <button class="cal-btn ic" data-cal-next title="Next">›</button>
+        <button class="cal-btn ic" data-open-feeds title="Calendar settings">⚙</button>
       </div>
     </div>
     ${gcalBarHtml()}
