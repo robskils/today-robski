@@ -14458,7 +14458,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
-let gateStep = 'email', gateEmail = '', gateMfaToken = '';
+let gateStep = 'email', gateEmail = '', gateMfaToken = '', gateBusy = false;
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
 // in to Robin's Daybook, so the wordmark drops the owner's name and reads just
 // "Daybook". On a tenant subdomain it stays whose it is.
@@ -14475,6 +14475,11 @@ function showGate(sub) {
       <p class="gate2-err" id="gate-err" hidden></p>
     </form></div>`);
   $('#gate-email').focus();
+  // Bind the primary action directly to the button too. On iOS the form's implicit
+  // submit could be eaten by the on-screen keyboard dismissing on the first tap,
+  // which is why it "took a few goes"; a direct click is reliable. gateBusy stops
+  // the click and the form-submit both firing a second request.
+  const gb = $('#gate-btn'); if (gb) gb.addEventListener('click', (ev) => { ev.preventDefault(); gateSubmit(ev); });
 }
 // Onboarding gate: a signed-in email with no account yet claims its space here
 // (name + subdomain + invite). Only reached on the multi-tenant build, where
@@ -14546,6 +14551,7 @@ async function gateSend(channel) {
   const err = $('#gate-err'), btn = $('#gate-btn'), sms = $('#gate-sms');
   gateEmail = $('#gate-email').value.trim();
   if (!gateEmail) { err.textContent = t('gate.enteremail'); err.hidden = false; return; }
+  if (gateBusy) return; gateBusy = true;
   err.hidden = true; btn.disabled = true; if (sms) sms.disabled = true;
   try {
     const r = await fetch('/auth/request-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, channel }) });
@@ -14560,12 +14566,13 @@ async function gateSend(channel) {
     $('#gate-code').hidden = false; $('#gate-code').focus();
     btn.textContent = t('gate.signin');
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
-  btn.disabled = false; if (sms) sms.disabled = false;
+  btn.disabled = false; if (sms) sms.disabled = false; gateBusy = false;
 }
 async function gateSubmit(e) {
   e.preventDefault();
   if (gateStep === 'email') return gateSend('email');
   const err = $('#gate-err'), btn = $('#gate-btn');
+  if (gateBusy) return; gateBusy = true;
   err.hidden = true; btn.disabled = true;
   try {
     // Second factor: trade the pending token for a real session.
@@ -14583,12 +14590,12 @@ async function gateSubmit(e) {
       $('#gate-sub').textContent = t('gate.totp');
       const c = $('#gate-code'); c.value = ''; c.placeholder = '000000'; c.focus();
       const sms = $('#gate-sms'); if (sms) sms.hidden = true;
-      btn.textContent = t('gate.verify'); btn.disabled = false; return;
+      btn.textContent = t('gate.verify'); btn.disabled = false; gateBusy = false; return;
     }
     if (!r.ok || !d.token) throw new Error(d.error || t('gate.badcode'));
     localStorage.setItem(KEY, d.token); location.reload();
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
-  btn.disabled = false;
+  btn.disabled = false; gateBusy = false;
 }
 document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') gateSubmit(e); });
 document.addEventListener('click', (e) => { if (e.target.id === 'gate-sms') gateSend('sms'); });
