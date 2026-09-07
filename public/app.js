@@ -27,6 +27,45 @@ const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
 const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+
+// ── Languages (i18n) ───────────────────────────────────────────────────────
+// A tiny runtime translator: English is the source (every key here), Portuguese
+// overrides where translated; a missing PT key falls back to English. Phase 1
+// covers the navigation and Settings; more surfaces get wired to t() over time.
+// European Portuguese only (never Brazilian).
+const LANGS = [['en', 'English'], ['pt', 'Português']];
+const T_EN = {
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
+  'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
+  'set.title': 'Settings',
+  'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more',
+  'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
+};
+const T_PT = {
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
+  'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
+  'set.title': 'Definições',
+  'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais',
+  'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
+};
+function locale() {
+  try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
+  try { return (navigator.language || 'en').toLowerCase().startsWith('pt') ? 'pt' : 'en'; } catch { return 'en'; }
+}
+function t(key, params) {
+  let s = (locale() === 'pt' && T_PT[key] != null) ? T_PT[key] : (T_EN[key] != null ? T_EN[key] : key);
+  if (params) for (const k in params) s = s.split('{' + k + '}').join(params[k]);
+  return s;
+}
+async function setLocale(l) {
+  if (l !== 'pt' && l !== 'en') return;
+  try { localStorage.setItem('life.locale', l); } catch {}
+  api('/api/kv/locale', { method: 'PUT', body: JSON.stringify({ value: l }) }).catch(() => {});
+  try { document.documentElement.lang = l; } catch {}
+  location.reload();   // re-render everything in the new language
+}
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
@@ -708,22 +747,22 @@ function labelForView(v) {
     case 'help': return v.tool === 'index' ? 'Guide' : `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
     case 'tasks': return taskTabLabel(v);
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
-    case 'calendar': return 'Calendar'; case 'mail': return 'Mail'; case 'today': return 'Today';
+    case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today');
     case 'mailaccounts': return 'Mail accounts';
-    case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return 'Notes';
-    case 'journal': return 'Well-being'; case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || 'Well-being';
+    case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
+    case 'journal': return t('nav.reflect'); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('nav.reflect');
     case 'readwatch': return 'Read & Watch';
-    case 'settings': return 'Settings';
+    case 'settings': return t('set.title');
     case 'card': return 'Daybook card';
     case 'admin': return 'Admin';
     case 'friends': return 'Contacts on Daybook';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
-    case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return 'Life areas';
-    case 'financial': return 'Money';
-    case 'contacts': return 'Contacts'; case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
-    case 'goals': return 'Goals'; case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
-    case 'reviews': return 'Reviews'; case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
-    case 'toolbox': return 'Toolbox';
+    case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return t('nav.areas');
+    case 'financial': return t('nav.financial');
+    case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
+    case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
+    case 'reviews': return t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
+    case 'toolbox': return t('nav.timer');
     case 'visioncard': return (state.vision_open && `${state.vision_open.area.title} · Vision`) || 'Vision'; case 'visionwall': return 'The wall';
     default: return 'Home';
   }
@@ -1932,15 +1971,15 @@ function renderSettings() {
   // Account and Appearance lead. Each section is its own tab rather than a long
   // collapsing scroll, so the settings you reach for most are one tap in.
   const TABS = [
-    ['account', 'Account'],
-    ['card', 'Card'],
-    ['ai', 'Plan'],
-    ['appearance', 'Appearance'],
-    ['mobile', 'Mobile'],
-    ['notifications', 'Notifications'],
-    ['sections', 'Tools'],
-    ['invites', 'Invites'],
-    ['manage', 'Manage'],
+    ['account', t('set.tab.account')],
+    ['card', t('set.tab.card')],
+    ['ai', t('set.tab.ai')],
+    ['appearance', t('set.tab.appearance')],
+    ['mobile', t('set.tab.mobile')],
+    ['notifications', t('set.tab.notifications')],
+    ['sections', t('set.tab.sections')],
+    ['invites', t('set.tab.invites')],
+    ['manage', t('set.tab.manage')],
   ];
   // The Card tab shows the Daybook-card editor; make sure its data is loaded.
   if (state.settings.tab === 'card' && state.card === undefined) {
@@ -1974,6 +2013,7 @@ function renderSettings() {
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
+        <div class="set-row"><div><div class="set-row-t">${t('set.language')}</div><div class="set-row-s">${t('set.language.hint')}</div></div><select class="sel" data-set-locale style="max-width:170px">${LANGS.map(([v, l]) => `<option value="${v}" ${locale() === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">Auto follows your local sunrise &amp; sunset.</div></div><button class="add-btn wide" data-theme-toggle>${themeLabel()}</button></div>
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
@@ -2040,11 +2080,11 @@ function renderSettings() {
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
   const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: 'Your details & sign-in addresses', card: 'Your Daybook card - photo, tagline, links & colour', appearance: 'Theme & accent colour', mobile: 'Arrange your Home on the phone', ai: 'Your plan, and how the AI runs', notifications: 'How and when Daybook reaches you', sections: 'Turn off any tool you don\'t use', invites: 'Email someone an invitation to join', manage: 'Life areas, mail, categories & more' };
+  const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
 
   $('#pane').innerHTML = `
-    ${pageCrumb('Settings')}
-    <div class="pane-head home-head"><h1>Settings</h1></div>
+    ${pageCrumb(t('set.title'))}
+    <div class="pane-head home-head"><h1>${t('set.title')}</h1></div>
     ${seg}
     <section class="home-sec">
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
@@ -2100,38 +2140,38 @@ function renderNav() {
   $('#nav').innerHTML = `
     <div class="nav-topline" data-view-home title="Home">
       <div class="nav-brand">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></div>
-      <button class="nav-util-toggle" data-util-toggle aria-label="Show tools" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
+      <button class="nav-util-toggle" data-util-toggle aria-label="${t('nav.tools')}" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
     </div>
-    <button class="nav-msearch" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
+    <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
     <div class="nav-foot">
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
-    <button class="nav-k" data-palette><span>Search or jump…</span><kbd>${PK('⌘K')}</kbd></button>
+    <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
     <div class="nav-grid">
-    <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-lbl">Home</span></button>
-    ${modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-lbl">Tasks</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : ''}
-    ${modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-lbl">Mail</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : ''}
-    ${modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-lbl">Contacts</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : ''}
-    ${modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-lbl">Calendar</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : ''}
-    ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-lbl">Today</span></button>` : ''}
-    ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-lbl">Notes</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
-    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">Life areas</span></button>` : ''}
-    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">Well-being</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
-    ${modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-lbl">Reviews</span></button>` : ''}
-    ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">Goals</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
-    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">Money</span></button>` : ''}
-    ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">Saved</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
-    ${modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-lbl">Toolbox</span></button>` : ''}
+    <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-lbl">${t('nav.home')}</span></button>
+    ${modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : ''}
+    ${modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : ''}
+    ${modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : ''}
+    ${modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : ''}
+    ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-lbl">${t('nav.today')}</span></button>` : ''}
+    ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
+    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">${t('nav.areas')}</span></button>` : ''}
+    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">${t('nav.reflect')}</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
+    ${modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-lbl">${t('nav.reviews')}</span></button>` : ''}
+    ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
+    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">${t('nav.financial')}</span></button>` : ''}
+    ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
+    ${modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-lbl">${t('nav.timer')}</span></button>` : ''}
     </div>
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
       <div class="nav-bottom-row">
         ${helpIconHtml()}
         <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
-        <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings"><span class="ns-ic">⚙</span><span class="ns-lbl"> Settings</span></button>
+        <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="${t('nav.settings')}"><span class="ns-ic">⚙</span><span class="ns-lbl"> ${t('nav.settings')}</span></button>
       </div>
-      ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> Admin</span></button>` : ''}
-      ${state.me ? '<button class="nav-theme nav-signout" data-account-signout title="Sign out of Daybook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> Sign out</span></button>' : ''}
+      ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
+      ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Daybook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
       <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Daybook</span></div>
     </div>`;
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
@@ -11832,6 +11872,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
+  if (e.target.matches('[data-set-locale]')) { setLocale(e.target.value); return; }
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
   if (e.target.matches('[data-msec-show]')) { const key = e.target.dataset.msecShow; const cfg = mobileHomeCfg(); const set = new Set(cfg.hidden); if (e.target.checked) set.delete(key); else set.add(key); cfg.hidden = [...set]; saveMobileHomeCfg(cfg); toast(e.target.checked ? 'Shown on mobile' : 'Hidden on mobile'); }
@@ -14640,11 +14681,17 @@ async function onbConnectGmail() {
   } catch {}
   try {
     let modKv;
-    [state.noteTops, state.tables, state.areas, state.favs, modKv] = await Promise.all([
+    let locKv;
+    [state.noteTops, state.tables, state.areas, state.favs, modKv, locKv] = await Promise.all([
       api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table'), api('/api/blocks?kind=area'),
       api('/api/favorites').catch(() => []),
       api('/api/kv/modules').catch(() => null),
+      api('/api/kv/locale').catch(() => null),
     ]);
+    // Apply the account's saved language before the first render (so a new device
+    // opens in the chosen language without a reload). setLocale keeps kv in step.
+    try { const lc = locKv && locKv.value; if ((lc === 'pt' || lc === 'en') && localStorage.getItem('life.locale') !== lc) localStorage.setItem('life.locale', lc); } catch {}
+    try { document.documentElement.lang = locale(); } catch {}
     try { state.modules = JSON.parse((modKv && modKv.value) || '{}') || {}; } catch { state.modules = {}; }
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
