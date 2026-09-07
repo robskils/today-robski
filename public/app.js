@@ -8435,7 +8435,9 @@ function contactCardHtml(c) {
   const tags = liveGroupsOf(c);
   const sel = (state.contactSel instanceof Set) && state.contactSel.has(c.id);
   const starred = !!p.starred;
-  return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}" data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}" title="Drag onto a group to add">
+  const area = areaById(blockAreas(c)[0]);
+  const hue = area ? hueOf(area) : null;
+  return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}"${area ? ` title="${esc(area.title)}"` : ' title="Drag onto a group to add"'}>
     <span class="cc-check ${sel ? 'on' : ''}" data-contact-sel="${c.id}" role="checkbox" aria-checked="${sel}" title="Select (to merge)">${sel ? '✓' : ''}</span>
     <span class="cc-star ${starred ? 'on' : ''}" data-contact-star="${c.id}" role="button" title="${starred ? 'Starred - tap to unstar' : 'Star this contact'}">${starred ? '★' : '☆'}</span>
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
