@@ -9574,7 +9574,7 @@ function renderGoalCard() {
       ${goalAreaTasksHtml()}
     </section>
     ${connectedNotesHtml()}
-    ${(g.body || '').trim() ? notesSection(g.body, 'goal', g.id, false, 'Older notes') : ''}
+    ${notesSection(g.body, 'goal', g.id, false, 'Notes wall')}
     <details class="gc-settings">
       <summary>⚙ Goal settings</summary>
       <div class="tf-meta">
@@ -9626,7 +9626,7 @@ function connectedNotesHtml() {
   const notes = go.notes || [];
   const cards = notes.map((n) => `<div class="gc-note-card" style="--h:${a ? hueOf(a) : 220}"><button class="gc-note-open" data-open-note="${n.id}"><span class="gc-note-ic">▤</span><span class="gc-note-t">${esc(n.title || 'Untitled')}</span></button><button class="gc-note-x" data-goal-unlink-note="${n.id}" title="Disconnect from this goal">×</button></div>`).join('');
   return `<section class="focus-notes gc-notes-sec">
-    <div class="fn-h">Notes${notes.length ? ` · ${notes.length}` : ''}</div>
+    <div class="fn-h">Connected notes${notes.length ? ` · ${notes.length}` : ''}</div>
     ${notes.length ? `<div class="gc-notes-grid">${cards}</div>` : '<p class="gc-notes-empty">Jot your thinking as a note - it lives here and in Notes, ready to grow.</p>'}
     <div class="goal-notelist">
       <div class="gal-box">
@@ -9714,7 +9714,21 @@ function msDel(mid) { const g = state.goal_open.goal; g.props.milestones = goalM
 function msText(mid, v) { const m = goalMs().find((x) => x.id === mid); if (m) { m.text = v; saveMs(); } }
 // A goal's task = a real task (kind='task') tagged to the goal (and a milestone).
 // It shows here AND in Tasks/Today - the same task, in context, never a copy.
-const goalTaskRow = (t) => `<div class="ga-row ${t.props.done ? 'done' : ''}"><button class="check" data-check="${t.id}">✓</button><span class="ga-t" data-open-task="${t.id}">${esc(t.title)}</span><button class="ga-x" data-goal-untask="${t.id}" title="Remove from this goal (keeps the task)">×</button></div>`;
+// A proper task card on the goal: tick it, tap the body to open it, and see its
+// priority, life area and surface/repeat at a glance.
+const goalTaskRow = (t) => {
+  const p = t.props || {}; const a = areaById(p.area);
+  const meta = [];
+  if (p.priority) meta.push(`<span class="prio ${p.priority}">${p.priority}</span>`);
+  if (a) meta.push(`<span class="gt-area"><span class="cd"></span>${esc(a.title)}</span>`);
+  if (p.snooze) meta.push(`<span class="tbadge snz">☀ ${esc(dpLabel(p.snooze))}</span>`);
+  if (p.repeat) meta.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(p.repeat))}</span>`);
+  return `<div class="gt-card ${p.done ? 'done' : ''}" style="--h:${hueOf(a)}">
+    <button class="check gt-check" data-check="${t.id}" title="${p.done ? 'Mark not done' : 'Mark done'}">✓</button>
+    <button class="gt-body" data-open-task="${t.id}"><span class="gt-title">${esc(t.title || 'Untitled')}</span>${meta.length ? `<span class="gt-meta">${meta.join('')}</span>` : ''}</button>
+    <button class="ga-x gt-x" data-goal-untask="${t.id}" title="Remove from this goal (keeps the task)">×</button>
+  </div>`;
+};
 async function unlinkTaskFromGoal(taskId) {
   const go = state.goal_open; if (!go) return;
   go.tasks = (go.tasks || []).filter((t) => t.id !== taskId);
