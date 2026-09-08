@@ -5299,10 +5299,13 @@ function renderArea() {
   const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${n.props && n.props.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}</button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
-  // Notes & tables in a draggable order (saved on the area as props.noteOrder;
-  // starred first, then the rest, until you drag them into your own order).
+  // Notes & tables in a draggable order (saved on the area as props.noteOrder). The
+  // DEFAULT, before you drag anything, is starred first then most-recently-updated,
+  // so the ones you touched last are right at the top. A saved manual order wins
+  // where you've set it. (Robin.)
   const noteTblOrdered = (() => {
-    const items = [...starredNotes, ...otherNotes, ...tables];
+    const upd = (n) => n.updated_at || n.created_at || '';
+    const items = [...notes, ...tables].sort((a, b) => ((isFav(b) ? 1 : 0) - (isFav(a) ? 1 : 0)) || String(upd(b)).localeCompare(String(upd(a))));
     const ord = (area.props && Array.isArray(area.props.noteOrder)) ? area.props.noteOrder : [];
     const idx = (id) => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };
     return items.map((n, i0) => ({ n, i0 })).sort((a, b) => (idx(a.n.id) - idx(b.n.id)) || (a.i0 - b.i0)).map((x) => x.n);
