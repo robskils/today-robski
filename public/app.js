@@ -5096,6 +5096,71 @@ function removeContactFromArea(contactId) {
   state.area_open.blocks = (state.area_open.blocks || []).filter((b) => b.id !== contactId);
   renderArea();
 }
+// One area's Wheel of Life: its score now, the line of it over time (pulled from
+// every review that rated it), a read of the trend, and a little gamification. The
+// story of how this one part of your life has moved.
+function areaWheelSeries(area) {
+  return (state.reviews || []).map((r) => r.props || {})
+    .filter((p) => p.wheel && p.wheel[area.id] != null && Math.min(p.wheel[area.id], 5) > 0)
+    .map((p) => ({ score: Math.min(p.wheel[area.id], 5), date: p.to || '', rtype: p.rtype || 'weekly' }))
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+function areaWheelCommentary(revs, cur, area) {
+  const nm = esc(area.title);
+  if (!revs.length) return `Rate <b>${nm}</b> in a review and its story starts here.`;
+  const n = revs.length; const last = revs[n - 1].score; const first = revs[0].score; const best = Math.max(...revs.map((r) => r.score));
+  const sent = (AREA_SENTIMENT[cur] || '').toLowerCase();
+  if (n === 1) return `First reading: <b>${last}/5</b> - ${sent}. Keep rating it each review and the line takes shape.`;
+  const change = last - first; const d = last - revs[n - 2].score;
+  let s;
+  if (change >= 2) s = `<b>${nm}</b> has climbed from ${first} to ${last} over ${n} reviews - a real upward run. `;
+  else if (change <= -2) s = `<b>${nm}</b> has drifted from ${first} down to ${last} across ${n} reviews - worth some care. `;
+  else if (d > 0) s = `<b>${nm}</b> ticked up to ${last}/5 this time. `;
+  else if (d < 0) s = `<b>${nm}</b> eased to ${last}/5. `;
+  else s = `<b>${nm}</b> is holding steady at ${last}/5. `;
+  if (last >= best) s += `That's your best yet. `;
+  else if (best - last >= 2) s += `Your best was ${best}/5 - room to climb back. `;
+  s += cur >= 4 ? 'A lovely place to be.' : cur <= 2 ? 'Small steps add up.' : 'Steady as she goes.';
+  return s;
+}
+function areaWheelPanel(area) {
+  const hue = hueOf(area);
+  if (state.reviews === undefined) { state.reviews = null; api('/api/blocks?kind=review').then((r) => { state.reviews = r || []; if (state.view.type === 'area') renderArea(); }).catch(() => { state.reviews = []; }); }
+  if (state.reviews === null) return '<div class="home-empty" style="padding:20px 0">Loading your wheel…</div>';
+  const revs = areaWheelSeries(area);
+  const curScore = Math.min((area.props && area.props.wheelScore) || 0, 5) || (revs.length ? revs[revs.length - 1].score : 0);
+  if (!revs.length && !curScore) {
+    return `<div class="awheel awheel-empty"><div class="awheel-gauge" style="--h:${hue};--sc:0"><span class="awg-n">–</span></div>
+      <p>Rate <b>${esc(area.title)}</b> in your weekly review and its Wheel of Life takes shape here - watch this one part of your life move over time.</p>
+      <button class="add-btn wide" data-start-review="weekly">Start this week's review</button></div>`;
+  }
+  const best = revs.length ? Math.max(...revs.map((r) => r.score)) : curScore;
+  const prev = revs.length >= 2 ? revs[revs.length - 2].score : null;
+  const delta = prev != null ? curScore - prev : 0;
+  const dTag = delta ? `<span class="awg-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'}${Math.abs(delta)}</span>` : '';
+  let run = 1; for (let i = revs.length - 1; i > 0; i--) { if (revs[i].score >= revs[i - 1].score) run++; else break; }
+  const isPB = revs.length >= 2 && curScore >= best && curScore > (prev || 0);
+  const bars = revs.slice(-16).map((r, i, arr) => `<span class="awt-bar ${i === arr.length - 1 ? 'now' : ''}" style="--h:${hue};--bh:${Math.max(10, Math.round(r.score / 5 * 100))}%" title="${esc(evShortDate(r.date))} · ${r.score}/5"></span>`).join('');
+  const pills = [];
+  if (curScore === 5) pills.push('<span class="awg-pill full">✨ Thriving</span>');
+  if (isPB) pills.push('<span class="awg-pill pb">🏆 Personal best</span>');
+  else if (run >= 3) pills.push(`<span class="awg-pill">📈 ${run} up in a row</span>`);
+  pills.push(`<span class="awg-pill">🏅 Best ${best}/5</span>`);
+  pills.push(`<span class="awg-pill">📊 ${revs.length} rating${revs.length === 1 ? '' : 's'}</span>`);
+  return `<div class="awheel">
+    <div class="awheel-hero">
+      <div class="awheel-gauge" style="--h:${hue};--sc:${curScore}"><span class="awg-n">${curScore || '–'}</span><span class="awg-of">/5</span></div>
+      <div class="awheel-herometa">
+        <div class="awg-sent">${AREA_SENTIMENT[curScore] || 'Not rated yet'} ${dTag}</div>
+        <div class="awg-sub">${curScore ? `${curScore} out of 5${prev != null && delta ? ` · was ${prev}` : ''}` : 'Rate it in a review'}</div>
+        <div class="awg-pills">${pills.join('')}</div>
+      </div>
+    </div>
+    ${revs.length >= 2 ? `<div class="awheel-timeline"><div class="awt-h">Over time</div><div class="awt-bars">${bars}</div><div class="awt-axis"><span>${esc(evShortDate(revs[0].date))}</span><span>now</span></div></div>` : ''}
+    <p class="awheel-comm">${areaWheelCommentary(revs, curScore, area)}</p>
+    <button class="wheel-more awheel-more" data-open-wheel>See the whole Wheel of Life →</button>
+  </div>`;
+}
 const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
 // Collapsible section headers on a life area page (open by default; collapse
 // remembered per section label across areas).
@@ -5260,8 +5325,9 @@ function renderArea() {
   // pattern Robin liked on the Toolbox + Home). Order fixed and sensible.
   const notesTotal = starredNotes.length + otherNotes.length + tables.length;
   const memberCount = (state.area_open.shares && state.area_open.shares.length) || 0;
-  const TILE_META = { 'Overview': '▦', 'Vision': '🧭', 'Goals': '🎯', 'Notes and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Reflections': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
-  const counts = { 'Overview': null, 'Vision': null, 'Goals': activeGoals.length, 'Notes and tables': notesTotal, 'Tasks': openTs.length, 'Contacts': contacts.length, 'Saved links': bookmarks.length, 'Reflections': journals.length, 'Emails': emails.length, 'Bucket list': bucket.length, 'Shared with': memberCount || null, 'Wall': null };
+  const wheelNow = Math.min((area.props && area.props.wheelScore) || 0, 5) || null;
+  const TILE_META = { 'Overview': '▦', 'Vision': '🧭', 'Wheel of Life': '◍', 'Goals': '🎯', 'Notes and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Reflections': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
+  const counts = { 'Overview': null, 'Vision': null, 'Wheel of Life': wheelNow, 'Goals': activeGoals.length, 'Notes and tables': notesTotal, 'Tasks': openTs.length, 'Contacts': contacts.length, 'Saved links': bookmarks.length, 'Reflections': journals.length, 'Emails': emails.length, 'Bucket list': bucket.length, 'Shared with': memberCount || null, 'Wall': null };
   // The landing dashboard: a card per populated part of this area, each showing a
   // count and a few items, and clicking its header drills into that section's tile.
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
@@ -5301,6 +5367,7 @@ function renderArea() {
   // sensible default position.
   const flowDefs = [
     ['Vision', canEditArea || !!visionSnip, 'Goals', null, visionBodyHtml],
+    ['Wheel of Life', !(area.props && area.props.reviewOff), 'Wheel of Life', wheelNow, areaWheelPanel(area)],
     ['Goals', true, 'Goals', activeGoals.length, goalsBody],
     ['Tasks', true, 'Tasks', openTs.length, tasksBody],
     ['Notes and tables', !!notesTotal, null, notesTotal, `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>`],
@@ -5322,6 +5389,7 @@ function renderArea() {
     // Vision and Goals share one tab now (button says "Goals", page says "Vision
     // and Goals") - the vision sets the direction the goals serve.
     'Goals': `<div class="area-vg"><div class="avg-h">Vision</div>${visionInner}<div class="avg-h avg-h-goals">Goals</div>${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>'}</div>`,
+    'Wheel of Life': areaWheelPanel(area),
     'Notes and tables': notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
     'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',
     'Contacts': areaContactsPanel(area, contacts),
@@ -5335,8 +5403,8 @@ function renderArea() {
   // Vision folded into Goals; Wall lives on the Overview dashboard, not a tile.
   const TILE_TITLE = { 'Goals': 'Vision and Goals' };
   const CORE = new Set(['Overview', 'Goals', 'Notes and tables', 'Tasks']);
-  const tileOrder = ['Overview', 'Goals', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with'];
-  const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; return CORE.has(k) || counts[k] > 0; });
+  const tileOrder = ['Overview', 'Goals', 'Wheel of Life', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with'];
+  const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; if (k === 'Wheel of Life') return !(area.props && area.props.reviewOff); return CORE.has(k) || counts[k] > 0; });
   // Landing on an area shows the Overview dashboard; a tile click switches for the
   // session (state only), so a fresh visit always opens on the dashboard again.
   let openTile = state.area_open.tileOpen || 'Overview';
