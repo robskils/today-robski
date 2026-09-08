@@ -2370,8 +2370,8 @@ function sunTimes(date, lat, lng) {
 // While a pointer is pressed on the sidebar, hold off rebuilding it (a mid-tap
 // innerHTML swap re-targets the click). Any render that wants to run in that
 // window is deferred and flushed once after the tap completes.
-let navHeld = false, navDeferred = false;
-document.addEventListener('pointerdown', (e) => { if (e.target && e.target.closest && e.target.closest('#nav')) navHeld = true; }, true);
+let navHeld = false, navDeferred = false, __downNav = null;
+document.addEventListener('pointerdown', (e) => { const inNav = !!(e.target && e.target.closest && e.target.closest('#nav')); navHeld = inNav; __downNav = inNav ? e.target : null; }, true);
 function releaseNavHold() { if (!navHeld) return; navHeld = false; if (navDeferred) { navDeferred = false; setTimeout(renderNav, 0); } }
 document.addEventListener('pointerup', releaseNavHold, true);
 document.addEventListener('pointercancel', releaseNavHold, true);
@@ -12752,7 +12752,16 @@ document.addEventListener('focusout', (e) => { if (e.target && e.target.matches 
 document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
 document.addEventListener('mouseout', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.help-btn'))) hideHelpPop(); });
 document.addEventListener('click', (e) => {
-  const t = e.target;
+  // Trust where the press landed, not where the click resolved. If a re-render
+  // swapped the sidebar between press and release, the browser can re-aim the
+  // click at whatever's now under the cursor - which is how a Contacts tap could
+  // fire Home. __downNav is the exact element the pointer went down on inside the
+  // sidebar; its data-* actions are intact even if it's since been replaced. Only
+  // override when the click itself landed in the sidebar (the retarget stays
+  // within it, since the cursor hasn't moved).
+  const inNavClick = !!(e.target && e.target.closest && e.target.closest('#nav'));
+  const t = (inNavClick && __downNav) ? __downNav : e.target;
+  __downNav = null;
   // Bottom-nav tab: tapping it jumps to the top of that page. If you're already
   // on it, just scroll up; otherwise navigate (fall through) and scroll after.
   const tabb = t.closest('.tab-b');
