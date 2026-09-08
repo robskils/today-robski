@@ -3365,7 +3365,7 @@ function cadenceStreak(daysDesc, cad, today) {
 }
 function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
 const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
-function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'today') renderToday(); }
+function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'today') renderToday(); else if (v === 'toolbox') renderToolbox(); }
 async function openPractices() { state.view = { type: 'practices' }; renderNav(); await loadPractices(true); renderPractices(); }
 function renderPractices() {
   if (!state.practices) return;
