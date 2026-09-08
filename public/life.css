@@ -603,6 +603,12 @@ button { cursor:pointer; background:none; border:0; }
 .gc-prog-l { font-size:13px; color:var(--ink-3); }
 .gc-prog-edit input { max-width:92px; text-align:center; } .gc-prog-edit .gc-unit { max-width:110px; text-align:left; }
 .gc-prog-done { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.gc-metric-row { display:flex; align-items:center; gap:9px; margin-top:11px; }
+.gc-metric-l { font-size:13px; color:var(--ink-3); flex:none; }
+.gc-metric-row .sel { max-width:220px; }
+.gc-metric-auto { margin-top:10px; font-size:13.5px; line-height:1.5; color:var(--ink-2); background:var(--paper-2,rgba(0,0,0,.03)); border:1px solid var(--line); border-radius:10px; padding:9px 12px; }
+.gc-metric-aim { display:block; margin-top:4px; color:var(--ink-3); }
+.gc-mini-num { max-width:64px; text-align:center; display:inline-block; height:30px; padding:2px 6px; margin:0 2px; }
 .gc-why { display:flex; flex-direction:column; gap:5px; margin-top:16px; }
 .gc-why-l { font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
 .gc-why textarea { resize:vertical; font-family:'Cormorant Garamond',Georgia,serif; font-size:18px; font-style:italic; line-height:1.5; color:var(--ink); min-height:48px; width:100%; max-width:none; border:0; background:none; padding:0; }

@@ -9337,6 +9337,19 @@ const HORIZONS = [['quarter', 'This quarter'], ['year', 'This year'], ['longterm
 // get there, and one that tracks a number toward a target. (Milestones dropped
 // 2026-09 - too confusing; connect tasks straight to the goal instead.)
 const GTYPES = [['done', 'Just mark it done'], ['number', 'A number to reach']];
+// A number goal can measure itself straight off the tool instead of a figure you
+// keep updating by hand: count the tasks you tick off under it, or the notes you
+// gather against it. The count is read live from the open card's linked items and
+// denormalised onto props.current/target (see renderGoalCard) so every goals list
+// draws the right bar without having to load the links.
+const GMETRICS = [['manual', 'A number I set'], ['tasks', 'Linked tasks done'], ['notes', 'Notes connected']];
+function goalMetricLive(g) {
+  const go = state.goal_open; if (!go || !go.goal || go.goal.id !== g.id) return null;
+  const m = gp(g).metric;
+  if (m === 'tasks') { const ts = go.tasks || []; return { current: ts.filter((t) => t.props && t.props.done).length, target: ts.length }; }
+  if (m === 'notes') { const ns = go.notes || []; return { current: ns.length }; }   // target stays user-set: how many you're aiming to gather
+  return null;
+}
 const GSTATUS = [['active', 'Active'], ['done', 'Done'], ['onhold', 'On hold'], ['dropped', 'Dropped']];
 const BSTATUS = [['someday', 'Someday'], ['planning', 'Planning'], ['done', 'Done']];
 const gp = (g) => (g && g.props) || {};
@@ -9371,7 +9384,7 @@ function goalProgress(g) {
 }
 function goalMeasure(g) {
   const p = gp(g);
-  if (p.gtype === 'number') return `${p.current || 0} / ${p.target || 0}${p.unit ? ' ' + p.unit : ''}`;
+  if (p.gtype === 'number') { const u = p.metric === 'tasks' ? ' tasks' : p.metric === 'notes' ? ' notes' : (p.unit ? ' ' + p.unit : ''); return `${p.current || 0} / ${p.target || 0}${u}`; }
   return p.status === 'done' ? 'Achieved' : '';
 }
 // ── Financial (Portfolio · Advice · Spending) ────────────────────────────
@@ -10229,6 +10242,15 @@ function renderGoalCard() {
   const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
+  const metric = gtype === 'number' ? (p.metric || 'manual') : 'manual';
+  // An auto metric keeps current (and, for tasks, target) in step with the linked
+  // items every time the card re-renders - which covers ticking a task, linking or
+  // unlinking one, and connecting or removing a note (each already re-renders). We
+  // persist only when the figure actually moved, so this never loops.
+  if (metric !== 'manual') {
+    const live = goalMetricLive(g);
+    if (live) { const patch = {}; if ('current' in live && p.current !== live.current) patch.current = live.current; if ('target' in live && p.target !== live.target) patch.target = live.target; if (Object.keys(patch).length) { Object.assign(p, patch); patchGoal(g.id, patch, true); } }
+  }
   const isDone = (p.status || 'active') === 'done';
   const st = p.status || 'active';
   const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
@@ -10237,11 +10259,18 @@ function renderGoalCard() {
   const doneN = gtasks.filter((t) => t.props && t.props.done).length;
   // Progress front and centre: a number goal shows its bar + an inline "update"
   // row; a simple goal shows the (liked) Mark-as-achieved button.
+  const unitLbl = metric === 'tasks' ? ' tasks' : metric === 'notes' ? ' notes' : (p.unit ? ` ${esc(p.unit)}` : '');
+  const metricEditRow = metric === 'manual'
+    ? `<div class="gc-prog-edit"><span class="gc-prog-l">${t('goal.update')}</span><input class="sel" id="gc-current" type="number" inputmode="decimal" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div>`
+    : metric === 'tasks'
+      ? `<div class="gc-metric-auto">✓ Counts the tasks you link below${(state.goal_open.tasks || []).length ? ' - tick them off and this fills itself.' : '. Add or link a task below to get going.'}</div>`
+      : `<div class="gc-metric-auto">▤ Counts the notes connected below.<span class="gc-metric-aim">Aiming for <input class="sel gc-mini-num" id="gc-target" type="number" min="1" value="${esc(p.target ?? '')}" placeholder="10"> notes.</span></div>`;
   const progressBlock = gtype === 'number'
     ? `<div class="gc-prog">
-        <div class="gc-prog-nums"><span class="gc-prog-cur"><b>${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${p.unit ? ` ${esc(p.unit)}` : ''}</span><span class="gc-prog-pct">${pctNum}%</span></div>
+        <div class="gc-prog-nums"><span class="gc-prog-cur"><b>${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${unitLbl}</span><span class="gc-prog-pct">${pctNum}%</span></div>
         <div class="goal-bar gc-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div>
-        <div class="gc-prog-edit"><span class="gc-prog-l">${t('goal.update')}</span><input class="sel" id="gc-current" type="number" inputmode="decimal" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div>
+        <div class="gc-metric-row"><span class="gc-metric-l">Measure by</span><select class="sel" id="gc-metric">${GMETRICS.map(([v, l]) => `<option value="${v}" ${metric === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        ${metricEditRow}
       </div>`
     : `<div class="gc-prog gc-prog-done"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? t('goal.achieved') : t('goal.markachieved')}</button><span class="goal-done-note">${isDone ? t('goal.nicelydone') : t('goal.tickwhen')}</span></div>`;
   const focusMins = focusMinsFor('goal', g.id);
@@ -13617,6 +13646,7 @@ document.addEventListener('change', (e) => {
     else if (id === 'goalcard-area') patchGoal(gid, { area: e.target.value || null }, true);
     else if (id === 'goalcard-horizon') { const hz = e.target.value; const patch = { horizon: hz }; const td = horizonTargetDate(hz); if (td) patch.targetDate = td; patchGoal(gid, patch, true); renderGoalCard(); }
     else if (id === 'goalcard-gtype') patchGoal(gid, { gtype: e.target.value }, true).then(renderGoalCard);
+    else if (id === 'gc-metric') patchGoal(gid, { metric: e.target.value }, true).then(renderGoalCard);
     else if (id === 'goalcard-status') patchGoal(gid, { status: e.target.value }, true);
     else if (id === 'goalcard-target') patchGoal(gid, { targetDate: e.target.value || null }, true);
     else if (id === 'gc-current') patchGoal(gid, { current: e.target.value === '' ? null : +e.target.value }, true);
