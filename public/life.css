@@ -1736,6 +1736,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-cards .nav-sub.on { border-color:hsl(var(--h,220) 60% 52%); box-shadow:0 0 0 1px hsl(var(--h,220) 60% 52% / .35), var(--shadow); }
 .nav-cards .nav-sub.muted { background:none; border:0; box-shadow:none; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
+/* Sidebar People section: connected Daybook folk, online first, offline greyed. */
+.nav-people { gap:1px; }
+.nav-person { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:6px 12px; border-radius:8px; color:var(--ink-2); font-size:15px; overflow:hidden; cursor:pointer; background:none; border:0; }
+.nav-person:hover { background:color-mix(in srgb,var(--ink) 5%,transparent); color:var(--ink); }
+.np-av { flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:var(--paper-2,var(--paper)); color:var(--ink-2); font-weight:600; font-size:12px; position:relative; }
+.np-av.online::after { content:''; position:absolute; right:-1px; bottom:-1px; width:9px; height:9px; border-radius:50%; background:#3fae5a; border:2px solid var(--card); }
+.np-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.np-badge { flex:none; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--accent); color:var(--accent-ink,#fff); font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+.nav-person.off { color:var(--ink-3); }
+.nav-person.off .np-av { opacity:.5; }
 /* Calendar event: start + end date side by side (multi-day events). */
 .ce-dates { display:flex; gap:12px; flex-wrap:wrap; }
 .ce-datewrap { display:flex; flex-direction:column; gap:4px; flex:1; min-width:130px; }

@@ -191,7 +191,7 @@ const state = {
   favs: [], home: { events: [] }, cal: null, mail: null,
   tabs: [], activeTab: null,
   nav: {
-    order: (() => { const def = ['favs', 'notes', 'areas']; const o = readLS('life.nav.order', null); const c = Array.isArray(o) ? o.filter((k) => def.includes(k)) : []; for (const k of def) if (!c.includes(k)) c.push(k); return c; })(),
+    order: (() => { const def = ['favs', 'notes', 'areas', 'people']; const o = readLS('life.nav.order', null); const c = Array.isArray(o) ? o.filter((k) => def.includes(k)) : []; for (const k of def) if (!c.includes(k)) c.push(k); return c; })(),
     collapsed: readLS('life.nav.collapsed', {}),
   },
   pal: { open: false, q: '', items: [], sel: 0 },
@@ -987,6 +987,20 @@ function navSection(key, v) {
       const hue = a ? hueOf(a) : null;
       return `<button class="nav-sub${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} ${isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`}${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${isT ? TBL_ICO : NOTE_ICO}</span><span class="t">${esc(n.title || 'Untitled')}</span></button>`;
     }).join('') || '<div class="nav-sub muted">Notes you open appear here</div>';
+  } else if (key === 'people') {
+    // Your connected Daybook people, online ones first and offline ones greyed,
+    // so you can see who's about at a glance and message them in a tap.
+    title = 'People'; add = '<button class="nav-add" data-open-contacts title="Contacts">👤</button>';
+    // Need the friends list (names) once; the 90s status poll keeps who's online.
+    if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
+    const friends = (state.friends && state.friends.friends) || [];
+    const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+    const isOnline = (f) => onSet.has(f.id) || !!f.online;
+    const sorted = friends.slice().sort((a, b) => (isOnline(b) - isOnline(a)) || (a.name || '').localeCompare(b.name || ''));
+    rows = sorted.map((f) => {
+      const on = isOnline(f); const un = unreadFrom(f.id);
+      return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
+    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Daybook</button>');
   } else {
     title = 'Life areas'; add = '<button class="nav-add" data-new-area title="New life area">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
@@ -1002,7 +1016,7 @@ function navSection(key, v) {
       <span class="nav-sec-title">${title}</span>
       ${add}<span class="nav-grip" title="Drag to reorder">⠿</span>
     </div>
-    ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}${(key === 'areas' || key === 'notes') ? ' nav-cards' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
+    ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}${(key === 'areas' || key === 'notes') ? ' nav-cards' : ''}${key === 'people' ? ' nav-people' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
   </div>`;
 }
 // ── theme: automatic by local sunrise/sunset, overridable by the button ──
@@ -2377,7 +2391,7 @@ function renderNav() {
     ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
     ${modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-lbl">${t('nav.timer')}</span></button>` : ''}
     </div>
-    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
+    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes')) || (k === 'people' && !modOn('contacts'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
       <div class="nav-bottom-row">
         ${helpIconHtml()}
