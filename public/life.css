@@ -3121,6 +3121,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .gal-row .ga-t { flex:1; min-width:0; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:7px; }
 .gal-row .ga-t .p-tag { flex:none; }
 .gal-link { flex:none; padding:4px 11px; font-size:13px; opacity:.7; }
+/* Whole-row link: click anywhere on a picker row to link it, not just the cue. */
+.gal-row-link { cursor:pointer; }
+.gal-row-link .ga-t { cursor:pointer; }
+.gal-link-cue { flex:none; padding:4px 11px; font-size:13px; color:var(--accent); opacity:.55; transition:opacity .12s; }
+.gal-row-link:hover .gal-link-cue, .gal-row-link:focus-visible .gal-link-cue { opacity:1; }
+.gal-row-link:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
 .gal-row:hover .gal-link { opacity:1; border-color:var(--accent); color:var(--accent); }
 /* Connected notes on a goal - a matching pair to the connected tasks. */
 .goal-notes-sec { margin:22px 0 4px; }

@@ -10236,9 +10236,11 @@ async function openGoalCard(id) {
   state.goal_open = { goal: g, tasks, allTasks: all, notes, allNotes: allNotes || [], areaQuery: '', noteQuery: '' };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
-  // Land with the cursor in the goal's name, text selected, ready to rename or
-  // type straight away. (Robin.) Only on open, not on every re-render.
-  setTimeout(() => { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.select(); } catch {} autoGrowSoon(el); } }, 0);
+  // Drop the cursor into the name ONLY when the goal is still unnamed - a fresh
+  // goal you want to type straight into. Once it has a title, opening it (or
+  // logging back in) shouldn't grab focus and select the text every time; that
+  // was only ever useful at the very start. (Robin.)
+  if (!(g.title || '').trim()) setTimeout(() => { if (state.goal_open && state.goal_open.goal.id === id) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.select(); } catch {} autoGrowSoon(el); } } }, 0);
   // Who can see this goal (via its shared life area). Owner only.
   if (!g.sharedBy) api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {});
 }
@@ -10347,7 +10349,7 @@ function goalAreaListInner() {
   // Priority first (P1 at the top), then newest, so the ones that matter lead.
   list = list.slice().sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5) || String(b.created_at || '').localeCompare(String(a.created_at || '')));
   if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : 'unlinked '}tasks in this area${q ? '' : ' yet'}.</div>`;
-  return list.slice(0, 60).map((t) => { const pr = t.props.priority; return `<div class="gal-row"><span class="ga-t" data-open-task="${t.id}">${pr ? `<span class="p-tag p-${pr}">${pr}</span>` : ''}${esc(t.title)}</span><button class="ghost gal-link" data-goal-link="${t.id}" title="Link to this goal">＋ Link</button></div>`; }).join('')
+  return list.slice(0, 60).map((t) => { const pr = t.props.priority; return `<div class="gal-row gal-row-link" data-goal-link="${t.id}" role="button" tabindex="0" title="Link to this goal"><span class="ga-t">${pr ? `<span class="p-tag p-${pr}">${pr}</span>` : ''}${esc(t.title)}</span><span class="gal-link gal-link-cue">＋ Link</span></div>`; }).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
 function renderGoalAreaList() { const el = $('.gal-list'); if (el) el.innerHTML = goalAreaListInner(); }
@@ -10382,7 +10384,7 @@ function connectedNotesPickerInner() {
   if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q));
   list = list.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
   if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}notes${gAreas.length ? ' in this life area' : ''} to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
-  return list.slice(0, 60).map((n) => `<div class="gal-row"><span class="ga-t" data-open-note="${n.id}">▤ ${esc(n.title || 'Untitled')}</span><button class="ghost gal-link" data-goal-link-note="${n.id}" title="Connect to this goal">＋ Link</button></div>`).join('')
+  return list.slice(0, 60).map((n) => `<div class="gal-row gal-row-link" data-goal-link-note="${n.id}" role="button" tabindex="0" title="Connect to this goal"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="gal-link gal-link-cue">＋ Link</span></div>`).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
 function renderGoalNoteList() { const el = $('.gc-note-list'); if (el) el.innerHTML = connectedNotesPickerInner(); }
