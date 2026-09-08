@@ -8999,7 +8999,7 @@ function renderContacts() {
       ${(() => {
         // On the default "All" view, pull starred contacts into their own section
         // at the top; the grid below then holds the rest, A-Z.
-        const starred = (!g) ? list.filter((c) => c.props && c.props.starred) : [];
+        const starred = (!af) ? list.filter((c) => c.props && c.props.starred) : [];
         const rest = starred.length ? list.filter((c) => !(c.props && c.props.starred)) : list;
         return `${starred.length ? `<div class="cts-sec-h">★ Starred <span class="muted">${starred.length}</span></div><div class="contact-grid cts-starred">${starred.map(contactCardHtml).join('')}</div>${rest.length ? '<div class="cts-sec-h">All contacts</div>' : ''}` : ''}
       <div class="contact-grid">${rest.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>`;
