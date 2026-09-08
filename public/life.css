@@ -268,10 +268,12 @@ button { cursor:pointer; background:none; border:0; }
 .glist-area { display:inline-flex; align-items:center; gap:5px; }
 .glist-area .cd { width:8px; height:8px; border-radius:50%; background:hsl(var(--h) 55% 56%); }
 .glist-st { color:var(--ink-2); background:var(--paper-2,color-mix(in srgb,var(--ink) 6%,transparent)); padding:1px 8px; border-radius:999px; }
+.glist-bar-wrap { position:relative; display:flex; align-items:center; }
+.glist-bar-wrap .glist-bar { flex:1; }
 .glist-bar { height:8px; border-radius:999px; background:var(--paper-2,color-mix(in srgb,var(--ink) 8%,transparent)); overflow:hidden; }
 .glist-bar i { display:block; height:100%; border-radius:999px; background:hsl(var(--h) var(--lane-s) var(--lane-l)); }
 .glist-pct { font-size:13px; color:var(--ink-2); text-align:right; font-variant-numeric:tabular-nums; }
-@media (max-width:560px){ .glist-row { grid-template-columns:18px 1fr 44px; } .glist-bar { display:none; } }
+@media (max-width:560px){ .glist-row { grid-template-columns:18px 1fr 44px; } .glist-bar-wrap { display:none; } }
 /* An area's Vision → Goals as one connected flow: a tinted panel, the vision on
    top, a labelled connector, then the goals working towards it. */
 .goal-area { margin:0 0 20px; padding:16px 18px 18px; border-radius:16px; background:color-mix(in srgb,hsl(var(--h,220) 55% 55%) 5%,var(--card)); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); }
@@ -4960,6 +4962,8 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
 /* Recurrence marker on a calendar event - tells a repeating event from a one-off. */
 .cal-recur { color:var(--accent); font-size:.85em; margin-left:6px; opacity:.8; }
 .cal-btn { padding:9px 15px; border-radius:11px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; background:var(--card); box-shadow:var(--shadow); transition:border-color .15s,color .15s; }
+.cal-planbtn { border-color:color-mix(in srgb,var(--accent) 42%,var(--line-2)); color:var(--accent); font-weight:600; }
+.cal-planbtn:hover { background:color-mix(in srgb,var(--accent) 8%,var(--card)); border-color:var(--accent); }
 .cal-btn:hover { border-color:var(--accent); color:var(--accent); }
 .cal-btn.ic { width:42px; padding:9px 0; font-size:20px; line-height:1; }
 .cal-warn { margin-bottom:12px; color:var(--accent); font-size:14.5px; }

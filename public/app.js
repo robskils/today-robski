@@ -5684,6 +5684,7 @@ function renderCalendar() {
     <div class="cal-head">
       <h1>${title}</h1>
       <div class="cal-nav">
+        ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Today tool">☀ Plan day</button>' : ''}
         <div class="cal-modes"><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button><button class="cal-mode ${c.mode === 'week' ? 'on' : ''}" data-cal-mode="week">Week</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         <button class="cal-btn ic" data-cal-prev title="Previous">‹</button>
@@ -10033,12 +10034,16 @@ function goalsListBody() {
     const p = gp(g); const a = areaById(p.area); const pct = Math.round(goalProgress(g) * 100); const st = p.status || 'active';
     const measure = goalMeasure(g);
     const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
-    return `<button class="glist-row" data-open-goal="${g.id}" style="--h:${a ? hueOf(a) : 220}">
+    // A "mark it done" goal (active, no number measure) gets a grabbable slider
+    // right on its bar - set progress without opening it. Number goals keep their
+    // computed bar.
+    const canSlide = st === 'active' && p.gtype !== 'number';
+    return `<div class="glist-row" data-open-goal="${g.id}" role="button" tabindex="0" style="--h:${a ? hueOf(a) : 220}">
       <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'In focus this quarter' : ''}">${p.focus ? '★' : ''}</span>
       <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
-      <span class="glist-bar"><i style="width:${pct}%"></i></span>
+      <span class="glist-bar-wrap"><span class="glist-bar"><i style="width:${pct}%"></i></span>${canSlide ? `<input type="range" class="gc-slider glist-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set how far along this goal is">` : ''}</span>
       <span class="glist-pct">${st === 'done' ? '✓' : pct + '%'}</span>
-    </button>`;
+    </div>`;
   }).join('');
   return `${controls}<div class="glist">${rows}</div>`;
 }
@@ -12510,8 +12515,9 @@ document.addEventListener('input', (e) => {
   // Goal progress slider: paint the fill + % live as you drag, save when you settle.
   if (e.target && e.target.matches && e.target.matches('[data-goal-progress]')) {
     const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
-    const wrap = e.target.closest('.gc-progress');
-    if (wrap) { const fill = wrap.querySelector('.gc-bar > i'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct'); if (lab) lab.textContent = v + '%'; }
+    // Works for a goal card (.gc-progress) and a Goals-tab list row (.glist-row).
+    const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card');
+    if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct'); if (lab) lab.textContent = v + '%'; }
     e.target.setAttribute('aria-label', `Progress: ${v}%`);
     clearTimeout(window.__goalProgT); window.__goalProgT = setTimeout(() => saveGoalProgress(e.target.dataset.goalProgress, v), 450);
   }
