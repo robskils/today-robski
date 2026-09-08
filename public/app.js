@@ -3655,7 +3655,7 @@ function renderHome() {
             mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
           };
-          const order = ['today', 'priority', 'favareas', ...(kitCount ? ['keepintouch'] : []), ...(modOn('mail') ? ['mail'] : []), 'favs'];
+          const order = ['today', ...(modOn('mail') ? ['mail'] : []), 'priority', 'favareas', 'favs', ...(kitCount ? ['keepintouch'] : [])];
           let open = state.home.tileOpen || (() => { try { return localStorage.getItem('life.home.tileOpen'); } catch { return ''; } })();
           if (!order.includes(open)) open = 'today';
           const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
@@ -9768,6 +9768,13 @@ function goalsListBody() {
   }).join('');
   return `${controls}<div class="glist">${rows}</div>`;
 }
+// Each Life Area section on Goals collapses on a header tap (remembered per
+// area), like every other titled section in the app. Default open.
+function goalAreaOpen(id) { try { const c = JSON.parse(localStorage.getItem('life.goals.acollapse') || '[]'); return !(Array.isArray(c) && c.includes(id)); } catch { return true; } }
+function toggleGoalArea(id) {
+  try { let c = JSON.parse(localStorage.getItem('life.goals.acollapse') || '[]'); if (!Array.isArray(c)) c = []; const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); localStorage.setItem('life.goals.acollapse', JSON.stringify(c)); } catch {}
+  renderGoals();
+}
 // Goals organised the way Robin thinks: for each Life Area, its Vision then its
 // Goals. ("This quarter's focus" is its own tab now, not the lead here.)
 function goalsByAreaBody() {
@@ -9778,11 +9785,12 @@ function goalsByAreaBody() {
     const goals = active.filter((g) => gp(g).area === a.id).sort((x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (x.title || '').localeCompare(y.title || ''));
     const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
     const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${(p.vision || '').trim() ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
-    return `<section class="goal-area" style="--h:${hueOf(a)}">
-      <div class="goal-area-h"><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span><button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button></div>
-      <div class="ga-step"><span class="ga-step-l">Vision</span>${vision}</div>
+    const open = goalAreaOpen(a.id);
+    return `<section class="goal-area ${open ? '' : 'collapsed'}" style="--h:${hueOf(a)}">
+      <div class="goal-area-h" data-goal-area-toggle="${a.id}" role="button" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span>${goals.length ? `<span class="goal-area-n">${goals.length}</span>` : ''}<button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button></div>
+      ${open ? `<div class="ga-step"><span class="ga-step-l">Vision</span>${vision}</div>
       <div class="ga-flow"><span class="ga-flow-l">${goals.length ? 'Working towards it' : 'Goals'}</span></div>
-      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>
+      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>` : ''}
     </section>`;
   }).join('');
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
@@ -12528,6 +12536,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
+  { const gat = t.closest('[data-goal-area-toggle]'); if (gat) { toggleGoalArea(gat.dataset.goalAreaToggle); return; } }
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }

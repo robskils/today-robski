@@ -275,9 +275,14 @@ button { cursor:pointer; background:none; border:0; }
 /* An area's Vision → Goals as one connected flow: a tinted panel, the vision on
    top, a labelled connector, then the goals working towards it. */
 .goal-area { margin:0 0 20px; padding:16px 18px 18px; border-radius:16px; background:color-mix(in srgb,hsl(var(--h,220) 55% 55%) 5%,var(--card)); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); }
-.goal-area-h { display:flex; align-items:center; gap:9px; margin:0 0 12px; }
+.goal-area-h { display:flex; align-items:center; gap:9px; margin:0 0 12px; cursor:pointer; -webkit-user-select:none; user-select:none; border-radius:9px; margin-left:-4px; padding:2px 4px; transition:background .12s; }
+.goal-area-h:hover { background:color-mix(in srgb,hsl(var(--h,220) 55% 55%) 9%,transparent); }
+.goal-area.collapsed { padding-bottom:16px; }
+.goal-area.collapsed .goal-area-h { margin-bottom:0; }
+.goal-area-h .acw-chev { color:var(--ink-3); flex:none; font-size:13px; }
 .goal-area-h .cd { width:12px; height:12px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
-.goal-area-name { font-family:'Cormorant Garamond',serif; font-size:25px; font-weight:600; color:var(--ink); flex:1; min-width:0; }
+.goal-area-name { font-family:'Cormorant Garamond',serif; font-size:25px; font-weight:600; color:var(--ink); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.goal-area-n { flex:none; color:var(--ink-3); font-size:14px; font-variant-numeric:tabular-nums; }
 .goal-area-add { flex:none; padding:5px 12px; font-size:13px; border-radius:999px; }
 .ga-step-l { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.09em; font-weight:700; color:hsl(var(--h,220) 42% 46%); margin:0 0 7px 2px; }
 .gv-card { margin:0; padding:14px 16px; background:var(--card); }
