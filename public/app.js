@@ -2828,7 +2828,7 @@ function homeTodayItems() {
   // snoozed-task surfacing are a today-only signal, so they don't ride along.
   const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
-  const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, contact: e.contact }));
+  const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
   // Birthdays (from Contacts) whose day is today lead the list, all-day style.
   if (off === 0) ((state.home.alerts && state.home.alerts.birthdays) || [])
     .filter((b) => !alertDismissed('bday:' + b.id))
@@ -3722,7 +3722,8 @@ function renderHome() {
       const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
       const ct = it.contact ? findContact(it.contact) : null;
       const withChip = ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : '';
-      const joinBtn = it.url ? `<a class="ev-join-btn" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : '';
+      const ju = eventJoinUrl(it);
+      const joinBtn = ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : '';
       return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${withChip}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}${joinBtn}</div>`;
     }
     // (end time stacked under start; duration tag after the title)
@@ -5729,9 +5730,9 @@ function renderCalendar() {
   const dayEvents = (byDay[c.selected] || []);
   const agTime = (e) => e.allDay ? 'all day'
     : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}-${minToLabel(e.end_min)}` : minToLabel(e.start_min));
-  const agendaRows = dayEvents.length ? dayEvents.map((e) => { const ct = e.contact ? findContact(e.contact) : null; return `<div class="cal-ag-row" data-cal-ev="${e.id}" role="button" tabindex="0">
+  const agendaRows = dayEvents.length ? dayEvents.map((e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); return `<div class="cal-ag-row" data-cal-ev="${e.id}" role="button" tabindex="0">
       <span class="cal-ag-time">${agTime(e)}</span>
-      <span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${e.url ? `<a class="ev-join-btn" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; }).join('')
+      <span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; }).join('')
     : '<div class="home-empty">Nothing on this day.</div>';
   const cq = (state.calQuery || '').trim().toLowerCase();
   const matches = cq ? state.cal.events
@@ -5768,6 +5769,15 @@ function renderCalendar() {
 // Any http(s) links inside an event's notes, rendered as tappable chips under the
 // notes box - so links saved from an invitation email are one tap away, not just
 // text to copy.
+// The link to surface as a one-tap button on an event: its Link field if set,
+// otherwise the first URL found in its notes (a meeting link pasted in there, as
+// an invite from Gmail often is). So Today and the calendar agenda can offer it.
+function eventJoinUrl(e) {
+  if (e && e.url) return e.url;
+  const s = String((e && e.notes) || ''); if (!s) return '';
+  BARE_URL.lastIndex = 0; const m = BARE_URL.exec(s);
+  return m ? m[0] : '';
+}
 function noteLinksHtml(notes) {
   const s = String(notes || ''); const seen = new Set(); const links = []; let m; BARE_URL.lastIndex = 0;
   while ((m = BARE_URL.exec(s))) { const u = m[0]; const k = u.toLowerCase(); if (!seen.has(k)) { seen.add(k); links.push(u); } }
