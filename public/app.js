@@ -11111,7 +11111,14 @@ function reviewInsight(m, p) {
 }
 function reviewScrollTop() { try { window.scrollTo(0, 0); const pane = document.getElementById('pane'); if (pane) pane.scrollTop = 0; const sc = document.querySelector('.app-main, .app-scroll, main'); if (sc) sc.scrollTop = 0; } catch {} }
 async function openReviewCard(id) {
-  const r = await api(`/api/blocks/${id}`); state.review_open = { review: r, mode: (r.props || {}).status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
+  const r = await api(`/api/blocks/${id}`);
+  // A review whose period has ended opens as the read-only report - even if it was
+  // never formally submitted - so a past week/month is a clean look-back, not a
+  // form full of empty fields. Only a CURRENT-period review opens editable; you can
+  // still tap Edit on any report to change it. (Robin: past monthlies showed a form.)
+  const p = r.props || {};
+  const ended = p.to && p.to < localISO(new Date());
+  state.review_open = { review: r, mode: (p.status === 'done' || ended) ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview(); reviewScrollTop();
   // Load tasks so the wins strip can enrich each done task (age, goal, priority,
   // day) and the deeper reviews can map tasks onto goals.
@@ -11498,9 +11505,10 @@ function renderReviewReport() {
 }
 function renderReviewCard() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
-  // A submitted review reads as a finished report, not the working form - unless
-  // you tap Edit (R.mode === 'edit'). In-progress reviews always open editable.
-  if ((p.status || 'active') === 'done' && R.mode !== 'edit') return renderReviewReport();
+  // The mode set at open decides it: a submitted OR past-period review reads as a
+  // finished report; a current review opens as the working form. Tapping Edit flips
+  // the mode to 'edit', so any report can still be changed.
+  if (R.mode === 'report') return renderReviewReport();
   // A re-render (a Wheel score, a goal note, the AI summary landing) rebuilds this
   // whole pane from r.body. Capture whatever is live in the reflection editor
   // first, so your writing is never thrown away by a click elsewhere on the card.
