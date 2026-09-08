@@ -180,7 +180,7 @@ const state = {
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   taskFilters: null, taskFiltersOpen: false,
   contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
-  contactGroups: [], contactsGroup: null, contactMenu: null,
+  contactGroups: [], contactsArea: null, contactMenu: null,
   financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null, tracker: null, trackerLoading: false },
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
   // Phones default to priority order (P1 first); desktop to most-recently added.
@@ -5486,12 +5486,7 @@ async function setBlockAreas(kind, id, ids) {
   if (h) { for (const b of (h.copies() || [])) { if (b && b.id === id) { b.props = b.props || {}; b.props.areas = ids; b.props.area = ids[0] || null; } } h.render(); }
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props }) }); } catch (e) { toast(e.message); }
 }
-function addBlockArea(kind, id, areaId) {
-  if (!areaId) return;
-  setBlockAreas(kind, id, [...blockAreas(areaHostBlock(kind, id)), areaId]);
-  // On a contact, mirror the life area into a same-named contact group (add-only).
-  if (kind === 'contact') { const a = areaById(areaId); const c = findContact(id); const g = a && groupByTitle(a.title); if (g && c && !groupsOf(c).includes(g.id)) { setContactGroups(c, [...groupsOf(c), g.id], true); if (state.view.type === 'contactcard') renderContactCard(); else if (state.view.type === 'contacts') renderContacts(); } }
-}
+function addBlockArea(kind, id, areaId) { if (!areaId) return; setBlockAreas(kind, id, [...blockAreas(areaHostBlock(kind, id)), areaId]); }
 function removeBlockArea(kind, id, areaId) { setBlockAreas(kind, id, blockAreas(areaHostBlock(kind, id)).filter((x) => x !== areaId)); }
 // The chip + picker. Each attached area is a chip that links through to its page
 // and carries an x to drop it; the dropdown offers the areas not yet attached.
@@ -8882,32 +8877,29 @@ function selfContactHtml() {
   return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Daybook card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
 }
 // The row of group chips: All, then each group (droppable + count), then + New.
-function groupBarHtml() {
-  const gs = (state.contactGroups || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  const chip = (sel, gid, label, n) => `<button class="cg-chip ${sel ? 'on' : ''}" ${gid ? `data-contact-group="${gid}" data-group-drop="${gid}"` : 'data-contact-group=""'}>${esc(label)}${n != null ? ` <span class="cg-n">${n}</span>` : ''}</button>`;
+// Contacts are organised by LIFE AREA, not a separate "groups" concept. The bar
+// filters by area, showing only areas that actually hold contacts (plus All).
+function contactAreaBarHtml() {
+  const inArea = (aid) => (state.contacts || []).filter((c) => blockAreas(c).includes(aid)).length;
+  const areas = (state.areas || []).filter((a) => a && a.title).map((a) => ({ a, n: inArea(a.id) })).filter((x) => x.n > 0).sort((x, y) => (x.a.title || '').localeCompare(y.a.title || ''));
+  if (!areas.length) return '';
+  const chip = (sel, aid, label, n, hue) => `<button class="cg-chip ${sel ? 'on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-contact-area="${aid}">${aid ? '<span class="cg-dot"></span>' : ''}${esc(label)}${n != null ? ` <span class="cg-n">${n}</span>` : ''}</button>`;
   return `<div class="cg-bar">
-    ${chip(!state.contactsGroup, '', 'All', (state.contacts || []).length)}
-    ${gs.map((g) => chip(state.contactsGroup === g.id, g.id, g.title || 'Group', contactsInGroup(g.id).length)).join('')}
-    <button class="cg-chip cg-new" data-new-contact-group title="Create a group">+ Group</button>
+    ${chip(!state.contactsArea, '', 'All', (state.contacts || []).length)}
+    ${areas.map((x) => chip(state.contactsArea === x.a.id, x.a.id, x.a.title, x.n, hueOf(x.a))).join('')}
   </div>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
 function contactMenuHtml() {
   const m = state.contactMenu; if (!m) return '';
   const c = findContact(m.id); if (!c) return '';
-  const inIds = new Set(groupsOf(c));
-  const addable = (state.contactGroups || []).filter((g) => !inIds.has(g.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  const current = liveGroupsOf(c);
   const selN = (state.contactSel instanceof Set) ? state.contactSel.size : 0;
   return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
     <div class="ctx-h">${esc(c.title || 'Contact')}</div>
     <button class="ctx-item" data-ctx-star="${c.id}">${(c.props && c.props.starred) ? '★ Unstar' : '☆ Star contact'}</button>
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
-    ${addable.length ? `<div class="ctx-lbl">Add to group</div>${addable.map((g) => `<button class="ctx-item" data-ctx-add="${g.id}">${esc(g.title)}</button>`).join('')}` : ''}
-    <button class="ctx-item ctx-new" data-ctx-newgroup>+ New group…</button>
-    ${current.length ? `<div class="ctx-sep"></div>${current.map((g) => `<button class="ctx-item" data-ctx-remove="${g.id}">Remove from ${esc(g.title)}</button>`).join('')}` : ''}
-    ${(c.props && c.props.email) ? `<div class="ctx-sep"></div><button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Daybook</button>` : ''}
+    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Daybook</button><div class="ctx-sep"></div>` : ''}
     <div class="ctx-sep"></div>
     <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
   </div></div>`;
@@ -8924,17 +8916,17 @@ function openContactMenu(id, x, y) {
 }
 function renderContacts() {
   const q = (state.contactsQuery || '').trim().toLowerCase();
-  // A deleted group can't stay selected.
-  if (state.contactsGroup && !groupById(state.contactsGroup)) state.contactsGroup = null;
-  const g = state.contactsGroup;
+  // A deleted/renamed area can't stay selected as the filter.
+  if (state.contactsArea && !areaById(state.contactsArea)) state.contactsArea = null;
+  const af = state.contactsArea;
   const match = (c) => {
-    if (g && !groupsOf(c).includes(g)) return false;
+    if (af && !blockAreas(c).includes(af)) return false;
     if (!q) return true; const p = c.props || {}; return [c.title, p.email, p.phone].some((v) => (v || '').toLowerCase().includes(q));
   };
   const list = sortContacts((state.contacts || []).filter(match));
-  const grp = g && groupById(g);
+  const area = af && areaById(af);
   const emptyMsg = q ? 'No contacts match.'
-    : grp ? `No contacts in ${esc(grp.title)} yet. Drag a contact onto the group chip, or open a contact and add it here.`
+    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this life area.`
     : 'No contacts yet. Add one, or import your Apple Contacts .vcf.';
   // Friends are Daybook contacts, so they lead the page. d holds the social data.
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
@@ -8956,10 +8948,9 @@ function renderContacts() {
       ${selfContactHtml()}
       <div class="cts-head">
         <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
-        ${groupBarHtml()}
+        ${contactAreaBarHtml()}
         <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">${t('ct.import')}</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
-      ${grp ? `<div class="cg-head"><span class="cg-head-t">${esc(grp.title)} · ${contactsInGroup(g).length}</span><span class="cg-head-act"><button class="ghost" data-rename-contact-group="${g}">Rename</button><button class="ghost cg-del" data-del-contact-group="${g}">Delete group</button></span></div>` : ''}
       ${contactSelBarHtml()}
       ${state.contactAdding ? contactAddForm() : ''}
       ${(() => {
@@ -9180,7 +9171,6 @@ function renderContactCard() {
       ${contactAddressFields(p)}
     </div>
     ${keepInTouchSection(c)}
-    ${contactGroupsSection(c)}
     ${notesSection(c.body, 'contact', c.id)}`;
   autoGrowSoon($('#contactcard-name'));
 }
@@ -13417,7 +13407,7 @@ document.addEventListener('click', (e) => {
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   if (t.closest('[data-cc-add-addr]')) { const btn = t.closest('[data-cc-add-addr]'); btn.insertAdjacentHTML('beforebegin', contactAddrRowHtml({}, 'n' + Date.now().toString(36), true)); btn.previousElementSibling.querySelector('.cc-adr-label')?.focus(); return; }
   { const dca = t.closest('[data-cc-del-addr]'); if (dca && state.contact_open) { dca.closest('[data-adr-row]').remove(); patchContact(state.contact_open.contact.id, readCardAddresses(), true); return; } }
-  const cgc = t.closest('[data-contact-group]'); if (cgc) { state.contactsGroup = cgc.dataset.contactGroup || null; renderContacts(); return; }
+  const cac = t.closest('[data-contact-area]'); if (cac) { state.contactsArea = cac.dataset.contactArea || null; renderContacts(); return; }
   if (t.closest('[data-new-contact-group]')) { newContactGroup(); return; }
   const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
   const dcg = t.closest('[data-del-contact-group]'); if (dcg) { delContactGroup(dcg.dataset.delContactGroup); return; }

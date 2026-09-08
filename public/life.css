@@ -213,6 +213,7 @@ button { cursor:pointer; background:none; border:0; }
 .cg-chip { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:7px 14px; cursor:pointer; }
 .cg-chip:hover { border-color:var(--accent); }
 .cg-chip.on { background:color-mix(in srgb,var(--accent) 14%,transparent); border-color:color-mix(in srgb,var(--accent) 45%,transparent); color:var(--ink); }
+.cg-chip .cg-dot { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
 .cg-chip .cg-n { font-size:12px; color:var(--ink-3); font-weight:500; }
 .cg-chip.on .cg-n { color:var(--accent); }
 .cg-chip.cg-new { color:var(--accent); border-style:dashed; }
