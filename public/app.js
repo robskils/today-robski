@@ -8797,6 +8797,7 @@ function readCardAddresses() {
   return { addresses: rows, address: first };
 }
 async function openContacts() {
+  window.__oc = 'start'; setTimeout(() => { try { const paneHas = !!document.querySelector('#pane .contacts-mine, #pane .contact-grid'); toast('🧭OC ' + window.__oc + ' view:' + (state.view && state.view.type) + ' pane:' + (paneHas ? 'contacts' : 'NOT')); } catch {} }, 450);
   state.view = { type: 'contacts' };
   renderNav();
   // Paint the pane straight away, from whatever's cached (even nothing - the page
@@ -8805,7 +8806,7 @@ async function openContacts() {
   // PANE after awaiting the loads, so if any load threw - and loadContacts /
   // loadContactGroups had no catch - openContacts rejected before renderContacts
   // ever ran, leaving the pane showing Home under a Contacts-highlighted nav.
-  renderContacts();
+  try { renderContacts(); window.__oc = 'rendered'; } catch (e) { window.__oc = 'RENDER-THREW: ' + (e && e.message); throw e; }
   const [, , friends, shared] = await Promise.all([
     loadContacts(true).catch(() => state.contacts || []),
     loadContactGroups(true).catch(() => state.contactGroups || []),
@@ -8813,7 +8814,7 @@ async function openContacts() {
     api('/api/shared').then((r) => r.items || []).catch(() => []),
   ]);
   state.friends = friends; state.sharedWithMe = shared;
-  if (state.view.type === 'contacts') renderContacts();
+  if (state.view.type === 'contacts') { try { renderContacts(); window.__oc = 'done'; } catch (e) { window.__oc = 'RENDER2-THREW: ' + (e && e.message); throw e; } }
 }
 function contactCardHtml(c) {
   const p = c.props || {};
