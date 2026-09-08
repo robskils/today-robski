@@ -2732,7 +2732,18 @@ async function addTableEntry(id) {
 const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
-const greeting = () => { const h = new Date().getHours(); return t(h < 12 ? 'home.greeting.morning' : h < 18 ? 'home.greeting.afternoon' : 'home.greeting.evening'); };
+// Morning until noon, then afternoon until NIGHTFALL (your local sunset), then
+// evening. European Portuguese draws the line at dusk, not a fixed hour: "boa
+// tarde" runs to sunset, "boa noite" only after it. Uses today's sunset for your
+// cached location; with no fix yet it falls back to 7pm.
+const greeting = () => {
+  const now = new Date(); const h = now.getHours();
+  if (h < 12) return t('home.greeting.morning');
+  const loc = cachedLoc();
+  const s = loc ? sunTimes(now, loc.lat, loc.lng) : null;
+  const evening = (s && s.sunset) ? now.getTime() >= s.sunset.getTime() : h >= 19;
+  return t(evening ? 'home.greeting.evening' : 'home.greeting.afternoon');
+};
 // The name to be greeted by: the first word of your full name, and failing that
 // your username. "Good afternoon" is a person speaking, so it uses what you'd
 // actually be called - not "Robin Lumley-Savile", and certainly not "Robski",
