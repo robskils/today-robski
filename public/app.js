@@ -2321,8 +2321,8 @@ function renderNav() {
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   const dark = document.documentElement.dataset.theme === 'dark';
   $('#nav').innerHTML = `
-    <div class="nav-topline" data-view-home title="Home">
-      <div class="nav-brand">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></div>
+    <div class="nav-topline" title="Home">
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></button>
       <button class="nav-util-toggle" data-util-toggle aria-label="${t('nav.tools')}" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
     </div>
     <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
