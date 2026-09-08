@@ -5476,7 +5476,12 @@ async function setBlockAreas(kind, id, ids) {
   if (h) { for (const b of (h.copies() || [])) { if (b && b.id === id) { b.props = b.props || {}; b.props.areas = ids; b.props.area = ids[0] || null; } } h.render(); }
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props }) }); } catch (e) { toast(e.message); }
 }
-function addBlockArea(kind, id, areaId) { if (!areaId) return; setBlockAreas(kind, id, [...blockAreas(areaHostBlock(kind, id)), areaId]); }
+function addBlockArea(kind, id, areaId) {
+  if (!areaId) return;
+  setBlockAreas(kind, id, [...blockAreas(areaHostBlock(kind, id)), areaId]);
+  // On a contact, mirror the life area into a same-named contact group (add-only).
+  if (kind === 'contact') { const a = areaById(areaId); const c = findContact(id); const g = a && groupByTitle(a.title); if (g && c && !groupsOf(c).includes(g.id)) { setContactGroups(c, [...groupsOf(c), g.id], true); if (state.view.type === 'contactcard') renderContactCard(); else if (state.view.type === 'contacts') renderContacts(); } }
+}
 function removeBlockArea(kind, id, areaId) { setBlockAreas(kind, id, blockAreas(areaHostBlock(kind, id)).filter((x) => x !== areaId)); }
 // The chip + picker. Each attached area is a chip that links through to its page
 // and carries an x to drop it; the dropdown offers the areas not yet attached.
@@ -8687,6 +8692,13 @@ const contactsInGroup = (gid) => (state.contacts || []).filter((c) => groupsOf(c
 // Only groups that still exist, in name order - a deleted group's stale id on a
 // contact is simply ignored.
 const liveGroupsOf = (c) => groupsOf(c).map(groupById).filter(Boolean).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+// Group ↔ life area sync: a contact group and a life area that share a name are two
+// views of the same circle (a "Portugal" group and a "Portugal" life area), so
+// filing a contact into one files it into the other automatically. Matched by name,
+// case-insensitively; add-only (removing one leaves the other, no surprise deletes).
+const normTitle = (s) => String(s || '').trim().toLowerCase();
+const groupByTitle = (name) => name ? (state.contactGroups || []).find((g) => g && g.title && normTitle(g.title) === normTitle(name)) : null;
+const areaByTitle = (name) => name ? (state.areas || []).find((a) => a && a.title && normTitle(a.title) === normTitle(name)) : null;
 // Address is structured. Old contacts (and simple imports) may hold a plain
 // string; those read into the Street field and format as-is.
 const ADDR_FIELDS = [['street', 'Street'], ['city', 'City'], ['postcode', 'Postcode'], ['country', 'Country']];
@@ -9322,7 +9334,10 @@ async function addContactToGroup(contactId, groupId) {
   if (!c || !g) return;
   if (groupsOf(c).includes(groupId)) { toast(`${c.title || 'Contact'} is already in ${g.title}`); return; }
   setContactGroups(c, [...groupsOf(c), groupId]);
-  toast(`Added ${c.title || 'contact'} to ${g.title}`);
+  // Mirror into a same-named life area, if there is one and it's not already set.
+  const a = areaByTitle(g.title);
+  if (a && !blockAreas(c).includes(a.id)) { setBlockAreas('contact', c.id, [...blockAreas(c), a.id]); toast(`Added ${c.title || 'contact'} to ${g.title} - group + life area`); }
+  else toast(`Added ${c.title || 'contact'} to ${g.title}`);
 }
 function removeContactFromGroup(contactId, groupId) {
   const c = findContact(contactId); if (!c) return;
