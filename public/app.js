@@ -8336,7 +8336,13 @@ function rerenderCurrent() {
   else if (v === 'reviewcard') renderReviewCard(); else if (v === 'goals') renderGoals();
   else if (v === 'contactcard') renderContactCard();
   else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail();
-  else if (v === 'today') renderToday(); else openHome();
+  else if (v === 'today') renderToday();
+  else if (v === 'contacts' || v === 'friends') renderContacts();
+  else if (v === 'home') renderHome();
+  // No `else openHome()`: falling back to Home for an unhandled view was THE
+  // "Contacts sends me to the homepage" bug - a background re-render (a friend
+  // status landing) hit rerenderCurrent while on Contacts, and openHome fired. An
+  // unhandled view now simply doesn't re-render here, which never navigates away.
 }
 // Collapsible card sections (Surface, Who can see this, Notes). Click a header to
 // fold it; the choice is remembered per section, across tasks. A universal habit.
