@@ -3856,7 +3856,7 @@ function noteCard(n) {
 // (Robin, 2026-09.)
 function noteTypeToggle(id, current) {
   if (current !== 'note') return '';
-  return `<button class="ghost ntt-conv" data-note-to-table title="Make a table from this note's lines">▦</button>`;
+  return `<button class="ghost ntt-conv" data-note-to-table data-tip="Make a table from this note's lines" aria-label="Make a table from this note's lines">▦</button>`;
 }
 // Flip a note ↔ table. Non-destructive: the flip only changes the block's kind
 // (a table gets a starter column if it has none). A note's prose and a table's
@@ -11662,7 +11662,7 @@ function relatedNotesHtml(note) {
 function shareBtn(block, kind) {
   if (block.sharedBy) return '';   // a borrowed block: only its owner can share it
   const n = block.sharedWith || 0;
-  return `<button class="note-share ghost ${n ? 'on' : ''}" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}" title="Share with a friend">🤝 Share${n ? ` · ${n}` : ''}</button>`;
+  return `<button class="note-share ghost ${n ? 'on' : ''}" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}" data-tip="Share with a friend" aria-label="Share with a friend">Share${n ? ` · ${n}` : ''}</button>`;
 }
 // A banner on a block someone shared with me, noting who and whether I can edit.
 function sharedBanner(block) {
@@ -11759,13 +11759,13 @@ function renderNote() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${noteAreasControl(n)}
-      <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" title="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
+      <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       ${noteTypeToggle(n.id, 'note')}
-      ${n.sharedBy ? '' : '<button class="note-tidy ghost" data-note-tidy title="Tidy the spacing - remove blank lines and even out the paragraphs">Tidy</button>'}
+      ${n.sharedBy ? '' : '<button class="note-tidy ghost" data-note-tidy data-tip="Tidy the spacing" aria-label="Tidy the spacing - remove blank lines and even out the paragraphs">Tidy</button>'}
       ${shareBtn(n, 'note')}
-      ${n.sharedBy ? '' : `<button class="note-lock ghost ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" title="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-      <button class="note-move ghost" data-move-note title="Move this note inside another">Move</button>
-      <button class="note-del ghost" data-del-note title="Delete this note">Delete</button>`}</span></div>
+      ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note data-tip="Move this note inside another" aria-label="Move this note inside another">Move</button>
+      <button class="note-lock ghost ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
+      <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
         ${sharedBanner(n)}

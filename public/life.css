@@ -1006,6 +1006,19 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .wheel-restore { margin-top:10px; border:0; background:none; color:var(--ink-3); font-size:13.5px; cursor:pointer; padding:4px 0; }
 .wheel-restore:hover { color:var(--accent); }
 .linkish { border:0; background:none; color:var(--accent); font:inherit; cursor:pointer; padding:0; text-decoration:underline; }
+/* Fast, styled hover tips (native title tooltips lag ~1s). A short delay so a tip
+   appears almost as soon as you land on a control. Desktop hover only. */
+[data-tip] { position:relative; }
+@media (hover:hover) {
+  [data-tip]::after {
+    content:attr(data-tip); position:absolute; bottom:calc(100% + 7px); left:50%;
+    transform:translateX(-50%) translateY(3px); white-space:nowrap;
+    background:var(--ink); color:var(--paper); font-size:12px; font-weight:500; line-height:1.25; letter-spacing:.01em;
+    padding:5px 9px; border-radius:7px; pointer-events:none; opacity:0; z-index:80;
+    box-shadow:0 8px 20px -10px rgba(0,0,0,.55); transition:opacity .1s ease, transform .1s ease; transition-delay:.12s;
+  }
+  [data-tip]:hover::after, [data-tip]:focus-visible::after { opacity:1; transform:translateX(-50%) translateY(0); }
+}
 .wheel-a { font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wheel-pips { display:flex; gap:4px; }
 .wp { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); flex:1 1 0; min-width:0; height:22px; border:1px solid var(--line-2); border-radius:5px; background:var(--card); cursor:pointer; padding:0; }
