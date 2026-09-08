@@ -1800,7 +1800,7 @@ async function refreshFriendStatus() {
     const sig = JSON.stringify([r.incoming || 0, r.unread || 0, r.unreadBy || {}, (r.online || []).map((o) => o.id).sort()]);
     const changed = sig !== state.__friendSig; state.__friendSig = sig;
     state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, unreadBy: r.unreadBy || {}, friends: r.friends || 0 };
-    renderNav();
+    if (changed) renderNav();   // only when the badge actually changes - a needless rebuild can steal a nav tap
     // Refresh Home's People section on a real change - but never while the user is
     // typing (e.g. in the notepad), which a full re-render would interrupt.
     const ae = document.activeElement; const editing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
@@ -2351,7 +2351,7 @@ function renderNav() {
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   const dark = document.documentElement.dataset.theme === 'dark';
-  $('#nav').innerHTML = `
+  const navHtml = `
     <div class="nav-topline" title="Home">
       <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></button>
       <button class="nav-util-toggle" data-util-toggle aria-label="${t('nav.tools')}" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
@@ -2388,6 +2388,14 @@ function renderNav() {
       ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Daybook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
       <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Daybook</span></div>
     </div>`;
+  // Only touch the DOM when the markup actually changed. Background polls (friend
+  // status every 90s, chat, presence) call renderNav often; rebuilding #nav out
+  // from under a tap re-targets the click - which is how a Contacts tap sometimes
+  // landed on Home. Compare against the last string WE generated (the browser
+  // normalises innerHTML, so that can't be compared directly); a no-op render
+  // then leaves the live buttons untouched.
+  const nav = $('#nav');
+  if (nav && (navHtml !== state.__navHtml || !nav.firstChild)) { nav.innerHTML = navHtml; state.__navHtml = navHtml; }
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
