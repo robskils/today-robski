@@ -4966,11 +4966,22 @@ async function openArea(id) {
 const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
 // Collapsible section headers on a life area page (open by default; collapse
 // remembered per section label across areas).
-const areaSecOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.area.secs') || '{}')[k]); } catch { return true; } };
+// Sections that start collapsed on a life-area overview (Vision is a quiet
+// backdrop, not the first thing you want to scroll past every visit).
+const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision']);
+// Stored explicitly (1 = collapsed, 0 = open) once you've toggled it; before
+// that, the per-key default decides. Old entries (presence = collapsed) still read.
+const areaSecOpen = (k) => {
+  try {
+    const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}');
+    if (Object.prototype.hasOwnProperty.call(c, k)) return !c[k];
+    return !AREA_SEC_CLOSED_DEFAULT.has(k);
+  } catch { return !AREA_SEC_CLOSED_DEFAULT.has(k); }
+};
 // Tracker area sections: collapsible, remembered per area.
 const trkOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}')[k]); } catch { return true; } };
 function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} renderToday(); }
-function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
+function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); c[k] = areaSecOpen(k) ? 1 : 0; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like
 // Home's), so your arrangement is the same on every area page.
 function areaFlowOrder() { try { const a = JSON.parse(localStorage.getItem('life.area.secorder')); return Array.isArray(a) ? a : []; } catch { return []; } }
