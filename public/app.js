@@ -742,7 +742,7 @@ function renderGuideIndex() {
       <div class="guide-sec-h">All the guides</div>
       <div class="guide-grid">${cards}</div>
       <div class="guide-sec-h">Privacy &amp; terms</div>
-      <p class="guide-start-p"><b>Your data belongs to you.</b> Daybook is funded by subscriptions, never by advertising or by selling what you put in - we don't read your notes, share your information, or use it to train AI. Your Daybook is private to you, and your connected-account passwords are encrypted so not even we can read them. Export everything or delete it for good, any time.</p>
+      <p class="guide-start-p"><b>Your data belongs to you.</b> Daybook is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Daybook is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
       <div class="guide-legal">
         <a class="guide-legal-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
         <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
@@ -12281,8 +12281,8 @@ function renderTable() {
     ${sharedBanner(t)}
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
-      <button class="tbl-filter-btn ${nSort > 1 || vw.sorting ? 'on' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort > 1 ? ` · ${nSort}` : ''}</button>
-      <button class="tbl-filter-btn ${nFilt || vw.filtering ? 'on' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
+      <button class="tbl-filter-btn ${vw.sorting ? 'on' : ''} ${nSort ? 'active' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort ? ` · ${nSort}` : ''}</button>
+      <button class="tbl-filter-btn ${vw.filtering ? 'on' : ''} ${nFilt ? 'active' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
       <button class="add-btn wide tbl-add-row" data-add-row title="Add a new row">+ New</button>
     </div>
     <div id="tbl-sort-panel">${vw.sorting ? sortPanelHtml() : ''}</div>
