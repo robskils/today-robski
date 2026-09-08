@@ -9354,6 +9354,11 @@ const GSTATUS = [['active', 'Active'], ['done', 'Done'], ['onhold', 'On hold'], 
 const BSTATUS = [['someday', 'Someday'], ['planning', 'Planning'], ['done', 'Done']];
 const gp = (g) => (g && g.props) || {};
 const goalArea = (g) => areaById(gp(g).area);
+// A task can belong to more than one goal. props.goals is the list; props.goal
+// mirrors the first, so older single-goal readers (the review stats, the daily
+// report) and any task that predates the list keep working. Read both.
+function taskGoalIds(t) { const p = (t && t.props) || {}; const a = Array.isArray(p.goals) ? p.goals.filter(Boolean) : []; return a.length ? [...new Set(a)] : (p.goal ? [p.goal] : []); }
+const taskInGoal = (t, gid) => taskGoalIds(t).includes(gid);
 const gStatusLabel = (s) => (GSTATUS.find((x) => x[0] === (s || 'active')) || GSTATUS[0])[1];
 const horizonLabel = (h) => (HORIZONS.find((x) => x[0] === h) || ['', ''])[1];
 // A horizon carries its own deadline: "this quarter" = the end of the quarter
@@ -10226,7 +10231,7 @@ async function openGoalCard(id) {
     api('/api/blocks?kind=task'),
     api('/api/blocks?kind=note').catch(() => []),
   ]);
-  const tasks = all.filter((t) => t.props && t.props.goal === id);
+  const tasks = all.filter((t) => taskInGoal(t, id));
   const notes = (allNotes || []).filter((n) => n.props && n.props.goal === id);
   state.goal_open = { goal: g, tasks, allTasks: all, notes, allNotes: allNotes || [], areaQuery: '', noteQuery: '' };
   state.view = { type: 'goalcard', id };
@@ -10414,10 +10419,11 @@ async function addGoalNote() {
 async function linkTaskToGoal(taskId) {
   const go = state.goal_open; if (!go) return;
   const t = (go.allTasks || []).find((x) => x.id === taskId); if (!t) return;
-  t.props = t.props || {}; t.props.goal = go.goal.id;
-  go.tasks.push(t);
+  const ids = [...new Set([...taskGoalIds(t), go.goal.id])];
+  t.props = t.props || {}; t.props.goals = ids; t.props.goal = ids[0] || null;
+  if (!go.tasks.some((x) => x.id === taskId)) go.tasks.push(t);
   renderGoalCard();
-  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: go.goal.id } }) }); toast('Linked to goal'); }
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { goals: ids, goal: ids[0] || null } }) }); toast('Linked to goal'); }
   catch (e) { toast(e.message); }
 }
 async function patchGoal(id, patch, isProps) {
@@ -10460,14 +10466,17 @@ const goalTaskRow = (t) => {
 async function unlinkTaskFromGoal(taskId) {
   const go = state.goal_open; if (!go) return;
   go.tasks = (go.tasks || []).filter((t) => t.id !== taskId);
-  const at = (go.allTasks || []).find((x) => x.id === taskId); if (at) { at.props = at.props || {}; at.props.goal = null; }
+  const at = (go.allTasks || []).find((x) => x.id === taskId) || taskCopies(taskId)[0];
+  const ids = at ? taskGoalIds(at).filter((x) => x !== go.goal.id) : [];
+  if (at) { at.props = at.props || {}; at.props.goals = ids; at.props.goal = ids[0] || null; if (!ids.length) at.props.milestone = null; }
   renderGoalCard();
-  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: null, milestone: null } }) }); toast('Removed from this goal'); } catch (e) { toast(e.message); }
+  const patch = ids.length ? { goals: ids, goal: ids[0] } : { goals: [], goal: null, milestone: null };
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: patch }) }); toast('Removed from this goal'); } catch (e) { toast(e.message); }
 }
 async function addGoalTask(goalId, milestoneId) {
   const title = await uiPrompt('Task for this ' + (milestoneId ? 'milestone' : 'goal') + ':', { placeholder: 'e.g. Draft the opening section' }); if (!title) return;
   const g = state.goal_open.goal;
-  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: gp(g).area || null, priority: null, done: false, goal: goalId, milestone: milestoneId || null } }) });
+  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: gp(g).area || null, priority: null, done: false, goals: [goalId], goal: goalId, milestone: milestoneId || null } }) });
   state.goal_open.tasks.push(t); renderGoalCard();
 }
 // bucket list
@@ -11579,8 +11588,8 @@ function goalReviewSection(r) {
   const allTasks = (state.review_open && state.review_open.tasks) || [];
   const byId = new Map(allTasks.map((t) => [t.id, t]));
   const doneIds = ((p.mirror || {}).tasksDone || []).map((t) => t.id).filter(Boolean);
-  const doneForGoal = (gid) => doneIds.map((id) => byId.get(id)).filter((t) => t && t.props && t.props.goal === gid);
-  const openForGoal = (gid) => allTasks.filter((t) => t.props && t.props.goal === gid && !t.props.done);
+  const doneForGoal = (gid) => doneIds.map((id) => byId.get(id)).filter((t) => t && taskInGoal(t, gid));
+  const openForGoal = (gid) => allTasks.filter((t) => taskInGoal(t, gid) && !t.props.done);
   const chip = (t, done) => `<button class="gr-task-chip ${done ? 'done' : ''}" data-open-task="${t.id}">${done ? '✓ ' : ''}${esc(t.title || 'Untitled')}</button>`;
   const byArea = new Map();
   goals.forEach((g) => { const k = g.area || '_none'; if (!byArea.has(k)) byArea.set(k, []); byArea.get(k).push(g); });
@@ -13086,6 +13095,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-vision-tab]')) { openGoals('vision').catch((x) => toast(x.message)); return; }
   const ovi = t.closest('[data-open-vision]'); if (ovi) { openVisionCard(ovi.dataset.openVision).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-goal-progress]')) return;   // the progress slider - adjust, don't open the goal
+  { const tug = t.closest('[data-task-ungoal]'); if (tug) { const [tid, gid] = tug.dataset.taskUngoal.split(':'); detachTaskFromGoal(tid, gid); return; } }
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
   const obk = t.closest('[data-open-bucket]'); if (obk) { openBucketCard(obk.dataset.openBucket).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-goal]')) { newGoal(null).catch((x) => toast(x.message)); return; }
@@ -13591,6 +13601,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
+  if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-rvg-done]')) { const id = e.target.dataset.rvgDone; patchGoal(id, { status: e.target.checked ? 'done' : 'active' }, true).then(() => { if (state.view.type === 'reviewcard') renderReviewCard(); }); return; }
@@ -14397,12 +14408,52 @@ function editArea(span) {
 }
 
 // ── view: task focus (open card) ─────────────────────
+// The Goals section on a task card: which goals this task counts toward, and a
+// picker to attach it to another. The same two-way link the goal card draws from
+// the other end - attach here and the task shows under that goal (and feeds a
+// tasks-metric goal's progress); detach and it drops off.
+function taskGoalsHtml(t) {
+  if (t.sharedBy && !t.canEdit) return '';   // a viewer of a shared task doesn't manage its goals
+  const ids = taskGoalIds(t);
+  const goals = state.goals || [];
+  const byId = new Map(goals.map((g) => [g.id, g]));
+  const attached = ids.map((id) => byId.get(id)).filter(Boolean);
+  const chips = attached.map((g) => { const ga = goalArea(g); const hue = ga ? hueOf(ga) : 210; const meas = goalMeasure(g); return `<div class="tgoal-chip" style="--h:${hue}"><button class="tgoal-open" data-open-goal="${g.id}" title="Open this goal"><span class="tgoal-ic">🎯</span><span class="tgoal-t">${esc(g.title || 'Untitled goal')}</span>${meas ? `<span class="tgoal-m">${esc(meas)}</span>` : ''}</button><button class="tgoal-x" data-task-ungoal="${t.id}:${g.id}" title="Detach from this goal">×</button></div>`; }).join('');
+  const pick = goals.filter((g) => !ids.includes(g.id) && (gp(g).status || 'active') !== 'dropped');
+  const opts = pick.slice().sort((x, y) => (x.title || '').localeCompare(y.title || '')).map((g) => `<option value="${g.id}">${esc(g.title || 'Untitled goal')}</option>`).join('');
+  const picker = opts
+    ? `<select class="sel tgoal-add" data-task-addgoal="${t.id}"><option value="">＋ Attach to a goal…</option>${opts}</select>`
+    : (goals.length ? '' : '<p class="tgoals-empty">No goals yet - create one in Goals, then attach it here.</p>');
+  return `<section class="focus-notes tgoals-sec">
+    <div class="fn-h">Goals${attached.length ? ` · ${attached.length}` : ''}</div>
+    ${attached.length ? `<div class="tgoals-grid">${chips}</div>` : '<p class="tgoals-empty">Not attached to a goal yet. Attach one and this task counts toward it.</p>'}
+    ${picker}
+  </section>`;
+}
+async function setTaskGoalIds(taskId, ids) {
+  ids = [...new Set(ids.filter(Boolean))];
+  const patch = ids.length ? { goals: ids, goal: ids[0] } : { goals: [], goal: null, milestone: null };
+  patchTaskProps(taskId, patch);   // persists + updates every live copy + re-renders the task card
+  // Keep an open goal card's linked list in step if we changed its membership.
+  const go = state.goal_open;
+  if (go) {
+    const gid = go.goal.id; const inList = (go.tasks || []).some((x) => x.id === taskId);
+    if (ids.includes(gid) && !inList) { const src = (go.allTasks || []).find((x) => x.id === taskId) || taskCopies(taskId)[0]; if (src) go.tasks.push(src); }
+    else if (!ids.includes(gid) && inList) go.tasks = go.tasks.filter((x) => x.id !== taskId);
+    if (state.view.type === 'goalcard') renderGoalCard();
+  }
+}
+function attachTaskToGoal(taskId, goalId) { if (!goalId) return; const t = taskCopies(taskId)[0]; if (!t) return; setTaskGoalIds(taskId, [...taskGoalIds(t), goalId]); toast('Attached to goal'); }
+function detachTaskFromGoal(taskId, goalId) { const t = taskCopies(taskId)[0]; if (!t) return; setTaskGoalIds(taskId, taskGoalIds(t).filter((x) => x !== goalId)); }
 async function openTaskCard(id) {
   const task = await api(`/api/blocks/${id}`);
   state.task_open = { task };
   state.view = { type: 'taskcard', id };
   recordRecent('task', id, task.title, blockAreas(task)[0]);
   renderNav(); renderTaskCard();
+  // Goals power the Goals section's picker; they're only loaded once you visit
+  // Goals, so pull them in the background here and repaint when they land.
+  if (!state.goals || !state.goals.length) api('/api/blocks?kind=goal').then((gs) => { if (Array.isArray(gs) && gs.length) { state.goals = gs; if (state.view.type === 'taskcard' && state.task_open && state.task_open.task.id === id) renderTaskCard(); } }).catch(() => {});
   // Who can see this task (direct shares + shared-area members). Owner only.
   if (!task.sharedBy) api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {});
 }
@@ -14469,6 +14520,7 @@ function renderTaskCard() {
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
+    ${taskGoalsHtml(t)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
