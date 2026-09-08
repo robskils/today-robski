@@ -9084,8 +9084,14 @@ function contactMenuHtml() {
     ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No areas to add.</div>')}
     ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
     <div class="ctx-sep"></div>` : '';
+  // A few recently-opened contacts up top, most recent first - a quick hop to
+  // whoever you were just looking at, without leaving the menu to search.
+  const recentContacts = recentContactIds().filter((rid) => rid !== m.id).map(findContact).filter(Boolean).slice(0, 4);
+  const recentRow = (rc) => { const ra = areaById(blockAreas(rc)[0]); return `<button class="ctx-item ctx-recent" data-ctx-recent="${rc.id}" style="--h:${ra ? hueOf(ra) : 220}"><span class="ctx-recent-av">${esc(initial(rc.title || '?'))}</span><span class="ctx-recent-n">${esc(rc.title || 'Contact')}</span></button>`; };
+  const recentSection = recentContacts.length ? `<div class="ctx-lbl">Recent</div>${recentContacts.map(recentRow).join('')}<div class="ctx-sep"></div>` : '';
   return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
     <div class="ctx-h">${esc(c.title || 'Contact')}</div>
+    ${recentSection}
     <button class="ctx-item" data-ctx-star="${c.id}">${(c.props && c.props.starred) ? '★ Unstar' : '☆ Star contact'}</button>
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
@@ -9220,7 +9226,18 @@ async function addContact(o) {
   state.contacts.push(b); renderContacts();
   if (state.contactAdding) { const i = $('#ct-name'); if (i) i.focus(); }
 }
+// A small local trail of recently-opened contacts, so the right-click menu can
+// offer a quick hop back to whoever you were just looking at. Kept separate from
+// life.recent (Home's list), which deliberately never carries contacts.
+function recentContactIds() { try { const a = JSON.parse(localStorage.getItem('life.recentContacts') || '[]'); return Array.isArray(a) ? a.filter((x) => typeof x === 'string') : []; } catch { return []; } }
+function recordRecentContact(id) {
+  if (!id) return;
+  const list = recentContactIds().filter((x) => x !== id);
+  list.unshift(id);
+  try { localStorage.setItem('life.recentContacts', JSON.stringify(list.slice(0, 10))); } catch {}
+}
 async function openContactCard(id) {
+  recordRecentContact(id);
   const [c] = await Promise.all([api(`/api/blocks/${id}`), loadContacts(), loadContactGroups()]);
   // The keep-in-touch task holds the dates (next nudge, last contact). A missing
   // one just reads as "off": a contact whose task was deleted elsewhere shouldn't
@@ -13701,6 +13718,7 @@ document.addEventListener('click', (e) => {
   const dcg = t.closest('[data-del-contact-group]'); if (dcg) { delContactGroup(dcg.dataset.delContactGroup); return; }
   const rmg = t.closest('[data-contact-remove-group]'); if (rmg) { removeContactFromGroup(rmg.dataset.cid, rmg.dataset.gid); return; }
   // Contact right-click menu
+  { const cr = t.closest('[data-ctx-recent]'); if (cr) { const id = cr.dataset.ctxRecent; state.contactMenu = null; openContactCard(id).catch((e) => toast(e.message)); return; } }
   const ctxAdd = t.closest('[data-ctx-add]'); if (ctxAdd) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) addContactToGroup(id, ctxAdd.dataset.ctxAdd); else renderContacts(); return; }
   if (t.closest('[data-ctx-newgroup]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; renderContacts(); if (id) addContactViaNewGroup(id); return; }
   const ctxRm = t.closest('[data-ctx-remove]'); if (ctxRm) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) removeContactFromGroup(id, ctxRm.dataset.ctxRemove); else renderContacts(); return; }

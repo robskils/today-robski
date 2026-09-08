@@ -271,6 +271,11 @@ button { cursor:pointer; background:none; border:0; }
 .ctx-item { display:block; width:100%; text-align:left; padding:9px 12px; border-radius:8px; color:var(--ink); font-size:15px; }
 .ctx-item:hover { background:var(--paper-2); color:var(--accent); }
 .ctx-item.ctx-new { color:var(--accent); }
+/* Recent-contacts shortcuts at the top of the contact menu: a small tinted
+   initial avatar and the name, a quick hop to whoever you were just viewing. */
+.ctx-recent { display:flex; align-items:center; gap:9px; }
+.ctx-recent-av { flex:none; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--ink); background:color-mix(in srgb, hsl(var(--h,220) 55% 55%) 24%, var(--paper-2)); }
+.ctx-recent-n { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ctx-item.ctx-danger { color:var(--danger,#c0392b); }
 .ctx-item.ctx-danger:hover { background:color-mix(in srgb,var(--danger,#c0392b) 12%,transparent); color:var(--danger,#c0392b); }
 .ctx-sep { height:1px; background:var(--line); margin:5px 8px; }
