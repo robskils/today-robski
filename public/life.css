@@ -288,7 +288,9 @@ button { cursor:pointer; background:none; border:0; }
 .goal-area-add { flex:none; padding:5px 12px; font-size:13px; border-radius:999px; }
 .ga-step-l { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.09em; font-weight:700; color:hsl(var(--h,220) 42% 46%); margin:0 0 7px 2px; }
 .gv-card { margin:0; padding:14px 16px; background:var(--card); }
-.gv-card .vc-text { font-size:15px; }
+/* On the Goals & Vision page the vision shows in full, not clamped to a few lines. */
+.gv-card { padding:16px 18px; }
+.gv-card .vc-text { font-size:15px; display:block; overflow:visible; -webkit-line-clamp:unset; white-space:pre-wrap; }
 /* The connector between vision and goals - a hairline with a small centred label. */
 .ga-flow { display:flex; align-items:center; gap:12px; margin:14px 2px 12px; }
 .ga-flow::before, .ga-flow::after { content:''; height:1px; flex:1; background:linear-gradient(to right,transparent,color-mix(in srgb,hsl(var(--h,220) 55% 55%) 40%,transparent),transparent); }
@@ -3624,6 +3626,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-vision-edit:focus { outline:none; border-color:color-mix(in srgb,var(--c) 55%,var(--line)); }
 .area-vision-edit::placeholder { color:var(--ink-3); font-style:italic; }
 .area-vision-ro { font-size:16px; line-height:1.6; color:var(--ink-2); font-style:italic; }
+/* Vision highlights: the best bits pulled out as pull-quotes above the full text. */
+.vision-hl { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+.vision-hl-q { margin:0; padding:10px 6px 10px 18px; border-left:3px solid hsl(var(--h,220) 60% 52%); font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; line-height:1.35; color:var(--ink); font-style:italic; text-wrap:balance; }
+.vision-hl-tog { display:inline-flex; align-items:center; gap:8px; margin-top:10px; font-size:13.5px; color:var(--ink-3); cursor:pointer; user-select:none; }
+.vision-hl-tog input { accent-color:hsl(var(--h,220) 60% 52%); }
+.vision-hl-tog:hover { color:var(--ink-2); }
 .area-sec-more { align-self:flex-start; margin-top:8px; background:none; border:0; color:var(--accent); font-size:14px; font-weight:600; cursor:pointer; padding:4px 2px; }
 .area-sec-more:hover { text-decoration:underline; }
 @media (max-width:640px) { .area-flow { gap:24px; } }

@@ -5043,6 +5043,14 @@ function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('lif
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like
 // Home's), so your arrangement is the same on every area page.
 function areaFlowOrder() { try { const a = JSON.parse(localStorage.getItem('life.area.secorder')); return Array.isArray(a) ? a : []; } catch { return []; } }
+// The "best bits" of a vision, as pull-quotes: the punchiest lines, favouring
+// present-tense first-person affirmations ("I move daily…") at a readable length.
+function visionHighlights(text) {
+  const s = String(text || '').replace(/\s+/g, ' ').trim(); if (!s) return [];
+  const parts = (s.match(/[^.!?]+[.!?]*/g) || []).map((x) => x.trim()).filter((x) => x.length >= 12 && x.length <= 160);
+  const score = (x) => (/^i\b|^i'/i.test(x) ? 2 : 0) + (x.length >= 20 && x.length <= 90 ? 1 : 0);
+  return parts.map((x, i) => ({ x, i, sc: score(x) })).sort((a, b) => (b.sc - a.sc) || (a.i - b.i)).slice(0, 3).map((o) => o.x);
+}
 const areaSecH = (key, label, count) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${esc(label)}${count != null ? ` · ${count}` : ''}</div>`;
 function timeAgo(t) {
   const s = Math.floor((Date.now() - t) / 1000);
@@ -5186,10 +5194,16 @@ function renderArea() {
       </div>
       ${open ? `<div class="area-sec-body">${body}</div>` : ''}
     </section>`; };
-  // Vision: write it straight here, no click-through.
-  const visionBodyHtml = canEditArea
+  // Vision: write it straight here, no click-through. A "Highlight" toggle pulls
+  // a few standout lines out as pull-quotes above the full vision.
+  const visionHl = !!(area.props && area.props.visionHighlight);
+  const visionText = canEditArea
     ? `<textarea class="area-vision-edit" data-area-vision="${area.id}" rows="3" placeholder="Picture this area at its best - write it in the present tense…">${esc(visionSnip)}</textarea>`
     : (visionSnip ? `<div class="area-vision-ro">${esc(visionSnip)}</div>` : '<div class="home-empty">Nothing yet.</div>');
+  const hlQuotes = (visionHl && visionSnip) ? visionHighlights(visionSnip) : [];
+  const hlHtml = hlQuotes.length ? `<div class="vision-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
+  const hlToggle = (visionSnip && canEditArea) ? `<label class="vision-hl-tog"><input type="checkbox" data-area-vision-hl="${area.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
+  const visionBodyHtml = `${hlHtml}${visionText}${hlToggle}`;
   const goalsBody = (activeGoals.length ? `<div class="goal-grid">${activeGoals.map((g) => goalCardMini(g)).join('')}</div>` : (canEditArea ? '' : '<div class="home-empty">No goals yet.</div>'))
     + (canEditArea ? `<button class="adc-addgoal" data-area-add-goal>+ ${activeGoals.length ? 'Add another goal' : 'Add a goal'}</button>` : '');
   const TASK_CAP = 8;
@@ -13562,6 +13576,13 @@ document.addEventListener('change', (e) => {
     if (e.target.checked) hs = hs.filter((x) => x !== key); else if (!hs.includes(key)) hs.push(key);
     a.props.hiddenSecs = hs;
     api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs } }) }).catch((err) => toast(err.message));
+    renderArea(); return;
+  }
+  if (e.target.matches('[data-area-vision-hl]')) {
+    const a = state.area_open && state.area_open.area; if (!a) return; a.props = a.props || {};
+    const patch = { visionHighlight: e.target.checked };
+    Object.assign(a.props, patch); const al = (state.areas || []).find((x) => x.id === a.id); if (al) { al.props = al.props || {}; Object.assign(al.props, patch); }
+    api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
     renderArea(); return;
   }
   if (e.target.matches('[data-area-reviewstar]') || e.target.matches('[data-area-reviewon]')) {
