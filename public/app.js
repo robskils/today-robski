@@ -10928,6 +10928,12 @@ function currentPeriodWindow(rtype, anchorISO) {
   if (rtype === 'quarterly') { const q = Math.floor(M / 3); return { from: localISO(new Date(Y, q * 3, 1)), to: localISO(new Date(Y, q * 3 + 3, 0)) }; }
   return { from: localISO(new Date(Y, 0, 1)), to: localISO(new Date(Y, 11, 31)) };
 }
+// The period immediately before a given window - the "previous one" shown beside
+// the current review of each type. Anchor on the day before the window's start.
+function prevPeriodWindow(rtype, win) {
+  const anchor = localISO(new Date(new Date(win.from + 'T00:00').getTime() - 86400000));
+  return (!rtype || rtype === 'weekly') ? weeklyWindow(anchor) : currentPeriodWindow(rtype, anchor);
+}
 // Which period a review of this type should offer RIGHT NOW: the just-completed
 // one by default (a September monthly reviews August), but once you've already
 // filed that, roll forward to the current, still-running period so you can begin
@@ -11116,11 +11122,35 @@ function reviewsBody() {
     : submittedThisWeek
     ? `<button class="rv-start-weekly rv-hero-done" data-open-review="${thisWeek.id}"><span class="rvw-ic">✓</span><span class="rvw-body"><b>This week's review - submitted</b><small>Tap to look back over it.</small></span><span class="rvw-go">→</span></button>`
     : `<button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>`;
+  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  // The "previous one" beside each type's current review: the period just before
+  // the one shown as current. A compact strip - open its report if it exists, or
+  // fill it in if you never did. (Robin: show each type's current AND previous.)
+  const prevStrip = (k, curWin) => {
+    const w = prevPeriodWindow(k, curWin);
+    const pt = periodTitle(k, w.from, w.to);
+    const main = (k === 'weekly') ? `${shortD(w.from)} – ${shortD(w.to)}` : pt.main;
+    const ex = past.find((r) => (r.props || {}).rtype === k && (r.props || {}).to === w.to);
+    const prog = ex && (ex.props || {}).status === 'inprogress';
+    const done = ex && (ex.props || {}).status === 'done';
+    const status = done ? '✓ Filed' : prog ? '● In progress' : 'Not done';
+    const statusCls = done ? 'is-done' : prog ? 'is-prog' : 'is-none';
+    const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review-period="${k}|${w.from}|${w.to}"`;
+    return `<button class="rv-prevstrip rv-pt-${k}" ${attr} title="${esc(main)} · ${done ? 'filed' : prog ? 'in progress' : 'not done yet'}">
+      <span class="rv-prev-lbl">Previous</span>
+      <span class="rv-prev-period">${esc(main)}</span>
+      <span class="rv-prev-badge ${statusCls}">${status}</span>
+      <span class="rv-prev-go">→</span>
+    </button>`;
+  };
   const hero = `<div class="rv-hero">
-    <div class="rv-weekcard">
-      ${whenHtml}
-      <div class="rv-week-due">${dueLine}</div>
-      ${heroBtn}
+    <div class="rv-weekcol">
+      <div class="rv-weekcard">
+        ${whenHtml}
+        <div class="rv-week-due">${dueLine}</div>
+        ${heroBtn}
+      </div>
+      ${prevStrip('weekly', win)}
     </div>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => {
       const w = activeReviewWindow(k, todayISO);
@@ -11137,16 +11167,16 @@ function reviewsBody() {
       const badge = exDone ? '<span class="rv-pt-badge is-done">✓ Filed</span>' : exProg ? '<span class="rv-pt-badge is-prog">● In progress</span>' : '';
       const cta = exDone ? 'Look back' : exProg ? 'Continue' : 'Start';
       const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review="${k}"`;
-      return `<button class="rv-ptile rv-pt-${k}" ${attr}>
+      const currentTile = `<button class="rv-ptile rv-pt-${k}" ${attr}>
         <div class="rv-pt-top"><span class="rv-pt-label rv-l-${k}">${REVIEWS[k].label}</span>${badge}</div>
         <div class="rv-pt-period">${esc(pt.main)}</div>
         <div class="rv-pt-hook">${esc(hook)}</div>
         <div class="rv-pt-cta">${cta} <span class="rv-pt-arrow">→</span></div>
       </button>`;
+      return `<div class="rv-ptgroup">${currentTile}${prevStrip(k, w)}</div>`;
     }).join('')}</div>
   </div>`;
   // Compact, dashboard-y past-review cards, filterable by type.
-  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
   const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pt = periodTitle(p.rtype, p.from, p.to); const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${shortD(p.from)} – ${shortD(p.to)}` : pt.main) : pt.main; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
     <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(shortD(p.doneAt))}` : ''}`}</span></div>
     <div class="rv-card-period">${esc(periodMain)}</div>
@@ -11323,8 +11353,8 @@ function setReviewCadMode(k, mode) { const c = ensureCad(k); c.mode = mode; revi
 function setReviewCadAlert(k, n) { const c = ensureCad(k); c.alertBefore = Math.max(0, Math.min(14, n)); c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadPause(k, dateISO) { const c = ensureCad(k); c.pausedUntil = (dateISO && /^\d{4}-\d\d-\d\d$/.test(dateISO)) ? dateISO : null; saveReviewRem(); reReviewRems(); }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
-async function startReview(rtype) {
-  const { from, to } = reviewPeriod(rtype);
+async function startReview(rtype, winOverride) {
+  const { from, to } = (winOverride && winOverride.from && winOverride.to) ? winOverride : reviewPeriod(rtype);
   // Never mint a second review for the same period - open the existing one instead.
   const existing = (state.reviews || []).find((r) => (r.props || {}).rtype === rtype && (r.props || {}).to === to);
   if (existing) { openReviewCard(existing.id); return; }
@@ -13641,6 +13671,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
+  { const srp = t.closest('[data-start-review-period]'); if (srp) { const [k, from, to] = srp.dataset.startReviewPeriod.split('|'); startReview(k, { from, to }).catch((x) => toast(x.message)); return; } }
   const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemOpen = state.reviewRemOpen || {}; state.reviewRemOpen[k] = !state.reviewRemOpen[k]; reReviewRems(); return; }
   { const cd = t.closest('[data-rev-cad-dow]'); if (cd) { const [k, d] = cd.dataset.revCadDow.split(':'); setReviewCadDow(k, +d); return; } }
   { const cm = t.closest('[data-rev-cad-mode]'); if (cm) { const [k, m] = cm.dataset.revCadMode.split(':'); setReviewCadMode(k, m); return; } }

@@ -1176,7 +1176,8 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rva-note::placeholder { color:var(--ink-3); }
 /* Reviews dashboard page. */
 .rv-hero { display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px; margin:6px 0 20px; }
-.rv-weekcard { flex:1 1 380px; min-width:0; border:1px solid var(--line); border-radius:18px; padding:16px 18px; background:var(--card); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; }
+.rv-weekcol { flex:1 1 380px; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.rv-weekcard { min-width:0; border:1px solid var(--line); border-radius:18px; padding:16px 18px; background:var(--card); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; }
 .rv-weekcard .rv-start-weekly { flex:none; box-shadow:none; }
 .rv-start-weekly.rv-hero-done { border-color:color-mix(in srgb,#6f9f4a 45%,var(--line)); background:color-mix(in srgb,#6f9f4a 8%,var(--card)); }
 .rv-week-due { font-size:14.5px; color:var(--ink-2); }
@@ -1207,6 +1208,19 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rv-pt-cta { margin-top:4px; font-size:13px; font-weight:600; color:var(--pt-c,var(--accent)); display:flex; align-items:center; gap:5px; }
 .rv-pt-arrow { transition:transform .12s; }
 .rv-ptile:hover .rv-pt-arrow { transform:translateX(3px); }
+.rv-pt-weekly { --pt-c:var(--accent); }
+/* Each type's current tile carries a slim "previous" strip beneath it - the
+   period just gone, tap to open its report or fill it in. (Robin.) */
+.rv-ptgroup { display:flex; flex-direction:column; gap:8px; }
+.rv-prevstrip { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:8px 13px; border:1px solid var(--line); border-left:3px solid var(--pt-c,var(--line)); border-radius:11px; background:var(--paper-2); cursor:pointer; transition:border-color .12s, background .12s, transform .08s; }
+.rv-prevstrip:hover { border-color:var(--pt-c,var(--accent)); background:var(--card); transform:translateY(-1px); }
+.rv-prev-lbl { flex:none; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); }
+.rv-prev-period { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:600; color:var(--ink); }
+.rv-prev-badge { flex:none; margin-left:auto; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+.rv-prev-badge.is-done { color:#6f9f4a; background:color-mix(in srgb,#6f9f4a 12%,transparent); }
+.rv-prev-badge.is-prog { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
+.rv-prev-badge.is-none { color:var(--ink-3); background:var(--paper); }
+.rv-prev-go { flex:none; font-size:15px; color:var(--pt-c,var(--accent)); }
 .rv-trend-sec .rv-spark { display:flex; align-items:flex-end; gap:5px; height:64px; padding:8px 2px 0; }
 .rv-bar { flex:1 1 0; min-width:6px; max-width:34px; background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent)); border-radius:4px 4px 0 0; }
 .rv-trend-now { flex:none; align-self:center; font-size:14px; font-weight:600; color:var(--ink-2); margin-left:8px; }
