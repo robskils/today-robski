@@ -819,7 +819,7 @@ function openView(v) {
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'financial': return openFinancial(v.tab);
-    case 'settings': return openSettings();
+    case 'settings': return openSettings(v.tab);
     case 'card': return openCard();
     case 'admin': return openAdmin();
     case 'practices': return openPractices();
@@ -836,7 +836,11 @@ function openView(v) {
 }
 // ── in-app history (Back) + breadcrumbs ──────────────
 let navHist = [], navLastKey = null, navLastView = null;
-const viewKey = (v) => `${v.type}:${v.id || v.tile || ''}`;
+// Include a sub-screen discriminator (id / tile / tab) so a step WITHIN a tool -
+// switching Financial tabs, say - is its own history entry. Without this, those
+// shared one key, weren't recorded, and Back leaped clean out of the tool instead
+// of stepping back one screen inside it. (Robin.)
+const viewKey = (v) => `${v.type}:${v.id || v.tile || v.tab || ''}`;
 // Called from renderNav on every render; pushes the previous view when the view
 // actually changes, so Back returns to where you were.
 function recordHistory() {
@@ -1078,7 +1082,7 @@ async function syncAccentFromServer() {
 }
 
 // ── Settings hub ──────────────────────────────────────────────────────
-function openSettings(tab) { state.view = { type: 'settings' }; state.settings = state.settings || {}; if (tab) state.settings.tab = tab; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
+function openSettings(tab) { state.settings = state.settings || {}; if (tab) state.settings.tab = tab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 // 🇵🇹 from "PT" - two regional-indicator symbols (client mirror of the worker's).
 function flagEmoji(code) {
   const c = String(code || '').trim().toUpperCase();
@@ -10870,13 +10874,18 @@ function reviewsBody() {
   const inProgressHtml = inProgress.length
     ? `<section class="home-sec rv-inprog-sec">${rvSecH('inprog', `Pick up where you left off · ${inProgress.length}`)}${rvSecOpen('inprog') ? `<div class="rv-cards">${inProgress.map(card).join('')}</div>` : ''}</section>`
     : '';
+  // The browsable archive shows EVERY review - in-progress (this year's, still
+  // being written) alongside the submitted ones - so filtering by a type shows the
+  // current one and all the past ones of that type together. The card itself marks
+  // "● In progress" vs "✓ Submitted", so the two read clearly in one list. (Robin.)
   const filt = state.reviewsFilter || '';
-  const shownPast = filt ? finished.filter((r) => (r.props || {}).rtype === filt) : finished;
-  const fcounts = {}; finished.forEach((r) => { const t = (r.props || {}).rtype || 'weekly'; fcounts[t] = (fcounts[t] || 0) + 1; });
-  const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${finished.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
-  const pastSection = finished.length
-    ? `<section class="home-sec">${rvSecH('past', `Past reviews · ${finished.length}`)}${rvSecOpen('past') ? `${fchips}<div class="rv-cards">${shownPast.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div>` : ''}</section>`
-    : (inProgress.length ? '' : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>');
+  const allSorted = past;   // newest-first, both statuses
+  const shownList = filt ? allSorted.filter((r) => ((r.props || {}).rtype || 'weekly') === filt) : allSorted;
+  const fcounts = {}; allSorted.forEach((r) => { const ty = (r.props || {}).rtype || 'weekly'; fcounts[ty] = (fcounts[ty] || 0) + 1; });
+  const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${allSorted.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
+  const pastSection = allSorted.length
+    ? `<section class="home-sec">${rvSecH('past', `All reviews · ${allSorted.length}`)}${rvSecOpen('past') ? `${fchips}<div class="rv-cards">${shownList.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div>` : ''}</section>`
+    : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>';
   return `${hero}${inProgressHtml}${wheelOfLifeHtml()}${pastSection}${reviewsListHtml()}`;
 }
 // When is a review of this type next due? The last one of that type + its
@@ -13108,7 +13117,7 @@ document.addEventListener('click', (e) => {
     renderHome(); return;
   } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
-  { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; renderSettings(); return; } }
+  { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
