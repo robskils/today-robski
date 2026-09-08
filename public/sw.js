@@ -13,7 +13,7 @@
 //
 // Bump CACHE when this file's logic changes, to purge older caches on activate.
 
-const CACHE = 'daybook-cache-v1';
+const CACHE = 'daybook-cache-v2';
 const SHELL = ['/app.html', '/qrcode.min.js', '/icon-192.png'];
 
 self.addEventListener('install', (event) => {
