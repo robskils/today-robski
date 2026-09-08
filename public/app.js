@@ -4868,15 +4868,17 @@ async function delJournalEntry() {
 // ── Read & Watch (bookmarks) ─────────────────────────
 // Saved links: blocks kind 'bookmark', props {url,title,image,site,media,status,added}.
 // Captured via the iOS Shortcut / desktop bookmarklet (/api/capture) or pasted here.
-const RW_SORTS = [['added-desc', 'Newest'], ['added-asc', 'Oldest'], ['title', 'Title A–Z'], ['media', 'Type']];
+const RW_SORTS = [['added-desc', 'Newest'], ['added-asc', 'Oldest'], ['title', 'Title A–Z'], ['media', 'Type'], ['rating', 'My rating']];
 function rwSortList(list, sort) {
   const added = (b) => String((b.props && b.props.added) || b.created_at || '');
   const title = (b) => String((b.props && b.props.title) || b.title || '').toLowerCase();
   const media = (b) => String((b.props && b.props.media) || 'article');
+  const rating = (b) => Number((b.props && b.props.rating) || 0);
   const s = list.slice();
   if (sort === 'added-asc') s.sort((a, b) => added(a).localeCompare(added(b)));
   else if (sort === 'title') s.sort((a, b) => title(a).localeCompare(title(b)));
   else if (sort === 'media') s.sort((a, b) => media(a).localeCompare(media(b)) || added(b).localeCompare(added(a)));
+  else if (sort === 'rating') s.sort((a, b) => rating(b) - rating(a) || added(b).localeCompare(added(a)));   // best first, unrated last
   else s.sort((a, b) => added(b).localeCompare(added(a)));   // newest first (default)
   return s;
 }
@@ -4920,6 +4922,7 @@ function renderReadwatch() {
       <div class="rw-body">
         <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
         <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : book ? '📖 Book' : film ? '🎬 Film' : '📰 Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
+        ${done ? rwRatingHtml(b) : ''}
       </div>
       <button class="rw-del" data-rw-del="${b.id}" title="Remove">×</button>
     </div>`;
@@ -4985,6 +4988,21 @@ async function rwSetDone(id, done) {
   b.props = b.props || {}; b.props.status = done ? 'done' : 'todo';
   renderReadwatch();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { status: b.props.status } }) }); } catch (e) { toast(e.message); }
+}
+// Your own score out of 10, shown on a finished item. Ten pips fill up to the
+// rating; tapping the current score again clears it (mis-tap escape hatch).
+function rwRatingHtml(b) {
+  const r = Number((b.props || {}).rating) || 0;
+  const pips = Array.from({ length: 10 }, (_, i) => { const n = i + 1; return `<button class="rw-pip ${n <= r ? 'on' : ''}" data-rw-rate="${b.id}" data-rw-rate-n="${n}" title="${n} out of 10" aria-label="Rate ${n} out of 10">${n}</button>`; }).join('');
+  return `<div class="rw-rating ${r ? 'rated' : ''}"><span class="rw-rate-lbl">${r ? 'Your score' : 'Rate it'}</span><div class="rw-pips">${pips}</div>${r ? `<span class="rw-score">${r}<span class="rw-score-of">/10</span></span>` : ''}</div>`;
+}
+async function rwSetRating(id, n) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  b.props = b.props || {};
+  const rating = (Number(b.props.rating) || 0) === n ? 0 : n;   // tap current score to clear
+  b.props.rating = rating;
+  renderReadwatch();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { rating } }) }); } catch (e) { toast(e.message); }
 }
 async function rwDelete(id) {
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); state.rw.items = (state.rw.items || []).filter((x) => x.id !== id); renderReadwatch(); } catch (e) { toast(e.message); }
@@ -5184,7 +5202,7 @@ function areaWheelPanel(area) {
   pills.push(`<span class="awg-pill">📊 ${revs.length} rating${revs.length === 1 ? '' : 's'}</span>`);
   return `<div class="awheel">
     <div class="awheel-hero">
-      <div class="awheel-gauge" style="--h:${hue};--sc:${curScore}"><span class="awg-n">${curScore || '–'}</span><span class="awg-of">/5</span></div>
+      <div class="awheel-gauge" style="--h:${hue};--sc:${curScore}"><span class="awg-line"><span class="awg-n">${curScore || '–'}</span><span class="awg-of">/5</span></span></div>
       <div class="awheel-herometa">
         <div class="awg-sent">${AREA_SENTIMENT[curScore] || 'Not rated yet'} ${dTag}</div>
         <div class="awg-sub">${curScore ? `${curScore} out of 5${prev != null && delta ? ` · was ${prev}` : ''}` : 'Rate it in a review'}</div>
@@ -13366,6 +13384,7 @@ document.addEventListener('click', (e) => {
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
   const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) i.focus(); } return; }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
+  const rwr = t.closest('[data-rw-rate]'); if (rwr) { rwSetRating(rwr.dataset.rwRate, Number(rwr.dataset.rwRateN)); return; }
   const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
