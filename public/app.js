@@ -5014,6 +5014,13 @@ function renderAreasList() {
     const hue = hueOf(a); const s = S(a.id); const fav = !!(a.props && a.props.fav);
     const vision = (a.props && (a.props.vision || '').trim()) || '';
     const act = areaActivity(s.last);
+    // Wheel-of-Life marker: a mini donut filled to this area's last score (in its own
+    // colour), shown only on areas actually tracked in the wheel (not reviewOff); a
+    // gold ring flags a "key" area. So you can see at a glance what's on the wheel.
+    const tracked = !(a.props && a.props.reviewOff);
+    const wscore = Math.min((a.props && a.props.wheelScore) || 0, 5);
+    const keyArea = !!(a.props && a.props.reviewStar);
+    const wheelBadge = tracked ? `<span class="agc-wheel${keyArea ? ' key' : ''}" style="--sc:${wscore};--wh:${hue}" title="In your Wheel of Life${keyArea ? ' · a key area' : ''}${wscore ? ` · last score ${wscore}/5` : ' · not scored yet'}" aria-label="Tracked in Wheel of Life"></span>` : '';
     const chips = [
       `<span class="agc-chip agc-chip-t">✓ ${s.tasks || 0}</span>`,
       s.goals ? `<span class="agc-chip agc-chip-g">🎯 ${s.goals}</span>` : '',
@@ -5022,7 +5029,7 @@ function renderAreasList() {
     ].join('');
     return `<div class="area-gcard" style="--h:${hue}" ${canDrag ? `draggable="true" data-area-drag="${a.id}"` : `data-area-drag="${a.id}"`}>
       <button class="agc-open" data-open-area="${a.id}">
-        <span class="agc-toprow"><span class="agc-mono">${esc(initial(a.title || '?'))}</span><span class="agc-act agc-act-${act.cls}" title="How active this area has been">${act.label}</span></span>
+        <span class="agc-toprow"><span class="agc-mono">${esc(initial(a.title || '?'))}</span><span class="agc-topright">${wheelBadge}<span class="agc-act agc-act-${act.cls}" title="How active this area has been">${act.label}</span></span></span>
         <span class="agc-name">${esc(a.title || 'Untitled')}</span>
         ${vision ? `<span class="agc-vision">${esc(vision.slice(0, 84))}${vision.length > 84 ? '…' : ''}</span>` : '<span class="agc-vision agc-vision-empty">Add a vision to steer by</span>'}
         <span class="agc-metrics">${chips}</span>

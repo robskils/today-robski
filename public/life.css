@@ -3622,6 +3622,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .agc-star { position:absolute; top:12px; right:10px; }
 /* Top row: monogram + an "how active" pill. */
 .agc-toprow { display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; }
+.agc-topright { display:inline-flex; align-items:center; gap:8px; flex:none; }
+/* Wheel-of-Life marker: a mini donut filled to the area's last score, in its colour;
+   a gold ring means it's a key area. Only tracked areas get one, so the wheel members
+   read at a glance. */
+.agc-wheel { width:20px; height:20px; border-radius:50%; flex:none; position:relative; background:conic-gradient(from -90deg, hsl(var(--wh,220) 58% 52%) calc(var(--sc,0) * 72deg), color-mix(in srgb,hsl(var(--wh,220) 45% 50%) 20%, var(--paper-2)) 0); }
+.agc-wheel::after { content:''; position:absolute; inset:5px; border-radius:50%; background:var(--card); }
+.agc-wheel.key { box-shadow:0 0 0 2px var(--gold); }
 .agc-act { font-size:11px; font-weight:700; letter-spacing:.02em; padding:3px 9px; border-radius:999px; white-space:nowrap; }
 .agc-act-hot { color:#fff; background:var(--c); }
 .agc-act-warm { color:var(--ink-1); background:color-mix(in srgb,var(--c) 22%,transparent); }
@@ -3852,7 +3859,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* The controls pin just under the sticky breadcrumb and the list scrolls under them,
    so search + filters + sort are always in reach in a long list. Negative side
    margins let the blurred bar span the pane's full width (cancelling its padding). */
-.notes-toolbar-sticky { position:sticky; top:calc(44px + var(--notes-crumbh,44px)); z-index:8; background:color-mix(in srgb,var(--paper) 93%,transparent); backdrop-filter:blur(10px); margin:0 calc(-1 * clamp(20px,4vw,52px)) 16px; padding:10px clamp(20px,4vw,52px) 12px; border-bottom:1px solid var(--line); }
+.notes-toolbar-sticky { position:sticky; top:calc(44px + var(--notes-crumbh,44px)); z-index:8; background:var(--paper); margin:0 calc(-1 * clamp(20px,4vw,52px)) 16px; padding:10px clamp(20px,4vw,52px) 12px; border-bottom:1px solid var(--line); }
 @media (max-width:820px){ .notes-toolbar-sticky { top:calc(var(--navh,56px) + var(--notes-crumbh,44px)); margin-left:calc(-1 * max(16px,env(safe-area-inset-left))); margin-right:calc(-1 * max(16px,env(safe-area-inset-right))); padding-left:max(16px,env(safe-area-inset-left)); padding-right:max(16px,env(safe-area-inset-right)); } }
 .notes-toolbar .list-search { flex:1; min-width:180px; margin:0; }
 .notes-toolbar .notes-sort { flex:none; width:auto; max-width:none; font-size:15px; padding:12px 14px; }
