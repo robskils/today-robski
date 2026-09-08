@@ -8742,13 +8742,21 @@ function contactPhoneFields(p) {
 async function openContacts() {
   state.view = { type: 'contacts' };
   renderNav();
+  // Paint the pane straight away, from whatever's cached (even nothing - the page
+  // renders an empty state). This is the fix for "tapping Contacts drops me on
+  // Home": we used to renderNav (which highlights Contacts) but only render the
+  // PANE after awaiting the loads, so if any load threw - and loadContacts /
+  // loadContactGroups had no catch - openContacts rejected before renderContacts
+  // ever ran, leaving the pane showing Home under a Contacts-highlighted nav.
+  renderContacts();
   const [, , friends, shared] = await Promise.all([
-    loadContacts(true), loadContactGroups(true),
+    loadContacts(true).catch(() => state.contacts || []),
+    loadContactGroups(true).catch(() => state.contactGroups || []),
     api('/api/friends').catch(() => ({ friends: [], incoming: [], outgoing: [], suggestions: [] })),
     api('/api/shared').then((r) => r.items || []).catch(() => []),
   ]);
   state.friends = friends; state.sharedWithMe = shared;
-  renderContacts();
+  if (state.view.type === 'contacts') renderContacts();
 }
 function contactCardHtml(c) {
   const p = c.props || {};
