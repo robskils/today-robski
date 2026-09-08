@@ -3332,11 +3332,11 @@ function practicesManageHtml() {
   const body = ordered.map((g) => {
     const rows = g.items.map((a) => {
       const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
-      return `<button class="pm-row ${a.avoid ? 'pm-avoid' : ''}" data-prc-edit="${a.id}"><span class="pm-name">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<span class="pm-edit" title="Edit">✎</span></button>`;
+      return `<div class="pm-row ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><button class="pm-open" data-prc-edit="${a.id}"><span class="pm-name">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<span class="pm-edit" title="Edit">✎</span></button></div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
-      ${rows}
+      <div class="pm-rows">${rows}</div>
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}
     </div>`;
   }).join('');
@@ -13839,6 +13839,52 @@ function areaSecDragEnd(e) {
 }
 document.addEventListener('pointerup', areaSecDragEnd);
 document.addEventListener('pointercancel', areaSecDragEnd);
+// Practices (Settings › Practices): drag the ⠿ grip to reorder within its life
+// area, so the ones you do most sit at the top. Persists via each activity's
+// position, which the Today palette reads too.
+let prcDrag = null;
+document.addEventListener('pointerdown', (e) => {
+  const grip = e.target.closest && e.target.closest('[data-prc-grip]'); if (!grip) return;
+  const row = grip.closest('[data-prc-id]'); const cont = row && row.closest('.pm-rows'); if (!row || !cont) return;
+  e.preventDefault(); e.stopPropagation();
+  const order = [...cont.querySelectorAll(':scope > [data-prc-id]')].map((el) => el.dataset.prcId);
+  prcDrag = { id: grip.dataset.prcGrip, row, cont, pid: e.pointerId, startY: e.clientY, moved: false, order, before: null };
+  row.classList.add('mdragging');
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  const d = prcDrag; if (!d || e.pointerId !== d.pid) return;
+  e.preventDefault();
+  const dy = e.clientY - d.startY; if (Math.abs(dy) > 4) d.moved = true;
+  d.row.style.position = 'relative'; d.row.style.zIndex = '20'; d.row.style.transform = `translateY(${dy}px)`;
+  const others = [...d.cont.querySelectorAll(':scope > [data-prc-id]')].filter((el) => el !== d.row);
+  others.forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  let beforeEl = null;
+  for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
+  d.before = beforeEl ? beforeEl.dataset.prcId : null;
+  if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
+  const vh = window.innerHeight; if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
+});
+function prcDragEnd(e) {
+  const d = prcDrag; if (!d || (e && e.pointerId !== d.pid)) return; prcDrag = null;
+  d.row.style.transform = ''; d.row.style.zIndex = ''; d.row.style.position = ''; d.row.classList.remove('mdragging');
+  d.cont.querySelectorAll('[data-prc-id]').forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  if (!d.moved) return;
+  const arr = d.order.filter((k) => k !== d.id);
+  let i = d.before ? arr.indexOf(d.before) : arr.length; if (i < 0) i = arr.length;
+  arr.splice(i, 0, d.id);
+  if (arr.join() !== d.order.join()) savePracticeOrder(arr);
+}
+document.addEventListener('pointerup', prcDragEnd);
+document.addEventListener('pointercancel', prcDragEnd);
+// Reassign positions to a life area's practices in the new order, persist each
+// changed one, then re-sort so the page reflects it at once.
+function savePracticeOrder(orderedIds) {
+  const acts = state.practices && state.practices.activities; if (!acts) return;
+  orderedIds.forEach((id, i) => { const a = acts.find((x) => String(x.id) === String(id)); if (a && a.position !== i) { a.position = i; api('/api/activities/' + id, { method: 'PATCH', body: JSON.stringify({ position: i }) }).catch(() => {}); } });
+  acts.sort((x, y) => String(x.lane || '').localeCompare(String(y.lane || '')) || ((x.position || 0) - (y.position || 0)) || ((x.id || 0) - (y.id || 0)));
+  rerenderPractices();
+}
 function reorderHomeSec(dragged, before, cur) {
   const arr = cur.filter((k) => k !== dragged);
   let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
