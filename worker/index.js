@@ -772,14 +772,23 @@ async function reviewSummary(request, env, json, err) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: env.CLAUDIUS_MODEL || 'claude-opus-5', max_tokens: 700, thinking: { type: 'disabled' }, system, messages: [{ role: 'user', content: user }] }),
+      // 700 tokens could cut a rich brief off mid-sentence (the classic dangling
+      // "The …" with nothing after it); 1200 gives a 2-4 paragraph brief room to
+      // finish, and the max_tokens guard below trims any overflow cleanly.
+      body: JSON.stringify({ model: env.CLAUDIUS_MODEL || 'claude-opus-5', max_tokens: 1200, thinking: { type: 'disabled' }, system, messages: [{ role: 'user', content: user }] }),
     });
     if (!res.ok) { const t = await res.text().catch(() => ''); return err(`Summary error ${res.status}: ${t.slice(0, 200)}`, request, 502); }
     const data = await res.json();
     await logAiUsage(env, 'anthropic', 'review-summary', data.model, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens);
     if (data.stop_reason === 'refusal') return err('Claude held back on this one.', request, 200);
-    const summary = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
+    let summary = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
     if (!summary) return err('No summary came back.', request, 502);
+    // If the model still ran to the ceiling, never display the half-sentence it
+    // stopped on: trim back to the last completed sentence.
+    if (data.stop_reason === 'max_tokens') {
+      const cut = Math.max(summary.lastIndexOf('.'), summary.lastIndexOf('!'), summary.lastIndexOf('?'), summary.lastIndexOf('…'));
+      if (cut > 40) summary = summary.slice(0, cut + 1);
+    }
     return json({ summary }, request);
   } catch (e) { console.error('reviewSummary:', e.message); return err('Could not reach Claude.', request, 502); }
 }

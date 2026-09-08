@@ -5015,30 +5015,35 @@ function renderArea() {
   // count and a few items, and clicking its header drills into that section's tile.
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
   const visionSnip = (area.props && (area.props.vision || '').trim()) || '';
-  // `target` is the tile the card opens (defaults to its own key) - Vision now
-  // opens the combined Goals tab.
-  const dashCard = (key, items, target) => `<section class="area-dash-card">
-    <button class="adc-head" data-area-tile="${esc(target || key)}"><span class="adc-ic">${TILE_META[key]}</span><span class="adc-l">${esc(key)}</span>${counts[key] != null ? `<span class="adc-c">${counts[key]}</span>` : ''}<span class="adc-go">→</span></button>
-    <div class="adc-body">${items}</div></section>`;
-  const dashItem = (attr, id, label, lead) => `<button class="adc-item" ${attr}="${id}">${lead || ''}<span class="adc-item-t">${esc(label)}</span></button>`;
-  const dashChips = (list, f) => `<div class="adc-chips">${list.map(f).join('')}</div>`;
   const canEditArea = !area.sharedBy;
-  // Vision: write it straight here, no click-through. (Robin, 2026-09.)
+  // The overview reads as one open page, not a wall of little boxes: each part is
+  // a quiet heading with its real content laid out directly beneath - note and
+  // table cards, goal cards, the task table - the same components the focused
+  // tiles use. The heading is a link into that tile for the fuller view.
+  // (Robin, 2026-09: "boxes are boring, break the data out.")
+  const secHead = (key, target, count) => `<button class="area-sec-h" data-area-tile="${esc(target || key)}"><span class="ash-ic">${TILE_META[key]}</span><span class="ash-l">${esc(key)}</span>${count != null ? `<span class="ash-c">${count}</span>` : ''}<span class="ash-go">→</span></button>`;
+  const flowSec = (key, target, count, body) => `<section class="area-sec">${secHead(key, target, count)}<div class="area-sec-body">${body}</div></section>`;
+  // Vision: write it straight here, no click-through.
   const visionBodyHtml = canEditArea
-    ? `<textarea class="adc-vision-edit" data-area-vision="${area.id}" rows="4" placeholder="Picture this area at its best - write it in the present tense…">${esc(visionSnip)}</textarea>`
-    : (visionSnip ? `<div class="adc-vision">${esc(visionSnip.slice(0, 180))}${visionSnip.length > 180 ? '…' : ''}</div>` : '<div class="adc-empty">Nothing yet.</div>');
-  const goalsBodyHtml = (activeGoals.length ? activeGoals.slice(0, 5).map((g) => dashItem('data-open-goal', g.id, g.title || 'Untitled')).join('') : (canEditArea ? '' : '<div class="adc-empty">No goals yet.</div>'))
+    ? `<textarea class="area-vision-edit" data-area-vision="${area.id}" rows="3" placeholder="Picture this area at its best - write it in the present tense…">${esc(visionSnip)}</textarea>`
+    : (visionSnip ? `<div class="area-vision-ro">${esc(visionSnip)}</div>` : '<div class="home-empty">Nothing yet.</div>');
+  const goalsBody = (activeGoals.length ? `<div class="goal-grid">${activeGoals.map((g) => goalCardMini(g)).join('')}</div>` : (canEditArea ? '' : '<div class="home-empty">No goals yet.</div>'))
     + (canEditArea ? `<button class="adc-addgoal" data-area-add-goal>+ ${activeGoals.length ? 'Add another goal' : 'Add a goal'}</button>` : '');
-  const dash = `<div class="area-dash" style="--h:${h}">
-    ${dashCard('Vision', visionBodyHtml, 'Goals')}
-    ${dashCard('Goals', goalsBodyHtml)}
-    ${dashCard('Tasks', openTs.length ? openTs.slice(0, 6).map((t) => dashItem('data-open-task', t.id, t.title || 'Untitled', t.props.priority ? `<span class="p-tag p-${t.props.priority}">${t.props.priority}</span>` : '')).join('') : '<div class="adc-empty">No open tasks.</div>')}
-    ${notesTotal ? dashCard('Notes and tables', [...starredNotes, ...otherNotes].slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled')).join('') + tables.slice(0, 2).map((t) => dashItem('data-open-table', t.id, t.title || 'Untitled', '<span class="adc-lead">▦</span>')).join('')) : ''}
-    ${contacts.length ? dashCard('Contacts', dashChips(contacts.slice(0, 6), (c) => `<span class="adc-chip">${esc(c.title || 'Someone')}</span>`)) : ''}
-    ${bookmarks.length ? dashCard('Saved links', dashChips(bookmarks.slice(0, 5), (b) => `<span class="adc-chip">${esc(b.title || 'Saved')}</span>`)) : ''}
-    ${journals.length ? dashCard('Reflections', journals.slice(0, 4).map((j) => dashItem('data-open-jentry', j.id, j.title || 'Journal entry')).join('')) : ''}
-    ${bucket.length ? dashCard('Bucket list', dashChips(bucket.slice(0, 5), (b) => `<span class="adc-chip">${esc(b.title || 'Someday')}</span>`)) : ''}
-    ${emails.length ? dashCard('Emails', emails.slice(0, 4).map((n) => dashItem('data-open-note', n.id, n.title || 'Untitled', '<span class="adc-lead">✉</span>')).join('')) : ''}
+  const TASK_CAP = 8;
+  const tasksBody = openTs.length
+    ? taskTableHtml(openTs.slice(0, TASK_CAP), 'No open tasks here.') + (openTs.length > TASK_CAP ? `<button class="area-sec-more" data-area-tile="Tasks">${openTs.length - TASK_CAP} more open task${openTs.length - TASK_CAP === 1 ? '' : 's'} →</button>` : '')
+    : '<div class="home-empty">No open tasks.</div>';
+  const sec = (key, ok, target, count, body) => (ok && !secHidden(key)) ? flowSec(key, target || key, count, body) : '';
+  const dash = `<div class="area-flow" style="--h:${h}">
+    ${sec('Vision', canEditArea || !!visionSnip, 'Goals', null, visionBodyHtml)}
+    ${sec('Goals', true, 'Goals', activeGoals.length, goalsBody)}
+    ${sec('Tasks', true, 'Tasks', openTs.length, tasksBody)}
+    ${sec('Notes and tables', !!notesTotal, null, notesTotal, `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>`)}
+    ${sec('Contacts', !!contacts.length, null, contacts.length, `<div class="contact-grid">${contactCards}</div>`)}
+    ${sec('Saved links', !!bookmarks.length, null, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`)}
+    ${sec('Reflections', !!journals.length, null, journals.length, `<div class="tbl-cards">${journalCards}</div>`)}
+    ${sec('Bucket list', !!bucket.length, null, bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
+    ${sec('Emails', !!emails.length, null, emails.length, `<div class="tbl-cards">${emailCards}</div>`)}
   </div>
   <section class="area-dash-files">${areaAttachHtml(area)}</section>
   ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
@@ -11248,7 +11253,13 @@ function setGoalReviewScore(goalId, score) {
 }
 // Render the stored AI summary text (plain prose, blank-line paragraphs) as HTML.
 function reviewSummaryHtml(text) {
-  return String(text || '').split(/\n{2,}/).map((para) => para.trim()).filter(Boolean)
+  let s = String(text || '').trim();
+  // Some older briefs were generated with a low token cap and got clipped mid-
+  // sentence (the dangling "The …"). If the whole thing doesn't end on a
+  // sentence, trim the fragment so nothing half-written shows. New briefs are
+  // already trimmed server-side and finish cleanly.
+  if (s && !/[.!?…"'”’)\]]$/.test(s)) { const cut = Math.max(s.lastIndexOf('.'), s.lastIndexOf('!'), s.lastIndexOf('?'), s.lastIndexOf('…')); if (cut > 40) s = s.slice(0, cut + 1); }
+  return s.split(/\n{2,}/).map((para) => para.trim()).filter(Boolean)
     .map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('');
 }
 // The "What you did" showcase: engaging metrics rather than a flat list - counts
@@ -11319,21 +11330,43 @@ function reviewWinsHtml(m, p, compact) {
   if (p1) stand.push(`<button class="rvw-win" ${p1.id ? `data-open-task="${p1.id}"` : ''}><span class="rvw-win-tag">⭐ a P1, done</span><span class="rvw-win-t">${esc(p1.title || 'Untitled')}</span></button>`);
   const standouts = stand.length ? `<div class="rvw-wins-h">Wins worth noting</div><div class="rvw-wins">${stand.join('')}</div>` : '';
 
-  const full = `<details class="rvw-all"><summary>See everything you ticked off · ${done.length}</summary><div class="rvw-all-body">${reviewDoneCards(m)}</div></details>`;
+  const full = `<details class="rvw-all"${(state.review_open && state.review_open.doneOpen) ? ' open' : ''} data-rvd-details><summary>See everything you ticked off · ${done.length}</summary><div class="rvw-all-body">${reviewDoneCards(m)}</div></details>`;
   return compact ? `${standouts}${full}` : `${metrics}${bars}${standouts}${full}`;
 }
-// Everything you ticked off, grouped by life area (the "type"), each a card you
-// can click straight through to. Shown under the ✦ summary when "ticked off" is open.
+// Everything you ticked off, each a card you can click straight through to.
+// Grouped by life area or by priority - your choice, toggled at the top (Robin,
+// 2026-09). Shown under the ✦ summary when "ticked off" is open. Area and
+// priority are enriched from the live task blocks so older reviews sort too.
 function reviewDoneCards(m) {
   const done = m.tasksDone || []; if (!done.length) return '';
-  const byArea = new Map();
-  done.forEach((t) => { const k = t.area || '_none'; if (!byArea.has(k)) byArea.set(k, []); byArea.get(k).push(t); });
-  const groups = [...byArea.entries()].sort((a, b) => b[1].length - a[1].length).map(([aid, ts]) => {
-    const a = aid === '_none' ? null : areaById(aid); const name = a ? a.title : 'No area';
-    const cards = ts.map((t) => `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="rvm-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
-    return `<div class="rvd-group"><div class="rvd-group-h">${a ? `<span class="rvm-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span>` : ''}${esc(name)}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
-  }).join('');
-  return `<div class="rvd-list"><div class="rvd-total"><b>${done.length}</b> ticked off across <b>${byArea.size}</b> area${byArea.size === 1 ? '' : 's'} · tap any to open it</div>${groups}</div>`;
+  const R = state.review_open || {};
+  const sort = R.doneSort === 'priority' ? 'priority' : 'area';
+  const byId = new Map(((R.tasks) || []).map((t) => [t.id, t]));
+  const items = done.map((t) => { const lp = ((byId.get(t.id) || {}).props) || {}; return { ...t, area: t.area || lp.area || null, priority: t.priority || lp.priority || null }; });
+  const nA = new Set(items.map((t) => t.area || '_none')).size;
+  const cardOf = (t, a) => `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="rvm-t">${esc(t.title || 'Untitled')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}</button>`;
+  let groups;
+  if (sort === 'priority') {
+    const order = ['P1', 'P2', 'P3', '_none'];
+    const byP = new Map();
+    items.forEach((t) => { const k = t.priority || '_none'; if (!byP.has(k)) byP.set(k, []); byP.get(k).push(t); });
+    groups = order.filter((k) => byP.has(k)).map((k) => {
+      const ts = byP.get(k);
+      const head = k === '_none' ? 'No priority' : `<span class="p-tag p-${k}">${k}</span>`;
+      const cards = ts.map((t) => cardOf(t, t.area ? areaById(t.area) : null)).join('');
+      return `<div class="rvd-group"><div class="rvd-group-h">${head}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
+    }).join('');
+  } else {
+    const byArea = new Map();
+    items.forEach((t) => { const k = t.area || '_none'; if (!byArea.has(k)) byArea.set(k, []); byArea.get(k).push(t); });
+    groups = [...byArea.entries()].sort((a, b) => b[1].length - a[1].length).map(([aid, ts]) => {
+      const a = aid === '_none' ? null : areaById(aid); const name = a ? a.title : 'No area';
+      const cards = ts.map((t) => cardOf(t, a)).join('');
+      return `<div class="rvd-group"><div class="rvd-group-h">${a ? `<span class="rvm-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span>` : ''}${esc(name)}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
+    }).join('');
+  }
+  const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Life area</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
+  return `<div class="rvd-list"><div class="rvd-total"><b>${done.length}</b> ticked off across <b>${nA}</b> area${nA === 1 ? '' : 's'} · tap any to open it</div>${toggle}${groups}</div>`;
 }
 // The compact record the summary is written from - the same mirror the card
 // already shows, with area ids resolved to names so the brief can name them.
@@ -12613,6 +12646,7 @@ document.addEventListener('click', (e) => {
   const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(() => { renderReviewCard(); reviewScrollTop(); }); toast('Filed ✓ - here is your report'); return; }
   const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
   { const rt = t.closest('[data-rr-tab]'); if (rt) { if (state.review_open) { state.review_open.reportTab = rt.dataset.rrTab; renderReviewCard(); } return; } }
+  { const rvs = t.closest('[data-rvd-sort]'); if (rvs) { if (state.review_open) { state.review_open.doneSort = rvs.dataset.rvdSort; state.review_open.doneOpen = true; renderReviewCard(); } return; } }
   if (t.closest('[data-review-edit]')) { if (state.review_open) { state.review_open.mode = 'edit'; renderReviewCard(); } return; }
   if (t.closest('[data-review-report]')) { if (state.review_open) { flushProse(); flushReviewAnswers(); state.review_open.mode = 'report'; renderReviewCard(); } return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }

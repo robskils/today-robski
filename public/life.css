@@ -831,6 +831,11 @@ button { cursor:pointer; background:none; border:0; }
 .rvd-list { margin-top:16px; padding-top:16px; border-top:1px solid color-mix(in srgb,var(--accent) 20%,var(--line)); }
 .rvd-total { font-size:13.5px; color:var(--ink-2); margin-bottom:12px; }
 .rvd-total b { color:var(--ink); }
+.rvd-sort { display:flex; align-items:center; gap:7px; margin-bottom:14px; }
+.rvd-sort-l { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin-right:2px; }
+.rvd-sort-b { font-size:13px; font-weight:600; padding:5px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); cursor:pointer; }
+.rvd-sort-b:hover { border-color:var(--line-2); color:var(--ink); }
+.rvd-sort-b.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .rvd-group { margin-bottom:14px; }
 .rvd-group-h { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--ink-2); margin-bottom:7px; }
 .rvd-count { margin-left:2px; font-size:11.5px; font-weight:600; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 8px; }
@@ -2958,6 +2963,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .tfa-block { margin-top:18px; }
 .tfa-block .set-row-s { margin-top:8px; line-height:1.5; }
 .tfa-block .set-row-s + .set-row-s { margin-top:12px; }
+.tfa-block .add-btn.wide { margin-top:16px; padding:13px 30px; }
 .tfa-pill { font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; vertical-align:middle; margin-left:6px; }
 .tfa-pill.on { color:#6f9f4a; background:color-mix(in srgb,#6f9f4a 14%,transparent); }
 .tfa-pill.off { color:var(--ink-3); background:var(--paper-2,color-mix(in srgb,var(--ink) 8%,transparent)); }
@@ -3472,6 +3478,25 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .adc-empty { padding:8px; font-size:13.5px; color:var(--ink-3); }
 .adc-chips { display:flex; flex-wrap:wrap; gap:6px; padding:6px 8px; }
 .adc-chip { font-size:13px; color:var(--ink-2); background:color-mix(in srgb,var(--c) 9%,transparent); border:1px solid var(--line); padding:3px 10px; border-radius:999px; white-space:nowrap; }
+/* Open, flowing area overview: each part is a heading + its real content laid
+   straight on the page (note/table cards, goal cards, task table), no boxes. */
+.area-flow { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; gap:30px; }
+.area-sec { display:flex; flex-direction:column; gap:13px; }
+.area-sec-h { display:flex; align-items:center; gap:10px; width:100%; background:none; border:0; border-bottom:1px solid var(--line); padding:0 0 6px; cursor:pointer; text-align:left; color:var(--ink-3); }
+.area-sec-h:hover { color:var(--ink); }
+.area-sec-h:hover .ash-go { opacity:1; transform:none; }
+.ash-ic { font-size:15px; line-height:1; color:color-mix(in srgb,var(--c) 72%,var(--ink-3)); }
+.ash-l { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; }
+.ash-c { font-size:12px; font-weight:700; color:var(--ink-2); background:color-mix(in srgb,var(--c) 15%,transparent); padding:1px 8px; border-radius:999px; }
+.ash-go { margin-left:auto; font-size:15px; color:var(--ink-3); opacity:0; transform:translateX(-4px); transition:opacity .14s, transform .14s; }
+.area-sec-body { min-width:0; }
+.area-vision-edit { width:100%; border:1px solid var(--line); background:var(--card); resize:vertical; padding:12px 14px; font:inherit; font-size:15.5px; line-height:1.6; color:var(--ink); min-height:82px; border-radius:12px; box-shadow:var(--shadow); }
+.area-vision-edit:focus { outline:none; border-color:color-mix(in srgb,var(--c) 55%,var(--line)); }
+.area-vision-edit::placeholder { color:var(--ink-3); font-style:italic; }
+.area-vision-ro { font-size:16px; line-height:1.6; color:var(--ink-2); font-style:italic; }
+.area-sec-more { align-self:flex-start; margin-top:8px; background:none; border:0; color:var(--accent); font-size:14px; font-weight:600; cursor:pointer; padding:4px 2px; }
+.area-sec-more:hover { text-decoration:underline; }
+@media (max-width:640px) { .area-flow { gap:24px; } }
 .area-dash-shared { margin-top:20px; }
 .area-dash-wall { margin-top:20px; }
 
