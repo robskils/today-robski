@@ -3759,12 +3759,23 @@ function renderHome() {
           const todayRows = evRows + (off === 0 ? surfacedRows : '');
           const p1all = priorityTasks(); const p1total = alerts.p1 || p1all.length;
           const kit = alerts.keepInTouch || [];
+          // A due catch-up also surfaces as a Today notification, with a ✓ (been in
+          // touch) and an × to hide it for the day when it gets boring - the same
+          // way a surfaced task or a birthday behaves. Only on today itself.
+          const kitTodayRows = off === 0 ? kit.filter((k) => !alertDismissed('kit:' + k.id)).map((k) => {
+            const a = areaById(k.area); const hue = a ? hueOf(a) : 220;
+            const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet';
+            return `<div class="ev-row ev-task ev-kit ev-click" data-open-contact="${k.id}" role="button" tabindex="0" title="Open ${esc(k.name || '')}">
+      <span class="ev-time"><button class="ev-check" data-kit-done="${esc(k.taskId)}" title="I've been in touch" aria-label="Mark back in touch with ${esc(k.name || '')}">✓</button></span>
+      <span class="ev-t"><span class="ev-dot" style="--h:${hue}"></span>💬 Reach out to ${esc(k.name || 'someone')}</span><span class="ev-loc ev-surfaced">${esc(since)}</span>
+      <button class="ev-x" data-alert-x="kit:${k.id}" title="Hide for today" aria-label="Hide ${esc(k.name || '')} reminder for today">×</button></div>`;
+          }).join('') : '';
           const bdays = (off === 0 && alerts.birthdays) ? alerts.birthdays.filter((b) => !alertDismissed('bday:' + b.id)) : [];
           const kitCount = kit.length + bdays.length;
           const bdayRows = bdays.map((b) => `<div class="kit-hrow"><button class="kit-hopen" data-open-contact="${b.id}"><span class="contact-av kit-hav">🎂</span><span class="kit-hnm">${esc(b.name)}</span><span class="kit-hsub">Birthday today</span></button></div>`).join('');
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
-            today: `<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (todayRows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
+            today: `<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 8).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 8 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
@@ -10070,6 +10081,13 @@ function renderGoalCard() {
       </div>`
     : `<div class="gc-prog gc-prog-done"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? t('goal.achieved') : t('goal.markachieved')}</button><span class="goal-done-note">${isDone ? t('goal.nicelydone') : t('goal.tickwhen')}</span></div>`;
   const focusMins = focusMinsFor('goal', g.id);
+  // Preserve the title's focus + caret across a re-render (the viewers fetch, a
+  // progress tick, etc. rebuild this pane). Without this, landing on a goal put
+  // the cursor in the name and then a background re-render snatched it away.
+  const ta0 = document.getElementById('goalcard-title');
+  const keepTitleFocus = !!ta0 && document.activeElement === ta0;
+  const selS = keepTitleFocus ? ta0.selectionStart : null;
+  const selE = keepTitleFocus ? ta0.selectionEnd : null;
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
@@ -10105,6 +10123,7 @@ function renderGoalCard() {
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     </details>`;
   autoGrowSoon($('#goalcard-title'));
+  if (keepTitleFocus) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.setSelectionRange(selS, selE); } catch {} } }
 }
 // Every task already sitting in this goal's life area, so you can pull an
 // existing one in rather than only ever adding fresh tasks. Linked tasks and
@@ -12864,13 +12883,13 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-self-show]')) { try { localStorage.removeItem('life.contacts.selfHidden'); } catch {} renderContacts(); return; }
   if (t.closest('[data-contacts-merge]')) { mergeSelectedContacts(); return; }
   if (t.closest('[data-contacts-selclear]')) { state.contactSel = new Set(); renderContacts(); return; }
+  const kitd0 = t.closest('[data-kit-done]'); if (kitd0) { homeKitTouched(kitd0.dataset.kitDone); return; }   // the ✓ on a Keep-in-touch row (checked before the row's open-contact)
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
   if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
   if (t.closest('[data-contact-import]')) { $('#contact-file')?.click(); return; }
   const delc = t.closest('[data-del-contact]'); if (delc) { delContact(delc.dataset.delContact); return; }
   const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
-  const kitd = t.closest('[data-kit-done]'); if (kitd) { homeKitTouched(kitd.dataset.kitDone); return; }
   const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
   const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
   if (t.closest('[data-cc-add-email]')) { const btn = t.closest('[data-cc-add-email]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row"><input class="sel cc-email-in" type="email" placeholder="name@example.com" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-email title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-email-in')?.focus(); return; }
