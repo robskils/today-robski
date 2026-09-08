@@ -10900,7 +10900,34 @@ function periodWindow(rtype, anchorISO) {
   const y = (a < new Date(Y, 11, 31)) ? Y - 1 : Y;
   return { from: localISO(new Date(y, 0, 1)), to: localISO(new Date(y, 11, 31)) };
 }
-function reviewPeriod(rtype) { return periodWindow(rtype, todayISO()); }
+function reviewPeriod(rtype) { return activeReviewWindow(rtype, todayISO()); }
+// The period CONTAINING today (this month / quarter / year), as opposed to the
+// just-completed one. A living review of the current stretch.
+function currentPeriodWindow(rtype, anchorISO) {
+  if (!rtype || rtype === 'weekly') return weeklyWindow(anchorISO);
+  const a = new Date((anchorISO || todayISO()) + 'T00:00');
+  const Y = a.getFullYear(), M = a.getMonth();
+  if (rtype === 'monthly') return { from: localISO(new Date(Y, M, 1)), to: localISO(new Date(Y, M + 1, 0)) };
+  if (rtype === 'quarterly') { const q = Math.floor(M / 3); return { from: localISO(new Date(Y, q * 3, 1)), to: localISO(new Date(Y, q * 3 + 3, 0)) }; }
+  return { from: localISO(new Date(Y, 0, 1)), to: localISO(new Date(Y, 11, 31)) };
+}
+// Which period a review of this type should offer RIGHT NOW: the just-completed
+// one by default (a September monthly reviews August), but once you've already
+// filed that, roll forward to the current, still-running period so you can begin
+// building the next one. The yearly especially is a living document you grow
+// across the year - so having filed 2025, you're offered 2026, not sent back.
+function activeReviewWindow(rtype, anchorISO) {
+  const done = periodWindow(rtype, anchorISO);
+  // "Already filed" = a submitted review of this type whose period ends within the
+  // just-completed window (a range check, not an exact date, so a review made under
+  // older period maths still counts as done).
+  const filed = (state.reviews || []).some((r) => { const q = r.props || {}; return q.rtype === rtype && q.status === 'done' && q.to && q.to >= done.from && q.to <= done.to; });
+  if (filed) {
+    const cur = currentPeriodWindow(rtype, anchorISO);
+    if (cur.to !== done.to) return cur;
+  }
+  return done;
+}
 // A legible label for a review's period, by type.
 function periodTitle(rtype, from, to) {
   if (!from || !to) return { main: '', range: '' };
@@ -11079,12 +11106,17 @@ function reviewsBody() {
       ${heroBtn}
     </div>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => {
-      const w = periodWindow(k, todayISO);
+      const w = activeReviewWindow(k, todayISO);
       const pt = periodTitle(k, w.from, w.to);
       const ex = past.find((r) => (r.props || {}).rtype === k && (r.props || {}).to === w.to);
       const exProg = ex && (ex.props || {}).status === 'inprogress';
       const exDone = ex && (ex.props || {}).status === 'done';
-      const hook = { monthly: 'What actually moved this month?', quarterly: 'Score the cycle just gone.', yearly: 'The whole year, in the round.' }[k];
+      // The hook flips once you've moved onto the current, still-running period:
+      // it's a look-ahead you build up, not a retrospective of the period just gone.
+      const isCurrent = w.to === currentPeriodWindow(k, todayISO).to;
+      const hook = isCurrent
+        ? { monthly: 'This month, as it unfolds.', quarterly: 'This quarter, as it takes shape.', yearly: 'This year, in the round - build it as you go.' }[k]
+        : { monthly: 'What actually moved this month?', quarterly: 'Score the cycle just gone.', yearly: 'The whole year, in the round.' }[k];
       const badge = exDone ? '<span class="rv-pt-badge is-done">✓ Filed</span>' : exProg ? '<span class="rv-pt-badge is-prog">● In progress</span>' : '';
       const cta = exDone ? 'Look back' : exProg ? 'Continue' : 'Start';
       const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review="${k}"`;
@@ -11557,6 +11589,38 @@ function reviewWheelHtml(p) {
     <div class="rr-wheel-read"><p class="rr-wheel-comm">${comm}</p>${moversHtml}<div class="rr-wheel-spokes">${spokeRows}</div></div>
   </div>`;
 }
+// A LIVE wheel for the edit tab: the shape takes form as you score, with the
+// running average and the move on last time. Just the picture and the number -
+// the editable rows sit below it, so no spoke list here. Appears once three
+// areas are scored, so the reward of "it's taking shape" lands as you go.
+function reviewWheelPreview(p) {
+  const areas = (state.areas || []).filter((a) => a && a.title && (p.wheel || {})[a.id] > 0);
+  if (areas.length < 3) return '';
+  const period = PERIOD_WORD[p.rtype] || 'period';
+  const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
+  const prevWheel = (prev && prev.wheel) || null;
+  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5), prev: prevWheel ? Math.min(prevWheel[a.id] || 0, 5) : 0 }));
+  const N = data.length, cx = 90, cy = 90, R = 76, seg = 2 * Math.PI / N;
+  const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`;
+  const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
+  const wedges = data.map((d, i) => { const a0 = -Math.PI / 2 + i * seg, a1 = a0 + seg, large = seg > Math.PI ? 1 : 0, rr = R * d.score / 5; return `<path d="M${cx},${cy} L${P(R, a0)} A${R},${R} 0 ${large} 1 ${P(R, a1)} Z" class="wol-track"/><path d="M${cx},${cy} L${P(rr, a0)} A${rr.toFixed(1)},${rr.toFixed(1)} 0 ${large} 1 ${P(rr, a1)} Z" fill="hsl(${hueOf(d.a)} 58% 55%)" fill-opacity="0.9" stroke="var(--card)" stroke-width="1.5"/>`; }).join('');
+  const havePrev = prevWheel && data.every((d) => d.prev > 0);
+  const prevOutline = havePrev ? `<polygon points="${data.map((d, i) => P(R * d.prev / 5, -Math.PI / 2 + i * seg + seg / 2)).join(' ')}" class="rr-wheel-prev"/>` : '';
+  const svg = `<svg viewBox="0 0 180 180" class="wol-svg" role="img" aria-label="Your Wheel of Life so far">${rings}${wedges}${prevOutline}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
+  const avg = Math.round(data.reduce((s, d) => s + d.score, 0) / data.length * 10) / 10;
+  const prevAvg = havePrev ? Math.round(data.reduce((s, d) => s + d.prev, 0) / data.length * 10) / 10 : null;
+  const dTag = (d) => d ? `<span class="rr-key-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(Math.round(d * 10) / 10)}</span>` : '';
+  const total = (state.areas || []).filter((a) => a && a.title && !(a.props && a.props.reviewOff)).length;
+  const legend = havePrev ? `<div class="rr-wheel-legend"><span class="rr-wheel-key now">This ${period}</span><span class="rr-wheel-key was">Last ${period}</span></div>` : '';
+  return `<div class="rv-wprev">
+    <div class="rv-wprev-chart">${svg}${legend}</div>
+    <div class="rv-wprev-meta">
+      <div class="rv-wprev-avg"><span class="rv-wpa-n">${avg}</span><span class="rv-wpa-of">/5</span>${prevAvg != null && prevAvg !== avg ? ` ${dTag(avg - prevAvg)}` : ''}</div>
+      <div class="rv-wprev-lbl">Life balance</div>
+      <div class="rv-wprev-sub">${data.length} of ${total} area${total === 1 ? '' : 's'} scored${data.length < total ? ' · score the rest below' : ' · nicely complete'}</div>
+    </div>
+  </div>`;
+}
 // Trends across this review type's history: sparklines for tasks completed and
 // Wheel of Life, with the move vs last time - an infographic read, not a list.
 function reviewSeries(rtype) {
@@ -11822,22 +11886,39 @@ function renderReviewCard() {
             : `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`}` : ''}
     </section>
 
-    <section class="rv-input">
+    ${(() => {
+      const answered = cfg.prompts.filter((q, i) => String((p.answers || {})[i] || '').trim()).length;
+      const wheelScored = Object.values(p.wheel || {}).filter((v) => v > 0).length;
+      const bal = wheelAvg(p.wheel) ? Math.min(wheelAvg(p.wheel), 5) : 0;
+      return `<section class="rv-input">
       <div class="home-sec-h">Your bit</div>
-      <div class="rv-input-tabs">
-        <button class="rv-input-tab ${inputTab === 'questions' ? 'on' : ''}" data-rv-inputtab="questions">Reflect</button>
-        <button class="rv-input-tab ${inputTab === 'wheel' ? 'on' : ''}" data-rv-inputtab="wheel">Wheel of Life${wheelAvg(p.wheel) ? ` · ${Math.min(wheelAvg(p.wheel), 5)}/5` : ''}</button>
+      <p class="rv-input-lead">Two ways in - reflect in words, or score how each area of life feels. Do one, or both; it all saves as you go.</p>
+      <div class="rv-optrow" role="tablist">
+        <button class="rv-opt ${inputTab === 'questions' ? 'on' : ''}" role="tab" aria-selected="${inputTab === 'questions'}" data-rv-inputtab="questions">
+          <span class="rv-opt-ic">✍️</span>
+          <span class="rv-opt-txt"><b>Reflect</b><small>${cfg.prompts.length} prompt${cfg.prompts.length === 1 ? '' : 's'} &amp; free writing</small></span>
+          ${answered ? `<span class="rv-opt-badge">${answered}/${cfg.prompts.length}</span>` : ''}
+        </button>
+        <button class="rv-opt ${inputTab === 'wheel' ? 'on' : ''}" role="tab" aria-selected="${inputTab === 'wheel'}" data-rv-inputtab="wheel">
+          <span class="rv-opt-ic">◍</span>
+          <span class="rv-opt-txt"><b>Wheel of Life</b><small>${bal ? `Balance ${bal}/5 so far` : 'Score each area out of 5'}</small></span>
+          ${wheelScored ? `<span class="rv-opt-badge">${wheelScored}</span>` : ''}
+        </button>
       </div>
       <div class="rv-input-panel">${inputTab === 'wheel'
-        ? `<p class="rva-intro">A line on how each area went, and a score out of 5 - your scores draw the <b>Wheel of Life</b>. Tap the × to leave an area out of this review.</p>
+        ? `${reviewWheelPreview(p)}
+           <p class="rva-intro">Score how each area went out of 5 and add a line on how it felt - your scores draw the <b>Wheel of Life</b>${wheelAreas.length >= 3 ? ', which takes shape above as you go' : ''}. Tap the × to leave an area out.</p>
            <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to reflect on them here.'}</div>`}</div>
            ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} left out · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}`
-        : `<div class="rv-qa">${cfg.prompts.map((q, i) => `<div class="rv-q">
-             <label class="rv-q-label" for="rv-ans-${i}">${esc(q)}</label>
-             <textarea class="rv-ans" id="rv-ans-${i}" data-rv-answer="${i}" rows="2" placeholder="Write your answer…" autocomplete="off">${esc((p.answers || {})[i] || '')}</textarea>
-           </div>`).join('')}</div>
-           <div class="rv-freewrite"><div class="rv-freewrite-h">Anything else on your mind</div>${notesSection(r.body, 'review', r.id)}</div>`}</div>
-    </section>
+        : `<p class="rv-reflect-intro">A few prompts to get you going - answer what speaks to you, skip what doesn't.</p>
+           <div class="rv-qa">${cfg.prompts.map((q, i) => { const has = String((p.answers || {})[i] || '').trim(); return `<div class="rv-q ${has ? 'answered' : ''}">
+             <span class="rv-q-num">${has ? '✓' : i + 1}</span>
+             <div class="rv-q-body"><label class="rv-q-label" for="rv-ans-${i}">${esc(q)}</label>
+             <textarea class="rv-ans" id="rv-ans-${i}" data-rv-answer="${i}" rows="2" placeholder="Write your answer…" autocomplete="off">${esc((p.answers || {})[i] || '')}</textarea></div>
+           </div>`; }).join('')}</div>
+           <div class="rv-freewrite"><div class="rv-freewrite-h">✎ Anything else on your mind</div>${notesSection(r.body, 'review', r.id)}</div>`}</div>
+    </section>`;
+    })()}
 
     ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
 
