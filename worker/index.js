@@ -298,6 +298,8 @@ async function handleCalendar(request, env, url) {
   const native = await nativeRangeEvents(env, from, to).catch(() => []);
   const g = await calendarRange(env, from, to);
   const events = applyEventAreas([...(g.events || []), ...native], await getEventAreas(env).catch(() => ({})));
+  applyEventContacts(events, await getEventContacts(env).catch(() => ({})));
+  applyEventUrls(events, await getEventUrls(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) merged in as read-only overlays.
   const feeds = await getFeeds(env);
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
@@ -341,6 +343,7 @@ async function createEvent(request, env) {
     const r = await createNativeEvent(env, b);
     if (r.error) return err(r.error, request);
     if (b.area !== undefined) await setEventAreaFor(env, r.id, b.area).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, r.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, r.id, b.url).catch(() => {});
     return json({ ok: true, id: r.id }, request, 201);
   }
 
@@ -390,7 +393,7 @@ async function createEvent(request, env) {
         const qRes = await fetch(q, { headers: { Authorization: `Bearer ${token}` } });
         if (qRes.ok) {
           const found = ((await qRes.json()).items || []).find((e) => e.status !== 'cancelled');
-          if (found) { if (b.area !== undefined) await setEventAreaFor(env, found.id, b.area).catch(() => {}); return json({ ok: true, id: found.id, existed: true }, request, 200); }
+          if (found) { if (b.area !== undefined) await setEventAreaFor(env, found.id, b.area).catch(() => {}); if (b.contact !== undefined) await setEventContactFor(env, found.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, found.id, b.url).catch(() => {}); return json({ ok: true, id: found.id, existed: true }, request, 200); }
         }
       } catch { /* lookup is best-effort; fall through and create */ }
     }
@@ -426,6 +429,7 @@ async function createEvent(request, env) {
 
     const ev = await res.json();
     if (b.area !== undefined) await setEventAreaFor(env, ev.id, b.area).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, ev.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, ev.id, b.url).catch(() => {});
     return json({ ok: true, id: ev.id }, request, 201);
   } catch (e) {
     console.error('createEvent:', e.message);
@@ -466,6 +470,7 @@ async function updateEvent(request, env, id) {
     await env.DB.prepare("UPDATE blocks SET title=?, props=?, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
       .bind(title, JSON.stringify(p), new Date().toISOString(), native.id, env.uid).run();
     if (b.area !== undefined) await setEventAreaFor(env, native.id, b.area).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, native.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, native.id, b.url).catch(() => {});
     return json({ ok: true, id: native.id }, request);
   }
   if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
@@ -507,6 +512,7 @@ async function updateEvent(request, env, id) {
     if (!res.ok) { console.error('google update event:', res.status, await res.text()); return err('Google would not update that event.', request, 502); }
     const ev = await res.json();
     if (b.area !== undefined) await setEventAreaFor(env, id, b.area).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, id, b.url).catch(() => {});
     return json({ ok: true, id: ev.id }, request);
   } catch (e) {
     console.error('updateEvent:', e.message);
@@ -911,6 +917,30 @@ async function setEventAreaFor(env, id, areaId) {
   await setSetting(env, 'event_areas', JSON.stringify(map));
 }
 function applyEventAreas(events, map) { if (!map) return events; for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; if (map[k]) e.area = map[k]; } return events; }
+// Which contact an event is "with", kept in a side-map keyed by the event's base
+// id (like event_areas) so it works for both native and Google events - the
+// owner's events live on Google, so this can't ride in the event's own props.
+async function getEventContacts(env) { const v = await getSetting(env, 'event_contacts'); try { return v ? JSON.parse(v) : {}; } catch { return {}; } }
+async function setEventContactFor(env, id, contactId) {
+  const key = String(id || '').split('::')[0]; if (!key) return;
+  const map = await getEventContacts(env);
+  if (contactId) map[key] = String(contactId); else delete map[key];
+  await setSetting(env, 'event_contacts', JSON.stringify(map));
+}
+function applyEventContacts(events, map) { if (!map) return events; for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; if (map[k]) e.contact = map[k]; } return events; }
+// A one-tap link on an event (a class page, a call, anything). Kept in a side-map
+// like the area/contact so it survives on the owner's Google events too - Google
+// only hands back recognised video-meeting links, so a plain class URL would
+// otherwise be lost. An explicit link here wins over an auto-detected one.
+async function getEventUrls(env) { const v = await getSetting(env, 'event_urls'); try { return v ? JSON.parse(v) : {}; } catch { return {}; } }
+async function setEventUrlFor(env, id, url) {
+  const key = String(id || '').split('::')[0]; if (!key) return;
+  const map = await getEventUrls(env);
+  const u = String(url || '').trim();
+  if (u) map[key] = u; else delete map[key];
+  await setSetting(env, 'event_urls', JSON.stringify(map));
+}
+function applyEventUrls(events, map) { if (!map) return events; for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; if (map[k]) e.url = map[k]; } return events; }
 
 // The accounts the per-minute cron fans out over: every active member. A NULL
 // status counts as active - rows created before the column existed have none,
@@ -2365,6 +2395,8 @@ async function handleDay(request, env, url) {
   const nativeDay = await nativeDayEvents(env, day).catch(() => []);
   cal.events = [...(cal.events || []), ...nativeDay];
   applyEventAreas(cal.events, await getEventAreas(env).catch(() => ({})));
+  applyEventContacts(cal.events, await getEventContacts(env).catch(() => ({})));
+  applyEventUrls(cal.events, await getEventUrls(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) for this day, read-only overlays.
   const feeds = await getFeeds(env);
   if (feedCountries(feeds).length || feedTeams(feeds).length) {

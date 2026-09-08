@@ -4958,12 +4958,20 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
 .cal-ag-when { min-width:0; }
 .cal-ag-eyebrow { display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.14em; font-weight:600; color:var(--accent); margin-bottom:1px; }
 .cal-ag-list { display:flex; flex-direction:column; }
-.cal-ag-row { display:flex; align-items:baseline; gap:16px; width:100%; text-align:left; padding:13px 8px; border-bottom:1px solid var(--line); transition:background .12s; }
+.cal-ag-row { display:flex; align-items:baseline; gap:16px; width:100%; text-align:left; padding:13px 8px; border-bottom:1px solid var(--line); transition:background .12s; cursor:pointer; }
 .cal-ag-row:hover { background:var(--paper-2); }
 .cal-ag-time { flex:none; width:112px; color:var(--ink-3); font-size:15px; font-variant-numeric:tabular-nums; }
 .cal-ag-t { flex:1; color:var(--ink); font-size:17px; }
 .cal-ag-loc { color:var(--ink-3); font-size:14.5px; }
 .cal-ag-join { margin-left:7px; font-size:13px; vertical-align:baseline; }
+.cal-ag-row .ev-join-btn { align-self:center; margin-left:auto; }
+/* "· with Ines" - the person an event is with. */
+.ev-with { color:var(--ink-3); font-weight:400; margin-left:6px; }
+/* A one-tap link on an event (the class, the call, the page) - a clear button,
+   right where the event sits on Home and in the calendar. */
+.ev-join-btn { flex:none; display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:999px; border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line-2)); background:color-mix(in srgb,var(--accent) 10%,var(--card)); color:var(--accent); font-size:13.5px; font-weight:650; text-decoration:none; white-space:nowrap; }
+.ev-join-btn:hover { background:color-mix(in srgb,var(--accent) 18%,var(--card)); border-color:var(--accent); }
+.ev-row .ev-join-btn { grid-column:2; justify-self:start; margin-top:6px; }
 /* Join-the-meeting link on an event's detail form. */
 .ce-join { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:9px 15px; border-radius:11px; background:var(--accent); color:var(--accent-ink); font-size:15px; font-weight:600; text-decoration:none; box-shadow:var(--shadow); }
 .ce-join:hover { filter:brightness(1.05); }

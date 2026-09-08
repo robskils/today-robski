@@ -742,7 +742,7 @@ function renderGuideIndex() {
       <div class="guide-sec-h">All the guides</div>
       <div class="guide-grid">${cards}</div>
       <div class="guide-sec-h">Privacy &amp; terms</div>
-      <p class="guide-start-p">How Daybook handles your data, and the terms of use. Daybook is private by design - your content is yours, never sold, and never used to train AI.</p>
+      <p class="guide-start-p"><b>We don't want your data. We want you to control it - we just help you do it.</b> Daybook earns its keep from subscriptions, not from your data: we don't read it, sell it, or use it to train AI, and we never will. Your Daybook is private to you, and your connected-account passwords are encrypted so not even we can read them. Download everything or delete it for good, any time.</p>
       <div class="guide-legal">
         <a class="guide-legal-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
         <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
@@ -2729,6 +2729,9 @@ async function openHome() {
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
   state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 }, today: day.today || dayKey(new Date()), dayOffset: 0, dayData: null, tileOpen: 'today' };
   renderNav(); renderHome();
+  // If a today event names a person, load contacts once so the "· with <name>"
+  // chip can resolve (the one-tap link works without them).
+  if ((state.home.events || []).some((e) => e.contact) && state.contacts === undefined) loadContacts().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {});
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
 // practices and task-bearing slots), merged and sorted by time. A slot that
@@ -2752,7 +2755,7 @@ function homeTodayItems() {
   // snoozed-task surfacing are a today-only signal, so they don't ride along.
   const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
-  const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url }));
+  const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, contact: e.contact }));
   // Birthdays (from Contacts) whose day is today lead the list, all-day style.
   if (off === 0) ((state.home.alerts && state.home.alerts.birthdays) || [])
     .filter((b) => !alertDismissed('bday:' + b.id))
@@ -3644,7 +3647,10 @@ function renderHome() {
     }
     if (it.kind === 'event') {
       const hasEnd = !it.allDay && it.end_min != null && it.end_min !== it.start_min;
-      return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${it.url ? '<span class="cal-ag-join" title="Has a video meeting link">🎥</span>' : ''}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}</div>`;
+      const ct = it.contact ? findContact(it.contact) : null;
+      const withChip = ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : '';
+      const joinBtn = it.url ? `<a class="ev-join-btn" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : '';
+      return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${withChip}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}${joinBtn}</div>`;
     }
     // (end time stacked under start; duration tag after the title)
     return `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`;
@@ -5556,6 +5562,9 @@ async function openCalendar(dateStr) {
   state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: localStorage.getItem('life.calMode') === 'week' ? 'week' : 'month', events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
+  // Contacts power the event form's "With" picker; load them quietly so the
+  // dropdown is ready when you open an event.
+  loadContacts().then(() => { if (state.view.type === 'calendar' && state.cal && (state.cal.adding || state.cal.editing) && document.getElementById('ce-contact')) renderCalendar(); }).catch(() => {});
   // The connect flow bounces back to /calendar?gcal=... - surface the outcome once.
   try {
     const g = new URLSearchParams(location.search).get('gcal');
@@ -5625,9 +5634,9 @@ function renderCalendar() {
   const dayEvents = (byDay[c.selected] || []);
   const agTime = (e) => e.allDay ? 'all day'
     : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}-${minToLabel(e.end_min)}` : minToLabel(e.start_min));
-  const agendaRows = dayEvents.length ? dayEvents.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}">
+  const agendaRows = dayEvents.length ? dayEvents.map((e) => { const ct = e.contact ? findContact(e.contact) : null; return `<div class="cal-ag-row" data-cal-ev="${e.id}" role="button" tabindex="0">
       <span class="cal-ag-time">${agTime(e)}</span>
-      <span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${e.url ? '<span class="cal-ag-join" title="Has a video meeting link">🎥</span>' : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
+      <span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${e.url ? `<a class="ev-join-btn" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; }).join('')
     : '<div class="home-empty">Nothing on this day.</div>';
   const cq = (state.calQuery || '').trim().toLowerCase();
   const matches = cq ? state.cal.events
@@ -5700,6 +5709,8 @@ function showCalForm(ev) {
     </div>
     <label class="ce-field"><span class="ce-flbl">Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
+    <label class="ce-field"><span class="ce-flbl">Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="A class, call or page to open in one tap (optional)" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
+    <label class="ce-field"><span class="ce-flbl">With</span><select id="ce-contact" class="sel"><option value="">Nobody</option>${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${c.id}" ${(ev && ev.contact) === c.id ? 'selected' : ''}>${esc(c.title || 'Unnamed')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     ${(ev && ev.recurringId) ? (() => { const REP = { daily: 'daily', weekdays: 'every weekday', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' }; const cad = (ev.repeat && REP[ev.repeat]) ? ` ${REP[ev.repeat]}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ Repeats${cad}</span><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
@@ -5738,7 +5749,7 @@ function onEventEndEdit(prefix) {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
 // Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
-function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, isNew, fallbackDate }) {
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
   // Send the repeat whenever the form supplied one (create OR edit) so you can
@@ -5746,11 +5757,13 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   const rep = (repeat !== undefined && repeat !== null && repeat !== '') ? { repeat } : {};
   const nt = (notes && String(notes).trim()) ? { notes: String(notes).trim() } : { notes: '' };
   const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a life area
+  const ur = url !== undefined ? { url: String(url || '').trim() } : {};   // a link to open in one tap (class, call, page)
+  const co = contact !== undefined ? { contact: contact || null } : {};    // a person this event is with
   if (allDay) {
     // Stored end is exclusive (the day after the last), so a multi-day trip pushes
     // the inclusive end date on by one.
     const multi = endDate && endDate > startDate ? { end_date: addDayISO(endDate, 1) } : {};
-    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt, ...ar };
+    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt, ...ar, ...ur, ...co };
   }
   // Duration = the gap between the two date+times (spanning days if it crosses
   // midnight). A non-positive or missing end falls back to an hour.
@@ -5758,10 +5771,10 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   let duration = Math.max(0, daysBetween(startDate, endDate)) * 1440 + isoToMin(endTime) - sMin;
   if (!(duration > 0)) duration = 60;
   duration = Math.max(15, duration);
-  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar };
+  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co };
 }
-async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area) {
-  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, isNew: !id, fallbackDate: state.cal.selected }));
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact) {
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, isNew: !id, fallbackDate: state.cal.selected }));
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
@@ -13400,7 +13413,7 @@ document.addEventListener('submit', (e) => {
     const v = $('#qe-title').value.trim();
     if (v) homeAddEvent(buildEventBody({ title: v, startDate: $('#qe-date').value, startTime: ($('#qe-time') || {}).value, endDate: ($('#qe-enddate') || {}).value, endTime: ($('#qe-endtime') || {}).value, location: $('#qe-loc').value.trim(), allDay: $('#qe-allday').checked, repeat: ($('#qe-repeat') || {}).value, notes: ($('#qe-notes') || {}).value, area: ($('#qe-area') || {}).value, isNew: true }));
   }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
