@@ -2367,14 +2367,21 @@ function sunTimes(date, lat, lng) {
   return { sunrise: mk(calc(true)), sunset: mk(calc(false)) };
 }
 
-// While a pointer is pressed on the sidebar, hold off rebuilding it (a mid-tap
-// innerHTML swap re-targets the click). Any render that wants to run in that
-// window is deferred and flushed once after the tap completes.
-let navHeld = false, navDeferred = false, __downNav = null, __downNavAt = 0;
-document.addEventListener('pointerdown', (e) => { const inNav = !!(e.target && e.target.closest && e.target.closest('#nav')); navHeld = inNav; __downNav = inNav ? e.target : null; __downNavAt = e.timeStamp || Date.now(); }, true);
-function releaseNavHold() { if (!navHeld) return; navHeld = false; if (navDeferred) { navDeferred = false; setTimeout(renderNav, 0); } }
-document.addEventListener('pointerup', releaseNavHold, true);
-document.addEventListener('pointercancel', releaseNavHold, true);
+// The "tapping Contacts drops me on Home" bug: a background render (friends
+// loading, a presence poll) rebuilds #nav's innerHTML in the split second between
+// pointerdown and the click that press generates. The browser hit-tested the OLD
+// button but dispatches the click to whatever now sits at those coordinates -
+// often Home. The cure is to freeze the sidebar for the whole gesture: while a
+// press is live on #nav we DEFER any rebuild, and we hold that freeze THROUGH the
+// click (released by the post-routing listener registered just after the main
+// click handler), so the sidebar the click lands on is the one that was pressed.
+// A fallback timer releases a press that never becomes a click (a scroll, a tap on
+// a gap). Releasing on pointerup instead raced the click and reintroduced the bug.
+let navHeld = false, navDeferred = false, navHoldT = null;
+document.addEventListener('pointerdown', (e) => { navHeld = !!(e.target && e.target.closest && e.target.closest('#nav')); }, true);
+function flushNavHold() { clearTimeout(navHoldT); navHoldT = null; navHeld = false; if (navDeferred) { navDeferred = false; renderNav(); } }
+document.addEventListener('pointerup', () => { if (navHeld) { clearTimeout(navHoldT); navHoldT = setTimeout(flushNavHold, 500); } }, true);
+document.addEventListener('pointercancel', flushNavHold, true);
 function renderNav() {
   const v = state.view;
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
@@ -12905,16 +12912,10 @@ document.addEventListener('focusout', (e) => { if (e.target && e.target.matches 
 document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
 document.addEventListener('mouseout', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.help-btn'))) hideHelpPop(); });
 document.addEventListener('click', (e) => {
-  // Trust where the press landed, not where the click resolved. If a re-render
-  // swapped the sidebar between press and release, the browser re-aims the click
-  // at whatever's now under the cursor - onto Home or clean off the sidebar - and
-  // a Contacts tap fires Home. __downNav is the exact element the pointer went
-  // down on inside the sidebar (its data-* actions survive even a rebuild), so
-  // whenever this gesture began in the sidebar we route by THAT, wherever the
-  // click ended up. A short freshness window stops a stale press (a scroll that
-  // never clicked) from steering a much later click.
-  const t = (__downNav && ((e.timeStamp || Date.now()) - __downNavAt) < 700) ? __downNav : e.target;
-  __downNav = null;
+  // The sidebar is frozen for the whole gesture (see navHeld above), so the button
+  // the browser hit-tested at pointerdown is still the button under this click - a
+  // plain e.target routes correctly, no press-target bookkeeping needed.
+  const t = e.target;
   // Bottom-nav tab: tapping it jumps to the top of that page. If you're already
   // on it, just scroll up; otherwise navigate (fall through) and scroll after.
   const tabb = t.closest('.tab-b');
@@ -13573,6 +13574,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-add-row]')) { addRow(); return; }
   if (t.closest('[data-del-cur]')) { delTable(); return; }
 });
+// Registered AFTER the main click handler above, so it runs once routing is done:
+// release the sidebar freeze and flush any rebuild that was deferred during the
+// tap. The DOM stayed frozen through the click, so this rebuild can't re-target it.
+document.addEventListener('click', () => { if (navHeld) flushNavHold(); });
 // right-click a column header for its menu (rename / type / options / sort / delete)
 document.addEventListener('contextmenu', (e) => {
   const th = e.target.closest('[data-sort-col]');
