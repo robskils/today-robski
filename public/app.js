@@ -4021,8 +4021,8 @@ function renderSpirit() {
 function spiritActionsHtml() {
   const c = state.spirit && state.spirit.card;
   if (!c) return '';
-  if (state.spirit.saved) return `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>`;
-  return `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
+  if (state.spirit.saved) return `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button><button class="spirit-again spirit-close" data-spirit-close>✕ Close</button>`;
+  return `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button><button class="spirit-again spirit-close" data-spirit-close>✕ Close</button>`;
 }
 const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
 function spiritHistoryHtml() {
@@ -4224,6 +4224,7 @@ function renderIChing() {
         ${(s.q && aiClientOn()) ? `<button class="ic-btn" data-iching-reflect ${s.reflecting ? 'disabled' : ''}>${s.reflecting ? '✦ Reflecting…' : (s.reflection ? '✦ Reflect again' : '✦ Reflect on my question')}</button>` : ''}
         ${s.saved ? '<span class="ic-saved">✓ Saved to your readings</span>' : '<button class="ic-btn ic-btn-primary" data-iching-save>✓ Save this reading</button>'}
         <button class="ic-btn" data-iching-cast>↻ Cast again</button>
+        <button class="ic-btn ic-btn-close" data-iching-close>✕ Close</button>
       </div>
     </div>`;
   }
@@ -4345,7 +4346,7 @@ function renderHoro() {
       <label class="ho-l">Date of birth<input type="date" class="sel" id="ho-date" value="${esc((b && b.date) || '')}"></label>
       <label class="ho-l">Time of birth <span class="ho-opt">optional</span><input type="time" class="sel" id="ho-time" value="${esc((b && b.time) || '')}"></label>
       <label class="ho-l">Place of birth <span class="ho-opt">optional</span><input type="text" class="sel" id="ho-place" placeholder="City, country" value="${esc((b && b.place) || '')}" maxlength="120"></label>
-      <div class="ic-actions"><button class="ic-btn ic-btn-primary" data-horo-save>Save</button>${(b && b.date) ? '<button class="ic-btn" data-horo-canceledit>Cancel</button>' : ''}</div>
+      <div class="ic-actions"><button class="ic-btn ic-btn-primary" data-horo-save>Save</button>${(b && b.date) ? '<button class="ic-btn" data-horo-canceledit>Cancel</button>' : ''}<button class="ic-btn ic-btn-close" data-horo-close>✕ Close</button></div>
     </div>`;
   } else {
     const z = zodiacFor(b.date);
@@ -4358,6 +4359,7 @@ function renderHoro() {
       <div class="ic-actions">
         <button class="ic-btn ic-btn-primary" data-horo-read ${state.horoLoading ? 'disabled' : ''}>${state.horoText ? '↻ Refresh' : '✶ Today\'s reading'}</button>
         <button class="ic-btn" data-horo-edit>Edit birth details</button>
+        <button class="ic-btn ic-btn-close" data-horo-close>✕ Close</button>
       </div>
       ${(b.time || b.place) ? `<div class="ho-meta">Born ${b.time ? esc(b.time) : ''}${b.time && b.place ? ' · ' : ''}${b.place ? esc(b.place) : ''}</div>` : ''}
     </div>`;

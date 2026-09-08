@@ -354,7 +354,7 @@ export async function getAccount(env) {
     phone: ph ? ph.value : '', smsAlerts: !sms || sms.value !== '0',
     briefEmail: !brief || brief.value !== '0',
     surfaceEmail: !surfEmail || surfEmail.value !== '0',   // default on
-    surfaceSms: !!(surfSms && surfSms.value === '1'),       // default off (costs money, needs a number)
+    surfaceSms: !surfSms || surfSms.value !== '0',          // default on (only sends if a phone is on file)
     dailyQuote: !(qOff && qOff.value === '1'),
     aiOff: !!(aiOff && aiOff.value === '1'),
     aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),

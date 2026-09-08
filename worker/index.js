@@ -1852,7 +1852,7 @@ async function runSurfaceAlertsForUser(env, user) {
   // Account-wide defaults; a task can override its channels (props.surfaceEmail /
   // props.surfaceSms) so someone can pick text, email or both per task.
   const emailOn = (await getSetting(env, 'surface_email', uid)) !== '0';
-  const smsOn = (await getSetting(env, 'surface_sms', uid)) === '1';
+  const smsOn = (await getSetting(env, 'surface_sms', uid)) !== '0';   // default on (matches the account default; only sends where a phone is on file)
 
   const today = now.date;
   const { results } = await env.DB.prepare(
