@@ -1618,6 +1618,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .subpage { position:relative; }
 .sp-grip { color:var(--ink-3); opacity:0; font-size:12px; line-height:1; flex:none; cursor:grab; transition:opacity .12s; margin-left:-4px; }
 .subpage:hover .sp-grip { opacity:.55; }
+/* A two-way connected note (not a nested sub): a link glyph, and an × to undo the
+   connection on both sides. */
+.sp-linkico { color:var(--accent); opacity:.85; }
+.subpage .sp-t { flex:1; }
+.sp-unlink { flex:none; margin-left:auto; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:var(--ink-3); font-size:16px; line-height:1; opacity:0; cursor:pointer; transition:opacity .12s, background .12s, color .12s; }
+.subpage-linked:hover .sp-unlink { opacity:1; }
+.sp-unlink:hover { background:color-mix(in srgb,var(--danger,#c4412e) 12%,transparent); color:var(--danger,#c4412e); }
 .subpage.dragging { opacity:.4; }
 
 .results { display:flex; flex-direction:column; gap:2px; }

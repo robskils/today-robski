@@ -2573,7 +2573,8 @@ async function openNote(id) {
   // Both sub-notes and table notes nested inside this note.
   const children = (await api(`/api/blocks?parent_id=${id}`)).filter((b) => b.kind === 'note' || b.kind === 'table');
   if (!state.allTasks) state.allTasks = notKit(await api('/api/blocks?kind=task').catch(() => []));
-  state.note = { current: note, path, children, taskQuery: '', shares: null };
+  const linked = await loadNoteLinks(note, children);
+  state.note = { current: note, path, children, linked, taskQuery: '', shares: null };
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title, blockAreas(note)[0]);
   renderNav(); renderNote();
@@ -11695,12 +11696,23 @@ function noteWallHtml(n) {
     ${open ? `<textarea class="home-notepad note-wall-ta" data-note-wall placeholder="A shared space for this note - everyone with access can see it." ${ro ? 'readonly' : ''}>${esc(wall)}</textarea>` : ''}
   </section>`;
 }
-// Connected notes: the note-page panel lets you both create a note that lives
-// under this one and connect an existing note to it (both via parent_id).
+// Connected notes: the panel lets you create a note under this one (parent_id),
+// and connect an existing note to it. A connection is TWO-WAY - the link is
+// stored in props.links on BOTH notes, so each one lists the other, whichever
+// you're looking at. (No re-parenting, so a connected note keeps its own place.)
+const noteLinkIds = (note) => (note && note.props && Array.isArray(note.props.links)) ? note.props.links.filter(Boolean) : [];
+async function loadNoteLinks(note, children) {
+  const childIds = new Set((children || []).map((c) => c.id));
+  const ids = noteLinkIds(note).filter((lid) => lid !== note.id && !childIds.has(lid));
+  if (!ids.length) return [];
+  const got = await Promise.all(ids.map((lid) => api(`/api/blocks/${lid}`).catch(() => null)));
+  return got.filter((b) => b && (b.kind === 'note' || b.kind === 'table'));
+}
 function noteConnListRows() {
-  const cur = state.note.current; const childIds = new Set((state.note.children || []).map((c) => c.id));
+  const cur = state.note.current;
+  const taken = new Set([...(state.note.children || []).map((c) => c.id), ...(state.note.linked || []).map((c) => c.id)]);
   const q = (state.note.connQuery || '').trim().toLowerCase();
-  let list = (state.noteTops || []).filter((x) => x.id !== cur.id && !childIds.has(x.id));
+  let list = (state.noteTops || []).filter((x) => x.id !== cur.id && !taken.has(x.id));
   if (q) list = list.filter((x) => (x.title || '').toLowerCase().includes(q));
   list = list.slice(0, 8);
   return list.length ? list.map((x) => { const a = areaById(blockAreas(x)[0]); const hue = a ? hueOf(a) : null; return `<button class="nconn-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-note-connect="${x.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span></button>`; }).join('') : '<div class="ov-muted" style="padding:6px 2px">No other notes to connect.</div>';
@@ -11711,9 +11723,28 @@ function noteConnectPickerHtml() {
 async function connectExistingNote(id) {
   const cur = state.note && state.note.current; if (!cur || id === cur.id) return;
   try {
-    await api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ parent_id: cur.id }) });
-    state.note.children = (await api('/api/blocks?parent_id=' + cur.id)).filter((b) => b.kind === 'note' || b.kind === 'table');
-    state.note.connQuery = ''; renderNote(); toast('Note connected');
+    const target = await api(`/api/blocks/${id}`);
+    const curLinks = Array.from(new Set([...noteLinkIds(cur), id]));
+    const tgtLinks = Array.from(new Set([...noteLinkIds(target), cur.id]));
+    // Write both sides so the connection shows on each note.
+    await api(`/api/blocks/${cur.id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: curLinks } }) });
+    await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: tgtLinks } }) });
+    cur.props = cur.props || {}; cur.props.links = curLinks;
+    state.note.linked = await loadNoteLinks(cur, state.note.children);
+    state.note.connQuery = ''; renderNote(); toast('Notes connected');
+  } catch (e) { toast(e.message); }
+}
+// Undo a two-way connection: remove each note from the other's links.
+async function disconnectNote(id) {
+  const cur = state.note && state.note.current; if (!cur) return;
+  try {
+    const target = await api(`/api/blocks/${id}`).catch(() => null);
+    const curLinks = noteLinkIds(cur).filter((x) => x !== id);
+    await api(`/api/blocks/${cur.id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: curLinks } }) });
+    if (target) await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: noteLinkIds(target).filter((x) => x !== cur.id) } }) });
+    cur.props = cur.props || {}; cur.props.links = curLinks;
+    state.note.linked = await loadNoteLinks(cur, state.note.children);
+    renderNote(); toast('Disconnected');
   } catch (e) { toast(e.message); }
 }
 function renderNote() {
@@ -11723,7 +11754,8 @@ function renderNote() {
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
-  const kids = state.note.children.map((c) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}" draggable="true" data-sub-id="${c.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-grip" title="Drag to reorder">⠿</span><span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span><span class="sp-t">${esc(c.title || 'Untitled')}</span></button>`; }).join('');
+  const subItem = (c, linked) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage${hue != null ? ' has-area' : ''}${linked ? ' subpage-linked' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}"${linked ? '' : ` draggable="true" data-sub-id="${c.id}"`}${a ? ` title="${esc(a.title)}"` : ''}>${linked ? '<span class="sp-ico sp-linkico" title="Two-way connection">🔗</span>' : '<span class="sp-grip" title="Drag to reorder">⠿</span>'}${linked ? '' : `<span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span>`}<span class="sp-t">${esc(c.title || 'Untitled')}</span>${linked ? `<span class="sp-unlink" data-note-unlink="${c.id}" role="button" title="Disconnect">×</span>` : ''}</button>`; };
+  const kids = [...state.note.children.map((c) => subItem(c, false)), ...(state.note.linked || []).map((c) => subItem(c, true))].join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${noteAreasControl(n)}
@@ -11744,7 +11776,7 @@ function renderNote() {
         ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
-        <div class="subpages" data-subpages><div class="sub-h">Connected notes${state.note.children.length ? ` · ${state.note.children.length}` : ''}</div>
+        <div class="subpages" data-subpages><div class="sub-h">Connected notes${(state.note.children.length + (state.note.linked || []).length) ? ` · ${state.note.children.length + (state.note.linked || []).length}` : ''}</div>
           ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New connected note</span></button>${noteConnectPickerHtml()}</div>
         ${noteTasksHtml(n.id)}
         ${relatedNotesHtml(n)}
@@ -12569,6 +12601,7 @@ document.addEventListener('click', (e) => {
   if (state.navUtilOpen && !t.closest('[data-util-toggle]') && (t.closest('.nav-topline') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
+  { const nu = t.closest('[data-note-unlink]'); if (nu) { e.stopPropagation(); disconnectNote(nu.dataset.noteUnlink); return; } }
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
