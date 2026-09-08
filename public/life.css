@@ -1159,6 +1159,7 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rv-datehead { display:flex; flex-direction:column; gap:2px; margin:-4px 0 10px; }
 .rv-dh-day { font-family:'Cormorant Garamond',serif; font-size:23px; font-weight:600; color:var(--ink); }
 .rv-dh-range { font-size:13.5px; color:var(--ink-3); }
+.rv-dh-week { align-self:flex-start; margin-top:4px; font-size:12px; font-weight:700; letter-spacing:.04em; color:var(--accent); background:color-mix(in srgb,var(--accent) 11%,transparent); border:1px solid color-mix(in srgb,var(--accent) 24%,transparent); border-radius:999px; padding:2px 10px; }
 .rv-dh-sub { font-size:13px; font-weight:700; color:#6f9f4a; margin-top:2px; }
 /* List-card period + status. */
 .rv-card-period { font-size:15px; font-weight:600; color:var(--ink); }
@@ -3266,6 +3267,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-head h1 .hi-name { color:var(--accent); font-style:italic; }
 .home-hi { min-width:0; }
 .home-date { margin-top:4px; font-size:16px; color:var(--accent); font-weight:600; letter-spacing:.01em; }
+.wx-chip { display:inline-flex; align-items:center; gap:8px; margin-top:9px; padding:5px 12px; border-radius:999px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow-sm); font-size:14px; color:var(--ink-2); }
+.wx-ic { font-size:16px; line-height:1; }
+.wx-t { font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+.wx-hl { color:var(--ink-3); font-size:12.5px; font-variant-numeric:tabular-nums; }
 .home-actions { display:flex; gap:10px; }
 /* Mobile: the three quick actions share the row as equal thirds so longer
    labels (e.g. Portuguese "+ Tarefa" / "+ Evento") never overflow the screen

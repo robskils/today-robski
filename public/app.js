@@ -2709,6 +2709,42 @@ function homeDate() {
   const ord = (n) => { const v = n % 100; return n + (['th', 'st', 'nd', 'rd'][(v - 20) % 10] || ['th', 'st', 'nd', 'rd'][v] || 'th'); };
   return `${d.toLocaleDateString('en-GB', { weekday: 'long' })} ${ord(d.getDate())} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
 }
+// A quiet weather chip on Home. WMO code → an icon + a word.
+const WMO_WX = (code) => {
+  const c = Number(code);
+  if (c === 0) return ['☀️', 'Clear'];
+  if (c <= 2) return ['🌤️', 'Mostly clear'];
+  if (c === 3) return ['☁️', 'Overcast'];
+  if (c === 45 || c === 48) return ['🌫️', 'Fog'];
+  if (c >= 51 && c <= 57) return ['🌦️', 'Drizzle'];
+  if (c >= 61 && c <= 67) return ['🌧️', 'Rain'];
+  if (c >= 71 && c <= 77) return ['🌨️', 'Snow'];
+  if (c >= 80 && c <= 82) return ['🌦️', 'Showers'];
+  if (c >= 85 && c <= 86) return ['🌨️', 'Snow showers'];
+  if (c >= 95) return ['⛈️', 'Thunderstorm'];
+  return ['🌡️', 'Weather'];
+};
+function weatherChipHtml() {
+  if (state.weather === undefined) { loadWeather(); return ''; }
+  const w = state.weather;
+  if (!w || w === 'off' || w.temp == null) return '';   // loading, unavailable, or no reading
+  const [ic, label] = WMO_WX(w.code);
+  const hl = (w.high != null && w.low != null) ? `<span class="wx-hl">↑${w.high}° ↓${w.low}°</span>` : '';
+  return `<div class="wx-chip" title="${esc(label)} where you are${w.high != null ? ` · today ${w.high}° / ${w.low}°` : ''}"><span class="wx-ic">${ic}</span><span class="wx-t">${w.temp}${w.unit || '°'}</span>${hl}</div>`;
+}
+async function loadWeather() {
+  if (state.weather !== undefined) return;   // undefined = not started; null = loading; object/'off' = done
+  state.weather = null;
+  try { const c = JSON.parse(localStorage.getItem('life.weather')); if (c && c.at && Date.now() - c.at < 30 * 60000 && Number.isFinite(c.temp)) { state.weather = c; return; } } catch {}
+  const loc = cachedLoc();
+  if (!loc) { ensureLoc(); setTimeout(() => { if (cachedLoc() && state.weather === null) { state.weather = undefined; if (state.view && state.view.type === 'home') renderHome(); } }, 4000); return; }
+  try {
+    const w = await api(`/api/weather?lat=${loc.lat}&lon=${loc.lng}`);
+    state.weather = (w && w.temp != null) ? w : 'off';
+    try { if (state.weather !== 'off') localStorage.setItem('life.weather', JSON.stringify(state.weather)); } catch {}
+    if (state.view && state.view.type === 'home') renderHome();
+  } catch { state.weather = 'off'; }
+}
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
 const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
@@ -3709,7 +3745,7 @@ function renderHome() {
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="home-head">
-        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1><div class="home-date">${homeDate()}</div></div>
+        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1><div class="home-date">${homeDate()}</div>${weatherChipHtml()}</div>
         <div class="home-actions"><button class="add-btn wide" data-new-note>${t('home.newnote')}</button><button class="add-btn wide" data-quick-task>${t('home.newtask')}</button><button class="add-btn wide" data-quick-event>${t('home.newevent')}</button></div>
       </div>
       ${alertsHtml()}
@@ -10938,6 +10974,17 @@ async function openReviewCard(id) {
 // The review's timeframe, shown in relation to NOW rather than as a dry range:
 // a relative headline (This week / Last week / 3 weeks ago), a bar with a "today"
 // marker so you see how far through the period we are, and a plain-English detail.
+// ISO week number of a YYYY-MM-DD date, plus how many weeks that ISO year holds
+// (52 or 53) - so "Week 36 / 52" tells you where you are in the run.
+function isoWeeksInYear(y) { const d = (m, day) => new Date(Date.UTC(y, m, day)).getUTCDay(); return (d(0, 1) === 4 || d(11, 31) === 4) ? 53 : 52; }
+function isoWeekInfo(dateStr) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  const dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+  const day = dt.getUTCDay() || 7; dt.setUTCDate(dt.getUTCDate() + 4 - day);   // shift to the week's Thursday
+  const isoYear = dt.getUTCFullYear();
+  const week = Math.ceil(((dt - new Date(Date.UTC(isoYear, 0, 1))) / 86400000 + 1) / 7);
+  return { week, total: isoWeeksInYear(isoYear) };
+}
 function reviewWhenHtml(p) {
   const from = p.from, to = p.to;
   if (!from || !to) return '';
@@ -11217,7 +11264,9 @@ function renderReviewReport() {
   const spanWords = { weekly: '1 week', monthly: '1 month', quarterly: '3 months', yearly: '1 year' }[p.rtype] || '';
   const shortDR = (iso) => new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   const rangeLine = (p.from && p.to) ? `${shortDR(p.from)} - ${shortDR(p.to)}` : (pt.range || '');
-  const periodLine = [spanWords, rangeLine].filter(Boolean).join(' · ');
+  // Which week of the year - a small sense of where you are in the run.
+  const weekNo = (p.rtype === 'weekly' && p.to) ? (() => { const w = isoWeekInfo(p.to); return `Week ${w.week} / ${w.total}`; })() : '';
+  const periodLine = [spanWords, rangeLine, weekNo].filter(Boolean).join(' · ');
   // A pull-quote from your own words, if you wrote any.
   const quote = reviewPullQuote(p, r);
   // The previous review of this type, for figure deltas (▲/▼ vs last time).
@@ -11303,7 +11352,7 @@ function renderReviewCard() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Submitted' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
-    ${p.to ? (() => { const pt = periodTitle(p.rtype, p.from, p.to); return `<div class="rv-datehead"><span class="rv-dh-day">${esc(pt.main)}</span>${pt.range ? `<span class="rv-dh-range">${esc(pt.range)}</span>` : ''}${p.doneAt ? `<span class="rv-dh-sub">✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(p.doneAt.slice(0, 4))}</span>` : ''}</div>`; })() : ''}
+    ${p.to ? (() => { const pt = periodTitle(p.rtype, p.from, p.to); const wk = (p.rtype === 'weekly') ? isoWeekInfo(p.to) : null; return `<div class="rv-datehead"><span class="rv-dh-day">${esc(pt.main)}</span>${pt.range ? `<span class="rv-dh-range">${esc(pt.range)}</span>` : ''}${wk ? `<span class="rv-dh-week">Week ${wk.week} / ${wk.total}</span>` : ''}${p.doneAt ? `<span class="rv-dh-sub">✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(p.doneAt.slice(0, 4))}</span>` : ''}</div>`; })() : ''}
     <div class="rv-period">
       ${reviewWhenHtml(p)}
       ${R.editDates ? `<div class="rv-period-dates">
@@ -11842,7 +11891,7 @@ function noteConnListRows() {
   return list.length ? list.map((x) => { const a = areaById(blockAreas(x)[0]); const hue = a ? hueOf(a) : null; return `<button class="nconn-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-note-connect="${x.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span></button>`; }).join('') : '<div class="ov-muted" style="padding:6px 2px">No other notes to connect.</div>';
 }
 function noteConnectPickerHtml() {
-  return `<details class="nconn"><summary>🔗 Connect an existing note</summary><input class="sel nconn-q" data-note-conn-q placeholder="Search your notes…" value="${esc(state.note.connQuery || '')}" autocomplete="off"><div class="nconn-list" id="nconn-list">${noteConnListRows()}</div></details>`;
+  return `<details class="nconn"><summary>🔗 Connect a note</summary><input class="sel nconn-q" data-note-conn-q placeholder="Search your notes…" value="${esc(state.note.connQuery || '')}" autocomplete="off"><div class="nconn-list" id="nconn-list">${noteConnListRows()}</div></details>`;
 }
 async function connectExistingNote(id) {
   const cur = state.note && state.note.current; if (!cur || id === cur.id) return;
@@ -11901,7 +11950,7 @@ function renderNote() {
       </div>
       <aside class="note-side">
         <div class="subpages" data-subpages><div class="sub-h">Connected notes${(state.note.children.length + (state.note.linked || []).length) ? ` · ${state.note.children.length + (state.note.linked || []).length}` : ''}</div>
-          ${kids}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New connected note</span></button>${noteConnectPickerHtml()}</div>
+          ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
         ${noteTasksHtml(n.id)}
         ${relatedNotesHtml(n)}
       </aside>

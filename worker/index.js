@@ -750,6 +750,27 @@ async function journalInsights(request, env, json, err) {
 // the client already assembled for the review (done tasks, practices, open P1s,
 // quiet areas, goals) and writes it up. The client caches the result on the
 // review block (props.doneSummary), so this is called on demand, not per render.
+// Current weather for a lat/lon, proxied so the app (CSP: connect-src 'self')
+// can show it. Open-Meteo is free and needs no key; the edge caches each
+// location for 30 minutes so we don't hammer it.
+async function weatherNow(request, env, json, err) {
+  const u = new URL(request.url);
+  const lat = Number(u.searchParams.get('lat')); const lon = Number(u.searchParams.get('lon'));
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return err('lat/lon required', request);
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
+  try {
+    const res = await fetch(url, { cf: { cacheTtl: 1800, cacheEverything: true } });
+    if (!res.ok) return err('weather unavailable', request, 502);
+    const d = await res.json();
+    const c = d.current || {}; const day = d.daily || {};
+    const r = (x) => (x == null ? null : Math.round(x));
+    return json({
+      temp: r(c.temperature_2m), code: c.weather_code ?? null, isDay: c.is_day !== 0,
+      high: r((day.temperature_2m_max || [])[0]), low: r((day.temperature_2m_min || [])[0]),
+      unit: (d.current_units && d.current_units.temperature_2m) || '°C', at: Date.now(),
+    }, request);
+  } catch { return err('weather unavailable', request, 502); }
+}
 async function reviewSummary(request, env, json, err) {
   const key = await aiKey(env, 'anthropic');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
@@ -3663,6 +3684,7 @@ export default {
       if (path === '/api/messages/unread' && request.method === 'GET') return json(await unreadCounts(env), request);
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
+      if (path === '/api/weather' && request.method === 'GET') return weatherNow(request, env, json, err);
       if (path === '/api/areas/summary' && request.method === 'GET') return areasSummary(request, env);
       if (path === '/api/home/alerts' && request.method === 'GET') return homeAlerts(request, env, json);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
