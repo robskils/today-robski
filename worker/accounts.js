@@ -345,8 +345,10 @@ export async function getAccount(env) {
   const surfEmail = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'surface_email'").bind(env.uid).first().catch(() => null);
   const surfSms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'surface_sms'").bind(env.uid).first().catch(() => null);
   const wkStart = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'week_start'").bind(env.uid).first().catch(() => null);
+  const curr = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'currency'").bind(env.uid).first().catch(() => null);
   return {
     weekStart: (wkStart && /^[0-6]$/.test(wkStart.value)) ? Number(wkStart.value) : 1,   // 0=Sun..6=Sat; default Monday
+    currency: (curr && /^[A-Z]{3}$/.test(curr.value)) ? curr.value : 'EUR',   // display currency for the money tools
     name: (u && u.name) || '', email: (u && u.email) || '', subdomain: (u && u.subdomain) || '',
     plan: (u && u.plan) || 'free', status: (u && u.status) || 'active',
     phone: ph ? ph.value : '', smsAlerts: !sms || sms.value !== '0',
@@ -378,6 +380,7 @@ export async function patchAccount(env, body) {
   if (body.surfaceEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_email', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceEmail ? '1' : '0').run();
   if (body.surfaceSms !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_sms', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceSms ? '1' : '0').run();
   if (body.weekStart !== undefined) { const w = Number(body.weekStart); if (Number.isInteger(w) && w >= 0 && w <= 6) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'week_start', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(w)).run(); }
+  if (body.currency !== undefined) { const c = String(body.currency).toUpperCase(); if (/^[A-Z]{3}$/.test(c)) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'currency', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, c).run(); }
   return getAccount(env);
 }
 // Adding an alias no longer trusts the owner on its own: the address is stored

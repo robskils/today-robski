@@ -2102,11 +2102,11 @@ function renderSettings() {
   ];
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
-  // collapsing scroll, so the settings you reach for most are one tap in.
+  // collapsing scroll, so the settings you reach for most are one tap in. Your
+  // Daybook card and your security (two-factor) are not separate tabs - they
+  // live inside Account: the card as a sub-page (Edit card), two-factor inline.
   const TABS = [
     ['account', t('set.tab.account')],
-    ['security', t('set.tab.security')],
-    ['card', t('set.tab.card')],
     ['ai', t('set.tab.ai')],
     ['appearance', t('set.tab.appearance')],
     ['mobile', t('set.tab.mobile')],
@@ -2116,6 +2116,10 @@ function renderSettings() {
     ['invites', t('set.tab.invites')],
     ['manage', t('set.tab.manage')],
   ];
+  // Sub-pages reachable from a tab (not shown in the segmented control): the
+  // Daybook card editor opens from Account and returns there.
+  const SUBTABS = ['card'];
+  const SUB_TITLE = { card: t('set.tab.card') };
   // Calendar feed subscriptions (holidays, fixtures) - load once.
   if (state.feeds === undefined) {
     state.feeds = {};
@@ -2131,9 +2135,12 @@ function renderSettings() {
     state.card = {};
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} } if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {});
   }
-  if (!TABS.some(([k]) => k === state.settings.tab)) state.settings.tab = 'account';
+  if (!TABS.some(([k]) => k === state.settings.tab) && !SUBTABS.includes(state.settings.tab)) state.settings.tab = 'account';
   const tab = state.settings.tab;
-  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
+  const isSub = SUBTABS.includes(tab);
+  const seg = isSub
+    ? `<button class="crumb-back set-subback" data-set-tab="account">← Account settings</button>`
+    : `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
   const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
       <div class="set-card set-cardpreview">
@@ -2158,6 +2165,10 @@ function renderSettings() {
         ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
         <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
         <p class="acct-privacy">Your Daybook is private to you - never sold, never used to train a model. It's yours to download any time, and you can bring your own AI, or your own storage. <a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></p>
+      </div>
+      <div class="set-card set-account-sec">
+        <div class="set-sec-title">Security</div>
+        ${twoFactorHtml()}
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
@@ -2168,8 +2179,7 @@ function renderSettings() {
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
-        ${state.account ? `<label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>` : ''}
-        ${modOn('contacts') ? `<label class="set-mod"><span>See online contacts on Home<small>Show which of your contacts are online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
+        ${state.account ? `<label class="set-mod"><span>Default currency<small>The symbol your money, spending and portfolio are shown in</small></span><select class="sel" data-account-currency style="max-width:180px">${CURRENCIES_APP.map(([code, sym, , name]) => `<option value="${code}" ${appCurrencyCode() === code ? 'selected' : ''}>${sym} ${name} (${code})</option>`).join('')}</select></label>` : ''}
       </div>`;
 
   const aiPane = state.account ? (() => {
@@ -2217,6 +2227,10 @@ function renderSettings() {
           <label class="set-mod"><span>Reminders you set on your day<small>A text 5 minutes before an item you've asked about - turn the bell on for any task or practice in the Today planner${state.account.phone ? '' : '. Add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
           <label class="set-mod"><span>When something surfaces<small>A text the morning a "surface on" task comes back${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-surface-sms ${state.account.surfaceSms ? 'checked' : ''}></label>
         </div>
+        <div class="set-notif-group"><div class="set-notif-h">Around the app</div>
+          <label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>
+          ${modOn('contacts') ? `<label class="set-mod"><span>See online contacts<small>Show which of your contacts are online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
+        </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const invitesPane = `<div class="set-card">
@@ -2248,17 +2262,15 @@ function renderSettings() {
         </div>
       </div>`;
 
-  const securityPane = state.account ? `<div class="set-card">${twoFactorHtml()}</div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
-
-  const panes = { account: accountPane, security: securityPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: t('set.sub.account'), security: t('set.sub.security'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
+  const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
+  const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
 
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
     <div class="pane-head home-head"><h1>${t('set.title')}</h1></div>
     ${seg}
     <section class="home-sec">
-      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
+      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
       ${panes[tab] || ''}
     </section>
     ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(planLabel(state.me.plan))} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
@@ -9207,7 +9219,24 @@ async function loadPortfolio(force) {
   } catch (e) { f.error = e.message; }
   f.loading = false; renderFinancial();
 }
-const eur0 = (n) => '€' + Math.round(Number(n) || 0).toLocaleString('en-IE');
+// The default currency the money tools show in. It's a display choice (symbol +
+// number grouping), not a conversion - you enter amounts in your own currency
+// and Daybook shows them with your symbol. Chosen in Settings › Appearance,
+// stored on the account (account.currency, default EUR). [code, symbol, locale, name]
+const CURRENCIES_APP = [
+  ['EUR', '€', 'en-IE', 'Euro'],
+  ['GBP', '£', 'en-GB', 'Pound'],
+  ['USD', '$', 'en-US', 'Dollar'],
+  ['CHF', 'CHF ', 'de-CH', 'Swiss franc'],
+  ['CAD', 'C$', 'en-CA', 'Canadian dollar'],
+  ['AUD', 'A$', 'en-AU', 'Australian dollar'],
+  ['BRL', 'R$', 'pt-BR', 'Brazilian real'],
+  ['JPY', '¥', 'ja-JP', 'Yen'],
+];
+function appCurrencyCode() { return (state.account && state.account.currency) || 'EUR'; }
+function appCurrency() { const c = appCurrencyCode(); return CURRENCIES_APP.find((x) => x[0] === c) || CURRENCIES_APP[0]; }
+const curSymApp = () => appCurrency()[1];
+const eur0 = (n) => { const c = appCurrency(); return c[1] + Math.round(Number(n) || 0).toLocaleString(c[2]); };
 const fmtQty = (n) => Number(n).toLocaleString('en-GB', { maximumFractionDigits: 4 });
 function renderFinancial() {
   const f = state.financial;
@@ -9432,7 +9461,7 @@ function spendCatToggleType(cat, col) {
   else { const s = spendAlsoExpense(); s.has(cat) ? s.delete(cat) : s.add(cat); saveSpendCatType('expense', [...s]); }
 }
 const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
-const eurSigned = (n) => (n < 0 ? '-' : '') + '€' + Math.abs(Math.round(n)).toLocaleString('en-IE');
+const eurSigned = (n) => { const c = appCurrency(); return (n < 0 ? '-' : '') + c[1] + Math.abs(Math.round(n)).toLocaleString(c[2]); };
 function txnList() { return (state.financial.txns || []).map((t) => ({ id: t.id, ...(t.props || {}) })).filter((t) => t.date); }
 function spendMonths() { return [...new Set(txnList().map((t) => t.date.slice(0, 7)))].sort().reverse(); }
 function spendingBody() {
@@ -12319,6 +12348,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
   if (e.target.matches('[data-account-weekstart]')) { const w = Number(e.target.value); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
+  if (e.target.matches('[data-account-currency]')) { const code = e.target.value; if (state.account) state.account.currency = code; saveAccount({ currency: code }); const c = (CURRENCIES_APP.find((x) => x[0] === code) || [])[3] || code; toast(`Money shown in ${c}`); }
   if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
@@ -14503,7 +14533,9 @@ function colTypeSeed(id, type) {
       catch { return { options: [] }; }
     }
   } else if (type === 'currency') {
-    if (!existing || typeof existing.currency !== 'string') return { currency: '€' };   // default to Euro; changeable in the menu
+    // Seed with the account's default currency symbol where the table column set
+    // supports it (€/$/£); otherwise plain Euro. Changeable in the column menu.
+    if (!existing || typeof existing.currency !== 'string') { const s = curSymApp(); return { currency: ['€', '$', '£'].includes(s) ? s : '€' }; }
   }
   return {};
 }

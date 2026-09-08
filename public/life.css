@@ -2958,6 +2958,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .set-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .set-row-t { font-size:16px; font-weight:600; color:var(--ink); }
 .set-row-s { font-size:13.5px; color:var(--ink-3); margin-top:3px; }
+/* A sub-section title inside a set-card (e.g. Security on the Account page). */
+.set-sec-title { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; }
+.set-account-sec { gap:0; }
+/* The back link that replaces the tab bar on a settings sub-page (Daybook card). */
+.set-subback { display:inline-flex; align-items:center; gap:7px; width:auto; height:auto; padding:8px 15px; border-radius:999px; font-size:14px; font-weight:600; color:var(--ink-2); border:1px solid var(--line); background:var(--card); cursor:pointer; }
+.set-subback:hover { border-color:var(--accent); color:var(--accent); }
 .set-block { border-top:1px solid var(--line); padding-top:18px; }
 /* Two-factor (TOTP) enrolment in Settings. */
 .tfa-block { margin-top:18px; }
