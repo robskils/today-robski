@@ -3920,8 +3920,11 @@ function openTablesList() {
 
 function openNotesList() {
   state.view = { type: 'notes' };
+  state.noteMenu = null;
   renderNav();
   renderNotesList();
+  // Areas power the right-click "file under life areas" menu and the area filter.
+  if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'notes') renderNotesList(); } }).catch(() => {});
 }
 const NOTE_SORTS = [['added-desc', t('notes.sort.newest')], ['updated-desc', t('notes.sort.recent')], ['added-asc', t('notes.sort.oldest')], ['az', t('notes.sort.az')], ['za', t('notes.sort.za')], ['area', t('notes.sort.area')]];
 function notesSortMode() { return state.notesSort || (state.notesSort = localStorage.getItem('life.notesSort') || 'added-desc'); }
@@ -4041,9 +4044,41 @@ function renderNotesList() {
     ${notesControlsHtml(true)}
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     ${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}
-    ${listHtml}`;
+    ${listHtml}
+    ${noteMenuHtml()}`;
   // Measure the sticky breadcrumb so the toolbar pins just beneath it.
   requestAnimationFrame(() => { try { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--notes-crumbh', cb.offsetHeight + 'px'); } catch {} });
+}
+// Right-click a note (or table) in the list to file it into life areas - the same
+// checkbox menu as contacts. Left-click still opens; this is the quick filer.
+function openNoteMenu(id, x, y) {
+  const vh = window.innerHeight;
+  const top = Math.min(y, Math.max(8, vh - 240));
+  const maxh = Math.max(200, vh - top - 12);
+  state.noteMenu = { id, x: Math.min(x, window.innerWidth - 240), y: top, maxh };
+  renderNotesList();
+}
+function noteMenuHtml() {
+  const m = state.noteMenu; if (!m) return '';
+  const n = noteEntries().find((x) => x.id === m.id); if (!n) return '';
+  const allAreas = (state.areas || []).filter((a) => a && a.title).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const curSet = new Set(blockAreas(n));
+  const isT = isTableNote(n);
+  const row = (a) => `<button class="ctx-item ctx-area" data-note-area="${a.id}" style="--h:${hueOf(a)}"><span class="ctx-cb${curSet.has(a.id) ? ' ctx-cb-on' : ''}"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button>`;
+  return `<div class="ctx-bg" data-note-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
+    <div class="ctx-h">${esc(n.title || 'Untitled')}</div>
+    <button class="ctx-item" data-open-${isT ? 'table' : 'note'}="${n.id}">Open</button>
+    <div class="ctx-sep"></div>
+    <div class="ctx-lbl">File under life areas</div>
+    ${allAreas.length ? allAreas.map(row).join('') : '<div class="ctx-empty">Create a life area first, then file notes into it.</div>'}
+  </div></div>`;
+}
+function noteToggleArea(areaId) {
+  const m = state.noteMenu; if (!m) return;
+  const n = noteEntries().find((x) => x.id === m.id); if (!n) return;
+  const cur = blockAreas(n);
+  setBlockAreas(isTableNote(n) ? 'table' : 'note', n.id, cur.includes(areaId) ? cur.filter((x) => x !== areaId) : [...cur, areaId]);
+  renderNotesList();   // keep the menu open so you can file into several
 }
 
 // ── Journal ──────────────────────────────────────────
@@ -13578,6 +13613,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-ctx-merge]')) { state.contactMenu = null; mergeSelectedContacts(); return; }
   if (t.closest('[data-ctx-delete]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) delContact(id); else renderContacts(); return; }
   if (t.closest('[data-ctx-close]') && !t.closest('.ctx-menu')) { state.contactMenu = null; renderContacts(); return; }
+  { const na = t.closest('[data-note-area]'); if (na) { noteToggleArea(na.dataset.noteArea); return; } }
+  if (t.closest('[data-note-ctx-close]') && !t.closest('.ctx-menu')) { state.noteMenu = null; renderNotesList(); return; }
   if (t.closest('[data-open-p1]')) { openP1Tasks(); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
@@ -13919,6 +13956,8 @@ document.addEventListener('contextmenu', (e) => {
   }
   const cc = e.target.closest('.contact-card[data-open-contact]');
   if (cc && state.view.type === 'contacts') { e.preventDefault(); openContactMenu(cc.dataset.openContact, e.clientX, e.clientY); return; }
+  const nrc = e.target.closest('.nt-card[data-open-note], .nt-card[data-open-table]');
+  if (nrc && state.view.type === 'notes') { e.preventDefault(); openNoteMenu(nrc.dataset.openNote || nrc.dataset.openTable, e.clientX, e.clientY); return; }
   // Right-click a link inside note/task prose: offer to open it in a new tab.
   // Internal Daybook links (#rl-…) open in a fresh in-app tab; web links open in
   // a new browser tab.
