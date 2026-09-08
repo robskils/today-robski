@@ -537,7 +537,12 @@ button { cursor:pointer; background:none; border:0; }
 .gc-pct { flex:none; font-size:12px; font-weight:600; color:var(--ink-3); font-variant-numeric:tabular-nums; min-width:34px; text-align:right; }
 /* The slider overlays the bar: transparent track (the bar's fill shows through),
    only the thumb is visible and grabbable. */
-.gc-slider { position:absolute; inset:-9px 0; width:100%; height:auto; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; z-index:2; touch-action:pan-y; }
+/* Inset the track by half a thumb (8px) each side, so the thumb sits FULLY on the
+   rail at both ends - at 0% it rests hard against the left, not half-hanging off
+   (which iOS WebKit does with an appearance:none thumb, making a 0% goal look like
+   it has no handle). The 8px inset also lands the thumb centre exactly on the fill
+   edge at every value. width:auto lets left/right drive the size. */
+.gc-slider { position:absolute; inset:-9px 8px; width:auto; height:auto; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; z-index:2; touch-action:pan-y; }
 .gc-slider:focus { outline:none; }
 .gc-slider::-webkit-slider-runnable-track { background:transparent; border:0; height:100%; }
 .gc-slider::-moz-range-track { background:transparent; border:0; }
