@@ -2431,7 +2431,30 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .tbx-tt { flex:1; }
 .tbx-run { font-family:'Spline Sans Mono',ui-monospace,monospace; font-size:13px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; }
 .tbx-tool-body { padding:4px 16px 18px; }
-.tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer, .tbx-tool-body.tbx-med { max-width:400px; margin-left:auto; margin-right:auto; }
+.tbx-tool-body.tbx-focus, .tbx-tool-body.tbx-timer, .tbx-tool-body.tbx-med { max-width:none; }
+/* Two-column tool layout: the tool itself on the left, its past-sessions
+   history (and, for meditation, today's note) on the right. Stacks on mobile. */
+.tbx-cols { display:flex; flex-wrap:wrap; gap:26px; align-items:flex-start; }
+.tbx-main { flex:1 1 300px; min-width:0; display:flex; flex-direction:column; align-items:center; }
+.tbx-side { flex:1 1 240px; min-width:0; max-width:320px; display:flex; flex-direction:column; gap:18px; }
+@media (max-width:640px) { .tbx-cols { gap:20px; } .tbx-side { flex-basis:100%; max-width:none; } }
+/* Past-sessions list. Quiet rows: when · duration · what it was for. */
+.sess-hist { border:1px solid var(--line); border-radius:14px; background:color-mix(in srgb,var(--card) 60%,transparent); padding:13px 15px 15px; }
+.sess-hist-h { font-size:11.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; margin-bottom:10px; }
+.sess-rows { display:flex; flex-direction:column; }
+.sess-row { display:flex; align-items:baseline; gap:9px; padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+.sess-row:first-child { border-top:0; }
+.sess-when { color:var(--ink-3); white-space:nowrap; }
+.sess-dur { color:var(--ink-2); font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
+.sess-tag { margin-left:auto; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-2); font-size:12.5px; padding:2px 8px; border-radius:999px; background:color-mix(in srgb,var(--ink) 5%,transparent); }
+.sess-tag.has-area { background:hsl(var(--h,220) 60% 52% / .13); color:hsl(var(--h,220) 42% 38%); border-left:2px solid hsl(var(--h,220) 60% 52%); }
+.sess-empty { color:var(--ink-3); font-size:13px; line-height:1.5; padding:4px 0 2px; }
+/* Meditation: a plain place to jot a few words about today's sit. */
+.med-notes-box { border:1px solid var(--line); border-radius:14px; background:color-mix(in srgb,var(--card) 60%,transparent); padding:13px 15px 15px; }
+.med-notes-ta { width:100%; min-height:88px; resize:vertical; margin-top:2px; font-size:14px; line-height:1.55; }
+/* Timer life-area picker. */
+.tmr-area-l { display:flex; flex-direction:column; gap:5px; margin:12px 0 2px; width:100%; max-width:280px; }
+.tmr-area-l > span { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
 /* Feature-box toolbox: equal cards in a row, tap one to open its tool below. */
 .tbx-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px; margin:2px 0 4px; }
 .tbx-card { position:relative; display:flex; flex-direction:column; align-items:center; text-align:center; gap:7px; padding:22px 16px 20px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; transition:border-color .14s, transform .1s, box-shadow .14s; }
@@ -2443,7 +2466,7 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .tbx-card-d { font-size:12.5px; color:var(--ink-3); line-height:1.4; max-width:20ch; }
 .tbx-card.running { border-color:color-mix(in srgb,var(--accent) 50%,var(--line)); }
 .tbx-card .tbx-run { position:absolute; top:10px; right:12px; }
-.tbx-panel { margin-top:18px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); padding:18px; max-width:440px; }
+.tbx-panel { margin-top:18px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); padding:18px; max-width:760px; }
 .tbx-panel-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; font-weight:600; color:var(--ink); margin-bottom:12px; }
 .tbx-hint { margin:22px 2px; color:var(--ink-3); font-size:14.5px; }
 /* Meditation timer - calm, with a slowly breathing orb behind the time. */

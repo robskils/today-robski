@@ -2775,6 +2775,40 @@ function logFocusSession(mins) {
 function focusMinsFor(kind, id) { return pomoLog().filter((e) => e.kind === kind && String(e.id) === String(id)).reduce((s, e) => s + (e.mins || 0), 0); }
 function focusMinsToday() { const d = new Date(); d.setHours(0, 0, 0, 0); const t0 = d.getTime(); return pomoLog().filter((e) => e.ts >= t0).reduce((s, e) => s + (e.mins || 0), 0); }
 const fmtMins = (m) => (m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ' ' + (m % 60) + 'm' : ''}` : `${m}m`);
+// ── Session history, shared by the Toolbox tools (Focus, Timer, Meditation) ──
+function timerSessions() { try { const a = JSON.parse(localStorage.getItem('life.timer.log')); return Array.isArray(a) ? a : []; } catch { return []; } }
+function logTimerSession(mins, label, area) {
+  const log = timerSessions();
+  log.push({ ts: Date.now(), mins, label: (label || '').trim() || null, kind: area ? 'area' : null, id: area || null });
+  try { localStorage.setItem('life.timer.log', JSON.stringify(log.slice(-2000))); } catch {}
+}
+function medSessions() { try { const a = JSON.parse(localStorage.getItem('life.med.log')); return Array.isArray(a) ? a : []; } catch { return []; } }
+function logMedSession(mins) { const log = medSessions(); log.push({ ts: Date.now(), mins }); try { localStorage.setItem('life.med.log', JSON.stringify(log.slice(-2000))); } catch {} }
+function medNotesAll() { try { const o = JSON.parse(localStorage.getItem('life.med.notes')); return (o && typeof o === 'object') ? o : {}; } catch { return {}; } }
+function medNoteFor(day) { return medNotesAll()[day] || ''; }
+function saveMedNote(day, text) { const o = medNotesAll(); if ((text || '').trim()) o[day] = text; else delete o[day]; try { localStorage.setItem('life.med.notes', JSON.stringify(o)); } catch {} }
+const SESS_IC = { area: '◈', goal: '🎯', task: '✓' };
+function sessionWhen(ts) {
+  const d = new Date(ts); const day = new Date(d); day.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((today - day) / 86400000);
+  const tm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  if (diff === 0) return `Today · ${tm}`;
+  if (diff === 1) return `Yesterday · ${tm}`;
+  return `${d.getDate()} ${MONTHS_LONG[d.getMonth()].slice(0, 3)} · ${tm}`;
+}
+function sessionRow(e) {
+  const isArea = e.kind === 'area';
+  const hue = isArea ? (() => { const a = areaById(e.id); return a ? hueOf(a) : null; })() : null;
+  const label = e.label || (isArea ? ((areaById(e.id) || {}).title || '') : '');
+  const tag = label ? `<span class="sess-tag${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>${e.kind ? (SESS_IC[e.kind] || '') + ' ' : ''}${esc(String(label))}</span>` : '';
+  return `<div class="sess-row"><span class="sess-when">${esc(sessionWhen(e.ts))}</span><span class="sess-dur">${e.mins}m</span>${tag}</div>`;
+}
+function sessionsListHtml(entries, emptyMsg) {
+  const total = entries.reduce((s, e) => s + (e.mins || 0), 0);
+  const rows = entries.slice().reverse().slice(0, 40).map(sessionRow).join('');
+  return `<div class="sess-hist"><div class="sess-hist-h">Past sessions${entries.length ? ` · ${fmtMins(total)} total` : ''}</div><div class="sess-rows">${rows || `<div class="sess-empty">${esc(emptyMsg)}</div>`}</div></div>`;
+}
 function pomoRemaining() { return (pomo.running && pomo.endAt) ? Math.max(0, Math.round((pomo.endAt - Date.now()) / 1000)) : pomo.remaining; }
 const pomoFmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 let pomoTicker = null;
@@ -2839,7 +2873,7 @@ function pomoHtml() {
 function pomoPanel() {
   const r = pomoRemaining();
   const pt = state.pomoPickType || (pomo.target && pomo.target.kind) || '';
-  return `<div class="pomo ${pomo.running ? 'running' : ''}">
+  return `<div class="tbx-cols"><div class="tbx-main"><div class="pomo ${pomo.running ? 'running' : ''}">
       <div class="pomo-time js-pomo-time">${pomoFmt(r)}</div>
       <div class="pomo-modes">
         <button class="pomo-mode ${pomo.mode === 'focus' ? 'on' : ''}" data-pomo-mode="focus">Focus</button>
@@ -2859,7 +2893,7 @@ function pomoPanel() {
         ${pomo.target ? `<div class="pomo-on">Focusing on <b>${esc(pomo.target.label)}</b>${(() => { const m = focusMinsFor(pomo.target.kind, pomo.target.id); return m ? ` · <span class="pomo-tot">${fmtMins(m)} logged</span>` : ''; })()}</div>` : ''}
       </div>
       ${(() => { const m = focusMinsToday(); return `<div class="pomo-today">${m ? `🍅 ${fmtMins(m)} focused today` : 'Complete a focus block to log time'}</div>`; })()}
-    </div>`;
+    </div></div><aside class="tbx-side">${sessionsListHtml(pomoLog(), 'Complete a focus block and it appears here, with what you focused on.')}</aside></div>`;
 }
 
 // ── Toolbox: Focus, a plain countdown Timer, and Daily Practices ─────────
@@ -2895,7 +2929,7 @@ function renderToolbox() {
 
 // ── plain countdown Timer ───────────────────────────────────────────────
 const TIMER_QUICK = [5, 10, 15, 25, 45];
-let timerState = (() => { try { const t = JSON.parse(localStorage.getItem('life.timer')); if (t && typeof t.dur === 'number') return t; } catch {} return { label: '', running: false, endAt: null, remaining: 600, dur: 600 }; })();
+let timerState = (() => { try { const t = JSON.parse(localStorage.getItem('life.timer')); if (t && typeof t.dur === 'number') return { area: null, ...t }; } catch {} return { label: '', area: null, running: false, endAt: null, remaining: 600, dur: 600 }; })();
 function saveTimer() { try { localStorage.setItem('life.timer', JSON.stringify(timerState)); } catch {} }
 function timerRemaining() { return (timerState.running && timerState.endAt) ? Math.max(0, Math.round((timerState.endAt - Date.now()) / 1000)) : timerState.remaining; }
 const timerFmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -2908,9 +2942,11 @@ function timerEnsureTicker() {
     document.querySelectorAll('.js-timer-time').forEach((el) => { el.textContent = timerFmt(r); });
     if (r <= 0) {
       timerState.running = false; timerState.endAt = null; timerState.remaining = timerState.dur; saveTimer();
+      logTimerSession(Math.max(1, Math.round(timerState.dur / 60)), timerState.label, timerState.area);
       timerChime(); const what = (timerState.label || '').trim();
       toast(`⏲ Timer done${what ? ` - ${what}` : ''}`); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {}
       if (state.view && state.view.type === 'home') renderHome();
+      else if (state.view && state.view.type === 'toolbox') renderToolbox();
     }
   }, 500);
 }
@@ -2926,13 +2962,15 @@ function timerChime() {
 }
 function timerPanel() {
   const r = timerRemaining();
-  return `<div class="tmr ${timerState.running ? 'running' : ''}">
+  const areaOpts = `<option value="">No life area</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
+  return `<div class="tbx-cols"><div class="tbx-main"><div class="tmr ${timerState.running ? 'running' : ''}">
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
+      <label class="tmr-area-l"><span>Life area</span><select class="sel" data-timer-area>${areaOpts}</select></label>
       <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
       <div class="tmr-custom"><span class="tmr-custom-l">Custom</span><input class="sel tmr-cnum" id="timer-min" type="number" min="0" max="1440" inputmode="numeric" value="${Math.floor(timerState.dur / 60)}" title="Minutes"><span class="tmr-colon">:</span><input class="sel tmr-cnum" id="timer-sec" type="number" min="0" max="59" inputmode="numeric" value="${String(timerState.dur % 60).padStart(2, '0')}" title="Seconds"><button class="ghost tmr-set" data-timer-custom>Set</button></div>
       <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
-    </div>`;
+    </div></div><aside class="tbx-side">${sessionsListHtml(timerSessions(), 'Finish a timer and it appears here.')}</aside></div>`;
 }
 function timerToggle() {
   if (timerState.running) { timerState.remaining = timerRemaining(); timerState.running = false; timerState.endAt = null; }
@@ -3025,6 +3063,7 @@ function medEnsureTicker() {
     if (medState.shimmer && !medShimmerDone && r <= MED_SHIMMER_LEAD && r > 1) { medShimmerDone = true; medShimmer(); }
     if (r <= 0) {
       medState.running = false; medState.endAt = null; medState.remaining = medState.dur; saveMed(); medReleaseWake();
+      logMedSession(Math.max(1, Math.round(medState.dur / 60)));
       medEndGongs(); toast('🧘 Sit complete'); try { navigator.vibrate && navigator.vibrate([120, 80, 120]); } catch {}
       if (state.view && state.view.type === 'toolbox') renderToolbox();
     }
@@ -3073,7 +3112,11 @@ function medPanel() {
     + `<input class="sel med-num" id="med-gongs-num" type="number" min="1" max="6" inputmode="numeric" value="${medState.gongs}" title="How many gongs" data-med-gongs-input>`;
   const intervals = MED_INTERVALS.map(([v, l]) => `<button class="med-chip ${medState.interval === v ? 'on' : ''}" data-med-interval="${v}">${l}</button>`).join('')
     + `<input class="sel med-num" id="med-int-min" type="number" min="1" max="120" inputmode="numeric" value="${known ? '' : medState.interval}" placeholder="min" title="Custom minutes" data-med-int-input>`;
-  return `<div class="med ${running ? 'running' : ''}">
+  const today = dayKey(new Date());
+  const medSide = `<aside class="tbx-side">
+    <div class="med-notes-box"><div class="sess-hist-h">Today's note</div><textarea class="sel med-notes-ta" data-med-note placeholder="A few words about this sit, if you like…">${esc(medNoteFor(today))}</textarea></div>
+    ${sessionsListHtml(medSessions(), 'Finish a sit and it appears here.')}</aside>`;
+  return `<div class="tbx-cols"><div class="tbx-main"><div class="med ${running ? 'running' : ''}">
       <div class="med-stage"><div class="med-orb"></div><div class="med-time js-med-time">${medFmt(r)}</div></div>
       <div class="med-presets">${MED_PRESETS.map((m) => `<button class="med-preset ${dur === m * 60 ? 'on' : ''}" data-med-set="${m}">${m} min</button>`).join('')}<span class="med-custom"><input class="sel med-cnum" id="med-min" type="number" min="1" max="180" inputmode="numeric" value="${Math.round(dur / 60)}" title="Minutes"><button class="ghost med-cset" data-med-custom>Set</button></span></div>
       <div class="med-opts">
@@ -3084,7 +3127,7 @@ function medPanel() {
       </div>
       <div class="med-ctrls"><button class="add-btn wide med-go" data-med-toggle>${running ? 'Pause' : (r < dur ? 'Resume' : 'Begin')}</button><button class="ghost med-reset" data-med-reset title="Reset">↺</button></div>
       <div class="med-note">${medState.gongs} bell${medState.gongs === 1 ? '' : 's'} to open and close${medState.interval ? `, one every ${medState.interval} min` : ''}${medState.shimmer ? ', a shimmer as the end nears' : ''}. Keep the screen awake for the bells.</div>
-    </div>`;
+    </div></div>${medSide}</div>`;
 }
 if (medState.running) medEnsureTicker();
 
@@ -12257,6 +12300,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-area-wall]')) { const a = state.area_open && state.area_open.area; if (a) { a.props = a.props || {}; a.props.wall = e.target.value; const v = e.target.value; clearTimeout(window.__areaWallT); window.__areaWallT = setTimeout(() => { api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); }, 700); } }
   if (e.target.matches('[data-note-wall]')) { const n = state.note && state.note.current; if (n) { n.props = n.props || {}; n.props.wall = e.target.value; const v = e.target.value; clearTimeout(window.__noteWallT); window.__noteWallT = setTimeout(() => { api('/api/blocks/' + n.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); }, 700); } }
   if (e.target.matches('[data-timer-label]')) { timerState.label = e.target.value; saveTimer(); }
+  if (e.target.matches('[data-med-note]')) { const day = dayKey(new Date()); const v = e.target.value; clearTimeout(window.__medNoteT); window.__medNoteT = setTimeout(() => saveMedNote(day, v), 500); return; }
   // Live search: refresh only the list (quiet), so the box you're typing in is
   // never rebuilt and keeps focus. Debounced so it fires when you pause.
   if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages(true); }, 500); }
@@ -12995,6 +13039,7 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
   if (e.target.matches('[data-card-email]')) {
