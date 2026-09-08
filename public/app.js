@@ -8880,14 +8880,16 @@ async function openContacts() {
   // Paint the pane straight away, from whatever's cached (even nothing - it renders
   // an empty state), so tapping Contacts leaves Home at once.
   renderContacts();
-  const [, , friends, shared] = await Promise.all([
+  const [, , friends, shared, areas] = await Promise.all([
     loadContacts(true).catch(() => state.contacts || []),
     loadContactGroups(true).catch(() => state.contactGroups || []),
     api('/api/friends').catch(() => ({ friends: [], incoming: [], outgoing: [], suggestions: [] })),
     api('/api/shared').then((r) => r.items || []).catch(() => []),
+    (state.areas && state.areas.length) ? Promise.resolve(null) : api('/api/blocks?kind=area').catch(() => null),
   ]);
   if (gen !== navGen) return;   // navigated away while contacts loaded
   state.friends = friends; state.sharedWithMe = shared;
+  if (Array.isArray(areas)) state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   renderContacts();
 }
 function contactCardHtml(c) {
@@ -8897,16 +8899,16 @@ function contactCardHtml(c) {
   if (p.phone) bits.push(`<span class="cc-row">☎ ${esc(p.phone)}</span>`);
   if (p.birthday) bits.push(`<span class="cc-row">🎂 ${esc(dpLabel(p.birthday))}</span>`);
   { const addrs = contactAddresses(p); if (addrs.length) { const a0 = addrs[0]; const lbl = a0.label ? `<b class="cc-adr-tag">${esc(a0.label)}</b> ` : ''; bits.push(`<span class="cc-row">📍 ${lbl}${esc(formatAddress(a0))}${addrs.length > 1 ? ` <span class="cc-adr-more">+${addrs.length - 1}</span>` : ''}</span>`); } }
-  const tags = liveGroupsOf(c);
+  const areaTags = blockAreas(c).map((id) => areaById(id)).filter(Boolean);
   const sel = (state.contactSel instanceof Set) && state.contactSel.has(c.id);
   const starred = !!p.starred;
-  const area = areaById(blockAreas(c)[0]);
+  const area = areaTags[0];
   const hue = area ? hueOf(area) : null;
-  return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}"${area ? ` title="${esc(area.title)}"` : ' title="Drag onto a group to add"'}>
+  return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}"${area ? ` title="${esc(area.title)}"` : ''}>
     <span class="cc-check ${sel ? 'on' : ''}" data-contact-sel="${c.id}" role="checkbox" aria-checked="${sel}" title="Select (to merge)">${sel ? '✓' : ''}</span>
     <span class="cc-star ${starred ? 'on' : ''}" data-contact-star="${c.id}" role="button" title="${starred ? 'Starred - tap to unstar' : 'Star this contact'}">${starred ? '★' : '☆'}</span>
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
-    <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${tags.length ? `<span class="contact-tags">${tags.map((g) => `<span class="contact-tag">${esc(g.title)}</span>`).join('')}</span>` : ''}</span></button>`;
+    <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
 // Your own Daybook card, shown as a "You" card at the top of Contacts. It's
 // always there (can't be deleted, only hidden) and ties to your Daybook card -
@@ -8933,19 +8935,50 @@ function contactAreaBarHtml() {
   </div>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
+const areaHiddenForContacts = (a) => !!(a && a.props && a.props.contactsHide);
 function contactMenuHtml() {
   const m = state.contactMenu; if (!m) return '';
   const c = findContact(m.id); if (!c) return '';
   const selN = (state.contactSel instanceof Set) ? state.contactSel.size : 0;
+  const allAreas = (state.areas || []).filter((a) => a && a.title).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const curSet = new Set(blockAreas(c));
+  const currentAreas = allAreas.filter((a) => curSet.has(a.id));
+  const available = allAreas.filter((a) => !curSet.has(a.id) && !areaHiddenForContacts(a));
+  const hiddenAreas = allAreas.filter((a) => !curSet.has(a.id) && areaHiddenForContacts(a));
+  const showHidden = !!m.showHidden;
+  // File under a life area: current areas (tap ✓ to remove), then the areas on offer
+  // (tap to add; the 🚫 hides that area from this list). Hidden ones fold away behind
+  // a "Show hidden" toggle so the everyday list stays short.
+  const curRow = (a) => `<button class="ctx-item ctx-area ctx-area-on" data-ctx-unarea="${a.id}" style="--h:${hueOf(a)}"><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-tick">✓</span></button>`;
+  const addRow = (a) => `<div class="ctx-arearow" style="--h:${hueOf(a)}"><button class="ctx-item ctx-area" data-ctx-area="${a.id}"><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button><button class="ctx-area-hide" data-ctx-area-hide="${a.id}" title="Hide ${esc(a.title)} from this list" aria-label="Hide ${esc(a.title)} from the contacts list">🚫</button></div>`;
+  const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
+  const areaSection = allAreas.length ? `<div class="ctx-lbl">Life areas</div>
+    ${currentAreas.map(curRow).join('')}
+    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No areas to add.</div>')}
+    ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
+    <div class="ctx-sep"></div>` : '';
   return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
     <div class="ctx-h">${esc(c.title || 'Contact')}</div>
     <button class="ctx-item" data-ctx-star="${c.id}">${(c.props && c.props.starred) ? '★ Unstar' : '☆ Star contact'}</button>
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
+    ${areaSection}
     ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Daybook</button><div class="ctx-sep"></div>` : ''}
-    <div class="ctx-sep"></div>
     <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
   </div></div>`;
+}
+function ctxContactArea(areaId, add) {
+  const m = state.contactMenu; if (!m) return; const c = findContact(m.id); if (!c) return;
+  const cur = blockAreas(c);
+  setBlockAreas('contact', c.id, add ? [...cur, areaId] : cur.filter((x) => x !== areaId));
+  renderContacts();   // keep the menu open (state.contactMenu is still set) so you can file into several
+}
+function ctxAreaHidden(areaId, hidden) {
+  const a = areaById(areaId); if (!a) return;
+  a.props = a.props || {}; a.props.contactsHide = hidden;
+  const inList = (state.areas || []).find((x) => x.id === areaId); if (inList) { inList.props = inList.props || {}; inList.props.contactsHide = hidden; }
+  api(`/api/blocks/${areaId}`, { method: 'PATCH', body: JSON.stringify({ props: { contactsHide: hidden } }) }).catch((e) => toast(e.message));
+  renderContacts();
 }
 function openContactMenu(id, x, y) {
   const vh = window.innerHeight;
@@ -13463,6 +13496,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-ctx-newgroup]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; renderContacts(); if (id) addContactViaNewGroup(id); return; }
   const ctxRm = t.closest('[data-ctx-remove]'); if (ctxRm) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) removeContactFromGroup(id, ctxRm.dataset.ctxRemove); else renderContacts(); return; }
   { const cxs = t.closest('[data-ctx-star]'); if (cxs) { const id = cxs.dataset.ctxStar; state.contactMenu = null; toggleContactStar(id); return; } }
+  { const cah = t.closest('[data-ctx-area-hide]'); if (cah) { ctxAreaHidden(cah.dataset.ctxAreaHide, true); return; } }
+  { const cauh = t.closest('[data-ctx-area-unhide]'); if (cauh) { ctxAreaHidden(cauh.dataset.ctxAreaUnhide, false); return; } }
+  { const cxa = t.closest('[data-ctx-area]'); if (cxa) { ctxContactArea(cxa.dataset.ctxArea, true); return; } }
+  { const cxu = t.closest('[data-ctx-unarea]'); if (cxu) { ctxContactArea(cxu.dataset.ctxUnarea, false); return; } }
+  { const cxt = t.closest('[data-ctx-hidden-toggle]'); if (cxt) { if (state.contactMenu) { state.contactMenu.showHidden = !state.contactMenu.showHidden; renderContacts(); } return; } }
   if (t.closest('[data-ctx-merge]')) { state.contactMenu = null; mergeSelectedContacts(); return; }
   if (t.closest('[data-ctx-delete]')) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) delContact(id); else renderContacts(); return; }
   if (t.closest('[data-ctx-close]') && !t.closest('.ctx-menu')) { state.contactMenu = null; renderContacts(); return; }

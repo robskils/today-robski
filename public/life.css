@@ -248,6 +248,23 @@ button { cursor:pointer; background:none; border:0; }
 .ctx-item.ctx-danger { color:var(--danger,#c0392b); }
 .ctx-item.ctx-danger:hover { background:color-mix(in srgb,var(--danger,#c0392b) 12%,transparent); color:var(--danger,#c0392b); }
 .ctx-sep { height:1px; background:var(--line); margin:5px 8px; }
+/* Life-area rows in the contact menu: a colour dot + name; the add rows carry a 🚫
+   to hide that area from the list, current areas show a ✓, hidden ones a faint unhide. */
+.ctx-area { display:flex; align-items:center; gap:9px; }
+.ctx-adot { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
+.ctx-area-n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ctx-area-tick { flex:none; color:hsl(var(--h,220) 55% 50%); font-weight:800; }
+.ctx-arearow { display:flex; align-items:center; }
+.ctx-arearow .ctx-area { flex:1; min-width:0; }
+.ctx-area-hide { flex:none; border:0; background:none; padding:8px 10px; font-size:13px; opacity:.35; cursor:pointer; border-radius:8px; }
+.ctx-arearow:hover .ctx-area-hide { opacity:.8; }
+.ctx-area-hide:hover { opacity:1; background:var(--paper-2); }
+.ctx-area-dim { opacity:.6; }
+.ctx-area-unhide { flex:none; font-size:11px; color:var(--accent); font-weight:600; }
+.ctx-showhidden { font-size:12.5px; color:var(--ink-3); }
+.ctx-empty { font-size:13px; color:var(--ink-3); padding:6px 12px; }
+.contact-tag .ct-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); margin-right:4px; vertical-align:middle; }
+.contact-tag { --h:220; color:var(--ink-2); background:color-mix(in srgb,hsl(var(--h) 55% 55%) 14%,transparent); }
 
 /* Goals & bucket list */
 .seg { display:inline-flex; flex-wrap:wrap; max-width:100%; gap:3px; background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:22px; }
