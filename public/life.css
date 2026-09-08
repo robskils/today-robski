@@ -537,14 +537,11 @@ button { cursor:pointer; background:none; border:0; }
 .gc-pct { flex:none; font-size:12px; font-weight:600; color:var(--ink-3); font-variant-numeric:tabular-nums; min-width:34px; text-align:right; }
 /* The slider overlays the bar: transparent track (the bar's fill shows through),
    only the thumb is visible and grabbable. */
-/* Inset the track by half a thumb (8px) each side, so the thumb sits FULLY on the
-   rail at both ends - at 0% it rests hard against the left, not half-hanging off
-   (which iOS WebKit does with an appearance:none thumb, making a 0% goal look like
-   it has no handle). The 8px inset also lands the thumb centre exactly on the fill
-   edge at every value. width:auto lets left/right drive the size. */
-/* Height matches the thumb (16px) and sits centred on the bar (top:50% + a -50%
-   shift), so the thumb fills the track exactly and can't drift high or low. */
-.gc-slider { position:absolute; top:50%; left:8px; right:8px; transform:translateY(-50%); width:auto; height:16px; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; z-index:2; touch-action:pan-y; }
+/* Full-width track (left/right:0), so at 0% the thumb rests hard against the far
+   left of the rail with no gap - the browser keeps the thumb inside the track, so
+   it's flush at both ends, not inset. Height matches the thumb (16px) and it sits
+   centred on the bar (top:50% + a -50% shift) so the thumb can't drift high or low. */
+.gc-slider { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); width:auto; height:16px; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; z-index:2; touch-action:pan-y; }
 .gc-slider.ro { pointer-events:none; }   /* number/finished goals: a read-only marker, click falls through to open the goal */
 .gc-slider:focus { outline:none; }
 .gc-slider::-webkit-slider-runnable-track { background:transparent; border:0; height:100%; }
@@ -2357,6 +2354,22 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .nt-result .ga-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; color:var(--ink); }
 .nt-link-ic { flex:none; font-size:12.5px; color:var(--accent); font-weight:600; }
 .nt-new { font-size:13.5px; width:100%; text-align:left; padding-left:12px; padding-right:12px; }
+/* Notes ↔ events: linked cards + a "you might mean" suggestion row. */
+.note-events { margin-top:22px; }
+.ce-linked { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+.ce-card { display:flex; align-items:center; gap:4px; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; background:var(--card); overflow:hidden; }
+.ce-card:hover { border-color:var(--accent); }
+.ce-open { flex:1; min-width:0; display:inline-flex; align-items:center; gap:8px; background:none; border:0; padding:8px 4px 8px 11px; cursor:pointer; color:var(--ink); font:inherit; font-size:14px; text-align:left; }
+.ce-ic { flex:none; color:var(--accent); }
+.ce-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ce-d { flex:none; margin-left:auto; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+.ce-x { flex:none; background:none; border:0; padding:6px 10px 6px 4px; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; }
+.ce-x:hover { color:var(--accent); }
+.ce-sugg { margin:2px 0 8px; }
+.ce-sugg-h { font-size:11.5px; color:var(--ink-3); margin:2px 0 5px; text-transform:uppercase; letter-spacing:.03em; }
+.ce-sugg .nt-result { border-style:dashed; margin-bottom:4px; }
+.ce-notes-sec .ce-notes-body { margin-top:6px; }
+.ce-notes-sec .nt-result, .note-events .nt-result { margin-bottom:4px; }
 /* Tasks: priority filter chips. */
 /* Tasks: build-your-own filter bar. */
 .task-filters { margin:0 0 18px; }

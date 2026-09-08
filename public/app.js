@@ -5888,6 +5888,7 @@ function showCalForm(ev) {
     ${(() => { const cur = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl">Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}</select></label>`; })()}
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
+    ${(ev && ev.id) ? eventNotesHtml(ev) : ''}
     ${(ev && ev.recurringId) ? (() => { const REP = { daily: 'daily', weekdays: 'every weekday', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' }; const cad = (ev.repeat && REP[ev.repeat]) ? ` ${REP[ev.repeat]}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ Repeats${cad}</span><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
       ${opt('none', 'Does not repeat')}
       ${opt('daily', 'Daily')}
@@ -12024,6 +12025,121 @@ function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.heig
 function autoGrowSoon(el) { if (!el) return; requestAnimationFrame(() => autoGrow(el)); }
 // Tasks linked to a note: the associated tasks, plus a search to link an
 // existing one and a button to make a new one. A task carries props.note.
+// ── notes ↔ events ─────────────────────────────────────────────────────
+// A two-way link. The note holds snapshots in props.events ([{id,title,date}]);
+// the event holds the reverse in a side-map (surfaced as e.noteLinks), so it works
+// on Google events too. Both ends are written on connect/disconnect.
+const noteEventLinks = (n) => (n && n.props && Array.isArray(n.props.events)) ? n.props.events.filter((e) => e && e.id) : [];
+const evBaseId = (e) => String((e && e.id) || '').split('::')[0];
+const evShortDate = (iso) => { if (!iso) return ''; try { return new Date(String(iso).slice(0, 10) + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch { return String(iso).slice(0, 10); } };
+// A pool of recent + upcoming events (native AND Google) for the note-side picker
+// and suggestions. Loaded once, lazily; refreshes the note when it lands.
+function loadNoteEvents() {
+  if (state.noteEvents !== undefined) return; state.noteEvents = null;
+  const d = new Date(); const from = new Date(d); from.setDate(from.getDate() - 45); const to = new Date(d); to.setDate(to.getDate() + 150);
+  const iso = (x) => x.toISOString().slice(0, 10);
+  api(`/api/calendar?from=${iso(from)}&to=${iso(to)}`).then((r) => { const seen = new Set(); state.noteEvents = (r.events || []).filter((e) => { if (!e || !e.id || !e.title || e.feed) return false; const b = evBaseId(e); if (seen.has(b)) return false; seen.add(b); return true; }); if (state.view.type === 'note') renderNote(); }).catch(() => { state.noteEvents = []; });
+}
+function connectedEventsHtml(n) {
+  if (n.sharedBy && !n.canEdit) return '';
+  const links = noteEventLinks(n);
+  const linkedIds = new Set(links.map((x) => evBaseId(x)));
+  const pool = state.noteEvents;
+  if (pool === undefined) loadNoteEvents();
+  const q = ((state.note && state.note.eventQuery) || '').trim().toLowerCase();
+  const nt = (n.title || '').trim().toLowerCase();
+  let sugg = [];
+  if (Array.isArray(pool) && !q && nt.length >= 3) sugg = pool.filter((ev) => { const et = (ev.title || '').toLowerCase(); return !linkedIds.has(evBaseId(ev)) && et && (et.includes(nt) || nt.includes(et)); }).slice(0, 4);
+  let results = [];
+  if (Array.isArray(pool) && q) results = pool.filter((ev) => !linkedIds.has(evBaseId(ev)) && (ev.title || '').toLowerCase().includes(q)).slice(0, 8);
+  const evRow = (ev) => `<button class="nt-result" data-note-link-event="${esc(evBaseId(ev))}"><span class="ga-t">◑ ${esc(ev.title || 'Event')}${ev.date ? ` <span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</span><span class="nt-link-ic">＋ Link</span></button>`;
+  const cards = links.map((ev) => `<div class="ce-card"><button class="ce-open" data-open-event-date="${esc(String(ev.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(ev.title || 'Event')}</span>${ev.date ? `<span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</button><button class="ce-x" data-note-unlink-event="${esc(evBaseId(ev))}" title="Disconnect">×</button></div>`).join('');
+  return `<div class="note-events"><div class="sub-h">Connected events${links.length ? ` · ${links.length}` : ''}</div>
+    <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No events linked yet.</div>'}</div>
+    ${sugg.length ? `<div class="ce-sugg"><div class="ce-sugg-h">You might mean</div>${sugg.map(evRow).join('')}</div>` : ''}
+    <input class="sel nt-search" data-note-event-q placeholder="Search an event to link…" value="${esc((state.note && state.note.eventQuery) || '')}" autocomplete="off">
+    ${results.length ? `<div class="nt-results">${results.map(evRow).join('')}</div>` : ''}</div>`;
+}
+function noteLinkEvent(baseId) {
+  const n = state.note && state.note.current; if (!n) return;
+  const ev = (state.noteEvents || []).find((x) => evBaseId(x) === baseId); if (!ev) return;
+  const evs = noteEventLinks(n).filter((x) => evBaseId(x) !== baseId);
+  evs.push({ id: baseId, title: ev.title || 'Event', date: String(ev.date || '').slice(0, 10) });
+  n.props = n.props || {}; n.props.events = evs; state.note.eventQuery = ''; renderNote();
+  api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ props: { events: evs } }) }).catch((e) => toast(e.message));
+  api('/api/event-notes', { method: 'POST', body: JSON.stringify({ eventId: baseId, addNote: { id: n.id, title: n.title || 'Untitled' } }) }).catch(() => {});
+  toast('Linked to event');
+}
+function noteUnlinkEvent(baseId) {
+  const n = state.note && state.note.current; if (!n) return;
+  const evs = noteEventLinks(n).filter((x) => evBaseId(x) !== baseId);
+  n.props = n.props || {}; n.props.events = evs; renderNote();
+  api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ props: { events: evs } }) }).catch((e) => toast(e.message));
+  api('/api/event-notes', { method: 'POST', body: JSON.stringify({ eventId: baseId, removeNoteId: n.id }) }).catch(() => {});
+}
+function renderNoteEvents() { const el = document.querySelector('.note-events'); if (el && state.note && state.note.current) { const w = document.createElement('div'); w.innerHTML = connectedEventsHtml(state.note.current); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
+// The event-editor end of the same link. Pool = all your notes (loaded once), for
+// the picker and the same-name suggestions. Acts immediately and repaints only its
+// own section, so unsaved edits in the event form aren't lost.
+function loadEvNotePool() {
+  if (state.evNotePool !== undefined) return; state.evNotePool = null;
+  api('/api/blocks?kind=note').then((r) => { state.evNotePool = (r || []).filter((n) => n && n.id && !(n.props && n.props.private)); if (state.view.type === 'calendar') renderEventNotesSection(); }).catch(() => { state.evNotePool = []; });
+}
+function eventNotesHtml(ev) {
+  const links = Array.isArray(ev.noteLinks) ? ev.noteLinks : [];
+  const linkedIds = new Set(links.map((x) => String(x.id)));
+  const pool = Array.isArray(state.evNotePool) ? state.evNotePool : [];
+  if (state.evNotePool === undefined) loadEvNotePool();
+  const q = ((state.cal && state.cal.noteQuery) || '').trim().toLowerCase();
+  const et = (ev.title || '').trim().toLowerCase();
+  const pickable = (nn) => nn && nn.id && !linkedIds.has(String(nn.id)) && !isTableNote(nn);
+  let sugg = [];
+  if (!q && et.length >= 3) sugg = pool.filter((nn) => { if (!pickable(nn)) return false; const n2 = (nn.title || '').toLowerCase(); return n2 && (n2.includes(et) || et.includes(n2)); }).slice(0, 4);
+  let results = [];
+  if (q) results = pool.filter((nn) => pickable(nn) && (nn.title || '').toLowerCase().includes(q)).slice(0, 8);
+  const nRow = (nn) => `<button type="button" class="nt-result" data-ev-link-note="${nn.id}" data-ev-note-title="${esc(nn.title || 'Untitled')}"><span class="ga-t">▤ ${esc(nn.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`;
+  const cards = links.map((nn) => `<div class="ce-card"><button type="button" class="ce-open" data-open-note="${esc(nn.id)}"><span class="ce-ic">▤</span><span class="ce-t">${esc(nn.title || 'Untitled')}</span></button><button type="button" class="ce-x" data-ev-unlink-note="${esc(nn.id)}" title="Disconnect">×</button></div>`).join('');
+  return `<div class="ce-field ce-notes-sec"><span class="ce-flbl">Connected notes</span><div class="ce-notes-body">
+    <div class="ce-linked">${cards || '<div class="home-empty" style="padding:4px 0">No notes linked yet.</div>'}</div>
+    ${sugg.length ? `<div class="ce-sugg"><div class="ce-sugg-h">You might mean</div>${sugg.map(nRow).join('')}</div>` : ''}
+    <input class="sel nt-search" data-ev-note-q placeholder="Search a note to link…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off">
+    ${results.length ? `<div class="nt-results">${results.map(nRow).join('')}</div>` : ''}
+  </div></div>`;
+}
+function renderEventNotesSection() { const el = document.querySelector('.ce-notes-sec'); if (el && state.cal && state.cal.editing) { const w = document.createElement('div'); w.innerHTML = eventNotesHtml(state.cal.editing); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
+// Mirror an event-side change onto the note's own props.events, so opening the note
+// shows the event too. The note may not be in the pool (private/subnote) - fetch it.
+async function patchNoteEventLink(noteId, ev, on) {
+  const baseId = evBaseId(ev);
+  let note = (state.evNotePool || []).find((x) => String(x.id) === String(noteId));
+  if (!note) { try { note = await api(`/api/blocks/${noteId}`); } catch { return; } }
+  const evs = noteEventLinks(note).filter((x) => evBaseId(x) !== baseId);
+  if (on) evs.push({ id: baseId, title: ev.title || 'Event', date: String(ev.date || '').slice(0, 10) });
+  note.props = note.props || {}; note.props.events = evs;
+  api(`/api/blocks/${noteId}`, { method: 'PATCH', body: JSON.stringify({ props: { events: evs } }) }).catch(() => {});
+}
+function eventLinkNote(noteId, noteTitle) {
+  const ev = state.cal && state.cal.editing; if (!ev) return;
+  const baseId = evBaseId(ev);
+  const links = (Array.isArray(ev.noteLinks) ? ev.noteLinks : []).filter((x) => String(x.id) !== String(noteId));
+  links.push({ id: String(noteId), title: noteTitle || 'Untitled' });
+  ev.noteLinks = links; state.cal.noteQuery = '';
+  (state.cal.events || []).forEach((x) => { if (evBaseId(x) === baseId) x.noteLinks = links; });
+  renderEventNotesSection();
+  api('/api/event-notes', { method: 'POST', body: JSON.stringify({ eventId: baseId, addNote: { id: String(noteId), title: noteTitle || 'Untitled' } }) }).catch((e) => toast(e.message));
+  patchNoteEventLink(noteId, ev, true);
+  toast('Note linked');
+}
+function eventUnlinkNote(noteId) {
+  const ev = state.cal && state.cal.editing; if (!ev) return;
+  const baseId = evBaseId(ev);
+  const links = (Array.isArray(ev.noteLinks) ? ev.noteLinks : []).filter((x) => String(x.id) !== String(noteId));
+  ev.noteLinks = links;
+  (state.cal.events || []).forEach((x) => { if (evBaseId(x) === baseId) x.noteLinks = links; });
+  renderEventNotesSection();
+  api('/api/event-notes', { method: 'POST', body: JSON.stringify({ eventId: baseId, removeNoteId: String(noteId) }) }).catch((e) => toast(e.message));
+  patchNoteEventLink(noteId, ev, false);
+}
 function noteTasksHtml(noteId) {
   const all = state.allTasks || [];
   const linked = all.filter((t) => t.props && t.props.note === noteId && !t.props.done);
@@ -12213,6 +12329,7 @@ function renderNote() {
         <div class="subpages" data-subpages>${(() => { const cn = state.note.children.length + linkedCards.length + (parent ? 1 : 0); return `<div class="sub-h">Connected notes${cn ? ` · ${cn}` : ''}</div>`; })()}
           ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
         ${noteTasksHtml(n.id)}
+        ${connectedEventsHtml(n)}
         ${relatedNotesHtml(n)}
         ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-totable" data-note-to-table title="Make a table from this note's lines - each line becomes a row">▦ Turn into a table</button>`}
       </aside>
@@ -12885,6 +13002,8 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-home-area-sort]')) { try { localStorage.setItem('life.home.areaSort', e.target.value); } catch {} renderHome(); return; }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-note-event-q]') && state.note) { const pos = e.target.selectionStart; state.note.eventQuery = e.target.value; renderNoteEvents(); const i = document.querySelector('[data-note-event-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
   // Daybook card: live-update the preview as you type, save shortly after.
   if (e.target.matches('[data-card-name]')) { const v = e.target.value; if (state.account) state.account.name = v; cardLivePreview(); clearTimeout(window.__cardNT); window.__cardNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.me && state.account) state.me.name = state.account.name; renderNav(); }), 700); return; }
@@ -13465,6 +13584,11 @@ document.addEventListener('click', (e) => {
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
+  { const nle = t.closest('[data-note-link-event]'); if (nle) { noteLinkEvent(nle.dataset.noteLinkEvent); return; } }
+  { const nue = t.closest('[data-note-unlink-event]'); if (nue) { noteUnlinkEvent(nue.dataset.noteUnlinkEvent); return; } }
+  { const eln = t.closest('[data-ev-link-note]'); if (eln) { eventLinkNote(eln.dataset.evLinkNote, eln.dataset.evNoteTitle); return; } }
+  { const eun = t.closest('[data-ev-unlink-note]'); if (eun) { eventUnlinkNote(eun.dataset.evUnlinkNote); return; } }
+  { const oed = t.closest('[data-open-event-date]'); if (oed) { const d = oed.dataset.openEventDate; openCalendar().then(() => { if (d) { state.cal.selected = d; const [yy, mm] = d.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); loadCalendar(); } }).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-note-new-task]')) { newNoteTask(state.note.current.id); return; }
   if (t.closest('[data-open-admin]')) { openAdmin(); return; }
   if (t.closest('[data-adm-area-add]')) { adminAreaAdd(); return; }

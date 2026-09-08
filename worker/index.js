@@ -301,6 +301,7 @@ async function handleCalendar(request, env, url) {
   applyEventContacts(events, await getEventContacts(env).catch(() => ({})));
   applyEventUrls(events, await getEventUrls(env).catch(() => ({})));
   applyEventAlarms(events, await getEventAlarms(env).catch(() => ({})));
+  applyEventNotes(events, await getEventNotes(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) merged in as read-only overlays.
   const feeds = await getFeeds(env);
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
@@ -975,6 +976,24 @@ async function setEventAlarmFor(env, id, alarm) {
   await setSetting(env, 'event_alarms', JSON.stringify(map));
 }
 function applyEventAlarms(events, map) { if (!map) return events; for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; if (map[k] != null) e.alarm = map[k]; } return events; }
+// Notes connected to an event, side-mapped by base id like the rest so it works on
+// the owner's Google events too. Stores lightweight {id,title} snapshots so the
+// calendar can list a linked note's name without loading notes; the note holds the
+// reverse (props.events) so the two ends stay in step. Surfaced as e.noteLinks
+// (NOT e.notes - that's the event's own description text).
+async function getEventNotes(env) { const v = await getSetting(env, 'event_notes'); try { return v ? JSON.parse(v) : {}; } catch { return {}; } }
+// Add or remove ONE note link, so either end (note card or event editor) can change
+// it without having to know the whole list first.
+async function updateEventNoteLink(env, id, addNote, removeNoteId) {
+  const key = String(id || '').split('::')[0]; if (!key) return;
+  const map = await getEventNotes(env);
+  let arr = Array.isArray(map[key]) ? map[key] : [];
+  if (removeNoteId != null) arr = arr.filter((n) => String(n.id) !== String(removeNoteId));
+  if (addNote && addNote.id) { arr = arr.filter((n) => String(n.id) !== String(addNote.id)); arr.push({ id: String(addNote.id), title: String(addNote.title || '').slice(0, 200) }); }
+  if (arr.length) map[key] = arr; else delete map[key];
+  await setSetting(env, 'event_notes', JSON.stringify(map));
+}
+function applyEventNotes(events, map) { if (!map) return events; for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; if (map[k]) e.noteLinks = map[k]; } return events; }
 
 // The accounts the per-minute cron fans out over: every active member. A NULL
 // status counts as active - rows created before the column existed have none,
@@ -2433,6 +2452,7 @@ async function handleDay(request, env, url) {
   applyEventContacts(cal.events, await getEventContacts(env).catch(() => ({})));
   applyEventUrls(cal.events, await getEventUrls(env).catch(() => ({})));
   applyEventAlarms(cal.events, await getEventAlarms(env).catch(() => ({})));
+  applyEventNotes(cal.events, await getEventNotes(env).catch(() => ({})));
   // Subscribed feeds (holidays + fixtures) for this day, read-only overlays.
   const feeds = await getFeeds(env);
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
@@ -3871,6 +3891,7 @@ export default {
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
       if (path === '/api/calendar' && request.method === 'GET') return handleCalendar(request, env, url);
+      if (path === '/api/event-notes' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await updateEventNoteLink(env, b.eventId, b.addNote, b.removeNoteId); return json({ ok: true }, request); }
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       if (path.startsWith('/api/push/')) return handlePush(request, env, path, json, err);
       if (path === '/api/wellbeing/iching' && request.method === 'POST') return ichingReflect(request, env, json, err);
