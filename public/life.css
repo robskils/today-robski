@@ -5023,7 +5023,8 @@ table.ttable tr:last-child td { border-bottom:0; }
 .area-card .star, .area-hero .star { position:static; opacity:0; }
 .area-card:hover .star, .area-card .star.on, .area-hero .star, .area-hero .star.on { opacity:1; }
 .area-hero-top { display:flex; align-items:center; gap:4px; }
-.area-hero-top .star { margin-left:auto; }
+/* The area's own controls live on the title row, not jammed into the breadcrumbs. */
+.area-h1-tools { flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:8px; }
 
 /* ── calendar ────────────────────────────────────────── */
 .cal-head { display:flex; align-items:center; justify-content:space-between; gap:12px 16px; margin-bottom:18px; flex-wrap:wrap; }
