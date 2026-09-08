@@ -11285,8 +11285,8 @@ function reviewsListHtml() {
   const open = state.reviewRemEdit; const t0 = todayISO();
   const cards = RTYPE_ORDER.map((k) => {
     const c = reviewCad(k);
-    // All open by default; tap a header to collapse just that one.
-    const isOpen = !((state.reviewRemClosed || {})[k]);
+    // Collapsed by default; tap a header to open just that one. (Robin.)
+    const isOpen = !!((state.reviewRemOpen || {})[k]);
     const done = reviewDoneCount(k);
     // Every type has a due date - the official cadence date - whether or not you're
     // alerted. The on/off toggle only governs the nudge.
@@ -13641,7 +13641,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
-  const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemClosed = state.reviewRemClosed || {}; state.reviewRemClosed[k] = !state.reviewRemClosed[k]; reReviewRems(); return; }
+  const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemOpen = state.reviewRemOpen || {}; state.reviewRemOpen[k] = !state.reviewRemOpen[k]; reReviewRems(); return; }
   { const cd = t.closest('[data-rev-cad-dow]'); if (cd) { const [k, d] = cd.dataset.revCadDow.split(':'); setReviewCadDow(k, +d); return; } }
   { const cm = t.closest('[data-rev-cad-mode]'); if (cm) { const [k, m] = cm.dataset.revCadMode.split(':'); setReviewCadMode(k, m); return; } }
   { const ca = t.closest('[data-rev-cad-alert]'); if (ca) { const [k, n] = ca.dataset.revCadAlert.split(':'); setReviewCadAlert(k, +n); return; } }
