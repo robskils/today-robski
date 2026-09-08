@@ -10216,14 +10216,16 @@ function goalsListBody() {
     const p = gp(g); const a = areaById(p.area); const pct = Math.round(goalProgress(g) * 100); const st = p.status || 'active';
     const measure = goalMeasure(g);
     const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
-    // A "mark it done" goal (active, no number measure) gets a grabbable slider
-    // right on its bar - set progress without opening it. Number goals keep their
-    // computed bar.
+    // Every row shows a slider circle so they read as one set. A "mark it done"
+    // active goal is grabbable (set progress without opening it); number goals and
+    // finished ones show the same thumb at their computed spot as a read-only
+    // marker (disabled, so a drag can't fight the number that owns their bar).
     const canSlide = st === 'active' && p.gtype !== 'number';
+    const slider = `<input type="range" class="gc-slider glist-slider${canSlide ? '' : ' ro'}" min="0" max="100" step="5" value="${pct}" ${canSlide ? `data-goal-progress="${g.id}"` : 'tabindex="-1"'} aria-label="Progress: ${pct}%" title="${canSlide ? 'Drag to set how far along this goal is' : `${pct}% complete`}">`;
     return `<div class="glist-row" data-open-goal="${g.id}" role="button" tabindex="0" style="--h:${a ? hueOf(a) : 220}">
       <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'In focus this quarter' : ''}">${p.focus ? '★' : ''}</span>
       <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
-      <span class="glist-bar-wrap"><span class="glist-bar"><i style="width:${pct}%"></i></span>${canSlide ? `<input type="range" class="gc-slider glist-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set how far along this goal is">` : ''}</span>
+      <span class="glist-bar-wrap"><span class="glist-bar"><i style="width:${pct}%"></i></span>${slider}</span>
       <span class="glist-pct">${st === 'done' ? '✓' : pct + '%'}</span>
     </div>`;
   }).join('');

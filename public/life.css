@@ -542,7 +542,10 @@ button { cursor:pointer; background:none; border:0; }
    (which iOS WebKit does with an appearance:none thumb, making a 0% goal look like
    it has no handle). The 8px inset also lands the thumb centre exactly on the fill
    edge at every value. width:auto lets left/right drive the size. */
-.gc-slider { position:absolute; inset:-9px 8px; width:auto; height:auto; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; z-index:2; touch-action:pan-y; }
+/* Height matches the thumb (16px) and sits centred on the bar (top:50% + a -50%
+   shift), so the thumb fills the track exactly and can't drift high or low. */
+.gc-slider { position:absolute; top:50%; left:8px; right:8px; transform:translateY(-50%); width:auto; height:16px; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; z-index:2; touch-action:pan-y; }
+.gc-slider.ro { pointer-events:none; }   /* number/finished goals: a read-only marker, click falls through to open the goal */
 .gc-slider:focus { outline:none; }
 .gc-slider::-webkit-slider-runnable-track { background:transparent; border:0; height:100%; }
 .gc-slider::-moz-range-track { background:transparent; border:0; }
