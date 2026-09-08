@@ -11202,20 +11202,56 @@ function reviewSentiment(p, r) {
 function reviewWheelHtml(p) {
   const areas = (state.areas || []).filter((a) => a && a.title && (p.wheel || {})[a.id]);
   if (areas.length < 3) return '';
-  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5) }));
+  const period = PERIOD_WORD[p.rtype] || 'period';
+  // The previous review of this type, so the wheel can show how the shape has
+  // changed - a dashed "last time" outline over it, and a move on each spoke.
+  const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
+  const prevWheel = (prev && prev.wheel) || null;
+  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5), prev: prevWheel ? Math.min(prevWheel[a.id] || 0, 5) : 0 }));
   const N = data.length, cx = 110, cy = 110, R = 92, seg = 2 * Math.PI / N;
   const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`;
   const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
   const wedges = data.map((d, i) => { const a0 = -Math.PI / 2 + i * seg, a1 = a0 + seg, large = seg > Math.PI ? 1 : 0, rr = R * d.score / 5; return `<path d="M${cx},${cy} L${P(R, a0)} A${R},${R} 0 ${large} 1 ${P(R, a1)} Z" class="wol-track"/><path d="M${cx},${cy} L${P(rr, a0)} A${rr.toFixed(1)},${rr.toFixed(1)} 0 ${large} 1 ${P(rr, a1)} Z" fill="hsl(${hueOf(d.a)} 58% 55%)" fill-opacity="0.9" stroke="var(--card)" stroke-width="1.5"/>`; }).join('');
-  const svg = `<svg viewBox="0 0 220 220" class="wol-svg" role="img" aria-label="Wheel of Life">${rings}${wedges}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
+  // "Last time" as a dashed radar outline: each spoke's previous score plotted at
+  // the spoke's mid-angle, joined into a closed loop. Only when every spoke has a
+  // prior score, so the shape is honest and not full of gaps.
+  const havePrev = prevWheel && data.every((d) => d.prev > 0);
+  const prevOutline = havePrev
+    ? `<polygon points="${data.map((d, i) => P(R * d.prev / 5, -Math.PI / 2 + i * seg + seg / 2)).join(' ')}" class="rr-wheel-prev"/>`
+    : '';
+  const svg = `<svg viewBox="0 0 220 220" class="wol-svg" role="img" aria-label="Wheel of Life">${rings}${wedges}${prevOutline}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
   const sorted = data.slice().sort((x, y) => y.score - x.score);
   const top = sorted[0], low = sorted[sorted.length - 1];
   const avg = Math.round(data.reduce((s, d) => s + d.score, 0) / data.length * 10) / 10;
+  const prevAvg = havePrev ? Math.round(data.reduce((s, d) => s + d.prev, 0) / data.length * 10) / 10 : null;
   const spread = top.score - low.score;
-  let comm = `Averaging <b>${avg}/5</b>. <b>${esc(top.a.title)}</b> leads at ${top.score}/5`;
+  const dTag = (d) => d ? `<span class="rr-key-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(Math.round(d * 10) / 10)}</span>` : '';
+  let comm = `Averaging <b>${avg}/5</b>${prevAvg != null && prevAvg !== avg ? ` ${dTag(avg - prevAvg)} on last ${period}` : ''}. <b>${esc(top.a.title)}</b> leads at ${top.score}/5`;
   if (low.a.id !== top.a.id) comm += `; <b>${esc(low.a.title)}</b> is quietest at ${low.score}/5`;
   comm += spread >= 3 ? ' - an uneven picture, worth steering some energy to the lower spokes.' : ' - a nicely balanced spread.';
-  return `<div class="rr-wheel"><div class="rr-wheel-chart">${svg}</div><p class="rr-wheel-comm">${comm}</p></div>`;
+  // Per-spoke breakdown: dots + score + the move on last time, hottest first.
+  const spokeRows = sorted.map((d) => {
+    const delta = (d.prev && d.score) ? d.score - d.prev : 0;
+    const dots = Array.from({ length: 5 }, (_, i) => `<span class="rr-dot ${i < d.score ? 'on' : ''}" style="--h:${hueOf(d.a)}"></span>`).join('');
+    return `<button class="rr-spoke" data-open-area="${d.a.id}" style="--h:${hueOf(d.a)}"><span class="rr-spoke-n">${esc(d.a.title)}</span><span class="rr-spoke-dots">${dots}</span><span class="rr-spoke-s">${d.score}/5${dTag(delta)}</span></button>`;
+  }).join('');
+  // Movers vs last time: the spoke that climbed most and the one that slipped most.
+  let moversHtml = '';
+  if (havePrev) {
+    const moved = data.map((d) => ({ a: d.a, d: d.score - d.prev, now: d.score })).filter((x) => x.d !== 0).sort((x, y) => y.d - x.d);
+    const up = moved[0] && moved[0].d > 0 ? moved[0] : null;
+    const dn = moved[moved.length - 1] && moved[moved.length - 1].d < 0 ? moved[moved.length - 1] : null;
+    const bits = [];
+    if (up) bits.push(`<span class="rr-mover up">📈 <b>${esc(up.a.title)}</b> ${dTag(up.d)} to ${up.now}/5</span>`);
+    if (dn) bits.push(`<span class="rr-mover down">📉 <b>${esc(dn.a.title)}</b> ${dTag(dn.d)} to ${dn.now}/5</span>`);
+    if (!up && !dn) bits.push(`<span class="rr-mover flat">Every spoke held its ground since last ${period}.</span>`);
+    moversHtml = `<div class="rr-wheel-movers">${bits.join('')}</div>`;
+  }
+  const legend = havePrev ? `<div class="rr-wheel-legend"><span class="rr-wheel-key now">This ${period}</span><span class="rr-wheel-key was">Last ${period}</span></div>` : '';
+  return `<div class="rr-wheel">
+    <div class="rr-wheel-chart">${svg}${legend}</div>
+    <div class="rr-wheel-read"><p class="rr-wheel-comm">${comm}</p>${moversHtml}<div class="rr-wheel-spokes">${spokeRows}</div></div>
+  </div>`;
 }
 // Trends across this review type's history: sparklines for tasks completed and
 // Wheel of Life, with the move vs last time - an infographic read, not a list.

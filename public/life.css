@@ -942,7 +942,25 @@ button { cursor:pointer; background:none; border:0; }
 .rr-read p:last-child { margin-bottom:0; }
 .rr-wheel { display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin:2px 0 16px; }
 .rr-wheel-chart { flex:none; width:180px; max-width:60vw; }
-.rr-wheel-comm { flex:1 1 220px; min-width:0; font-size:15px; line-height:1.55; color:var(--ink-2); } .rr-wheel-comm b { color:var(--ink); }
+.rr-wheel-comm { font-size:15px; line-height:1.55; color:var(--ink-2); margin:0 0 12px; } .rr-wheel-comm b { color:var(--ink); }
+.rr-wheel-read { flex:1 1 260px; min-width:0; }
+/* Dashed "last time" outline laid over the current wheel. */
+.rr-wheel-prev { fill:none; stroke:var(--ink-2); stroke-width:1.6; stroke-dasharray:3 3; opacity:.7; stroke-linejoin:round; }
+.rr-wheel-legend { display:flex; gap:14px; justify-content:center; margin-top:8px; font-size:11.5px; color:var(--ink-3); }
+.rr-wheel-key { display:inline-flex; align-items:center; gap:5px; }
+.rr-wheel-key::before { content:''; width:16px; height:0; border-top:3px solid hsl(var(--h,40) 58% 55%); }
+.rr-wheel-key.now::before { border-top:5px solid color-mix(in srgb,var(--ink) 45%,transparent); }
+.rr-wheel-key.was::before { border-top:1.6px dashed var(--ink-2); }
+.rr-wheel-movers { display:flex; flex-wrap:wrap; gap:8px 16px; margin:0 0 12px; font-size:13.5px; color:var(--ink-2); }
+.rr-wheel-movers b { color:var(--ink); }
+.rr-wheel-spokes { display:flex; flex-direction:column; gap:6px; }
+.rr-spoke { display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; background:none; padding:6px 8px; border-radius:8px; cursor:pointer; color:var(--ink); font:inherit; border-left:3px solid hsl(var(--h,220) var(--lane-s) var(--lane-l)); transition:background .12s; }
+.rr-spoke:hover { background:var(--paper-2,color-mix(in srgb,var(--ink) 5%,transparent)); }
+.rr-spoke-n { flex:1; min-width:0; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rr-spoke-dots { display:flex; gap:3px; flex:none; }
+.rr-spoke-dots .rr-dot { width:9px; height:9px; }
+.rr-spoke-s { flex:none; display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; min-width:34px; justify-content:flex-end; }
+@media (max-width:560px){ .rr-spoke-dots { display:none; } }
 .rr-areas { display:flex; flex-direction:column; gap:10px; }
 .rr-area { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); padding:12px 14px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:12px; background:var(--card); }
 .rr-area-h { display:flex; align-items:center; gap:10px; }
