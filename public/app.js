@@ -2378,7 +2378,7 @@ function sunTimes(date, lat, lng) {
 // A fallback timer releases a press that never becomes a click (a scroll, a tap on
 // a gap). Releasing on pointerup instead raced the click and reintroduced the bug.
 let navHeld = false, navDeferred = false, navHoldT = null;
-document.addEventListener('pointerdown', (e) => { navHeld = !!(e.target && e.target.closest && e.target.closest('#nav')); }, true);
+document.addEventListener('pointerdown', (e) => { navHeld = !!(e.target && e.target.closest && e.target.closest('#nav')); try { const el = e.target; const d = (x) => x && x.closest ? ((x.closest('[data-open-contacts]') && 'contacts') || (x.closest('[data-view-home]') && 'home') || (x.dataset && Object.keys(x.dataset)[0]) || x.className || x.tagName) : String(x); window.__navdiag = { down: d(el), downTag: el && el.tagName, inNav: navHeld, t: Date.now() }; } catch {} }, true);
 function flushNavHold() { clearTimeout(navHoldT); navHoldT = null; navHeld = false; if (navDeferred) { navDeferred = false; renderNav(); } }
 document.addEventListener('pointerup', () => { if (navHeld) { clearTimeout(navHoldT); navHoldT = setTimeout(flushNavHold, 500); } }, true);
 document.addEventListener('pointercancel', flushNavHold, true);
@@ -12924,6 +12924,7 @@ document.addEventListener('click', (e) => {
   // the browser hit-tested at pointerdown is still the button under this click - a
   // plain e.target routes correctly, no press-target bookkeeping needed.
   const t = e.target;
+  try { if (t && t.closest && (t.closest('#nav') || t.closest('[data-open-contacts]') || t.closest('[data-view-home]'))) { const cd = (t.closest('[data-open-contacts]') && 'contacts') || (t.closest('[data-view-home]') && 'home') || 'other'; const dn = (window.__navdiag && window.__navdiag.down) || '?'; const info = { clickResolves: cd, clickTag: t.tagName, down: dn, navHeld, navDeferred, viewBefore: state.view && state.view.type }; window.__navlog = (window.__navlog || []); window.__navlog.push(info); console.log('🧭 NAVDIAG', JSON.stringify(info)); if (dn === 'contacts' && cd !== 'contacts') toast('🧭 pressed contacts → resolved ' + cd + ' (held:' + navHeld + ' def:' + navDeferred + ' view:' + (state.view && state.view.type) + ')'); } } catch {}
   // Bottom-nav tab: tapping it jumps to the top of that page. If you're already
   // on it, just scroll up; otherwise navigate (fall through) and scroll after.
   const tabb = t.closest('.tab-b');
