@@ -568,15 +568,16 @@ const HELP = {
       <li><b>Sort</b> by clicking a column header.</li>
       <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
       <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
-  notes: { title: 'Notes', tip: 'Free writing with headings, links and sub-notes. Tag a note to one or more life areas.',
+  notes: { title: 'Notes', tip: 'Free writing with headings and links. Connect notes to one another, and tag them to your life areas.',
     body: `<p>Notes are for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse long notes), lists and links.</p>
-      <ul><li><b>Sub-notes</b> nest inside a note (the “Notes inside” panel), so a project can hold its own pages.</li>
-      <li><b>Link</b> highlighted text to another note or even a table row, to weave things together.</li>
-      <li><b>Life areas</b> - tag a note to one or several areas (the chips up top); it then shows on each of those area pages.</li>
-      <li>A note can become a <b>table</b> and back with the Note/Table toggle.</li></ul>
+      <ul><li><b>Connected notes</b> - link notes to each other rather than burying one inside another. From any note, start a <b>new connected note</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
+      <li><b>Related notes</b> appear on their own - any note sharing a life area with this one is a tap away, so things find each other.</li>
+      <li><b>Link</b> highlighted text to another note or even a table row, to weave your writing together.</li>
+      <li><b>Life areas</b> - tag a note to one or several areas (the chips up top); it then shows on each of those area pages, in that area's colour.</li>
+      <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
       <p>Star a note to pin it to the sidebar; recently opened notes are always a click away there too.</p>` },
   calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
-    body: `<p>The calendar shows your events by month, with an agenda and search. It reads and writes your Google calendar.</p>
+    body: `<p>The calendar shows your events by month, with an agenda and search. It works on its own, and can also sync with your <b>Google Calendar</b> if you connect it.</p>
       <ul><li><b>Add</b> an event with a title, a start date and time (or All day), and a length. All-day events can span several days.</li>
       <li>Set a start date and the end follows to the same day - an event can never end before it begins.</li>
       <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
@@ -617,6 +618,12 @@ const HELP = {
   saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
     body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
       <p>One-tap capture (a bookmarklet or an iOS Shortcut) saves a page straight to your list from any browser.</p>` },
+  timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, a meditation timer with real bells, and your practices - the small tools for doing the work.',
+    body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
+      <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its life area, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
+      <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a life area and it keeps the same history.</li>
+      <li><b>Meditation</b> - a calm timer with real bells and optional interval gongs. Each sit is logged, and there's a place to jot a few words about the day's sitting.</li>
+      <li><b>Practices</b> - the things you do again and again, grouped by life area. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>` },
   friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and chat.',
     body: `<p>Some of your contacts are on Daybook too, and you can connect with them. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
       <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
@@ -640,16 +647,21 @@ const HELP = {
       <li><b>Close</b> a working tab with its <b>×</b> (it shows once you have more than one). Pinned tabs have no ×, so you can’t lose one by accident - unpin it first if you really want it gone.</li>
       <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Daybook.</li></ul>
       <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
-  settings: { title: 'Settings', tip: 'Your account, look and feel, which sections show, invites, and the tools that manage your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan. <b>Appearance</b> sets the theme and accent colour. <b>AI</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> has the morning-brief and text-alert switches. <b>Tools</b> turns sections on or off. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers life areas, mail accounts, spending categories and reminders.</p>` },
-  'settings-account': { title: 'Account', tip: 'Your name, the addresses you sign in with, your phone and your plan.',
-    body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on. <b>Download your data</b> exports everything; <b>Close account</b> removes it.</p>` },
-  'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, and the daily quote.',
-    body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Daily inspirational quote</b> turns the one-a-day quote on Home, Today and the morning email on or off.</p>` },
+  settings: { title: 'Settings', tip: 'Your account, look and feel, which tools show, invites, and everything that manages your setup.',
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Daybook card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers life areas, mail accounts, spending categories and reminders.</p>` },
+  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Daybook card, and two-factor security - all in one place.',
+    body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on.</p>
+      <ul><li><b>Your Daybook card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
+      <li><b>Two-factor authentication</b> lives here too, under Security: add a second step at sign-in from your authenticator app.</li>
+      <li><b>Download your data</b> exports everything; <b>Close account</b> removes it.</li></ul>` },
+  'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
+    body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
   'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Premium Plus where we handle it.',
     body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Well-being coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
-  'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the morning brief and text alerts.',
-    body: `<p><b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45. <b>Before a time block starts</b> texts you 5 minutes before a scheduled block (add a phone in Account first).</p>` },
+  'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the brief, text alerts, and a couple of Home touches.',
+    body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
+      <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
+      <p><b>Around the app:</b> the <b>daily inspirational quote</b> on Home, Today and the brief, and whether you <b>see online contacts</b> in the Home sidebar.</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
   'settings-invites': { title: 'Invites', tip: 'Bring people onto Daybook.',
@@ -663,8 +675,8 @@ function helpKey(v) {
   const t = (v && v.type) || 'home';
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
     journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
-    area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'reviews', reviewcard: 'reviews', visioncard: 'goals', visionwall: 'goals',
-    readwatch: 'saved' })[t] || t;
+    area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
+    toolbox: 'timer', readwatch: 'saved' })[t] || t;
 }
 // The i beside the tabs, keyed to the tool you're on. Hover = the tip; click = pin
 // the full guide in its own tab.
@@ -695,7 +707,10 @@ function showHelpPop(btn) {
 function hideHelpPop() { const el = document.getElementById('help-pop'); if (el) el.style.display = 'none'; }
 function openHelp(key) { state.view = { type: 'help', tool: key }; renderNav(); renderHelp(key); return Promise.resolve(); }
 // The tools listed on the Guide home page, in a sensible reading order.
-const GUIDE_TOPICS = ['home', 'tabs', 'today', 'tasks', 'calendar', 'mail', 'notes', 'reflect', 'financial', 'goals', 'areas', 'contacts', 'saved', 'friends', 'settings'];
+const GUIDE_TOPICS = ['home', 'tabs', 'today', 'tasks', 'calendar', 'mail', 'notes', 'reflect', 'financial', 'goals', 'areas', 'contacts', 'saved', 'timer', 'friends', 'settings'];
+// A quiet icon per guide, so the index reads at a glance. Mirrors the app's own
+// glyphs where it has one.
+const GUIDE_ICON = { home: '⌂', tabs: '⧉', today: '☀', tasks: '✓', calendar: '◑', mail: '✉', notes: '▤', reflect: '✎', financial: '💰', goals: '🎯', areas: '◈', contacts: '👤', saved: '🔖', timer: '🧰', friends: '👥', settings: '⚙' };
 function renderHelp(key) {
   if (key === 'index' || !HELP[key]) return renderGuideIndex();
   const h = HELP[key];
@@ -708,7 +723,7 @@ function renderHelp(key) {
 function renderGuideIndex() {
   const cards = GUIDE_TOPICS.filter((k) => HELP[k]).map((k) => {
     const h = HELP[k];
-    return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></button>`;
+    return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-ic">${GUIDE_ICON[k] || '›'}</span><span class="guide-card-body"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></span></button>`;
   }).join('');
   $('#pane').innerHTML = `${pageCrumb('Guide')}
     <div class="pane-head home-head"><h1>Guide</h1></div>
