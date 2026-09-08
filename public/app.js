@@ -3724,6 +3724,7 @@ function homeDiscoverHtml() {
   </section>`;
 }
 function renderHome() {
+  if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
