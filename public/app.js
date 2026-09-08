@@ -2360,6 +2360,14 @@ function sunTimes(date, lat, lng) {
   return { sunrise: mk(calc(true)), sunset: mk(calc(false)) };
 }
 
+// While a pointer is pressed on the sidebar, hold off rebuilding it (a mid-tap
+// innerHTML swap re-targets the click). Any render that wants to run in that
+// window is deferred and flushed once after the tap completes.
+let navHeld = false, navDeferred = false;
+document.addEventListener('pointerdown', (e) => { if (e.target && e.target.closest && e.target.closest('#nav')) navHeld = true; }, true);
+function releaseNavHold() { if (!navHeld) return; navHeld = false; if (navDeferred) { navDeferred = false; setTimeout(renderNav, 0); } }
+document.addEventListener('pointerup', releaseNavHold, true);
+document.addEventListener('pointercancel', releaseNavHold, true);
 function renderNav() {
   const v = state.view;
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
@@ -2409,7 +2417,13 @@ function renderNav() {
   // normalises innerHTML, so that can't be compared directly); a no-op render
   // then leaves the live buttons untouched.
   const nav = $('#nav');
-  if (nav && (navHtml !== state.__navHtml || !nav.firstChild)) { nav.innerHTML = navHtml; state.__navHtml = navHtml; }
+  if (nav && (navHtml !== state.__navHtml || !nav.firstChild)) {
+    // Never rebuild the sidebar while a tap is in progress on it - replacing the
+    // button under your finger re-targets the click (that's the "first Contacts
+    // tap goes Home" bug: a data-driven render lands mid-tap). Defer to just after.
+    if (navHeld) { navDeferred = true; }
+    else { nav.innerHTML = navHtml; state.__navHtml = navHtml; }
+  }
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory();
