@@ -742,7 +742,7 @@ function renderGuideIndex() {
       <div class="guide-sec-h">All the guides</div>
       <div class="guide-grid">${cards}</div>
       <div class="guide-sec-h">Privacy &amp; terms</div>
-      <p class="guide-start-p"><b>We don't want your data. We want you to control it - we just help you do it.</b> Daybook earns its keep from subscriptions, not from your data: we don't read it, sell it, or use it to train AI, and we never will. Your Daybook is private to you, and your connected-account passwords are encrypted so not even we can read them. Download everything or delete it for good, any time.</p>
+      <p class="guide-start-p"><b>Your data belongs to you.</b> Daybook is funded by subscriptions, never by advertising or by selling what you put in - we don't read your notes, share your information, or use it to train AI. Your Daybook is private to you, and your connected-account passwords are encrypted so not even we can read them. Export everything or delete it for good, any time.</p>
       <div class="guide-legal">
         <a class="guide-legal-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
         <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
@@ -5745,6 +5745,7 @@ function showCalForm(ev) {
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
     <label class="ce-field"><span class="ce-flbl">Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="A class, call or page to open in one tap (optional)" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
     <label class="ce-field"><span class="ce-flbl">With</span><select id="ce-contact" class="sel"><option value="">Nobody</option>${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${c.id}" ${(ev && ev.contact) === c.id ? 'selected' : ''}>${esc(c.title || 'Unnamed')}</option>`).join('')}</select></label>
+    ${(() => { const cur = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl">Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}</select></label>`; })()}
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     ${(ev && ev.recurringId) ? (() => { const REP = { daily: 'daily', weekdays: 'every weekday', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' }; const cad = (ev.repeat && REP[ev.repeat]) ? ` ${REP[ev.repeat]}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ Repeats${cad}</span><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="ce-repeat" class="sel">
@@ -5783,7 +5784,7 @@ function onEventEndEdit(prefix) {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
 // Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
-function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, isNew, fallbackDate }) {
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
   // Send the repeat whenever the form supplied one (create OR edit) so you can
@@ -5793,11 +5794,12 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a life area
   const ur = url !== undefined ? { url: String(url || '').trim() } : {};   // a link to open in one tap (class, call, page)
   const co = contact !== undefined ? { contact: contact || null } : {};    // a person this event is with
+  const alrm = alarm !== undefined ? { alarm: (alarm === '' || alarm == null) ? '' : Number(alarm) } : {};   // in-app reminder, minutes before
   if (allDay) {
     // Stored end is exclusive (the day after the last), so a multi-day trip pushes
     // the inclusive end date on by one.
     const multi = endDate && endDate > startDate ? { end_date: addDayISO(endDate, 1) } : {};
-    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt, ...ar, ...ur, ...co };
+    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt, ...ar, ...ur, ...co, ...alrm };
   }
   // Duration = the gap between the two date+times (spanning days if it crosses
   // midnight). A non-positive or missing end falls back to an hour.
@@ -5805,10 +5807,11 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   let duration = Math.max(0, daysBetween(startDate, endDate)) * 1440 + isoToMin(endTime) - sMin;
   if (!(duration > 0)) duration = 60;
   duration = Math.max(15, duration);
-  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co };
+  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co, ...alrm };
 }
-async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact) {
-  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, isNew: !id, fallbackDate: state.cal.selected }));
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm) {
+  if (alarm !== undefined && alarm !== '') ensureAlarmSetup();   // arming the first reminder: unlock sound + ask for notifications
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, isNew: !id, fallbackDate: state.cal.selected }));
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
@@ -5818,7 +5821,71 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
     // Jump the view to the event's day so it's visible even if it moved months.
     state.cal.selected = startDate; const [yy, mm] = startDate.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; }
     await loadCalendar();
+    refreshAlarmEvents();   // pick up a just-set (or cleared) reminder right away
   } catch (e) { toast(e.message); }
+}
+// ── Event reminders (in-app alarms) ─────────────────────────────────────
+// A reminder set on an event fires while Daybook is open: a toast, a chime and,
+// if you allow it, a browser notification. Checked on a short loop so it works
+// across a reload and background-tab throttling. It fires client-side, so it
+// needs the app open somewhere - which for a day tool it usually is.
+let alarmTimer = null;
+function alarmFiredSet() {
+  try { const o = JSON.parse(localStorage.getItem('life.alarm.fired') || '{}'); return (o.day === todayISO() && Array.isArray(o.ids)) ? new Set(o.ids) : new Set(); } catch { return new Set(); }
+}
+function markAlarmFired(key) { const s = alarmFiredSet(); s.add(key); try { localStorage.setItem('life.alarm.fired', JSON.stringify({ day: todayISO(), ids: [...s] })); } catch {} }
+// Unlock sound + ask permission the moment a reminder is armed (a real gesture),
+// so the chime and banner can actually fire later.
+function ensureAlarmSetup() {
+  try { medCtx(); } catch {}
+  try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); } catch {}
+}
+function playAlarmChime() {
+  const ctx = medCtx(); if (!ctx) return;
+  const now = ctx.currentTime;
+  [880, 1174.7, 1568].forEach((f, i) => {
+    const t = now + i * 0.18; const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.28, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0008, t + 0.9);
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 1);
+  });
+}
+function fireEventAlarm(e, mins) {
+  const when = mins <= 0 ? 'now' : `in ${mins} min${mins === 1 ? '' : 's'}`;
+  toast(`⏰ ${e.title || 'Event'} · ${when}`);
+  try { playAlarmChime(); } catch {}
+  try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://daybook.fyi/email-mark.png' });
+      n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
+    }
+  } catch {}
+}
+async function refreshAlarmEvents() {
+  try { const d = await api('/api/day'); state.alarmEvents = (d.events || []).filter((e) => e.alarm != null && !e.allDay && e.start_min != null); state.alarmDay = d.today || dayKey(new Date()); } catch {}
+}
+function checkAlarms() {
+  const evs = state.alarmEvents || []; if (!evs.length) return;
+  if ((state.alarmDay || dayKey(new Date())) !== dayKey(new Date())) { refreshAlarmEvents(); return; }
+  const fired = alarmFiredSet();
+  const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+  for (const e of evs) {
+    const at = (e.start_min || 0) - (Number(e.alarm) || 0);
+    const key = String(e.id) + ':' + e.alarm;
+    if (fired.has(key)) continue;
+    // Fire when its moment arrives, within a 3-minute grace so opening the app a
+    // touch late still catches it - but a long-past one is left alone.
+    if (nowMin >= at && nowMin < at + 3) { markAlarmFired(key); fireEventAlarm(e, Number(e.alarm) || 0); }
+  }
+}
+function startAlarmLoop() {
+  if (alarmTimer) return;
+  refreshAlarmEvents();
+  alarmTimer = setInterval(() => { if (!document.hidden) checkAlarms(); }, 25000);
+  setInterval(() => { if (!document.hidden) refreshAlarmEvents(); }, 300000);
+  // Warm the audio on the first interaction so the chime can play later.
+  document.addEventListener('pointerdown', () => { try { medCtx(); } catch {} }, { once: true });
 }
 async function calDeleteEvent(id) {
   const ev = (state.cal.events || []).find((x) => x.id === id) || state.cal.editing;
@@ -13525,7 +13592,7 @@ document.addEventListener('submit', (e) => {
     const v = $('#qe-title').value.trim();
     if (v) homeAddEvent(buildEventBody({ title: v, startDate: $('#qe-date').value, startTime: ($('#qe-time') || {}).value, endDate: ($('#qe-enddate') || {}).value, endTime: ($('#qe-endtime') || {}).value, location: $('#qe-loc').value.trim(), allDay: $('#qe-allday').checked, repeat: ($('#qe-repeat') || {}).value, notes: ($('#qe-notes') || {}).value, area: ($('#qe-area') || {}).value, isNew: true }));
   }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact'); const al = $('#ce-alarm'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, al ? al.value : undefined); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
@@ -15477,6 +15544,7 @@ async function onbConnectGmail() {
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     startPresence();         // heartbeat so friends can see you're online
     startFriendStatusPoll(); // Contacts badge + Home "People" section
+    startAlarmLoop();        // in-app reminders for events with an alarm set
     // The "People on Home" preference follows the account across devices.
     api('/api/kv/home_people').then((r) => { if (r && (r.value === '0' || r.value === '1')) { try { localStorage.setItem('life.home.people', r.value); } catch {} if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
     registerSW();            // offline / instant-open caching (works even where push isn't supported)
