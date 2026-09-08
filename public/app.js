@@ -1519,6 +1519,12 @@ async function downloadExport() {
 // sweep takes everything under life.* plus the token, and keeps only what the
 // device chose about how things look - a key added later is cleared by the same
 // sweep rather than quietly surviving it.
+// A crumb shared across *.daybook.fyi (the token can't be - it's per-origin in
+// localStorage): which subdomain this browser is signed in on. The apex marketing
+// page reads it so "Sign in" jumps you straight to your Daybook instead of asking
+// for your email again. Cleared on sign-out.
+function rememberSubdomain(sub) { if (!sub || !/^[a-z0-9-]{1,63}$/i.test(sub)) return; try { document.cookie = `db_sub=${encodeURIComponent(sub)}; domain=.daybook.fyi; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax; secure`; } catch {} }
+function forgetSubdomain() { try { document.cookie = 'db_sub=; domain=.daybook.fyi; path=/; max-age=0; samesite=lax; secure'; } catch {} }
 const SIGNOUT_KEEP = new Set(['life.theme.mode', 'life.accent', 'today.theme']);
 async function signOut() {
   if (!(await uiConfirm('Sign out of Daybook on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
@@ -1536,6 +1542,7 @@ async function signOut() {
   } catch {}
   // Object.keys snapshots, so removing while iterating is safe.
   try { for (const k of Object.keys(localStorage)) { if (k === KEY || (k.startsWith('life.') && !SIGNOUT_KEEP.has(k))) localStorage.removeItem(k); } } catch {}
+  forgetSubdomain();
   location.replace('/');
 }
 async function loadInvites() { try { const r = await api('/api/invites'); state.invites = r.invites || []; state.giftsLeft = r.giftsLeft; state.giftMonths = r.giftMonths || 6; if (state.view && (state.view.type === 'settings' || state.view.type === 'admin')) (state.view.type === 'admin' ? renderAdmin : renderSettings)(); } catch {} }
@@ -12680,7 +12687,7 @@ document.addEventListener('input', (e) => {
     const prev = document.querySelector('.js-username-preview'); if (prev) prev.textContent = v || 'username';
     clearTimeout(window.__acctUN); window.__acctUN = setTimeout(async () => {
       if (!v || v === state.account.subdomain) return;
-      try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ subdomain: v }) }); if (state.me) state.me.subdomain = v; toast(`Username updated - you're now at ${v}.daybook.fyi`); }
+      try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ subdomain: v }) }); if (state.me) state.me.subdomain = v; rememberSubdomain(v); toast(`Username updated - you're now at ${v}.daybook.fyi`); }
       catch (x) { toast(x.message); }
     }, 800); }
   if (e.target.matches('.acct-phone-cc, .acct-phone-num')) { clearTimeout(window.__acctPT); const cc = (document.querySelector('.acct-phone-cc') || {}).value; const number = (document.querySelector('.acct-phone-num') || {}).value; window.__acctPT = setTimeout(() => saveAccount({ phone: joinPhone({ cc, number }) }), 700); }
@@ -15645,6 +15652,7 @@ async function onbConnectGmail() {
     // daybook.fyi is the marketing site, not anybody's Daybook. Someone who
     // arrived on a join link and already has an account belongs on their own
     // subdomain, signed in - not staring at "Request an invite".
+    if (me && me.user && me.user.subdomain) rememberSubdomain(me.user.subdomain);   // so the apex "Sign in" can skip straight here
     if (me && me.user && onApex() && me.user.subdomain) { goToMyDaybook(me.user.subdomain); return; }
     if (me && me.user) state.me = me.user;
   } catch {}

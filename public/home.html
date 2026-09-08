@@ -554,7 +554,17 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   // your own Daybook. The email rides in the fragment: never sent to a server,
   // never logged, and consumed once so a reload doesn't re-send a code.
   const sm = document.getElementById('signin-modal');
-  const openSignin = (e) => { if (e) e.preventDefault(); sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30); };
+  // If this browser is already signed in on a Daybook subdomain (a shared crumb
+  // the app leaves on .daybook.fyi), skip the email step and go straight there -
+  // the subdomain shows your dashboard if the session's still good, or its own
+  // sign-in if it has expired.
+  const readCookie = (n) => { const m = document.cookie.match('(?:^|; )' + n + '=([^;]*)'); return m ? decodeURIComponent(m[1]) : ''; };
+  const openSignin = (e) => {
+    if (e) e.preventDefault();
+    const sub = readCookie('db_sub');
+    if (sub && /^[a-z0-9-]{1,63}$/.test(sub)) { location.href = 'https://' + sub + '.daybook.fyi/'; return; }
+    sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30);
+  };
   const closeSignin = () => { sm.hidden = true; };
   document.querySelectorAll('[data-signin]').forEach((el) => el.addEventListener('click', openSignin));
   document.querySelectorAll('[data-signin-close]').forEach((el) => el.addEventListener('click', closeSignin));
