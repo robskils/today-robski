@@ -3369,7 +3369,7 @@ async function savePractice() {
 function trackerPanel() {
   if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHome(); }); return '<div class="home-empty" style="padding:6px 0">Loading practices…</div>'; }
   const groups = practicesGroups(true);
-  return `<div class="prc">${groups || '<div class="home-empty" style="padding:6px 0">No practices yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
+  return `<div class="prc"><div class="prc-manage"><button class="ghost prc-edit-link" data-open-practices>✎ Edit practices</button></div>${groups || '<div class="home-empty" style="padding:6px 0">No practices yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
 }
 
 // Gentle Home notifications - today's birthdays and open P1 tasks. Each can be
@@ -11510,7 +11510,7 @@ function noteConnListRows() {
   let list = (state.noteTops || []).filter((x) => x.id !== cur.id && !childIds.has(x.id));
   if (q) list = list.filter((x) => (x.title || '').toLowerCase().includes(q));
   list = list.slice(0, 8);
-  return list.length ? list.map((x) => `<button class="nconn-item" data-note-connect="${x.id}"><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span></button>`).join('') : '<div class="ov-muted" style="padding:6px 2px">No other notes to connect.</div>';
+  return list.length ? list.map((x) => { const a = areaById(blockAreas(x)[0]); const hue = a ? hueOf(a) : null; return `<button class="nconn-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-note-connect="${x.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span></button>`; }).join('') : '<div class="ov-muted" style="padding:6px 2px">No other notes to connect.</div>';
 }
 function noteConnectPickerHtml() {
   return `<details class="nconn"><summary>🔗 Connect an existing note</summary><input class="sel nconn-q" data-note-conn-q placeholder="Search your notes…" value="${esc(state.note.connQuery || '')}" autocomplete="off"><div class="nconn-list" id="nconn-list">${noteConnListRows()}</div></details>`;

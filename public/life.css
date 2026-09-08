@@ -1577,6 +1577,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nconn-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:none; border:0; padding:7px 6px; border-radius:8px; cursor:pointer; color:var(--ink); font-size:14px; }
 .nconn-item:hover { background:var(--paper); color:var(--accent); }
 .nconn-item .sp-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nconn-item.has-area { border-left:3px solid hsl(var(--h,220) 60% 52%); padding-left:8px; }
+.nconn-item.has-area .sp-ico { color:hsl(var(--h,220) 55% 55%); }
+.nconn-item.has-area .sp-ico .ico-note, .nconn-item.has-area .sp-ico .ico-tbl { color:inherit; }
+/* Toolbox Practices: link to the full editor. */
+.prc-manage { display:flex; justify-content:flex-end; margin-bottom:8px; }
+.prc-edit-link { font-size:14px; }
 .sub-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:10px; font-weight:600; }
 /* Connected notes as little cards, each in its own life-area colour. */
 .subpages { display:flex; flex-direction:column; gap:8px; }
