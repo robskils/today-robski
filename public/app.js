@@ -2654,6 +2654,8 @@ async function openHome() {
   // nav re-render, so tapping the wordmark never leaves the drawer open over
   // Home (which read as "it didn't take me back").
   state.navUtilOpen = false;
+  // Landing on Home always opens on the Today tile (not the last one you left on).
+  if (state.home) state.home.tileOpen = 'today';
   renderNav();
   // Instant paint: if we already have Home data from a previous visit, show it
   // right away so tapping the wordmark feels immediate, then refresh behind it.
@@ -2682,7 +2684,7 @@ async function openHome() {
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
   // The pinned spirit card follows the account: take the server's if we have one.
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
-  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 }, today: day.today || dayKey(new Date()), dayOffset: 0, dayData: null };
+  state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 }, today: day.today || dayKey(new Date()), dayOffset: 0, dayData: null, tileOpen: 'today' };
   renderNav(); renderHome();
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
@@ -3656,7 +3658,7 @@ function renderHome() {
             favs: { ic: '★', label: 'Starred', count: null },
           };
           const order = ['today', ...(modOn('mail') ? ['mail'] : []), 'priority', 'favareas', 'favs', ...(kitCount ? ['keepintouch'] : [])];
-          let open = state.home.tileOpen || (() => { try { return localStorage.getItem('life.home.tileOpen'); } catch { return ''; } })();
+          let open = state.home.tileOpen || 'today';
           if (!order.includes(open)) open = 'today';
           const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
           return `<div class="home-tiles">${tiles}</div><div class="home-tilepanel"><div class="htp-head"><span class="htp-t"><span class="htp-ic">${meta[open].ic}</span>${meta[open].label}</span>${meta[open].nav || ''}</div>${bodies[open]}</div>`;
