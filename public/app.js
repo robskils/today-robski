@@ -5106,6 +5106,17 @@ async function setBlockPrivate(kind, id, on) {
   try { await api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: { private: on } }) }); toast(on ? '🔒 Private to you' : 'Visible to area members'); }
   catch (e) { toast(e.message); }
 }
+// "Hide from search": mute a note or task from the ⌘K palette and every search
+// (excluded server-side in searchBlocks via props.noSearch). The item stays exactly
+// where it lives - this is for reference bits you park inside something else and
+// never go hunting for on their own, so they stop cluttering results.
+async function setBlockNoSearch(kind, id, on) {
+  const upd = (b) => { if (b && b.id === id) { b.props = b.props || {}; b.props.noSearch = on; } };
+  upd(state.note && state.note.current); (state.noteTops || []).forEach(upd);
+  taskCopies(id).forEach(upd);
+  try { await api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: { noSearch: on } }) }); toast(on ? '🙈 Hidden from search' : 'Back in search'); }
+  catch (e) { toast(e.message); }
+}
 // A life area's sentiment, carried over from the last Wheel of Life score it was
 // given in a review (area.props.wheelScore/wheelAt, denormalised by setWheel).
 const AREA_SENTIMENT = ['', 'Struggling', 'Finding its feet', 'Okay', 'Good', 'Thriving'];
@@ -8739,6 +8750,41 @@ function contactPhoneFields(p) {
   const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" placeholder="211 234 400" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
   return `<div class="tf-field"><span class="tf-label">Phone</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-phone>+ Add phone</button></div>${ccDatalist()}</div>`;
 }
+// A contact can hold several addresses, each with an optional nickname (Work,
+// Yorkshire, Combloux…). props.addresses is the canonical array; props.address
+// mirrors the first (fields only, no label) so every older reader - the contact
+// tile, vCard import/export, dedupe - keeps working unchanged.
+const ADDR_KEYS = ADDR_FIELDS.map(([k]) => k);
+const addrHasContent = (a) => !!(a && (ADDR_KEYS.some((k) => (a[k] || '').trim()) || (a.label || '').trim()));
+function contactAddresses(p) {
+  if (Array.isArray(p.addresses)) return p.addresses.map((a) => ({ label: String((a && a.label) || '').trim(), ...ADDR_KEYS.reduce((o, k) => (o[k] = (a && a[k]) || '', o), {}) })).filter(addrHasContent);
+  if (p.address) { const a = typeof p.address === 'string' ? { street: p.address } : p.address; if (formatAddress(a)) return [{ label: '', ...ADDR_KEYS.reduce((o, k) => (o[k] = a[k] || '', o), {}) }]; }
+  return [];
+}
+function contactAddrRowHtml(a, idSuffix, removable) {
+  a = a || {};
+  const fields = ADDR_FIELDS.map(([k, l]) => k === 'country'
+    ? countrySelect('cc-adr-country-' + idSuffix, a[k] || '', 'sel cc-adr-f cc-adr-country')
+    : `<input class="sel cc-adr-f cc-adr-${k}" value="${esc(a[k] || '')}" placeholder="${l}" autocomplete="off">`).join('');
+  return `<div class="cc-adr-row" data-adr-row>
+    <div class="cc-adr-head"><input class="sel cc-adr-label" value="${esc(a.label || '')}" placeholder="Nickname - Work, Yorkshire, Combloux…" autocomplete="off">${removable ? '<button type="button" class="cc-multi-x cc-adr-x" data-cc-del-addr title="Remove this address">×</button>' : ''}</div>
+    <div class="cc-addr-row">${fields}</div>
+  </div>`;
+}
+function contactAddressFields(p) {
+  const addrs = contactAddresses(p); if (!addrs.length) addrs.push({ label: '' });
+  const rows = addrs.map((a, i) => contactAddrRowHtml(a, i, i > 0)).join('');
+  return `<div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-multi cc-adr-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-addr>+ Add address</button></div></div>`;
+}
+// Gather every address row on the open card into the array + the mirrored primary.
+function readCardAddresses() {
+  const rows = [...document.querySelectorAll('[data-adr-row]')].map((r) => {
+    const g = (cls) => { const el = r.querySelector('.' + cls); return el ? el.value.trim() : ''; };
+    return { label: g('cc-adr-label'), ...ADDR_KEYS.reduce((o, k) => (o[k] = g('cc-adr-' + k), o), {}) };
+  }).filter(addrHasContent);
+  const first = rows[0] ? cleanAddress(rows[0]) : null;
+  return { addresses: rows, address: first };
+}
 async function openContacts() {
   state.view = { type: 'contacts' };
   renderNav();
@@ -8764,7 +8810,7 @@ function contactCardHtml(c) {
   if (p.email) bits.push(`<span class="cc-row">✉ ${esc(p.email)}</span>`);
   if (p.phone) bits.push(`<span class="cc-row">☎ ${esc(p.phone)}</span>`);
   if (p.birthday) bits.push(`<span class="cc-row">🎂 ${esc(dpLabel(p.birthday))}</span>`);
-  if (formatAddress(p.address)) bits.push(`<span class="cc-row">📍 ${esc(formatAddress(p.address))}</span>`);
+  { const addrs = contactAddresses(p); if (addrs.length) { const a0 = addrs[0]; const lbl = a0.label ? `<b class="cc-adr-tag">${esc(a0.label)}</b> ` : ''; bits.push(`<span class="cc-row">📍 ${lbl}${esc(formatAddress(a0))}${addrs.length > 1 ? ` <span class="cc-adr-more">+${addrs.length - 1}</span>` : ''}</span>`); } }
   const tags = liveGroupsOf(c);
   const sel = (state.contactSel instanceof Set) && state.contactSel.has(c.id);
   const starred = !!p.starred;
@@ -9083,7 +9129,7 @@ function renderContactCard() {
       ${contactPhoneFields(p)}
       <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
       <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
-      <div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-addr-row">${ADDR_FIELDS.map(([k, l]) => k === 'country' ? countrySelect('contactcard-' + k, addrField(p.address, k), 'sel contactcard-addr cc-addr-' + k) : `<input class="sel contactcard-addr cc-addr-${k}" id="contactcard-${k}" value="${esc(addrField(p.address, k))}" placeholder="${l}" autocomplete="off">`).join('')}</div></div>
+      ${contactAddressFields(p)}
     </div>
     ${keepInTouchSection(c)}
     ${contactGroupsSection(c)}
@@ -12087,6 +12133,7 @@ function renderNote() {
       ${shareBtn(n, 'note')}
       ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note data-tip="Move this note inside another" aria-label="Move this note inside another">Move</button>
       <button class="note-lock ghost ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
+      <button class="note-lock ghost ${n.props && n.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="note:${n.id}" data-tip="${n.props && n.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${n.props && n.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${n.props && n.props.noSearch ? '🙈' : '🔍'}</button>
       <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
@@ -12492,8 +12539,8 @@ function buildPalette() {
   const q = state.pal.q.trim();
   if (!q) {
     state.pal.items = [...ACTIONS,
-      ...state.noteTops.slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
-      ...state.tables.slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' })),
+      ...state.noteTops.filter((n) => !(n.props && n.props.noSearch)).slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
+      ...state.tables.filter((t) => !(t.props && t.props.noSearch)).slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' })),
       ...state.areas.slice(0, 6).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }))];
     state.pal.sel = 0; renderPalItems(); return;
   }
@@ -12916,6 +12963,7 @@ document.addEventListener('click', (e) => {
   const mva = t.closest('[data-move-area]'); if (mva) { moveNoteToArea(mva.dataset.moveArea); return; }
   if (t.closest('[data-move-note]')) { openMoveNote(); return; }
   { const bp = t.closest('[data-block-private-btn]'); if (bp) { const [k, id] = bp.dataset.blockPrivateBtn.split(':'); const cur = state.note && state.note.current; const on = !(cur && cur.props && cur.props.private); setBlockPrivate(k, id, on).then(() => { if (k === 'note' && state.view.type === 'note') renderNote(); }); return; } }
+  { const bn = t.closest('[data-block-nosearch-btn]'); if (bn) { const [k, id] = bn.dataset.blockNosearchBtn.split(':'); const cur = k === 'note' ? (state.note && state.note.current) : (state.task_open && state.task_open.task); const on = !(cur && cur.props && cur.props.noSearch); setBlockNoSearch(k, id, on).then(() => { if (k === 'note' && state.view.type === 'note') renderNote(); else if (k === 'task' && state.view.type === 'taskcard') renderTaskCard(); }); return; } }
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-disc-hide]')) { try { localStorage.setItem('life.home.discHidden', '1'); } catch {} renderHome(); return; }
@@ -13189,6 +13237,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="+351" title="Country code"><input class="sel cc-phone-num" type="tel" placeholder="211 234 400" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
   const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
+  if (t.closest('[data-cc-add-addr]')) { const btn = t.closest('[data-cc-add-addr]'); btn.insertAdjacentHTML('beforebegin', contactAddrRowHtml({}, 'n' + Date.now().toString(36), true)); btn.previousElementSibling.querySelector('.cc-adr-label')?.focus(); return; }
+  { const dca = t.closest('[data-cc-del-addr]'); if (dca && state.contact_open) { dca.closest('[data-adr-row]').remove(); patchContact(state.contact_open.contact.id, readCardAddresses(), true); return; } }
   const cgc = t.closest('[data-contact-group]'); if (cgc) { state.contactsGroup = cgc.dataset.contactGroup || null; renderContacts(); return; }
   if (t.closest('[data-new-contact-group]')) { newContactGroup(); return; }
   const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
@@ -13700,7 +13750,7 @@ document.addEventListener('change', (e) => {
     const cid = state.contact_open.contact.id;
     if (e.target.id === 'contactcard-name') { const v = e.target.value.trim(); if (v) patchContact(cid, { title: v }, false); }
     if (e.target.classList.contains('cc-email-in') || e.target.classList.contains('cc-phone-cc') || e.target.classList.contains('cc-phone-num')) patchContact(cid, readCardContacts(), true);
-    if (e.target.classList.contains('contactcard-addr')) patchContact(cid, { address: readCardAddress() }, true);
+    if (e.target.classList.contains('cc-adr-f') || e.target.classList.contains('cc-adr-label')) patchContact(cid, readCardAddresses(), true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
   }
   if (state.goal_open && state.view.type === 'goalcard') {
@@ -14555,6 +14605,7 @@ function renderTaskCard() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
       <span class="crumb-tools">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
+      ${t.sharedBy ? '' : `<button class="note-lock ghost ${t.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="task:${t.id}" data-tip="${t.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${t.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${t.props.noSearch ? '🙈' : '🔍'}</button>`}
       ${shareBtn(t, 'task')}
       ${t.sharedBy ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a friend">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
       ${t.sharedBy ? '' : '<button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button>'}</span></div>
