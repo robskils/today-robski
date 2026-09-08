@@ -836,6 +836,13 @@ function openView(v) {
 }
 // ── in-app history (Back) + breadcrumbs ──────────────
 let navHist = [], navLastKey = null, navLastView = null;
+// Navigation generation: bumped at the start of every async open. An open that
+// awaits data then renders must first check it's still the current generation -
+// otherwise a slow load (Home's, on boot) repaints its page over one you've since
+// navigated to. THIS is the real "tapping Contacts drops me on Home": you tap
+// during boot, Contacts draws, then boot's Home load lands and paints over it.
+let navGen = 0;
+const bumpNav = () => ++navGen;
 // Include a sub-screen discriminator (id / tile / tab) so a step WITHIN a tool -
 // switching Financial tabs, say - is its own history entry. Without this, those
 // shared one key, weren't recorded, and Back leaped clean out of the tool instead
@@ -2382,7 +2389,7 @@ function sunTimes(date, lat, lng) {
 // A fallback timer releases a press that never becomes a click (a scroll, a tap on
 // a gap). Releasing on pointerup instead raced the click and reintroduced the bug.
 let navHeld = false, navDeferred = false, navHoldT = null;
-document.addEventListener('pointerdown', (e) => { navHeld = !!(e.target && e.target.closest && e.target.closest('#nav')); try { const el = e.target; const d = (x) => x && x.closest ? ((x.closest('[data-open-contacts]') && 'contacts') || (x.closest('[data-view-home]') && 'home') || (x.dataset && Object.keys(x.dataset)[0]) || x.className || x.tagName) : String(x); window.__navdiag = { down: d(el), downTag: el && el.tagName, inNav: navHeld, t: Date.now() }; } catch {} }, true);
+document.addEventListener('pointerdown', (e) => { navHeld = !!(e.target && e.target.closest && e.target.closest('#nav')); }, true);
 function flushNavHold() { clearTimeout(navHoldT); navHoldT = null; navHeld = false; if (navDeferred) { navDeferred = false; renderNav(); } }
 document.addEventListener('pointerup', () => { if (navHeld) { clearTimeout(navHoldT); navHoldT = setTimeout(flushNavHold, 500); } }, true);
 document.addEventListener('pointercancel', flushNavHold, true);
@@ -2783,6 +2790,7 @@ const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, are
 const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
 
 async function openHome() {
+  const gen = bumpNav();
   state.view = { type: 'home' };
   // Always close the mobile tools drawer on the way home, and give an instant
   // nav re-render, so tapping the wordmark never leaves the drawer open over
@@ -2818,6 +2826,7 @@ async function openHome() {
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
   // The pinned spirit card follows the account: take the server's if we have one.
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
+  if (gen !== navGen) return;   // navigated away while Home was loading - don't clobber the new page
   state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 }, today: day.today || dayKey(new Date()), dayOffset: 0, dayData: null, tileOpen: 'today' };
   renderNav(); renderHome();
   // If a today event names a person, load contacts once so the "· with <name>"
@@ -8797,24 +8806,21 @@ function readCardAddresses() {
   return { addresses: rows, address: first };
 }
 async function openContacts() {
-  window.__oc = 'start'; setTimeout(() => { try { const paneHas = !!document.querySelector('#pane .contacts-mine, #pane .contact-grid'); toast('🧭OC ' + window.__oc + ' view:' + (state.view && state.view.type) + ' pane:' + (paneHas ? 'contacts' : 'NOT')); } catch {} }, 450);
+  const gen = bumpNav();
   state.view = { type: 'contacts' };
   renderNav();
-  // Paint the pane straight away, from whatever's cached (even nothing - the page
-  // renders an empty state). This is the fix for "tapping Contacts drops me on
-  // Home": we used to renderNav (which highlights Contacts) but only render the
-  // PANE after awaiting the loads, so if any load threw - and loadContacts /
-  // loadContactGroups had no catch - openContacts rejected before renderContacts
-  // ever ran, leaving the pane showing Home under a Contacts-highlighted nav.
-  try { renderContacts(); window.__oc = 'rendered'; } catch (e) { window.__oc = 'RENDER-THREW: ' + (e && e.message); throw e; }
+  // Paint the pane straight away, from whatever's cached (even nothing - it renders
+  // an empty state), so tapping Contacts leaves Home at once.
+  renderContacts();
   const [, , friends, shared] = await Promise.all([
     loadContacts(true).catch(() => state.contacts || []),
     loadContactGroups(true).catch(() => state.contactGroups || []),
     api('/api/friends').catch(() => ({ friends: [], incoming: [], outgoing: [], suggestions: [] })),
     api('/api/shared').then((r) => r.items || []).catch(() => []),
   ]);
+  if (gen !== navGen) return;   // navigated away while contacts loaded
   state.friends = friends; state.sharedWithMe = shared;
-  if (state.view.type === 'contacts') { try { renderContacts(); window.__oc = 'done'; } catch (e) { window.__oc = 'RENDER2-THREW: ' + (e && e.message); throw e; } }
+  renderContacts();
 }
 function contactCardHtml(c) {
   const p = c.props || {};
@@ -12934,7 +12940,6 @@ document.addEventListener('click', (e) => {
   // the browser hit-tested at pointerdown is still the button under this click - a
   // plain e.target routes correctly, no press-target bookkeeping needed.
   const t = e.target;
-  try { const dn = (window.__navdiag && window.__navdiag.down) || null; const inNavGesture = (window.__navdiag && window.__navdiag.inNav) || (t.closest && t.closest('#nav')); if (inNavGesture) { const cd = (t.closest && t.closest('[data-open-contacts]') && 'contacts') || (t.closest && t.closest('[data-view-home]') && 'home') || (t.closest && t.closest('[data-open-tasks],[data-view-tasks]') && 'tasks') || (t.tagName || 'other'); const info = { down: dn, resolves: cd, held: navHeld, def: navDeferred, view: state.view && state.view.type }; window.__navlog = (window.__navlog || []); window.__navlog.push(info); console.log('🧭 NAVDIAG b1508', JSON.stringify(info)); toast('🧭b1508 ' + (dn || '?') + '→' + cd + ' held:' + navHeld); } } catch {}
   // Bottom-nav tab: tapping it jumps to the top of that page. If you're already
   // on it, just scroll up; otherwise navigate (fall through) and scroll after.
   const tabb = t.closest('.tab-b');
@@ -15938,7 +15943,10 @@ async function onbConnectGmail() {
     else if (route === '/reviews') await openReviews();
     else if (route === '/saved' || route === '/read') await openReadwatch();
     else if (route === '/share') await handleShareTarget();
-    else await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
+    // The default landing (the active tab's view) is a fallback, not a command:
+    // if you tapped a sidebar item while the app was still booting, that click has
+    // already navigated (navGen moved), so DON'T override it with the default page.
+    else if (navGen === 0) await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     startPresence();         // heartbeat so friends can see you're online
     startFriendStatusPoll(); // Contacts badge + Home "People" section
