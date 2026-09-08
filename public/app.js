@@ -12034,7 +12034,15 @@ function renderNote() {
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
   const subItem = (c, linked) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage${hue != null ? ' has-area' : ''}${linked ? ' subpage-linked' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}"${linked ? '' : ` draggable="true" data-sub-id="${c.id}"`}${a ? ` title="${esc(a.title)}"` : ''}>${linked ? '<span class="sp-ico sp-linkico" title="Two-way connection">🔗</span>' : '<span class="sp-grip" title="Drag to reorder">⠿</span>'}${linked ? '' : `<span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span>`}<span class="sp-t">${esc(c.title || 'Untitled')}</span>${linked ? `<span class="sp-unlink" data-note-unlink="${c.id}" role="button" title="Disconnect">×</span>` : ''}</button>`; };
-  const kids = [...state.note.children.map((c) => subItem(c, false)), ...(state.note.linked || []).map((c) => subItem(c, true))].join('');
+  // The note this one lives inside shows here too, so the connection reads both
+  // ways: open the parent and you see the child (a sub-note), open the child and
+  // you see the parent. It's structural (parent_id), so no × here - use Move to
+  // change where a note lives.
+  const parent = (state.note.path && state.note.path.length > 1) ? state.note.path[state.note.path.length - 2] : null;
+  const parentItem = (c) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage subpage-parent${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}"${a ? ` title="In ${esc(a.title)}"` : ''}><span class="sp-ico sp-parentico" title="This note lives inside this one">↖</span><span class="sp-t">${esc(c.title || 'Untitled')}</span><span class="sp-parent-tag">holds this</span></button>`; };
+  const parentCard = parent ? parentItem(parent) : '';
+  const linkedCards = (state.note.linked || []).filter((c) => !parent || c.id !== parent.id);
+  const kids = [parentCard, ...state.note.children.map((c) => subItem(c, false)), ...linkedCards.map((c) => subItem(c, true))].join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${noteAreasControl(n)}
@@ -12054,7 +12062,7 @@ function renderNote() {
         ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
-        <div class="subpages" data-subpages><div class="sub-h">Connected notes${(state.note.children.length + (state.note.linked || []).length) ? ` · ${state.note.children.length + (state.note.linked || []).length}` : ''}</div>
+        <div class="subpages" data-subpages>${(() => { const cn = state.note.children.length + linkedCards.length + (parent ? 1 : 0); return `<div class="sub-h">Connected notes${cn ? ` · ${cn}` : ''}</div>`; })()}
           ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
         ${noteTasksHtml(n.id)}
         ${relatedNotesHtml(n)}

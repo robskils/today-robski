@@ -1659,6 +1659,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .subpage-linked:hover .sp-unlink { opacity:1; }
 .sp-unlink:hover { background:color-mix(in srgb,var(--danger,#c4412e) 12%,transparent); color:var(--danger,#c4412e); }
 .subpage.dragging { opacity:.4; }
+/* The note this one lives inside - the upward half of the two-way connection. */
+.subpage-parent { background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+.sp-parentico { color:var(--accent); opacity:.85; font-size:15px; }
+.sp-parent-tag { flex:none; margin-left:auto; font-size:11.5px; letter-spacing:.02em; text-transform:uppercase; color:var(--ink-3); background:color-mix(in srgb,var(--accent) 10%,transparent); padding:2px 8px; border-radius:999px; }
 
 .results { display:flex; flex-direction:column; gap:2px; }
 .result { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 8px; border-bottom:1px solid var(--line); color:var(--ink); font-size:16.5px; }
