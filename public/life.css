@@ -168,6 +168,13 @@ button { cursor:pointer; background:none; border:0; }
 .contact-card:hover .cc-star, .cc-star.on { opacity:1; }
 .cc-star.on { color:var(--gold); }
 .cc-star:hover { color:var(--gold); transform:scale(1.15); }
+/* Associated contacts on a life area: the card, with a remove-from-area × (top-left,
+   clear of the select tick and star), plus an add-a-contact picker below. */
+.area-contact-wrap { position:relative; }
+.area-contact-wrap .contact-card { width:100%; }
+.area-contact-rm { position:absolute; top:6px; left:6px; z-index:3; width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:var(--card); color:var(--ink-3); font-size:15px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; opacity:.75; box-shadow:var(--shadow); }
+.area-contact-rm:hover { color:var(--accent); opacity:1; border-color:var(--accent); }
+.area-contact-add { margin-top:16px; display:flex; flex-direction:column; gap:8px; max-width:420px; }
 .cts-sec-h { font-size:12.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); margin:18px 0 2px; display:flex; align-items:center; gap:8px; }
 .cts-sec-h .muted { font-weight:600; }
 .cts-self { position:relative; margin:0 0 16px; }
@@ -3842,6 +3849,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .list-head { display:flex; gap:12px; align-items:stretch; margin:0 0 18px; }
 .list-head .list-search { flex:1; width:auto; min-width:0; margin:0; }
 .notes-toolbar { display:flex; gap:10px; align-items:stretch; margin:0 0 18px; flex-wrap:wrap; }
+/* The controls pin just under the sticky breadcrumb and the list scrolls under them,
+   so search + filters + sort are always in reach in a long list. Negative side
+   margins let the blurred bar span the pane's full width (cancelling its padding). */
+.notes-toolbar-sticky { position:sticky; top:calc(44px + var(--notes-crumbh,44px)); z-index:8; background:color-mix(in srgb,var(--paper) 93%,transparent); backdrop-filter:blur(10px); margin:0 calc(-1 * clamp(20px,4vw,52px)) 16px; padding:10px clamp(20px,4vw,52px) 12px; border-bottom:1px solid var(--line); }
+@media (max-width:820px){ .notes-toolbar-sticky { top:calc(var(--navh,56px) + var(--notes-crumbh,44px)); margin-left:calc(-1 * max(16px,env(safe-area-inset-left))); margin-right:calc(-1 * max(16px,env(safe-area-inset-right))); padding-left:max(16px,env(safe-area-inset-left)); padding-right:max(16px,env(safe-area-inset-right)); } }
 .notes-toolbar .list-search { flex:1; min-width:180px; margin:0; }
 .notes-toolbar .notes-sort { flex:none; width:auto; max-width:none; font-size:15px; padding:12px 14px; }
 .notes-toolbar .list-search { flex:1 1 180px; min-width:140px; max-width:360px; }

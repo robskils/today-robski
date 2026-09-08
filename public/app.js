@@ -52,7 +52,7 @@ const T_EN = {
   'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Life area', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All areas', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life area', 'palette.search': 'Search notes, tables, tasks — or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All areas', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life area', 'palette.search': 'Search notes, tables, tasks — or type a command…',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -72,7 +72,7 @@ const T_PT = {
   'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Área da vida', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todas as áreas', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Área da vida', 'palette.search': 'Pesquisar notas, tabelas, tarefas — ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todas as áreas', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Área da vida', 'palette.search': 'Pesquisar notas, tabelas, tarefas — ou escrever um comando…',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -3923,7 +3923,7 @@ function openNotesList() {
   renderNav();
   renderNotesList();
 }
-const NOTE_SORTS = [['added-desc', t('notes.sort.newest')], ['added-asc', t('notes.sort.oldest')], ['az', t('notes.sort.az')], ['za', t('notes.sort.za')], ['area', t('notes.sort.area')]];
+const NOTE_SORTS = [['added-desc', t('notes.sort.newest')], ['updated-desc', t('notes.sort.recent')], ['added-asc', t('notes.sort.oldest')], ['az', t('notes.sort.az')], ['za', t('notes.sort.za')], ['area', t('notes.sort.area')]];
 function notesSortMode() { return state.notesSort || (state.notesSort = localStorage.getItem('life.notesSort') || 'added-desc'); }
 // A note's life-area title for sorting (its first, if it has several); no-area
 // sorts last (￿).
@@ -3934,6 +3934,7 @@ function sortNotes(list) {
   const d = (n) => n.created_at || '';
   const arr = [...list];
   if (mode === 'added-asc') arr.sort((a, b) => (d(a) < d(b) ? -1 : d(a) > d(b) ? 1 : 0));
+  else if (mode === 'updated-desc') { const u = (n) => n.updated_at || n.created_at || ''; arr.sort((a, b) => (u(a) < u(b) ? 1 : u(a) > u(b) ? -1 : 0)); }
   else if (mode === 'az') arr.sort((a, b) => t(a).localeCompare(t(b)));
   else if (mode === 'za') arr.sort((a, b) => t(b).localeCompare(t(a)));
   else if (mode === 'area') arr.sort((a, b) => noteAreaTitle(a).localeCompare(noteAreaTitle(b)) || t(a).localeCompare(t(b)));
@@ -3954,7 +3955,7 @@ function notesControlsHtml(full) {
   const typeChips = `<div class="note-type-chips">${NOTE_TYPES.map(([v, l]) => `<button class="ntype ${type === v ? 'on' : ''}" data-notes-type="${v}">${l}</button>`).join('')}</div>`;
   const areaSel = `<select class="sel notes-area" data-notes-area title="Filter by life area"><option value="">${t('filter.allareas')}</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
   const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
-  return `<div class="notes-toolbar${full ? '' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${full ? `<button class="add-btn wide notes-new" data-new-note>${t('notes.newnote')}</button>` : ''}</div>`;
+  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${full ? `<button class="add-btn wide notes-new" data-new-note>${t('notes.newnote')}</button>` : ''}</div>`;
 }
 function noteCard(n) {
   const t = isTableNote(n);
@@ -4032,16 +4033,17 @@ function renderNotesList() {
   } else {
     listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun}${areaLbl} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
   }
-  // Repeat the controls just above the main list (only worth it when there's a
-  // Starred/Recent strip pushing the list down).
-  const repeat = (!q && (favNotes.length || recentNotes.length)) ? notesControlsHtml(false) : '';
+  // The controls bar is sticky (below the breadcrumb), so the search + filters + sort
+  // stay in reach however far you scroll the list. Everything below scrolls under it.
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.notes'))}
     <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
     ${notesControlsHtml(true)}
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
     ${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}
-    ${repeat}${listHtml}`;
+    ${listHtml}`;
+  // Measure the sticky breadcrumb so the toolbar pins just beneath it.
+  requestAnimationFrame(() => { try { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--notes-crumbh', cb.offsetHeight + 'px'); } catch {} });
 }
 
 // ── Journal ──────────────────────────────────────────
@@ -5053,6 +5055,40 @@ async function openArea(id) {
     state.friends ? Promise.resolve() : api('/api/friends').then((f) => { state.friends = f; }).catch(() => {}),
   ]).then(([shares]) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.shares = shares; if (state.view.type === 'area') renderArea(); } });
 }
+// Contacts associated with a life area - the people tied to it (a vet, a landlord,
+// a coach). It's just the ordinary contact→area link (props.areas), so no sharing or
+// access is implied; adding here files the contact under this area, and it shows on
+// the contact too. A picker adds; the × removes it from this area only.
+function areaContactsPanel(area, contacts) {
+  if (state.contacts === undefined) loadContacts().then(() => { if (state.view.type === 'area') renderArea(); }).catch(() => {});
+  const q = ((state.area_open && state.area_open.contactQuery) || '').trim().toLowerCase();
+  const inIds = new Set(contacts.map((c) => c.id));
+  const results = q ? (state.contacts || []).filter((c) => !inIds.has(c.id) && ((c.title || '').toLowerCase().includes(q) || ((c.props && c.props.email) || '').toLowerCase().includes(q))).slice(0, 8) : [];
+  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this life area" aria-label="Remove from this life area">×</button></div>`).join('');
+  return `<div class="area-contacts">
+    ${contacts.length ? `<div class="contact-grid">${cards}</div>` : '<div class="home-empty">No contacts here yet - add the people tied to this area (a vet, a landlord, a coach…).</div>'}
+    <div class="area-contact-add">
+      <input class="sel" data-area-contact-q placeholder="Add a contact to this area…" value="${esc((state.area_open && state.area_open.contactQuery) || '')}" autocomplete="off">
+      ${results.length ? `<div class="nt-results">${results.map((c) => `<button class="nt-result" data-area-contact-add="${c.id}"><span class="ga-t">👤 ${esc(c.title || 'Unnamed')}${(c.props && c.props.email) ? ` <span class="ce-d">${esc(c.props.email)}</span>` : ''}</span><span class="nt-link-ic">＋ Add</span></button>`).join('')}</div>` : ''}
+    </div>
+  </div>`;
+}
+function renderAreaContacts() { const el = document.querySelector('.area-contacts'); if (!el || !state.area_open) return; const cts = (state.area_open.blocks || []).filter((b) => b.kind === 'contact'); const w = document.createElement('div'); w.innerHTML = areaContactsPanel(state.area_open.area, cts); if (w.firstElementChild) el.replaceWith(w.firstElementChild); }
+function addContactToArea(contactId) {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  const c = (state.contacts || []).find((x) => x.id === contactId); if (!c) return;
+  const cur = blockAreas(c); if (cur.includes(area.id)) return;
+  setBlockAreas('contact', contactId, [...cur, area.id]);
+  if (state.area_open.blocks && !state.area_open.blocks.some((b) => b.id === contactId)) state.area_open.blocks.push(c);
+  state.area_open.contactQuery = ''; renderArea(); toast('Added to this life area');
+}
+function removeContactFromArea(contactId) {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  const c = (state.area_open.blocks || []).find((b) => b.id === contactId) || (state.contacts || []).find((x) => x.id === contactId); if (!c) return;
+  setBlockAreas('contact', contactId, blockAreas(c).filter((x) => x !== area.id));
+  state.area_open.blocks = (state.area_open.blocks || []).filter((b) => b.id !== contactId);
+  renderArea();
+}
 const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
 // Collapsible section headers on a life area page (open by default; collapse
 // remembered per section label across areas).
@@ -5281,7 +5317,7 @@ function renderArea() {
     'Goals': `<div class="area-vg"><div class="avg-h">Vision</div>${visionInner}<div class="avg-h avg-h-goals">Goals</div>${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>'}</div>`,
     'Notes and tables': notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
     'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',
-    'Contacts': `<div class="contact-grid">${contactCards}</div>`,
+    'Contacts': areaContactsPanel(area, contacts),
     'Saved links': `<div class="tbl-cards">${bookmarkCards}</div>`,
     'Reflections': `<div class="tbl-cards">${journalCards}</div>`,
     'Emails': `<div class="tbl-cards">${emailCards}</div>`,
@@ -12994,6 +13030,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-note-event-q]') && state.note) { const pos = e.target.selectionStart; state.note.eventQuery = e.target.value; renderNoteEvents(); const i = document.querySelector('[data-note-event-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
   // Daybook card: live-update the preview as you type, save shortly after.
   if (e.target.matches('[data-card-name]')) { const v = e.target.value; if (state.account) state.account.name = v; cardLivePreview(); clearTimeout(window.__cardNT); window.__cardNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.me && state.account) state.me.name = state.account.name; renderNav(); }), 700); return; }
@@ -13393,6 +13430,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-contacts-merge]')) { mergeSelectedContacts(); return; }
   if (t.closest('[data-contacts-selclear]')) { state.contactSel = new Set(); renderContacts(); return; }
   const kitd0 = t.closest('[data-kit-done]'); if (kitd0) { homeKitTouched(kitd0.dataset.kitDone); return; }   // the ✓ on a Keep-in-touch row (checked before the row's open-contact)
+  { const aca = t.closest('[data-area-contact-add]'); if (aca) { addContactToArea(aca.dataset.areaContactAdd); return; } }
+  { const acr = t.closest('[data-area-contact-rm]'); if (acr) { e.stopPropagation(); removeContactFromArea(acr.dataset.areaContactRm); return; } }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
   if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
