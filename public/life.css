@@ -2277,6 +2277,12 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .prio-chip.on { border-color:var(--accent); color:var(--ink); background:var(--paper); font-weight:600; }
 .prio-chip.on b { color:var(--accent); }
 /* Home: faved life areas + drag-to-reposition sections. */
+/* Home Life-areas tile: a sort control above the areas (starred first). */
+.favarea-sort { display:flex; justify-content:flex-end; margin:6px 0 2px; }
+.favarea-sort-l { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-3); }
+.favarea-sort-l .sel { max-width:170px; }
+.favarea.is-fav { border-left:3px solid hsl(var(--h,4) 60% 52%); }
+.favarea .fa-star { color:var(--accent); font-size:12px; margin-left:-2px; }
 .favarea-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
 .favarea { display:inline-flex; align-items:center; gap:9px; padding:9px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:15px; box-shadow:var(--shadow-sm); transition:border-color .12s, transform .12s; }
 .favarea:hover { border-color:var(--line-2); transform:translateY(-1px); }

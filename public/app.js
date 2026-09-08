@@ -3625,6 +3625,15 @@ function renderHome() {
         </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
+          // The Life areas tile lists ALL areas, starred first, then by a chosen
+          // sort (name or recently viewed). The sort choice is remembered.
+          const homeAreaSort = (() => { try { return localStorage.getItem('life.home.areaSort') || 'az'; } catch { return 'az'; } })();
+          const areaRecentRank = {}; recentItems().forEach((r, i) => { if (r && r.kind === 'area' && areaRecentRank[r.id] === undefined) areaRecentRank[r.id] = i; });
+          const areaSortFn = homeAreaSort === 'recent'
+            ? (x, y) => ((areaRecentRank[x.id] ?? 1e9) - (areaRecentRank[y.id] ?? 1e9)) || (x.title || '').localeCompare(y.title || '')
+            : homeAreaSort === 'za' ? (x, y) => (y.title || '').localeCompare(x.title || '')
+              : (x, y) => (x.title || '').localeCompare(y.title || '');
+          const sortedAreas = (state.areas || []).slice().sort((x, y) => (((y.props && y.props.fav) ? 1 : 0) - ((x.props && x.props.fav) ? 1 : 0)) || areaSortFn(x, y));
           const fg = focusGoals();
           const fgIds = new Set(fg.map((g) => g.id));
           const restGoals = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active' && !fgIds.has(g.id));
@@ -3643,7 +3652,7 @@ function renderHome() {
             today: `<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (todayRows || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 8).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 8 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
-            favareas: favAreas.length ? `<div class="favarea-grid">${favAreas.map((a) => `<button class="favarea" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span></button>`).join('')}</div>` : '<div class="home-empty">Star a life area (the ★ on it) to pin it here.</div>',
+            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
             keepintouch: kitCount ? `<div class="kit-hlist">${bdayRows}${kit.map((k) => { const a = areaById(k.area); const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet'; return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}><button class="kit-hopen" data-open-contact="${k.id}"><span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span><span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span></button><button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button></div>`; }).join('')}</div>` : '<div class="home-empty">Nobody due a catch-up.</div>',
             mail: homeMailHtml(),
             favs: `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>`,
@@ -3652,7 +3661,7 @@ function renderHome() {
             today: { ic: '☀', label: 'Today', count: null, nav: dayNav },
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
-            favareas: { ic: '◈', label: 'Life areas', count: favAreas.length || null },
+            favareas: { ic: '◈', label: 'Life areas', count: sortedAreas.length || null },
             keepintouch: { ic: '💬', label: 'Keep in touch', count: kitCount || null },
             mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
@@ -12204,6 +12213,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-goalnote-q]') && state.goal_open) { state.goal_open.noteQuery = e.target.value; renderGoalNoteList(); }
   if (e.target.matches('[data-areas-sort]')) { state.areasSort = e.target.value; try { localStorage.setItem('life.areas.sort', state.areasSort); } catch {} renderAreasList(); }
+  if (e.target.matches('[data-home-area-sort]')) { try { localStorage.setItem('life.home.areaSort', e.target.value); } catch {} renderHome(); return; }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }

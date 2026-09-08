@@ -215,7 +215,13 @@ async function calendarEvents(env, day) {
   url.searchParams.set('maxResults', '50');
 
   try {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${g.token}` } });
+    let res = await fetch(url, { headers: { Authorization: `Bearer ${g.token}` } });
+    // A transient hiccup (5xx / 429) at brief time must not read as "no events".
+    // One quick retry catches most of them before we give up.
+    if (!res.ok && (res.status >= 500 || res.status === 429)) {
+      await new Promise((r) => setTimeout(r, 400));
+      res = await fetch(url, { headers: { Authorization: `Bearer ${g.token}` } });
+    }
     if (!res.ok) return { events: [], error: `google_${res.status}` };
     const data = await res.json();
 
@@ -2048,9 +2054,20 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       ).bind(uid, now.date).all(),
     ]);
 
-    // A calendar failure must not cost the rest of the brief. The empty list
-    // reads as "nothing scheduled", so say so explicitly instead.
+    // A calendar failure must not cost the rest of the brief. It's now surfaced
+    // in the email (calError) rather than silently reading as "the day is yours".
     if (cal.error) console.error('brief calendar:', cal.error);
+    // Merge the same overlays the app shows: native events (a member's own; the
+    // owner's live on Google) and any subscribed feeds (holidays / fixtures), so
+    // the brief matches the day in the app.
+    let events = cal.events || [];
+    try { const nd = await nativeDayEvents(env, now.date); if (nd.length) events = [...events, ...nd]; } catch {}
+    try {
+      const feeds = await getFeeds(env);
+      if (feedCountries(feeds).length || feedTeams(feeds).length) {
+        events = [...events, ...feedDayEvents(await userHolidays(env, feeds, now.date, now.date), await userFixtures(env, feeds), now.date)];
+      }
+    } catch {}
 
     // The label under a task is its life area. It used to be the practice LANE,
     // which only existed for the Today tool's streams: an area mapped to no lane,
@@ -2067,7 +2084,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     // morning, which reads as spam. The owner always sends (he has a calendar);
     // everyone else sends only once they have something to be briefed on. The
     // day stays claimed either way, so this is one decision a morning, not a loop.
-    if (!owner && !cal.events.length && !tasks.length) return { sent: false, reason: 'nothing to brief' };
+    if (!owner && !events.length && !tasks.length) return { sent: false, reason: 'nothing to brief' };
 
     // Recipient: the owner keeps his configured BRIEF_EMAIL; every other member
     // gets it at their own sign-in address.
@@ -2076,7 +2093,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     if (!to) return { sent: false, reason: 'no recipient' };
     const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
 
-    const payload = { day: now.date, events: cal.events, tasks, quote, siteUrl: home };
+    const payload = { day: now.date, events, tasks, quote, siteUrl: home, calError: cal.error || null };
     const subject = briefSubject(payload);
     const html = briefEmail(payload);
     if (env.BRIEF_SMTP_PASS) {
@@ -2100,7 +2117,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       });
       if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
     }
-    return { sent: true, uid, events: cal.events.length, tasks: tasks.length };
+    return { sent: true, uid, events: events.length, tasks: tasks.length };
   } catch (e) {
     // Hand the day back so a later tick inside the window can try again. A
     // Resend blip before 10:15 should cost a few minutes, not the brief.

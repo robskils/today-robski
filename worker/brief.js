@@ -142,14 +142,15 @@ function empty(text) {
 }
 
 const BRIEF_TASK_CAP = 7;
-export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl = 'https://robski.daybook.fyi' }) {
+export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl = 'https://robski.daybook.fyi', calError = null }) {
   const shown = tasks.slice(0, BRIEF_TASK_CAP);
   const moreCount = tasks.length - shown.length;
   const timed = [...events].sort((a, b) => (a.allDay ? -1 : b.allDay ? 1 : a.start_min - b.start_min));
 
+  // A calendar fetch that errored must not read as "your day is free" - say so.
   const calendar = timed.length
     ? timed.map(eventRow).join('')
-    : empty('Nothing scheduled. The day is yours.');
+    : (calError ? empty('Your calendar could not be reached this morning - open Daybook to see your day.') : empty('Nothing scheduled. The day is yours.'));
 
   const p1 = shown.length
     ? shown.map((t) => taskRow(t, siteUrl)).join('') + (moreCount > 0
