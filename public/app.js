@@ -10314,10 +10314,10 @@ async function bucketToGoal() {
 // own data (ticked tasks, kept practices, undone P1s, quiet areas), a Wheel of
 // Life pulse per area, and guided writing. Deeper reviews widen the window.
 const REVIEWS = {
-  weekly: { label: t('review.weekly'), sub: t('review.weekly.sub'), days: 7, prompts: ['A win or two from this week', 'What did I neglect?', 'The one thing to carry into next week'] },
-  monthly: { label: t('review.monthly'), sub: t('review.monthly.sub'), days: 30, prompts: ['What actually moved this month?', 'Is each goal still the right one?', 'What needs re-prioritising or letting go?'] },
-  quarterly: { label: t('review.quarterly'), sub: t('review.quarterly.sub'), days: 91, prompts: ['Score each goal — what worked, what got in the way?', 'What did I learn about myself?', "Next quarter's one-to-three goals"] },
-  yearly: { label: t('review.yearly'), sub: t('review.yearly.sub'), days: 365, prompts: ['The year across every area — the highs and the lows', 'What am I most proud of?', 'What do I want next year to be about?', 'Anything to add to the bucket list?'] },
+  weekly: { label: t('review.weekly'), sub: t('review.weekly.sub'), days: 7, prompts: ['A win or two from this week', 'Anything slip that you meant to get to?', 'One thing to carry into next week'] },
+  monthly: { label: t('review.monthly'), sub: t('review.monthly.sub'), days: 30, prompts: ['What went well this month?', 'How are your goals feeling — still worth it?', 'Anything worth easing off, or letting go?'] },
+  quarterly: { label: t('review.quarterly'), sub: t('review.quarterly.sub'), days: 91, prompts: ['How did each goal go — what helped, what got in the way?', 'What did you learn about yourself?', 'One to three goals to focus on next quarter'] },
+  yearly: { label: t('review.yearly'), sub: t('review.yearly.sub'), days: 365, prompts: ['Your year across every area — the highs and the lows', 'What are you most proud of?', 'What do you want next year to be about?', 'Anything to add to the bucket list?'] },
 };
 const RTYPE_ORDER = ['weekly', 'monthly', 'quarterly', 'yearly'];
 function localISO(d) { const x = d || new Date(); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; }
