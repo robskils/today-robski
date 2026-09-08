@@ -526,6 +526,21 @@ button { cursor:pointer; background:none; border:0; }
 .gc-area { color:var(--c); font-weight:600; }
 .gc-bar { height:6px; border-radius:99px; background:var(--paper-2); overflow:hidden; }
 .gc-bar > i { display:block; height:100%; background:linear-gradient(90deg,var(--gold),var(--done)); border-radius:99px; }
+/* Progress row: the bar (with an optional grabbable slider over it) + a % label. */
+.gc-progress { display:flex; align-items:center; gap:10px; }
+.gc-barwrap { position:relative; flex:1; min-width:0; display:flex; align-items:center; }
+.gc-barwrap .gc-bar { flex:1; }
+.gc-pct { flex:none; font-size:12px; font-weight:600; color:var(--ink-3); font-variant-numeric:tabular-nums; min-width:34px; text-align:right; }
+/* The slider overlays the bar: transparent track (the bar's fill shows through),
+   only the thumb is visible and grabbable. */
+.gc-slider { position:absolute; inset:-9px 0; width:100%; height:auto; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; z-index:2; touch-action:pan-y; }
+.gc-slider:focus { outline:none; }
+.gc-slider::-webkit-slider-runnable-track { background:transparent; border:0; height:100%; }
+.gc-slider::-moz-range-track { background:transparent; border:0; }
+.gc-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:hsl(var(--h,220) 60% 50%); border:2px solid var(--card); box-shadow:0 1px 5px -1px rgba(0,0,0,.5); cursor:grab; margin-top:0; }
+.gc-slider::-webkit-slider-thumb:active { cursor:grabbing; }
+.gc-slider::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:hsl(var(--h,220) 60% 50%); border:2px solid var(--card); box-shadow:0 1px 5px -1px rgba(0,0,0,.5); cursor:grab; }
+.gc-slider:focus-visible::-webkit-slider-thumb { box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 40%,transparent); }
 .goal-done { margin-top:26px; }
 .goal-done > summary { cursor:pointer; color:var(--ink-3); font-size:15px; padding:8px 0; list-style:none; }
 .goal-done > summary::-webkit-details-marker { display:none; }
@@ -1890,8 +1905,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .adm-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:0 0 14px; }
 .adm-card { padding:16px 18px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow-sm); }
 .adm-card-v { font-size:26px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
-.adm-card-l { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin-top:2px; }
+.adm-card-l { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin-top:2px; display:flex; align-items:center; gap:6px; }
 .adm-card-s { font-size:12.5px; color:var(--ink-3); margin-top:5px; }
+/* A clickable overview card drills into that metric. */
+.adm-card-click { cursor:pointer; transition:border-color .12s, transform .08s, box-shadow .12s; }
+.adm-card-click:hover { border-color:var(--accent); box-shadow:0 10px 24px -16px color-mix(in srgb,var(--accent) 60%,transparent); }
+.adm-card-click:active { transform:translateY(1px); }
+.adm-card-go { margin-left:auto; color:var(--ink-3); opacity:0; transition:opacity .12s, color .12s; }
+.adm-card-click:hover .adm-card-go { opacity:1; color:var(--accent); }
 .adm-plans { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 20px; }
 .adm-plan-chip { font-size:13px; padding:4px 12px; border:1px solid var(--line); border-radius:999px; color:var(--ink-2); text-transform:capitalize; }
 .adm-signup .scope { font-size:12.5px; color:var(--ink-3); font-weight:400; }

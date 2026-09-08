@@ -1577,7 +1577,7 @@ function renderAdmin() {
   const inv = ov.invites || {};
   const plans = ov.plans || {};
   const pub = a.settings ? a.settings.publicSignup : ov.publicSignup;
-  const card = (label, value, sub) => `<div class="adm-card"><div class="adm-card-v">${value}</div><div class="adm-card-l">${label}</div>${sub ? `<div class="adm-card-s">${sub}</div>` : ''}</div>`;
+  const card = (label, value, sub, attr) => `<div class="adm-card${attr ? ' adm-card-click' : ''}" ${attr || ''}${attr ? ' role="button" tabindex="0"' : ''}><div class="adm-card-v">${value}</div><div class="adm-card-l">${label}${attr ? '<span class="adm-card-go">→</span>' : ''}</div>${sub ? `<div class="adm-card-s">${sub}</div>` : ''}</div>`;
   const planChips = Object.entries(plans).map(([p, n]) => `<span class="adm-plan-chip">${esc(p)} · ${n}</span>`).join('');
 
   // Admin is five unrelated jobs stacked in one scroll, which on a phone means
@@ -1590,13 +1590,13 @@ function renderAdmin() {
 
   const overviewPane = `
     <div class="adm-cards">
-      ${card('Members', admN(uOv.total), `${uOv.active7 || 0} active this week`)}
-      ${card('New members', admN(uOv.new7), `${admN(uOv.new30)} in the last 30 days`)}
-      ${card('AI cost this month', admUSD(ai.totalCost), `${admN(ai.calls)} calls${ai.month ? ' · ' + ai.month : ''}`)}
-      ${card('Invitations', admN(inv.total), `${inv.unused || 0} still open`)}
+      ${card('Members', admN(uOv.total), `${uOv.active7 || 0} active this week`, 'data-adm-tab="members"')}
+      ${card('New members', admN(uOv.new7), `${admN(uOv.new30)} in the last 30 days`, 'data-adm-tab="members"')}
+      ${card('AI cost this month', admUSD(ai.totalCost), `${admN(ai.calls)} calls${ai.month ? ' · ' + ai.month : ''}`, (a.aiUsage || []).length ? 'data-adm-jump="ai"' : '')}
+      ${card('Invitations', admN(inv.total), `${inv.unused || 0} still open`, 'data-adm-tab="invites"')}
     </div>
     ${planChips ? `<div class="adm-plans">${planChips}</div>` : ''}
-    ${(a.aiUsage || []).length ? `<div class="home-sec-h" style="margin-top:8px">AI usage · this month</div>
+    ${(a.aiUsage || []).length ? `<div class="home-sec-h" id="adm-ai-usage" style="margin-top:8px">AI usage · this month</div>
       <div class="admin-list">${a.aiUsage.map((r) => `<div class="admin-row"><span class="au-sub">${esc(r.subdomain || ('user ' + r.userId))}</span><span class="au-email">${admTok(r.inTokens)} in · ${admTok(r.outTokens)} out · ${admN(r.calls)} calls</span><span class="au-plan">${admUSD(r.cost)}</span></div>`).join('')}</div>` : ''}`;
 
   const membersPane = `<div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>`;
@@ -9168,7 +9168,11 @@ function horizonDateLabel(horizon, iso) {
 }
 function goalProgress(g) {
   const p = gp(g); if (p.status === 'done') return 1;
+  // A number goal computes its own progress from current/target. Everything else
+  // is "0% until done" UNLESS you've set a progress by hand (the slider on the
+  // goal card) - then your figure wins.
   if (p.gtype === 'number') { const t = +p.target || 0, c = +p.current || 0; return t > 0 ? Math.max(0, Math.min(1, c / t)) : 0; }
+  if (typeof p.progress === 'number' && !Number.isNaN(p.progress)) return Math.max(0, Math.min(1, p.progress / 100));
   return 0;   // a "mark it done" goal is 0% until achieved
 }
 function goalMeasure(g) {
@@ -9848,10 +9852,31 @@ function reorderFocus(dragged, before) {
 }
 function goalCardMini(g, drag) {
   const a = goalArea(g); const p = gp(g); const pct = Math.round(goalProgress(g) * 100);
-  return `<button class="goal-card" data-open-goal="${g.id}" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
+  // A "mark it done" goal (not a number goal, not already done) gets a grabbable
+  // slider right on its bar, so you can set how far along it feels without opening
+  // it. Number goals keep their computed bar; done goals are full.
+  const canSlide = (p.status || 'active') === 'active' && p.gtype !== 'number';
+  const bar = `<div class="gc-progress">
+      <div class="gc-barwrap">
+        <div class="gc-bar"><i style="width:${pct}%"></i></div>
+        ${canSlide ? `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set how far along this goal is">` : ''}
+      </div>
+      <span class="gc-pct">${pct}%</span>
+    </div>`;
+  return `<div class="goal-card" data-open-goal="${g.id}" role="button" tabindex="0" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
     <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span>${p.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}<span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
     <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
-    <div class="gc-bar"><i style="width:${pct}%"></i></div></button>`;
+    ${bar}</div>`;
+}
+// Save a hand-set goal progress (0-100). Optimistic: update the in-memory goal
+// and any list it sits in, persist to the block's props.
+function saveGoalProgress(id, pct) {
+  const v = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+  const apply = (g) => { if (g && g.id === id) { g.props = g.props || {}; g.props.progress = v; } };
+  (state.goals || []).forEach(apply);
+  if (state.area_open) (state.area_open.blocks || []).forEach(apply);
+  if (state.goal_open) apply(state.goal_open.goal);
+  api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { progress: v } }) }).catch((e) => toast(e.message));
 }
 const goalsView = () => state.goalsView || (state.goalsView = (() => { try { return localStorage.getItem('life.goals.view') || 'areas'; } catch { return 'areas'; } })());
 function renderGoals() {
@@ -9995,6 +10020,9 @@ async function openGoalCard(id) {
   state.goal_open = { goal: g, tasks, allTasks: all, notes, allNotes: allNotes || [], areaQuery: '', noteQuery: '' };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
+  // Land with the cursor in the goal's name, text selected, ready to rename or
+  // type straight away. (Robin.) Only on open, not on every re-render.
+  setTimeout(() => { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.select(); } catch {} autoGrowSoon(el); } }, 0);
   // Who can see this goal (via its shared life area). Owner only.
   if (!g.sharedBy) api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {});
 }
@@ -12339,6 +12367,14 @@ document.addEventListener('input', (e) => {
 document.addEventListener('input', (e) => {
   if (e.target && e.target.id === 'feed-team-q') feedTeamSearchInput(e.target.value);
   if (e.target && e.target.id === 'feed-country-q') feedCountrySearchInput(e.target.value);
+  // Goal progress slider: paint the fill + % live as you drag, save when you settle.
+  if (e.target && e.target.matches && e.target.matches('[data-goal-progress]')) {
+    const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+    const wrap = e.target.closest('.gc-progress');
+    if (wrap) { const fill = wrap.querySelector('.gc-bar > i'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct'); if (lab) lab.textContent = v + '%'; }
+    e.target.setAttribute('aria-label', `Progress: ${v}%`);
+    clearTimeout(window.__goalProgT); window.__goalProgT = setTimeout(() => saveGoalProgress(e.target.dataset.goalProgress, v), 450);
+  }
 });
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
@@ -12675,6 +12711,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-create-invite]')) { inviteToDaybook(); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
+  { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://daybook.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
   { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
@@ -12745,6 +12782,7 @@ document.addEventListener('click', (e) => {
   const grp = t.closest('[data-goalrev]'); if (grp) { const s = grp.dataset.goalrev; const i = s.lastIndexOf(':'); setGoalReviewScore(s.slice(0, i), +s.slice(i + 1)); return; }
   if (t.closest('[data-open-vision-tab]')) { openGoals('vision').catch((x) => toast(x.message)); return; }
   const ovi = t.closest('[data-open-vision]'); if (ovi) { openVisionCard(ovi.dataset.openVision).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-goal-progress]')) return;   // the progress slider - adjust, don't open the goal
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
   const obk = t.closest('[data-open-bucket]'); if (obk) { openBucketCard(obk.dataset.openBucket).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-goal]')) { newGoal(null).catch((x) => toast(x.message)); return; }
@@ -13703,6 +13741,7 @@ function favDrop(container, x, y, draggedId) {
   return null;
 }
 document.addEventListener('dragstart', (e) => {
+  if (e.target.closest('[data-goal-progress]')) { e.preventDefault(); return; }   // dragging the progress slider must not drag the card
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const fo = e.target.closest('[data-focus-id]'); if (fo) { dragFocus = fo.dataset.focusId; fo.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const pr = e.target.closest('[data-p1-id]'); if (pr) { dragP1 = pr.dataset.p1Id; pr.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
