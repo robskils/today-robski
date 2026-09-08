@@ -9017,9 +9017,12 @@ function contactMenuHtml() {
   // File under a life area: current areas (tap ✓ to remove), then the areas on offer
   // (tap to add; the 🚫 hides that area from this list). Hidden ones fold away behind
   // a "Show hidden" toggle so the everyday list stays short.
-  const curRow = (a) => `<button class="ctx-item ctx-area ctx-area-on" data-ctx-unarea="${a.id}" style="--h:${hueOf(a)}"><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-tick">✓</span></button>`;
-  const addRow = (a) => `<div class="ctx-arearow" style="--h:${hueOf(a)}"><button class="ctx-item ctx-area" data-ctx-area="${a.id}"><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button><button class="ctx-area-hide" data-ctx-area-hide="${a.id}" title="Hide ${esc(a.title)} from this list" aria-label="Hide ${esc(a.title)} from the contacts list">🚫</button></div>`;
-  const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
+  // A checkbox metaphor: a filled tick-box for areas the contact is in (tap to
+  // remove), an empty box for ones on offer (tap to file). A faint hide icon on the
+  // offered rows tucks an area out of the list.
+  const curRow = (a) => `<button class="ctx-item ctx-area ctx-area-on" data-ctx-unarea="${a.id}" style="--h:${hueOf(a)}"><span class="ctx-cb ctx-cb-on"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button>`;
+  const addRow = (a) => `<div class="ctx-arearow" style="--h:${hueOf(a)}"><button class="ctx-item ctx-area" data-ctx-area="${a.id}"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button><button class="ctx-area-hide" data-ctx-area-hide="${a.id}" title="Hide ${esc(a.title)} from this list" aria-label="Hide ${esc(a.title)} from the contacts list">⊘</button></div>`;
+  const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
   const areaSection = allAreas.length ? `<div class="ctx-lbl">Life areas</div>
     ${currentAreas.map(curRow).join('')}
     ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No areas to add.</div>')}

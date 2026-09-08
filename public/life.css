@@ -276,14 +276,17 @@ button { cursor:pointer; background:none; border:0; }
 /* Life-area rows in the contact menu: a colour dot + name; the add rows carry a 🚫
    to hide that area from the list, current areas show a ✓, hidden ones a faint unhide. */
 .ctx-area { display:flex; align-items:center; gap:9px; }
-.ctx-adot { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
+.ctx-adot { width:8px; height:8px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
 .ctx-area-n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ctx-area-tick { flex:none; color:hsl(var(--h,220) 55% 50%); font-weight:800; }
+/* Empty tick-box for areas not filed; filled with a tick for ones the contact is in. */
+.ctx-cb { width:17px; height:17px; border-radius:5px; border:1.5px solid var(--line-2); flex:none; position:relative; box-sizing:border-box; }
+.ctx-cb-on { background:hsl(var(--h,220) 55% 52%); border-color:hsl(var(--h,220) 55% 52%); }
+.ctx-cb-on::after { content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:800; }
 .ctx-arearow { display:flex; align-items:center; }
 .ctx-arearow .ctx-area { flex:1; min-width:0; }
-.ctx-area-hide { flex:none; border:0; background:none; padding:8px 10px; font-size:13px; opacity:.35; cursor:pointer; border-radius:8px; }
-.ctx-arearow:hover .ctx-area-hide { opacity:.8; }
-.ctx-area-hide:hover { opacity:1; background:var(--paper-2); }
+.ctx-area-hide { flex:none; border:0; background:none; padding:8px 10px; font-size:14px; color:var(--ink-3); opacity:.3; cursor:pointer; border-radius:8px; }
+.ctx-arearow:hover .ctx-area-hide { opacity:.7; }
+.ctx-area-hide:hover { opacity:1; background:var(--paper-2); color:var(--accent); }
 .ctx-area-dim { opacity:.6; }
 .ctx-area-unhide { flex:none; font-size:11px; color:var(--accent); font-weight:600; }
 .ctx-showhidden { font-size:12.5px; color:var(--ink-3); }
