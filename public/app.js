@@ -11885,10 +11885,23 @@ function noteConnListRows() {
   const cur = state.note.current;
   const taken = new Set([...(state.note.children || []).map((c) => c.id), ...(state.note.linked || []).map((c) => c.id)]);
   const q = (state.note.connQuery || '').trim().toLowerCase();
+  const curAreas = new Set(blockAreas(cur));
+  // Recently-viewed order, so notes you've had open lately float up.
+  const recent = new Map(recentItems().filter((r) => r && (r.kind === 'note' || r.kind === 'table')).map((r, i) => [r.id, i]));
   let list = (state.noteTops || []).filter((x) => x.id !== cur.id && !taken.has(x.id));
   if (q) list = list.filter((x) => (x.title || '').toLowerCase().includes(q));
-  list = list.slice(0, 8);
-  return list.length ? list.map((x) => { const a = areaById(blockAreas(x)[0]); const hue = a ? hueOf(a) : null; return `<button class="nconn-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-note-connect="${x.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span></button>`; }).join('') : '<div class="ov-muted" style="padding:6px 2px">No other notes to connect.</div>';
+  // Rank: notes sharing this note's life area first, then recently-viewed, then
+  // most-recently-updated. So the picker leads with the notes you'd most likely
+  // want to connect - always be helpful.
+  const rank = (x) => {
+    const shares = blockAreas(x).some((a) => curAreas.has(a)) ? 0 : 1;
+    const rec = recent.has(x.id) ? recent.get(x.id) : 999;
+    return [shares, rec];
+  };
+  list = list.map((x) => ({ x, r: rank(x) }))
+    .sort((a, b) => (a.r[0] - b.r[0]) || (a.r[1] - b.r[1]) || String(b.x.updated_at || '').localeCompare(String(a.x.updated_at || '')) || (a.x.title || '').localeCompare(b.x.title || ''))
+    .map((o) => o.x).slice(0, 10);
+  return list.length ? list.map((x) => { const a = areaById(blockAreas(x)[0]); const hue = a ? hueOf(a) : null; const same = blockAreas(x).some((ar) => curAreas.has(ar)); return `<button class="nconn-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-note-connect="${x.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span>${same && a ? `<span class="nconn-area">${esc(a.title)}</span>` : ''}</button>`; }).join('') : `<div class="ov-muted" style="padding:6px 2px">${q ? 'No notes match.' : 'No other notes to connect.'}</div>`;
 }
 function noteConnectPickerHtml() {
   return `<details class="nconn"><summary>🔗 Connect a note</summary><input class="sel nconn-q" data-note-conn-q placeholder="Search your notes…" value="${esc(state.note.connQuery || '')}" autocomplete="off"><div class="nconn-list" id="nconn-list">${noteConnListRows()}</div></details>`;
@@ -11933,7 +11946,6 @@ function renderNote() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${noteAreasControl(n)}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
-      ${noteTypeToggle(n.id, 'note')}
       ${n.sharedBy ? '' : '<button class="note-tidy ghost" data-note-tidy data-tip="Tidy the spacing" aria-label="Tidy the spacing - remove blank lines and even out the paragraphs">Tidy</button>'}
       ${shareBtn(n, 'note')}
       ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note data-tip="Move this note inside another" aria-label="Move this note inside another">Move</button>
@@ -11953,6 +11965,7 @@ function renderNote() {
           ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
         ${noteTasksHtml(n.id)}
         ${relatedNotesHtml(n)}
+        ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-totable" data-note-to-table title="Make a table from this note's lines - each line becomes a row">▦ Turn into a table</button>`}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
     </div>`;

@@ -1590,6 +1590,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-main { grid-area:main; min-width:0; }
 .note-attach { grid-area:attach; min-width:0; }
 .note-side { grid-area:side; position:sticky; top:16px; min-width:0; }
+/* A quiet 'turn into a table' at the very bottom of the note sidebar - out of the
+   way, not in the toolbar. */
+.note-totable { display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:6px 10px; background:none; border:0; color:var(--ink-3); font-size:13px; cursor:pointer; border-radius:8px; }
+.note-totable:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent); }
 .note-side .subpages { margin-top:0; border-top:0; padding:16px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; }
 @media (max-width:900px){
   /* Single column. `display:contents` on the side rail lets its sections (Notes
@@ -1612,7 +1616,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nconn-list { display:flex; flex-direction:column; gap:2px; max-height:220px; overflow:auto; }
 .nconn-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:none; border:0; padding:7px 6px; border-radius:8px; cursor:pointer; color:var(--ink); font-size:14px; }
 .nconn-item:hover { background:var(--paper); color:var(--accent); }
-.nconn-item .sp-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nconn-item .sp-t { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nconn-area { flex:none; font-size:11px; color:hsl(var(--h,220) 42% 42%); background:hsl(var(--h,220) 60% 52% / .12); border-radius:999px; padding:1px 8px; max-width:40%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .nconn-item.has-area { border-left:3px solid hsl(var(--h,220) 60% 52%); padding-left:8px; }
 .nconn-item.has-area .sp-ico { color:hsl(var(--h,220) 55% 55%); }
 .nconn-item.has-area .sp-ico .ico-note, .nconn-item.has-area .sp-ico .ico-tbl { color:inherit; }
