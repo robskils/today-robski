@@ -3457,7 +3457,20 @@ export default {
         const file = isLife ? '/app.html' : '/index.html';
         return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
       }
-      return withHsts(await env.ASSETS.fetch(request));
+      // Versioned assets (app.js?v=…, life.css?v=…) are immutable: the ?v= stamp
+      // changes on every deploy, so a given URL never changes content. The assets
+      // binding otherwise serves them `max-age=0, must-revalidate`, which made the
+      // browser re-validate (and often re-download) the ~370KB app.js on EVERY app
+      // open - the "slow load, white screen". Cache versioned assets hard instead.
+      {
+        const res = await env.ASSETS.fetch(request);
+        if (url.searchParams.has('v') && res && res.ok && res.status === 200) {
+          const r = new Response(res.body, res);
+          r.headers.set('cache-control', 'public, max-age=31536000, immutable');
+          return withHsts(r);
+        }
+        return withHsts(res);
+      }
     }
 
     if (request.method === 'OPTIONS') {
