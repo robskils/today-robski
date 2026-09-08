@@ -5653,7 +5653,7 @@ function renderCalendar() {
     <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
     ${cq ? searchBlock : `<section class="cal-agenda cal-agenda-top">
-      <div class="cal-ag-head"><h2>${c.selected === todayISO() ? 'Today: ' : ''}${prettyDate(c.selected)}</h2><button class="add-btn wide" data-cal-add>+ Event</button></div>
+      <div class="cal-ag-head"><div class="cal-ag-when">${c.selected === todayISO() ? '<span class="cal-ag-eyebrow">Today</span>' : ''}<h2>${prettyDate(c.selected)}</h2></div><button class="add-btn wide" data-cal-add>+ Event</button></div>
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
