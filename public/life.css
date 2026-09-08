@@ -2163,6 +2163,26 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .alias-verify-row input { width:110px; flex:none; letter-spacing:.18em; text-align:center; font-variant-numeric:tabular-nums; }
 .acct-plan { display:flex; align-items:center; gap:12px; } .acct-plan b { text-transform:capitalize; }
 .acct-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; }
+/* Account tab order: your details first, then the Daybook card + Security side by
+   side, then Your data. */
+.set-account, .set-acct-cols { margin-bottom:16px; }
+.set-acct-cols { display:flex; gap:16px; align-items:stretch; }
+.set-acct-cols > .set-card { flex:1 1 0; min-width:0; }
+.set-acct-cols .set-cardpreview { margin-bottom:0; }
+@media (max-width:720px) { .set-acct-cols { flex-direction:column; } }
+.set-yourdata { gap:14px; }
+.yd-hosts { display:flex; gap:12px; flex-wrap:wrap; }
+.yd-host { flex:1 1 220px; min-width:0; border:1px solid var(--line); border-radius:12px; padding:13px 15px; display:flex; flex-direction:column; gap:5px; background:color-mix(in srgb,var(--card) 55%,transparent); }
+.yd-host.on { border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 6%,transparent); }
+.yd-host-h { display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:650; color:var(--ink); }
+.yd-host-dot { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:var(--accent); color:var(--accent-ink,#fff); font-size:11px; flex:none; }
+.yd-host-s { font-size:13px; color:var(--ink-3); line-height:1.5; }
+.yd-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.yd-privacy-link { text-decoration:none; }
+.yd-ai-links { display:flex; gap:10px; flex-wrap:wrap; }
+.yd-ai-link { display:inline-flex; align-items:center; padding:9px 14px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink-2); font-size:14px; box-shadow:var(--shadow-sm); text-decoration:none; }
+.yd-ai-link b { color:var(--ink); font-weight:650; margin-right:2px; }
+.yd-ai-link:hover { border-color:var(--accent); color:var(--accent); }
 .acct-privacy { margin:14px 0 0; font-size:13.5px; line-height:1.55; color:var(--ink-3); max-width:560px; }
 .acct-privacy a { color:var(--ink-2); text-decoration:none; border-bottom:1px solid var(--line-2); white-space:nowrap; }
 .acct-privacy a:hover { color:var(--accent); border-color:var(--accent); }
@@ -3493,14 +3513,30 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    straight on the page (note/table cards, goal cards, task table), no boxes. */
 .area-flow { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; gap:30px; }
 .area-sec { display:flex; flex-direction:column; gap:13px; }
-.area-sec-h { display:flex; align-items:center; gap:10px; width:100%; background:none; border:0; border-bottom:1px solid var(--line); padding:0 0 6px; cursor:pointer; text-align:left; color:var(--ink-3); }
-.area-sec-h:hover { color:var(--ink); }
-.area-sec-h:hover .ash-go { opacity:1; transform:none; }
-.ash-ic { font-size:15px; line-height:1; color:color-mix(in srgb,var(--c) 72%,var(--ink-3)); }
-.ash-l { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; }
-.ash-c { font-size:12px; font-weight:700; color:var(--ink-2); background:color-mix(in srgb,var(--c) 15%,transparent); padding:1px 8px; border-radius:999px; }
-.ash-go { margin-left:auto; font-size:15px; color:var(--ink-3); opacity:0; transform:translateX(-4px); transition:opacity .14s, transform .14s; }
+.area-sec.area-sec-collapsed { gap:0; }
+.area-sec-h { display:flex; align-items:center; gap:8px; width:100%; border-bottom:1px solid var(--line); padding:0 0 6px; color:var(--ink-3); }
+/* Drag handle: grab to reorder. touch-action:none so a drag on the phone moves
+   the section instead of scrolling the page. */
+.ash-grip { flex:none; cursor:grab; color:var(--ink-3); opacity:.5; font-size:14px; line-height:1; padding:2px; touch-action:none; -webkit-user-select:none; user-select:none; }
+.ash-grip:hover { opacity:1; color:var(--ink-2); }
+.area-sec-h:hover .ash-grip { opacity:.85; }
+.ash-grip:active { cursor:grabbing; }
+/* The header proper toggles the section open/closed. */
+.ash-toggle { flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:none; border:0; padding:0; cursor:pointer; text-align:left; color:inherit; }
+.ash-toggle:hover { color:var(--ink); }
+.ash-ic { flex:none; font-size:15px; line-height:1; color:color-mix(in srgb,var(--c) 72%,var(--ink-3)); }
+.ash-l { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ash-c { flex:none; font-size:12px; font-weight:700; color:var(--ink-2); background:color-mix(in srgb,var(--c) 15%,transparent); padding:1px 8px; border-radius:999px; }
+/* The → opens this section on its own (its focused tile). */
+.ash-open { flex:none; margin-left:auto; background:none; border:0; cursor:pointer; font-size:15px; color:var(--ink-3); padding:2px 4px; border-radius:7px; opacity:0; transition:opacity .14s, color .12s, background .12s; }
+.area-sec-h:hover .ash-open { opacity:1; }
+.ash-open:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
 .area-sec-body { min-width:0; }
+/* Drag feedback, mirroring Home's section drag. */
+.area-sec.mdragging { position:relative; z-index:20; }
+.area-sec.mdragging .area-sec-h { border-radius:10px; background:var(--card); box-shadow:0 14px 34px -12px rgba(0,0,0,.45); }
+.area-sec.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
+.area-sec.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
 .area-vision-edit { width:100%; border:1px solid var(--line); background:var(--card); resize:vertical; padding:12px 14px; font:inherit; font-size:15.5px; line-height:1.6; color:var(--ink); min-height:82px; border-radius:12px; box-shadow:var(--shadow); }
 .area-vision-edit:focus { outline:none; border-color:color-mix(in srgb,var(--c) 55%,var(--line)); }
 .area-vision-edit::placeholder { color:var(--ink-3); font-style:italic; }

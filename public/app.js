@@ -2158,10 +2158,6 @@ function renderSettings() {
     : `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
   const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
-      <div class="set-card set-cardpreview">
-        <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Daybook card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
-        <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
-      </div>
       <div class="set-card set-account">
         <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
         <label class="set-field"><span>Username</span>
@@ -2178,12 +2174,32 @@ function renderSettings() {
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="+351" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
-        <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-export>⬇ Download your data</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
-        <p class="acct-privacy">Your Daybook is private to you - never sold, never used to train a model. It's yours to download any time, and you can bring your own AI, or your own storage. <a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></p>
+        <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-signout>↪ Sign out</button><button class="ghost acct-danger" data-account-close>Close account…</button></div>
       </div>
-      <div class="set-card set-account-sec">
-        <div class="set-sec-title">Security</div>
-        ${twoFactorHtml()}
+      <div class="set-acct-cols">
+        <div class="set-card set-cardpreview">
+          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Daybook card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
+          <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
+        </div>
+        <div class="set-card set-account-sec">
+          <div class="set-sec-title">Security</div>
+          ${twoFactorHtml()}
+        </div>
+      </div>
+      <div class="set-card set-yourdata">
+        <div class="set-sec-title">Your data</div>
+        <div class="set-row-s">Your Daybook is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
+        <div class="yd-hosts">
+          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Daybook</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
+          <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
+        </div>
+        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
+        <div class="set-sec-title" style="margin-top:8px">Your AI</div>
+        <div class="set-row-s">Bring your own keys, or let us run it for you - set up in <button class="linkish" data-set-tab="ai">Plan</button>.</div>
+        <div class="yd-ai-links">
+          <a class="yd-ai-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener"><b>Claude</b> · console.anthropic.com ↗</a>
+          <a class="yd-ai-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener"><b>Gemini</b> · aistudio.google.com ↗</a>
+        </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
@@ -4913,6 +4929,9 @@ const areaSecOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('lif
 const trkOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}')[k]); } catch { return true; } };
 function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} renderToday(); }
 function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
+// The order the overview sections sit in, dragged by the ⠿ grip. Global (like
+// Home's), so your arrangement is the same on every area page.
+function areaFlowOrder() { try { const a = JSON.parse(localStorage.getItem('life.area.secorder')); return Array.isArray(a) ? a : []; } catch { return []; } }
 const areaSecH = (key, label, count) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${esc(label)}${count != null ? ` · ${count}` : ''}</div>`;
 function timeAgo(t) {
   const s = Math.floor((Date.now() - t) / 1000);
@@ -5046,10 +5065,16 @@ function renderArea() {
   // The overview reads as one open page, not a wall of little boxes: each part is
   // a quiet heading with its real content laid out directly beneath - note and
   // table cards, goal cards, the task table - the same components the focused
-  // tiles use. The heading is a link into that tile for the fuller view.
-  // (Robin, 2026-09: "boxes are boring, break the data out.")
-  const secHead = (key, target, count) => `<button class="area-sec-h" data-area-tile="${esc(target || key)}"><span class="ash-ic">${TILE_META[key]}</span><span class="ash-l">${esc(key)}</span>${count != null ? `<span class="ash-c">${count}</span>` : ''}<span class="ash-go">→</span></button>`;
-  const flowSec = (key, target, count, body) => `<section class="area-sec">${secHead(key, target, count)}<div class="area-sec-body">${body}</div></section>`;
+  // tiles use. Sections collapse (tap the header) and reorder (drag the ⠿), like
+  // Home; the → opens that section on its own. (Robin, 2026-09.)
+  const flowSec = (key, target, count, body) => { const open = areaSecOpen(key); return `<section class="area-sec ${open ? '' : 'area-sec-collapsed'}" data-aflow="${esc(key)}">
+      <div class="area-sec-h">
+        <span class="ash-grip" data-aflow-grip="${esc(key)}" title="Drag to reorder" aria-hidden="true">⠿</span>
+        <button class="ash-toggle" data-area-sec="${esc(key)}" aria-expanded="${open}" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="ash-ic">${TILE_META[key]}</span><span class="ash-l">${esc(key)}</span>${count != null ? `<span class="ash-c">${count}</span>` : ''}</button>
+        <button class="ash-open" data-area-tile="${esc(target || key)}" title="Open ${esc(key)} on its own">→</button>
+      </div>
+      ${open ? `<div class="area-sec-body">${body}</div>` : ''}
+    </section>`; };
   // Vision: write it straight here, no click-through.
   const visionBodyHtml = canEditArea
     ? `<textarea class="area-vision-edit" data-area-vision="${area.id}" rows="3" placeholder="Picture this area at its best - write it in the present tense…">${esc(visionSnip)}</textarea>`
@@ -5060,18 +5085,24 @@ function renderArea() {
   const tasksBody = openTs.length
     ? taskTableHtml(openTs.slice(0, TASK_CAP), 'No open tasks here.') + (openTs.length > TASK_CAP ? `<button class="area-sec-more" data-area-tile="Tasks">${openTs.length - TASK_CAP} more open task${openTs.length - TASK_CAP === 1 ? '' : 's'} →</button>` : '')
     : '<div class="home-empty">No open tasks.</div>';
-  const sec = (key, ok, target, count, body) => (ok && !secHidden(key)) ? flowSec(key, target || key, count, body) : '';
-  const dash = `<div class="area-flow" style="--h:${h}">
-    ${sec('Vision', canEditArea || !!visionSnip, 'Goals', null, visionBodyHtml)}
-    ${sec('Goals', true, 'Goals', activeGoals.length, goalsBody)}
-    ${sec('Tasks', true, 'Tasks', openTs.length, tasksBody)}
-    ${sec('Notes and tables', !!notesTotal, null, notesTotal, `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>`)}
-    ${sec('Contacts', !!contacts.length, null, contacts.length, `<div class="contact-grid">${contactCards}</div>`)}
-    ${sec('Saved links', !!bookmarks.length, null, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`)}
-    ${sec('Reflections', !!journals.length, null, journals.length, `<div class="tbl-cards">${journalCards}</div>`)}
-    ${sec('Bucket list', !!bucket.length, null, bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`)}
-    ${sec('Emails', !!emails.length, null, emails.length, `<div class="tbl-cards">${emailCards}</div>`)}
-  </div>
+  // [key, present?, tile-target, count, body]. Present, un-hidden sections are
+  // shown in your saved drag order; anything without a saved place keeps its
+  // sensible default position.
+  const flowDefs = [
+    ['Vision', canEditArea || !!visionSnip, 'Goals', null, visionBodyHtml],
+    ['Goals', true, 'Goals', activeGoals.length, goalsBody],
+    ['Tasks', true, 'Tasks', openTs.length, tasksBody],
+    ['Notes and tables', !!notesTotal, null, notesTotal, `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>`],
+    ['Contacts', !!contacts.length, null, contacts.length, `<div class="contact-grid">${contactCards}</div>`],
+    ['Saved links', !!bookmarks.length, null, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`],
+    ['Reflections', !!journals.length, null, journals.length, `<div class="tbl-cards">${journalCards}</div>`],
+    ['Bucket list', !!bucket.length, null, bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`],
+    ['Emails', !!emails.length, null, emails.length, `<div class="tbl-cards">${emailCards}</div>`],
+  ];
+  const flowOrder = areaFlowOrder();
+  const flowSecs = flowDefs.filter(([key, ok]) => ok && !secHidden(key))
+    .sort((a, b) => { const ia = flowOrder.indexOf(a[0]); const ib = flowOrder.indexOf(b[0]); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+  const dash = `<div class="area-flow" style="--h:${h}">${flowSecs.map(([key, , target, count, body]) => flowSec(key, target, count, body)).join('')}</div>
   <section class="area-dash-files">${areaAttachHtml(area)}</section>
   ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
   ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
@@ -13557,6 +13588,47 @@ function deskSecDragEnd(e) {
 }
 document.addEventListener('pointerup', deskSecDragEnd);
 document.addEventListener('pointercancel', deskSecDragEnd);
+// Life-area overview sections: grab the ⠿ grip to reorder within the single
+// column, saved globally so every area page follows the same arrangement.
+let areaSecDrag = null;
+document.addEventListener('pointerdown', (e) => {
+  const grip = e.target.closest && e.target.closest('[data-aflow-grip]'); if (!grip) return;
+  const sec = grip.closest('[data-aflow]'); const flow = sec && sec.closest('.area-flow'); if (!sec || !flow) return;
+  e.preventDefault(); e.stopPropagation();
+  const order = [...flow.querySelectorAll(':scope > [data-aflow]')].map((el) => el.dataset.aflow);
+  areaSecDrag = { key: grip.dataset.aflowGrip, sec, flow, id: e.pointerId, startY: e.clientY, moved: false, order, before: null };
+  sec.classList.add('mdragging');
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  const d = areaSecDrag; if (!d || e.pointerId !== d.id) return;
+  e.preventDefault();
+  const dy = e.clientY - d.startY; if (Math.abs(dy) > 4) d.moved = true;
+  d.sec.style.position = 'relative'; d.sec.style.zIndex = '20'; d.sec.style.transform = `translateY(${dy}px)`;
+  const others = [...d.flow.querySelectorAll(':scope > [data-aflow]')].filter((el) => el !== d.sec);
+  others.forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  let beforeEl = null;
+  for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
+  d.before = beforeEl ? beforeEl.dataset.aflow : null;
+  if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
+  const vh = window.innerHeight; if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
+});
+function areaSecDragEnd(e) {
+  const d = areaSecDrag; if (!d || (e && e.pointerId !== d.id)) return; areaSecDrag = null;
+  d.sec.style.transform = ''; d.sec.style.zIndex = ''; d.sec.style.position = ''; d.sec.classList.remove('mdragging');
+  d.flow.querySelectorAll('[data-aflow]').forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  if (!d.moved) return;
+  const arr = d.order.filter((k) => k !== d.key);
+  let i = d.before ? arr.indexOf(d.before) : arr.length; if (i < 0) i = arr.length;
+  arr.splice(i, 0, d.key);
+  // Keep any saved keys not on screen right now, appended, so hiding then showing
+  // a section doesn't wipe its remembered place.
+  const rest = areaFlowOrder().filter((k) => !arr.includes(k));
+  try { localStorage.setItem('life.area.secorder', JSON.stringify([...arr, ...rest])); } catch {}
+  renderArea(); toast('Moved');
+}
+document.addEventListener('pointerup', areaSecDragEnd);
+document.addEventListener('pointercancel', areaSecDragEnd);
 function reorderHomeSec(dragged, before, cur) {
   const arr = cur.filter((k) => k !== dragged);
   let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
