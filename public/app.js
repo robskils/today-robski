@@ -15132,8 +15132,16 @@ async function addTask(o) {
   // show straight away in the card's Notes section.
   const body = textToProse(o.notes);
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props, ...(body ? { body } : {}) }) });
-  state.tasks.push(b); renderTasks();
-  // Keep the form open for adding several in a row.
+  state.tasks.push(b);
+  // On a phone, adding one task closes the form and drops you back on the Tasks
+  // list (as if you'd tapped Done) - you rarely batch-add on mobile and the open
+  // form plus keyboard just gets in the way. Desktop keeps the form open so you
+  // can add several in a row. (Robin.)
+  if (window.matchMedia && window.matchMedia('(max-width:820px)').matches) {
+    state.taskAdding = false; state.taskAddArea = null;
+    try { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); } catch {}
+  }
+  renderTasks();
   if (state.taskAdding) { const i = $('#task-title'); if (i) i.focus(); }
 }
 // A task can be held in more than one place at once - the Tasks list, an open
