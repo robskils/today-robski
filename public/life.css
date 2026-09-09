@@ -1957,6 +1957,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-notelinks-body { display:flex; flex-direction:column; gap:8px; }
 .ce-notelinks-body:empty { display:none; }
 @media (max-width:480px){ .ce-links3, .ce-links3.cols2 { grid-template-columns:1fr; } }
+/* Quick chips: the event's attributes at a glance, each a tap to jump to and edit
+   that field. Tinted when set (the value shown), an accent tint by default and
+   the area's own hue for the life-area chip. Delete is a danger chip. */
+.ce-quick { display:flex; flex-wrap:wrap; gap:7px; margin:1px 0 2px; }
+.ce-q { display:inline-flex; align-items:center; gap:6px; padding:7px 11px; border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--ink-2); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:border-color .12s, background .12s, color .12s, transform .08s; }
+.ce-q:hover { border-color:var(--accent); color:var(--ink); transform:translateY(-1px); }
+.ce-q-ic { font-size:14px; line-height:1; }
+.ce-q-l { white-space:nowrap; max-width:120px; overflow:hidden; text-overflow:ellipsis; }
+.ce-q.on { border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); background:color-mix(in srgb, var(--accent) 10%, var(--card)); color:var(--ink); }
+.ce-q.on.ce-q-hue { border-color:color-mix(in srgb, hsl(var(--h) 60% 55%) 55%, var(--line)); background:color-mix(in srgb, hsl(var(--h) 60% 55%) 14%, var(--card)); }
+.ce-q-del { margin-left:auto; color:var(--danger,#c0392b); border-color:color-mix(in srgb, var(--danger,#c0392b) 22%, var(--line)); }
+.ce-q-del:hover { background:color-mix(in srgb, var(--danger,#c0392b) 12%, transparent); border-color:var(--danger,#c0392b); color:var(--danger,#c0392b); transform:none; }
 /* Title takes two thirds of the top row, the life area a third beside it. */
 .ce-titlerow { display:grid; grid-template-columns:2fr 1fr; gap:12px; align-items:end; }
 .ce-titlerow .ce-title { margin:0; align-self:end; }

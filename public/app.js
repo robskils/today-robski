@@ -6028,6 +6028,31 @@ function noteLinksHtml(notes) {
   const label = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
   return `<div class="ce-notelinks">${links.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">🔗 ${esc(label(u))}</a>`).join('')}</div>`;
 }
+// A row of quick chips at the top of the event card: the event's attributes at a
+// glance (tinted when set, showing their value), each a tap to jump to - and open
+// - that field. Delete sits here too. Fast on mobile and desktop, no scrolling to
+// find "add a reminder". (Robin.)
+const CE_ALARM_SHORT = { '0': 'At time', '5': '5 min', '10': '10 min', '15': '15 min', '30': '30 min', '60': '1 hr', '120': '2 hr', '1440': '1 day' };
+const CE_REPEAT_SHORT = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
+function ceQuickBar(ev) {
+  const hasArea = !!(ev && ev.area);
+  const hasAlarm = !!(ev && ev.alarm != null && ev.alarm !== '');
+  const hasRepeat = !!(ev && ((ev.repeat && ev.repeat !== 'none') || ev.recurringId));
+  const hasContact = !!(ev && ev.contact);
+  const noteN = (ev && Array.isArray(ev.noteLinks)) ? ev.noteLinks.length : 0;
+  const hasUrl = !!(ev && ev.url);
+  const area = hasArea ? areaById(ev.area) : null;
+  const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
+  const out = [];
+  out.push(chip('#ce-area', '◈', hasArea ? ((area && area.title) || 'Life area') : 'Life area', hasArea, (hasArea && area) ? hueOf(area) : null));
+  out.push(chip('#ce-alarm', '🔔', hasAlarm ? (CE_ALARM_SHORT[String(ev.alarm)] || 'Reminder') : 'Reminder', hasAlarm));
+  out.push(chip((ev && ev.recurringId) ? '.ce-repeat-info' : '#ce-repeat', '↻', hasRepeat ? (ev.recurringId ? 'Repeats' : (CE_REPEAT_SHORT[ev.repeat] || 'Repeat')) : 'Repeat', hasRepeat));
+  out.push(chip('#ce-url', '🔗', hasUrl ? 'Link' : 'Add link', hasUrl));
+  out.push(chip('#ce-contact-search', '👤', hasContact ? ((findContact(ev.contact) || {}).title || 'Contact') : 'Contact', hasContact));
+  if (ev && ev.id) out.push(chip('[data-ev-note-q]', '▤', noteN ? `${noteN} note${noteN > 1 ? 's' : ''}` : 'Link note', noteN > 0));
+  if (ev && ev.id) out.push('<button type="button" class="ce-q ce-q-del" data-cal-del aria-label="Delete event" title="Delete event"><span class="ce-q-ic">🗑</span><span class="ce-q-l">Delete</span></button>');
+  return `<div class="ce-quick">${out.join('')}</div>`;
+}
 function showCalForm(ev) {
   const c = state.cal;
   const title = ev ? ev.title : '';
@@ -6052,6 +6077,7 @@ function showCalForm(ev) {
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
       <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     </div>
+    ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
     <div class="ce-when">
       <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span>
@@ -14009,6 +14035,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); return; }
   if (t.closest('[data-cal-prev]')) { stepCal(-1); return; }
   if (t.closest('[data-cal-next]')) { stepCal(1); return; }
+  // Event quick-chip: jump to that field, focus it, and open the picker if it's a
+  // select - so the chip both shows the value and edits it in one tap.
+  { const jmp = t.closest('[data-ce-jump]'); if (jmp) { const el = document.querySelector(jmp.dataset.ceJump); if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {} try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} } if (el.tagName === 'SELECT' && el.showPicker) { try { el.showPicker(); } catch {} } } return; } }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
