@@ -10351,6 +10351,7 @@ async function openGoals(tab) {
   const [areas, goals, bucket, reviews] = await Promise.all([api('/api/blocks?kind=area'), api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket'), api('/api/blocks?kind=review')]);
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.goals = goals; state.bucket = bucket; state.reviews = reviews;
+  pruneDuplicateReviews();
   renderNav(); renderGoals();
   api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewRem = r.reminders || {}; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
 }
@@ -10359,6 +10360,7 @@ async function openReviews() {
   state.view = { type: 'reviews' };
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
+  pruneDuplicateReviews();   // collapse any (type, period) duplicates to one canonical block
   renderNav(); renderReviews();
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
 }
@@ -11039,6 +11041,7 @@ async function openWheel() {
   state.view = { type: 'wheel' };
   state.navUtilOpen = false; renderNav();
   if (state.reviews === undefined) { try { state.reviews = await api('/api/blocks?kind=review'); } catch { state.reviews = []; } }
+  pruneDuplicateReviews();
   if (!state.areas || !state.areas.length) { try { state.areas = await api('/api/blocks?kind=area'); } catch {} }
   renderWheel();
 }
@@ -11366,12 +11369,63 @@ function setReviewCadMode(k, mode) { const c = ensureCad(k); c.mode = mode; revi
 function setReviewCadAlert(k, n) { const c = ensureCad(k); c.alertBefore = Math.max(0, Math.min(14, n)); c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadPause(k, dateISO) { const c = ensureCad(k); c.pausedUntil = (dateISO && /^\d{4}-\d\d-\d\d$/.test(dateISO)) ? dateISO : null; saveReviewRem(); reReviewRems(); }
 const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
+// One review per (type, period). A submit → edit → resubmit must update the same
+// block, never mint a new one. Stale state or a double-tap have minted a few
+// duplicates; collapse each (rtype,to) group to one canonical block - preferring a
+// submitted one, then the richest, then the most recently touched - after folding
+// any writing from the losers into it, then delete the redundant blocks. (Robin.)
+function reviewKey(r) { const p = r.props || {}; return `${p.rtype || 'weekly'}|${p.to || r.created_at || ''}`; }
+function reviewRichness(r) { const p = r.props || {}; return Object.values(p.answers || {}).filter((x) => String(x || '').trim()).length + Object.values(p.wheel || {}).filter((n) => n > 0).length + Object.values(p.areaNotes || {}).filter((x) => String(x || '').trim()).length + (String(r.body || '').replace(/<[^>]+>/g, '').trim() ? 1 : 0); }
+function pickCanonicalReview(a, b) {
+  const da = (a.props || {}).status === 'done' ? 1 : 0, db = (b.props || {}).status === 'done' ? 1 : 0;
+  if (da !== db) return da > db ? a : b;                       // a submitted one wins
+  const ra = reviewRichness(a), rb = reviewRichness(b);
+  if (ra !== rb) return ra > rb ? a : b;                       // then the one with more writing
+  return String(a.updated_at || a.created_at || '') >= String(b.updated_at || b.created_at || '') ? a : b;   // then the most recent
+}
+function pruneDuplicateReviews() {
+  const groups = new Map();
+  for (const r of (state.reviews || [])) { const k = reviewKey(r); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); }
+  const keep = []; const toDelete = [];
+  for (const arr of groups.values()) {
+    if (arr.length === 1) { keep.push(arr[0]); continue; }
+    let winner = arr[0]; for (let i = 1; i < arr.length; i++) winner = pickCanonicalReview(winner, arr[i]);
+    const losers = arr.filter((r) => r !== winner);
+    // Fold any writing the winner is missing in from the losers, so an edit made on
+    // a duplicate isn't lost when that duplicate is removed.
+    const wp = winner.props || (winner.props = {});
+    const ans = { ...(wp.answers || {}) }, wheel = { ...(wp.wheel || {}) }, notes = { ...(wp.areaNotes || {}) };
+    let changed = false;
+    for (const l of losers) { const lp = l.props || {};
+      for (const [i, v] of Object.entries(lp.answers || {})) if (String(v || '').trim() && !String(ans[i] || '').trim()) { ans[i] = v; changed = true; }
+      for (const [aid, sc] of Object.entries(lp.wheel || {})) if (sc > 0 && !(wheel[aid] > 0)) { wheel[aid] = sc; changed = true; }
+      for (const [aid, v] of Object.entries(lp.areaNotes || {})) if (String(v || '').trim() && !String(notes[aid] || '').trim()) { notes[aid] = v; changed = true; }
+    }
+    if (changed) { wp.answers = ans; wp.wheel = wheel; wp.areaNotes = notes; api(`/api/blocks/${winner.id}`, { method: 'PATCH', body: JSON.stringify({ props: { answers: ans, wheel, areaNotes: notes } }) }).catch(() => {}); }
+    keep.push(winner); losers.forEach((l) => toDelete.push(l));
+  }
+  if (!toDelete.length) return false;
+  state.reviews = keep;
+  for (const d of toDelete) api(`/api/blocks/${d.id}`, { method: 'DELETE' }).catch(() => {});
+  return true;
+}
+const reviewStarting = new Set();
 async function startReview(rtype, winOverride) {
   const { from, to } = (winOverride && winOverride.from && winOverride.to) ? winOverride : reviewPeriod(rtype);
-  // Never mint a second review for the same period - open the existing one instead.
-  const existing = (state.reviews || []).find((r) => (r.props || {}).rtype === rtype && (r.props || {}).to === to);
+  // Check against a real, loaded list - a stale/empty state.reviews is how
+  // duplicates for the same period got minted.
+  if (!Array.isArray(state.reviews)) { try { state.reviews = await api('/api/blocks?kind=review'); } catch { state.reviews = []; } }
+  const findExisting = () => (state.reviews || []).find((r) => (r.props || {}).rtype === rtype && (r.props || {}).to === to);
+  const existing = findExisting();
   if (existing) { openReviewCard(existing.id); return; }
+  // Guard the async gap: a double-tap must not run two creates for the same period.
+  const key = `${rtype}|${to}`;
+  if (reviewStarting.has(key)) return;
+  reviewStarting.add(key);
+  try {
   const [tasks, mir] = await Promise.all([api('/api/blocks?kind=task'), api(`/api/review-mirror?from=${from}&to=${to}`).catch(() => ({ practices: [], total: 0 }))]);
+  // Re-check after the awaits: another start may have created it in the meantime.
+  const now = findExisting(); if (now) { openReviewCard(now.id); return; }
   state.tasks = notKit(tasks);
   const s = reviewTaskStats(from);
   const snapshot = state.goals.filter((g) => (gp(g).status || 'active') === 'active').map((g) => ({ id: g.id, title: g.title, area: gp(g).area, measure: goalMeasure(g), progress: Math.round(goalProgress(g) * 100) }));
@@ -11389,6 +11443,7 @@ async function startReview(rtype, winOverride) {
   const props = { rtype, from, to, wheel, snapshot, mirror, tasksDone: s.done.length, openP1: s.openP1.length, status: 'inprogress' };
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'review', title: `${REVIEWS[rtype].label} review · ${dpLabel(to)}`, props }) });
   state.reviews.push(b); openReviewCard(b.id);
+  } finally { reviewStarting.delete(key); }
 }
 // A little actionable insight, drawn from the week's record. Subtle, and just the
 // piece worth knowing: the strongest area, what went quiet, an open P1, what
