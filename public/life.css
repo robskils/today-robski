@@ -5252,12 +5252,19 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
   }
 }
 @media (max-width:820px){
-  .cal-head {
-    position:sticky; top:var(--navh,56px); z-index:21;
-    margin:0 -18px 14px; padding:10px 18px 11px;
+  /* The week title + mode/nav buttons scroll away with the page; only the day
+     agenda header (the day + "+ Event") pins, just under the breadcrumb, so the
+     current day and the add button stay to hand while everything else scrolls.
+     (Robin.) */
+  .cal-head { position:static; margin:0 0 12px; padding:0; background:none; backdrop-filter:none; border-bottom:0; }
+  .cal-agenda-top { margin-top:2px; }
+  .cal-ag-head {
+    position:sticky; top:calc(var(--navh,56px) + var(--cal-crumbh,44px)); z-index:20;
+    margin:0 -18px; padding:9px 18px 10px;
     background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(12px);
     border-bottom:1px solid var(--line);
   }
+  .cal-ag-head h2 { font-size:23px; }
 }
 /* Recurrence marker on a calendar event - tells a repeating event from a one-off. */
 .cal-recur { color:var(--accent); font-size:.85em; margin-left:6px; opacity:.8; }

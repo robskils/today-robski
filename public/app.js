@@ -6017,6 +6017,8 @@ function renderCalendar() {
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
   restoreCalForm(_calFormSnap); _calFormSnap = null;
+  // Measure the breadcrumb so the sticky day-header (mobile) pins right below it.
+  { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--cal-crumbh', cb.offsetHeight + 'px'); }
 }
 // A background re-render (contacts loading, Google-status landing, an events
 // refetch) rebuilds the open event form from scratch, which used to wipe whatever
@@ -13185,6 +13187,11 @@ async function setCell(rowId, colId, value) {
 }
 
 // ── palette (⌘K) ─────────────────────────────────────
+// Tapping a search result must not blur the input first: on a phone that dismisses
+// the keyboard and reflows the overlay, so the tap lands on nothing and the result
+// "doesn't open". Preventing the mousedown default keeps focus; the click still
+// fires and opens the result. (Robin: tapped a task in search, it didn't open.)
+document.addEventListener('mousedown', (e) => { if (e.target && e.target.closest && e.target.closest('#pal-list [data-pal-i]')) e.preventDefault(); });
 function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
 const ACTIONS = [
