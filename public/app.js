@@ -6058,28 +6058,27 @@ function showCalForm(ev) {
     </div>
     <div class="ce-grid">
       <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">◈</span>Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+      <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
       ${(() => { const cur = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}</select></label>`; })()}
+      ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
-    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
-    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="A class, call or page to open in one tap (optional)" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
-    ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<div class="ce-with">
-      <span class="ce-with-ic">👤</span>
-      <input id="ce-contact-search" class="ce-with-input" list="ce-contact-dl" placeholder="Link a person (optional)" autocomplete="off" value="${esc(withName)}">
-      <input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}">
-      <datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist>
-    </div>`; })()}
+    ${(ev && ev.recurringId) ? (() => { const REP = { daily: 'daily', weekdays: 'every weekday', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' }; const cad = (ev.repeat && REP[ev.repeat]) ? ` ${REP[ev.repeat]}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ Repeats${cad}</span><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
     <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
-    ${(ev && ev.id) ? eventNotesHtml(ev) : ''}
-    ${(ev && ev.recurringId) ? (() => { const REP = { daily: 'daily', weekdays: 'every weekday', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' }; const cad = (ev.repeat && REP[ev.repeat]) ? ` ${REP[ev.repeat]}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ Repeats${cad}</span><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">
-      ${opt('none', 'Does not repeat')}
-      ${opt('daily', 'Daily')}
-      ${opt('weekdays', 'Every weekday (Mon-Fri)')}
-      ${opt('weekly', 'Weekly')}
-      ${opt('monthly', 'Monthly')}
-      ${opt('yearly', 'Yearly')}</select></label>`; })()}
+    <div class="ce-links">
+      <div class="ce-links-h">Links</div>
+      <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Link to a URL</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="A class, call or page to open in one tap (optional)" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
+      ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<div class="ce-with">
+        <span class="ce-with-ic">👤</span>
+        <input id="ce-contact-search" class="ce-with-input" list="ce-contact-dl" placeholder="Link a person (optional)" autocomplete="off" value="${esc(withName)}">
+        <input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}">
+        <datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist>
+      </div>`; })()}
+      ${(ev && ev.id) ? eventNotesHtml(ev) : ''}
+    </div>
     <div class="ce-foot">
       <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
+      <button type="button" class="ghost ce-cancel" data-cal-close>Close</button>
       ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}
     </div></form>`;
   $('#ce-title').focus();

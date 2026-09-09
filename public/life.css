@@ -1946,6 +1946,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-with-input::placeholder { color:var(--ink-3); }
 .ce-with-input:focus { outline:none; border-bottom-color:var(--accent); border-bottom-style:solid; }
 .ce-repeat-field { max-width:280px; }
+/* The three ways to link an event out - a URL, a person, a note - grouped in one
+   soft panel so they read as a set rather than scattered fields. (Robin.) */
+.ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
+.ce-links-h { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+.ce-links .ce-with { margin:0; }
+.ce-links .ce-notes-sec { gap:6px; }
 /* The footer is just the actions now - Save on the left, Delete pushed right. */
 .ce-foot { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-top:14px; margin-top:2px; border-top:1px solid var(--line); }
 .ce-foot .ce-submit { flex:none; }
