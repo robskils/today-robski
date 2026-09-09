@@ -6048,7 +6048,10 @@ function showCalForm(ev) {
   // same day (and an hour on); change it only when you mean to.
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event${allDay ? ' allday-on' : ''}" data-ev="${ev ? ev.id : ''}" data-evgap="${allDay ? 60 : dur}">
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
-    <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
+    <div class="ce-titlerow">
+      <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+    </div>
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
     <div class="ce-when">
       <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span>
@@ -6057,7 +6060,6 @@ function showCalForm(ev) {
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
     <div class="ce-grid">
-      <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">◈</span>Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
       <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
       ${(() => { const cur = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}</select></label>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
@@ -6067,13 +6069,11 @@ function showCalForm(ev) {
     ${noteLinksHtml(notes)}
     <div class="ce-links">
       <div class="ce-links-h">Links</div>
-      <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Link to a URL</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="A class, call or page to open in one tap (optional)" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
-      ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<div class="ce-with">
-        <span class="ce-with-ic">👤</span>
-        <input id="ce-contact-search" class="ce-with-input" list="ce-contact-dl" placeholder="Link a person (optional)" autocomplete="off" value="${esc(withName)}">
-        <input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}">
-        <datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist>
-      </div>`; })()}
+      <div class="ce-links3${(ev && ev.id) ? '' : ' cols2'}">
+        <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
+        ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">👤</span>Contact</span><input id="ce-contact-search" class="sel" list="ce-contact-dl" placeholder="Search…" autocomplete="off" value="${esc(withName)}"><input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}"><datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist></label>`; })()}
+        ${(ev && ev.id) ? eventNoteSearchField(ev) : ''}
+      </div>
       ${(ev && ev.id) ? eventNotesHtml(ev) : ''}
     </div>
     <div class="ce-foot">
@@ -12493,6 +12493,13 @@ function loadEvNotePool() {
   if (state.evNotePool !== undefined) return; state.evNotePool = null;
   api('/api/blocks?kind=note').then((r) => { state.evNotePool = (r || []).filter((n) => n && n.id && !(n.props && n.props.private)); if (state.view.type === 'calendar') renderEventNotesSection(); }).catch(() => { state.evNotePool = []; });
 }
+// The note-search INPUT sits in the Links row (one of the three columns); the
+// linked-note cards, title suggestions and search results render full width
+// beneath it via eventNotesHtml, so a busy note list never squeezes the row.
+function eventNoteSearchField(ev) {
+  if (!ev || !ev.id) return '';
+  return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">▤</span>Note</span><input class="sel nt-search" data-ev-note-q placeholder="Search…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off"></label>`;
+}
 function eventNotesHtml(ev) {
   const links = Array.isArray(ev.noteLinks) ? ev.noteLinks : [];
   const linkedIds = new Set(links.map((x) => String(x.id)));
@@ -12507,12 +12514,7 @@ function eventNotesHtml(ev) {
   if (q) results = pool.filter((nn) => pickable(nn) && (nn.title || '').toLowerCase().includes(q)).slice(0, 8);
   const nRow = (nn) => `<button type="button" class="nt-result" data-ev-link-note="${nn.id}" data-ev-note-title="${esc(nn.title || 'Untitled')}"><span class="ga-t">▤ ${esc(nn.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`;
   const cards = links.map((nn) => `<div class="ce-card"><button type="button" class="ce-open" data-open-note="${esc(nn.id)}"><span class="ce-ic">▤</span><span class="ce-t">${esc(nn.title || 'Untitled')}</span></button><button type="button" class="ce-x" data-ev-unlink-note="${esc(nn.id)}" title="Disconnect">×</button></div>`).join('');
-  return `<div class="ce-field ce-notes-sec"><span class="ce-flbl">Connected notes</span><div class="ce-notes-body">
-    <div class="ce-linked">${cards || '<div class="home-empty" style="padding:4px 0">No notes linked yet.</div>'}</div>
-    ${sugg.length ? `<div class="ce-sugg"><div class="ce-sugg-h">You might mean</div>${sugg.map(nRow).join('')}</div>` : ''}
-    <input class="sel nt-search" data-ev-note-q placeholder="Search a note to link…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off">
-    ${results.length ? `<div class="nt-results">${results.map(nRow).join('')}</div>` : ''}
-  </div></div>`;
+  return `<div class="ce-notes-sec ce-notelinks-body">${cards ? `<div class="ce-linked">${cards}</div>` : ''}${sugg.length ? `<div class="ce-sugg"><div class="ce-sugg-h">You might mean</div>${sugg.map(nRow).join('')}</div>` : ''}${results.length ? `<div class="nt-results">${results.map(nRow).join('')}</div>` : ''}</div>`;
 }
 function renderEventNotesSection() { const el = document.querySelector('.ce-notes-sec'); if (el && state.cal && state.cal.editing) { const w = document.createElement('div'); w.innerHTML = eventNotesHtml(state.cal.editing); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
 // Mirror an event-side change onto the note's own props.events, so opening the note
@@ -12533,6 +12535,7 @@ function eventLinkNote(noteId, noteTitle) {
   links.push({ id: String(noteId), title: noteTitle || 'Untitled' });
   ev.noteLinks = links; state.cal.noteQuery = '';
   (state.cal.events || []).forEach((x) => { if (evBaseId(x) === baseId) x.noteLinks = links; });
+  { const qi = document.querySelector('[data-ev-note-q]'); if (qi) qi.value = ''; }   // the search box lives outside the re-rendered body now
   renderEventNotesSection();
   api('/api/event-notes', { method: 'POST', body: JSON.stringify({ eventId: baseId, addNote: { id: String(noteId), title: noteTitle || 'Untitled' } }) }).catch((e) => toast(e.message));
   patchNoteEventLink(noteId, ev, true);

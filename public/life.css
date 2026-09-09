@@ -1950,8 +1950,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    soft panel so they read as a set rather than scattered fields. (Robin.) */
 .ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
 .ce-links-h { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
-.ce-links .ce-with { margin:0; }
-.ce-links .ce-notes-sec { gap:6px; }
+/* The three link entry points - URL, contact, note - a third of the row each. */
+.ce-links3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px 12px; }
+.ce-links3.cols2 { grid-template-columns:1fr 1fr; }
+.ce-links3 .sel { width:100%; box-sizing:border-box; }
+.ce-notelinks-body { display:flex; flex-direction:column; gap:8px; }
+.ce-notelinks-body:empty { display:none; }
+@media (max-width:480px){ .ce-links3, .ce-links3.cols2 { grid-template-columns:1fr; } }
+/* Title takes two thirds of the top row, the life area a third beside it. */
+.ce-titlerow { display:grid; grid-template-columns:2fr 1fr; gap:12px; align-items:end; }
+.ce-titlerow .ce-title { margin:0; align-self:end; }
+@media (max-width:480px){ .ce-titlerow { grid-template-columns:1fr; } }
 /* The footer is just the actions now - Save on the left, Delete pushed right. */
 .ce-foot { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-top:14px; margin-top:2px; border-top:1px solid var(--line); }
 .ce-foot .ce-submit { flex:none; }
