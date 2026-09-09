@@ -46,7 +46,7 @@ const T_EN = {
   'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes & Tables', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
-  'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify',
+  'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Vision and Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
@@ -66,7 +66,7 @@ const T_PT = {
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas e tabelas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
-  'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar',
+  'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Visão e Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
@@ -16111,6 +16111,7 @@ function showGate(sub) {
       <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span><span class="gate2-tag">${t('gate.tag')}</span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
+      <div class="gate2-codehead" id="gate-codehead" hidden></div>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="${t('gate.code.ph')}" hidden>
       <button class="gate2-btn" id="gate-btn" type="submit">${t('gate.emailme')}</button>
       <button class="gate2-smslink" id="gate-sms" type="button" title="For when your email lives inside Daybook and you can't open it to read the code">${t('gate.smslink')}</button>
@@ -16200,12 +16201,18 @@ async function gateSend(channel) {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(t('gate.sendfail'));
     gateStep = 'code';
-    $('#gate-sub').textContent = d.channel === 'sms' ? t('gate.texted')
-      : (channel === 'sms' && d.smsUnavailable) ? t('gate.smsunavail', { email: gateEmail })
-      : t('gate.codesent', { email: gateEmail });
+    // Spell out exactly which code, and where it went - so the code step and the
+    // authenticator step that may follow are never mistaken for each other.
+    const isSms = d.channel === 'sms';
+    const title = isSms ? t('gate.code.head.sms') : t('gate.code.head.email');
+    const hint = (channel === 'sms' && d.smsUnavailable) ? t('gate.smsunavail', { email: esc(gateEmail) })
+      : isSms ? t('gate.code.hint.sms') : t('gate.code.hint.email', { email: esc(gateEmail) });
+    const ch = $('#gate-codehead');
+    if (ch) { ch.className = 'gate2-codehead'; ch.innerHTML = `<span class="gch-title">${title}</span><span class="gch-hint">${hint}</span>`; ch.hidden = false; }
+    const subEl = $('#gate-sub'); if (subEl) subEl.hidden = true;
     $('#gate-email').hidden = true; if (sms) sms.hidden = true;
     { const or = $('.gate2-or'); if (or) or.hidden = true; }
-    $('#gate-code').hidden = false; $('#gate-code').focus();
+    const codeEl = $('#gate-code'); codeEl.placeholder = '123456'; codeEl.hidden = false; codeEl.focus();
     btn.textContent = t('gate.signin');
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
   btn.disabled = false; if (sms) sms.disabled = false; gateBusy = false;
@@ -16229,8 +16236,13 @@ async function gateSubmit(e) {
     // 2FA on: step up to the authenticator code before a session is issued.
     if (r.ok && d.mfa && d.mfaToken) {
       gateMfaToken = d.mfaToken; gateStep = 'totp';
-      $('#gate-sub').textContent = t('gate.totp');
-      const c = $('#gate-code'); c.value = ''; c.placeholder = '000000'; c.focus();
+      // Make the second factor unmistakable: confirm the first code was accepted,
+      // then say plainly this is a DIFFERENT code from the authenticator app.
+      const ch = $('#gate-codehead');
+      if (ch) { ch.className = 'gate2-codehead is-totp'; ch.innerHTML = `<span class="gch-badge">${t('gate.totp.badge')}</span><span class="gch-title">${t('gate.totp.head')}</span><span class="gch-hint">${t('gate.totp.hint')}</span>`; ch.hidden = false; }
+      const subEl = $('#gate-sub'); if (subEl) subEl.hidden = true;
+      // Not one-time-code here, or the browser offers the SMS code we just used.
+      const c = $('#gate-code'); c.value = ''; c.placeholder = '000000'; c.setAttribute('autocomplete', 'off'); c.focus();
       const sms = $('#gate-sms'); if (sms) sms.hidden = true;
       btn.textContent = t('gate.verify'); btn.disabled = false; gateBusy = false; return;
     }

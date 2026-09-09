@@ -4802,6 +4802,16 @@ table.ttable tr:last-child td { border-bottom:0; }
 .gate2-input:focus-visible { outline:none; border-color:var(--accent);
   box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent); }
 .gate2-code { letter-spacing:.32em; font-size:22px; font-family:ui-monospace,Menlo,monospace; }
+/* The per-step "which code" heading above the code box. Plain for the emailed/
+   texted code; a distinct, bordered call-out for the authenticator step, so the
+   two 6-digit prompts are never confused. */
+.gate2-codehead { display:flex; flex-direction:column; gap:5px; text-align:left; margin:2px 0 -4px; }
+.gch-title { font-size:16px; font-weight:600; color:var(--ink); line-height:1.35; }
+.gch-hint { font-size:13.5px; color:var(--ink-3); line-height:1.5; }
+.gch-hint b { color:var(--ink-2); }
+.gate2-codehead.is-totp { padding:13px 15px; border:1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); border-radius:14px; background:color-mix(in srgb, var(--accent) 7%, var(--card)); gap:7px; }
+.gate2-codehead.is-totp .gch-badge { align-self:flex-start; font-size:12px; font-weight:700; color:#6f9f4a; background:color-mix(in srgb,#6f9f4a 14%,transparent); padding:3px 10px; border-radius:999px; }
+.gate2-codehead.is-totp .gch-title { font-size:17px; }
 /* The button's depth comes from the shared .btn-accent treatment below; the
    gate one is simply full width and a touch taller. */
 .gate2-btn { width:100%; min-height:52px; font-size:17px; margin-top:2px; }
