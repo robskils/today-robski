@@ -1933,6 +1933,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-field { display:flex; flex-direction:column; gap:6px; }
 .ce-flbl { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
 .ce-field .sel { width:100%; max-width:none; margin:0; }
+/* "With": a quiet, optional person link - a small search box, not a labelled
+   dropdown, since linking a person to an event is the exception, not the rule. */
+.ce-with { display:flex; align-items:center; gap:8px; margin:-3px 0 1px; }
+.ce-with-ic { flex:none; font-size:14px; opacity:.5; }
+.ce-with-input { flex:1; min-width:0; font:inherit; font-size:13.5px; color:var(--ink); background:transparent; border:0; border-bottom:1px dashed var(--line-2); border-radius:0; padding:4px 2px; }
+.ce-with-input::placeholder { color:var(--ink-3); }
+.ce-with-input:focus { outline:none; border-bottom-color:var(--accent); border-bottom-style:solid; }
 .ce-repeat-field { max-width:280px; }
 /* The footer is just the actions now - Save on the left, Delete pushed right. */
 .ce-foot { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-top:14px; margin-top:2px; border-top:1px solid var(--line); }

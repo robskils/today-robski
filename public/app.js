@@ -6046,7 +6046,12 @@ function showCalForm(ev) {
     <label class="ce-field"><span class="ce-flbl">Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
     <label class="ce-field"><span class="ce-flbl">Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="A class, call or page to open in one tap (optional)" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
-    <label class="ce-field"><span class="ce-flbl">With</span><select id="ce-contact" class="sel"><option value="">Nobody</option>${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${c.id}" ${(ev && ev.contact) === c.id ? 'selected' : ''}>${esc(c.title || 'Unnamed')}</option>`).join('')}</select></label>
+    ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<div class="ce-with">
+      <span class="ce-with-ic">👤</span>
+      <input id="ce-contact-search" class="ce-with-input" list="ce-contact-dl" placeholder="Link a person (optional)" autocomplete="off" value="${esc(withName)}">
+      <input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}">
+      <datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist>
+    </div>`; })()}
     ${(() => { const cur = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl">Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}</select></label>`; })()}
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
@@ -13375,6 +13380,9 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
   if (e.target.id === 'friend-email') { clearTimeout(window.__frST); window.__frST = setTimeout(peopleSearch, 250); }
   if (e.target.id === 'move-input') { state.move.q = e.target.value; renderMoveList(); }
+  // Event "With": a search box, not a dropdown. Resolve the typed name to a
+  // contact id in the hidden field the save reads; blank (or no match) = nobody.
+  if (e.target.id === 'ce-contact-search') { const v = e.target.value.trim().toLowerCase(); const hid = document.getElementById('ce-contact'); if (hid) { const m = (state.contacts || []).find((c) => (c.title || '').trim().toLowerCase() === v); hid.value = m ? m.id : ''; } }
   if (e.target.id === 'linkpick-input' && state.linkpick) { state.linkpick.q = e.target.value; renderLinkPickerList(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   // Page search boxes (Tasks / Notes / Calendar): keep focus + caret across the re-render.
