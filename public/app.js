@@ -10920,8 +10920,18 @@ function periodWindow(rtype, anchorISO) {
 function reviewPeriod(rtype) { return activeReviewWindow(rtype, todayISO()); }
 // The period CONTAINING today (this month / quarter / year), as opposed to the
 // just-completed one. A living review of the current stretch.
+// The week CONTAINING today (still in progress), Mon–Sun per the week-start
+// setting - as opposed to weeklyWindow's "the week just gone".
+function currentWeekWindow(anchorISO) {
+  const sd = weekStart();
+  const a = new Date((anchorISO || todayISO()) + 'T00:00');
+  const back = (a.getDay() - sd + 7) % 7;
+  const start = new Date(a.getTime() - back * 86400000);
+  const end = new Date(start.getTime() + 6 * 86400000);
+  return { from: localISO(start), to: localISO(end) };
+}
 function currentPeriodWindow(rtype, anchorISO) {
-  if (!rtype || rtype === 'weekly') return weeklyWindow(anchorISO);
+  if (!rtype || rtype === 'weekly') return currentWeekWindow(anchorISO);
   const a = new Date((anchorISO || todayISO()) + 'T00:00');
   const Y = a.getFullYear(), M = a.getMonth();
   if (rtype === 'monthly') return { from: localISO(new Date(Y, M, 1)), to: localISO(new Date(Y, M + 1, 0)) };
@@ -11097,31 +11107,34 @@ function reviewsBody() {
   const finished = past.filter((r) => (r.props || {}).status !== 'inprogress');
   const weeklies = past.filter((r) => (r.props || {}).rtype === 'weekly');
   const todayISO = localISO(new Date());
-  // The period the review covers, and its review day = the week's end. The review
-  // is due ON the review day (today, if today is the week-end), NOT next week.
-  const win = weeklyWindow(todayISO);
-  const whenHtml = reviewWhenHtml({ rtype: 'weekly', from: win.from, to: win.to });
-  // Any review for this exact week? A submitted one wins over a stray in-progress
-  // duplicate, so once you've filed it the hero says so (not "continue").
-  const thisWeekAll = weeklies.filter((r) => (r.props || {}).to === win.to);
+  // The weekly review rolls forward like the others: while last week is unfiled it
+  // covers that week (due on its Sunday); once you've filed it, it moves onto THIS
+  // week - the one in progress - so you can start and build it mid-week rather than
+  // wait for the weekend. (Robin: let me start this week's even if it's Wednesday.)
+  const curWin = activeReviewWindow('weekly', todayISO);
+  const inProgWk = curWin.to === currentWeekWindow(todayISO).to;   // covering the live week?
+  const whenHtml = reviewWhenHtml({ rtype: 'weekly', from: curWin.from, to: curWin.to });
+  // A submitted review wins over a stray in-progress duplicate for the same week.
+  const thisWeekAll = weeklies.filter((r) => (r.props || {}).to === curWin.to);
   const submittedRev = thisWeekAll.find((r) => (r.props || {}).status === 'done');
   const thisWeek = submittedRev || thisWeekAll[0];
   const submittedThisWeek = !!submittedRev;
-  // Due day: this week's review day, unless it's already submitted - then next week's.
-  const eff = submittedThisWeek ? localISO(new Date(Date.parse(win.to + 'T00:00') + 7 * 86400000)) : win.to;
+  // Due day = the covered week's review day (its end); once filed, next week's.
+  const eff = submittedThisWeek ? localISO(new Date(Date.parse(curWin.to + 'T00:00') + 7 * 86400000)) : curWin.to;
   const dueDate = new Date(eff + 'T00:00');
   const dueLbl = dueDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
   const diff = Math.round((dueDate - new Date(todayISO + 'T00:00')) / 86400000);
+  const wkWord = inProgWk ? 'this' : 'last';
   let dueLine;
   if (submittedThisWeek) dueLine = `📅 Next review lands <b>${esc(dueLbl)}</b> · ${diff === 0 ? 'today' : `in ${diff} day${diff === 1 ? '' : 's'}`}`;
   else if (diff > 0) dueLine = `📅 Review lands <b>${esc(dueLbl)}</b> · in ${diff} day${diff === 1 ? '' : 's'}`;
   else if (diff === 0) dueLine = `📅 <b>Today is review day</b> - it's due now`;
   else dueLine = `📅 <b>Review overdue</b> · ${-diff} day${diff === -1 ? '' : 's'}`;
   const heroBtn = (thisWeek && !submittedThisWeek)
-    ? `<button class="rv-start-weekly" data-open-review="${thisWeek.id}"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Continue this week's review</b><small>You've started it - pick up where you left off.</small></span><span class="rvw-go">→</span></button>`
+    ? `<button class="rv-start-weekly" data-open-review="${thisWeek.id}"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Continue ${wkWord} week's review</b><small>You've started it - pick up where you left off.</small></span><span class="rvw-go">→</span></button>`
     : submittedThisWeek
-    ? `<button class="rv-start-weekly rv-hero-done" data-open-review="${thisWeek.id}"><span class="rvw-ic">✓</span><span class="rvw-body"><b>This week's review - submitted</b><small>Tap to look back over it.</small></span><span class="rvw-go">→</span></button>`
-    : `<button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start this week's review</b><small>A few minutes, and you'll know where you stand.</small></span><span class="rvw-go">→</span></button>`;
+    ? `<button class="rv-start-weekly rv-hero-done" data-open-review="${thisWeek.id}"><span class="rvw-ic">✓</span><span class="rvw-body"><b>${inProgWk ? 'This' : 'Last'} week's review - submitted</b><small>Tap to look back over it.</small></span><span class="rvw-go">→</span></button>`
+    : `<button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start ${wkWord} week's review</b><small>${inProgWk ? "It's only partway through - start now and add to it as the week goes." : "A few minutes, and you'll know where you stand."}</small></span><span class="rvw-go">→</span></button>`;
   const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
   // The "previous one" beside each type's current review: the period just before
   // the one shown as current. A compact strip - open its report if it exists, or
@@ -11150,7 +11163,7 @@ function reviewsBody() {
         <div class="rv-week-due">${dueLine}</div>
         ${heroBtn}
       </div>
-      ${prevStrip('weekly', win)}
+      ${prevStrip('weekly', curWin)}
     </div>
     <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => {
       const w = activeReviewWindow(k, todayISO);
