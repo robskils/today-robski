@@ -5952,7 +5952,11 @@ function renderCalendar() {
   if (c.mode === 'week') {
     const wk = weekDays(c.weekAnchor || todayISO()), a = wk[0], b = wk[6];
     title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
-    body = `<div class="cal-week">${wk.map((d) => {
+    // The day shown in full up top (today by default) isn't repeated in the strip
+    // below - otherwise you see it twice. (Robin.) When the selected day sits
+    // outside the shown week, nothing is filtered, so it stays a full seven.
+    const strip = wk.filter((d) => d.iso !== c.selected);
+    body = `<div class="cal-week" style="--cwn:${strip.length}">${strip.map((d) => {
       const evs = byDay[d.iso] || [];
       return `<div class="cw-day ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
         <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span><button class="cal-add-day cw-add" data-cal-add-day="${d.iso}" title="Add an event on this day" aria-label="Add an event on this day">＋</button></div>
@@ -6033,7 +6037,29 @@ function noteLinksHtml(notes) {
 // - that field. Delete sits here too. Fast on mobile and desktop, no scrolling to
 // find "add a reminder". (Robin.)
 const CE_ALARM_SHORT = { '0': 'At time', '5': '5 min', '10': '10 min', '15': '15 min', '30': '30 min', '60': '1 hr', '120': '2 hr', '1440': '1 day' };
+// A compact label for any reminder value (presets plus custom minutes).
+function alarmChipLabel(mins) {
+  const n = parseInt(mins, 10); if (!Number.isFinite(n)) return 'Reminder';
+  if (CE_ALARM_SHORT[String(n)]) return CE_ALARM_SHORT[String(n)];
+  if (n % 1440 === 0) return `${n / 1440} day${n / 1440 > 1 ? 's' : ''}`;
+  if (n % 60 === 0) return `${n / 60} hr${n / 60 > 1 ? 's' : ''}`;
+  return `${n} min`;
+}
 const CE_REPEAT_SHORT = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
+const DOW_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const ordinalNum = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+// How often an event repeats, in words, using this occurrence's day for the
+// pattern (a weekly event's weekday, a monthly's day-of-month) - the series keeps
+// the same pattern, so any occurrence's date names it. (Robin.)
+function recurDescribe(ev) {
+  const r = ev && ev.repeat; const d = (ev && ev.date) ? new Date(ev.date + 'T00:00') : null;
+  if (r === 'daily') return 'Every day';
+  if (r === 'weekdays') return 'Every weekday (Mon–Fri)';
+  if (r === 'weekly') return d ? `Every week on ${DOW_FULL[d.getDay()]}` : 'Every week';
+  if (r === 'monthly') return d ? `Every month on the ${ordinalNum(d.getDate())}` : 'Every month';
+  if (r === 'yearly') return d ? `Every year on ${d.getDate()} ${MONTHS_LONG[d.getMonth()].slice(0, 3)}` : 'Every year';
+  return 'Repeats';
+}
 function ceQuickBar(ev) {
   const hasArea = !!(ev && ev.area);
   const hasAlarm = !!(ev && ev.alarm != null && ev.alarm !== '');
@@ -6045,7 +6071,7 @@ function ceQuickBar(ev) {
   const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
   const out = [];
   out.push(chip('#ce-area', '◈', hasArea ? ((area && area.title) || 'Life area') : 'Life area', hasArea, (hasArea && area) ? hueOf(area) : null));
-  out.push(chip('#ce-alarm', '🔔', hasAlarm ? (CE_ALARM_SHORT[String(ev.alarm)] || 'Reminder') : 'Reminder', hasAlarm));
+  out.push(chip('#ce-alarm', '🔔', hasAlarm ? alarmChipLabel(ev.alarm) : 'Reminder', hasAlarm));
   out.push(chip((ev && ev.recurringId) ? '.ce-repeat-info' : '#ce-repeat', '↻', hasRepeat ? (ev.recurringId ? 'Repeats' : (CE_REPEAT_SHORT[ev.repeat] || 'Repeat')) : 'Repeat', hasRepeat));
   out.push(chip('#ce-url', '🔗', hasUrl ? 'Link' : 'Add link', hasUrl));
   out.push(chip('#ce-contact-search', '👤', hasContact ? ((findContact(ev.contact) || {}).title || 'Contact') : 'Contact', hasContact));
@@ -6087,10 +6113,10 @@ function showCalForm(ev) {
     </div>
     <div class="ce-grid">
       <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
-      ${(() => { const cur = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}</select></label>`; })()}
+      ${(() => { const av = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const presets = ['', '0', '5', '10', '15', '30', '60', '120', '1440']; const isCustom = av !== '' && !presets.includes(av); const opt = (v, l) => `<option value="${v}" ${(!isCustom && av === v) ? 'selected' : ''}>${l}</option>`; const mins = isCustom ? Math.max(1, parseInt(av, 10) || 1) : 0; const unit = isCustom ? (mins % 1440 === 0 ? 'd' : mins % 60 === 0 ? 'h' : 'm') : 'm'; const num = isCustom ? (unit === 'd' ? mins / 1440 : unit === 'h' ? mins / 60 : mins) : ''; const uOpt = (v, l) => `<option value="${v}" ${unit === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}<option value="custom" ${isCustom ? 'selected' : ''}>Custom…</option></select><div class="ce-alarm-custom" ${isCustom ? '' : 'hidden'}><input id="ce-alarm-n" class="sel" type="number" min="1" max="999" inputmode="numeric" value="${num}" placeholder="e.g. 45"><select id="ce-alarm-u" class="sel">${uOpt('m', 'minutes before')}${uOpt('h', 'hours before')}${uOpt('d', 'days before')}</select></div></label>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
-    ${(ev && ev.recurringId) ? (() => { const REP = { daily: 'daily', weekdays: 'every weekday', weekly: 'weekly', monthly: 'monthly', yearly: 'yearly' }; const cad = (ev.repeat && REP[ev.repeat]) ? ` ${REP[ev.repeat]}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ Repeats${cad}</span><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
+    ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ ${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">📅 Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `⏹ Until ${esc(ends)}` : '∞ No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
     <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <div class="ce-links">
@@ -14290,6 +14316,8 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  // Event reminder: reveal the number+unit inputs when "Custom…" is chosen.
+  if (e.target.id === 'ce-alarm') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) { const on = e.target.value === 'custom'; cc.hidden = !on; if (on) { const n = document.getElementById('ce-alarm-n'); if (n) { n.focus(); n.select(); } } } return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
@@ -14549,7 +14577,11 @@ document.addEventListener('submit', (e) => {
     const v = $('#qe-title').value.trim();
     if (v) homeAddEvent(buildEventBody({ title: v, startDate: $('#qe-date').value, startTime: ($('#qe-time') || {}).value, endDate: ($('#qe-enddate') || {}).value, endTime: ($('#qe-endtime') || {}).value, location: $('#qe-loc').value.trim(), allDay: $('#qe-allday').checked, repeat: ($('#qe-repeat') || {}).value, notes: ($('#qe-notes') || {}).value, area: ($('#qe-area') || {}).value, isNew: true }));
   }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact'); const al = $('#ce-alarm'); if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, al ? al.value : undefined); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact'); const al = $('#ce-alarm');
+    // A "Custom…" reminder resolves to minutes-before from the number + unit.
+    let alarmVal = al ? al.value : undefined;
+    if (alarmVal === 'custom') { const n = Math.max(1, Math.min(999, parseInt(($('#ce-alarm-n') || {}).value, 10) || 0)); const u = (($('#ce-alarm-u') || {}).value) || 'm'; alarmVal = n ? String(n * (u === 'd' ? 1440 : u === 'h' ? 60 : 1)) : ''; }
+    if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmVal); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';

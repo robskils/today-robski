@@ -1431,14 +1431,18 @@ function nativeRangeShape(blockId, title, p, occDate) {
   const id = recurring ? `${blockId}${NATIVE_SEP}${occDate}` : blockId;
   const recurringId = recurring ? blockId : null;
   const repeat = p.repeat || 'none';
+  // Carry the series' own start date and end (if any) onto each occurrence, so the
+  // event card's repeat section can say when it began and whether it ends.
+  const recurStart = recurring ? (p.date || null) : null;
+  const until = recurring ? (p.until || null) : null;
   if (p.allDay) {
     const span = (p.end_date && p.end_date > p.date) ? Math.round((Date.parse(`${p.end_date}T00:00:00Z`) - Date.parse(`${p.date}T00:00:00Z`)) / 86400000) : 1;
-    return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId, repeat };
+    return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId, repeat, recurStart, until };
   }
   const startMin = Math.max(0, Number(p.start_min) || 0);
   const duration = Math.max(15, Number(p.duration) || 60);
   const total = startMin + duration;
-  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId, repeat };
+  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId, repeat, recurStart, until };
 }
 async function nativeEventBlocks(env) {
   const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(env.uid).all();

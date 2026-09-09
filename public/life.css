@@ -1946,6 +1946,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-with-input::placeholder { color:var(--ink-3); }
 .ce-with-input:focus { outline:none; border-bottom-color:var(--accent); border-bottom-style:solid; }
 .ce-repeat-field { max-width:280px; }
+/* Custom reminder: a number + unit that appears under the select on "Custom…". */
+.ce-alarm-custom { display:flex; gap:8px; margin-top:7px; }
+.ce-alarm-custom #ce-alarm-n { flex:none; width:84px; max-width:84px; }
+.ce-alarm-custom #ce-alarm-u { flex:1; min-width:0; }
 /* The three ways to link an event out - a URL, a person, a note - grouped in one
    soft panel so they read as a set rather than scattered fields. (Robin.) */
 .ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
@@ -1982,6 +1986,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-repeat-info { display:flex; flex-direction:column; gap:6px; }
 .ce-repeat-panel { display:flex; flex-direction:column; gap:8px; align-items:flex-start; padding:12px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); }
 .ce-recur-badge { font-size:15px; font-weight:600; color:var(--accent); }
+.ce-recur-meta { display:flex; flex-wrap:wrap; gap:6px 14px; margin:2px 0 2px; }
+.ce-recur-when { font-size:13px; color:var(--ink-2); }
 .ce-repeat-hint { font-size:13.5px; color:var(--ink-3); line-height:1.4; }
 .ce-recur-remove { align-self:flex-start; }
 @media (max-width:560px){ .ce-foot .ce-submit { flex:1 1 100%; } .ce-foot .cal-del { margin-left:0; } }
@@ -5326,7 +5332,7 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
 .cal-mode { padding:8px 14px; font-size:14.5px; color:var(--ink-2); background:var(--card); }
 .cal-mode.on { background:var(--accent); color:var(--accent-ink); }
 /* Week view: seven day columns */
-.cal-week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+.cal-week { display:grid; grid-template-columns:repeat(var(--cwn,7),minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
 .cw-day { background:var(--card); min-height:230px; padding:8px 8px 12px; cursor:pointer; display:flex; flex-direction:column; gap:7px; transition:background .12s; }
 .cw-day:hover { background:var(--paper-2); }
 .cw-day.csel { box-shadow:inset 0 0 0 2px var(--accent); }
