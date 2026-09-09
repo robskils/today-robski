@@ -6450,7 +6450,7 @@ window.addEventListener('resize', () => { if (state.view && state.view.type === 
 function t2TrackerHtml() {
   const P = state.practices; const T = state.today;
   const tracked = (P.activities || []).filter((a) => a.tracked);
-  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a practice with <b>Track it</b> on and its run of days appears here.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
+  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a practice with <b>Track it</b> on and its run of days appears here.<br><div class="trk-foot" style="margin-top:14px;justify-content:center"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div></div>';
   const today = dayKey(new Date());
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
@@ -6504,7 +6504,7 @@ function t2TrackerHtml() {
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
-  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p>${trkNav}<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
+  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p>${trkNav}<div class="trk-dash">${body}</div><div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").

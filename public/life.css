@@ -3038,6 +3038,10 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .trk-nav-now { margin-left:2px; padding:8px 14px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; touch-action:manipulation; }
 .trk-nav-now:hover { border-color:var(--accent); color:var(--accent); }
 .trk-newbtn { margin-top:16px; }
+/* The tracker footer: add a practice, or jump to the full Practices settings. */
+.trk-foot { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:16px; }
+.trk-foot .trk-newbtn { margin-top:0; flex:1 1 200px; }
+.trk-manage { flex:none; font-size:14px; }
 /* A quiet "add a practice" row at the foot of each area card. */
 .trk-addp { width:100%; margin-top:6px; padding:8px; border:1px dashed var(--line-2); border-radius:10px; background:transparent; color:var(--ink-3); font-size:13.5px; font-weight:600; cursor:pointer; }
 .trk-addp:hover { border-color:var(--accent); color:var(--accent); }
