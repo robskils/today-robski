@@ -1919,12 +1919,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* The event form is a tidy card, not a wrapping flex row (which stretched the
    title box to the height of the Start/End block). Title on its own line, the
    when-block, an all-day toggle, then a footer row of location + repeat + save. */
-.add-event { display:flex; flex-direction:column; align-items:stretch; gap:13px; padding:14px 18px 16px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+.add-event { display:flex; flex-direction:column; align-items:stretch; gap:13px; padding:14px 18px 16px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); max-width:100%; min-width:0; box-sizing:border-box; }
+/* Every field is bounded to the card - a long title or address must never stretch
+   the form past the screen (grid items default to min-content width). (Robin.) */
+.add-event input, .add-event select, .add-event textarea, .add-event .date-field { min-width:0; max-width:100%; box-sizing:border-box; }
 .ce-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:-2px 0 -2px; }
 .ce-head-t { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
 .ce-close { flex:none; width:30px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; }
 .ce-close:hover { border-color:var(--accent); color:var(--accent); }
-.add-event .ce-title { flex:none; width:100%; font-size:18px; font-weight:500; }
+.add-event .ce-title { flex:none; width:100%; min-width:0; font-size:18px; font-weight:500; }
 .add-event .ce-when { gap:9px 11px; background:var(--paper-2); border-radius:12px; padding:11px 13px; }
 .add-event .ce-when-row { padding:2px 0; }
 .ce-allday { align-self:flex-start; }
@@ -1936,8 +1939,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-field .sel { width:100%; max-width:none; margin:0; }
 /* Short selects sit two-up, so the card isn't a tall stack of full-width bars;
    they drop to one column when the calendar panel is narrow. (Robin.) */
-.ce-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px 12px; }
-@media (max-width:460px){ .ce-grid { grid-template-columns:1fr; } }
+.ce-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:11px 12px; }
+@media (max-width:460px){ .ce-grid { grid-template-columns:minmax(0,1fr); } }
 /* "With": a quiet, optional person link - a small search box, not a labelled
    dropdown, since linking a person to an event is the exception, not the rule. */
 .ce-with { display:flex; align-items:center; gap:8px; margin:-3px 0 1px; }
@@ -1955,12 +1958,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
 .ce-links-h { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
 /* The three link entry points - URL, contact, note - a third of the row each. */
-.ce-links3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px 12px; }
-.ce-links3.cols2 { grid-template-columns:1fr 1fr; }
+.ce-links3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px 12px; }
+.ce-links3.cols2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .ce-links3 .sel { width:100%; box-sizing:border-box; }
 .ce-notelinks-body { display:flex; flex-direction:column; gap:8px; }
 .ce-notelinks-body:empty { display:none; }
-@media (max-width:480px){ .ce-links3, .ce-links3.cols2 { grid-template-columns:1fr; } }
+@media (max-width:480px){ .ce-links3, .ce-links3.cols2 { grid-template-columns:minmax(0,1fr); } }
 /* Quick chips: the event's attributes at a glance, each a tap to jump to and edit
    that field. Tinted when set (the value shown), an accent tint by default and
    the area's own hue for the life-area chip. Delete is a danger chip. */
@@ -1974,9 +1977,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-q-del { margin-left:auto; color:var(--danger,#c0392b); border-color:color-mix(in srgb, var(--danger,#c0392b) 22%, var(--line)); }
 .ce-q-del:hover { background:color-mix(in srgb, var(--danger,#c0392b) 12%, transparent); border-color:var(--danger,#c0392b); color:var(--danger,#c0392b); transform:none; }
 /* Title takes two thirds of the top row, the life area a third beside it. */
-.ce-titlerow { display:grid; grid-template-columns:2fr 1fr; gap:12px; align-items:end; }
+.ce-titlerow { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:12px; align-items:end; }
 .ce-titlerow .ce-title { margin:0; align-self:end; }
-@media (max-width:480px){ .ce-titlerow { grid-template-columns:1fr; } }
+@media (max-width:480px){ .ce-titlerow { grid-template-columns:minmax(0,1fr); } }
 /* The footer is just the actions now - Save on the left, Delete pushed right. */
 .ce-foot { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-top:14px; margin-top:2px; border-top:1px solid var(--line); }
 .ce-foot .ce-submit { flex:none; }
