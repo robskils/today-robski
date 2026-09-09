@@ -5951,6 +5951,7 @@ function stepCal(delta) {
 }
 function renderCalendar() {
   const c = state.cal, byDay = eventsByDay();
+  _calFormSnap = snapshotCalForm();   // keep any unsaved edits across this rebuild
   let title, body;
   if (c.mode === 'week') {
     const wk = weekDays(c.weekAnchor || todayISO()), a = wk[0], b = wk[6];
@@ -6015,6 +6016,31 @@ function renderCalendar() {
     ${body}`}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
+  restoreCalForm(_calFormSnap); _calFormSnap = null;
+}
+// A background re-render (contacts loading, Google-status landing, an events
+// refetch) rebuilds the open event form from scratch, which used to wipe whatever
+// you'd typed - most visibly the finish time snapping back to a one-hour default.
+// Snapshot the live form before the rebuild and put the values back after, so an
+// unsaved edit survives. (Robin: the end time wouldn't stick.)
+let _calFormSnap = null;
+function snapshotCalForm() {
+  const f = document.getElementById('cal-ev-form'); if (!f) return null;
+  const v = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
+  return { ev: f.dataset.ev || '', evgap: f.dataset.evgap, title: v('ce-title'), date: v('ce-date'), time: v('ce-time'), enddate: v('ce-enddate'), endtime: v('ce-endtime'),
+    allday: !!(document.getElementById('ce-allday') || {}).checked, loc: v('ce-loc'), url: v('ce-url'), alarm: v('ce-alarm'), alarmN: v('ce-alarm-n'), alarmU: v('ce-alarm-u'),
+    repeat: v('ce-repeat'), area: v('ce-area'), contact: v('ce-contact'), contactSearch: v('ce-contact-search'), notes: v('ce-notes') };
+}
+function restoreCalForm(s) {
+  if (!s) return; const f = document.getElementById('cal-ev-form'); if (!f) return;
+  if ((f.dataset.ev || '') !== s.ev) return;   // a different event opened - don't paste a stale draft onto it
+  const set = (id, val) => { if (val === undefined) return; const el = document.getElementById(id); if (el) el.value = val; };
+  if (s.evgap) f.dataset.evgap = s.evgap;
+  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes', 'ce-alarm:alarm', 'ce-alarm-n:alarmN', 'ce-alarm-u:alarmU'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
+  if (s.date !== undefined) setDateField('ce-date', s.date);
+  if (s.enddate !== undefined) setDateField('ce-enddate', s.enddate);
+  if (s.alarm === 'custom') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) cc.hidden = false; }
+  const cb = document.getElementById('ce-allday'); if (cb) { cb.checked = s.allday; f.classList.toggle('allday-on', s.allday); }
 }
 // Any http(s) links inside an event's notes, rendered as tappable chips under the
 // notes box - so links saved from an invitation email are one tap away, not just
@@ -6123,7 +6149,7 @@ function showCalForm(ev) {
     <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <div class="ce-links">
-      <div class="ce-links-h">Links</div>
+      <div class="ce-links-h">Connected</div>
       <div class="ce-links3${(ev && ev.id) ? '' : ' cols2'}">
         <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
         ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">👤</span>Contact</span><input id="ce-contact-search" class="sel" list="ce-contact-dl" placeholder="Search…" autocomplete="off" value="${esc(withName)}"><input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}"><datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist></label>`; })()}
