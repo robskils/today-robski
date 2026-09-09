@@ -4801,6 +4801,19 @@ function renderJournalEntry() {
              <span class="j-deeper-hint">Dig deeper asks one question to take it further. Empathy gives a warm, understanding reflection. Use either as often as you like.</span>`}
       </div>
     </div>`;
+  // Land the cursor ready to write: focus the editor and drop the caret at the end
+  // of whatever's there (an empty entry, or continuing after a prompt/last line).
+  setTimeout(() => {
+    if (!(state.view && state.view.type === 'journalentry')) return;
+    const ed = document.querySelector('.prose[data-prose="journal"]');
+    if (!ed || ed.getAttribute('contenteditable') === 'false') return;
+    try {
+      ed.focus();
+      const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      const last = ed.lastElementChild; if (last && last.scrollIntoView) last.scrollIntoView({ block: 'center' });
+    } catch {}
+  }, 0);
 }
 async function journalDeepen() {
   const n = state.journal && state.journal.current; if (!n) return;
