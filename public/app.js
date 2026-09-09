@@ -13221,6 +13221,33 @@ document.addEventListener('keydown', (e) => {
       return;
     }
   }
+  // Backspace at the very start of a bullet clears it instead of merging into the
+  // item above: a nested item outdents one level, a top-level item becomes a plain
+  // paragraph. So an unwanted bullet goes away with a single backspace, without
+  // hunting for a "clear formatting" button. (Robin.)
+  if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    const ed = e.target.closest && e.target.closest('.prose[contenteditable="true"]');
+    if (ed) {
+      const sel = window.getSelection();
+      if (sel && sel.isCollapsed && sel.anchorNode && ed.contains(sel.anchorNode)) {
+        const node = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+        const li = node && node.closest ? node.closest('li') : null;
+        if (li && ed.contains(li)) {
+          // Is the caret at the very start of this item's own content?
+          const r = document.createRange(); r.selectNodeContents(li); r.setEnd(sel.anchorNode, sel.anchorOffset);
+          if (r.toString().length === 0) {
+            e.preventDefault();
+            let depth = 0; for (let n = li; n && ed.contains(n); n = n.parentElement) if (n.tagName === 'UL' || n.tagName === 'OL') depth++;
+            if (depth > 1) document.execCommand('outdent');
+            else document.execCommand((li.parentElement && li.parentElement.tagName === 'OL') ? 'insertOrderedList' : 'insertUnorderedList');
+            try { normalizeProseLists(ed); } catch {}
+            ed.dispatchEvent(new Event('input', { bubbles: true }));
+            return;
+          }
+        }
+      }
+    }
+  }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); state.shortcutsOpen ? closeShortcuts() : openShortcuts(); return; }
   // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
@@ -15940,6 +15967,9 @@ function normalizeProseLists(prose) {
     if (!p.textContent.trim() && !p.querySelector('img')) p.remove();
   });
   prose.querySelectorAll('ul + ul, ol + ol').forEach((l) => { const prev = l.previousElementSibling; while (l.firstChild) prev.appendChild(l.firstChild); l.remove(); });
+  // outdent can leave an <li> nested directly inside another <li> (malformed);
+  // lift each such inner item out to sit as a proper sibling, in order.
+  [...prose.querySelectorAll('li > li')].reverse().forEach((inner) => { inner.parentElement.after(inner); });
 }
 // Link picker: one dialog that both accepts a URL (type + Enter) and searches
 // your notes, tables & areas for an internal link.
