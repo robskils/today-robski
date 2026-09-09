@@ -4909,15 +4909,20 @@ table.ttable tr:last-child td { border-bottom:0; }
 
 /* ── inline rich-text editor ─────────────────────────── */
 .prose { font-size:18.5px; line-height:1.75; color:var(--ink); outline:none; cursor:text; }
+.prose.prose-heads { padding-left:28px; }   /* gutter for the fold chevrons, only when the note has headings */
 .prose:empty::before, .prose[data-empty]::before { content:attr(data-ph); color:var(--ink-3); font-style:italic; pointer-events:none; }
 .prose > *:first-child { margin-top:0; }
 .prose p { margin:0 0 14px; }
-/* Collapsible headings: a subtle chevron before each heading folds its content. */
-.fold-toggle { display:inline-block; width:.85em; margin-right:.12em; color:var(--ink-3); cursor:pointer; user-select:none; font-size:.6em; vertical-align:middle; transition:color .12s; }
+/* Collapsible headings: a subtle chevron before each heading folds its content.
+   The chevron and drag grip sit in a fixed left gutter (absolute), so they don't
+   push the heading TEXT right - otherwise content indented under a heading looked
+   outdented, sitting left of the heading it belongs to. (Robin.) */
+.prose h1, .prose h2, .prose h3 { position:relative; }
+.fold-toggle { position:absolute; left:-15px; top:.34em; width:12px; text-align:center; margin:0; color:var(--ink-3); cursor:pointer; user-select:none; font-size:11px; line-height:1; transition:color .12s; }
 .fold-toggle:hover { color:var(--accent); }
 /* Drag grip to reorder a heading's whole section. Faint until you hover the
-   heading, so it doesn't clutter the note. */
-.head-grip { display:inline-block; width:.7em; margin-right:.1em; color:var(--ink-3); cursor:grab; user-select:none; font-size:.62em; vertical-align:middle; opacity:0; transition:opacity .12s, color .12s; }
+   heading, so it doesn't clutter the note. Sits just left of the fold chevron. */
+.head-grip { position:absolute; left:-28px; top:.34em; width:12px; text-align:center; margin:0; color:var(--ink-3); cursor:grab; user-select:none; font-size:11px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
 .prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.6; }
 .head-grip:hover { opacity:1 !important; color:var(--accent); }
 .head-grip:active { cursor:grabbing; }

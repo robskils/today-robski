@@ -410,6 +410,9 @@ function applyProseIndent(prose) {
   const kids = [...prose.children];
   let base = 99;   // shallowest heading level present (a note of only H2s starts flush)
   for (const k of kids) { const l = HLVL[k.tagName]; if (l && l < base) base = l; }
+  // The left gutter (for the fold chevrons) only exists when there are headings,
+  // so a plain note isn't pushed in for no reason.
+  prose.classList.toggle('prose-heads', base !== 99);
   if (base === 99) { for (const k of kids) k.style.marginLeft = ''; return; }
   let cur = 0;     // indent depth for the current section's content
   for (const k of kids) {
