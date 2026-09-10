@@ -11714,7 +11714,7 @@ function reviewsBody() {
     }).join('')}</div>
   </div>`;
   // Compact, dashboard-y past-review cards, filterable by type.
-  const card = (r) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pt = periodTitle(p.rtype, p.from, p.to); const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${shortD(p.from)} – ${shortD(p.to)}` : pt.main) : pt.main; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
+  const card = (r, feature) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pt = periodTitle(p.rtype, p.from, p.to); const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${shortD(p.from)} – ${shortD(p.to)}` : pt.main) : pt.main; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}${feature ? ' rv-card-feat' : ''}" data-open-review="${r.id}">
     <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(shortD(p.doneAt))}` : ''}`}</span></div>
     <div class="rv-card-period">${esc(periodMain)}</div>
     <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5</span>` : ''}</div>
@@ -11734,8 +11734,13 @@ function reviewsBody() {
   const shownList = filt ? allSorted.filter((r) => ((r.props || {}).rtype || 'weekly') === filt) : allSorted;
   const fcounts = {}; allSorted.forEach((r) => { const ty = (r.props || {}).rtype || 'weekly'; fcounts[ty] = (fcounts[ty] || 0) + 1; });
   const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${allSorted.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
+  // The two most recent - the live one and the one just closed - lead as larger
+  // feature cards; the rest follow in the grid below.
+  const cardsHtml = shownList.length
+    ? shownList.map((r, i) => card(r, i < 2)).join('')
+    : '<div class="empty" style="padding:12px 0">None of that type yet.</div>';
   const pastSection = allSorted.length
-    ? `<section class="home-sec">${rvSecH('past', `All reviews · ${allSorted.length}`)}${rvSecOpen('past') ? `${fchips}<div class="rv-cards">${shownList.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div>` : ''}</section>`
+    ? `<section class="home-sec">${rvSecH('past', `All reviews · ${allSorted.length}`)}${rvSecOpen('past') ? `${fchips}<div class="rv-cards">${cardsHtml}</div>` : ''}</section>`
     : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>';
   return `${hero}${wheelOfLifeHtml()}${inProgressHtml}${pastSection}${reviewsListHtml()}`;
 }
