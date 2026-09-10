@@ -3761,6 +3761,20 @@ function contactsKitHtml() {
   }).join('');
   return `<section class="home-sec home-sec-kit cts-kit">${secH('ctskit', t('home.sec.keepintouch'), `<span class="muted">${due.length}</span>`, true)}${secOpen('ctskit') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
 }
+// The Christmas list on the Contacts page: everyone switched on, with a 🎁 if
+// you're giving a present and their ideas beside them. Hidden when nobody's on it.
+function contactsXmasHtml() {
+  const list = (state.contacts || []).filter((c) => c.props && c.props.xmas).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  if (!list.length) return '';
+  const rows = list.map((c) => {
+    const p = c.props || {}; const a = areaById(blockAreas(c)[0]); const ideas = (p.xmasIdeas || '').trim();
+    const sub = [p.xmasPresent ? '🎁 Present' : '', ideas].filter(Boolean).join(' · ');
+    return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}>
+      <button class="kit-hopen" data-open-contact="${c.id}"><span class="contact-av kit-hav">${esc(initial(c.title || '?'))}</span><span class="kit-hnm">${esc(c.title || 'Unnamed')}</span>${sub ? `<span class="kit-hsub">${esc(sub)}</span>` : ''}</button>
+    </div>`;
+  }).join('');
+  return `<section class="home-sec cts-xmas">${secH('ctsxmas', '🎄 Christmas list', `<span class="muted">${list.length}</span>`, false)}${secOpen('ctsxmas') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
+}
 function p1Html() {
   const all = priorityTasks();
   if (!all.length) return '';
@@ -9510,6 +9524,7 @@ function renderContacts() {
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>` : `
     ${contactsKitHtml()}
+    ${contactsXmasHtml()}
     <section class="home-sec contacts-mine">
       ${selfContactHtml()}
       <div class="cts-head">
@@ -9681,6 +9696,19 @@ async function contactNewTask(id) {
   try { const tk = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: (title.trim() || 'Untitled'), props }) }); (state.contact_open.linkedTasks = state.contact_open.linkedTasks || []).unshift(tk); if (state.allTasks) state.allTasks.push(tk); renderContactCard(); toast('Task added'); }
   catch (e) { toast(e.message); }
 }
+// An opt-in Christmas list: who to reach out to, whether you're giving a present,
+// and a space to jot present ideas. Off by default - only the people you switch on.
+function contactXmasSection(c) {
+  const p = c.props || {}; const on = !!p.xmas;
+  return `<div class="tf-field cc-xmas">
+    <label class="kit-tick"><input type="checkbox" data-xmas-toggle ${on ? 'checked' : ''}><span class="tf-label kit-tick-l">🎄 Christmas list</span></label>
+    <p class="kit-hint">Add this person to your Christmas list - who to reach out to, and whether you're giving a present.</p>
+    ${on ? `<div class="kit-body">
+      <label class="cc-xmas-present"><input type="checkbox" data-xmas-present ${p.xmasPresent ? 'checked' : ''}><span>🎁 Giving a present</span></label>
+      <label class="tf-field cc-xmas-ideas"><span class="tf-label">Present ideas</span><textarea class="sel" data-xmas-ideas rows="2" placeholder="Jot ideas as they come to you…">${esc(p.xmasIdeas || '')}</textarea></label>
+    </div>` : ''}
+  </div>`;
+}
 function keepInTouchSection(c) {
   const every = (c.props || {}).kitEvery || '';
   const tp = (kitTaskOf() || {}).props || {};
@@ -9802,6 +9830,7 @@ function renderContactCard() {
       </div>
     </div>
     ${keepInTouchSection(c)}
+    ${contactXmasSection(c)}
     ${contactConnectedHtml(c)}
     ${externalLinksHtml('contact', c)}
     ${notesSection(c.body, 'contact', c.id)}`;
@@ -14838,6 +14867,8 @@ document.addEventListener('change', (e) => {
     return;
   }
   if (e.target.matches('[data-kit-toggle]')) { kitToggle(e.target.checked); return; }
+  if (e.target.matches('[data-xmas-toggle]')) { const c = state.contact_open && state.contact_open.contact; if (c) { patchContact(c.id, { xmas: e.target.checked }, true); renderContactCard(); } return; }
+  if (e.target.matches('[data-xmas-present]')) { const c = state.contact_open && state.contact_open.contact; if (c) patchContact(c.id, { xmasPresent: e.target.checked }, true); return; }
   if (e.target.matches('[data-kit-every]')) {
     // "Custom…" isn't a cadence, it's a request for the two extra fields - so it
     // seeds a real one (every 3 months) that those fields then edit.
@@ -14946,6 +14977,7 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('cc-email-in') || e.target.classList.contains('cc-phone-cc') || e.target.classList.contains('cc-phone-num')) patchContact(cid, readCardContacts(), true);
     if (e.target.classList.contains('cc-adr-f') || e.target.classList.contains('cc-adr-label')) patchContact(cid, readCardAddresses(), true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
+    if (e.target.matches('[data-xmas-ideas]')) patchContact(cid, { xmasIdeas: e.target.value.trim() || null }, true);
   }
   if (state.goal_open && state.view.type === 'goalcard') {
     const gid = state.goal_open.goal.id; const id = e.target.id;
