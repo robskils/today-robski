@@ -1752,7 +1752,26 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .note-side .subpages { order:2; background:transparent; border:0; border-radius:0; padding:0; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
   .note-attach { order:3; }
   .note-tasks { order:4; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
+  .note-events { order:5; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
+  .note-contacts { order:6; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
+  .note-links { order:7; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
   .note-starred, .note-related { display:none; }
+}
+/* Desktop: each connected block is its own tasteful white card, and the note
+   body and the sidebar scroll independently (the rail sticks and scrolls inside
+   itself while the note scrolls with the page). */
+@media (min-width:901px){
+  .note-side { max-height:calc(100vh - 32px); overflow-y:auto; overflow-x:hidden; padding-right:4px; }
+  .note-side .subpages,
+  .note-side .note-tasks,
+  .note-side .note-events,
+  .note-side .note-contacts,
+  .note-side .note-links,
+  .note-side .note-related { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); margin-top:14px; border-top:1px solid var(--line); }
+  .note-side .subpages { margin-top:0; }
+  /* Chips and sub-note cards become soft insets so they read on the white card. */
+  .note-side .ce-card { background:var(--paper-2); }
+  .note-side .subpage { background:var(--paper-2); box-shadow:none; }
 }
 .subpages { margin-top:36px; border-top:1px solid var(--line); padding-top:20px; }
 .nconn { margin-top:6px; }

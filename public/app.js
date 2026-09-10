@@ -12904,6 +12904,45 @@ async function newNoteTask(noteId) {
     state.allTasks = state.allTasks || []; state.allTasks.push(t); renderNoteTasks();
   } catch (e) { toast(e.message); }
 }
+// Contacts linked to a note, in the same sidebar style as events/tasks: linked
+// people as chips, a search box to link more. Stored in the note's props.contacts.
+function noteContactsHtml(n) {
+  if (state.contacts === undefined) { loadContacts().then(() => { if (state.view.type === 'note') renderNote(); }).catch(() => {}); }
+  const ids = blockContactIds(n);
+  const linked = ids.map((id) => findContact(id)).filter(Boolean);
+  const linkedSet = new Set(ids.map(String));
+  const q = ((state.note && state.note.contactQuery) || '').trim().toLowerCase();
+  const results = q ? (state.contacts || []).filter((c) => !linkedSet.has(String(c.id)) && (c.title || '').toLowerCase().includes(q)).slice(0, 8) : [];
+  const cards = linked.map((c) => `<div class="ce-card"><button class="ce-open" data-open-contact="${c.id}"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span><span class="ce-t">${esc(c.title || 'Unnamed')}</span></button><button class="ce-x" data-note-unlink-contact="${c.id}" title="Disconnect">×</button></div>`).join('');
+  const cRow = (c) => `<button class="nt-result" data-note-link-contact="${c.id}"><span class="ga-t"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span>${esc(c.title || 'Unnamed')}</span><span class="nt-link-ic">＋ Link</span></button>`;
+  return `<div class="note-contacts"><div class="sub-h">Contacts${ids.length ? ` · ${ids.length}` : ''}</div>
+    <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No contacts linked yet.</div>'}</div>
+    <input class="sel nt-search" data-note-contact-q placeholder="Search a contact to link…" value="${esc((state.note && state.note.contactQuery) || '')}" autocomplete="off">
+    ${results.length ? `<div class="nt-results">${results.map(cRow).join('')}</div>` : ''}</div>`;
+}
+function renderNoteContacts() { const el = document.querySelector('.note-contacts'); if (el && state.note && state.note.current) { const w = document.createElement('div'); w.innerHTML = noteContactsHtml(state.note.current); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
+function noteLinkContact(cid) {
+  const n = state.note && state.note.current; if (!n || !cid) return;
+  const ids = [...new Set([...blockContactIds(n).map(String), String(cid)])];
+  n.props = n.props || {}; n.props.contacts = ids; state.note.contactQuery = '';
+  renderNote();
+  api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }).then(() => toast('Contact linked')).catch((e) => toast(e.message));
+}
+function noteUnlinkContact(cid) {
+  const n = state.note && state.note.current; if (!n) return;
+  const ids = blockContactIds(n).map(String).filter((x) => x !== String(cid));
+  n.props = n.props || {}; n.props.contacts = ids; renderNote();
+  api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }).catch((e) => toast(e.message));
+}
+// External links on a note, same sidebar style (the add/remove reuse the shared
+// xlink handlers). Opens each link in a new tab.
+function noteExtLinksHtml(n) {
+  const links = blockLinks(n);
+  const cards = links.map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<div class="ce-card"><a class="ce-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}"><span class="ce-ic">🔗</span><span class="ce-t">${esc(label)}</span></a><button class="ce-x" data-xlink-del data-xlink-kind="note" data-xlink-id="${n.id}" data-xlink-idx="${i}" title="Remove link">×</button></div>`; }).join('');
+  return `<div class="note-links"><div class="sub-h">Links${links.length ? ` · ${links.length}` : ''}</div>
+    <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No links yet.</div>'}</div>
+    <button class="ghost nt-new" data-xlink-add data-xlink-kind="note" data-xlink-id="${n.id}">+ Add a link</button></div>`;
+}
 // Related notes: other notes that share any life area with the one you're
 // viewing. Collapsed by default; nothing at all if this note has no life area.
 // Up to 12, with a link through to the first shared area.
@@ -13060,9 +13099,9 @@ function renderNote() {
           ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
         ${noteTasksHtml(n.id)}
         ${connectedEventsHtml(n)}
-        ${connectedContactsSection('note', n)}
+        ${noteContactsHtml(n)}
+        ${noteExtLinksHtml(n)}
         ${relatedNotesHtml(n)}
-        ${externalLinksHtml('note', n)}
         ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-totable" data-note-to-table title="Make a table from this note's lines - each line becomes a row">▦ Turn into a table</button>`}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
@@ -13771,6 +13810,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-note-event-q]') && state.note) { const pos = e.target.selectionStart; state.note.eventQuery = e.target.value; renderNoteEvents(); const i = document.querySelector('[data-note-event-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-note-contact-q]') && state.note) { const pos = e.target.selectionStart; state.note.contactQuery = e.target.value; renderNoteContacts(); const i = document.querySelector('[data-note-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
@@ -14382,6 +14422,8 @@ document.addEventListener('click', (e) => {
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
   { const nle = t.closest('[data-note-link-event]'); if (nle) { noteLinkEvent(nle.dataset.noteLinkEvent); return; } }
   { const nue = t.closest('[data-note-unlink-event]'); if (nue) { noteUnlinkEvent(nue.dataset.noteUnlinkEvent); return; } }
+  { const nlc = t.closest('[data-note-link-contact]'); if (nlc) { noteLinkContact(nlc.dataset.noteLinkContact); return; } }
+  { const nuc = t.closest('[data-note-unlink-contact]'); if (nuc) { noteUnlinkContact(nuc.dataset.noteUnlinkContact); return; } }
   { const eln = t.closest('[data-ev-link-note]'); if (eln) { eventLinkNote(eln.dataset.evLinkNote, eln.dataset.evNoteTitle); return; } }
   { const eun = t.closest('[data-ev-unlink-note]'); if (eun) { eventUnlinkNote(eun.dataset.evUnlinkNote); return; } }
   { const oed = t.closest('[data-open-event-date]'); if (oed) { const d = oed.dataset.openEventDate; openCalendar().then(() => { if (d) { state.cal.selected = d; const [yy, mm] = d.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); loadCalendar(); } }).catch((x) => toast(x.message)); return; } }
