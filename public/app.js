@@ -3405,7 +3405,8 @@ function renderPractices() {
   if (!state.practices) return;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Practices' }])}
-    <div class="pane-head home-head"><h1>${t('title.practices')}</h1></div>
+    <div class="pane-head home-head"><h1>${t('title.practices')}</h1>
+      <div class="prac-head-act"><button class="ghost prac-track-link" data-open-tracker title="Open the Tracker to tick off practices and see your streaks">✓ Go to the Tracker →</button><button class="add-btn wide prac-new-top" data-prc-new>＋ New practice</button></div></div>
     <p class="t2-sub">Activities you want to repeat</p>
     <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by life area. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it on the <b>Tracker</b>.</p>
     ${practicesManageHtml()}`;
@@ -6460,7 +6461,7 @@ function uiPrompt(message, opts = {}) {
 // The planner is the actual today app (index.html/today.js), embedded in a
 // same-origin iframe so it stays one codebase - no reimplementation, no drift -
 // while living inside the Life shell. ?embed hides its own header chrome.
-function openToday() { state.view = { type: 'today' }; if (!state.today) state.today = { day: todayISO(), taskPrios: new Set(['P1']) }; renderNav(); return loadToday(); }
+function openToday(tab) { state.view = { type: 'today' }; if (!state.today) state.today = { day: todayISO(), taskPrios: new Set(['P1']) }; if (tab) state.today.tab = tab; renderNav(); return loadToday(); }
 // ── Today: native timed day + practices + tasks + habits ───────────────
 const T2_START = 6, T2_END = 24, T2_PPM = 0.9;   // canvas spans 06:00 → midnight
 const t2Top = (m) => Math.max(0, Math.round((Math.max(T2_START * 60, Math.min(T2_END * 60, m)) - T2_START * 60) * T2_PPM));
@@ -14185,6 +14186,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-p1]')) { openP1Tasks(); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-tracker]')) { openToday('tracker'); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
   if (t.closest('[data-open-mail]')) {
     const onList = state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing;
