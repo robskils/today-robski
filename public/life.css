@@ -4942,7 +4942,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 
 /* ── inline rich-text editor ─────────────────────────── */
 .prose { font-size:18.5px; line-height:1.75; color:var(--ink); outline:none; cursor:text; }
-.prose.prose-heads { padding-left:36px; }   /* gutter for the fold chevrons, only when the note has headings */
+.prose.prose-heads { padding-left:42px; }   /* gutter for the fold chevrons, only when the note has headings */
 .prose:empty::before, .prose[data-empty]::before { content:attr(data-ph); color:var(--ink-3); font-style:italic; pointer-events:none; }
 .prose > *:first-child { margin-top:0; }
 .prose p { margin:0 0 14px; }
@@ -4953,11 +4953,11 @@ table.ttable tr:last-child td { border-bottom:0; }
 .prose h1, .prose h2, .prose h3 { position:relative; }
 /* A generous tap target - the glyph is small but the clickable box is ~20px wide
    and the height of the heading line, so the arrow is easy to hit. (Robin.) */
-.fold-toggle { position:absolute; left:-21px; top:0; width:21px; height:1.35em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:pointer; user-select:none; font-size:14px; line-height:1; border-radius:7px; transition:color .12s, background .12s; }
+.fold-toggle { position:absolute; left:-34px; top:0; width:30px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:pointer; user-select:none; font-size:19px; line-height:1; border-radius:8px; transition:color .12s, background .12s; }
 .fold-toggle:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 13%,transparent); }
 /* Drag grip to reorder a heading's whole section. Faint until you hover the
    heading, so it doesn't clutter the note. Sits just left of the fold chevron. */
-.head-grip { position:absolute; left:-37px; top:0; width:15px; height:1.35em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:grab; user-select:none; font-size:12px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
+.head-grip { position:absolute; left:-52px; top:0; width:15px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:grab; user-select:none; font-size:13px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
 .prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.6; }
 .head-grip:hover { opacity:1 !important; color:var(--accent); }
 .head-grip:active { cursor:grabbing; }
