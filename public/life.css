@@ -5173,6 +5173,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 .rw-title:hover { color:var(--accent); }
 .rw-meta { display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-3); }
 .rw-media { color:var(--ink-2); }
+/* Life area on a saved item: a coloured dot + name in the meta line, plus a left
+   accent on the card so the area reads at a glance like notes and tasks do. */
+.rw-card.has-area { border-left:3px solid hsl(var(--h,220) 60% 52%); }
+.rw-area { display:inline-flex; align-items:center; gap:5px; color:hsl(var(--h,220) 42% 42%); }
+.rw-area .cd { width:7px; height:7px; border-radius:50%; background:hsl(var(--h,220) 60% 52%); flex:none; }
+.rw-edit-links { flex:1 1 100%; }
+.rw-edit-links .xlinks { margin-top:2px; border:0; border-radius:0; background:none; box-shadow:none; padding:0; }
+.rw-edit-links .xlinks-h { font-family:inherit; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); font-weight:600; margin-bottom:6px; }
 /* Your own rating out of 5, on every saved item: five stars fill up, with a serif
    readout beside them. Warm gold so a rating reads as a reward, not admin. */
 .rw-rating { display:flex; align-items:center; flex-wrap:wrap; gap:5px 10px; margin-top:3px; }

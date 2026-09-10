@@ -5016,6 +5016,9 @@ function renderReadwatch() {
   const rw = state.rw || { items: [] };
   const items = rw.items || [];
   const sort = rw.sort || 'added-desc';
+  // Life areas power the per-item area picker + colour; pull them in once if this
+  // is a cold open straight onto Read & Watch.
+  if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'readwatch') renderReadwatch(); } }).catch(() => {});
   // One list, split by state: unread on top, read below. Ticking the box moves an
   // item between the two. The box IS the read/unread toggle - empty = unread.
   const unread = rwSortList(items.filter((b) => (b.props || {}).status !== 'done'), sort);
@@ -5032,16 +5035,19 @@ function renderReadwatch() {
     const icon = RW_MEDIA[mk].ic;
     const isEd = editing.has(b.id);
     const addedDate = String(p.added || b.created_at || '').slice(0, 10);
-    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''} ${isEd ? 'editing' : ''}">
+    const ar = p.area ? areaById(p.area) : null; const ahue = ar ? hueOf(ar) : null;
+    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''} ${isEd ? 'editing' : ''}${ar ? ' has-area' : ''}"${ar ? ` style="--h:${ahue}"` : ''}>
       <button class="rw-tick ${done ? 'on' : ''}" data-rw-done="${b.id}" role="checkbox" aria-checked="${done}" title="${done ? 'Read - tap to mark unread' : 'Tap when you\'ve read/watched it'}">${done ? '✓' : ''}</button>
       <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''} ${link ? 'link' : ''} ${art ? 'article' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
       <div class="rw-body">
         <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
-        <div class="rw-meta"><span class="rw-media">${icon} ${RW_MEDIA[mk].label}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
+        <div class="rw-meta"><span class="rw-media">${icon} ${RW_MEDIA[mk].label}</span>${ar ? `<span class="rw-area" style="--h:${ahue}"><span class="cd"></span>${esc(ar.title)}</span>` : ''}${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
         ${rwRatingHtml(b)}
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Life area</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
+          <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
       </div>
       <div class="rw-card-act">
@@ -5149,6 +5155,12 @@ async function rwSetDate(id, dateStr) {
   b.props = b.props || {}; b.props.added = added;
   renderReadwatch();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { added } }) }); } catch (e) { toast(e.message); }
+}
+async function rwSetArea(id, areaId) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  b.props = b.props || {}; b.props.area = areaId || null;
+  renderReadwatch();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { area: areaId || null } }) }); } catch (e) { toast(e.message); }
 }
 async function rwDelete(id) {
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); state.rw.items = (state.rw.items || []).filter((x) => x.id !== id); renderReadwatch(); } catch (e) { toast(e.message); }
@@ -14823,6 +14835,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-bc-add]')) { const cid = e.target.value; if (cid) addBlockContact(e.target.dataset.bcKind, e.target.dataset.bcId, cid); return; }
   if (e.target.matches('[data-pe-add-contact]')) { const cid = e.target.value; if (cid && state.practiceEdit) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(cid)])]; renderPeAttach(); } return; }
   if (e.target.matches('[data-rw-type-sel]')) { rwSetType(e.target.dataset.rwTypeSel, e.target.value); return; }
+  if (e.target.matches('[data-rw-area]')) { rwSetArea(e.target.dataset.rwArea, e.target.value); return; }
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
   if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
@@ -15809,7 +15822,14 @@ const LINKABLE_HOST = {
   goal: () => state.goal_open && state.goal_open.goal,
 };
 function linkableRerender(kind) {
-  ({ note: renderNote, task: renderTaskCard, contact: renderContactCard, area: renderArea, goal: renderGoalCard }[kind] || (() => {}))();
+  ({ note: renderNote, task: renderTaskCard, contact: renderContactCard, area: renderArea, goal: renderGoalCard, bookmark: renderReadwatch }[kind] || (() => {}))();
+}
+// Resolve the block a link/contact edit applies to. Most views hold a single
+// "current" block; Read & Watch shows many at once, so a bookmark is found by id.
+function linkableBlock(kind, id) {
+  if (kind === 'bookmark') return ((state.rw && state.rw.items) || []).find((x) => String(x.id) === String(id)) || null;
+  const fn = LINKABLE_HOST[kind]; const b = fn ? fn() : null;
+  return (b && String(b.id) === String(id)) ? b : null;
 }
 function blockLinks(b) { const l = (b && b.props || {}).links; return Array.isArray(l) ? l.filter((x) => x && (typeof x === 'string' || x.url)) : []; }
 function linkUrlOf(l) { return typeof l === 'string' ? l : (l.url || ''); }
@@ -15828,7 +15848,7 @@ function externalLinksHtml(kind, b) {
   </section>`;
 }
 async function addBlockLink(kind, id) {
-  const b = (LINKABLE_HOST[kind] || (() => null))(); if (!b || String(b.id) !== String(id)) return;
+  const b = linkableBlock(kind, id); if (!b) return;
   let url = await uiPrompt('Add a link', { placeholder: 'https://…' }); if (url == null) return;
   url = (url || '').trim(); if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
@@ -15840,7 +15860,7 @@ async function addBlockLink(kind, id) {
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links } }) }); } catch (e) { toast(e.message); }
 }
 async function removeBlockLink(kind, id, i) {
-  const b = (LINKABLE_HOST[kind] || (() => null))(); if (!b || String(b.id) !== String(id)) return;
+  const b = linkableBlock(kind, id); if (!b) return;
   const links = blockLinks(b).slice(); if (i < 0 || i >= links.length) return;
   links.splice(i, 1);
   b.props = b.props || {}; b.props.links = links;
