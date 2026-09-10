@@ -999,7 +999,7 @@ function navSection(key, v) {
       const aid = n.area || (() => { const b = (state.noteTops || []).find((x) => x.id === n.id) || (state.tables || []).find((x) => x.id === n.id); return b ? blockAreas(b)[0] : null; })();
       const a = aid ? areaById(aid) : null;
       const hue = a ? hueOf(a) : null;
-      return `<button class="nav-sub${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} ${isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`}${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${isT ? TBL_ICO : NOTE_ICO}</span><span class="t">${esc(n.title || 'Untitled')}</span></button>`;
+      return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} ${isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`}${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${isT ? TBL_ICO : NOTE_ICO}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${isT ? 'table' : 'note'}:${n.id}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
     }).join('') || '<div class="nav-sub muted">Notes you open appear here</div>';
   } else if (key === 'people') {
     // Your connected Daybook people, online ones first and offline ones greyed,
@@ -2681,6 +2681,16 @@ function recordRecent(kind, id, title, area) {
   // and-forget, debounced; openHome merges it back in by recency (the ts).
   clearTimeout(window.__recentSyncT);
   window.__recentSyncT = setTimeout(() => { api('/api/kv/home_recent', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(capped) }) }).catch(() => {}); }, 500);
+}
+// Drop a single entry from the recent list (not the block itself) - the little
+// × on a Recent Notes row. Persists and syncs, then repaints the sidebar.
+function removeRecent(kind, id) {
+  const list = recentItems().filter((x) => x && !(x.kind === kind && String(x.id) === String(id)));
+  try { localStorage.setItem('life.recent', JSON.stringify(list)); } catch {}
+  clearTimeout(window.__recentSyncT);
+  window.__recentSyncT = setTimeout(() => { api('/api/kv/home_recent', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(list) }) }).catch(() => {}); }, 400);
+  renderNav();
+  if (state.view && state.view.type === 'home') renderHome();
 }
 // Keep a recent entry's title in step when a block is renamed, so "Recently
 // viewed" doesn't sit on a stale "Untitled" until the item is reopened.
@@ -14148,6 +14158,7 @@ document.addEventListener('click', (e) => {
   if (state.navUtilOpen && !t.closest('[data-util-toggle]') && (t.closest('.nav-topline') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
+  { const rx = t.closest('[data-recent-x]'); if (rx) { e.preventDefault(); e.stopPropagation(); const [k, id] = rx.dataset.recentX.split(':'); removeRecent(k, id); return; } }
   { const nu = t.closest('[data-note-unlink]'); if (nu) { e.stopPropagation(); disconnectNote(nu.dataset.noteUnlink); return; } }
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
