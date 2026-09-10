@@ -6714,7 +6714,9 @@ function t2TrackerHtml() {
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
-  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p>${trkNav}<div class="trk-dash">${body}</div><div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div>`;
+  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p>
+    <div class="trk-tophead"><button class="trk-manage-top" data-open-practices title="Edit, add, group or delete your practices">⚙ Manage practices →</button></div>
+    ${trkNav}<div class="trk-dash">${body}</div><div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").

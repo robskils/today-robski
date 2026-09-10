@@ -3066,7 +3066,11 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .t2-habit.done .t2-hname { color:var(--ink-3); }
 /* ── Tracker dashboard (keep your life alive, by area) ── */
 .t2-sub { margin:-2px 0 14px; font-family:'Cormorant Garamond',serif; font-style:italic; font-size:20px; color:var(--ink-3); }
-.trk-intro { margin:2px 0 16px; }
+.trk-intro { margin:2px 0 12px; }
+/* A prominent jump to the Practices page, up near the top of the Tracker. */
+.trk-tophead { display:flex; justify-content:flex-end; margin:0 0 14px; }
+.trk-manage-top { display:inline-flex; align-items:center; gap:7px; padding:10px 16px; border-radius:11px; border:1px solid var(--accent); background:color-mix(in srgb,var(--accent) 9%,var(--card)); color:var(--accent); font-size:14.5px; font-weight:600; cursor:pointer; transition:background .12s, border-color .12s; }
+.trk-manage-top:hover { background:color-mix(in srgb,var(--accent) 16%,var(--card)); }
 /* Week stepper for the Tracker dot rows - move back/forward through past weeks. */
 .trk-nav { display:flex; align-items:center; gap:10px; margin:0 0 14px; }
 .trk-arw { width:36px; height:36px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:20px; line-height:1; touch-action:manipulation; }
