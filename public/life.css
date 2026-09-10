@@ -201,6 +201,14 @@ button { cursor:pointer; background:none; border:0; }
 .awheel-more { align-self:flex-start; background:none; border:0; color:var(--accent); font-weight:600; font-size:14px; cursor:pointer; padding:2px 0; }
 .awheel-empty { align-items:center; text-align:center; }
 .awheel-empty p { color:var(--ink-2); max-width:420px; margin:2px auto 4px; line-height:1.55; }
+/* Quiet "stop tracking" link under the wheel - understated so it never competes
+   with the rating, but always there when you want out. */
+.awheel-offbtn { align-self:flex-start; background:none; border:0; color:var(--ink-3); font-size:13px; cursor:pointer; padding:2px 0; text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--line-2); }
+.awheel-offbtn:hover { color:var(--ink-2); }
+/* Off-state panel: the area is out of the wheel, with a clear way back on. */
+.awheel-off { align-items:center; text-align:center; gap:12px; padding:10px 0 4px; }
+.awheel-off-ic { font-size:40px; color:var(--ink-3); opacity:.7; }
+.awheel-off p { color:var(--ink-2); max-width:430px; margin:0 auto; line-height:1.55; }
 .cts-sec-h { font-size:12.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); margin:18px 0 2px; display:flex; align-items:center; gap:8px; }
 .cts-sec-h .muted { font-weight:600; }
 .cts-self { position:relative; margin:0 0 16px; }

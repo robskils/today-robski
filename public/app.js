@@ -5250,8 +5250,28 @@ function areaWheelCommentary(revs, cur, area) {
   s += cur >= 4 ? 'A lovely place to be.' : cur <= 2 ? 'Small steps add up.' : 'Steady as she goes.';
   return s;
 }
+// Switch an area in or out of the Wheel of Life (props.reviewOff). Reachable
+// straight from the Wheel panel, so it's easy to stop - or resume - at any time.
+function setAreaWheelTracking(id, track) {
+  const a = state.area_open && state.area_open.area; if (!a || String(a.id) !== String(id)) return;
+  const patch = { reviewOff: !track };
+  a.props = a.props || {}; Object.assign(a.props, patch);
+  const al = (state.areas || []).find((x) => x.id === a.id); if (al) { al.props = al.props || {}; Object.assign(al.props, patch); }
+  renderArea();
+  toast(track ? 'Back in your Wheel of Life' : 'Out of the Wheel of Life - find it under the ◍ tile to turn back on');
+  api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
+}
 function areaWheelPanel(area) {
   const hue = hueOf(area);
+  // Turned off for the wheel: a quiet off-state with an easy way back on, so this
+  // never becomes a one-way door.
+  if (area.props && area.props.reviewOff) {
+    return `<div class="awheel awheel-off">
+      <div class="awheel-off-ic">◍</div>
+      <p><b>${esc(area.title)}</b> isn't tracked on the Wheel of Life. It stays here as normal, just out of the wheel and the weekly review.</p>
+      ${area.sharedBy ? '' : `<button class="add-btn wide" data-area-wheel-on="${area.id}">Track this area on the Wheel of Life</button>`}
+    </div>`;
+  }
   if (state.reviews === undefined) { state.reviews = null; api('/api/blocks?kind=review').then((r) => { state.reviews = r || []; if (state.view.type === 'area') renderArea(); }).catch(() => { state.reviews = []; }); }
   if (state.reviews === null) return '<div class="home-empty" style="padding:20px 0">Loading your wheel…</div>';
   const revs = areaWheelSeries(area);
@@ -5259,7 +5279,8 @@ function areaWheelPanel(area) {
   if (!revs.length && !curScore) {
     return `<div class="awheel awheel-empty"><div class="awheel-gauge" style="--h:${hue};--sc:0"><span class="awg-n">–</span></div>
       <p>Rate <b>${esc(area.title)}</b> in your weekly review and its Wheel of Life takes shape here - watch this one part of your life move over time.</p>
-      <button class="add-btn wide" data-start-review="weekly">Start this week's review</button></div>`;
+      <button class="add-btn wide" data-start-review="weekly">Start this week's review</button>
+      ${area.sharedBy ? '' : `<button class="awheel-offbtn" data-area-wheel-off="${area.id}" title="Keep this area out of the Wheel of Life">Don't track this area on the Wheel of Life</button>`}</div>`;
   }
   const best = revs.length ? Math.max(...revs.map((r) => r.score)) : curScore;
   const prev = revs.length >= 2 ? revs[revs.length - 2].score : null;
@@ -5286,6 +5307,7 @@ function areaWheelPanel(area) {
     ${revs.length >= 2 ? `<div class="awheel-timeline"><div class="awt-h">Over time</div><div class="awt-bars">${bars}</div><div class="awt-axis"><span>${esc(evShortDate(revs[0].date))}</span><span>now</span></div></div>` : ''}
     <p class="awheel-comm">${areaWheelCommentary(revs, curScore, area)}</p>
     <button class="wheel-more awheel-more" data-open-wheel>See the whole Wheel of Life →</button>
+    ${area.sharedBy ? '' : `<button class="awheel-offbtn" data-area-wheel-off="${area.id}" title="Keep this area out of the Wheel of Life">Don't track this area on the Wheel of Life</button>`}
   </div>`;
 }
 const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
@@ -5548,7 +5570,9 @@ function renderArea() {
   const TILE_TITLE = { 'Goals': 'Vision and Goals' };
   const CORE = new Set(['Overview', 'Goals', 'Notes and tables', 'Tasks']);
   const tileOrder = ['Overview', 'Goals', 'Wheel of Life', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with'];
-  const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; if (k === 'Wheel of Life') return !(area.props && area.props.reviewOff); return CORE.has(k) || counts[k] > 0; });
+  // The Wheel of Life tile stays available even when the area is turned off, so
+  // its panel (and the "track this again" switch) is always one tap away.
+  const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; return CORE.has(k) || counts[k] > 0 || k === 'Wheel of Life'; });
   // Landing on an area shows the Overview dashboard; a tile click switches for the
   // session (state only), so a fresh visit always opens on the dashboard again.
   let openTile = state.area_open.tileOpen || 'Overview';
@@ -14089,6 +14113,8 @@ document.addEventListener('click', (e) => {
   const tcx = t.closest('[data-trk-cat-del]'); if (tcx) { delTrkCat(tcx.dataset.trkCatDel); return; }
   if (t.closest('[data-open-bucketlist]')) { openGoals('bucket').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-install-app]')) { promptInstall(); return; }
+  { const wo = t.closest('[data-area-wheel-off]'); if (wo) { setAreaWheelTracking(wo.dataset.areaWheelOff, false); return; } }
+  { const won = t.closest('[data-area-wheel-on]'); if (won) { setAreaWheelTracking(won.dataset.areaWheelOn, true); return; } }
   if (t.closest('[data-open-wheel]')) { openWheel().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews-tool]') || t.closest('[data-open-reviews]')) { openReviews().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
