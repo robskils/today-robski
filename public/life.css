@@ -5268,11 +5268,20 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Contact header: name grows, the Email button sits right beside it. */
 .cc-focus { align-items:center; flex-wrap:wrap; }
 .cc-focus .note-title { flex:1 1 200px; }
-.cc-email-btn { flex:none; align-self:center; white-space:nowrap; }
-/* A subtle text link, not a button - a quiet way to invite this person to Daybook. */
-.cc-invite-link { flex:none; align-self:center; background:none; border:0; padding:4px 6px; font-size:13.5px; color:var(--ink-3); white-space:nowrap; cursor:pointer; }
-.cc-invite-link:hover { color:var(--accent); text-decoration:underline; }
-@media (max-width:560px){ .cc-email-btn { flex:1 1 100%; margin-left:55px; } .cc-invite-link { flex:1 1 100%; margin-left:55px; text-align:left; } }
+/* Quick actions: a tidy row of pill buttons under the name - Email, Call, Invite. */
+.cc-quick { flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.cc-qbtn { display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; text-decoration:none; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
+.cc-qbtn:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
+.cc-qic { font-size:15px; line-height:1; }
+.cc-qbtn-invite { color:var(--ink-3); }
+@media (max-width:560px){ .cc-quick { margin-left:0; } }
+/* Tidy the card into labelled sections. */
+.cc-sec { margin-top:22px; }
+.cc-sec-h { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; color:var(--ink); margin-bottom:10px; }
+.cc-sec .tf-meta { margin-top:0; }
+.cc-connected { margin-top:22px; }
+.cc-conn-empty { font-size:13.5px; color:var(--ink-3); margin:4px 0 10px; }
+.cc-conn-add { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
 .tf-check { flex:none; width:30px; height:30px; margin-top:6px; border:2px solid var(--line-2); border-radius:9px; color:transparent; display:grid; place-items:center; font-size:16px; transition:.15s; }
 .tf-check:hover { border-color:var(--accent); }
 .tf-check.done { background:var(--done); border-color:var(--done); color:#fff; }

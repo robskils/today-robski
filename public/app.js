@@ -9604,6 +9604,19 @@ async function openContactCard(id) {
   state.contact_open = { contact: c, kitTask: kt };
   state.view = { type: 'contactcard', id };
   renderNav(); renderContactCard();
+  loadContactLinks(id);
+}
+// Notes and tasks that name this contact (props.contacts) - the "connected" list,
+// loaded in the background and painted when it lands.
+async function loadContactLinks(id) {
+  try {
+    const [notes, tasks] = await Promise.all([api('/api/blocks?kind=note').catch(() => []), api('/api/blocks?kind=task').catch(() => [])]);
+    if (!state.contact_open || String(state.contact_open.contact.id) !== String(id)) return;
+    const has = (b) => Array.isArray(b.props && b.props.contacts) && b.props.contacts.map(String).includes(String(id));
+    state.contact_open.linkedNotes = (notes || []).filter(has);
+    state.contact_open.linkedTasks = (tasks || []).filter((t) => has(t) && !(t.props && t.props.done) && !(t.props && t.props.kit));
+    if (state.view.type === 'contactcard') renderContactCard();
+  } catch {}
 }
 // ── Keep in touch ─────────────────────────────────────────────────────
 // A cadence on a contact: "I'd like to speak to this person every few months."
@@ -9638,6 +9651,35 @@ function kitWhen(iso) {
   const unit = a >= 60 ? [Math.round(a / 30), 'month'] : a >= 14 ? [Math.round(a / 7), 'week'] : [a, 'day'];
   const span = `${unit[0]} ${unit[1]}${unit[0] === 1 ? '' : 's'}`;
   return n > 0 ? `in ${span}` : `${span} ago`;
+}
+// The notes and tasks tied to this person, shown as openable chips, with a way
+// to start a fresh one already linked to them.
+function contactConnectedHtml(c) {
+  const co = state.contact_open || {};
+  const notes = co.linkedNotes || []; const tasks = co.linkedTasks || [];
+  const nChips = notes.map((n) => `<div class="ce-card"><button class="ce-open" data-open-note="${n.id}"><span class="ce-ic">▤</span><span class="ce-t">${esc(n.title || 'Untitled')}</span></button></div>`).join('');
+  const tChips = tasks.map((tk) => `<div class="ce-card"><button class="ce-open" data-open-task="${tk.id}"><span class="ce-ic">✓</span><span class="ce-t">${esc(tk.title || 'Untitled')}</span></button></div>`).join('');
+  const body = (nChips || tChips)
+    ? `${nChips ? `<div class="ce-linked">${nChips}</div>` : ''}${tChips ? `<div class="ce-linked">${tChips}</div>` : ''}`
+    : '<p class="cc-conn-empty">Notes and tasks you tie to this person show up here.</p>';
+  return `<div class="tf-field cc-connected"><span class="tf-label">Connected</span>
+    ${body}
+    <div class="cc-conn-add"><button type="button" class="ghost nt-new" data-contact-new-note="${c.id}">+ New note</button><button type="button" class="ghost nt-new" data-contact-new-task="${c.id}">+ New task</button></div>
+  </div>`;
+}
+async function contactNewNote(id) {
+  const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
+  const title = await uiPrompt(`New note about ${c.title || 'this contact'}:`, { placeholder: 'e.g. Met at the conference' }); if (title == null) return;
+  const area = blockAreas(c)[0]; const props = { contacts: [c.id] }; if (area) props.area = area;
+  try { const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: (title.trim() || 'Untitled'), props }) }); (state.contact_open.linkedNotes = state.contact_open.linkedNotes || []).unshift(n); openNote(n.id).catch(() => {}); }
+  catch (e) { toast(e.message); }
+}
+async function contactNewTask(id) {
+  const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
+  const title = await uiPrompt(`New task for ${c.title || 'this contact'}:`, { placeholder: 'e.g. Send the proposal' }); if (title == null) return;
+  const area = blockAreas(c)[0]; const props = { contacts: [c.id], done: false }; if (area) { props.area = area; props.areas = [area]; }
+  try { const tk = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: (title.trim() || 'Untitled'), props }) }); (state.contact_open.linkedTasks = state.contact_open.linkedTasks || []).unshift(tk); if (state.allTasks) state.allTasks.push(tk); renderContactCard(); toast('Task added'); }
+  catch (e) { toast(e.message); }
 }
 function keepInTouchSection(c) {
   const every = (c.props || {}).kitEvery || '';
@@ -9737,17 +9779,30 @@ function renderContactCard() {
     <div class="task-focus cc-focus">
       <span class="contact-av big">${esc(initial(c.title || '?'))}</span>
       <textarea class="note-title" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
-      ${p.email ? `<button class="add-btn wide cc-email-btn" data-contact-mail="${esc(p.email)}" title="Email ${esc(p.email)}">✉ Email</button>` : ''}
-      <button class="cc-invite-link" data-cc-invite="${esc(p.email || '')}" title="Invite ${esc(c.title || 'them')} to Daybook">✦ Invite to Daybook</button>
+      <div class="cc-quick">
+        ${(() => { const firstEmail = contactEmails(p)[0]; return firstEmail ? `<button class="cc-qbtn" data-contact-mail="${esc(firstEmail)}" title="Email ${esc(firstEmail)}"><span class="cc-qic">✉</span>Email</button>` : ''; })()}
+        ${(() => { const ph = contactPhones(p)[0]; const num = ph ? `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}` : ''; return num ? `<a class="cc-qbtn" href="tel:${esc(num)}" title="Call ${esc(c.title || 'them')}"><span class="cc-qic">☎</span>Call</a>` : ''; })()}
+        <button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(contactEmails(p)[0] || '')}" title="Invite ${esc(c.title || 'them')} to Daybook"><span class="cc-qic">✦</span>Invite</button>
+      </div>
     </div>
-    <div class="tf-meta">
-      ${contactEmailFields(p)}
-      ${contactPhoneFields(p)}
-      <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
-      <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
-      ${contactAddressFields(p)}
+    <div class="cc-sec">
+      <div class="cc-sec-h">Details</div>
+      <div class="tf-meta">
+        ${contactEmailFields(p)}
+        ${contactPhoneFields(p)}
+        <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
+        ${contactAddressFields(p)}
+      </div>
+    </div>
+    <div class="cc-sec">
+      <div class="cc-sec-h">Organise</div>
+      <div class="tf-meta">
+        <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
+        ${contactGroupsSection(c)}
+      </div>
     </div>
     ${keepInTouchSection(c)}
+    ${contactConnectedHtml(c)}
     ${externalLinksHtml('contact', c)}
     ${notesSection(c.body, 'contact', c.id)}`;
   autoGrowSoon($('#contactcard-name'));
@@ -14347,6 +14402,8 @@ document.addEventListener('click', (e) => {
   const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
   const dcg = t.closest('[data-del-contact-group]'); if (dcg) { delContactGroup(dcg.dataset.delContactGroup); return; }
   const rmg = t.closest('[data-contact-remove-group]'); if (rmg) { removeContactFromGroup(rmg.dataset.cid, rmg.dataset.gid); return; }
+  { const cnn = t.closest('[data-contact-new-note]'); if (cnn) { contactNewNote(cnn.dataset.contactNewNote); return; } }
+  { const cnt = t.closest('[data-contact-new-task]'); if (cnt) { contactNewTask(cnt.dataset.contactNewTask); return; } }
   // Contact right-click menu
   { const cr = t.closest('[data-ctx-recent]'); if (cr) { const id = cr.dataset.ctxRecent; state.contactMenu = null; openContactCard(id).catch((e) => toast(e.message)); return; } }
   const ctxAdd = t.closest('[data-ctx-add]'); if (ctxAdd) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) addContactToGroup(id, ctxAdd.dataset.ctxAdd); else renderContacts(); return; }
