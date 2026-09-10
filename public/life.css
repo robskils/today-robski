@@ -3343,6 +3343,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .gc-note-open { display:inline-flex; align-items:center; gap:8px; background:none; border:0; padding:9px 4px 9px 12px; cursor:pointer; color:var(--ink); font-size:14.5px; max-width:240px; }
 .gc-note-ic { color:hsl(var(--h,220) 55% 50%); flex:none; }
 .gc-note-av { width:24px; height:24px; font-size:11px; }
+.bc-sec .bc-add-sel { width:100%; max-width:none; }
 .gc-pick-av { width:22px; height:22px; font-size:10px; margin-right:7px; vertical-align:middle; }
 .gc-notes-sec { margin-top:18px; }
 .gc-notes-empty { font-size:13.5px; color:var(--ink-3); margin:2px 0 12px; }

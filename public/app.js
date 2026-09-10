@@ -13033,6 +13033,7 @@ function renderNote() {
           ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
         ${noteTasksHtml(n.id)}
         ${connectedEventsHtml(n)}
+        ${connectedContactsSection('note', n)}
         ${relatedNotesHtml(n)}
         ${externalLinksHtml('note', n)}
         ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-totable" data-note-to-table title="Make a table from this note's lines - each line becomes a row">▦ Turn into a table</button>`}
@@ -13934,6 +13935,7 @@ document.addEventListener('click', (e) => {
   const rwr = t.closest('[data-rw-rate]'); if (rwr) { rwSetRating(rwr.dataset.rwRate, Number(rwr.dataset.rwRateN)); return; }
   const xla = t.closest('[data-xlink-add]'); if (xla) { addBlockLink(xla.dataset.xlinkKind, xla.dataset.xlinkId); return; }
   const xld = t.closest('[data-xlink-del]'); if (xld) { removeBlockLink(xld.dataset.xlinkKind, xld.dataset.xlinkId, Number(xld.dataset.xlinkIdx)); return; }
+  const bcu = t.closest('[data-bc-unlink]'); if (bcu) { removeBlockContact(bcu.dataset.bcKind, bcu.dataset.bcId, bcu.dataset.bcCid); return; }
   const rwed = t.closest('[data-rw-edit]'); if (rwed) { rwToggleEdit(rwed.dataset.rwEdit); return; }
   const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
@@ -14656,6 +14658,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
   if (e.target.matches('[data-notes-area]')) { state.notesArea = e.target.value; renderNotesList(); }
   if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
+  if (e.target.matches('[data-bc-add]')) { const cid = e.target.value; if (cid) addBlockContact(e.target.dataset.bcKind, e.target.dataset.bcId, cid); return; }
   if (e.target.matches('[data-rw-type-sel]')) { rwSetType(e.target.dataset.rwTypeSel, e.target.value); return; }
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
@@ -15617,6 +15620,7 @@ function renderTaskCard() {
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     ${taskGoalsHtml(t)}
+    ${connectedContactsSection('task', t)}
     ${externalLinksHtml('task', t)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
@@ -15679,6 +15683,40 @@ async function removeBlockLink(kind, id, i) {
   b.props = b.props || {}; b.props.links = links;
   linkableRerender(kind);
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links } }) }); } catch (e) { toast(e.message); }
+}
+// ── connected contacts on a block ────────────────────
+// Attach people to a note or task (goals and events have their own). The linked
+// contact ids live in the host block's props.contacts; the contact card opens
+// when you tap one. Uses the same state.contacts list the rest of the app shares.
+function blockContactIds(b) { const c = (b && b.props || {}).contacts; return Array.isArray(c) ? c.filter(Boolean) : []; }
+function connectedContactsSection(kind, b) {
+  if (!b) return '';
+  // Need the contact list to show names/avatars; fetch it once if missing.
+  if (state.contacts === undefined) { loadContacts().then(() => linkableRerender(kind)).catch(() => {}); }
+  const ids = blockContactIds(b);
+  const linked = new Set(ids.map(String));
+  const cards = ids.map((id) => { const c = findContact(id); if (!c) return ''; const ca = areaById(blockAreas(c)[0]); const ch = ca ? hueOf(ca) : 220; return `<div class="gc-note-card${ca ? ' has-area' : ''}" style="--h:${ch}"${ca ? ` title="${esc(ca.title)}"` : ''}><button class="gc-note-open" data-open-contact="${c.id}"><span class="contact-av gc-note-av">${esc(initial(c.title || '?'))}</span><span class="gc-note-t">${esc(c.title || 'Unnamed')}</span></button><button class="gc-note-x" data-bc-unlink data-bc-kind="${kind}" data-bc-id="${b.id}" data-bc-cid="${c.id}" title="Remove this contact">×</button></div>`; }).filter(Boolean).join('');
+  const others = (state.contacts || []).filter((c) => !linked.has(String(c.id))).sort((a, b2) => (a.title || '').localeCompare(b2.title || ''));
+  const picker = `<select class="sel bc-add-sel" data-bc-add data-bc-kind="${kind}" data-bc-id="${b.id}"><option value="">${ids.length ? '＋ Link another contact…' : '＋ Link a contact…'}</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>`;
+  return `<section class="focus-notes gc-notes-sec bc-sec">
+    <div class="fn-h">Contacts${ids.length ? ` · ${ids.length}` : ''}</div>
+    ${ids.length ? `<div class="gc-notes-grid">${cards}</div>` : '<p class="gc-notes-empty">Link the people tied to this - who it involves, who to ask.</p>'}
+    <div class="goal-notelist"><div class="gal-box">${picker}</div></div>
+  </section>`;
+}
+async function addBlockContact(kind, id, contactId) {
+  const b = (LINKABLE_HOST[kind] || (() => null))(); if (!b || String(b.id) !== String(id) || !contactId) return;
+  const ids = [...new Set([...blockContactIds(b).map(String), String(contactId)])];
+  b.props = b.props || {}; b.props.contacts = ids;
+  linkableRerender(kind);
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); toast('Contact linked'); } catch (e) { toast(e.message); }
+}
+async function removeBlockContact(kind, id, contactId) {
+  const b = (LINKABLE_HOST[kind] || (() => null))(); if (!b || String(b.id) !== String(id)) return;
+  const ids = blockContactIds(b).map(String).filter((x) => x !== String(contactId));
+  b.props = b.props || {}; b.props.contacts = ids;
+  linkableRerender(kind);
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); } catch (e) { toast(e.message); }
 }
 // ── attachments (R2-backed files on a block) ─────────
 const fmtBytes = (n) => (n < 1024 ? `${n} B` : n < 1048576 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`);
