@@ -5525,6 +5525,7 @@ function renderArea() {
     .sort((a, b) => { const ia = flowOrder.indexOf(a[0]); const ib = flowOrder.indexOf(b[0]); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
   const dash = `<div class="area-flow" style="--h:${h}">${flowSecs.map(([key, , target, count, body]) => flowSec(key, target, count, body)).join('')}</div>
   <section class="area-dash-files">${areaAttachHtml(area)}</section>
+  ${canEditArea || blockLinks(area).length ? `<section class="area-dash-links">${externalLinksHtml('area', area)}</section>` : ''}
   ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
   ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
   const panels = {
@@ -9626,6 +9627,7 @@ function renderContactCard() {
       ${contactAddressFields(p)}
     </div>
     ${keepInTouchSection(c)}
+    ${externalLinksHtml('contact', c)}
     ${notesSection(c.body, 'contact', c.id)}`;
   autoGrowSoon($('#contactcard-name'));
 }
@@ -10878,6 +10880,7 @@ function renderGoalCard() {
     </section>
     ${connectedNotesHtml()}
     ${connectedContactsHtml()}
+    ${externalLinksHtml('goal', g)}
     ${notesSection(g.body, 'goal', g.id, false, t('goal.noteswall'))}`;
   autoGrowSoon($('#goalcard-title'));
   if (keepTitleFocus) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.setSelectionRange(selS, selE); } catch {} } }
@@ -13031,6 +13034,7 @@ function renderNote() {
         ${noteTasksHtml(n.id)}
         ${connectedEventsHtml(n)}
         ${relatedNotesHtml(n)}
+        ${externalLinksHtml('note', n)}
         ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-totable" data-note-to-table title="Make a table from this note's lines - each line becomes a row">▦ Turn into a table</button>`}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
@@ -13928,6 +13932,8 @@ document.addEventListener('click', (e) => {
   const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) i.focus(); } return; }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
   const rwr = t.closest('[data-rw-rate]'); if (rwr) { rwSetRating(rwr.dataset.rwRate, Number(rwr.dataset.rwRateN)); return; }
+  const xla = t.closest('[data-xlink-add]'); if (xla) { addBlockLink(xla.dataset.xlinkKind, xla.dataset.xlinkId); return; }
+  const xld = t.closest('[data-xlink-del]'); if (xld) { removeBlockLink(xld.dataset.xlinkKind, xld.dataset.xlinkId, Number(xld.dataset.xlinkIdx)); return; }
   const rwed = t.closest('[data-rw-edit]'); if (rwed) { rwToggleEdit(rwed.dataset.rwEdit); return; }
   const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
@@ -15611,6 +15617,7 @@ function renderTaskCard() {
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     ${taskGoalsHtml(t)}
+    ${externalLinksHtml('task', t)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
@@ -15623,6 +15630,56 @@ function notesSection(body, key, id, readOnly, title) {
   return `<section class="focus-notes ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="notes"><span>${esc(title || 'Notes')}</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${proseEditor(body, key, id, readOnly)}${embedsHtml(body)}` : ''}</section>`;
 }
 
+// ── external links on a block ────────────────────────
+// Notes, tasks, contacts, life areas and goals can each carry a little list of
+// external links (a website, an online account, a doc). Stored as props.links:
+// an array of { url, title? }. One reusable section + handlers serves them all.
+const LINKABLE_HOST = {
+  note: () => state.note && state.note.current,
+  task: () => state.task_open && state.task_open.task,
+  contact: () => state.contact_open && state.contact_open.contact,
+  area: () => state.area_open && state.area_open.area,
+  goal: () => state.goal_open && state.goal_open.goal,
+};
+function linkableRerender(kind) {
+  ({ note: renderNote, task: renderTaskCard, contact: renderContactCard, area: renderArea, goal: renderGoalCard }[kind] || (() => {}))();
+}
+function blockLinks(b) { const l = (b && b.props || {}).links; return Array.isArray(l) ? l.filter((x) => x && (typeof x === 'string' || x.url)) : []; }
+function linkUrlOf(l) { return typeof l === 'string' ? l : (l.url || ''); }
+function prettyLinkLabel(url) {
+  try { const u = new URL(url); const path = u.pathname && u.pathname !== '/' ? u.pathname.replace(/\/$/, '') : ''; return (u.hostname.replace(/^www\./, '') + path).slice(0, 48); }
+  catch { return String(url || '').replace(/^https?:\/\//, '').slice(0, 48); }
+}
+function externalLinksHtml(kind, b) {
+  if (!b) return '';
+  const links = blockLinks(b);
+  const chips = links.map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<span class="xl-chip"><a class="xl-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}"><span class="xl-ic">🔗</span><span class="xl-t">${esc(label)}</span></a><button class="xl-x" data-xlink-del data-xlink-kind="${kind}" data-xlink-id="${b.id}" data-xlink-idx="${i}" title="Remove link">×</button></span>`; }).join('');
+  return `<section class="xlinks">
+    <div class="xlinks-h">Links${links.length ? ` · ${links.length}` : ''}</div>
+    ${links.length ? `<div class="xl-chips">${chips}</div>` : ''}
+    <button class="xl-add" data-xlink-add data-xlink-kind="${kind}" data-xlink-id="${b.id}">＋ Add link</button>
+  </section>`;
+}
+async function addBlockLink(kind, id) {
+  const b = (LINKABLE_HOST[kind] || (() => null))(); if (!b || String(b.id) !== String(id)) return;
+  let url = await uiPrompt('Add a link', { placeholder: 'https://…' }); if (url == null) return;
+  url = (url || '').trim(); if (!url) return;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  let title = await uiPrompt('Name it (optional)', { placeholder: prettyLinkLabel(url) });
+  title = (title || '').trim();
+  const links = blockLinks(b).slice(); links.push(title ? { url, title } : { url });
+  b.props = b.props || {}; b.props.links = links;
+  linkableRerender(kind);
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links } }) }); } catch (e) { toast(e.message); }
+}
+async function removeBlockLink(kind, id, i) {
+  const b = (LINKABLE_HOST[kind] || (() => null))(); if (!b || String(b.id) !== String(id)) return;
+  const links = blockLinks(b).slice(); if (i < 0 || i >= links.length) return;
+  links.splice(i, 1);
+  b.props = b.props || {}; b.props.links = links;
+  linkableRerender(kind);
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links } }) }); } catch (e) { toast(e.message); }
+}
 // ── attachments (R2-backed files on a block) ─────────
 const fmtBytes = (n) => (n < 1024 ? `${n} B` : n < 1048576 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`);
 const isImgType = (t) => /^image\//.test(t || '');
