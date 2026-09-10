@@ -6509,8 +6509,11 @@ function renderToday() {
   const h1 = T.tab === 'tracker' ? `${t('today.tracker')} <span class="t2-dsmall">${esc(todayLabel)}</span>` : (isToday ? `${t('nav.today')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel));
   const nav = `<span class="t2-nav">${!isToday ? `<button class="t2-navbtn" data-t2-today>${t('nav.today')}</button>` : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
   const toTick = (state.practices && (state.practices.activities || []).filter((a) => a.tracked && !a.avoid && !practiceMarked(a.id, dayKey(new Date()))).length) || 0;
+  // The day tab reads "Today" on today, but the weekday (e.g. Friday) once you've
+  // stepped to another day, so the label matches the calendar you're looking at.
+  const dayTabLabel = isToday ? t('nav.today') : d.toLocaleDateString('en-GB', { weekday: 'long' });
   const tabs = `<div class="t2-tabs">
-    <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">${t('nav.today')}</button>
+    <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">${esc(dayTabLabel)}</button>
     <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">${t('today.tracker')}${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
   </div>`;
   const dueReviews = (isToday && T.tab === 'today') ? reviewsDueToday() : [];
