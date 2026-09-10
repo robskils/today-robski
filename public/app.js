@@ -4904,6 +4904,11 @@ async function delJournalEntry() {
 // Saved links: blocks kind 'bookmark', props {url,title,image,site,media,status,added}.
 // Captured via the iOS Shortcut / desktop bookmarklet (/api/capture) or pasted here.
 const RW_SORTS = [['added-desc', 'Newest'], ['added-asc', 'Oldest'], ['title', 'Title A–Z'], ['media', 'Type'], ['rating', 'My rating']];
+// The kinds of thing you can save. 'link' (a plain website/reference) sits
+// alongside the readable/watchable types so a useful site can just be bookmarked.
+const RW_MEDIA = { link: { ic: '🔗', label: 'Website' }, article: { ic: '📰', label: 'Article' }, video: { ic: '▶', label: 'Video' }, book: { ic: '📖', label: 'Book' }, film: { ic: '🎬', label: 'Film' } };
+const RW_MEDIA_ORDER = ['link', 'article', 'video', 'book', 'film'];
+const rwMediaKey = (p) => (RW_MEDIA[(p || {}).media] ? p.media : 'article');
 function rwSortList(list, sort) {
   const added = (b) => String((b.props && b.props.added) || b.created_at || '');
   const title = (b) => String((b.props && b.props.title) || b.title || '').toLowerCase();
@@ -4929,7 +4934,7 @@ async function openReadwatch() {
   renderNav();
   const prev = state.rw || {};
   const savedSort = (() => { try { return localStorage.getItem('life.rwSort'); } catch { return null; } })();
-  try { state.rw = { items: await api('/api/blocks?kind=bookmark&parent_id='), filter: prev.filter || 'todo', sort: prev.sort || savedSort || 'added-desc', addType: prev.addType, setup: prev.setup, showSetup: false, saving: false }; }
+  try { state.rw = { items: await api('/api/blocks?kind=bookmark&parent_id='), filter: prev.filter || 'todo', sort: prev.sort || savedSort || 'added-desc', addType: prev.addType, setup: prev.setup, showSetup: false, saving: false, editing: prev.editing || new Set() }; }
   catch (e) { state.rw = { items: [], filter: 'todo' }; toast(e.message); }
   state.rw.items.sort((a, b) => String((b.props && b.props.added) || b.created_at || '').localeCompare(String((a.props && a.props.added) || a.created_at || '')));
   renderReadwatch();
@@ -4942,24 +4947,34 @@ function renderReadwatch() {
   // item between the two. The box IS the read/unread toggle - empty = unread.
   const unread = rwSortList(items.filter((b) => (b.props || {}).status !== 'done'), sort);
   const read = rwSortList(items.filter((b) => (b.props || {}).status === 'done'), sort);
+  const editing = rw.editing || new Set();
   const card = (b) => {
-    const p = b.props || {}; const done = p.status === 'done'; const vid = p.media === 'video'; const book = p.media === 'book'; const film = p.media === 'film';
+    const p = b.props || {}; const done = p.status === 'done';
+    const mk = rwMediaKey(p); const vid = mk === 'video'; const book = mk === 'book'; const film = mk === 'film'; const link = mk === 'link'; const art = mk === 'article';
     // A book/film with no stored link falls back to a web search, so tapping it
     // always leads somewhere (find it, buy it, watch it).
     const href = p.url || (book ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' book')}`
       : film ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' film')}`
       : vid ? `https://www.youtube.com/results?search_query=${encodeURIComponent(p.title || '')}` : '#');
-    const art = !vid && !book && !film;
-    const icon = vid ? '▶' : book ? '📖' : film ? '🎬' : '📰';
-    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''}">
+    const icon = RW_MEDIA[mk].ic;
+    const isEd = editing.has(b.id);
+    const addedDate = String(p.added || b.created_at || '').slice(0, 10);
+    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''} ${isEd ? 'editing' : ''}">
       <button class="rw-tick ${done ? 'on' : ''}" data-rw-done="${b.id}" role="checkbox" aria-checked="${done}" title="${done ? 'Read - tap to mark unread' : 'Tap when you\'ve read/watched it'}">${done ? '✓' : ''}</button>
-      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''} ${art ? 'article' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
+      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''} ${link ? 'link' : ''} ${art ? 'article' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
       <div class="rw-body">
         <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
-        <div class="rw-meta"><span class="rw-media">${vid ? '▶ Video' : book ? '📖 Book' : film ? '🎬 Film' : '📰 Article'}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
-        ${done ? rwRatingHtml(b) : ''}
+        <div class="rw-meta"><span class="rw-media">${icon} ${RW_MEDIA[mk].label}</span>${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
+        ${rwRatingHtml(b)}
+        ${isEd ? `<div class="rw-edit">
+          <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
+        </div>` : ''}
       </div>
-      <button class="rw-del" data-rw-del="${b.id}" title="Remove">×</button>
+      <div class="rw-card-act">
+        <button class="rw-edit-btn ${isEd ? 'on' : ''}" data-rw-edit="${b.id}" title="${isEd ? 'Done editing' : 'Edit type, date & rating'}">${isEd ? '✓' : '✎'}</button>
+        <button class="rw-del" data-rw-del="${b.id}" title="Remove">×</button>
+      </div>
     </div>`;
   };
   const section = (label, list, empty) => `<section class="rw-sec"><div class="home-sec-h rw-sec-h">${label}<span class="muted">${list.length}</span></div><div class="rw-list">${list.map(card).join('') || (empty ? `<div class="empty">${empty}</div>` : '')}</div></section>`;
@@ -5024,20 +5039,43 @@ async function rwSetDone(id, done) {
   renderReadwatch();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { status: b.props.status } }) }); } catch (e) { toast(e.message); }
 }
-// Your own score out of 10, shown on a finished item. Ten pips fill up to the
-// rating; tapping the current score again clears it (mis-tap escape hatch).
+// Your own rating out of 5, shown on every saved item. Five stars fill up to the
+// rating; tapping the current score again clears it (mis-tap escape hatch). Old
+// out-of-10 scores are shown at their nearest star so nothing looks broken.
 function rwRatingHtml(b) {
-  const r = Number((b.props || {}).rating) || 0;
-  const pips = Array.from({ length: 10 }, (_, i) => { const n = i + 1; return `<button class="rw-pip ${n <= r ? 'on' : ''}" data-rw-rate="${b.id}" data-rw-rate-n="${n}" title="${n} out of 10" aria-label="Rate ${n} out of 10">${n}</button>`; }).join('');
-  return `<div class="rw-rating ${r ? 'rated' : ''}"><span class="rw-rate-lbl">${r ? 'Your score' : 'Rate it'}</span><div class="rw-pips">${pips}</div>${r ? `<span class="rw-score">${r}<span class="rw-score-of">/10</span></span>` : ''}</div>`;
+  const raw = Number((b.props || {}).rating) || 0;
+  const r = raw > 5 ? Math.round(raw / 2) : raw;   // fold any legacy /10 score into /5
+  const stars = Array.from({ length: 5 }, (_, i) => { const n = i + 1; return `<button class="rw-star ${n <= r ? 'on' : ''}" data-rw-rate="${b.id}" data-rw-rate-n="${n}" title="${n} out of 5" aria-label="Rate ${n} out of 5">${n <= r ? '★' : '☆'}</button>`; }).join('');
+  return `<div class="rw-rating ${r ? 'rated' : ''}"><span class="rw-rate-lbl">${r ? 'My rating' : 'Rate it'}</span><div class="rw-stars">${stars}</div>${r ? `<span class="rw-score">${r}<span class="rw-score-of">/5</span></span>` : ''}</div>`;
 }
 async function rwSetRating(id, n) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
   b.props = b.props || {};
-  const rating = (Number(b.props.rating) || 0) === n ? 0 : n;   // tap current score to clear
+  const cur = (Number(b.props.rating) || 0); const curStar = cur > 5 ? Math.round(cur / 2) : cur;
+  const rating = curStar === n ? 0 : n;   // tap current score to clear
   b.props.rating = rating;
   renderReadwatch();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { rating } }) }); } catch (e) { toast(e.message); }
+}
+function rwToggleEdit(id) {
+  const rw = state.rw; if (!rw) return;
+  rw.editing = rw.editing || new Set();
+  if (rw.editing.has(id)) rw.editing.delete(id); else rw.editing.add(id);
+  renderReadwatch();
+}
+async function rwSetType(id, media) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b || !RW_MEDIA[media]) return;
+  b.props = b.props || {}; b.props.media = media;
+  renderReadwatch();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { media } }) }); } catch (e) { toast(e.message); }
+}
+async function rwSetDate(id, dateStr) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  // Store at local-noon UTC so the shown date never slips across a time zone.
+  const added = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? `${dateStr}T12:00:00.000Z` : (b.props && b.props.added) || b.created_at;
+  b.props = b.props || {}; b.props.added = added;
+  renderReadwatch();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { added } }) }); } catch (e) { toast(e.message); }
 }
 async function rwDelete(id) {
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); state.rw.items = (state.rw.items || []).filter((x) => x.id !== id); renderReadwatch(); } catch (e) { toast(e.message); }
@@ -13889,6 +13927,7 @@ document.addEventListener('click', (e) => {
   const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) i.focus(); } return; }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
   const rwr = t.closest('[data-rw-rate]'); if (rwr) { rwSetRating(rwr.dataset.rwRate, Number(rwr.dataset.rwRateN)); return; }
+  const rwed = t.closest('[data-rw-edit]'); if (rwed) { rwToggleEdit(rwed.dataset.rwEdit); return; }
   const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
@@ -14609,6 +14648,8 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
   if (e.target.matches('[data-notes-area]')) { state.notesArea = e.target.value; renderNotesList(); }
   if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
+  if (e.target.matches('[data-rw-type-sel]')) { rwSetType(e.target.dataset.rwTypeSel, e.target.value); return; }
+  if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
   if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
