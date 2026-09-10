@@ -5615,8 +5615,11 @@ function renderArea() {
     ['Emails', !!emails.length, null, emails.length, `<div class="tbl-cards">${emailCards}</div>`],
   ];
   const flowOrder = areaFlowOrder();
+  // Tasks always sit at the very bottom of the dashboard (just above the files
+  // section), whatever the saved drag order - they're the doing, read last.
+  const flowRank = (k) => (k === 'Tasks' ? 100000 : (flowOrder.indexOf(k) < 0 ? 999 : flowOrder.indexOf(k)));
   const flowSecs = flowDefs.filter(([key, ok]) => ok && !secHidden(key))
-    .sort((a, b) => { const ia = flowOrder.indexOf(a[0]); const ib = flowOrder.indexOf(b[0]); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+    .sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
   const dash = `<div class="area-flow" style="--h:${h}">${flowSecs.map(([key, , target, count, body]) => flowSec(key, target, count, body)).join('')}</div>
   <section class="area-dash-files">${areaAttachHtml(area)}</section>
   ${canEditArea || blockLinks(area).length ? `<section class="area-dash-links">${externalLinksHtml('area', area)}</section>` : ''}
