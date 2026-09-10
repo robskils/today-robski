@@ -5274,9 +5274,22 @@ function areaFlowOrder() { try { const a = JSON.parse(localStorage.getItem('life
 // The "best bits" of a vision, as pull-quotes: the punchiest lines, favouring
 // present-tense first-person affirmations ("I move daily…") at a readable length.
 function visionHighlights(text) {
-  const s = String(text || '').replace(/\s+/g, ' ').trim(); if (!s) return [];
-  const parts = (s.match(/[^.!?]+[.!?]*/g) || []).map((x) => x.trim()).filter((x) => x.length >= 12 && x.length <= 160);
-  const score = (x) => (/^i\b|^i'/i.test(x) ? 2 : 0) + (x.length >= 20 && x.length <= 90 ? 1 : 0);
+  const raw = String(text || ''); if (!raw.trim()) return [];
+  // The writer's own line breaks are the truest boundaries - a vision is usually
+  // a few lines or bullets, each a whole thought. Take those first; only a very
+  // long single line is sentence-split, and then only at a space that follows
+  // end punctuation AND precedes a capital or opening quote. That leaves "e.g.",
+  // "Dr.", decimals like 3.5, and mid-sentence dots intact, so we never chop a
+  // sentence in a way that reads as broken. (Robin, 2026-09.)
+  const stripBullet = (s) => s.replace(/^\s*(?:[-*•–]|\d+[.)])\s+/, '').trim();
+  const units = [];
+  for (const lineRaw of raw.split(/\n+/)) {
+    const line = stripBullet(lineRaw); if (!line) continue;
+    if (line.length <= 180) { units.push(line); continue; }
+    for (const part of line.split(/(?<=[.!?])\s+(?=["'“‘(A-Z])/)) { const v = part.trim(); if (v) units.push(v); }
+  }
+  const parts = units.map((x) => x.replace(/\s+/g, ' ').trim()).filter((x) => x.length >= 10 && x.length <= 200);
+  const score = (x) => (/^i\b|^i'/i.test(x) ? 2 : 0) + (x.length >= 20 && x.length <= 120 ? 1 : 0);
   return parts.map((x, i) => ({ x, i, sc: score(x) })).sort((a, b) => (b.sc - a.sc) || (a.i - b.i)).slice(0, 3).map((o) => o.x);
 }
 const areaSecH = (key, label, count) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${esc(label)}${count != null ? ` · ${count}` : ''}</div>`;
