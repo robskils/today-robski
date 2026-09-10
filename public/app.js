@@ -52,7 +52,7 @@ const T_EN = {
   'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Life area', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All areas', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life area', 'palette.search': 'Search notes, tables, tasks — or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All areas', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life area', 'palette.search': 'Search notes, tables, tasks — or type a command…',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
@@ -72,7 +72,7 @@ const T_PT = {
   'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Área da vida', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todas as áreas', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Área da vida', 'palette.search': 'Pesquisar notas, tabelas, tarefas — ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todas as áreas', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Área da vida', 'palette.search': 'Pesquisar notas, tabelas, tarefas — ou escrever um comando…',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -10683,14 +10683,16 @@ async function newGoal(area) {
   if (el) { el.focus(); try { el.setSelectionRange(0, 0); } catch {} }
 }
 async function openGoalCard(id) {
-  const [g, all, allNotes] = await Promise.all([
+  const [g, all, allNotes, allContacts] = await Promise.all([
     api(`/api/blocks/${id}`),
     api('/api/blocks?kind=task'),
     api('/api/blocks?kind=note').catch(() => []),
+    api('/api/blocks?kind=contact').catch(() => []),
   ]);
   const tasks = all.filter((t) => taskInGoal(t, id));
   const notes = (allNotes || []).filter((n) => n.props && n.props.goal === id);
-  state.goal_open = { goal: g, tasks, allTasks: all, notes, allNotes: allNotes || [], areaQuery: '', noteQuery: '' };
+  const contacts = (allContacts || []).filter((c) => contactInGoal(c, id));
+  state.goal_open = { goal: g, tasks, allTasks: all, notes, allNotes: allNotes || [], contacts, allContacts: allContacts || [], areaQuery: '', noteQuery: '', contactQuery: '' };
   state.view = { type: 'goalcard', id };
   renderNav(); renderGoalCard();
   // Drop the cursor into the name ONLY when the goal is still unnamed - a fresh
@@ -10760,14 +10762,7 @@ function renderGoalCard() {
       <label class="gc-why"><span class="gc-why-l">${t('goal.how')}</span><textarea class="sel" id="goalcard-how" rows="2" placeholder="${t('goal.howph')}">${esc(p.how || '')}</textarea></label>
       ${(doneN || focusMins) ? `<div class="gc-hero-stats">${doneN ? `<span>✓ ${doneN} task${doneN === 1 ? '' : 's'} done</span>` : ''}${focusMins ? `<span>🍅 ${fmtMins(focusMins)} focused</span>` : ''}</div>` : ''}
     </div>
-    <section class="focus-notes gc-tasks-sec">
-      <div class="fn-h">${t('goal.tasks')}${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
-      <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
-      ${goalAreaTasksHtml()}
-    </section>
-    ${connectedNotesHtml()}
-    ${notesSection(g.body, 'goal', g.id, false, t('goal.noteswall'))}
-    <details class="gc-settings" open>
+    <details class="gc-settings">
       <summary>${t('goal.timing')}</summary>
       <div class="tf-meta">
         <label class="tf-field"><span class="tf-label">${t('goal.type')}</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -10778,7 +10773,15 @@ function renderGoalCard() {
           : `<label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>`}
       </div>
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
-    </details>`;
+    </details>
+    <section class="focus-notes gc-tasks-sec">
+      <div class="fn-h">${t('goal.tasks')}${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
+      <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
+      ${goalAreaTasksHtml()}
+    </section>
+    ${connectedNotesHtml()}
+    ${connectedContactsHtml()}
+    ${notesSection(g.body, 'goal', g.id, false, t('goal.noteswall'))}`;
   autoGrowSoon($('#goalcard-title'));
   if (keepTitleFocus) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.setSelectionRange(selS, selE); } catch {} } }
 }
@@ -10872,6 +10875,58 @@ async function addGoalNote() {
     go.notes.push(n); go.allNotes.push(n); renderGoalCard();
     openNote(n.id).catch(() => {});
   } catch (e) { toast(e.message); }
+}
+// Connected contacts: people linked to this goal (props.goals on the contact).
+// A contact can sit against several goals at once, so we keep an array - the
+// same person, shown here as well as in Contacts, never a copy.
+function contactGoalIds(c) { const p = (c && c.props) || {}; const ids = Array.isArray(p.goals) ? p.goals.slice() : []; if (p.goal && !ids.includes(p.goal)) ids.push(p.goal); return ids; }
+function contactInGoal(c, id) { return contactGoalIds(c).includes(id); }
+function connectedContactsHtml() {
+  const go = state.goal_open; if (!go) return '';
+  const contacts = go.contacts || [];
+  const cards = contacts.map((c) => { const ca = areaById(blockAreas(c)[0]); const ch = ca ? hueOf(ca) : 220; return `<div class="gc-note-card${ca ? ' has-area' : ''}" style="--h:${ch}"${ca ? ` title="${esc(ca.title)}"` : ''}><button class="gc-note-open" data-open-contact="${c.id}"><span class="contact-av gc-note-av">${esc(initial(c.title || '?'))}</span><span class="gc-note-t">${esc(c.title || 'Unnamed')}</span></button><button class="gc-note-x" data-goal-unlink-contact="${c.id}" title="Disconnect from this goal">×</button></div>`; }).join('');
+  return `<section class="focus-notes gc-notes-sec">
+    <div class="fn-h">${t('goal.connectedcontacts')}${contacts.length ? ` · ${contacts.length}` : ''}</div>
+    ${contacts.length ? `<div class="gc-notes-grid">${cards}</div>` : '<p class="gc-notes-empty">Link the people tied to this goal - mentors, partners, whoever keeps you moving.</p>'}
+    <div class="goal-notelist">
+      <div class="gal-box">
+        <input class="sel gal-search" data-goalcontact-q placeholder="Connect a contact…" value="${esc(go.contactQuery || '')}" autocomplete="off">
+        <div class="gal-drop"><div class="gc-contact-list">${connectedContactsPickerInner()}</div></div>
+      </div>
+    </div>
+  </section>`;
+}
+function connectedContactsPickerInner() {
+  const go = state.goal_open; if (!go) return '';
+  const q = (go.contactQuery || '').trim().toLowerCase();
+  const linked = new Set((go.contacts || []).map((c) => c.id));
+  let list = (go.allContacts || []).filter((c) => !linked.has(c.id));
+  if (q) list = list.filter((c) => (c.title || '').toLowerCase().includes(q));
+  list = list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}contacts to connect${q ? '' : ''}.</div>`;
+  return list.slice(0, 60).map((c) => `<div class="gal-row gal-row-link" data-goal-link-contact="${c.id}" role="button" tabindex="0" title="Connect to this goal"><span class="ga-t"><span class="contact-av gc-pick-av">${esc(initial(c.title || '?'))}</span>${esc(c.title || 'Unnamed')}</span><span class="gal-link gal-link-cue">＋ Link</span></div>`).join('')
+    + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
+}
+function renderGoalContactList() { const el = $('.gc-contact-list'); if (el) el.innerHTML = connectedContactsPickerInner(); }
+async function linkContactToGoal(contactId) {
+  const go = state.goal_open; if (!go) return;
+  const c = (go.allContacts || []).find((x) => x.id === contactId); if (!c) return;
+  const ids = [...new Set([...contactGoalIds(c), go.goal.id])];
+  c.props = c.props || {}; c.props.goals = ids;
+  if (!go.contacts.some((x) => x.id === contactId)) go.contacts.push(c);
+  go.contactQuery = ''; renderGoalCard();
+  try { await api(`/api/blocks/${contactId}`, { method: 'PATCH', body: JSON.stringify({ props: { goals: ids } }) }); toast('Contact connected'); }
+  catch (e) { toast(e.message); }
+}
+async function unlinkContactFromGoal(contactId) {
+  const go = state.goal_open; if (!go) return;
+  const c = (go.contacts || []).find((x) => x.id === contactId);
+  go.contacts = (go.contacts || []).filter((x) => x.id !== contactId);
+  let ids = [];
+  if (c) { ids = contactGoalIds(c).filter((gid) => gid !== go.goal.id); c.props = c.props || {}; c.props.goals = ids; c.props.goal = null; }
+  renderGoalCard();
+  try { await api(`/api/blocks/${contactId}`, { method: 'PATCH', body: JSON.stringify({ props: { goals: ids, goal: null } }) }); toast('Contact disconnected'); }
+  catch (e) { toast(e.message); }
 }
 // Link an existing area task into this goal: it keeps its place in Tasks/Today
 // and now also shows under the goal (props.goal). No copy is made.
@@ -13581,6 +13636,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-tbl-q]')) { state.tables_view.query = e.target.value; renderTableBody(); }
   if (e.target.matches('[data-gal-q]') && state.goal_open) { state.goal_open.areaQuery = e.target.value; renderGoalAreaList(); }
   if (e.target.matches('[data-goalnote-q]') && state.goal_open) { state.goal_open.noteQuery = e.target.value; renderGoalNoteList(); }
+  if (e.target.matches('[data-goalcontact-q]') && state.goal_open) { state.goal_open.contactQuery = e.target.value; renderGoalContactList(); }
   if (e.target.matches('[data-areas-sort]')) { state.areasSort = e.target.value; try { localStorage.setItem('life.areas.sort', state.areasSort); } catch {} renderAreasList(); }
   if (e.target.matches('[data-home-area-sort]')) { try { localStorage.setItem('life.home.areaSort', e.target.value); } catch {} renderHome(); return; }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
@@ -13974,6 +14030,8 @@ document.addEventListener('click', (e) => {
   const nlink = t.closest('[data-goal-link-note]'); if (nlink) { linkNoteToGoal(nlink.dataset.goalLinkNote); return; }
   const nunlink = t.closest('[data-goal-unlink-note]'); if (nunlink) { unlinkNoteFromGoal(nunlink.dataset.goalUnlinkNote); return; }
   if (t.closest('[data-goal-addnote]')) { addGoalNote(); return; }
+  const clink = t.closest('[data-goal-link-contact]'); if (clink) { linkContactToGoal(clink.dataset.goalLinkContact); return; }
+  const cunlink = t.closest('[data-goal-unlink-contact]'); if (cunlink) { unlinkContactFromGoal(cunlink.dataset.goalUnlinkContact); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
   const sgt = t.closest('[data-set-gtype]'); if (sgt) { const g = state.goal_open && state.goal_open.goal; if (g) { patchGoal(g.id, { gtype: sgt.dataset.setGtype }, true); renderGoalCard(); } return; }
