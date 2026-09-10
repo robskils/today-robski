@@ -1863,7 +1863,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
      there's no bare strip above it for the list to scroll through. */
   .nav { padding-top:0; }
   .nav-topline { position:sticky; top:0; z-index:3; background:var(--paper-2); padding-top:16px; }
-  .nav-k { position:sticky; top:var(--nav-headh,56px); z-index:3; margin-top:0; margin-bottom:12px; }
+  /* A few px of the sidebar's own background carried under the search box (via a
+     hard, blur-less shadow), so items scroll under with a clean buffer, not flush
+     against its edge. */
+  .nav-k { position:sticky; top:var(--nav-headh,56px); z-index:3; margin-top:0; margin-bottom:12px; box-shadow:0 9px 0 var(--paper-2); }
 }
 /* Primary nav: two half-width tiles per row. */
 .nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:4px; }
