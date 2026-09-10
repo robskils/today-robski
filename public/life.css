@@ -5348,6 +5348,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .focus-notes { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
 .fn-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 8px; margin:0; }
 .focus-notes .prose { min-height:96px; }
+/* A task made from an email shows the email in its own section. */
+.tf-email-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:13px; color:var(--ink-3); margin:2px 0 10px; }
+.tfem-dot { color:var(--line-2); }
+.tf-email-body { min-height:0; font-size:15px; color:var(--ink-2); line-height:1.55; border-left:3px solid color-mix(in srgb,var(--accent) 30%,var(--line)); padding:2px 0 2px 14px; }
+.tf-email-body p { margin:0 0 10px; }
+.tf-email-body p:last-child { margin-bottom:0; }
 
 /* ── external links on a block (notes, tasks, contacts, areas, goals) ── */
 .xlinks { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:14px 16px 16px; }

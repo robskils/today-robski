@@ -7676,6 +7676,12 @@ async function openMail(openKey) {
     state.mailTrust = new Set();
     api('/api/kv/mail_trusted').then((r) => { try { (JSON.parse(r.value || '[]') || []).forEach((a) => state.mailTrust.add(String(a).toLowerCase())); } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
   }
+  // Whether to always show remote images (default off for privacy; a one-tap opt-in
+  // from the images banner turns it on for good).
+  if (state.mailShowImages === undefined) {
+    state.mailShowImages = false;
+    api('/api/kv/mail_show_images').then((r) => { state.mailShowImages = r && r.value === '1'; if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
+  }
   // Which emails you've filed into a life area, so the reader can say so. Keyed
   // by the stable Message-ID (falling back to the account:uid key).
   if (!state.mailAreas) {
@@ -8728,7 +8734,10 @@ async function openMailTaskMenu(anchor) {
   const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
   const r = anchor ? anchor.getBoundingClientRect() : { left: 240, bottom: 200 };
   const w = 300;
-  state.mail.taskMenu = { title, body: hdr + content, x: Math.max(12, Math.min(r.left, window.innerWidth - w - 12)), y: r.bottom + 6 };
+  // The email travels with the task as its own thing (props.email), so the card
+  // can show it in an Email section - not mixed into the free-form Notes.
+  const email = { name, addr, subject: (o.subject || '').trim(), when, html: content };
+  state.mail.taskMenu = { title, body: hdr + content, email, x: Math.max(12, Math.min(r.left, window.innerWidth - w - 12)), y: r.bottom + 6 };
   renderMail();
   setTimeout(() => { const el = document.getElementById('mtask-title'); if (el) { el.focus(); el.select(); } }, 30);
 }
@@ -8739,7 +8748,11 @@ async function mailTaskCreate() {
   const priority = document.getElementById('mtask-prio')?.value || null;
   state.mail.taskMenu = null; renderMail();
   try {
-    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, body: tm.body, props: { priority, area, done: false } }) });
+    // The email content lives in props.email (its own Email section on the card),
+    // leaving the task's Notes free for your own words.
+    const props = { priority, area, done: false };
+    if (tm.email && (tm.email.html || '').trim()) { props.email = tm.email; props.fromEmail = true; }
+    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props }) });
     toast(`Added to Tasks: “${title.length > 40 ? title.slice(0, 40) + '…' : title}”`);
   } catch (e) { toast(e.message); }
 }
@@ -15904,11 +15917,21 @@ function renderTaskCard() {
     ${taskGoalsHtml(t)}
     ${connectedContactsSection('task', t)}
     ${externalLinksHtml('task', t)}
+    ${taskEmailHtml(t)}
     ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
+// When a task was made from an email, the email rides along in props.email and
+// shows in its own collapsible section - kept out of the free-form Notes.
+function taskEmailHtml(t) {
+  const em = t.props && t.props.email; if (!em || !(em.html || '').trim()) return '';
+  const who = (em.name && em.addr && em.name !== em.addr) ? `${em.name} <${em.addr}>` : (em.name || em.addr || '');
+  const meta = [who, em.when].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('<span class="tfem-dot">·</span>');
+  const open = tfCardOpen('email');
+  return `<section class="focus-notes tf-email-sec ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="email"><span>✉ Email${em.subject ? ` · ${esc(em.subject)}` : ''}</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${meta ? `<div class="tf-email-meta">${meta}</div>` : ''}<div class="tf-email-body prose">${em.html}</div>` : ''}</section>`;
+}
 // A prose Notes section, reused by the task card and the row card. Backed by
 // the block's `body`, edited inline via the shared rich-text editor.
 function notesSection(body, key, id, readOnly, title) {
