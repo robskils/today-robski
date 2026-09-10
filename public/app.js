@@ -5599,6 +5599,11 @@ function renderArea() {
   const tasksBody = openTs.length
     ? taskTableHtml(openTs.slice(0, TASK_CAP), 'No open tasks here.') + (openTs.length > TASK_CAP ? `<button class="area-sec-more" data-area-tile="Tasks">${openTs.length - TASK_CAP} more open task${openTs.length - TASK_CAP === 1 ? '' : 's'} →</button>` : '')
     : '<div class="home-empty">No open tasks.</div>';
+  // A long notes list would swamp the overview, so cap it and offer a See-more
+  // that opens the full Notes and tables tile. (The tile itself still shows all.)
+  const NOTE_CAP = 8;
+  const notesDashBody = `<div class="tbl-cards noteord-cards">${noteTblOrdered.slice(0, NOTE_CAP).map(ntCard).join('')}</div>`
+    + (noteTblOrdered.length > NOTE_CAP ? `<button class="area-sec-more" data-area-tile="Notes and tables">See all ${noteTblOrdered.length} notes &amp; tables →</button>` : '');
   // [key, present?, tile-target, count, body]. Present, un-hidden sections are
   // shown in your saved drag order; anything without a saved place keeps its
   // sensible default position.
@@ -5607,7 +5612,7 @@ function renderArea() {
     ['Wheel of Life', !(area.props && area.props.reviewOff), 'Wheel of Life', wheelNow, areaWheelPanel(area)],
     ['Goals', true, 'Goals', activeGoals.length, goalsBody],
     ['Tasks', true, 'Tasks', openTs.length, tasksBody],
-    ['Notes and tables', !!notesTotal, null, notesTotal, `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>`],
+    ['Notes and tables', !!notesTotal, null, notesTotal, notesDashBody],
     ['Contacts', !!contacts.length, null, contacts.length, `<div class="contact-grid">${contactCards}</div>`],
     ['Saved links', !!bookmarks.length, null, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`],
     ['Reflections', !!journals.length, null, journals.length, `<div class="tbl-cards">${journalCards}</div>`],
