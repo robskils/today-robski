@@ -2762,6 +2762,16 @@ function homeDate() {
   const ord = (n) => { const v = n % 100; return n + (['th', 'st', 'nd', 'rd'][(v - 20) % 10] || ['th', 'st', 'nd', 'rd'][v] || 'th'); };
   return `${d.toLocaleDateString('en-GB', { weekday: 'long' })} ${ord(d.getDate())} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
 }
+// The live time beside the date on Home. Updated in place by a quiet ticker, so
+// it stays right without re-rendering the page.
+function homeTimeStr() { return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+function startHomeClock() {
+  if (state._homeClock) return;
+  state._homeClock = setInterval(() => {
+    const now = homeTimeStr();
+    document.querySelectorAll('.home-time').forEach((el) => { if (el.textContent !== now) el.textContent = now; });
+  }, 10000);
+}
 // A quiet weather chip on Home. WMO code → an icon + a word.
 const WMO_WX = (code) => {
   const c = Number(code);
@@ -3822,7 +3832,7 @@ function renderHome() {
         <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1></div>
       </div>
       <div class="home-actionbar">
-        <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}</div>
+        <div class="home-ab-left"><span class="home-time">${homeTimeStr()}</span><span class="home-date">${homeDate()}</span>${weatherChipHtml()}</div>
         <div class="home-actions"><button class="add-btn wide" data-new-note>${t('home.newnote')}</button><button class="add-btn wide" data-quick-task>${t('home.newtask')}</button><button class="add-btn wide" data-quick-event>${t('home.newevent')}</button></div>
       </div>
       ${alertsHtml()}
@@ -3928,6 +3938,7 @@ function renderHome() {
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
+  startHomeClock();         // keep the time beside the date ticking
 }
 function openTablesList() {
   state.view = { type: 'tables' };
