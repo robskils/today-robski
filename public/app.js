@@ -2543,7 +2543,7 @@ function closeShortcuts() { const el = document.getElementById('sc-overlay'); if
 async function quickAdd(kind) {
   try {
     if (kind === 'task') { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
-    else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); }
+    else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
@@ -6155,12 +6155,12 @@ function showCalForm(ev) {
     ${noteLinksHtml(notes)}
     <div class="ce-links">
       <div class="ce-links-h">Connected</div>
-      <div class="ce-links3${(ev && ev.id) ? '' : ' cols2'}">
+      <div class="ce-links3">
         <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
         ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">👤</span>Contact</span><input id="ce-contact-search" class="sel" list="ce-contact-dl" placeholder="Search…" autocomplete="off" value="${esc(withName)}"><input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}"><datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist></label>`; })()}
-        ${(ev && ev.id) ? eventNoteSearchField(ev) : ''}
+        ${eventNoteSearchField(ev)}
       </div>
-      ${(ev && ev.id) ? eventNotesHtml(ev) : ''}
+      ${eventNotesHtml(ev)}
     </div>
     <div class="ce-foot">
       <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
@@ -6223,7 +6223,20 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
-    else await api('/api/events', { method: 'POST', body });
+    else {
+      const created = await api('/api/events', { method: 'POST', body });
+      // Attach any notes picked while composing - a new event has no id to link to
+      // until now, so the picks were held as a draft and linked here. (Robin.)
+      const dn = state.cal.draftNotes || [];
+      const newId = (created && created.id) ? String(created.id).split('::')[0] : null;
+      if (newId && dn.length) {
+        for (const n of dn) {
+          api('/api/event-notes', { method: 'POST', body: JSON.stringify({ eventId: newId, addNote: { id: String(n.id), title: n.title || 'Untitled' } }) }).catch(() => {});
+          patchNoteEventLink(n.id, { id: newId, title, date: startDate }, true);
+        }
+      }
+    }
+    state.cal.draftNotes = [];
     toast(id ? 'Event updated' : 'Added to your calendar');
     state.cal.adding = false; state.cal.editing = null;
     // Jump the view to the event's day so it's visible even if it moved months.
@@ -12583,16 +12596,17 @@ function loadEvNotePool() {
 // linked-note cards, title suggestions and search results render full width
 // beneath it via eventNotesHtml, so a busy note list never squeezes the row.
 function eventNoteSearchField(ev) {
-  if (!ev || !ev.id) return '';
+  // Shown for a new event too - the picks are held as a draft until it's saved.
   return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">▤</span>Note</span><input class="sel nt-search" data-ev-note-q placeholder="Search…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off"></label>`;
 }
 function eventNotesHtml(ev) {
-  const links = Array.isArray(ev.noteLinks) ? ev.noteLinks : [];
+  const isNew = !(ev && ev.id);   // a new event links via state.cal.draftNotes
+  const links = isNew ? ((state.cal && state.cal.draftNotes) || []) : (Array.isArray(ev.noteLinks) ? ev.noteLinks : []);
   const linkedIds = new Set(links.map((x) => String(x.id)));
   const pool = Array.isArray(state.evNotePool) ? state.evNotePool : [];
   if (state.evNotePool === undefined) loadEvNotePool();
   const q = ((state.cal && state.cal.noteQuery) || '').trim().toLowerCase();
-  const et = (ev.title || '').trim().toLowerCase();
+  const et = (isNew ? ((document.getElementById('ce-title') || {}).value || '') : (ev.title || '')).trim().toLowerCase();
   const pickable = (nn) => nn && nn.id && !linkedIds.has(String(nn.id)) && !isTableNote(nn);
   let sugg = [];
   if (!q && et.length >= 3) sugg = pool.filter((nn) => { if (!pickable(nn)) return false; const n2 = (nn.title || '').toLowerCase(); return n2 && (n2.includes(et) || et.includes(n2)); }).slice(0, 4);
@@ -12602,7 +12616,7 @@ function eventNotesHtml(ev) {
   const cards = links.map((nn) => `<div class="ce-card"><button type="button" class="ce-open" data-open-note="${esc(nn.id)}"><span class="ce-ic">▤</span><span class="ce-t">${esc(nn.title || 'Untitled')}</span></button><button type="button" class="ce-x" data-ev-unlink-note="${esc(nn.id)}" title="Disconnect">×</button></div>`).join('');
   return `<div class="ce-notes-sec ce-notelinks-body">${cards ? `<div class="ce-linked">${cards}</div>` : ''}${sugg.length ? `<div class="ce-sugg"><div class="ce-sugg-h">You might mean</div>${sugg.map(nRow).join('')}</div>` : ''}${results.length ? `<div class="nt-results">${results.map(nRow).join('')}</div>` : ''}</div>`;
 }
-function renderEventNotesSection() { const el = document.querySelector('.ce-notes-sec'); if (el && state.cal && state.cal.editing) { const w = document.createElement('div'); w.innerHTML = eventNotesHtml(state.cal.editing); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
+function renderEventNotesSection() { const el = document.querySelector('.ce-notes-sec'); if (el && state.cal && (state.cal.editing || state.cal.adding)) { const w = document.createElement('div'); w.innerHTML = eventNotesHtml(state.cal.editing || undefined); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
 // Mirror an event-side change onto the note's own props.events, so opening the note
 // shows the event too. The note may not be in the pool (private/subnote) - fetch it.
 async function patchNoteEventLink(noteId, ev, on) {
@@ -12615,7 +12629,18 @@ async function patchNoteEventLink(noteId, ev, on) {
   api(`/api/blocks/${noteId}`, { method: 'PATCH', body: JSON.stringify({ props: { events: evs } }) }).catch(() => {});
 }
 function eventLinkNote(noteId, noteTitle) {
-  const ev = state.cal && state.cal.editing; if (!ev) return;
+  const ev = state.cal && state.cal.editing;
+  if (!ev) {
+    // Composing a new event: hold the pick as a draft; it's linked on save.
+    if (!state.cal || !state.cal.adding) return;
+    const draft = (state.cal.draftNotes || []).filter((x) => String(x.id) !== String(noteId));
+    draft.push({ id: String(noteId), title: noteTitle || 'Untitled' });
+    state.cal.draftNotes = draft; state.cal.noteQuery = '';
+    { const qi = document.querySelector('[data-ev-note-q]'); if (qi) qi.value = ''; }
+    renderEventNotesSection();
+    toast('Note attached');
+    return;
+  }
   const baseId = evBaseId(ev);
   const links = (Array.isArray(ev.noteLinks) ? ev.noteLinks : []).filter((x) => String(x.id) !== String(noteId));
   links.push({ id: String(noteId), title: noteTitle || 'Untitled' });
@@ -12628,7 +12653,13 @@ function eventLinkNote(noteId, noteTitle) {
   toast('Note linked');
 }
 function eventUnlinkNote(noteId) {
-  const ev = state.cal && state.cal.editing; if (!ev) return;
+  const ev = state.cal && state.cal.editing;
+  if (!ev) {
+    if (!state.cal || !state.cal.adding) return;
+    state.cal.draftNotes = (state.cal.draftNotes || []).filter((x) => String(x.id) !== String(noteId));
+    renderEventNotesSection();
+    return;
+  }
   const baseId = evBaseId(ev);
   const links = (Array.isArray(ev.noteLinks) ? ev.noteLinks : []).filter((x) => String(x.id) !== String(noteId));
   ev.noteLinks = links;
@@ -14089,11 +14120,11 @@ document.addEventListener('click', (e) => {
   const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.adding = false; } renderCalendar(); } return; }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
-  { const cad = t.closest('[data-cal-add-day]'); if (cad) { state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); return; } }
+  { const cad = t.closest('[data-cal-add-day]'); if (cad) { state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); return; } }
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
-  if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; renderCalendar(); return; }
+  if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); return; }
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
