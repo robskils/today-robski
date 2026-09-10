@@ -2917,6 +2917,14 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .pe-num { width:84px; }
 /* "Takes time" off hides the timing block. */
 .pe-panel:not(.timed-on) .pe-timing { display:none; }
+/* Practice editor: connected notes / contacts / links, the usual attach set. */
+.pe-attach { display:flex; flex-direction:column; gap:16px; }
+.pe-attach-sec .sub-h { margin-bottom:7px; }
+.pe-attach-sec .ce-linked { margin:6px 0; }
+.pe-attach-sec .nt-new { margin-top:4px; }
+/* Small round avatar inside a connected-contact chip (note sidebar + practices). */
+.ce-av { width:22px; height:22px; font-size:10px; flex:none; }
+.nt-result .ce-av { margin-right:7px; }
 /* Compact "mini dashboard" for the rhythm settings (takes time / length / track /
    aim / video) - tight rows in one card, instead of a stack of clunky fields. */
 .pe-mini { border:1px solid var(--line); border-radius:13px; overflow:hidden; background:var(--card); box-shadow:var(--shadow); }

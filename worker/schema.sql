@@ -128,7 +128,9 @@ CREATE TABLE IF NOT EXISTS activities (
   -- a habit you're BREAKING (e.g. smoking): the streak counts clean days and a
   -- tick marks a slip. avoid_since is the day the clean count starts from.
   avoid INTEGER NOT NULL DEFAULT 0,
-  avoid_since TEXT
+  avoid_since TEXT,
+  -- connected extras (JSON): { notes:[{id,title}], links:[{url,title}], contacts:[id] }
+  meta TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_activities_lane ON activities(lane, position);
 

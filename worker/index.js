@@ -2850,7 +2850,19 @@ async function practiceFields(env, b) {
   // and a tick marks a slip. avoidSince is the day the clean count starts from.
   const avoid = (b.avoid === true || b.avoid === 1) ? 1 : 0;
   const avoidSince = (b.avoidSince && /^\d{4}-\d{2}-\d{2}$/.test(String(b.avoidSince))) ? String(b.avoidSince) : null;
-  return { area, lane, note, video, timed, tracked, days, time_min, cadence, priority, avoid, avoidSince };
+  // Connected extras: notes, external links and contacts, stored as a JSON blob.
+  // Sanitised into a known shape so a bad payload can't wedge the column.
+  let meta = null;
+  if (b.meta !== undefined) {
+    try {
+      const m = typeof b.meta === 'string' ? JSON.parse(b.meta || '{}') : (b.meta || {});
+      const notes = Array.isArray(m.notes) ? m.notes.filter((n) => n && n.id).slice(0, 50).map((n) => ({ id: String(n.id), title: String(n.title || '').slice(0, 200) })) : [];
+      const links = Array.isArray(m.links) ? m.links.filter((l) => l && l.url).slice(0, 50).map((l) => ({ url: String(l.url).slice(0, 2000), title: String(l.title || '').slice(0, 200) })) : [];
+      const contacts = Array.isArray(m.contacts) ? m.contacts.filter(Boolean).map(String).slice(0, 100) : [];
+      meta = (notes.length || links.length || contacts.length) ? JSON.stringify({ notes, links, contacts }) : null;
+    } catch { meta = null; }
+  }
+  return { area, lane, note, video, timed, tracked, days, time_min, cadence, priority, avoid, avoidSince, meta };
 }
 async function createActivity(request, env) {
   const b = await request.json().catch(() => ({}));
@@ -2872,11 +2884,11 @@ async function createActivity(request, env) {
   ).bind(lane, env.uid).first();
 
   const row = await env.DB.prepare(
-    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence, priority, avoid, avoid_since)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence, priority, avoid, avoid_since, meta)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
   ).bind(lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid,
     p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min, p.cadence, p.priority,
-    p.avoid, p.avoidSince || (p.avoid ? todayLisbon() : null)).first();
+    p.avoid, p.avoidSince || (p.avoid ? todayLisbon() : null), p.meta).first();
 
   return json(row, request, 201);
 }
@@ -2896,7 +2908,7 @@ async function updateActivity(request, env, id) {
   for (const k of ['lane', 'title', 'url', 'duration', 'position']) if (b[k] !== undefined) set[k] = b[k];
 
   // New practice fields. Changing the area re-derives the legacy lane too.
-  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence', 'priority', 'avoid', 'avoidSince'];
+  const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence', 'priority', 'avoid', 'avoidSince', 'meta'];
   if (newKeys.some((k) => b[k] !== undefined)) {
     const p = await practiceFields(env, b);
     if (b.avoid !== undefined) { set.avoid = p.avoid; if (p.avoid && b.avoidSince === undefined) set.avoid_since = todayLisbon(); }
@@ -2910,6 +2922,7 @@ async function updateActivity(request, env, id) {
     if (b.time_min !== undefined) set.time_min = p.time_min;
     if (b.cadence !== undefined) set.cadence = p.cadence;
     if (b.priority !== undefined) set.priority = p.priority;
+    if (b.meta !== undefined) set.meta = p.meta;
   }
 
   const keys = Object.keys(set);

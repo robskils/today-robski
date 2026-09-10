@@ -3509,9 +3509,13 @@ function practiceAddForm() {
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
 // Daily Practices page.
+function parsePracticeMeta(a) {
+  let m = null; try { m = a && a.meta ? JSON.parse(a.meta) : null; } catch {}
+  return { notes: (m && Array.isArray(m.notes)) ? m.notes : [], links: (m && Array.isArray(m.links)) ? m.links : [], contacts: (m && Array.isArray(m.contacts)) ? m.contacts : [] };
+}
 function openPracticeEditor(id, presetArea) {
   const a = id ? (state.practices.activities || []).find((x) => String(x.id) === String(id)) : null;
-  state.practiceEdit = { id: a ? a.id : null, area: presetArea || '' };
+  state.practiceEdit = { id: a ? a.id : null, area: presetArea || '', meta: parsePracticeMeta(a), _noteQ: '' };
   let host = document.getElementById('prac-editor-host');
   if (!host) { host = document.createElement('div'); host.id = 'prac-editor-host'; document.body.appendChild(host); }
   host.innerHTML = practiceEditorHtml();
@@ -3548,9 +3552,60 @@ function practiceEditorHtml() {
           <div class="pe-mini-row"><span class="pe-mini-l">🎥 Video</span><input class="sel pe-mini-in" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a link (optional)" autocomplete="off"></div>
         </div>
         <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="2" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
+        <div class="pe-attach">${peAttachHtml()}</div>
       </div>
       <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add practice'}</button></div>
     </div>`;
+}
+// The practice's connected notes, contacts and links - the same attach options
+// the rest of Daybook has, held in the editor's state and saved with it.
+function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; return pe.meta; }
+function loadPeNotePool() { if (state.peNotePool !== undefined) return; state.peNotePool = null; api('/api/blocks?kind=note').then((r) => { state.peNotePool = (r || []).filter((n) => n && n.id); if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => { state.peNotePool = []; }); }
+function peAttachHtml() {
+  const m = peMeta();
+  const noteChips = m.notes.map((n) => `<div class="ce-card"><button type="button" class="ce-open" data-pe-open-note="${esc(n.id)}"><span class="ce-ic">▤</span><span class="ce-t">${esc(n.title || 'Untitled')}</span></button><button type="button" class="ce-x" data-pe-unlink-note="${esc(n.id)}" title="Remove">×</button></div>`).join('');
+  const q = (state.practiceEdit._noteQ || '').trim().toLowerCase();
+  const linkedN = new Set(m.notes.map((n) => String(n.id)));
+  const pool = Array.isArray(state.peNotePool) ? state.peNotePool : [];
+  if (state.peNotePool === undefined) loadPeNotePool();
+  const nres = q ? pool.filter((n) => !linkedN.has(String(n.id)) && !isTableNote(n) && (n.title || '').toLowerCase().includes(q)).slice(0, 6) : [];
+  const linkChips = m.links.map((l, i) => `<div class="ce-card"><a class="ce-open" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(l.url)}"><span class="ce-ic">🔗</span><span class="ce-t">${esc(l.title || prettyLinkLabel(l.url))}</span></a><button type="button" class="ce-x" data-pe-del-link="${i}" title="Remove">×</button></div>`).join('');
+  if (state.contacts === undefined) loadContacts().then(() => { if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => {});
+  const linkedC = new Set(m.contacts.map(String));
+  const contactChips = m.contacts.map((id) => { const c = findContact(id); if (!c) return ''; return `<div class="ce-card"><button type="button" class="ce-open" data-pe-open-contact="${c.id}"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span><span class="ce-t">${esc(c.title || 'Unnamed')}</span></button><button type="button" class="ce-x" data-pe-unlink-contact="${c.id}" title="Remove">×</button></div>`; }).filter(Boolean).join('');
+  const others = (state.contacts || []).filter((c) => !linkedC.has(String(c.id))).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  return `<div class="pe-attach-sec">
+      <div class="sub-h">Notes${m.notes.length ? ` · ${m.notes.length}` : ''}</div>
+      <div class="ce-linked">${noteChips || '<div class="home-empty" style="padding:4px 0 2px">No notes linked yet.</div>'}</div>
+      <input class="sel nt-search" data-pe-note-q placeholder="Search a note to link…" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off">
+      ${nres.length ? `<div class="nt-results">${nres.map((n) => `<button type="button" class="nt-result" data-pe-link-note="${n.id}" data-pe-note-title="${esc(n.title || 'Untitled')}"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join('')}</div>` : ''}
+      <button type="button" class="ghost nt-new" data-pe-new-note>+ New note for this practice</button>
+    </div>
+    <div class="pe-attach-sec">
+      <div class="sub-h">Contacts${m.contacts.length ? ` · ${m.contacts.length}` : ''}</div>
+      <div class="ce-linked">${contactChips || '<div class="home-empty" style="padding:4px 0 2px">No contacts linked yet.</div>'}</div>
+      <select class="sel bc-add-sel" data-pe-add-contact><option value="">＋ Link a contact…</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>
+    </div>
+    <div class="pe-attach-sec">
+      <div class="sub-h">Links${m.links.length ? ` · ${m.links.length}` : ''}</div>
+      <div class="ce-linked">${linkChips || '<div class="home-empty" style="padding:4px 0 2px">No links yet.</div>'}</div>
+      <button type="button" class="ghost nt-new" data-pe-add-link>+ Add a link</button>
+    </div>`;
+}
+function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); }
+async function peNewNote() {
+  const pe = state.practiceEdit; if (!pe) return;
+  const title = await uiPrompt('New note for this practice:', { placeholder: 'e.g. My routine' }); if (title == null) return;
+  const t = (title.trim() || 'Untitled');
+  const area = (document.getElementById('pe-area') || {}).value || '';
+  try { const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: t, props: area ? { area } : {} }) }); peMeta().notes.push({ id: n.id, title: n.title || t }); if (Array.isArray(state.peNotePool)) state.peNotePool.push(n); renderPeAttach(); toast('Note created & linked'); }
+  catch (e) { toast(e.message); }
+}
+async function peAddLink() {
+  let url = await uiPrompt('Add a link', { placeholder: 'https://…' }); if (url == null) return;
+  url = (url || '').trim(); if (!url) return; if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  let title = await uiPrompt('Name it (optional)', { placeholder: prettyLinkLabel(url) }); title = (title || '').trim();
+  peMeta().links.push(title ? { url, title } : { url }); renderPeAttach();
 }
 async function savePractice() {
   const pe = state.practiceEdit; if (!pe) return;
@@ -3571,6 +3626,7 @@ async function savePractice() {
     priority: ($('#pe-prio') || {}).value || '',
     video: (($('#pe-video') || {}).value || '').trim(),
     note: (($('#pe-note') || {}).value || '').trim(),
+    meta: JSON.stringify(peMeta()),
   };
   try {
     let a;
@@ -13822,6 +13878,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-note-event-q]') && state.note) { const pos = e.target.selectionStart; state.note.eventQuery = e.target.value; renderNoteEvents(); const i = document.querySelector('[data-note-event-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-note-contact-q]') && state.note) { const pos = e.target.selectionStart; state.note.contactQuery = e.target.value; renderNoteContacts(); const i = document.querySelector('[data-note-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-pe-note-q]') && state.practiceEdit) { const pos = e.target.selectionStart; state.practiceEdit._noteQ = e.target.value; renderPeAttach(); const i = document.querySelector('[data-pe-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
@@ -14062,6 +14119,14 @@ document.addEventListener('click', (e) => {
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
+  { const el = t.closest('[data-pe-link-note]'); if (el) { peMeta().notes.push({ id: el.dataset.peLinkNote, title: el.dataset.peNoteTitle || 'Untitled' }); state.practiceEdit._noteQ = ''; renderPeAttach(); return; } }
+  { const el = t.closest('[data-pe-unlink-note]'); if (el) { const id = el.dataset.peUnlinkNote; peMeta().notes = peMeta().notes.filter((n) => String(n.id) !== String(id)); renderPeAttach(); return; } }
+  { const el = t.closest('[data-pe-open-note]'); if (el) { closePracticeEditor(); openNote(el.dataset.peOpenNote).catch((x) => toast(x.message)); return; } }
+  if (t.closest('[data-pe-new-note]')) { peNewNote(); return; }
+  { const el = t.closest('[data-pe-add-link]'); if (el) { peAddLink(); return; } }
+  { const el = t.closest('[data-pe-del-link]'); if (el) { peMeta().links.splice(Number(el.dataset.peDelLink), 1); renderPeAttach(); return; } }
+  { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
+  { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
   // Today (native) view
   { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad]')) { trkToggle(tt.dataset.trkToggle); return; } }
@@ -14741,6 +14806,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-notes-area]')) { state.notesArea = e.target.value; renderNotesList(); }
   if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
   if (e.target.matches('[data-bc-add]')) { const cid = e.target.value; if (cid) addBlockContact(e.target.dataset.bcKind, e.target.dataset.bcId, cid); return; }
+  if (e.target.matches('[data-pe-add-contact]')) { const cid = e.target.value; if (cid && state.practiceEdit) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(cid)])]; renderPeAttach(); } return; }
   if (e.target.matches('[data-rw-type-sel]')) { rwSetType(e.target.dataset.rwTypeSel, e.target.value); return; }
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
