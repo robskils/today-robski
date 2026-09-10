@@ -15782,11 +15782,17 @@ function taskGoalsHtml(t) {
   const byId = new Map(goals.map((g) => [g.id, g]));
   const attached = ids.map((id) => byId.get(id)).filter(Boolean);
   const chips = attached.map((g) => { const ga = goalArea(g); const hue = ga ? hueOf(ga) : 210; const meas = goalMeasure(g); return `<div class="tgoal-chip" style="--h:${hue}"><button class="tgoal-open" data-open-goal="${g.id}" title="Open this goal"><span class="tgoal-ic">🎯</span><span class="tgoal-t">${esc(g.title || 'Untitled goal')}</span>${meas ? `<span class="tgoal-m">${esc(meas)}</span>` : ''}</button><button class="tgoal-x" data-task-ungoal="${t.id}:${g.id}" title="Detach from this goal">×</button></div>`; }).join('');
-  const pick = goals.filter((g) => !ids.includes(g.id) && (gp(g).status || 'active') !== 'dropped');
+  // Only offer goals from the same life area(s) as the task, so the picker stays
+  // relevant - a work task shouldn't list your fitness goals. With no area on the
+  // task there's nothing to match on, so fall back to showing them all.
+  const tAreas = blockAreas(t);
+  const pick = goals.filter((g) => !ids.includes(g.id) && (gp(g).status || 'active') !== 'dropped'
+    && (!tAreas.length || blockAreas(g).some((a) => tAreas.includes(a))));
   const opts = pick.slice().sort((x, y) => (x.title || '').localeCompare(y.title || '')).map((g) => `<option value="${g.id}">${esc(g.title || 'Untitled goal')}</option>`).join('');
   const picker = opts
     ? `<select class="sel tgoal-add" data-task-addgoal="${t.id}"><option value="">＋ Attach to a goal…</option>${opts}</select>`
-    : (goals.length ? '' : '<p class="tgoals-empty">No goals yet - create one in Goals, then attach it here.</p>');
+    : (!goals.length ? '<p class="tgoals-empty">No goals yet - create one in Goals, then attach it here.</p>'
+      : (tAreas.length && !attached.length ? '<p class="tgoals-empty">No goals in this life area yet.</p>' : ''));
   return `<section class="focus-notes tgoals-sec">
     <div class="fn-h">Goals${attached.length ? ` · ${attached.length}` : ''}</div>
     ${attached.length ? `<div class="tgoals-grid">${chips}</div>` : '<p class="tgoals-empty">Not attached to a goal yet. Attach one and this task counts toward it.</p>'}
