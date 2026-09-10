@@ -3669,9 +3669,25 @@ function kitHomeHtml() {
         <span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span>
       </button>
       <button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button>
+      <button class="kit-hsnooze" data-kit-snooze="${esc(k.taskId)}" title="Not now - remind me again in a week" aria-label="Snooze ${esc(k.name || '')} for a week">×</button>
     </div>`;
   }).join('');
   return `<section class="home-sec home-sec-kit" data-hsec="keepintouch">${secH('keepintouch', t('home.sec.keepintouch'), `<span class="muted">${due.length}</span>`, true)}${secOpen('keepintouch') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
+}
+// The same "who you're due a catch-up with" list, for the Contacts page.
+function contactsKitHtml() {
+  const due = state.contactsKitDue || [];
+  if (!due.length) return '';
+  const rows = due.map((k) => {
+    const a = areaById(k.area);
+    const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet';
+    return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}>
+      <button class="kit-hopen" data-open-contact="${k.id}"><span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span><span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span></button>
+      <button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button>
+      <button class="kit-hsnooze" data-kit-snooze="${esc(k.taskId)}" title="Not now - remind me again in a week" aria-label="Snooze ${esc(k.name || '')} for a week">×</button>
+    </div>`;
+  }).join('');
+  return `<section class="home-sec home-sec-kit cts-kit">${secH('ctskit', t('home.sec.keepintouch'), `<span class="muted">${due.length}</span>`, true)}${secOpen('ctskit') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
 }
 function p1Html() {
   const all = priorityTasks();
@@ -3858,13 +3874,13 @@ function renderHome() {
           // A due catch-up also surfaces as a Today notification, with a ✓ (been in
           // touch) and an × to hide it for the day when it gets boring - the same
           // way a surfaced task or a birthday behaves. Only on today itself.
-          const kitTodayRows = off === 0 ? kit.filter((k) => !alertDismissed('kit:' + k.id)).map((k) => {
+          const kitTodayRows = off === 0 ? kit.map((k) => {
             const a = areaById(k.area); const hue = a ? hueOf(a) : 220;
             const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet';
             return `<div class="ev-row ev-task ev-kit ev-click" data-open-contact="${k.id}" role="button" tabindex="0" title="Open ${esc(k.name || '')}">
       <span class="ev-time"><button class="ev-check" data-kit-done="${esc(k.taskId)}" title="I've been in touch" aria-label="Mark back in touch with ${esc(k.name || '')}">✓</button></span>
       <span class="ev-t"><span class="ev-dot" style="--h:${hue}"></span>💬 Reach out to ${esc(k.name || 'someone')}</span><span class="ev-loc ev-surfaced">${esc(since)}</span>
-      <button class="ev-x" data-alert-x="kit:${k.id}" title="Hide for today" aria-label="Hide ${esc(k.name || '')} reminder for today">×</button></div>`;
+      <button class="ev-x" data-kit-snooze="${esc(k.taskId)}" title="Not now - remind me again in a week" aria-label="Snooze ${esc(k.name || '')} reminder for a week">×</button></div>`;
           }).join('') : '';
           const bdays = (off === 0 && alerts.birthdays) ? alerts.birthdays.filter((b) => !alertDismissed('bday:' + b.id)) : [];
           const kitCount = kit.length + bdays.length;
@@ -9121,7 +9137,10 @@ async function openContacts() {
   renderNav();
   // Paint the pane straight away, from whatever's cached (even nothing - it renders
   // an empty state), so tapping Contacts leaves Home at once.
+  if (state.contactsKitDue === undefined && state.home && state.home.alerts) state.contactsKitDue = state.home.alerts.keepInTouch || [];
   renderContacts();
+  // Who you're due a catch-up with - refresh the list for the Contacts section.
+  api('/api/home/alerts').then((a) => { if (gen === navGen && a && state.view.type === 'contacts') { state.contactsKitDue = a.keepInTouch || []; renderContacts(); } }).catch(() => {});
   const [, , friends, shared, areas] = await Promise.all([
     loadContacts(true).catch(() => state.contacts || []),
     loadContactGroups(true).catch(() => state.contactGroups || []),
@@ -9271,6 +9290,7 @@ function renderContacts() {
     <section class="home-sec">
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>` : `
+    ${contactsKitHtml()}
     <section class="home-sec contacts-mine">
       ${selfContactHtml()}
       <div class="cts-head">
@@ -13968,6 +13988,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-self-show]')) { try { localStorage.removeItem('life.contacts.selfHidden'); } catch {} renderContacts(); return; }
   if (t.closest('[data-contacts-merge]')) { mergeSelectedContacts(); return; }
   if (t.closest('[data-contacts-selclear]')) { state.contactSel = new Set(); renderContacts(); return; }
+  { const kits = t.closest('[data-kit-snooze]'); if (kits) { homeKitSnooze(kits.dataset.kitSnooze); return; } }   // the × on a Keep-in-touch row: snooze a week
   const kitd0 = t.closest('[data-kit-done]'); if (kitd0) { homeKitTouched(kitd0.dataset.kitDone); return; }   // the ✓ on a Keep-in-touch row (checked before the row's open-contact)
   { const aca = t.closest('[data-area-contact-add]'); if (aca) { addContactToArea(aca.dataset.areaContactAdd); return; } }
   { const acr = t.closest('[data-area-contact-rm]'); if (acr) { e.stopPropagation(); removeContactFromArea(acr.dataset.areaContactRm); return; } }
@@ -15241,13 +15262,34 @@ async function homeTaskTick(id) {
 }
 // Tick a keep-in-touch nudge from Home. Same door as everywhere else
 // (/api/tasks/:id -> setTaskDone), which rolls it forward from today.
+// Keep-in-touch nudges live on both Home and the Contacts page now, so a tick or
+// snooze removes the person from whichever lists are loaded and re-renders the
+// view you're on. A failed PATCH just leaves the local removal - the next load
+// re-fetches the truth.
+function removeKitLocal(taskId) {
+  let removed = null;
+  [(state.home && state.home.alerts) ? state.home.alerts.keepInTouch : null, state.contactsKitDue].forEach((arr) => {
+    if (!Array.isArray(arr)) return; const i = arr.findIndex((k) => String(k.taskId) === String(taskId)); if (i >= 0) removed = arr.splice(i, 1)[0];
+  });
+  return removed;
+}
+function reKit() { const v = state.view && state.view.type; if (v === 'home') renderHome(); else if (v === 'contacts' || v === 'friends') renderContacts(); }
 async function homeKitTouched(taskId) {
-  const arr = (state.home.alerts && state.home.alerts.keepInTouch) || [];
-  const idx = arr.findIndex((k) => k.taskId === taskId); if (idx < 0) return;
-  const [removed] = arr.splice(idx, 1);
-  renderHome();
+  const removed = removeKitLocal(taskId); if (!removed) return;
+  reKit();
   try { await api(`/api/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast(`Noted — ${removed.name} is back on the list in due course`); }
-  catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }
+  catch (e) { toast(e.message); }
+}
+// The × on a keep-in-touch nudge: not "I spoke to them" (that's the ✓) but "not
+// now" - push the reminder out a week so it actually stops nagging, instead of the
+// old browser-only hide-for-today that came straight back the next day. (Robin.)
+async function homeKitSnooze(taskId) {
+  const removed = removeKitLocal(taskId); if (!removed) return;
+  reKit();
+  const next = addDayISO(todayISO(), 7);
+  taskCopies(taskId).forEach((tk) => { tk.props = tk.props || {}; tk.props.snooze = next; });
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { snooze: next } }) }); toast(`Snoozed — ${removed.name} again in a week`); }
+  catch (e) { toast(e.message); }
 }
 // Remove a surfaced task from Today WITHOUT completing it: clear its snooze so
 // it stops surfacing. The task stays open on the Tasks board.

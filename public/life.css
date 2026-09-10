@@ -5448,6 +5448,8 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
 .kit-hdone { flex:none; width:38px; height:38px; margin-right:6px; border-radius:50%; font-size:16px;
   color:var(--ink-3); border:1px solid var(--line); background:var(--card); }
 .kit-hdone:hover { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); }
+.kit-hsnooze { flex:none; width:30px; height:30px; margin-right:8px; border-radius:50%; font-size:17px; line-height:1; color:var(--ink-3); border:1px solid transparent; background:none; cursor:pointer; }
+.kit-hsnooze:hover { color:var(--ink); background:var(--paper-2); border-color:var(--line); }
 @media (max-width:560px){
   .kit-hsub { margin-left:0; padding-left:0; flex-basis:100%; }
   .kit-hopen { flex-wrap:wrap; }
