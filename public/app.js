@@ -3802,7 +3802,10 @@ function renderHome() {
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="home-head">
-        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1><div class="home-date">${homeDate()}</div>${weatherChipHtml()}</div>
+        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1></div>
+      </div>
+      <div class="home-actionbar">
+        <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}</div>
         <div class="home-actions"><button class="add-btn wide" data-new-note>${t('home.newnote')}</button><button class="add-btn wide" data-quick-task>${t('home.newtask')}</button><button class="add-btn wide" data-quick-event>${t('home.newevent')}</button></div>
       </div>
       ${alertsHtml()}
@@ -3872,7 +3875,7 @@ function renderHome() {
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 8).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 8 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
-            keepintouch: kitCount ? `<div class="kit-hlist">${bdayRows}${kit.map((k) => { const a = areaById(k.area); const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet'; return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}><button class="kit-hopen" data-open-contact="${k.id}"><span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span><span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span></button><button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button></div>`; }).join('')}</div>` : '<div class="home-empty">Nobody due a catch-up.</div>',
+            tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
             favs: `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>`,
           };
@@ -3881,11 +3884,11 @@ function renderHome() {
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
             favareas: { ic: '◈', label: 'Life areas', count: sortedAreas.length || null },
-            keepintouch: { ic: '💬', label: 'Keep in touch', count: kitCount || null },
+            tracker: { ic: '📊', label: 'Tracker', count: null },
             mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
           };
-          const order = ['today', ...(modOn('mail') ? ['mail'] : []), 'priority', 'favareas', 'favs', ...(kitCount ? ['keepintouch'] : [])];
+          const order = ['today', ...(modOn('mail') ? ['mail'] : []), 'priority', 'favareas', 'favs', ...(modOn('today') ? ['tracker'] : [])];
           let open = state.home.tileOpen || 'today';
           if (!order.includes(open)) open = 'today';
           const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
@@ -6479,7 +6482,7 @@ window.addEventListener('resize', () => { if (state.view && state.view.type === 
 // counts a day done if you did ANY of its practices. Each practice shows its own
 // run + status against its own aim.
 function t2TrackerHtml() {
-  const P = state.practices; const T = state.today;
+  const P = state.practices || {}; const T = state.today || {};   // callable from Home too
   const tracked = (P.activities || []).filter((a) => a.tracked);
   if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a practice with <b>Track it</b> on and its run of days appears here.<br><div class="trk-foot" style="margin-top:14px;justify-content:center"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div></div>';
   const today = dayKey(new Date());

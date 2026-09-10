@@ -3498,7 +3498,22 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .pane { min-width:0; padding:30px clamp(20px,4vw,52px) 90px; max-width:1100px; }
 
 /* ── home ────────────────────────────────────────── */
-.home-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.home-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+/* The action bar - date + weather on the left, the three quick actions on the
+   right - pins to the top on desktop so New note / task / event stay to hand as
+   you scroll the home page. (Robin.) */
+.home-actionbar { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
+.home-ab-left { display:flex; align-items:center; gap:12px; min-width:0; flex-wrap:wrap; }
+.home-ab-left .home-date { margin-top:0; }
+.home-ab-left .wx-chip { margin-top:0; }
+@media (min-width:821px){
+  .home-actionbar {
+    position:sticky; top:44px; z-index:15;
+    margin:0 calc(-1 * clamp(20px,4vw,52px)) 22px; padding:10px clamp(20px,4vw,52px) 11px;
+    background:color-mix(in srgb,var(--paper) 92%,transparent); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+}
 .home-head h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(30px,4.5vw,42px); font-weight:500; }
 .home-head h1 .hi-name { color:var(--accent); font-style:italic; }
 .home-hi { min-width:0; }
