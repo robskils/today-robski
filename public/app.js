@@ -11334,7 +11334,7 @@ function reviewsBody() {
   const pastSection = allSorted.length
     ? `<section class="home-sec">${rvSecH('past', `All reviews · ${allSorted.length}`)}${rvSecOpen('past') ? `${fchips}<div class="rv-cards">${shownList.map(card).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>'}</div>` : ''}</section>`
     : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>';
-  return `${hero}${inProgressHtml}${wheelOfLifeHtml()}${pastSection}${reviewsListHtml()}`;
+  return `${hero}${wheelOfLifeHtml()}${inProgressHtml}${pastSection}${reviewsListHtml()}`;
 }
 // When is a review of this type next due? The last one of that type + its
 // period. Null if none done yet. Used for the hero line and the reminder subs.
