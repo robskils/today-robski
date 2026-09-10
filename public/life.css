@@ -1837,7 +1837,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    iOS Safari reliably fires a bubbling click on, so tap-to-go-home works on the
    phone. Reset the button chrome back to the plain wordmark it was. */
 .nav-brand { display:block; width:100%; text-align:left; background:none; border:0; -webkit-appearance:none; appearance:none; color:var(--ink);
-  font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; padding:6px 10px 12px; cursor:pointer; border-radius:8px; transition:background .12s,opacity .12s;
+  font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; padding:6px 10px 8px; cursor:pointer; border-radius:8px; transition:background .12s,opacity .12s;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   /* Stop iOS turning a tap into a text selection, and kill the tap delay. */
   -webkit-user-select:none; user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
@@ -1855,6 +1855,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 }
 .nav-k:hover { border-color:var(--accent); color:var(--ink-2); }
 .nav-k kbd { font:inherit; font-size:12px; background:var(--paper-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--ink-3); }
+/* Desktop: the brand wordmark and the search box stay pinned at the top of the
+   scrolling sidebar (brand first, search right under it), while the nav list
+   below scrolls. Both carry the sidebar's own background so items slide under. */
+@media (min-width:821px){
+  .nav-topline { position:sticky; top:0; z-index:3; background:var(--paper-2); }
+  .nav-k { position:sticky; top:var(--nav-headh,40px); z-index:3; margin-top:0; margin-bottom:12px; }
+}
 /* Primary nav: two half-width tiles per row. */
 .nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:4px; }
 /* Text buttons, no icons: a thin outline + faint fill make each read as a

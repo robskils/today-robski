@@ -2468,6 +2468,11 @@ function setNavH() {
   const nav = document.getElementById('nav');
   const h = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
   document.documentElement.style.setProperty('--navh', (h || 56) + 'px');
+  // Desktop: the brand header sticks at the top of the scrolling sidebar, and the
+  // search box sticks right under it - so measure the header's height for the
+  // search box's sticky offset.
+  const tl = nav && nav.querySelector('.nav-topline');
+  if (tl) document.documentElement.style.setProperty('--nav-headh', Math.round(tl.getBoundingClientRect().height) + 'px');
 }
 let _navHBound = false;
 function queueNavH() {
