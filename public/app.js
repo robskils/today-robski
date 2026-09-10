@@ -7069,6 +7069,24 @@ async function mailStar(key) {
   try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: target._acct, mailbox: target._mailbox, uid: target.uid, flagged: on }) }); }
   catch (e) { toast(e.message); }
 }
+// --- Important senders (VIPs) ---------------------------------------------
+// A small list of addresses whose mail gets lifted to its own box at the top of
+// the inbox. `on` switches the whole grouping off without losing the list.
+function mailVips() { return state.mailVips || (state.mailVips = { on: true, addrs: new Set() }); }
+function isVipAddr(addr) { const v = mailVips(); return !!addr && v.addrs.has(String(addr).toLowerCase()); }
+function isVipMsg(m) { return !!(m && m.from && isVipAddr(m.from.address)); }
+function persistVips() {
+  const v = mailVips();
+  api('/api/kv/mail_vips', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify({ on: v.on, addrs: [...v.addrs] }) }) }).catch(() => {});
+}
+function toggleVipFeature() { const v = mailVips(); v.on = !v.on; persistVips(); renderMail(); toast(v.on ? 'Important senders on' : 'Important senders off'); }
+function toggleVipSender(addr) {
+  const a = String(addr || '').toLowerCase().trim(); if (!a) { toast('No sender address'); return; }
+  const v = mailVips();
+  if (v.addrs.has(a)) { v.addrs.delete(a); toast('Removed from important senders'); }
+  else { v.addrs.add(a); v.on = true; toast('⭐ Added to important senders'); }
+  persistVips(); renderMail();
+}
 // Every message key in the same conversation as `key` (just [key] when threading
 // is off), so Archive/Spam/Trash act on the whole thread at once.
 function threadKeysFor(key) {
@@ -7478,6 +7496,13 @@ async function openMail(openKey) {
   if (!state.mailAreas) {
     state.mailAreas = {};
     api('/api/kv/mail_areas').then((r) => { try { state.mailAreas = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
+  }
+  // Important senders (VIPs): mail from anyone on this list is lifted into its own
+  // box at the top of the inbox. `on` toggles the whole feature. Addresses are
+  // stored lowercased. (Robin wanted his Spark "important senders" back, 2026-09.)
+  if (!state.mailVips) {
+    state.mailVips = { on: true, addrs: new Set() };
+    api('/api/kv/mail_vips').then((r) => { try { const v = JSON.parse(r.value || '{}') || {}; state.mailVips = { on: v.on !== false, addrs: new Set((v.addrs || []).map((a) => String(a).toLowerCase())) }; } catch {} if (state.view.type === 'mail' && state.mail) renderMail(); }).catch(() => {});
   }
   renderNav();
   // Instant cold open: if we have a cached inbox, paint it now and refresh behind
@@ -8215,6 +8240,8 @@ const MAIL_ICO = {
   sparkle: mIco('<path d="M12 3.6l1.7 4.9 4.9 1.7-4.9 1.7L12 16.7l-1.7-4.8L5.4 10l4.9-1.7z"/>', true),
   task: mIco('<rect x="4.5" y="4.5" width="15" height="15" rx="3.5"/><path d="M8.4 12.3l2.4 2.4 4.8-5.4"/>'),
   area: mIco('<path d="M12 3.6l8.4 8.4-8.4 8.4L3.6 12z"/>'),   // the ◈ life-area diamond, as a line icon
+  vip: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>'),        // person outline
+  vipOn: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>', true), // filled = this sender is a VIP
 };
 // Recognised video-meeting links, so we can float a "Join" button.
 const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
@@ -8318,7 +8345,24 @@ function mailListInner(loading) {
   // Always threaded, Spark-style: one clean row per conversation (the latest
   // message), with a quiet count when there's more than one. Opening it shows
   // the whole conversation. No toggle, no chevrons, no big-deal badges.
-  const rows = buildThreads(m.messages || []).map((th) => mailRowHtml(th.latest, false, th.count)).join('');
+  const threads = buildThreads(m.messages || []);
+  // Important senders: in the inbox (not searching), lift threads from VIPs into
+  // their own box at the top so they don't get lost in the stream.
+  const v = mailVips();
+  const vipActive = v.on && v.addrs.size && (m.folder || 'inbox') === 'inbox' && !m.query;
+  if (vipActive) {
+    const vipThreads = threads.filter((th) => isVipMsg(th.latest));
+    if (vipThreads.length) {
+      const restThreads = threads.filter((th) => !isVipMsg(th.latest));
+      const vipRows = vipThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
+      const restRows = restThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
+      const errBanner0 = (!loading && (m.acctErrors || []).length)
+        ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
+        : '';
+      return `${errBanner0}<div class="mail-vip-box"><div class="mail-vip-h"><span>⭐ Important</span><button class="mail-vip-off" data-mail-vip-tog title="Turn important senders off">Turn off</button></div>${vipRows}</div>${restRows || `<div class="home-empty">Nothing else in your inbox.</div>`}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
+    }
+  }
+  const rows = threads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
   const errBanner = (!loading && (m.acctErrors || []).length)
     ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
     : '';
@@ -8394,7 +8438,7 @@ function renderMail(loading) {
     // "capture into Daybook" actions (file in a life area, make a task), the AI
     // draft, and the rare spam/block last. On mobile the whole bar wraps so none
     // of these hide off-screen (the life-area button used to scroll out of view).
-    const msgActs = `<button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button>`;
+    const msgActs = `<button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic mail-vip-btn ${o.from && isVipAddr(o.from.address) ? 'on' : ''}" data-mail-vip="${esc(o.from ? o.from.address : '')}" title="${o.from && isVipAddr(o.from.address) ? 'Important sender - tap to remove' : 'Mark as an important sender'}">${o.from && isVipAddr(o.from.address) ? MAIL_ICO.vipOn : MAIL_ICO.vip}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="mail-claudius mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -8442,6 +8486,7 @@ function renderMail(loading) {
     </div>` : `<div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
+      <button class="tbl-filter-btn mail-vip-tog ${mailVips().on ? 'on' : ''}" data-mail-vip-tog title="${mailVips().on ? 'Important senders on - group them at the top' : 'Important senders off'}">⭐</button>
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}`}
 ${''/* The "older unread sits further down" banner is retired: the background
@@ -14148,6 +14193,8 @@ document.addEventListener('click', (e) => {
   const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
   const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(mblk.dataset.mailBlock, mblk.dataset.mailFrom || ''); return; }
+  if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
+  const mvip = t.closest('[data-mail-vip]'); if (mvip) { e.preventDefault(); e.stopPropagation(); toggleVipSender(mvip.dataset.mailVip); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
   const mo = t.closest('[data-mail-open]'); if (mo) { if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; }

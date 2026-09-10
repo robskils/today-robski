@@ -4314,6 +4314,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-layout.reading .mail-list-col { display:none; }
 .mail-list { display:block; }
 .mail-list .home-empty { padding-left:16px; padding-right:16px; }
+/* Important senders box: the VIP threads, lifted to the top with a soft gold
+   wash so the eye lands on them first. The rest of the inbox follows below. */
+.mail-vip-box { background:color-mix(in srgb,var(--gold) 7%,var(--card)); border-bottom:1px solid color-mix(in srgb,var(--gold) 30%,var(--line)); box-shadow:inset 3px 0 0 var(--gold); }
+.mail-vip-h { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 16px 5px; font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:color-mix(in srgb,var(--gold) 62%,var(--ink-2)); }
+.mail-vip-off { background:none; border:0; cursor:pointer; font-size:12px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--ink-3); padding:2px 4px; border-radius:7px; }
+.mail-vip-off:hover { color:var(--accent); }
+.mail-act-ic.mail-vip-btn.on { color:var(--gold); }
 /* Multi-select: a checkbox overlays the avatar on hover / in select mode. */
 .mail-row { position:relative; }
 .mail-check { position:absolute; left:20px; top:15px; width:38px; height:38px; box-sizing:border-box; border-radius:50%; border:2px solid var(--line-2); background:var(--card); display:inline-flex; align-items:center; justify-content:center; color:var(--accent-ink); font-size:16px; opacity:0; pointer-events:none; z-index:2; transition:opacity .1s; }
