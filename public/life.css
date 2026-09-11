@@ -1217,8 +1217,19 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rv-pt-arrow { transition:transform .12s; }
 .rv-ptile:hover .rv-pt-arrow { transform:translateX(3px); }
 .rv-pt-weekly { --pt-c:var(--accent); }
-/* Each type's current tile carries a slim "previous" strip beneath it - the
-   period just gone, tap to open its report or fill it in. (Robin.) */
+/* Current + Previous as two equal tiles per type: a two-column grid (Current on
+   the left, Previous on the right), one row per review type, stacking on mobile.
+   Grid rows stretch, so the previous tile is exactly the current's size. (Robin.) */
+.rv-pairs { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:6px 0 22px; align-items:stretch; }
+@media (max-width:640px){ .rv-pairs { grid-template-columns:1fr; } }
+.rv-pairs .rv-ptile { height:100%; min-height:118px; gap:5px; }
+.rv-pt-rel { flex:none; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--pt-c,var(--accent)); background:color-mix(in srgb,var(--pt-c,var(--accent)) 11%,transparent); border-radius:999px; padding:2px 9px; }
+.rv-ptile.is-prev { background:var(--paper-2); }
+.rv-ptile.is-prev .rv-pt-rel { color:var(--ink-3); background:var(--paper); }
+.rv-pt-mid { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto; }
+.rv-pt-mid .rv-pt-hook { margin:0; }
+.rv-pt-badge.is-none { color:var(--ink-3); background:var(--paper); }
+/* (legacy) Each type's current tile once carried a slim "previous" strip beneath. */
 .rv-ptgroup { display:flex; flex-direction:column; gap:8px; }
 .rv-prevstrip { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:8px 13px; border:1px solid var(--line); border-left:3px solid var(--pt-c,var(--line)); border-radius:11px; background:var(--paper-2); cursor:pointer; transition:border-color .12s, background .12s, transform .08s; }
 .rv-prevstrip:hover { border-color:var(--pt-c,var(--accent)); background:var(--card); transform:translateY(-1px); }
@@ -1973,6 +1984,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-when-lbl { flex:none; width:52px; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
 .ce-when-fields { display:flex; align-items:center; gap:8px; flex:1; min-width:0; flex-wrap:wrap; }
 .add-event.allday-on .ce-timefield { display:none; }
+/* On a narrow screen, stack Start and End each to a full row (date flexes, time
+   sits beside it) so the pair can never push the form off-screen. */
+@media (max-width:480px){
+  .add-event .ce-when { flex-direction:column; align-items:stretch; }
+  .add-event .ce-wcell { display:flex; flex-wrap:wrap; width:100%; min-width:0; align-items:center; gap:7px 9px; }
+  .add-event .ce-wcell .date-field { flex:1 1 120px; min-width:0; }
+  .add-event .ce-wcell .ce-timefield { flex:1 1 90px; min-width:0; max-width:100%; }
+  .add-event .ce-warrow { display:none; }
+  .add-event .ce-allday { align-self:flex-start; }
+  /* Backstop: nothing in the form may force the page to scroll sideways. */
+  .add-event { overflow-x:clip; }
+}
 /* The event form is a tidy card, not a wrapping flex row (which stretched the
    title box to the height of the Start/End block). Title on its own line, the
    when-block, an all-day toggle, then a footer row of location + repeat + save. */

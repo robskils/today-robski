@@ -11935,59 +11935,34 @@ function reviewsBody() {
     ? `<button class="rv-start-weekly rv-hero-done" data-open-review="${thisWeek.id}"><span class="rvw-ic">✓</span><span class="rvw-body"><b>${inProgWk ? 'This' : 'Last'} week's review - submitted</b><small>Tap to look back over it.</small></span><span class="rvw-go">→</span></button>`
     : `<button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start ${wkWord} week's review</b><small>${inProgWk ? "It's only partway through - start now and add to it as the week goes." : "A few minutes, and you'll know where you stand."}</small></span><span class="rvw-go">→</span></button>`;
   const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-  // The "previous one" beside each type's current review: the period just before
-  // the one shown as current. A compact strip - open its report if it exists, or
-  // fill it in if you never did. (Robin: show each type's current AND previous.)
-  const prevStrip = (k, curWin) => {
-    const w = prevPeriodWindow(k, curWin);
+  // Each review type shows two equal tiles - its Current period and the Previous
+  // one - so "the previous review is the same size as the current". A tile opens
+  // its report if filed, continues it if started, or starts it if not. (Robin.)
+  const revTile = (k, w, rel) => {
     const pt = periodTitle(k, w.from, w.to);
-    const main = (k === 'weekly') ? `${shortD(w.from)} – ${shortD(w.to)}` : pt.main;
+    const period = (k === 'weekly') ? `${shortD(w.from)} – ${shortD(w.to)}` : pt.main;
     const ex = past.find((r) => (r.props || {}).rtype === k && (r.props || {}).to === w.to);
     const prog = ex && (ex.props || {}).status === 'inprogress';
     const done = ex && (ex.props || {}).status === 'done';
-    const status = done ? '✓ Filed' : prog ? '● In progress' : 'Not done';
-    const statusCls = done ? 'is-done' : prog ? 'is-prog' : 'is-none';
-    const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review-period="${k}|${w.from}|${w.to}"`;
-    return `<button class="rv-prevstrip rv-pt-${k}" ${attr} title="${esc(main)} · ${done ? 'filed' : prog ? 'in progress' : 'not done yet'}">
-      <span class="rv-prev-lbl">Previous</span>
-      <span class="rv-prev-period">${esc(main)}</span>
-      <span class="rv-prev-badge ${statusCls}">${status}</span>
-      <span class="rv-prev-go">→</span>
+    const badge = done ? '<span class="rv-pt-badge is-done">✓ Filed</span>' : prog ? '<span class="rv-pt-badge is-prog">● In progress</span>' : '<span class="rv-pt-badge is-none">Not done yet</span>';
+    const cta = done ? 'Look back' : prog ? 'Continue' : 'Start';
+    const attr = ex ? `data-open-review="${ex.id}"` : (rel === 'current' ? `data-start-review="${k}"` : `data-start-review-period="${k}|${w.from}|${w.to}"`);
+    // A context line: the weekly-current shows its due date; the rest a short hook.
+    let line = '';
+    if (rel === 'current' && k === 'weekly') line = dueLine;
+    else if (rel === 'current') { const isCur = w.to === currentPeriodWindow(k, todayISO).to; line = isCur ? { monthly: 'This month, as it unfolds.', quarterly: 'This quarter, as it takes shape.', yearly: 'This year, as it builds.' }[k] : { monthly: 'What moved this month?', quarterly: 'The cycle just gone.', yearly: 'The whole year.' }[k]; }
+    return `<button class="rv-ptile rv-pt-${k}${rel === 'previous' ? ' is-prev' : ''}" ${attr}>
+      <div class="rv-pt-top"><span class="rv-pt-label rv-l-${k}">${REVIEWS[k].label}</span><span class="rv-pt-rel">${rel === 'current' ? 'Current' : 'Previous'}</span></div>
+      <div class="rv-pt-period">${esc(period)}</div>
+      <div class="rv-pt-mid">${line ? `<span class="rv-pt-hook">${line}</span>` : ''}${badge}</div>
+      <div class="rv-pt-cta">${cta} <span class="rv-pt-arrow">→</span></div>
     </button>`;
   };
-  const hero = `<div class="rv-hero">
-    <div class="rv-weekcol">
-      <div class="rv-weekcard">
-        ${whenHtml}
-        <div class="rv-week-due">${dueLine}</div>
-        ${heroBtn}
-      </div>
-      ${prevStrip('weekly', curWin)}
-    </div>
-    <div class="rv-other">${['monthly', 'quarterly', 'yearly'].map((k) => {
-      const w = activeReviewWindow(k, todayISO);
-      const pt = periodTitle(k, w.from, w.to);
-      const ex = past.find((r) => (r.props || {}).rtype === k && (r.props || {}).to === w.to);
-      const exProg = ex && (ex.props || {}).status === 'inprogress';
-      const exDone = ex && (ex.props || {}).status === 'done';
-      // The hook flips once you've moved onto the current, still-running period:
-      // it's a look-ahead you build up, not a retrospective of the period just gone.
-      const isCurrent = w.to === currentPeriodWindow(k, todayISO).to;
-      const hook = isCurrent
-        ? { monthly: 'This month, as it unfolds.', quarterly: 'This quarter, as it takes shape.', yearly: 'This year, in the round - build it as you go.' }[k]
-        : { monthly: 'What actually moved this month?', quarterly: 'Score the cycle just gone.', yearly: 'The whole year, in the round.' }[k];
-      const badge = exDone ? '<span class="rv-pt-badge is-done">✓ Filed</span>' : exProg ? '<span class="rv-pt-badge is-prog">● In progress</span>' : '';
-      const cta = exDone ? 'Look back' : exProg ? 'Continue' : 'Start';
-      const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review="${k}"`;
-      const currentTile = `<button class="rv-ptile rv-pt-${k}" ${attr}>
-        <div class="rv-pt-top"><span class="rv-pt-label rv-l-${k}">${REVIEWS[k].label}</span>${badge}</div>
-        <div class="rv-pt-period">${esc(pt.main)}</div>
-        <div class="rv-pt-hook">${esc(hook)}</div>
-        <div class="rv-pt-cta">${cta} <span class="rv-pt-arrow">→</span></div>
-      </button>`;
-      return `<div class="rv-ptgroup">${currentTile}${prevStrip(k, w)}</div>`;
-    }).join('')}</div>
-  </div>`;
+  const hero = `<div class="rv-pairs">${['weekly', 'monthly', 'quarterly', 'yearly'].map((k) => {
+    const cur = activeReviewWindow(k, todayISO);
+    const prevW = prevPeriodWindow(k, cur);
+    return revTile(k, cur, 'current') + revTile(k, prevW, 'previous');
+  }).join('')}</div>`;
   // Compact, dashboard-y past-review cards, filterable by type.
   // A substantial archive card - the size of the current-period cards. Shows the
   // period, how it felt (Wheel average + its word), the headline stats, and a way
