@@ -5317,6 +5317,18 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-connected { margin-top:22px; }
 .cc-conn-empty { font-size:13.5px; color:var(--ink-3); margin:4px 0 10px; }
 .cc-conn-add { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+/* Notes / Tasks / Links as three equal boxes in a row. Each is a self-contained
+   card: a quiet header, its chips, and an add control pinned to the foot so the
+   three line up however many items each holds. */
+.cc-boxes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:22px; align-items:stretch; }
+.cc-box { display:flex; flex-direction:column; gap:10px; padding:15px 16px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
+.cc-box-h { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:600; color:var(--ink); }
+.cc-box-body { flex:1; display:flex; flex-direction:column; gap:6px; }
+.cc-box-empty { margin:0; font-size:13px; color:var(--ink-3); }
+.cc-box .ce-card { background:var(--paper-2); }
+.cc-box-add { align-self:flex-start; margin-top:2px; background:none; border:1px dashed var(--line-2); border-radius:9px; padding:7px 12px; color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
+.cc-box-add:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,transparent); }
+@media (max-width:760px){ .cc-boxes { grid-template-columns:1fr; } }
 /* Christmas list controls on the contact card. */
 .cc-xmas { margin-top:22px; }
 .cc-xmas-present { display:inline-flex; align-items:center; gap:8px; font-size:15px; color:var(--ink); cursor:pointer; margin:4px 0 12px; }
