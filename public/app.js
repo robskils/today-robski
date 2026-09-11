@@ -5751,7 +5751,7 @@ function renderArea() {
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
-      ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
+      ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-event>+ Event</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
     </div>
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
@@ -5943,6 +5943,14 @@ function blockAreasControl(kind, b) {
 }
 // From a life-area page: create a task/note already tagged to this area, then
 // open it for naming. It shows up in the Tasks/Notes lists too.
+async function areaNewEvent(id) {
+  const a = state.area_open && state.area_open.area; if (!a || String(a.id) !== String(id)) return;
+  await openCalendar();
+  state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = [];
+  renderCalendar();
+  // Prefill the new event's life area with this one (the form reads ce-area).
+  setTimeout(() => { const ar = document.getElementById('ce-area'); if (ar) ar.value = a.id; const ti = document.getElementById('ce-title'); if (ti) ti.focus(); }, 40);
+}
 async function areaAddTask() {
   const area = state.area_open && state.area_open.area; if (!area) return;
   // Open the Tasks add form pre-tagged to this area, rather than pre-creating an
@@ -14900,6 +14908,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-area-add-event]')) { const a = state.area_open && state.area_open.area; if (a) areaNewEvent(a.id); return; }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
