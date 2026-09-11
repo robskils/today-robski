@@ -14378,7 +14378,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
-  const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) i.focus(); } return; }
+  const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { const typed = ($('#rw-url') || {}).value || ''; state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) { i.value = typed; i.focus(); try { i.setSelectionRange(typed.length, typed.length); } catch {} } } return; }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
   const rwr = t.closest('[data-rw-rate]'); if (rwr) { rwSetRating(rwr.dataset.rwRate, Number(rwr.dataset.rwRateN)); return; }
   const xla = t.closest('[data-xlink-add]'); if (xla) { addBlockLink(xla.dataset.xlinkKind, xla.dataset.xlinkId); return; }
