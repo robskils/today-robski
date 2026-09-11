@@ -9826,15 +9826,30 @@ function renderContactCard() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-contacts>Contacts</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(c.title || 'Unnamed')}</span>
       <span class="crumb-tools"><button class="star ${p.starred ? 'on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star this contact'}">${p.starred ? '★' : '☆'}</button><button class="note-del ghost" data-del-contact="${c.id}" title="Delete this contact">Delete</button></span></div>
-    <div class="task-focus cc-focus">
-      <span class="contact-av big">${esc(initial(c.title || '?'))}</span>
-      <textarea class="note-title" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
-      <div class="cc-quick">
-        ${(() => { const firstEmail = contactEmails(p)[0]; return firstEmail ? `<button class="cc-qbtn" data-contact-mail="${esc(firstEmail)}" title="Email ${esc(firstEmail)}"><span class="cc-qic">✉</span>Email</button>` : ''; })()}
-        ${(() => { const ph = contactPhones(p)[0]; const num = ph ? `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}` : ''; return num ? `<a class="cc-qbtn" href="tel:${esc(num)}" title="Call ${esc(c.title || 'them')}"><span class="cc-qic">☎</span>Call</a>` : ''; })()}
-        <button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(contactEmails(p)[0] || '')}" title="Invite ${esc(c.title || 'them')} to Daybook"><span class="cc-qic">✦</span>Invite</button>
+    ${(() => {
+      const areas = blockAreas(c).map((id) => areaById(id)).filter(Boolean);
+      const a0 = areas[0]; const hue = a0 ? hueOf(a0) : null;
+      const firstEmail = contactEmails(p)[0];
+      const ph = contactPhones(p)[0]; const num = ph ? `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}` : '';
+      const addr = formatAddress(contactAddresses(p)[0]);
+      const kit = p.kitEvery ? kitWhen((kitTaskOf() || {}).props ? (kitTaskOf().props.snooze) : '') : '';
+      const areaChips = areas.map((a) => `<button class="cc-area-chip" data-open-area="${a.id}" style="--h:${hueOf(a)}" title="Open ${esc(a.title)}"><span class="cd"></span>${esc(a.title)}</button>`).join('');
+      const links = [
+        firstEmail ? `<button class="cc-qbtn" data-contact-mail="${esc(firstEmail)}" title="Email ${esc(firstEmail)}"><span class="cc-qic">✉</span>Email</button>` : '',
+        num ? `<a class="cc-qbtn" href="tel:${esc(num)}" title="Call"><span class="cc-qic">☎</span>Call</a>` : '',
+        num ? `<a class="cc-qbtn" href="sms:${esc(num)}" title="Message"><span class="cc-qic">💬</span>Message</a>` : '',
+        addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"><span class="cc-qic">📍</span>Map</a>` : '',
+        `<button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(firstEmail || '')}" title="Invite to Daybook"><span class="cc-qic">✦</span>Invite</button>`,
+      ].filter(Boolean).join('');
+      return `<div class="task-focus cc-focus${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>
+      <span class="contact-av big${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>${esc(initial(c.title || '?'))}</span>
+      <div class="cc-headmain">
+        <textarea class="note-title cc-name" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
+        ${(areaChips || kit) ? `<div class="cc-sub">${areaChips}${kit ? `<span class="cc-kit-chip" title="Keep in touch">🤝 ${esc(kit)}</span>` : ''}</div>` : ''}
+        <div class="cc-quick">${links}</div>
       </div>
-    </div>
+    </div>`;
+    })()}
     <div class="cc-sec">
       <div class="cc-sec-h">Details</div>
       <div class="tf-meta">

@@ -5290,15 +5290,26 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* ── task focus (open) view ──────────────────────────── */
 .task-focus { display:flex; align-items:flex-start; gap:14px; margin-bottom:6px; }
 /* Contact header: name grows, the Email button sits right beside it. */
-.cc-focus { align-items:center; flex-wrap:wrap; }
-.cc-focus .note-title { flex:1 1 200px; }
-/* Quick actions: a tidy row of pill buttons under the name - Email, Call, Invite. */
-.cc-quick { flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+/* Contact header: avatar + name + a subline of life-area links + quick actions,
+   on a soft wash of the contact's life-area colour so the card has a face. */
+.cc-focus { display:flex; align-items:flex-start; gap:18px; flex-wrap:nowrap; padding:20px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); }
+.cc-focus.has-area { background:linear-gradient(135deg,hsl(var(--h,220) 60% 52% / .12),hsl(var(--h,220) 60% 52% / .03) 60%,var(--card)); border-color:hsl(var(--h,220) 50% 55% / .3); }
+.cc-focus .contact-av.big { flex:none; }
+.contact-av.has-area { background:linear-gradient(140deg,hsl(var(--h,220) 62% 62%),hsl(var(--h,220) 58% 48%)); }
+.cc-headmain { flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.cc-name { margin:0; padding:0; }
+.cc-sub { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.cc-area-chip { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:hsl(var(--h,220) 42% 42%); background:hsl(var(--h,220) 60% 52% / .12); border:1px solid hsl(var(--h,220) 55% 52% / .28); border-radius:999px; padding:4px 11px; cursor:pointer; transition:background .12s; }
+.cc-area-chip:hover { background:hsl(var(--h,220) 60% 52% / .2); }
+.cc-area-chip .cd { width:7px; height:7px; border-radius:50%; background:hsl(var(--h,220) 60% 52%); flex:none; }
+.cc-kit-chip { font-size:12.5px; font-weight:600; color:var(--ink-3); }
+/* Quick actions: a tidy row of pill buttons - Email, Call, Message, Map, Invite. */
+.cc-quick { display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; }
 .cc-qbtn { display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:14px; font-weight:600; text-decoration:none; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
 .cc-qbtn:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .cc-qic { font-size:15px; line-height:1; }
 .cc-qbtn-invite { color:var(--ink-3); }
-@media (max-width:560px){ .cc-quick { margin-left:0; } }
+@media (max-width:560px){ .cc-focus { padding:16px; gap:13px; } .cc-focus .contact-av.big { width:52px; height:52px; font-size:21px; } }
 /* Tidy the card into labelled sections. */
 .cc-sec { margin-top:22px; }
 .cc-sec-h { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; color:var(--ink); margin-bottom:10px; }
