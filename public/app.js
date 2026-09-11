@@ -9888,7 +9888,9 @@ function renderContactCard() {
       </div>
     </div>
     ${keepInTouchSection(c)}
+    <div class="cc-group-h">Connect</div>
     ${contactBoxesHtml(c)}
+    <div class="cc-group-h">Notes</div>
     ${notesSection(c.body, 'contact', c.id, false, 'Notes to self')}`;
   autoGrowSoon($('#contactcard-name'));
 }
