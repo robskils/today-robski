@@ -877,6 +877,30 @@ function navBack() {
   navLastKey = null; navLastView = null;           // openView re-seeds without re-pushing
   Promise.resolve(openView(prev)).catch(() => openHome());
 }
+// Wire the device / browser Back button into the app's own navigation. A single
+// "trap" history entry rides on top; a Back press fires popstate, we step back
+// one in-app level - close an open event, palette, picker or overlay, else
+// retrace the page history (navHist) - and re-arm the trap. Only when nothing is
+// left in-app does a further Back leave the app, instead of the old behaviour of
+// jumping straight out of the PWA. (Robin: Back should retrace in-app steps.)
+let _backTrapArmed = false;
+function appHandleBack() {
+  const dp = document.getElementById('dp-pop'); if (dp && dp.innerHTML) { closeDatePicker(); return true; }
+  const pal = document.getElementById('palette'); if (pal && pal.innerHTML.trim()) { closePalette(); return true; }
+  const mv = document.getElementById('move-overlay'); if (mv && mv.innerHTML) { closeMove(); return true; }
+  if (document.getElementById('prac-editor-host')) { closePracticeEditor(); return true; }
+  if (state.cal && (state.cal.adding || state.cal.editing)) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return true; }
+  if (navHist.length) { navBack(); return true; }
+  return false;
+}
+function installBackTrap() {
+  if (_backTrapArmed) return; _backTrapArmed = true;
+  try { history.pushState({ dbTrap: true }, ''); } catch {}
+  window.addEventListener('popstate', () => {
+    if (appHandleBack()) { try { history.pushState({ dbTrap: true }, ''); } catch {} }
+    // Not handled: the trap is spent and not re-armed, so a further Back exits.
+  });
+}
 function areaLinkHtml(areaId) {
   if (!areaId) return '';
   const a = areaById(areaId); if (!a) return '';
@@ -2454,7 +2478,7 @@ function renderNav() {
   }
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);
-  syncActiveTab(); renderTabs(); recordHistory();
+  syncActiveTab(); renderTabs(); recordHistory(); installBackTrap();
   queueNavH();
 }
 // The mobile tools bar (Information, Colour Scheme, Settings) is hidden until you
