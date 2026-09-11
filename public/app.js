@@ -10097,6 +10097,7 @@ function renderContactCard() {
         firstEmail ? `<button class="cc-qbtn" data-contact-mail="${esc(firstEmail)}" title="Email ${esc(firstEmail)}"><span class="cc-qic">✉</span>Email</button>` : '',
         num ? `<a class="cc-qbtn" href="tel:${esc(num)}" title="Call"><span class="cc-qic">☎</span>Call</a>` : '',
         num ? `<a class="cc-qbtn" href="sms:${esc(num)}" title="Message"><span class="cc-qic">💬</span>Message</a>` : '',
+        (() => { const wa = num.replace(/[^\d]/g, ''); return wa.length >= 8 ? `<a class="cc-qbtn cc-qbtn-wa" href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" title="Message on WhatsApp"><span class="cc-qic">🟢</span>WhatsApp</a>` : ''; })(),
         addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"><span class="cc-qic">📍</span>Map</a>` : '',
         `<button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(firstEmail || '')}" title="Invite to Daybook"><span class="cc-qic">✦</span>Invite</button>`,
       ].filter(Boolean).join('');

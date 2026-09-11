@@ -5360,6 +5360,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-qbtn:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .cc-qic { font-size:15px; line-height:1; }
 .cc-qbtn-invite { color:var(--ink-3); }
+.cc-qbtn-wa:hover { border-color:#25d366; color:#128c3e; background:color-mix(in srgb,#25d366 10%,var(--card)); }
 @media (max-width:560px){ .cc-focus { padding:16px; gap:13px; } .cc-focus .contact-av.big { width:52px; height:52px; font-size:21px; } }
 /* Tidy the card into labelled sections. */
 .cc-sec { margin-top:22px; }
