@@ -9369,14 +9369,28 @@ function contactAddrRowHtml(a, idSuffix, removable) {
     ? countrySelect('cc-adr-country-' + idSuffix, a[k] || '', 'sel cc-adr-f cc-adr-country')
     : `<input class="sel cc-adr-f cc-adr-${k}" value="${esc(a[k] || '')}" placeholder="${l}" autocomplete="off">`).join('');
   return `<div class="cc-adr-row" data-adr-row>
-    <div class="cc-adr-head"><input class="sel cc-adr-label" value="${esc(a.label || '')}" placeholder="Nickname - Work, Yorkshire, Combloux…" autocomplete="off">${removable ? '<button type="button" class="cc-multi-x cc-adr-x" data-cc-del-addr title="Remove this address">×</button>' : ''}</div>
+    <div class="cc-adr-head"><input class="sel cc-adr-label" value="${esc(a.label || '')}" placeholder="Nickname (optional)" autocomplete="off">${removable ? '<button type="button" class="cc-multi-x cc-adr-x" data-cc-del-addr title="Remove this address">×</button>' : ''}</div>
     <div class="cc-addr-row">${fields}</div>
   </div>`;
 }
+// An address reads as a tidy block once saved - nickname, then the lines - with a
+// quiet Edit to reopen the form. Only an empty card (or an explicit Edit) shows
+// the fields, so a filled-in address isn't a wall of inputs every visit.
+function addrViewLines(a) {
+  return [a.street, [a.city, a.postcode].filter(Boolean).join(' '), a.country].map((x) => (x || '').trim()).filter(Boolean);
+}
+function contactAddressView(addrs) {
+  const items = addrs.map((a) => `<div class="cc-adr-view">${a.label ? `<div class="cc-adr-view-label">${esc(a.label)}</div>` : ''}<div class="cc-adr-view-lines">${addrViewLines(a).map((l) => `<span>${esc(l)}</span>`).join('')}</div></div>`).join('');
+  return `<div class="tf-field cc-addr"><span class="tf-label">Address <button type="button" class="tf-clear" data-cc-edit-addr>Edit</button></span><div class="cc-adr-views">${items}</div></div>`;
+}
 function contactAddressFields(p) {
-  const addrs = contactAddresses(p); if (!addrs.length) addrs.push({ label: '' });
-  const rows = addrs.map((a, i) => contactAddrRowHtml(a, i, i > 0)).join('');
-  return `<div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-multi cc-adr-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-addr>+ Add address</button></div></div>`;
+  const addrs = contactAddresses(p);
+  const editing = !!(state.contact_open && state.contact_open.editAddr);
+  // Saved and not being edited: show the formatted block, not the form.
+  if (addrs.length && !editing) return contactAddressView(addrs);
+  const rows = (addrs.length ? addrs : [{ label: '' }]).map((a, i) => contactAddrRowHtml(a, i, i > 0)).join('');
+  const done = addrs.length ? '<button type="button" class="cc-multi-add cc-adr-done" data-cc-addr-done>Done</button>' : '';
+  return `<div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-multi cc-adr-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-addr>+ Add address</button>${done}</div></div>`;
 }
 // Gather every address row on the open card into the array + the mirrored primary.
 function readCardAddresses() {
@@ -14472,6 +14486,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="" title="Country code"><input class="sel cc-phone-num" type="tel" placeholder="211 234 400" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
   const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
+  if (t.closest('[data-cc-edit-addr]') && state.contact_open) { state.contact_open.editAddr = true; renderContactCard(); return; }
+  if (t.closest('[data-cc-addr-done]') && state.contact_open) { patchContact(state.contact_open.contact.id, readCardAddresses(), true); state.contact_open.editAddr = false; renderContactCard(); return; }
   if (t.closest('[data-cc-add-addr]')) { const btn = t.closest('[data-cc-add-addr]'); btn.insertAdjacentHTML('beforebegin', contactAddrRowHtml({}, 'n' + Date.now().toString(36), true)); btn.previousElementSibling.querySelector('.cc-adr-label')?.focus(); return; }
   { const dca = t.closest('[data-cc-del-addr]'); if (dca && state.contact_open) { dca.closest('[data-adr-row]').remove(); patchContact(state.contact_open.contact.id, readCardAddresses(), true); return; } }
   const cac = t.closest('[data-contact-area]'); if (cac) { state.contactsArea = cac.dataset.contactArea || null; renderContacts(); return; }
