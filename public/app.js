@@ -220,6 +220,23 @@ function mdToHtml(md) {
 // Turn any bare http(s) URL into a clickable link, without touching URLs that
 // are already inside an <a> (or a <code> span). Works on rendered HTML.
 const BARE_URL = /\bhttps?:\/\/[^\s<>()]+[^\s<>().,;:!?'"]/gi;
+// Plain emails and phone numbers typed into a note, so they become tappable
+// mailto:/tel: links too (phone: starts + / 0 / (, 8-15 digits - strict enough
+// not to swallow ordinary numbers). (Robin.)
+const BARE_EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const BARE_PHONE = /(?:\+|\b00)?[(\d][\d\s().-]{6,}\d/g;
+// The earliest URL / email / phone match in `text` at or after `from`, or null.
+function firstLinkMatch(text, from) {
+  const cands = [];
+  BARE_URL.lastIndex = from; let m = BARE_URL.exec(text); if (m) cands.push({ i: m.index, len: m[0].length, href: m[0], label: prettyLinkText(m[0]) });
+  BARE_EMAIL.lastIndex = from; m = BARE_EMAIL.exec(text); if (m) cands.push({ i: m.index, len: m[0].length, href: `mailto:${m[0]}`, label: m[0] });
+  // >=9 digits keeps real numbers (PT 9, UK 10-11, +intl) while skipping 8-digit
+  // dates like 2024-09-11.
+  BARE_PHONE.lastIndex = from; m = BARE_PHONE.exec(text); if (m) { const digits = m[0].replace(/[^\d]/g, ''); if (digits.length >= 9 && digits.length <= 15) { const tel = m[0].trim().replace(/[^\d+]/g, ''); cands.push({ i: m.index, len: m[0].length, href: `tel:${tel}`, label: m[0].trim() }); } }
+  if (!cands.length) return null;
+  cands.sort((a, b) => a.i - b.i || b.len - a.len);
+  return cands[0];
+}
 const prettyHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return String(u || ''); } };
 // A long URL is shown as host + a trimmed path so it never sprawls across the note.
 function prettyLinkText(u) {
@@ -228,21 +245,23 @@ function prettyLinkText(u) {
   catch { return u.slice(0, 47) + '…'; }
 }
 function linkifyHtml(html) {
-  if (!html || !/https?:\/\//i.test(html)) return html || '';
+  if (!html || !/(https?:\/\/|@|\d{7})/.test(html)) return html || '';
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   const walk = (node) => {
     [...node.childNodes].forEach((c) => {
       if (c.nodeType === 1) { const tn = c.tagName; if (tn !== 'A' && tn !== 'CODE') walk(c); return; }
-      if (c.nodeType !== 3 || !/https?:\/\//i.test(c.nodeValue)) return;
-      const text = c.nodeValue; const frag = doc.createDocumentFragment(); let last = 0; let m;
-      BARE_URL.lastIndex = 0;
-      while ((m = BARE_URL.exec(text))) {
-        if (m.index > last) frag.appendChild(doc.createTextNode(text.slice(last, m.index)));
+      if (c.nodeType !== 3) return;
+      const text = c.nodeValue; let frag = null, last = 0, pos = 0, match;
+      while ((match = firstLinkMatch(text, pos))) {
+        frag = frag || doc.createDocumentFragment();
+        if (match.i > last) frag.appendChild(doc.createTextNode(text.slice(last, match.i)));
         const a = doc.createElement('a');
-        a.setAttribute('href', m[0]); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer');
-        a.textContent = prettyLinkText(m[0]); frag.appendChild(a); last = m.index + m[0].length;
+        a.setAttribute('href', match.href);
+        if (/^https?:/i.test(match.href)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
+        a.textContent = match.label; frag.appendChild(a);
+        last = match.i + match.len; pos = last;
       }
-      if (!frag.childNodes.length) return;
+      if (!frag) return;
       if (last < text.length) frag.appendChild(doc.createTextNode(text.slice(last)));
       c.replaceWith(frag);
     });
@@ -14404,9 +14423,9 @@ document.addEventListener('click', (e) => {
   // Our own synthesised open-in-browser click - let it proceed, don't re-handle
   // it (that would loop forever, since this listener is on document).
   if (alink && alink.dataset && alink.dataset.extOpen) return;
-  if (alink && /^https?:/i.test(alink.getAttribute('href') || '')) {
+  if (alink && /^(https?|mailto|tel):/i.test(alink.getAttribute('href') || '')) {
     e.preventDefault();
-    openExternal(alink.href);
+    openExternal(alink.getAttribute('href'));
     return;
   }
   const ate = t.closest('[data-add-table-entry]'); if (ate) { e.stopPropagation(); openTableEntryPicker(); return; }
