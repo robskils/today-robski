@@ -5068,6 +5068,7 @@ function renderReadwatch() {
         <div class="rw-meta"><span class="rw-media">${icon} ${RW_MEDIA[mk].label}</span>${ar ? `<span class="rw-area" style="--h:${ahue}"><span class="cd"></span>${esc(ar.title)}</span>` : ''}${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
         ${rwRatingHtml(b)}
         ${isEd ? `<div class="rw-edit">
+          <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Life area</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
@@ -5171,6 +5172,12 @@ async function rwSetType(id, media) {
   b.props = b.props || {}; b.props.media = media;
   renderReadwatch();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { media } }) }); } catch (e) { toast(e.message); }
+}
+async function rwSetName(id, name) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  name = (name || '').trim(); if (!name) return;
+  b.props = b.props || {}; b.props.title = name; b.title = name;
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title: name, props: { title: name } }) }); } catch (e) { toast(e.message); }
 }
 async function rwSetDate(id, dateStr) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
@@ -15131,6 +15138,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-bc-add]')) { const cid = e.target.value; if (cid) addBlockContact(e.target.dataset.bcKind, e.target.dataset.bcId, cid); return; }
   if (e.target.matches('[data-pe-add-contact]')) { const cid = e.target.value; if (cid && state.practiceEdit) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(cid)])]; renderPeAttach(); } return; }
   if (e.target.matches('[data-rw-type-sel]')) { rwSetType(e.target.dataset.rwTypeSel, e.target.value); return; }
+  if (e.target.matches('[data-rw-name]')) { rwSetName(e.target.dataset.rwName, e.target.value); return; }
   if (e.target.matches('[data-rw-area]')) { rwSetArea(e.target.dataset.rwArea, e.target.value); return; }
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
