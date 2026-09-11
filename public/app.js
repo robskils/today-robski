@@ -6472,8 +6472,10 @@ function renderCeLocSugg(q) {
 function onEventEndEdit(prefix) {
   const startMs = evAbsMs(`${prefix}-date`, `${prefix}-time`), endMs = evAbsMs(`${prefix}-enddate`, `${prefix}-endtime`);
   if (startMs == null || endMs == null) return;
-  if (endMs <= startMs) { syncEventEnd(prefix); return; }   // an end at or before the start snaps back to start + length
-  const form = evFormOf(prefix); if (form) form.dataset.evgap = String(Math.max(15, Math.round((endMs - startMs) / 60000)));
+  // Only a LATER end updates the stored length. An end at/before the start is left
+  // exactly as typed - no snap-back (that was eating manual edits mid-entry); the
+  // save falls back to an hour only if the final value is genuinely not after the start.
+  if (endMs > startMs) { const form = evFormOf(prefix); if (form) form.dataset.evgap = String(Math.max(15, Math.round((endMs - startMs) / 60000))); }
 }
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
