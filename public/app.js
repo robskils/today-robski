@@ -9369,7 +9369,7 @@ function contactAddrRowHtml(a, idSuffix, removable) {
     ? countrySelect('cc-adr-country-' + idSuffix, a[k] || '', 'sel cc-adr-f cc-adr-country')
     : `<input class="sel cc-adr-f cc-adr-${k}" value="${esc(a[k] || '')}" placeholder="${l}" autocomplete="off">`).join('');
   return `<div class="cc-adr-row" data-adr-row>
-    <div class="cc-adr-head"><input class="sel cc-adr-label" value="${esc(a.label || '')}" placeholder="Nickname (optional)" autocomplete="off">${removable ? '<button type="button" class="cc-multi-x cc-adr-x" data-cc-del-addr title="Remove this address">×</button>' : ''}</div>
+    <div class="cc-adr-head"><input class="sel cc-adr-label" value="${esc(a.label || '')}" placeholder="Address Nickname (optional)" autocomplete="off">${removable ? '<button type="button" class="cc-multi-x cc-adr-x" data-cc-del-addr title="Remove this address">×</button>' : ''}</div>
     <div class="cc-addr-row">${fields}</div>
   </div>`;
 }
@@ -9380,7 +9380,13 @@ function addrViewLines(a) {
   return [a.street, [a.city, a.postcode].filter(Boolean).join(' '), a.country].map((x) => (x || '').trim()).filter(Boolean);
 }
 function contactAddressView(addrs) {
-  const items = addrs.map((a) => `<div class="cc-adr-view">${a.label ? `<div class="cc-adr-view-label">${esc(a.label)}</div>` : ''}<div class="cc-adr-view-lines">${addrViewLines(a).map((l) => `<span>${esc(l)}</span>`).join('')}</div></div>`).join('');
+  const items = addrs.map((a) => {
+    const q = encodeURIComponent(formatAddress(a));
+    const maps = `https://www.google.com/maps/search/?api=1&query=${q}`;
+    const transit = `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=transit`;
+    return `<div class="cc-adr-view">${a.label ? `<div class="cc-adr-view-label">${esc(a.label)}</div>` : ''}<div class="cc-adr-view-lines">${addrViewLines(a).map((l) => `<span>${esc(l)}</span>`).join('')}</div>
+      <div class="cc-adr-actions"><a class="cc-adr-link" href="${maps}" target="_blank" rel="noopener noreferrer"><span>🗺</span> Google Maps</a><a class="cc-adr-link" href="${transit}" target="_blank" rel="noopener noreferrer" title="Directions by public transport from where you are"><span>🚆</span> Get there</a></div></div>`;
+  }).join('');
   return `<div class="tf-field cc-addr"><span class="tf-label">Address <button type="button" class="tf-clear" data-cc-edit-addr>Edit</button></span><div class="cc-adr-views">${items}</div></div>`;
 }
 function contactAddressFields(p) {

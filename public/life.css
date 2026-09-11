@@ -5384,6 +5384,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-adr-view { padding:11px 14px; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:12px; background:var(--card); }
 .cc-adr-view-label { font-weight:700; color:var(--ink); font-size:14px; margin-bottom:3px; }
 .cc-adr-view-lines { display:flex; flex-direction:column; gap:1px; font-size:15px; color:var(--ink-2); line-height:1.45; }
+.cc-adr-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.cc-adr-link { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; border:1px solid var(--line-2); background:var(--paper-2); color:var(--ink-2); font-size:13.5px; font-weight:600; text-decoration:none; transition:border-color .12s, color .12s, background .12s; }
+.cc-adr-link:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .cc-adr-done { color:var(--accent); font-weight:600; }
 .focus-notes { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
 .fn-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 8px; margin:0; }
