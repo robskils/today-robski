@@ -9596,12 +9596,17 @@ function renderContacts() {
       ${contactSelBarHtml()}
       ${state.contactAdding ? contactAddForm() : ''}
       ${(() => {
-        // On the default "All" view, pull starred contacts into their own section
-        // at the top; the grid below then holds the rest, A-Z.
+        // On the default "All" view, lift starred and recently-opened contacts into
+        // their own sections at the top; the grid below then holds the rest, A-Z.
         const starred = (!af) ? list.filter((c) => c.props && c.props.starred) : [];
-        const rest = starred.length ? list.filter((c) => !(c.props && c.props.starred)) : list;
-        return `${starred.length ? `<div class="cts-sec-h">★ Starred <span class="muted">${starred.length}</span></div><div class="contact-grid cts-starred">${starred.map(contactCardHtml).join('')}</div>${rest.length ? '<div class="cts-sec-h">All contacts</div>' : ''}` : ''}
-      <div class="contact-grid">${rest.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>`;
+        const starIds = new Set(starred.map((c) => c.id));
+        const recent = (!af) ? recentContactIds().map((id) => list.find((c) => c.id === id)).filter(Boolean).filter((c) => !starIds.has(c.id)).slice(0, 6) : [];
+        const special = new Set([...starIds, ...recent.map((c) => c.id)]);
+        const rest = special.size ? list.filter((c) => !special.has(c.id)) : list;
+        const starH = starred.length ? `<div class="cts-sec-h">★ Starred <span class="muted">${starred.length}</span></div><div class="contact-grid cts-starred">${starred.map(contactCardHtml).join('')}</div>` : '';
+        const recentH = recent.length ? `<div class="cts-sec-h">🕘 Recent <span class="muted">${recent.length}</span></div><div class="contact-grid cts-recent">${recent.map(contactCardHtml).join('')}</div>` : '';
+        const allH = (special.size && rest.length) ? '<div class="cts-sec-h">All contacts</div>' : '';
+        return `${starH}${recentH}${allH}<div class="contact-grid">${rest.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>`;
       })()}
     </section>
 
