@@ -5031,7 +5031,8 @@ async function openReadwatch() {
   renderNav();
   const prev = state.rw || {};
   const savedSort = (() => { try { return localStorage.getItem('life.rwSort'); } catch { return null; } })();
-  try { state.rw = { items: await api('/api/blocks?kind=bookmark&parent_id='), filter: prev.filter || 'todo', sort: prev.sort || savedSort || 'added-desc', addType: prev.addType, setup: prev.setup, showSetup: false, saving: false, editing: prev.editing || new Set() }; }
+  const savedType = (() => { try { return localStorage.getItem('life.rwType') || ''; } catch { return ''; } })();
+  try { state.rw = { items: await api('/api/blocks?kind=bookmark&parent_id='), filter: prev.filter || 'todo', sort: prev.sort || savedSort || 'added-desc', typeFilter: prev.typeFilter != null ? prev.typeFilter : savedType, addType: prev.addType, setup: prev.setup, showSetup: false, saving: false, editing: prev.editing || new Set() }; }
   catch (e) { state.rw = { items: [], filter: 'todo' }; toast(e.message); }
   state.rw.items.sort((a, b) => String((b.props && b.props.added) || b.created_at || '').localeCompare(String((a.props && a.props.added) || a.created_at || '')));
   renderReadwatch();
@@ -5043,10 +5044,15 @@ function renderReadwatch() {
   // Life areas power the per-item area picker + colour; pull them in once if this
   // is a cold open straight onto Read & Watch.
   if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'readwatch') renderReadwatch(); } }).catch(() => {});
-  // One list, split by state: unread on top, read below. Ticking the box moves an
-  // item between the two. The box IS the read/unread toggle - empty = unread.
-  const unread = rwSortList(items.filter((b) => (b.props || {}).status !== 'done'), sort);
-  const read = rwSortList(items.filter((b) => (b.props || {}).status === 'done'), sort);
+  // Type filter (All / Films / Books / Articles / Videos / Websites), so this can
+  // read as "films I want to see" and "films I've seen", and the same per type.
+  const tf = rw.typeFilter || '';
+  const inType = (b) => !tf || rwMediaKey(b.props || {}) === tf;
+  const scoped = items.filter(inType);
+  // Split by state: to-do on top, done below. Ticking the box moves an item
+  // between the two. The box IS the done toggle - empty = still to do.
+  const unread = rwSortList(scoped.filter((b) => (b.props || {}).status !== 'done'), sort);
+  const read = rwSortList(scoped.filter((b) => (b.props || {}).status === 'done'), sort);
   const editing = rw.editing || new Set();
   const card = (b) => {
     const p = b.props || {}; const done = p.status === 'done';
@@ -5088,8 +5094,19 @@ function renderReadwatch() {
     <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
     <div class="rw-type" title="Daybook works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
-    ${items.length ? `<div class="rw-sortbar"><select class="rw-sort sel" data-rw-sort title="Order">${RW_SORTS.map(([k, l]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-    ${section('To read &amp; watch', unread, 'All caught up - nothing left.')}${read.length ? section('Finished', read, '') : ''}`
+    ${items.length ? `${(() => {
+      const tc = {}; items.forEach((b) => { const k = rwMediaKey(b.props || {}); tc[k] = (tc[k] || 0) + 1; });
+      const chips = RW_MEDIA_ORDER.filter((k) => tc[k]).map((k) => `<button class="rw-fchip ${tf === k ? 'on' : ''}" data-rw-typefilter="${k}">${RW_MEDIA[k].ic} ${RW_MEDIA[k].label} · ${tc[k]}</button>`).join('');
+      return `<div class="rw-typefilter"><button class="rw-fchip ${!tf ? 'on' : ''}" data-rw-typefilter="">All · ${items.length}</button>${chips}</div>`;
+    })()}
+    <div class="rw-sortbar"><select class="rw-sort sel" data-rw-sort title="Order">${RW_SORTS.map(([k, l]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    ${(() => {
+      const TODO = { film: 'Want to see', book: 'Want to read', article: 'To read', video: 'To watch', link: 'To visit' };
+      const DONE = { film: 'Seen', book: 'Read', article: 'Read', video: 'Watched', link: 'Visited' };
+      const todoLbl = tf ? (TODO[tf] || 'To do') : 'To read &amp; watch';
+      const doneLbl = tf ? (DONE[tf] || 'Done') : 'Finished';
+      return `${section(todoLbl, unread, 'All caught up - nothing left.')}${read.length ? section(doneLbl, read, '') : ''}`;
+    })()}`
       : '<div class="empty">Nothing here yet. Paste a link above, or set up one-tap saving.</div>'}`;
 }
 function rwSetupHtml() {
@@ -14391,6 +14408,7 @@ document.addEventListener('click', (e) => {
   const xla = t.closest('[data-xlink-add]'); if (xla) { addBlockLink(xla.dataset.xlinkKind, xla.dataset.xlinkId); return; }
   const xld = t.closest('[data-xlink-del]'); if (xld) { removeBlockLink(xld.dataset.xlinkKind, xld.dataset.xlinkId, Number(xld.dataset.xlinkIdx)); return; }
   const bcu = t.closest('[data-bc-unlink]'); if (bcu) { removeBlockContact(bcu.dataset.bcKind, bcu.dataset.bcId, bcu.dataset.bcCid); return; }
+  { const rtf = t.closest('[data-rw-typefilter]'); if (rtf) { if (state.rw) { state.rw.typeFilter = rtf.dataset.rwTypefilter; try { localStorage.setItem('life.rwType', state.rw.typeFilter); } catch {} renderReadwatch(); } return; } }
   const rwed = t.closest('[data-rw-edit]'); if (rwed) { rwToggleEdit(rwed.dataset.rwEdit); return; }
   const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }

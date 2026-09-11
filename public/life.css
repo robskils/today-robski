@@ -5256,6 +5256,11 @@ table.ttable tr:last-child td { border-bottom:0; }
 .rw-sec { margin-bottom:22px; }
 .rw-sec-h { margin-bottom:12px; }
 .rw-sortbar { display:flex; justify-content:flex-end; margin-bottom:14px; }
+/* Type filter: All / Films / Books / Articles / Videos / Websites. */
+.rw-typefilter { display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 14px; }
+.rw-fchip { display:inline-flex; align-items:center; gap:6px; padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
+.rw-fchip:hover { border-color:var(--line-2); }
+.rw-fchip.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .rw-setup-panel { border:1px solid var(--line); border-radius:14px; background:var(--paper-2); padding:18px 20px; margin-bottom:16px; font-size:14.5px; color:var(--ink-2); line-height:1.5; }
 .rw-setup-h { font-size:16px; font-weight:600; color:var(--ink); margin-bottom:12px; }
 .rw-setup-sec { margin-bottom:14px; }
