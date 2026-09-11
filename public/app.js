@@ -3917,7 +3917,7 @@ function renderHome() {
         <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1></div>
       </div>
       <div class="home-actionbar">
-        <div class="home-ab-left"><span class="home-time">${homeTimeStr()}</span><span class="home-date">${homeDate()}</span>${weatherChipHtml()}</div>
+        <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}<span class="home-time">${homeTimeStr()}</span></div>
         <div class="home-actions"><button class="add-btn wide" data-new-note>${t('home.newnote')}</button><button class="add-btn wide" data-quick-task>${t('home.newtask')}</button><button class="add-btn wide" data-quick-event>${t('home.newevent')}</button></div>
       </div>
       ${alertsHtml()}

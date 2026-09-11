@@ -3595,7 +3595,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-date { margin-top:4px; font-size:16px; color:var(--accent); font-weight:600; letter-spacing:.01em; }
 /* The live time: a quiet serif note beside the date, set a touch larger so it
    reads as a gentle clock rather than a label. */
-.home-time { font-family:'Cormorant Garamond',serif; font-size:23px; font-weight:600; line-height:1; color:var(--ink-2); letter-spacing:.01em; font-variant-numeric:tabular-nums; }
+.home-time { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:600; line-height:1.2; color:var(--ink-2); letter-spacing:.01em; font-variant-numeric:tabular-nums; }
 .home-ab-left .home-time { margin-top:0; }
 .wx-chip { display:inline-flex; align-items:center; gap:8px; margin-top:9px; padding:5px 12px; border-radius:999px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow-sm); font-size:14px; color:var(--ink-2); }
 .wx-ic { font-size:16px; line-height:1; }
