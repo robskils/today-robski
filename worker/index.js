@@ -2079,6 +2079,89 @@ async function sendReviewMail(env, { to, label, home }) {
   await sendSystemMail(env, { to, subject, html, text });
 }
 
+// ── event reminders by text / email ────────────────────────────────────
+// The in-app alarm fires while Daybook is open; this is the other half - the
+// every-minute tick sends a text and/or email for any timed event whose chosen
+// channel is sms/email/both, at its reminder time. Dedup is per occurrence in a
+// settings map so a late or repeated tick can never send twice.
+const EV_CATCHUP_MIN = 6;   // how long after the fire minute a missed tick may still send
+async function runEventRemindersAll(env) {
+  let sent = 0;
+  for (const u of await activeUsers(env)) {
+    sent += await runEventRemindersForUser(env, u).catch((e) => { console.error('eventReminders', u.id, e.message); return 0; });
+  }
+  return { sent };
+}
+async function runEventRemindersForUser(env, user) {
+  const uid = user.id;
+  const uenv = { ...env, uid, user };
+  const alarms = await getEventAlarms(uenv).catch(() => ({}));
+  // Only events you asked to hear about by text/email need any server work; a
+  // bare-number (in-app) alarm is handled client-side. No such alarm → no fetch.
+  const wantsExternal = Object.values(alarms).some((v) => v && typeof v === 'object' && (v.ch === 'sms' || v.ch === 'email' || v.ch === 'both'));
+  if (!wantsExternal) return 0;
+
+  const now = localParts(new Date(), TZ);
+  const to = addDaysStr(now.date, 2);   // up to a day ahead (+crossing midnight) covers the 1-day-before max
+  const native = await nativeRangeEvents(uenv, now.date, to).catch(() => []);
+  const g = await calendarRange(uenv, now.date, to).catch(() => ({ events: [] }));
+  const events = [...(g.events || []), ...native];
+  applyEventAlarms(events, alarms);
+
+  // Per-occurrence dedup (`baseId:date`). Prune anything from before today.
+  let sentMap = {};
+  try { sentMap = JSON.parse((await getSetting(uenv, 'event_alarm_sent')) || '{}') || {}; } catch {}
+  let changed = false;
+  for (const k of Object.keys(sentMap)) { const d = k.slice(k.lastIndexOf(':') + 1); if (d && d < now.date) { delete sentMap[k]; changed = true; } }
+
+  const dayOffsetMin = (d) => Math.round((Date.parse(`${d}T00:00:00Z`) - Date.parse(`${now.date}T00:00:00Z`)) / 86400000) * 1440;
+  const fired = [];
+  for (const e of events) {
+    if (e.allDay || e.start_min == null || e.alarm == null) continue;   // timed events only
+    const ch = e.alarmCh; if (!(ch === 'sms' || ch === 'email' || ch === 'both')) continue;
+    const minsUntil = dayOffsetMin(e.date) + e.start_min - now.min;
+    const alarm = Number(e.alarm) || 0;
+    // Fire once we've reached (start - alarm), with a short catch-up for a late tick.
+    if (!(minsUntil <= alarm && minsUntil >= alarm - EV_CATCHUP_MIN)) continue;
+    const baseId = String(e.id || '').split(NATIVE_SEP)[0];
+    const key = `${baseId}:${e.date}`;
+    if (sentMap[key]) continue;
+    fired.push({ e, ch, minsUntil, key });
+  }
+  if (!fired.length) { if (changed) await setSetting(uenv, 'event_alarm_sent', JSON.stringify(sentMap)).catch(() => {}); return 0; }
+
+  const home = `https://${user.subdomain || 'robski'}.daybook.fyi`;
+  const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
+  const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
+  const email = uid === 1 ? (env.BRIEF_EMAIL || user.email) : user.email;
+  let count = 0;
+  for (const f of fired) {
+    const e = f.e;
+    const hh = `${String((e.start_min / 60) | 0).padStart(2, '0')}:${String(e.start_min % 60).padStart(2, '0')}`;
+    const inMin = Math.max(0, f.minsUntil);
+    const whenPhrase = inMin <= 0 ? 'now' : inMin < 60 ? `in ${inMin} min` : `in ${Math.round(inMin / 60)} h`;
+    let ok = false;
+    if ((f.ch === 'sms' || f.ch === 'both') && phone) {
+      const body = `⏰ ${e.title || 'Event'} at ${hh}${e.location ? `, ${e.location}` : ''} - ${whenPhrase}. ${home}/calendar`;
+      const r = await sendSms(env, body, phone).catch(() => ({ ok: false }));
+      ok = ok || !!(r && r.ok);
+    }
+    if ((f.ch === 'email' || f.ch === 'both') && email) {
+      await sendEventReminderMail(env, { to: email, title: e.title || 'Event', when: hh, whenPhrase, location: e.location, home }).catch(() => {});
+      ok = true;
+    }
+    if (ok) { sentMap[f.key] = 1; changed = true; count++; }
+  }
+  if (changed) await setSetting(uenv, 'event_alarm_sent', JSON.stringify(sentMap)).catch(() => {});
+  return count;
+}
+async function sendEventReminderMail(env, { to, title, when, whenPhrase, location, home }) {
+  const subject = `Reminder: ${title} at ${when}`;
+  const bodyHtml = `<p style="margin:0">A reminder you asked for: <b>${escHtml(title)}</b> starts at <b>${escHtml(when)}</b>${location ? ` · ${escHtml(location)}` : ''} - ${escHtml(whenPhrase)}.</p>`;
+  const html = brandedSystemEmail({ home, eyebrow: 'Event reminder', headline: title, bodyHtml, ctaHref: `${home}/calendar`, ctaLabel: 'Open the calendar', preheader: `${title} at ${when} - ${whenPhrase}`, title: subject });
+  const text = `Reminder: ${title} at ${when}${location ? ` · ${location}` : ''} - ${whenPhrase}.\n\nOpen the calendar: ${home}/calendar\n\nManage notifications: ${home}/settings/notifications\n\nFor a life well lived.`;
+  await sendSystemMail(env, { to, subject, html, text });
+}
 // Shared sender for the small system emails (surface note, review reminder):
 // contact@daybook.fyi over Purelymail SMTP, falling back to Resend.
 async function sendSystemMail(env, { to, subject, html, text }) {
@@ -3397,6 +3480,8 @@ export default {
     ctx.waitUntil(maybePollChannels(env).catch((e) => console.error('advicePoll:', e.message)));
     // Review reminders: push a nudge when one the user set falls due.
     ctx.waitUntil(maybeReviewReminders(env).catch((e) => console.error('reviewReminders:', e.message)));
+    // Event reminders by text / email, at each event's chosen lead time.
+    ctx.waitUntil(runEventRemindersAll(env).catch((e) => console.error('eventReminders:', e.message)));
     // Keep the Fulham fixtures cache fresh (self-gated to ~12h).
     ctx.waitUntil(maybeRefreshFixtures(env).catch((e) => console.error('fixtures:', e.message)));
   },
