@@ -345,7 +345,7 @@ async function createEvent(request, env) {
     const r = await createNativeEvent(env, b);
     if (r.error) return err(r.error, request);
     if (b.area !== undefined) await setEventAreaFor(env, r.id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, r.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, r.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, r.id, b.alarm).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, r.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, r.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, r.id, b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: r.id }, request, 201);
   }
 
@@ -395,7 +395,7 @@ async function createEvent(request, env) {
         const qRes = await fetch(q, { headers: { Authorization: `Bearer ${token}` } });
         if (qRes.ok) {
           const found = ((await qRes.json()).items || []).find((e) => e.status !== 'cancelled');
-          if (found) { if (b.area !== undefined) await setEventAreaFor(env, found.id, b.area).catch(() => {}); if (b.contact !== undefined) await setEventContactFor(env, found.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, found.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, found.id, b.alarm).catch(() => {}); return json({ ok: true, id: found.id, existed: true }, request, 200); }
+          if (found) { if (b.area !== undefined) await setEventAreaFor(env, found.id, b.area).catch(() => {}); if (b.contact !== undefined) await setEventContactFor(env, found.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, found.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, found.id, b.alarm, b.alarmCh).catch(() => {}); return json({ ok: true, id: found.id, existed: true }, request, 200); }
         }
       } catch { /* lookup is best-effort; fall through and create */ }
     }
@@ -431,7 +431,7 @@ async function createEvent(request, env) {
 
     const ev = await res.json();
     if (b.area !== undefined) await setEventAreaFor(env, ev.id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, ev.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, ev.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, ev.id, b.alarm).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, ev.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, ev.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, ev.id, b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: ev.id }, request, 201);
   } catch (e) {
     console.error('createEvent:', e.message);
@@ -472,7 +472,7 @@ async function updateEvent(request, env, id) {
     await env.DB.prepare("UPDATE blocks SET title=?, props=?, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
       .bind(title, JSON.stringify(p), new Date().toISOString(), native.id, env.uid).run();
     if (b.area !== undefined) await setEventAreaFor(env, native.id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, native.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, native.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, native.id, b.alarm).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, native.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, native.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, native.id, b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: native.id }, request);
   }
   if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
@@ -514,7 +514,7 @@ async function updateEvent(request, env, id) {
     if (!res.ok) { console.error('google update event:', res.status, await res.text()); return err('Google would not update that event.', request, 502); }
     const ev = await res.json();
     if (b.area !== undefined) await setEventAreaFor(env, id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, id, b.alarm).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, id, b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: ev.id }, request);
   } catch (e) {
     console.error('updateEvent:', e.message);
@@ -968,14 +968,23 @@ function applyEventUrls(events, map) { if (!map) return events; for (const e of 
 // Side-mapped like the others so it works on the owner's Google events too. The
 // alarm itself fires client-side, so this just stores when.
 async function getEventAlarms(env) { const v = await getSetting(env, 'event_alarms'); try { return v ? JSON.parse(v) : {}; } catch { return {}; } }
-async function setEventAlarmFor(env, id, alarm) {
+// A stored alarm is either a bare number (legacy: minutes-before, in-app only) or
+// { m: minutes, ch: 'app'|'sms'|'email'|'both' }. `ch` chooses how to remind -
+// in-app only (default), or also by text / email / both.
+const ALARM_CHANNELS = ['app', 'sms', 'email', 'both'];
+async function setEventAlarmFor(env, id, alarm, ch) {
   const key = String(id || '').split('::')[0]; if (!key) return;
   const map = await getEventAlarms(env);
   const n = Number(alarm);
-  if (alarm === '' || alarm == null || Number.isNaN(n) || n < 0) delete map[key]; else map[key] = Math.min(1440, Math.round(n));
+  if (alarm === '' || alarm == null || Number.isNaN(n) || n < 0) { delete map[key]; }
+  else { const m = Math.min(1440, Math.round(n)); const channel = ALARM_CHANNELS.includes(ch) ? ch : 'app'; map[key] = channel === 'app' ? m : { m, ch: channel }; }
   await setSetting(env, 'event_alarms', JSON.stringify(map));
 }
-function applyEventAlarms(events, map) { if (!map) return events; for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; if (map[k] != null) e.alarm = map[k]; } return events; }
+function applyEventAlarms(events, map) {
+  if (!map) return events;
+  for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; const v = map[k]; if (v == null) continue; if (typeof v === 'object') { e.alarm = v.m; e.alarmCh = v.ch || 'app'; } else { e.alarm = v; e.alarmCh = 'app'; } }
+  return events;
+}
 // Notes connected to an event, side-mapped by base id like the rest so it works on
 // the owner's Google events too. Stores lightweight {id,title} snapshots so the
 // calendar can list a linked note's name without loading notes; the note holds the

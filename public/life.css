@@ -2018,6 +2018,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-alarm-custom { display:flex; gap:8px; margin-top:7px; }
 .ce-alarm-custom #ce-alarm-n { flex:none; width:84px; max-width:84px; }
 .ce-alarm-custom #ce-alarm-u { flex:1; min-width:0; }
+.ce-alarm-ch { margin-top:7px; }
+.ce-alarm-ch #ce-alarm-ch { width:100%; max-width:none; }
 /* The three ways to link an event out - a URL, a person, a note - grouped in one
    soft panel so they read as a set rather than scattered fields. (Robin.) */
 .ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }

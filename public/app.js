@@ -6295,7 +6295,7 @@ function snapshotCalForm() {
   const f = document.getElementById('cal-ev-form'); if (!f) return null;
   const v = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
   return { ev: f.dataset.ev || '', evgap: f.dataset.evgap, title: v('ce-title'), date: v('ce-date'), time: v('ce-time'), enddate: v('ce-enddate'), endtime: v('ce-endtime'),
-    allday: !!(document.getElementById('ce-allday') || {}).checked, loc: v('ce-loc'), url: v('ce-url'), alarm: v('ce-alarm'), alarmN: v('ce-alarm-n'), alarmU: v('ce-alarm-u'),
+    allday: !!(document.getElementById('ce-allday') || {}).checked, loc: v('ce-loc'), url: v('ce-url'), alarm: v('ce-alarm'), alarmN: v('ce-alarm-n'), alarmU: v('ce-alarm-u'), alarmCh: v('ce-alarm-ch'),
     repeat: v('ce-repeat'), area: v('ce-area'), contact: v('ce-contact'), contactSearch: v('ce-contact-search'), notes: v('ce-notes') };
 }
 function restoreCalForm(s) {
@@ -6303,10 +6303,11 @@ function restoreCalForm(s) {
   if ((f.dataset.ev || '') !== s.ev) return;   // a different event opened - don't paste a stale draft onto it
   const set = (id, val) => { if (val === undefined) return; const el = document.getElementById(id); if (el) el.value = val; };
   if (s.evgap) f.dataset.evgap = s.evgap;
-  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes', 'ce-alarm:alarm', 'ce-alarm-n:alarmN', 'ce-alarm-u:alarmU'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
+  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes', 'ce-alarm:alarm', 'ce-alarm-n:alarmN', 'ce-alarm-u:alarmU', 'ce-alarm-ch:alarmCh'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
   if (s.date !== undefined) setDateField('ce-date', s.date);
   if (s.enddate !== undefined) setDateField('ce-enddate', s.enddate);
   if (s.alarm === 'custom') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) cc.hidden = false; }
+  if (s.alarm !== undefined && s.alarm !== '') { const chw = document.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = false; }
   const cb = document.getElementById('ce-allday'); if (cb) { cb.checked = s.allday; f.classList.toggle('allday-on', s.allday); }
 }
 // Any http(s) links inside an event's notes, rendered as tappable chips under the
@@ -6409,7 +6410,7 @@ function showCalForm(ev) {
     </div>
     <div class="ce-grid">
       <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
-      ${(() => { const av = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const presets = ['', '0', '5', '10', '15', '30', '60', '120', '1440']; const isCustom = av !== '' && !presets.includes(av); const opt = (v, l) => `<option value="${v}" ${(!isCustom && av === v) ? 'selected' : ''}>${l}</option>`; const mins = isCustom ? Math.max(1, parseInt(av, 10) || 1) : 0; const unit = isCustom ? (mins % 1440 === 0 ? 'd' : mins % 60 === 0 ? 'h' : 'm') : 'm'; const num = isCustom ? (unit === 'd' ? mins / 1440 : unit === 'h' ? mins / 60 : mins) : ''; const uOpt = (v, l) => `<option value="${v}" ${unit === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}<option value="custom" ${isCustom ? 'selected' : ''}>Custom…</option></select><div class="ce-alarm-custom" ${isCustom ? '' : 'hidden'}><input id="ce-alarm-n" class="sel" type="number" min="1" max="999" inputmode="numeric" value="${num}" placeholder="e.g. 45"><select id="ce-alarm-u" class="sel">${uOpt('m', 'minutes before')}${uOpt('h', 'hours before')}${uOpt('d', 'days before')}</select></div></label>`; })()}
+      ${(() => { const av = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const presets = ['', '0', '5', '10', '15', '30', '60', '120', '1440']; const isCustom = av !== '' && !presets.includes(av); const opt = (v, l) => `<option value="${v}" ${(!isCustom && av === v) ? 'selected' : ''}>${l}</option>`; const mins = isCustom ? Math.max(1, parseInt(av, 10) || 1) : 0; const unit = isCustom ? (mins % 1440 === 0 ? 'd' : mins % 60 === 0 ? 'h' : 'm') : 'm'; const num = isCustom ? (unit === 'd' ? mins / 1440 : unit === 'h' ? mins / 60 : mins) : ''; const uOpt = (v, l) => `<option value="${v}" ${unit === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}<option value="custom" ${isCustom ? 'selected' : ''}>Custom…</option></select><div class="ce-alarm-custom" ${isCustom ? '' : 'hidden'}><input id="ce-alarm-n" class="sel" type="number" min="1" max="999" inputmode="numeric" value="${num}" placeholder="e.g. 45"><select id="ce-alarm-u" class="sel">${uOpt('m', 'minutes before')}${uOpt('h', 'hours before')}${uOpt('d', 'days before')}</select></div>${(() => { const ch = (ev && ev.alarmCh) || 'app'; const cOpt = (v, l) => `<option value="${v}" ${ch === v ? 'selected' : ''}>${l}</option>`; return `<div class="ce-alarm-ch" ${av === '' ? 'hidden' : ''}><select id="ce-alarm-ch" class="sel">${cOpt('app', 'In the app')}${cOpt('email', 'By email')}${cOpt('sms', 'By text')}${cOpt('both', 'Text &amp; email')}</select></div>`; })()}</label>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
     ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ ${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">📅 Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `⏹ Until ${esc(ends)}` : '∞ No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
@@ -6480,7 +6481,7 @@ function onEventEndEdit(prefix) {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
 // Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
-function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, isNew, fallbackDate }) {
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, alarmCh, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
   // Send the repeat whenever the form supplied one (create OR edit) so you can
@@ -6490,7 +6491,7 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a life area
   const ur = url !== undefined ? { url: String(url || '').trim() } : {};   // a link to open in one tap (class, call, page)
   const co = contact !== undefined ? { contact: contact || null } : {};    // a person this event is with
-  const alrm = alarm !== undefined ? { alarm: (alarm === '' || alarm == null) ? '' : Number(alarm) } : {};   // in-app reminder, minutes before
+  const alrm = alarm !== undefined ? { alarm: (alarm === '' || alarm == null) ? '' : Number(alarm), ...(alarmCh ? { alarmCh } : {}) } : {};   // reminder: minutes before + channel (app/sms/email/both)
   if (allDay) {
     // Stored end is exclusive (the day after the last), so a multi-day trip pushes
     // the inclusive end date on by one.
@@ -6505,9 +6506,9 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   duration = Math.max(15, duration);
   return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co, ...alrm };
 }
-async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm) {
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, alarmCh) {
   if (alarm !== undefined && alarm !== '') ensureAlarmSetup();   // arming the first reminder: unlock sound + ask for notifications
-  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, isNew: !id, fallbackDate: state.cal.selected }));
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, alarmCh, isNew: !id, fallbackDate: state.cal.selected }));
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
@@ -15125,7 +15126,7 @@ function openLinkMenu(x, y, href, view) {
 // change: cells + selects
 document.addEventListener('change', (e) => {
   // Event reminder: reveal the number+unit inputs when "Custom…" is chosen.
-  if (e.target.id === 'ce-alarm') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) { const on = e.target.value === 'custom'; cc.hidden = !on; if (on) { const n = document.getElementById('ce-alarm-n'); if (n) { n.focus(); n.select(); } } } return; }
+  if (e.target.id === 'ce-alarm') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) { const on = e.target.value === 'custom'; cc.hidden = !on; if (on) { const n = document.getElementById('ce-alarm-n'); if (n) { n.focus(); n.select(); } } } const chw = document.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = (e.target.value === ''); return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
@@ -15398,7 +15399,8 @@ document.addEventListener('submit', (e) => {
     // A "Custom…" reminder resolves to minutes-before from the number + unit.
     let alarmVal = al ? al.value : undefined;
     if (alarmVal === 'custom') { const n = Math.max(1, Math.min(999, parseInt(($('#ce-alarm-n') || {}).value, 10) || 0)); const u = (($('#ce-alarm-u') || {}).value) || 'm'; alarmVal = n ? String(n * (u === 'd' ? 1440 : u === 'h' ? 60 : 1)) : ''; }
-    if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmVal); }
+    const alarmChVal = (alarmVal === '' || alarmVal === undefined) ? 'app' : (($('#ce-alarm-ch') || {}).value || 'app');
+    if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmVal, alarmChVal); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
