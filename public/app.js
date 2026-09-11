@@ -6187,6 +6187,11 @@ function stepCal(delta) {
 }
 function renderCalendar() {
   const c = state.cal, byDay = eventsByDay();
+  // Never rebuild the event form out from under an active edit: a background
+  // re-render (contacts/gcal/events landing) while you're setting the end time -
+  // its native picker still open - would snap your pick back to the default. If a
+  // field inside the open form has focus, skip this paint; a later one catches up.
+  if ((c.adding || c.editing)) { const f = document.getElementById('cal-ev-form'); if (f && document.activeElement && f.contains(document.activeElement)) return; }
   _calFormSnap = snapshotCalForm();   // keep any unsaved edits across this rebuild
   let title, body;
   if (c.mode === 'week') {
@@ -6379,7 +6384,7 @@ function showCalForm(ev) {
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
     <div class="ce-grid">
-      <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? (optional)" autocomplete="off" value="${esc(loc)}"></label>
+      <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
       ${(() => { const av = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const presets = ['', '0', '5', '10', '15', '30', '60', '120', '1440']; const isCustom = av !== '' && !presets.includes(av); const opt = (v, l) => `<option value="${v}" ${(!isCustom && av === v) ? 'selected' : ''}>${l}</option>`; const mins = isCustom ? Math.max(1, parseInt(av, 10) || 1) : 0; const unit = isCustom ? (mins % 1440 === 0 ? 'd' : mins % 60 === 0 ? 'h' : 'm') : 'm'; const num = isCustom ? (unit === 'd' ? mins / 1440 : unit === 'h' ? mins / 60 : mins) : ''; const uOpt = (v, l) => `<option value="${v}" ${unit === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}<option value="custom" ${isCustom ? 'selected' : ''}>Custom…</option></select><div class="ce-alarm-custom" ${isCustom ? '' : 'hidden'}><input id="ce-alarm-n" class="sel" type="number" min="1" max="999" inputmode="numeric" value="${num}" placeholder="e.g. 45"><select id="ce-alarm-u" class="sel">${uOpt('m', 'minutes before')}${uOpt('h', 'hours before')}${uOpt('d', 'days before')}</select></div></label>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
@@ -6415,6 +6420,30 @@ function syncEventEnd(prefix) {
   const d = new Date(startMs + gap * 60000);
   setDateField(`${prefix}-enddate`, `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`);
   const et = document.getElementById(`${prefix}-endtime`); if (et) et.value = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+// The Location field doubles as a search: type a contact's name (or part of an
+// address, or a place you've used before) and pick the full address in one tap -
+// "James" finds your brother's house. Contacts come first, then past locations.
+function renderCeLocSugg(q) {
+  const el = document.getElementById('ce-loc-sugg'); if (!el) return;
+  const query = (q || '').trim().toLowerCase();
+  if (query.length < 1) { el.hidden = true; el.innerHTML = ''; return; }
+  const rows = [];
+  const seen = new Set();
+  (state.contacts || []).forEach((c) => {
+    contactAddresses(c.props || {}).forEach((a) => {
+      const addr = formatAddress(a); if (!addr) return;
+      if (`${c.title || ''} ${a.label || ''} ${addr}`.toLowerCase().includes(query) && !seen.has(addr)) {
+        seen.add(addr);
+        rows.push(`<button type="button" class="ce-loc-opt" data-ce-loc-pick="${esc(addr)}"><span class="ce-loc-nm">👤 ${esc(c.title || 'Unnamed')}${a.label ? ` · ${esc(a.label)}` : ''}</span><span class="ce-loc-ad">${esc(addr)}</span></button>`);
+      }
+    });
+  });
+  const contactN = rows.length;
+  (state.cal && state.cal.events || []).forEach((ev) => { const l = (ev.location || '').trim(); if (l && l.toLowerCase().includes(query) && !seen.has(l)) { seen.add(l); rows.push(`<button type="button" class="ce-loc-opt" data-ce-loc-pick="${esc(l)}"><span class="ce-loc-nm">📍 ${esc(l)}</span></button>`); } });
+  const shown = [...rows.slice(0, contactN).slice(0, 6), ...rows.slice(contactN).slice(0, 4)];
+  if (!shown.length) { el.hidden = true; el.innerHTML = ''; return; }
+  el.innerHTML = shown.join(''); el.hidden = false;
 }
 function onEventEndEdit(prefix) {
   const startMs = evAbsMs(`${prefix}-date`, `${prefix}-time`), endMs = evAbsMs(`${prefix}-enddate`, `${prefix}-endtime`);
@@ -14192,6 +14221,7 @@ document.addEventListener('input', (e) => {
   // Event "With": a search box, not a dropdown. Resolve the typed name to a
   // contact id in the hidden field the save reads; blank (or no match) = nobody.
   if (e.target.id === 'ce-contact-search') { const v = e.target.value.trim().toLowerCase(); const hid = document.getElementById('ce-contact'); if (hid) { const m = (state.contacts || []).find((c) => (c.title || '').trim().toLowerCase() === v); hid.value = m ? m.id : ''; } }
+  if (e.target.id === 'ce-loc') { renderCeLocSugg(e.target.value); }
   if (e.target.id === 'linkpick-input' && state.linkpick) { state.linkpick.q = e.target.value; renderLinkPickerList(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   // Page search boxes (Tasks / Notes / Calendar): keep focus + caret across the re-render.
@@ -14803,6 +14833,7 @@ document.addEventListener('click', (e) => {
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
+  { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } return; } }
   if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); return; }
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }

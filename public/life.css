@@ -1996,6 +1996,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .ce-field .sel { width:100%; max-width:none; margin:0; }
 /* Short selects sit two-up, so the card isn't a tall stack of full-width bars;
    they drop to one column when the calendar panel is narrow. (Robin.) */
+/* Location search suggestions (contacts' addresses + past places). */
+.ce-loc-wrap { position:relative; }
+.ce-loc-sugg { position:absolute; left:0; right:0; top:100%; z-index:30; margin-top:4px; background:var(--card); border:1px solid var(--line-2); border-radius:11px; box-shadow:0 8px 28px rgba(0,0,0,.14); overflow:hidden; max-height:280px; overflow-y:auto; }
+.ce-loc-opt { display:flex; flex-direction:column; gap:1px; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--line); padding:9px 13px; cursor:pointer; }
+.ce-loc-opt:last-child { border-bottom:0; }
+.ce-loc-opt:hover { background:var(--paper-2); }
+.ce-loc-nm { font-size:14.5px; font-weight:600; color:var(--ink); }
+.ce-loc-ad { font-size:12.5px; color:var(--ink-3); }
 .ce-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:11px 12px; }
 @media (max-width:460px){ .ce-grid { grid-template-columns:minmax(0,1fr); } }
 /* "With": a quiet, optional person link - a small search box, not a labelled
