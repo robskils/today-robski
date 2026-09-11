@@ -9376,8 +9376,24 @@ function contactAddrRowHtml(a, idSuffix, removable) {
 // An address reads as a tidy block once saved - nickname, then the lines - with a
 // quiet Edit to reopen the form. Only an empty card (or an explicit Edit) shows
 // the fields, so a filled-in address isn't a wall of inputs every visit.
+// Countries that write the postcode BEFORE the town on the locality line
+// ("1100-048 Lisboa", "75008 Paris", "10115 Berlin") - most of continental Europe.
+const PC_BEFORE_CITY = new Set(['Portugal', 'France', 'Germany', 'Spain', 'Italy', 'Netherlands', 'Belgium', 'Austria', 'Switzerland', 'Luxembourg', 'Poland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Czechia', 'Slovakia', 'Slovenia', 'Croatia', 'Greece', 'Hungary', 'Romania', 'Bulgaria', 'Estonia', 'Latvia', 'Lithuania', 'Liechtenstein', 'Monaco', 'Turkey', 'Serbia', 'Bosnia and Herzegovina', 'North Macedonia', 'Montenegro', 'Iceland', 'Vatican City', 'San Marino', 'Andorra']);
+// Country-correct address lines for the read-only view. UK keeps the postcode on
+// its own line after the town; PT/FR/DE/… put it before; the rest (US, etc.) read
+// town then code. (Robin: get the big countries right.)
 function addrViewLines(a) {
-  return [a.street, [a.city, a.postcode].filter(Boolean).join(' '), a.country].map((x) => (x || '').trim()).filter(Boolean);
+  const street = (a.street || '').trim();
+  const city = (a.city || '').trim();
+  const pc = (a.postcode || '').trim();
+  const country = (a.country || '').trim();
+  const lines = [];
+  if (street) lines.push(street);
+  if (country === 'United Kingdom' || country === 'Ireland') { if (city) lines.push(city); if (pc) lines.push(pc); }
+  else if (PC_BEFORE_CITY.has(country)) { const l = [pc, city].filter(Boolean).join(' '); if (l) lines.push(l); }
+  else { const l = [city, pc].filter(Boolean).join(' '); if (l) lines.push(l); }
+  if (country) lines.push(country);
+  return lines;
 }
 // The formatted, read-only address blocks (nickname, lines, and the Map / transit
 // links) - shown inside the Details view; the section's own Edit reopens the form.
