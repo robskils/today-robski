@@ -9547,7 +9547,6 @@ function renderContacts() {
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>` : `
     ${contactsKitHtml()}
-    ${contactsXmasHtml()}
     <section class="home-sec contacts-mine">
       ${selfContactHtml()}
       <div class="cts-head">
@@ -9852,7 +9851,6 @@ function renderContactCard() {
       </div>
     </div>
     ${keepInTouchSection(c)}
-    ${contactXmasSection(c)}
     ${contactConnectedHtml(c)}
     ${externalLinksHtml('contact', c)}
     ${notesSection(c.body, 'contact', c.id)}`;
