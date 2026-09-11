@@ -9849,7 +9849,6 @@ function renderContactCard() {
       <div class="cc-sec-h">Organise</div>
       <div class="tf-meta">
         <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
-        ${contactGroupsSection(c)}
       </div>
     </div>
     ${keepInTouchSection(c)}
