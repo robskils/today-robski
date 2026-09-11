@@ -6233,8 +6233,13 @@ function renderCalendar() {
     }).join('')}</div>`;
   } else {
     title = `${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span>`;
+    const nowMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
     const cell = (d) => {
-      const evs = byDay[d.iso] || [];
+      let evs = byDay[d.iso] || [];
+      // On today, when there are more than fit, drop what's already happened and
+      // lead with what's still to come - a glance should show the next thing, not
+      // this morning's done meetings. (Keep all-day events; never blank the day.)
+      if (d.today && evs.length > 3) { const upcoming = evs.filter((e) => e.allDay || e.start_min == null || e.start_min >= nowMin); if (upcoming.length) evs = upcoming; }
       const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
       const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : '';
       const dots = evs.slice(0, 5).map((e) => `<span class="cal-dot ${e.allDay ? 'allday' : ''}"></span>`).join('');
