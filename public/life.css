@@ -1278,13 +1278,23 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rv-card:hover { border-color:var(--accent); transform:translateY(-1px); }
 .rv-card-h { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
 .rv-card-l { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; color:var(--ink); }
-/* The two most recent reviews lead as larger, full-width feature cards - the live
-   one and the one just closed read at a glance before the rest of the archive. */
-.rv-card-feat { grid-column:1 / -1; padding:22px 24px; border-left-width:5px; gap:12px; }
-.rv-card-feat .rv-card-l { font-size:26px; }
-.rv-card-feat .rv-card-period { font-size:18px; }
-.rv-card-feat .rv-card-stats { font-size:15px; }
-.rv-card-feat .rv-card-open { font-size:14.5px; }
+/* Archive reviews grouped by type, each card as substantial as a current-period
+   card: period, how it felt (Wheel word + score), the stats, and a way in. */
+.rv-typegroup { margin-top:18px; }
+.rv-typegroup:first-of-type { margin-top:6px; }
+.rv-typegroup-h { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; margin-bottom:10px; }
+.rv-typegroup-h .muted { font-family:system-ui,sans-serif; font-size:13px; font-weight:400; }
+.rv-card-tall { min-height:150px; padding:18px 20px; gap:7px; }
+.rv-card-tall .rv-card-period { font-size:17px; }
+.rv-card-rel { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); border-radius:999px; padding:2px 9px; }
+.rv-card-rel.is-past { color:var(--ink-3); background:var(--paper-2); }
+.rv-card-sentiment { display:flex; align-items:baseline; gap:10px; font-size:15px; font-weight:600; color:var(--ink-2); }
+.rv-card-sentiment-none { color:var(--ink-3); font-weight:400; font-style:italic; }
+.rv-card-score { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; color:var(--ink); }
+.rv-card-tall .rv-card-stats { margin-top:auto; }
+.rv-card-tall .rv-card-open { margin-top:4px; }
+.rv-card-tall .rv-card-h { justify-content:flex-start; flex-wrap:wrap; align-items:center; }
+.rv-card-tall .rv-card-badge { margin-left:auto; }
 .rv-card-d { font-size:12px; color:var(--ink-3); white-space:nowrap; }
 .rv-l-weekly { color:var(--accent); } .rv-card:has(.rv-l-weekly) { border-left-color:var(--accent); }
 .rv-l-monthly { color:#6f9f4a; } .rv-card:has(.rv-l-monthly) { border-left-color:#6f9f4a; }

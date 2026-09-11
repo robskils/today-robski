@@ -11877,16 +11877,20 @@ function reviewsBody() {
     }).join('')}</div>
   </div>`;
   // Compact, dashboard-y past-review cards, filterable by type.
-  const card = (r, feature) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pt = periodTitle(p.rtype, p.from, p.to); const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${shortD(p.from)} – ${shortD(p.to)}` : pt.main) : pt.main; return `<button class="rv-card ${prog ? 'rv-card-prog' : ''}${feature ? ' rv-card-feat' : ''}" data-open-review="${r.id}">
-    <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(shortD(p.doneAt))}` : ''}`}</span></div>
+  // A substantial archive card - the size of the current-period cards. Shows the
+  // period, how it felt (Wheel average + its word), the headline stats, and a way
+  // in. `rel` marks whether this is the type's current period or a past one.
+  const card = (r, rel) => { const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5); const lbl = (REVIEWS[p.rtype] || {}).label || 'Review'; const prog = p.status === 'inprogress'; const pt = periodTitle(p.rtype, p.from, p.to); const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${shortD(p.from)} – ${shortD(p.to)}` : pt.main) : pt.main; const sentiment = wv ? (AREA_SENTIMENT[Math.max(1, Math.round(wv))] || '') : ''; const relTag = rel === 'current' ? '<span class="rv-card-rel">Current</span>' : rel === 'past' ? '<span class="rv-card-rel is-past">Previous</span>' : ''; return `<button class="rv-card rv-card-tall ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
+    <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span>${relTag}<span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(shortD(p.doneAt))}` : ''}`}</span></div>
     <div class="rv-card-period">${esc(periodMain)}</div>
-    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}${wv ? `<span class="rvc-stat"><b>${wv}</b>/5</span>` : ''}</div>
+    ${sentiment ? `<div class="rv-card-sentiment">${esc(sentiment)}<span class="rv-card-score">${wv}/5</span></div>` : '<div class="rv-card-sentiment rv-card-sentiment-none">Not scored</div>'}
+    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}</div>
     <div class="rv-card-open">${prog ? 'Continue →' : 'Open report →'}</div>
   </button>`; };
   // Anything you started but haven't finished sits up top, plainly labelled, so a
   // half-written review is never mistaken for one that vanished.
   const inProgressHtml = inProgress.length
-    ? `<section class="home-sec rv-inprog-sec">${rvSecH('inprog', `Pick up where you left off · ${inProgress.length}`)}${rvSecOpen('inprog') ? `<div class="rv-cards">${inProgress.map(card).join('')}</div>` : ''}</section>`
+    ? `<section class="home-sec rv-inprog-sec">${rvSecH('inprog', `Pick up where you left off · ${inProgress.length}`)}${rvSecOpen('inprog') ? `<div class="rv-cards rv-cards-tall">${inProgress.map((r) => card(r)).join('')}</div>` : ''}</section>`
     : '';
   // The browsable archive shows EVERY review - in-progress (this year's, still
   // being written) alongside the submitted ones - so filtering by a type shows the
@@ -11897,13 +11901,16 @@ function reviewsBody() {
   const shownList = filt ? allSorted.filter((r) => ((r.props || {}).rtype || 'weekly') === filt) : allSorted;
   const fcounts = {}; allSorted.forEach((r) => { const ty = (r.props || {}).rtype || 'weekly'; fcounts[ty] = (fcounts[ty] || 0) + 1; });
   const fchips = `<div class="rv-pastfilter"><button class="rv-fchip ${!filt ? 'on' : ''}" data-reviews-filter="">All · ${allSorted.length}</button>${RTYPE_ORDER.filter((k) => fcounts[k]).map((k) => `<button class="rv-fchip ${filt === k ? 'on' : ''}" data-reviews-filter="${k}">${REVIEWS[k].label} · ${fcounts[k]}</button>`).join('')}</div>`;
-  // The two most recent - the live one and the one just closed - lead as larger
-  // feature cards; the rest follow in the grid below.
-  const cardsHtml = shownList.length
-    ? shownList.map((r, i) => card(r, i < 2)).join('')
-    : '<div class="empty" style="padding:12px 0">None of that type yet.</div>';
+  // Grouped by type, the way Robin thinks of them: each type's reviews together,
+  // newest first - so its current period leads, the previous sits next, older
+  // ones follow. The first two of a group are tagged Current / Previous.
+  const typeGroups = RTYPE_ORDER.filter((k) => fcounts[k] && (!filt || filt === k)).map((k) => {
+    const arr = allSorted.filter((r) => ((r.props || {}).rtype || 'weekly') === k);
+    const cards = arr.map((r, i) => card(r, i === 0 ? 'current' : i === 1 ? 'past' : '')).join('');
+    return `<div class="rv-typegroup"><div class="rv-typegroup-h rv-l-${k}">${REVIEWS[k].label}<span class="muted"> · ${arr.length}</span></div><div class="rv-cards rv-cards-tall">${cards}</div></div>`;
+  }).join('') || '<div class="empty" style="padding:12px 0">None of that type yet.</div>';
   const pastSection = allSorted.length
-    ? `<section class="home-sec">${rvSecH('past', `All reviews · ${allSorted.length}`)}${rvSecOpen('past') ? `${fchips}<div class="rv-cards">${cardsHtml}</div>` : ''}</section>`
+    ? `<section class="home-sec">${rvSecH('past', `Past reviews · ${allSorted.length}`)}${rvSecOpen('past') ? `${fchips}${typeGroups}` : ''}</section>`
     : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>';
   return `${hero}${wheelOfLifeHtml()}${inProgressHtml}${pastSection}${reviewsListHtml()}`;
 }
