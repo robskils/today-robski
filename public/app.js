@@ -9667,11 +9667,24 @@ async function openContactCard(id) {
 // loaded in the background and painted when it lands.
 async function loadContactLinks(id) {
   try {
-    const [notes, tasks] = await Promise.all([api('/api/blocks?kind=note').catch(() => []), api('/api/blocks?kind=task').catch(() => [])]);
+    const d = new Date(); const from = new Date(d); from.setDate(from.getDate() - 45); const to = new Date(d); to.setDate(to.getDate() + 180);
+    const iso = (x) => x.toISOString().slice(0, 10);
+    const [notes, tasks, cal] = await Promise.all([
+      api('/api/blocks?kind=note').catch(() => []),
+      api('/api/blocks?kind=task').catch(() => []),
+      api(`/api/calendar?from=${iso(from)}&to=${iso(to)}`).catch(() => ({ events: [] })),
+    ]);
     if (!state.contact_open || String(state.contact_open.contact.id) !== String(id)) return;
     const has = (b) => Array.isArray(b.props && b.props.contacts) && b.props.contacts.map(String).includes(String(id));
     state.contact_open.linkedNotes = (notes || []).filter(has);
     state.contact_open.linkedTasks = (tasks || []).filter((t) => has(t) && !(t.props && t.props.done) && !(t.props && t.props.kit));
+    // Events naming this contact (event_contacts map surfaces as e.contact), one
+    // row per base event, soonest first.
+    const seen = new Set();
+    state.contact_open.linkedEvents = ((cal && cal.events) || []).filter((e) => {
+      if (!e || !e.contact || String(e.contact) !== String(id)) return false;
+      const b = String(e.id || '').split('::')[0]; if (seen.has(b)) return false; seen.add(b); return true;
+    }).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     if (state.view.type === 'contactcard') renderContactCard();
   } catch {}
 }
@@ -9716,11 +9729,12 @@ function kitWhen(iso) {
 // lists its items as chips and carries its own add control.
 function contactBoxesHtml(c) {
   const co = state.contact_open || {};
-  const notes = co.linkedNotes || []; const tasks = co.linkedTasks || []; const links = blockLinks(c);
+  const notes = co.linkedNotes || []; const tasks = co.linkedTasks || []; const links = blockLinks(c); const events = co.linkedEvents || [];
   const chip = (inner, extra) => `<div class="ce-card">${inner}${extra || ''}</div>`;
   const noteChips = notes.map((n) => chip(`<button class="ce-open" data-open-note="${n.id}"><span class="ce-ic">▤</span><span class="ce-t">${esc(n.title || 'Untitled')}</span></button>`)).join('');
   const taskChips = tasks.map((tk) => chip(`<button class="ce-open" data-open-task="${tk.id}"><span class="ce-ic">✓</span><span class="ce-t">${esc(tk.title || 'Untitled')}</span></button>`)).join('');
   const linkChips = links.map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return chip(`<a class="ce-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}"><span class="ce-ic">🔗</span><span class="ce-t">${esc(label)}</span></a>`, `<button class="ce-x" data-xlink-del data-xlink-kind="contact" data-xlink-id="${c.id}" data-xlink-idx="${i}" title="Remove link">×</button>`); }).join('');
+  const eventChips = events.map((e) => chip(`<button class="ce-open" data-open-event-date="${esc(String(e.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(e.title || 'Event')}</span>${e.date ? `<span class="ce-d">${esc(evShortDate(e.date))}</span>` : ''}</button>`)).join('');
   const box = (title, n, chips, addBtn) => `<section class="cc-box">
     <div class="cc-box-h">${title}${n ? ` · ${n}` : ''}</div>
     <div class="cc-box-body">${chips || `<p class="cc-box-empty">Nothing yet.</p>`}</div>
@@ -9730,6 +9744,7 @@ function contactBoxesHtml(c) {
     ${box('Notes', notes.length, noteChips, `<button type="button" class="cc-box-add" data-contact-new-note="${c.id}">＋ New note</button>`)}
     ${box('Tasks', tasks.length, taskChips, `<button type="button" class="cc-box-add" data-contact-new-task="${c.id}">＋ New task</button>`)}
     ${box('Links', links.length, linkChips, `<button type="button" class="cc-box-add" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">＋ Add link</button>`)}
+    ${box('Events', events.length, eventChips, `<button type="button" class="cc-box-add" data-contact-new-event="${c.id}">＋ New event</button>`)}
   </div>`;
 }
 async function contactNewNote(id) {
@@ -9738,6 +9753,18 @@ async function contactNewNote(id) {
   const area = blockAreas(c)[0]; const props = { contacts: [c.id] }; if (area) props.area = area;
   try { const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: (title.trim() || 'Untitled'), props }) }); (state.contact_open.linkedNotes = state.contact_open.linkedNotes || []).unshift(n); openNote(n.id).catch(() => {}); }
   catch (e) { toast(e.message); }
+}
+async function contactNewEvent(id) {
+  const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
+  await openCalendar();
+  state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = [];
+  renderCalendar();
+  // Prefill the new event's contact with this person (the form reads ce-contact).
+  setTimeout(() => {
+    const hid = document.getElementById('ce-contact'); if (hid) hid.value = c.id;
+    const srch = document.getElementById('ce-contact-search'); if (srch) srch.value = c.title || '';
+    const ti = document.getElementById('ce-title'); if (ti) ti.focus();
+  }, 40);
 }
 async function contactNewTask(id) {
   const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
@@ -14505,6 +14532,7 @@ document.addEventListener('click', (e) => {
   const rmg = t.closest('[data-contact-remove-group]'); if (rmg) { removeContactFromGroup(rmg.dataset.cid, rmg.dataset.gid); return; }
   { const cnn = t.closest('[data-contact-new-note]'); if (cnn) { contactNewNote(cnn.dataset.contactNewNote); return; } }
   { const cnt = t.closest('[data-contact-new-task]'); if (cnt) { contactNewTask(cnt.dataset.contactNewTask); return; } }
+  { const cne = t.closest('[data-contact-new-event]'); if (cne) { contactNewEvent(cne.dataset.contactNewEvent); return; } }
   // Contact right-click menu
   { const cr = t.closest('[data-ctx-recent]'); if (cr) { const id = cr.dataset.ctxRecent; state.contactMenu = null; openContactCard(id).catch((e) => toast(e.message)); return; } }
   const ctxAdd = t.closest('[data-ctx-add]'); if (ctxAdd) { const id = state.contactMenu && state.contactMenu.id; state.contactMenu = null; if (id) addContactToGroup(id, ctxAdd.dataset.ctxAdd); else renderContacts(); return; }

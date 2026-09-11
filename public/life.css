@@ -5323,7 +5323,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Small grouping sub-heading above the Connect boxes and the Notes section. */
 .cc-group-h { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); margin:26px 0 2px; }
 .cc-group-h + .cc-boxes { margin-top:10px; }
-.cc-boxes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:22px; align-items:stretch; }
+.cc-boxes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:22px; align-items:stretch; }
 .cc-group-h + .focus-notes { margin-top:8px; }
 .cc-box { display:flex; flex-direction:column; gap:10px; padding:15px 16px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
 .cc-box-h { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:600; color:var(--ink); }
