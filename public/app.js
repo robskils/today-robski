@@ -13561,10 +13561,17 @@ function renderNote() {
       <aside class="note-side">
         <div class="subpages" data-subpages>${(() => { const cn = state.note.children.length + linkedCards.length + (parent ? 1 : 0); return `<div class="sub-h">Connected notes${cn ? ` · ${cn}` : ''}</div>`; })()}
           ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
-        ${noteTasksHtml(n.id)}
-        ${connectedEventsHtml(n)}
-        ${noteContactsHtml(n)}
-        ${noteExtLinksHtml(n)}
+        ${(() => {
+          // Sections that hold something float above the empty ones (which keep
+          // their add controls, just lower down). Stable within each group. (Robin.)
+          const secs = [
+            { has: (state.allTasks || []).some((t) => t.props && t.props.note === n.id && !t.props.done), html: noteTasksHtml(n.id) },
+            { has: noteEventLinks(n).length > 0, html: connectedEventsHtml(n) },
+            { has: blockContactIds(n).length > 0, html: noteContactsHtml(n) },
+            { has: blockLinks(n).length > 0, html: noteExtLinksHtml(n) },
+          ];
+          return secs.map((s, i) => ({ ...s, i })).sort((a, b) => (b.has - a.has) || (a.i - b.i)).map((s) => s.html).join('');
+        })()}
         ${relatedNotesHtml(n)}
         ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-totable" data-note-to-table title="Make a table from this note's lines - each line becomes a row">▦ Turn into a table</button>`}
       </aside>
