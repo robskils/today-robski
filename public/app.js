@@ -9932,6 +9932,7 @@ function renderContactCard() {
         ${contactPhoneFields(p)}
         <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
         ${contactAddressFields(p)}
+        <div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div>
       </div>`
         : `<div class="cc-facts">${contactDetailsView(c, p)}</div>`}
     </div>
