@@ -9716,15 +9716,16 @@ async function loadContactLinks(id) {
     ]);
     if (!state.contact_open || String(state.contact_open.contact.id) !== String(id)) return;
     const has = (b) => Array.isArray(b.props && b.props.contacts) && b.props.contacts.map(String).includes(String(id));
+    state.contact_open.notePool = (notes || []).filter((n) => n && n.id && !isTableNote(n));
+    state.contact_open.taskPool = (tasks || []).filter((t) => t && t.id && !(t.props && t.props.done) && !(t.props && t.props.kit));
     state.contact_open.linkedNotes = (notes || []).filter(has);
     state.contact_open.linkedTasks = (tasks || []).filter((t) => has(t) && !(t.props && t.props.done) && !(t.props && t.props.kit));
     // Events naming this contact (event_contacts map surfaces as e.contact), one
     // row per base event, soonest first.
     const seen = new Set();
-    state.contact_open.linkedEvents = ((cal && cal.events) || []).filter((e) => {
-      if (!e || !e.contact || String(e.contact) !== String(id)) return false;
-      const b = String(e.id || '').split('::')[0]; if (seen.has(b)) return false; seen.add(b); return true;
-    }).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    const pool = ((cal && cal.events) || []).filter((e) => { if (!e || !e.id || !e.title || e.feed) return false; const b = String(e.id || '').split('::')[0]; if (seen.has(b)) return false; seen.add(b); return true; });
+    state.contact_open.eventPool = pool;
+    state.contact_open.linkedEvents = pool.filter((e) => e.contact && String(e.contact) === String(id)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     if (state.view.type === 'contactcard') renderContactCard();
   } catch {}
 }
@@ -9775,17 +9776,68 @@ function contactBoxesHtml(c) {
   const taskChips = tasks.map((tk) => chip(`<button class="ce-open" data-open-task="${tk.id}"><span class="ce-ic">✓</span><span class="ce-t">${esc(tk.title || 'Untitled')}</span></button>`)).join('');
   const linkChips = links.map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return chip(`<a class="ce-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}"><span class="ce-ic">🔗</span><span class="ce-t">${esc(label)}</span></a>`, `<button class="ce-x" data-xlink-del data-xlink-kind="contact" data-xlink-id="${c.id}" data-xlink-idx="${i}" title="Remove link">×</button>`); }).join('');
   const eventChips = events.map((e) => chip(`<button class="ce-open" data-open-event-date="${esc(String(e.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(e.title || 'Event')}</span>${e.date ? `<span class="ce-d">${esc(evShortDate(e.date))}</span>` : ''}</button>`)).join('');
-  const box = (title, n, chips, addBtn) => `<section class="cc-box">
+  // A search box in each that has existing items to connect, plus a results list
+  // and, beneath, a New button. Search first, create if it isn't there yet.
+  const linkedNoteIds = new Set(notes.map((n) => String(n.id)));
+  const linkedTaskIds = new Set(tasks.map((t) => String(t.id)));
+  const linkedEvIds = new Set(events.map((e) => String(e.id || '').split('::')[0]));
+  const nq = (co.cbNoteQ || '').trim().toLowerCase();
+  const tq = (co.cbTaskQ || '').trim().toLowerCase();
+  const eq = (co.cbEventQ || '').trim().toLowerCase();
+  const nRes = nq ? (co.notePool || []).filter((n) => !linkedNoteIds.has(String(n.id)) && (n.title || '').toLowerCase().includes(nq)).slice(0, 6) : [];
+  const tRes = tq ? (co.taskPool || []).filter((t) => !linkedTaskIds.has(String(t.id)) && (t.title || '').toLowerCase().includes(tq)).slice(0, 6) : [];
+  const eRes = eq ? (co.eventPool || []).filter((e) => !linkedEvIds.has(String(e.id || '').split('::')[0]) && (e.title || '').toLowerCase().includes(eq)).slice(0, 6) : [];
+  const resList = (rows) => rows.length ? `<div class="nt-results">${rows}</div>` : '';
+  const searchBox = (q, attr, ph) => `<input class="sel nt-search cc-box-search" ${attr} placeholder="${ph}" value="${esc(q)}" autocomplete="off">`;
+  const box = (title, n, chips, search, addBtn) => `<section class="cc-box">
     <div class="cc-box-h">${title}${n ? ` · ${n}` : ''}</div>
     <div class="cc-box-body">${chips || `<p class="cc-box-empty">Nothing yet.</p>`}</div>
+    ${search || ''}
     ${addBtn}
   </section>`;
+  const notesSearch = searchBox(co.cbNoteQ || '', 'data-cb-note-q', 'Search notes to connect…') + resList(nRes.map((n) => `<button type="button" class="nt-result" data-cb-link-note="${n.id}"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
+  const tasksSearch = searchBox(co.cbTaskQ || '', 'data-cb-task-q', 'Search tasks to connect…') + resList(tRes.map((t) => `<button type="button" class="nt-result" data-cb-link-task="${t.id}"><span class="ga-t">✓ ${esc(t.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
+  const eventsSearch = searchBox(co.cbEventQ || '', 'data-cb-event-q', 'Search events to connect…') + resList(eRes.map((e) => `<button type="button" class="nt-result" data-cb-link-event="${esc(String(e.id || '').split('::')[0])}"><span class="ga-t">◑ ${esc(e.title || 'Event')}${e.date ? ` <span class="ce-d">${esc(evShortDate(e.date))}</span>` : ''}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
   return `<div class="cc-boxes">
-    ${box('Notes', notes.length, noteChips, `<button type="button" class="cc-box-add" data-contact-new-note="${c.id}">＋ New note</button>`)}
-    ${box('Tasks', tasks.length, taskChips, `<button type="button" class="cc-box-add" data-contact-new-task="${c.id}">＋ New task</button>`)}
-    ${box('Links', links.length, linkChips, `<button type="button" class="cc-box-add" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">＋ Add link</button>`)}
-    ${box('Events', events.length, eventChips, `<button type="button" class="cc-box-add" data-contact-new-event="${c.id}">＋ New event</button>`)}
+    ${box('Notes', notes.length, noteChips, notesSearch, `<button type="button" class="cc-box-add" data-contact-new-note="${c.id}">＋ New note</button>`)}
+    ${box('Tasks', tasks.length, taskChips, tasksSearch, `<button type="button" class="cc-box-add" data-contact-new-task="${c.id}">＋ New task</button>`)}
+    ${box('Links', links.length, linkChips, '', `<button type="button" class="cc-box-add" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">＋ Add link</button>`)}
+    ${box('Events', events.length, eventChips, eventsSearch, `<button type="button" class="cc-box-add" data-contact-new-event="${c.id}">＋ New event</button>`)}
   </div>`;
+}
+// Re-render just the Connect boxes (keeps the search box's focus + caret on a
+// live search, without rebuilding the whole card).
+function renderContactBoxes(focusSel) {
+  const el = document.querySelector('.cc-boxes'); if (!el || !state.contact_open) return;
+  const c = state.contact_open.contact;
+  const w = document.createElement('div'); w.innerHTML = contactBoxesHtml(c);
+  if (w.firstElementChild) el.replaceWith(w.firstElementChild);
+  if (focusSel) { const i = document.querySelector(focusSel); if (i) { const v = i.value; i.focus(); try { i.setSelectionRange(v.length, v.length); } catch {} } }
+}
+// Link an existing note/task to this contact: add the contact's id to that block's
+// props.contacts (the same store a note/task card uses), then show it here.
+async function cbLinkNote(noteId) {
+  const co = state.contact_open; if (!co) return; const n = (co.notePool || []).find((x) => String(x.id) === String(noteId)); if (!n) return;
+  const ids = [...new Set([...((n.props && Array.isArray(n.props.contacts)) ? n.props.contacts.map(String) : []), String(co.contact.id)])];
+  n.props = n.props || {}; n.props.contacts = ids;
+  co.linkedNotes = [n, ...(co.linkedNotes || []).filter((x) => String(x.id) !== String(noteId))]; co.cbNoteQ = '';
+  renderContactCard();
+  try { await api(`/api/blocks/${noteId}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); toast('Note connected'); } catch (e) { toast(e.message); }
+}
+async function cbLinkTask(taskId) {
+  const co = state.contact_open; if (!co) return; const t = (co.taskPool || []).find((x) => String(x.id) === String(taskId)); if (!t) return;
+  const ids = [...new Set([...((t.props && Array.isArray(t.props.contacts)) ? t.props.contacts.map(String) : []), String(co.contact.id)])];
+  t.props = t.props || {}; t.props.contacts = ids;
+  co.linkedTasks = [t, ...(co.linkedTasks || []).filter((x) => String(x.id) !== String(taskId))]; co.cbTaskQ = '';
+  renderContactCard();
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); toast('Task connected'); } catch (e) { toast(e.message); }
+}
+async function cbLinkEvent(baseId) {
+  const co = state.contact_open; if (!co) return; const ev = (co.eventPool || []).find((x) => String(x.id || '').split('::')[0] === String(baseId)); if (!ev) return;
+  ev.contact = co.contact.id;
+  co.linkedEvents = [ev, ...(co.linkedEvents || []).filter((x) => String(x.id || '').split('::')[0] !== String(baseId))].sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))); co.cbEventQ = '';
+  renderContactCard();
+  try { await api('/api/event-contact', { method: 'POST', body: JSON.stringify({ eventId: baseId, contact: co.contact.id }) }); toast('Event connected'); } catch (e) { toast(e.message); }
 }
 async function contactNewNote(id) {
   const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
@@ -14129,6 +14181,9 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-note-event-q]') && state.note) { const pos = e.target.selectionStart; state.note.eventQuery = e.target.value; renderNoteEvents(); const i = document.querySelector('[data-note-event-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-note-contact-q]') && state.note) { const pos = e.target.selectionStart; state.note.contactQuery = e.target.value; renderNoteContacts(); const i = document.querySelector('[data-note-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-pe-note-q]') && state.practiceEdit) { const pos = e.target.selectionStart; state.practiceEdit._noteQ = e.target.value; renderPeAttach(); const i = document.querySelector('[data-pe-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-cb-note-q]') && state.contact_open) { state.contact_open.cbNoteQ = e.target.value; renderContactBoxes('[data-cb-note-q]'); return; }
+  if (e.target.matches('[data-cb-task-q]') && state.contact_open) { state.contact_open.cbTaskQ = e.target.value; renderContactBoxes('[data-cb-task-q]'); return; }
+  if (e.target.matches('[data-cb-event-q]') && state.contact_open) { state.contact_open.cbEventQ = e.target.value; renderContactBoxes('[data-cb-event-q]'); return; }
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
@@ -14573,6 +14628,9 @@ document.addEventListener('click', (e) => {
   const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
   const dcg = t.closest('[data-del-contact-group]'); if (dcg) { delContactGroup(dcg.dataset.delContactGroup); return; }
   const rmg = t.closest('[data-contact-remove-group]'); if (rmg) { removeContactFromGroup(rmg.dataset.cid, rmg.dataset.gid); return; }
+  { const cln = t.closest('[data-cb-link-note]'); if (cln) { cbLinkNote(cln.dataset.cbLinkNote); return; } }
+  { const clt = t.closest('[data-cb-link-task]'); if (clt) { cbLinkTask(clt.dataset.cbLinkTask); return; } }
+  { const cle = t.closest('[data-cb-link-event]'); if (cle) { cbLinkEvent(cle.dataset.cbLinkEvent); return; } }
   { const cnn = t.closest('[data-contact-new-note]'); if (cnn) { contactNewNote(cnn.dataset.contactNewNote); return; } }
   { const cnt = t.closest('[data-contact-new-task]'); if (cnt) { contactNewTask(cnt.dataset.contactNewTask); return; } }
   { const cne = t.closest('[data-contact-new-event]'); if (cne) { contactNewEvent(cne.dataset.contactNewEvent); return; } }
