@@ -5388,6 +5388,18 @@ table.ttable tr:last-child td { border-bottom:0; }
 .cc-adr-link { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; border:1px solid var(--line-2); background:var(--paper-2); color:var(--ink-2); font-size:13.5px; font-weight:600; text-decoration:none; transition:border-color .12s, color .12s, background .12s; }
 .cc-adr-link:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
 .cc-adr-done { color:var(--accent); font-weight:600; }
+/* Details shown as read-only facts: a clean list of icon + value rows; email and
+   phone are tappable links, the address carries its own Maps buttons. */
+.cc-facts { display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+.cc-fact { display:flex; align-items:flex-start; gap:11px; padding:9px 4px; border-bottom:1px solid var(--line); color:var(--ink); font-size:16px; text-decoration:none; }
+.cc-fact:last-child { border-bottom:0; }
+a.cc-fact:hover { color:var(--accent); }
+a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2px; }
+.cc-fact-ic { flex:none; width:20px; text-align:center; color:var(--ink-3); font-size:15px; line-height:1.5; }
+.cc-fact-v { min-width:0; word-break:break-word; }
+.cc-fact-addr { align-items:flex-start; }
+.cc-fact-addr .cc-fact-v { flex:1; }
+.cc-fact-addr .cc-adr-views { margin-top:-2px; }
 .focus-notes { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
 .fn-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 8px; margin:0; }
 .focus-notes .prose { min-height:96px; }

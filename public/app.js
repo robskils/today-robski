@@ -9379,24 +9379,43 @@ function contactAddrRowHtml(a, idSuffix, removable) {
 function addrViewLines(a) {
   return [a.street, [a.city, a.postcode].filter(Boolean).join(' '), a.country].map((x) => (x || '').trim()).filter(Boolean);
 }
-function contactAddressView(addrs) {
-  const items = addrs.map((a) => {
+// The formatted, read-only address blocks (nickname, lines, and the Map / transit
+// links) - shown inside the Details view; the section's own Edit reopens the form.
+function contactAddressViewBlocks(addrs) {
+  return `<div class="cc-adr-views">${addrs.map((a) => {
     const q = encodeURIComponent(formatAddress(a));
     const maps = `https://www.google.com/maps/search/?api=1&query=${q}`;
     const transit = `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=transit`;
     return `<div class="cc-adr-view">${a.label ? `<div class="cc-adr-view-label">${esc(a.label)}</div>` : ''}<div class="cc-adr-view-lines">${addrViewLines(a).map((l) => `<span>${esc(l)}</span>`).join('')}</div>
       <div class="cc-adr-actions"><a class="cc-adr-link" href="${maps}" target="_blank" rel="noopener noreferrer"><span>🗺</span> Google Maps</a><a class="cc-adr-link" href="${transit}" target="_blank" rel="noopener noreferrer" title="Directions by public transport from where you are"><span>🚆</span> Get there</a></div></div>`;
-  }).join('');
-  return `<div class="tf-field cc-addr"><span class="tf-label">Address <button type="button" class="tf-clear" data-cc-edit-addr>Edit</button></span><div class="cc-adr-views">${items}</div></div>`;
+  }).join('')}</div>`;
 }
 function contactAddressFields(p) {
   const addrs = contactAddresses(p);
-  const editing = !!(state.contact_open && state.contact_open.editAddr);
-  // Saved and not being edited: show the formatted block, not the form.
-  if (addrs.length && !editing) return contactAddressView(addrs);
   const rows = (addrs.length ? addrs : [{ label: '' }]).map((a, i) => contactAddrRowHtml(a, i, i > 0)).join('');
-  const done = addrs.length ? '<button type="button" class="cc-multi-add cc-adr-done" data-cc-addr-done>Done</button>' : '';
-  return `<div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-multi cc-adr-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-addr>+ Add address</button>${done}</div></div>`;
+  return `<div class="tf-field cc-addr"><span class="tf-label">Address</span><div class="cc-multi cc-adr-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-addr>+ Add address</button></div></div>`;
+}
+// Birthday as a friendly line; the year shows only when it's a real one.
+function fmtBirthday(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return iso || '';
+  const d = new Date(iso + 'T00:00'); if (isNaN(d)) return iso;
+  const y = Number(iso.slice(0, 4));
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', ...(y > 1901 ? { year: 'numeric' } : {}) });
+}
+// The Details block read-only: the facts as text and tappable links. Phone dials,
+// email composes, the address carries its Maps links. An Edit flips to the form.
+function contactDetailsView(c, p) {
+  const fact = (icon, inner, href, cls) => href
+    ? `<a class="cc-fact ${cls || ''}" href="${href}"${/^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><span class="cc-fact-ic">${icon}</span><span class="cc-fact-v">${inner}</span></a>`
+    : `<div class="cc-fact ${cls || ''}"><span class="cc-fact-ic">${icon}</span><span class="cc-fact-v">${inner}</span></div>`;
+  const rows = [];
+  contactEmails(p).forEach((em) => rows.push(fact('✉', esc(em), 'mailto:' + encodeURIComponent(em).replace(/%40/g, '@'))));
+  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(fact('☎', esc(disp), 'tel:' + esc(tel))); });
+  if (p.birthday) rows.push(fact('🎂', esc(fmtBirthday(p.birthday))));
+  const addrs = contactAddresses(p);
+  let body = rows.join('');
+  if (addrs.length) body += `<div class="cc-fact cc-fact-addr"><span class="cc-fact-ic">📍</span><div class="cc-fact-v">${contactAddressViewBlocks(addrs)}</div></div>`;
+  return body || '<p class="cc-box-empty">No details yet — tap Edit to add email, phone, birthday or an address.</p>';
 }
 // Gather every address row on the open card into the array + the mirrored primary.
 function readCardAddresses() {
@@ -9906,13 +9925,15 @@ function renderContactCard() {
     </div>`;
     })()}
     <div class="cc-sec">
-      <div class="cc-sec-h">Details</div>
-      <div class="tf-meta">
+      <div class="cc-sec-h">Details ${state.contact_open && state.contact_open.editDetails ? '<button type="button" class="tf-clear cc-details-done" data-cc-details-done>Done</button>' : '<button type="button" class="tf-clear" data-cc-edit-details>Edit</button>'}</div>
+      ${(state.contact_open && state.contact_open.editDetails)
+        ? `<div class="tf-meta">
         ${contactEmailFields(p)}
         ${contactPhoneFields(p)}
         <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
         ${contactAddressFields(p)}
-      </div>
+      </div>`
+        : `<div class="cc-facts">${contactDetailsView(c, p)}</div>`}
     </div>
     <div class="cc-sec">
       <div class="cc-sec-h">Organise</div>
@@ -14521,8 +14542,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="" title="Country code"><input class="sel cc-phone-num" type="tel" placeholder="211 234 400" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
   const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
-  if (t.closest('[data-cc-edit-addr]') && state.contact_open) { state.contact_open.editAddr = true; renderContactCard(); return; }
-  if (t.closest('[data-cc-addr-done]') && state.contact_open) { patchContact(state.contact_open.contact.id, readCardAddresses(), true); state.contact_open.editAddr = false; renderContactCard(); return; }
+  if (t.closest('[data-cc-edit-details]') && state.contact_open) { state.contact_open.editDetails = true; renderContactCard(); return; }
+  if (t.closest('[data-cc-details-done]') && state.contact_open) { const cid = state.contact_open.contact.id; patchContact(cid, readCardContacts(), true); patchContact(cid, readCardAddresses(), true); state.contact_open.editDetails = false; renderContactCard(); return; }
   if (t.closest('[data-cc-add-addr]')) { const btn = t.closest('[data-cc-add-addr]'); btn.insertAdjacentHTML('beforebegin', contactAddrRowHtml({}, 'n' + Date.now().toString(36), true)); btn.previousElementSibling.querySelector('.cc-adr-label')?.focus(); return; }
   { const dca = t.closest('[data-cc-del-addr]'); if (dca && state.contact_open) { dca.closest('[data-adr-row]').remove(); patchContact(state.contact_open.contact.id, readCardAddresses(), true); return; } }
   const cac = t.closest('[data-contact-area]'); if (cac) { state.contactsArea = cac.dataset.contactArea || null; renderContacts(); return; }
