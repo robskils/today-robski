@@ -209,7 +209,7 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
                 <a href="${siteUrl}/goals" style="color:${INK};text-decoration:none">Goals</a>
               </p>
               <a href="${siteUrl}/today" style="font-family:${SANS};font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:${GOLD};text-decoration:none">Plan your day &#8594;</a>
-              <p style="margin:16px 0 0;font-family:${SERIF};font-size:17px;font-style:italic;color:${MIST}">For a life well lived.</p>
+              <p style="margin:16px 0 0;font-family:${SERIF};font-size:17px;font-style:italic"><a href="${siteUrl}" style="color:${MIST};text-decoration:none">For a life well lived</a></p>
             </td></tr>
           </table>
         </td></tr>

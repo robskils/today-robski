@@ -126,7 +126,7 @@ test('briefEmail offers the way back in', () => {
   const html = briefEmail({ day: '2026-08-04', siteUrl: 'https://x.daybook.fyi' });
   for (const p of ['/journal', '/dreams', '/goals', '/today']) assert.ok(html.includes(`https://x.daybook.fyi${p}`), p);
   assert.ok(html.includes('Plan your day'));
-  assert.ok(html.includes('For a life well lived.'));
+  assert.ok(html.includes('For a life well lived'));
   assert.ok(!html.includes('Sit first'));
 });
 

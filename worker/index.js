@@ -2030,7 +2030,7 @@ function brandedSystemEmail({ home, eyebrow, headline, bodyHtml, ctaHref, ctaLab
         <tr><td style="padding:34px 34px 34px">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${RULE}">
             <tr><td align="center" style="padding:22px 0 0">
-              <p style="margin:0;font-family:${SERIF};font-size:17px;font-style:italic;color:${MIST}">For a life well lived.</p>
+              <p style="margin:0;font-family:${SERIF};font-size:17px;font-style:italic"><a href="${home}" style="color:${MIST};text-decoration:none">For a life well lived</a></p>
               <p style="margin:14px 0 0;font-family:${SANS};font-size:12px;color:${MIST}"><a href="${home}/settings/notifications" style="color:${MIST};text-decoration:underline">Manage notifications</a></p>
             </td></tr>
           </table>
@@ -2057,7 +2057,7 @@ async function sendSurfaceMail(env, { to, tasks, home }) {
     bodyHtml, ctaHref: one ? link(tasks[0].id) : `${home}/today`, ctaLabel: one ? 'Open the task' : 'See them in Today',
     preheader: tasks.slice(0, 3).map((t) => t.title).join(' · '), title: subject,
   });
-  const text = `${one ? 'A task has' : tasks.length + ' tasks have'} surfaced to your Today feed - you asked to be told:\n\n${tasks.map((t) => `- ${t.title}  ${link(t.id)}`).join('\n')}\n\nManage notifications: ${home}/settings/notifications\n\nFor a life well lived.`;
+  const text = `${one ? 'A task has' : tasks.length + ' tasks have'} surfaced to your Today feed - you asked to be told:\n\n${tasks.map((t) => `- ${t.title}  ${link(t.id)}`).join('\n')}\n\nManage notifications: ${home}/settings/notifications\n\nFor a life well lived`;
   await sendSystemMail(env, { to, subject, html, text });
 }
 
@@ -2075,7 +2075,7 @@ async function sendReviewMail(env, { to, label, home }) {
     ctaHref: `${home}/reviews`, ctaLabel: 'Open your review',
     preheader: `A few quiet minutes to see how your ${period} went.`, title: subject,
   });
-  const text = `Your ${lc} review\n\nA few quiet minutes to look back over the ${period} - what moved, what went quiet, and one thing to carry forward.\n\nOpen your review: ${home}/reviews\n\nManage notifications: ${home}/settings/notifications\n\nFor a life well lived.`;
+  const text = `Your ${lc} review\n\nA few quiet minutes to look back over the ${period} - what moved, what went quiet, and one thing to carry forward.\n\nOpen your review: ${home}/reviews\n\nManage notifications: ${home}/settings/notifications\n\nFor a life well lived`;
   await sendSystemMail(env, { to, subject, html, text });
 }
 
@@ -2159,7 +2159,7 @@ async function sendEventReminderMail(env, { to, title, when, whenPhrase, locatio
   const subject = `Reminder: ${title} at ${when}`;
   const bodyHtml = `<p style="margin:0">A reminder you asked for: <b>${escHtml(title)}</b> starts at <b>${escHtml(when)}</b>${location ? ` · ${escHtml(location)}` : ''} - ${escHtml(whenPhrase)}.</p>`;
   const html = brandedSystemEmail({ home, eyebrow: 'Event reminder', headline: title, bodyHtml, ctaHref: `${home}/calendar`, ctaLabel: 'Open the calendar', preheader: `${title} at ${when} - ${whenPhrase}`, title: subject });
-  const text = `Reminder: ${title} at ${when}${location ? ` · ${location}` : ''} - ${whenPhrase}.\n\nOpen the calendar: ${home}/calendar\n\nManage notifications: ${home}/settings/notifications\n\nFor a life well lived.`;
+  const text = `Reminder: ${title} at ${when}${location ? ` · ${location}` : ''} - ${whenPhrase}.\n\nOpen the calendar: ${home}/calendar\n\nManage notifications: ${home}/settings/notifications\n\nFor a life well lived`;
   await sendSystemMail(env, { to, subject, html, text });
 }
 // Shared sender for the small system emails (surface note, review reminder):
