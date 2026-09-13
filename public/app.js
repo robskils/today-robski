@@ -2678,15 +2678,18 @@ function assignedSectionHtml() {
 async function openNote(id) {
   stopNotePoll();
   const note = await api(`/api/blocks/${id}`);
-  const path = [note]; let p = note;
-  // Stop the ancestry walk at the first parent we can't reach - a note shared
-  // with us sits under the owner's tree, which isn't ours to read.
-  while (p.parent_id) { try { p = await api(`/api/blocks/${p.parent_id}`); path.unshift(p); } catch { break; } }
-  // Both sub-notes and table notes nested inside this note.
+  // Flat model: notes are all equal. A note's connections are peer links
+  // (props.links, two-way); any legacy parent/child (parent_id) is folded in as
+  // an equal connection so nothing is orphaned, but nothing is a "parent". (Robin.)
   const children = (await api(`/api/blocks?parent_id=${id}`)).filter((b) => b.kind === 'note' || b.kind === 'table');
+  let parent = null;
+  if (note.parent_id) { try { parent = await api(`/api/blocks/${note.parent_id}`); } catch {} }
   if (!state.allTasks) state.allTasks = notKit(await api('/api/blocks?kind=task').catch(() => []));
   const linked = await loadNoteLinks(note, children);
-  state.note = { current: note, path, children, linked, taskQuery: '', shares: null };
+  // One flat, deduped list of everything this note connects to.
+  const seen = new Set([note.id]); const connected = [];
+  for (const c of [...(parent ? [parent] : []), ...children, ...linked]) { if (c && (c.kind === 'note' || c.kind === 'table') && !seen.has(c.id)) { seen.add(c.id); connected.push(c); } }
+  state.note = { current: note, path: [note], children, linked, connected, parent, taskQuery: '', shares: null };
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title, blockAreas(note)[0]);
   renderNav(); renderNote();
@@ -4161,7 +4164,7 @@ async function setNoteType(id, type) {
     await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
     // Refresh the top-level lists so the sidebar and Notes page reclassify it.
     [state.noteTops, state.tables] = await Promise.all([
-      api('/api/blocks?kind=note&parent_id=').catch(() => state.noteTops),
+      api('/api/blocks?kind=note').catch(() => state.noteTops),
       api('/api/blocks?kind=table').catch(() => state.tables),
     ]);
     if (type === 'table') await openTable(id); else await openNote(id);
@@ -13472,7 +13475,7 @@ async function loadNoteLinks(note, children) {
 }
 function noteConnListRows() {
   const cur = state.note.current;
-  const taken = new Set([...(state.note.children || []).map((c) => c.id), ...(state.note.linked || []).map((c) => c.id)]);
+  const taken = new Set((state.note.connected || []).map((c) => c.id));
   const q = (state.note.connQuery || '').trim().toLowerCase();
   const curAreas = new Set(blockAreas(cur));
   // Recently-viewed order, so notes you've had open lately float up.
@@ -13505,21 +13508,28 @@ async function connectExistingNote(id) {
     await api(`/api/blocks/${cur.id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: curLinks } }) });
     await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: tgtLinks } }) });
     cur.props = cur.props || {}; cur.props.links = curLinks;
-    state.note.linked = await loadNoteLinks(cur, state.note.children);
-    state.note.connQuery = ''; renderNote(); toast('Notes connected');
+    state.note.connQuery = '';
+    await openNote(cur.id);   // rebuild the flat connected list
+    toast('Notes connected');
   } catch (e) { toast(e.message); }
 }
-// Undo a two-way connection: remove each note from the other's links.
+// Disconnect a note. A peer link is removed from both notes' props.links; a
+// legacy parent/child relationship (parent_id) is cleared instead, so old nested
+// notes come apart cleanly into equals too.
 async function disconnectNote(id) {
   const cur = state.note && state.note.current; if (!cur) return;
   try {
     const target = await api(`/api/blocks/${id}`).catch(() => null);
+    // Peer link either way.
     const curLinks = noteLinkIds(cur).filter((x) => x !== id);
-    await api(`/api/blocks/${cur.id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: curLinks } }) });
-    if (target) await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: noteLinkIds(target).filter((x) => x !== cur.id) } }) });
-    cur.props = cur.props || {}; cur.props.links = curLinks;
-    state.note.linked = await loadNoteLinks(cur, state.note.children);
-    renderNote(); toast('Disconnected');
+    if (curLinks.length !== noteLinkIds(cur).length) { await api(`/api/blocks/${cur.id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: curLinks } }) }); cur.props = cur.props || {}; cur.props.links = curLinks; }
+    if (target && noteLinkIds(target).includes(cur.id)) { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: noteLinkIds(target).filter((x) => x !== cur.id) } }) }); }
+    // Legacy parent_id: this note is the child (its parent is `id`), or `id` is a
+    // child of this note. Clear whichever applies so they become equals.
+    if (cur.parent_id === id) { await api(`/api/blocks/${cur.id}`, { method: 'PATCH', body: JSON.stringify({ parent_id: null }) }); cur.parent_id = null; }
+    if (target && target.parent_id === cur.id) { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ parent_id: null }) }); }
+    await openNote(cur.id);   // reload the flat connected list
+    toast('Disconnected');
   } catch (e) { toast(e.message); }
 }
 function renderNote() {
@@ -13529,23 +13539,19 @@ function renderNote() {
   const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
     ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
     : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
-  const subItem = (c, linked) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage${hue != null ? ' has-area' : ''}${linked ? ' subpage-linked' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}"${linked ? '' : ` draggable="true" data-sub-id="${c.id}"`}${a ? ` title="${esc(a.title)}"` : ''}>${linked ? '<span class="sp-ico sp-linkico" title="Two-way connection">🔗</span>' : '<span class="sp-grip" title="Drag to reorder">⠿</span>'}${linked ? '' : `<span class="sp-ico">${isT ? TBL_ICO : NOTE_ICO}</span>`}<span class="sp-t">${esc(c.title || 'Untitled')}</span>${linked ? `<span class="sp-unlink" data-note-unlink="${c.id}" role="button" title="Disconnect">×</span>` : ''}</button>`; };
-  // The note this one lives inside shows here too, so the connection reads both
-  // ways: open the parent and you see the child (a sub-note), open the child and
-  // you see the parent. It's structural (parent_id), so no × here - use Move to
-  // change where a note lives.
-  const parent = (state.note.path && state.note.path.length > 1) ? state.note.path[state.note.path.length - 2] : null;
-  const parentItem = (c) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage subpage-parent${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}"${a ? ` title="In ${esc(a.title)}"` : ''}><span class="sp-ico sp-parentico" title="This note lives inside this one">↖</span><span class="sp-t">${esc(c.title || 'Untitled')}</span><span class="sp-parent-tag">holds this</span></button>`; };
-  const parentCard = parent ? parentItem(parent) : '';
-  const linkedCards = (state.note.linked || []).filter((c) => !parent || c.id !== parent.id);
-  const kids = [parentCard, ...state.note.children.map((c) => subItem(c, false)), ...linkedCards.map((c) => subItem(c, true))].join('');
+  // All connections are equal - no parent, no child. Each is a peer note you can
+  // open or disconnect; the × unlinks it (peer link removed, or a legacy parent
+  // relationship cleared). (Robin: notes are a flat set, all equal.)
+  const connItem = (c) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage subpage-linked${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico sp-linkico" title="Connected">🔗</span><span class="sp-t">${esc(c.title || 'Untitled')}</span><span class="sp-unlink" data-note-unlink="${c.id}" role="button" title="Disconnect">×</span></button>`; };
+  const connected = state.note.connected || [];
+  const kids = connected.map(connItem).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${noteAreasControl(n)}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       ${n.sharedBy ? '' : '<button class="note-tidy ghost" data-note-tidy data-tip="Tidy the spacing" aria-label="Tidy the spacing - remove blank lines and even out the paragraphs">Tidy</button>'}
       ${shareBtn(n, 'note')}
-      ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note data-tip="Move this note inside another" aria-label="Move this note inside another">Move</button>
+      ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note data-tip="File this note in a life area" aria-label="File this note in a life area">Life area</button>
       <button class="note-lock ghost ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
       <button class="note-lock ghost ${n.props && n.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="note:${n.id}" data-tip="${n.props && n.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${n.props && n.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${n.props && n.props.noSearch ? '🙈' : '🔍'}</button>
       <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
@@ -13559,7 +13565,7 @@ function renderNote() {
         ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
-        <div class="subpages" data-subpages>${(() => { const cn = state.note.children.length + linkedCards.length + (parent ? 1 : 0); return `<div class="sub-h">Connected notes${cn ? ` · ${cn}` : ''}</div>`; })()}
+        <div class="subpages" data-subpages>${(() => { const cn = connected.length; return `<div class="sub-h">Connected notes${cn ? ` · ${cn}` : ''}</div>`; })()}
           ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
         ${(() => {
           // Sections that hold something float above the empty ones (which keep
@@ -13580,30 +13586,23 @@ function renderNote() {
   autoGrowSoon($('#note-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
-// ── move a note inside another (re-parent) ───────────
+// ── file a note in a life area ───────────────────────
 function openMoveNote() {
   const cur = state.note && state.note.current; if (!cur) return;
-  Promise.all([
-    api('/api/blocks?kind=note'),
-    (state.areas && state.areas.length) ? Promise.resolve(state.areas) : api('/api/blocks?kind=area').catch(() => []),
-  ]).then(([all, areas]) => {
-    // Can't move a note into itself or any of its own descendants.
-    const kids = {}; all.forEach((n) => { const p = n.parent_id || ''; (kids[p] = kids[p] || []).push(n.id); });
-    const bad = new Set([cur.id]); const st = [cur.id];
-    while (st.length) { const p = st.pop(); (kids[p] || []).forEach((c) => { if (!bad.has(c)) { bad.add(c); st.push(c); } }); }
-    const opts = all.filter((n) => !bad.has(n.id)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    const areaList = (areas || []).filter((a) => !a.sharedBy).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    state.move = { cur: cur.id, curParent: cur.parent_id || null, curArea: (cur.props && cur.props.area) || null, opts, areas: areaList, q: '' };
-    renderMove();
-  }).catch((e) => toast(e.message));
+  Promise.resolve((state.areas && state.areas.length) ? state.areas : api('/api/blocks?kind=area').catch(() => []))
+    .then((areas) => {
+      const areaList = (areas || []).filter((a) => !a.sharedBy).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      state.move = { cur: cur.id, curArea: (cur.props && cur.props.area) || null, areas: areaList, q: '' };
+      renderMove();
+    }).catch((e) => toast(e.message));
 }
 function renderMove() {
   let el = document.getElementById('move-overlay');
   if (!el) { el = document.createElement('div'); el.id = 'move-overlay'; document.body.appendChild(el); }
   const title = (state.note && state.note.current && state.note.current.title) || 'this note';
-  el.innerHTML = `<div class="mv-bg" data-move-bg><div class="mv-panel" role="dialog" aria-label="Move note">
-    <div class="mv-head"><div class="mv-head-b"><div class="mv-title">Move note</div><div class="mv-sub">${esc(title)}</div></div><button class="mv-x" data-move-bg aria-label="Close">×</button></div>
-    <div class="mv-searchwrap"><span class="mv-search-ic">⌕</span><input id="move-input" class="mv-search" placeholder="Search notes and areas…" value="${esc(state.move.q)}" autocomplete="off"></div>
+  el.innerHTML = `<div class="mv-bg" data-move-bg><div class="mv-panel" role="dialog" aria-label="File note in a life area">
+    <div class="mv-head"><div class="mv-head-b"><div class="mv-title">Life area</div><div class="mv-sub">${esc(title)}</div></div><button class="mv-x" data-move-bg aria-label="Close">×</button></div>
+    <div class="mv-searchwrap"><span class="mv-search-ic">⌕</span><input id="move-input" class="mv-search" placeholder="Search life areas…" value="${esc(state.move.q)}" autocomplete="off"></div>
     <div class="mv-scroll" id="move-list"></div>
   </div></div>`;
   renderMoveList();
@@ -13613,15 +13612,14 @@ function renderMoveList() {
   const el = $('#move-list'); if (!el) return;
   const q = state.move.q.trim().toLowerCase();
   const match = (s) => !q || (s || '').toLowerCase().includes(q);
-  const topSel = !state.move.curParent && !state.move.curArea;
   const here = '<span class="mv-cur">Here now</span>';
-  const topHtml = match('top level') || match('out on its own') ? `<div class="mv-group"><div class="mv-glabel">On its own</div>
-    <button class="mv-opt" data-move-to=""><span class="mv-ic mv-ic-top">◇</span><span class="mv-opt-b"><span class="mv-opt-t">Top level</span><span class="mv-opt-s">Not inside a note, not in an area</span></span>${topSel ? here : ''}</button></div>` : '';
+  // Notes are a flat set - Move is now purely "which life area does this belong
+  // to" (or none). No note-nesting. (Robin.)
+  const noAreaSel = !state.move.curArea;
+  const noAreaHtml = (match('no area') || match('none')) ? `<div class="mv-group"><button class="mv-opt" data-move-area=""><span class="mv-ic mv-ic-top">◇</span><span class="mv-opt-b"><span class="mv-opt-t">No life area</span></span>${noAreaSel ? here : ''}</button></div>` : '';
   const areas = (state.move.areas || []).filter((a) => match(a.title));
-  const areasHtml = areas.length ? `<div class="mv-group"><div class="mv-glabel">Into a life area</div>${areas.map((a) => `<button class="mv-opt" data-move-area="${a.id}"><span class="mv-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span><span class="mv-opt-b"><span class="mv-opt-t">${esc(a.title || 'Untitled')}</span></span>${state.move.curArea === a.id && !state.move.curParent ? here : ''}</button>`).join('')}</div>` : '';
-  const notes = state.move.opts.filter((n) => match(n.title));
-  const notesHtml = notes.length ? `<div class="mv-group"><div class="mv-glabel">Inside another note</div>${notes.map((n) => `<button class="mv-opt" data-move-to="${n.id}"><span class="mv-ic">▤</span><span class="mv-opt-b"><span class="mv-opt-t">${esc(n.title || 'Untitled')}</span></span>${state.move.curParent === n.id ? here : ''}</button>`).join('')}</div>` : '';
-  const html = topHtml + areasHtml + notesHtml;
+  const areasHtml = areas.length ? `<div class="mv-group"><div class="mv-glabel">Into a life area</div>${areas.map((a) => `<button class="mv-opt" data-move-area="${a.id}"><span class="mv-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span><span class="mv-opt-b"><span class="mv-opt-t">${esc(a.title || 'Untitled')}</span></span>${state.move.curArea === a.id ? here : ''}</button>`).join('')}</div>` : '';
+  const html = noAreaHtml + areasHtml;
   el.innerHTML = html || '<div class="mv-empty">Nothing matches.</div>';
 }
 async function moveNote(targetId) {
@@ -13629,7 +13627,7 @@ async function moveNote(targetId) {
   const cur = state.move.cur; closeMove();
   try {
     await api(`/api/blocks/${cur}`, { method: 'PATCH', body: JSON.stringify({ parent_id: targetId || null }) });
-    state.noteTops = await api('/api/blocks?kind=note&parent_id=').catch(() => state.noteTops);
+    state.noteTops = await api('/api/blocks?kind=note').catch(() => state.noteTops);
     await openNote(cur);
     renderNav();
     toast(targetId ? 'Note moved' : 'Moved to top level');
@@ -13644,11 +13642,11 @@ async function moveNoteToArea(areaId) {
   const a = (state.move.areas || []).find((x) => x.id === areaId);
   closeMove();
   try {
-    await api(`/api/blocks/${cur}`, { method: 'PATCH', body: JSON.stringify({ parent_id: null, props: { area: areaId } }) });
-    state.noteTops = await api('/api/blocks?kind=note&parent_id=').catch(() => state.noteTops);
+    await api(`/api/blocks/${cur}`, { method: 'PATCH', body: JSON.stringify({ parent_id: null, props: { area: areaId || null } }) });
+    state.noteTops = await api('/api/blocks?kind=note').catch(() => state.noteTops);
     await openNote(cur);
     renderNav();
-    toast('Moved to ' + ((a && a.title) || 'the area'));
+    toast(areaId ? 'Filed in ' + ((a && a.title) || 'the area') : 'Removed from its life area');
   } catch (e) { toast(e.message); }
 }
 function closeMove() { const el = document.getElementById('move-overlay'); if (el) el.innerHTML = ''; state.move = null; }
@@ -13904,12 +13902,24 @@ function primeMobileKeyboard() {
   tmp.focus();
   return tmp;
 }
-async function newNote(parentId) {
+async function newNote(connectToId) {
   const primer = primeMobileKeyboard();
-  // Start with an empty title (the field shows its "Untitled" placeholder, not the
-  // literal word), cursor waiting - type the name straight in. (Robin.)
-  const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: '', body: '', parent_id: parentId || null }) });
-  if (!parentId) { state.noteTops.push(note); }
+  // Every note is top-level (no parent). Start with an empty title (the field
+  // shows its "Untitled" placeholder), cursor waiting - type the name straight in.
+  const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: '', body: '', parent_id: null }) });
+  // Made from another note's "New note"? Connect the two as equal peers, not as
+  // parent/child - a two-way link in props.links on each. (Robin.)
+  if (connectToId && connectToId !== note.id) {
+    try {
+      const origin = await api(`/api/blocks/${connectToId}`).catch(() => null);
+      if (origin) {
+        const oLinks = Array.from(new Set([...noteLinkIds(origin), note.id]));
+        await api(`/api/blocks/${note.id}`, { method: 'PATCH', body: JSON.stringify({ props: { links: [connectToId] } }) });
+        await api(`/api/blocks/${connectToId}`, { method: 'PATCH', body: JSON.stringify({ props: { links: oLinks } }) });
+      }
+    } catch {}
+  }
+  state.noteTops.push(note);
   await openNote(note.id);
   const ti = $('#note-title');
   if (ti) { ti.focus(); }   // empty field, cursor ready; keyboard carries over from the primer
@@ -17571,7 +17581,7 @@ async function onbConnectGmail() {
     let modKv;
     let locKv;
     [state.noteTops, state.tables, state.areas, state.favs, modKv, locKv] = await Promise.all([
-      api('/api/blocks?kind=note&parent_id='), api('/api/blocks?kind=table'), api('/api/blocks?kind=area'),
+      api('/api/blocks?kind=note'), api('/api/blocks?kind=table'), api('/api/blocks?kind=area'),
       api('/api/favorites').catch(() => []),
       api('/api/kv/modules').catch(() => null),
       api('/api/kv/locale').catch(() => null),
