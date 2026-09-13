@@ -13906,11 +13906,13 @@ function primeMobileKeyboard() {
 }
 async function newNote(parentId) {
   const primer = primeMobileKeyboard();
-  const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: 'Untitled', body: '', parent_id: parentId || null }) });
+  // Start with an empty title (the field shows its "Untitled" placeholder, not the
+  // literal word), cursor waiting - type the name straight in. (Robin.)
+  const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: '', body: '', parent_id: parentId || null }) });
   if (!parentId) { state.noteTops.push(note); }
   await openNote(note.id);
   const ti = $('#note-title');
-  if (ti) { ti.focus(); ti.select(); }   // keyboard carries over from the primer
+  if (ti) { ti.focus(); }   // empty field, cursor ready; keyboard carries over from the primer
   if (primer) primer.remove();
 }
 async function newArea() {
