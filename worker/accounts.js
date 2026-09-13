@@ -254,10 +254,21 @@ export async function createInvite(env, input) {
   const code = existing ? existing.code
     : (String(input.code || '').trim() || randomCode()).toUpperCase().slice(0, 24);
   if (!existing) {
-    // A gift is Premium (BYO-key), free for GIFT_MONTHS. A plain invite is Free.
-    const plan = gift ? 'byok' : 'free';
-    const free = gift ? 1 : 0;
-    const fm = gift ? GIFT_MONTHS : null;
+    let plan, free, fm;
+    // The owner (admin) gets the full range: pick the plan outright, and set any
+    // free period (in months) on top - not just the members' one-tap 6-month gift.
+    if (admin && (input.plan !== undefined || input.freeMonths !== undefined)) {
+      plan = ['free', 'byok', 'managed'].includes(String(input.plan)) ? String(input.plan) : 'free';
+      const fmN = Math.max(0, Math.min(120, Math.round(Number(input.freeMonths) || 0)));
+      free = fmN > 0 ? 1 : 0;
+      fm = fmN > 0 ? fmN : null;
+    } else {
+      // Members (and a plain owner invite): a gift is Premium (BYO-key), free for
+      // GIFT_MONTHS; otherwise Free.
+      plan = gift ? 'byok' : 'free';
+      free = gift ? 1 : 0;
+      fm = gift ? GIFT_MONTHS : null;
+    }
     const note = admin ? (input.note || null) : null;
     await env.DB.prepare(
       'INSERT INTO invites (code, email, plan, free, free_months, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',

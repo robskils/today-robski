@@ -1680,8 +1680,8 @@ function renderAdmin() {
   const membersPane = `<div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>`;
 
   const invitesPane = `<div class="set-card">
-      <div class="inv-new"><button class="add-btn wide" data-create-invite>✦ Invite someone</button></div>
-      <p class="inv-hint">Put in their email and Daybook sends the invitation - one link, no code for them to type.</p>
+      <div class="inv-new"><button class="add-btn wide" data-admin-invite>✦ Invite someone</button></div>
+      <p class="inv-hint">The full set of controls - their email, plan, and any complimentary period. Daybook sends one link, no code for them to type.</p>
       <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">Nobody invited yet.</div>'}</div>
     </div>`;
 
@@ -1845,6 +1845,62 @@ function inviteToDaybook(prefill) {
       if (r.sent) toast(`Invitation sent to ${r.email}`);
       // The invite exists even when the send failed, so hand its link over
       // rather than losing it to an error toast.
+      else if (r.email) copyJoinLink(r.link, `Invite made, but the email didn't send (${r.sendError || 'unknown error'}). Its link is copied - send it yourself.`);
+      else copyJoinLink(r.link, 'Invite link copied - share it with anyone');
+    } catch (e) { fail(e.message); }
+  }
+  document.addEventListener('keydown', onKey, true);
+  emailIn.addEventListener('input', syncBtn);
+  el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(); });
+  el.querySelectorAll('[data-ud]').forEach((b) => b.addEventListener('click', () => (b.dataset.ud === '1' ? send() : close())));
+  syncBtn();
+  setTimeout(() => { emailIn.focus(); emailIn.select(); }, 20);
+}
+// The owner's invite: the full range - pick the plan and any free period, not
+// the members' one-tap gift. (Robin: don't treat me like any old punter.)
+function adminInvite(prefill) {
+  const el = uiDialogHost();
+  const planOpts = PLAN_KEYS.map((p) => `<option value="${p}">${esc(PLAN_LABEL[p])}</option>`).join('');
+  const freeOpts = [['0', 'No free period'], ['1', '1 month'], ['3', '3 months'], ['6', '6 months'], ['12', '12 months'], ['24', '24 months'], ['120', 'Forever (10 years)']];
+  el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box inv-dialog">
+    <div class="recur-h">Invite someone (admin)</div>
+    <p class="recur-p">The full set of controls - pick their plan and any complimentary period. They still get a one-click link, no code to type.</p>
+    <label class="inv-f"><span>Their email</span>
+      <input class="ui-dialog-input" id="ainv-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
+    <div class="inv-two">
+      <label class="inv-f"><span>Plan</span><select class="ui-dialog-input" id="ainv-plan">${planOpts}</select></label>
+      <label class="inv-f"><span>Free period</span><select class="ui-dialog-input" id="ainv-free">${freeOpts.map(([v, l]) => `<option value="${v}" ${v === '0' ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    </div>
+    <label class="inv-f"><span>A note from you <em>optional</em></span>
+      <textarea class="ui-dialog-input inv-d-msg" id="ainv-msg" rows="3" placeholder="Thought you'd like this - it's how I run my day."></textarea></label>
+    <p class="inv-d-hint">No email? Leave it blank and we'll just make you a code to pass on.</p>
+    <p class="gate2-err inv-d-err" id="ainv-err" hidden></p>
+    <div class="ui-dialog-btns">
+      <button class="ui-btn cancel" data-ud="0">Cancel</button>
+      <button class="ui-btn primary" data-ud="1" id="ainv-ok">Send invitation</button>
+    </div></div></div>`;
+  const emailIn = el.querySelector('#ainv-email');
+  const errEl = el.querySelector('#ainv-err');
+  const ok = el.querySelector('#ainv-ok');
+  const close = () => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  const syncBtn = () => { ok.textContent = emailIn.value.trim() ? 'Send invitation' : 'Create a code'; };
+  const fail = (m) => { errEl.textContent = m; errEl.hidden = false; ok.disabled = false; };
+  async function send() {
+    const email = emailIn.value.trim();
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('That does not look like an email address.');
+    errEl.hidden = true; ok.disabled = true;
+    const body = {
+      email,
+      message: (el.querySelector('#ainv-msg').value || '').trim().slice(0, 600),
+      note: (el.querySelector('#ainv-msg').value || '').trim().slice(0, 600),
+      plan: el.querySelector('#ainv-plan').value,
+      freeMonths: Number(el.querySelector('#ainv-free').value) || 0,
+    };
+    try {
+      const r = await api('/api/invites', { method: 'POST', body: JSON.stringify(body) });
+      close(); await loadInvites();
+      if (r.sent) toast(`Invitation sent to ${r.email}`);
       else if (r.email) copyJoinLink(r.link, `Invite made, but the email didn't send (${r.sendError || 'unknown error'}). Its link is copied - send it yourself.`);
       else copyJoinLink(r.link, 'Invite link copied - share it with anyone');
     } catch (e) { fail(e.message); }
@@ -14613,6 +14669,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-totp-cancel]') || t.closest('[data-totp-done]')) { state.totp = null; renderSettings(); return; }
   if (t.closest('[data-totp-copy]')) { const codes = (state.totp && state.totp.recovery || []).join('\n'); if (codes) { try { navigator.clipboard.writeText(codes); toast('Recovery codes copied'); } catch { toast('Copy failed - select them by hand'); } } return; }
   if (t.closest('[data-create-invite]')) { inviteToDaybook(); return; }
+  if (t.closest('[data-admin-invite]')) { adminInvite(); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }

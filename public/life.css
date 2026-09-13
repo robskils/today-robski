@@ -3593,6 +3593,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .inv-f em { font-style:normal; font-weight:400; color:var(--ink-3); }
 .inv-f .ui-dialog-input { margin-bottom:14px; }
 .inv-f .sel { margin:0 0 14px; }
+.inv-two { display:flex; gap:12px; }
+.inv-two .inv-f { flex:1 1 0; min-width:0; }
+.inv-two .ui-dialog-input { width:100%; box-sizing:border-box; }
+@media (max-width:460px){ .inv-two { flex-direction:column; gap:0; } }
 .inv-d-msg { font-family:inherit; line-height:1.5; resize:vertical; min-height:76px; }
 .inv-d-owner { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
 .inv-d-owner .inv-f { flex:1; min-width:170px; }
