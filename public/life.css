@@ -4777,6 +4777,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .embed-yt .yt-play { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:56px; height:56px; border-radius:50%; background:rgba(0,0,0,.62); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; padding-left:3px; box-sizing:border-box; pointer-events:none; }
 /* Fallback card for videos that block embedding: a horizontal link, not a 16:9 box. */
 .embed-yt.is-card { aspect-ratio:auto; background:var(--card); box-shadow:none; border:1px solid var(--line); border-radius:14px; }
+/* An inline player, sitting in the prose where the URL was pasted. */
+.embed-yt.lc-inline { margin:16px 0; user-select:none; }
+.embed-yt .embed-x { position:absolute; top:8px; right:8px; z-index:2; width:24px; height:24px; padding:0; border:none; border-radius:50%; background:rgba(20,18,24,.6); color:#fff; font-size:16px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s, background .12s; }
+.embed-yt.lc-inline:hover .embed-x { opacity:1; }
+.embed-yt .embed-x:hover { background:var(--danger,#a3382e); }
+.prose.readonly .embed-x, .prose.readonly .lc-x { display:none; }
 .yt-card { display:flex; align-items:stretch; text-decoration:none; color:inherit; }
 .yt-card-thumb { position:relative; flex:none; width:168px; aspect-ratio:16/9; background:#000; overflow:hidden; }
 .yt-card-thumb img { width:100%; height:100%; object-fit:cover; }

@@ -314,15 +314,17 @@ async function hydrateEmbeds() {
     const id = el.dataset.yt; el.dataset.ytDone = '1';
     let info = ytCacheGet(id);
     if (!info) { try { info = await api(`/api/ytinfo?id=${id}`); ytCacheSet(id, info); } catch { info = { embeddable: true }; } }
+    // An inline embed (in the prose) keeps a remove × so you can take the video out.
+    const rmv = el.classList.contains('lc-inline') ? '<button class="lc-x embed-x" data-card-del title="Remove">×</button>' : '';
     if (info.embeddable) {
-      el.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}" title="${esc(info.title || 'YouTube video')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>`;
+      el.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}" title="${esc(info.title || 'YouTube video')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>${rmv}`;
     } else {
       el.classList.add('is-card');
       const thumb = info.thumb || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
       const sub = info.unavailable ? 'This video is unavailable' : 'Can’t be embedded · watch on YouTube';
       el.innerHTML = `<a class="yt-card" href="https://www.youtube.com/watch?v=${id}" title="Open on YouTube">
         <span class="yt-card-thumb"><img src="${esc(thumb)}" alt="" loading="lazy"><span class="yt-play">▶</span></span>
-        <span class="yt-card-meta"><span class="yt-card-title">${esc(info.title || 'YouTube video')}</span><span class="yt-card-src">${esc(sub)}</span></span></a>`;
+        <span class="yt-card-meta"><span class="yt-card-title">${esc(info.title || 'YouTube video')}</span><span class="yt-card-src">${esc(sub)}</span></span></a>${rmv}`;
     }
   }
   // Link cards for standalone non-YouTube URLs (Notion-style bookmark previews).
@@ -359,9 +361,22 @@ function decorateProse(html) {
   const d = document.createElement('div'); d.innerHTML = html;
   d.querySelectorAll('a[href]').forEach((a) => {
     const href = a.getAttribute('href') || '';
-    if (!/^https?:\/\//i.test(href) || youtubeIds(href).length) return;
+    if (!/^https?:\/\//i.test(href)) return;
     const p = a.parentElement;
     if (!p || !/^(P|DIV)$/.test(p.tagName) || p.textContent.trim() !== a.textContent.trim()) return;
+    // A YouTube URL alone in its paragraph becomes the player right where it was
+    // pasted - no separate URL line above it. (Robin: the video is enough.)
+    const yid = youtubeIds(href)[0];
+    if (yid) {
+      const emb = document.createElement('div');
+      emb.className = 'embed-yt lc-inline';
+      emb.setAttribute('contenteditable', 'false');
+      emb.setAttribute('data-yt', yid);
+      emb.setAttribute('data-yturl', href);
+      emb.innerHTML = `<img class="yt-poster" src="https://i.ytimg.com/vi/${yid}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span><button class="lc-x embed-x" data-card-del title="Remove">×</button>`;
+      p.replaceWith(emb);
+      return;
+    }
     const card = document.createElement('div');
     card.className = 'link-card lc-inline loading';
     card.setAttribute('contenteditable', 'false');
@@ -530,6 +545,14 @@ function sanitizeProse(html) {
   // so the body stays clean text, and decorateProse re-inflates the card on render.
   doc.querySelectorAll('[data-linkcard]').forEach((c) => {
     const u = c.getAttribute('data-linkcard') || '';
+    const p = doc.createElement('p');
+    const a = doc.createElement('a'); a.setAttribute('href', u); a.textContent = u;
+    p.appendChild(a); c.replaceWith(p);
+  });
+  // Inline YouTube players are display-only too: store the URL back as a paragraph
+  // so the body stays clean text and decorateProse re-inflates the player.
+  doc.querySelectorAll('[data-yt]').forEach((c) => {
+    const u = c.getAttribute('data-yturl') || `https://www.youtube.com/watch?v=${c.getAttribute('data-yt')}`;
     const p = doc.createElement('p');
     const a = doc.createElement('a'); a.setAttribute('href', u); a.textContent = u;
     p.appendChild(a); c.replaceWith(p);
@@ -13616,7 +13639,6 @@ function renderNote() {
         ${sharedBanner(n)}
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
         <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}</div>
-        ${embedsHtml(n.body)}
         ${noteMembersHtml(n)}
         ${noteWallHtml(n)}
       </div>
@@ -16290,7 +16312,7 @@ function taskEmailHtml(t) {
 // the block's `body`, edited inline via the shared rich-text editor.
 function notesSection(body, key, id, readOnly, title) {
   const open = tfCardOpen('notes');
-  return `<section class="focus-notes ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="notes"><span>${esc(title || 'Notes')}</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${proseEditor(body, key, id, readOnly)}${embedsHtml(body)}` : ''}</section>`;
+  return `<section class="focus-notes ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="notes"><span>${esc(title || 'Notes')}</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${proseEditor(body, key, id, readOnly)}` : ''}</section>`;
 }
 
 // ── external links on a block ────────────────────────
@@ -16403,7 +16425,7 @@ function attHost() {
 }
 // Remove an inline link card: drop its node and save the surrounding prose.
 function removeCardEl(btn) {
-  const card = btn.closest('.link-card'); if (!card) return;
+  const card = btn.closest('.link-card, .embed-yt'); if (!card) return;
   const prose = card.closest('.prose'); if (!prose) { card.remove(); return; }
   card.remove();
   if (prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
@@ -16851,9 +16873,6 @@ async function saveProse(key, rawHtml, blockId) {
     const display = decorateProse(html);
     if (el.innerHTML !== display) { el.innerHTML = display; hydrateEmbeds(); }
   }
-  // YouTube players live in the strip below; refresh it if that set changed.
-  const ytChanged = youtubeIds(html).join() !== youtubeIds(prev).join();
-  if (isCurrent && ytChanged && !focused) rerenderHost();
   try { const upd = await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); if (isCurrent && cur && upd && upd.updated_at) cur.updated_at = upd.updated_at; } catch (e) { toast(e.message); }
 }
 async function delTaskCard() {
