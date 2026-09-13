@@ -851,11 +851,50 @@ export async function handleMail(request, env, url, json, err) {
           out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
           return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll, failed }, request);
         }
+        // Starred sweeps every folder, not just the Inbox. A star is the
+        // \Flagged flag on the message itself, and on Gmail a starred mail that
+        // has been archived lives in All Mail, not INBOX - so searching INBOX
+        // alone found only the handful still in the inbox. Same multi-folder
+        // sweep as text search: newest first, de-duped by Message-ID.
+        if (flagged) {
+          const boxes = await im.listMailboxes();
+          const skip = (b) => /\\Junk/i.test(b.flags || '') || /(^|[/.\\])(spam|junk|bulk\s*mail)$/i.test(b.path || '');
+          const cap = Math.max(limit, 100);
+          // Gmail keeps every starred message in All Mail, so ranking it first
+          // means one SELECT usually answers the whole view before the deadline.
+          const rank = (b) => {
+            const p = (b.path || '').toUpperCase(); const f = b.flags || '';
+            if (/\\All/i.test(f)) return 0;
+            if (p === 'INBOX') return 1;
+            if (/\\Sent/i.test(f)) return 2;
+            if (/\\Archive|\\Drafts/i.test(f)) return 3;
+            return 4;
+          };
+          const ordered = boxes.filter((b) => !/\\Noselect/i.test(b.flags || '') && !skip(b)).sort((a, c) => rank(a) - rank(c));
+          const deadline = Date.now() + 60000;
+          let searchedAll = true;
+          const seen = new Set(); const out = [];
+          const failed = [];
+          for (const b of ordered) {
+            if (Date.now() > deadline) { searchedAll = false; break; }
+            try {
+              const t = await im.select(b.path);
+              if (!t) continue;
+              const found = await im.listFlagged(cap);
+              for (const m of found) {
+                const key = m.messageId || `${b.path}:${m.uid}`;
+                if (seen.has(key)) continue; seen.add(key);
+                out.push({ ...m, mailbox: b.path });
+              }
+            } catch { failed.push(b.path); searchedAll = false; }
+          }
+          out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
+          return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll, failed }, request);
+        }
         const box = await resolveMailbox(im, mailbox);
         const total = await im.select(box);
         let messages = !total ? []
           : unseen ? await im.listUnseen(limit)
-          : flagged ? await im.listFlagged(limit)
           : await im.listRange(total, offset, limit);
         // Stamp the real path so star/move/open on a Sent (etc.) message hit the
         // provider's actual folder, not the logical alias the client asked for.
