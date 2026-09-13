@@ -1039,10 +1039,9 @@ function navSection(key, v) {
   let title, add = '', rows;
   if (key === 'favs') {
     title = 'Starred';
-    // Short titles ride two-up; longer ones take a full-width row so you can
-    // actually read them.
+    // Every starred card takes a full-width row so the title always reads.
     rows = state.favs.map((f) => {
-      const wide = (f.title || '').length > 15 ? ' nav-sub-wide' : '';
+      const wide = ' nav-sub-wide';
       // Carry the item's life-area colour as a left edge. A starred AREA is its
       // own colour (it doesn't belong to another area); a note/table takes the
       // hue of the area it sits in.
