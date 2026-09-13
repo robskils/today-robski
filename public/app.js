@@ -16301,11 +16301,13 @@ function renderTaskCard() {
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
-    ${taskGoalsHtml(t)}
-    ${connectedContactsSection('task', t)}
-    ${externalLinksHtml('task', t)}
+    <div class="task-boxes">
+      ${taskGoalsHtml(t)}
+      ${connectedContactsSection('task', t)}
+      ${externalLinksHtml('task', t)}
+      ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
+    </div>
     ${taskEmailHtml(t)}
-    ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     ${attachSection(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }

@@ -5473,6 +5473,11 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cc-fact-addr .cc-fact-v { flex:1; }
 .cc-fact-addr .cc-adr-views { margin-top:-2px; }
 .focus-notes { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
+/* Task card: Goals, Contacts, Links and Notes tile two-up on two rows. Each
+   is already a card, so drop its own top margin and let the grid gap space them. */
+.task-boxes { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start; margin-top:18px; }
+.task-boxes > .focus-notes, .task-boxes > .xlinks { margin-top:0; }
+@media (max-width:720px) { .task-boxes { grid-template-columns:minmax(0,1fr); gap:14px; } }
 .fn-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 8px; margin:0; }
 .focus-notes .prose { min-height:96px; }
 /* A task made from an email shows the email in its own section. */
