@@ -7675,6 +7675,7 @@ async function mailBulk(action) {
   const keys = [...(state.mail.selected || [])]; if (!keys.length) return;
   if (action === 'move') { openMoveMenu(keys, document.querySelector('[data-mail-bulk="move"]')); return; }
   if (action === 'archive') return mailMoveTargets(keys, 'Archive');
+  if (action === 'spam') return mailMoveTargets(keys, 'Junk');
   if (action === 'delete') { if (!(await uiConfirm(`Move ${keys.length} message${keys.length === 1 ? '' : 's'} to Trash?`, { title: 'Move to Trash', okLabel: 'Move' }))) return; return mailMoveTargets(keys, 'Trash'); }
   if (action === 'star') { for (const k of keys) { const row = mailRow(k); if (row && !row.flagged) await mailStar(k); } state.mail.selected = new Set(); renderMail(); return; }
   if (action === 'read' || action === 'unread') { for (const k of keys) await mailSeen(k, action === 'read'); state.mail.selected = new Set(); renderMail(); return; }
@@ -14198,10 +14199,21 @@ document.addEventListener('keydown', (e) => {
     if (!editing) {
       const active = (m.open && m.open._key) || m.sel;   // reading wins, else the list cursor
       const triage = active || m.hoverThread;            // may be a whole collapsed thread
+      const picked = (m.selected && m.selected.size) ? m.selected : null;   // a multi-select
       if (e.key === '?') { e.preventDefault(); m.shortcuts = !m.shortcuts; renderMail(); return; }
-      if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else m.open = null; renderMail(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else if (picked) m.selected = new Set(); else m.open = null; renderMail(); return; }
       if (e.key === '/') { e.preventDefault(); const el = $('[data-mail-q]'); if (el) el.focus(); return; }
       if (e.key === 'c' || e.key === 'C') { e.preventDefault(); startCompose(); return; }
+      // With several messages selected, an action key applies to all of them.
+      if (picked) {
+        if (e.key === 'e' || e.key === 'E') { e.preventDefault(); mailBulk('archive'); return; }
+        if (e.key === 's' || e.key === 'S') { e.preventDefault(); mailBulk('star'); return; }
+        if (e.key === 'u' || e.key === 'U') { e.preventDefault(); mailBulk('unread'); return; }
+        if (e.key === 'i' || e.key === 'I') { e.preventDefault(); mailBulk('read'); return; }
+        if (e.key === '!') { e.preventDefault(); mailBulk('spam'); return; }
+        if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '#') { e.preventDefault(); mailBulk('delete'); return; }
+        // j / k still move the list cursor; everything else falls through below.
+      }
       // Robin's mapping: j steps back to the previous message, k forward to the
       // next. (The reverse of Gmail's j-down/k-up; his call, he's the only user.)
       if (e.key === 'j' || e.key === 'J') { e.preventDefault(); mailSelMove(-1); return; }
