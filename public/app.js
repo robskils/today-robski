@@ -4151,19 +4151,24 @@ function renderHome() {
              order can sit it just below Today. -->
         <nav class="home-launch">
           <button class="hl-btn hl-guide" data-open-guide><span class="hl-ic">${MARK_TIGHT}</span><span class="hl-t">Guide</span></button>
+          ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">▦</span><span class="hl-t">Calendar</span></button>` : ''}
           ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
-          ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
-          ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">👤</span><span class="hl-t">Contacts</span>${friendPending() ? `<span class="hl-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>` : ''}
-          ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">◑</span><span class="hl-t">Calendar</span></button>` : ''}
-          ${modOn('today') ? `<button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Today</span></button>` : ''}
+          ${modOn('today') ? `<button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Planner</span></button>` : ''}
+          ${modOn('today') ? `<button class="hl-btn" data-open-tracker><span class="hl-ic">✦</span><span class="hl-t">Tracker</span></button>` : ''}
+          ${modOn('today') ? `<button class="hl-btn" data-open-practices><span class="hl-ic">☯</span><span class="hl-t">Practices</span></button>` : ''}
           ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
+          ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">▷</span><span class="hl-t">Read &amp; Watch</span></button>` : ''}
+          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">£</span><span class="hl-t">Money</span></button>` : ''}
+          ${modOn('timer') ? `<button class="hl-btn" data-open-toolbox><span class="hl-ic">⚙</span><span class="hl-t">Toolbox</span></button>` : ''}
           ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
-          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Well-being</span></button>` : ''}
-          ${modOn('goals') ? `<button class="hl-btn" data-open-reviews-tool><span class="hl-ic">🔄</span><span class="hl-t">Reviews</span></button>` : ''}
-          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">🎯</span><span class="hl-t">Goals</span></button>` : ''}
-          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">💰</span><span class="hl-t">Money</span></button>` : ''}
-          ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">🔖</span><span class="hl-t">Saved</span></button>` : ''}
-          ${modOn('timer') ? `<button class="hl-btn" data-open-toolbox><span class="hl-ic">🧰</span><span class="hl-t">Toolbox</span></button>` : ''}
+          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">◎</span><span class="hl-t">Goals</span></button>` : ''}
+          ${modOn('goals') ? `<button class="hl-btn" data-open-reviews-tool><span class="hl-ic">↻</span><span class="hl-t">Reviews</span></button>` : ''}
+          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>` : ''}
+          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">❀</span><span class="hl-t">Well-being</span></button>` : ''}
+          ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
+          ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">☺</span><span class="hl-t">Contacts</span>${friendPending() ? `<span class="hl-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>` : ''}
+          ${modOn('contacts') ? `<button class="hl-btn" data-open-connect><span class="hl-ic">❥</span><span class="hl-t">Connect</span></button>` : ''}
+          ${modOn('contacts') ? `<button class="hl-btn" data-open-daybook><span class="hl-ic">❖</span><span class="hl-t">Daybook people</span></button>` : ''}
         </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
