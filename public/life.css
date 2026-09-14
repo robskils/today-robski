@@ -3392,10 +3392,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    the copy in the sidebar footer is hidden on desktop to avoid two of them. */
 .help-btn { flex:none; width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:Georgia,'Times New Roman',serif; font-style:italic; font-weight:700; font-size:17px; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .help-btn:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
-.tabstrip .help-btn { margin-left:auto; width:30px; height:30px; font-size:15px; }
+.tabstrip .help-btn { margin-left:auto; width:38px; height:38px; font-size:19px; }
 .nav-bottom-row .help-btn { display:none; }   /* desktop: the tab-strip one is used instead */
-/* Settings + Sign out in the tab strip, styled to match the round i. */
-.tabstrip .tab-util { flex:none; width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13.5px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
+/* Settings + Sign out in the tab strip, styled to match the round i. Sized up so
+   the glyphs are legible (Robin's eyesight). */
+.tabstrip .tab-util { flex:none; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .tabstrip .tab-util:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
 .tabstrip .tab-util.on { color:var(--accent); border-color:var(--accent); }
 /* The top-right cluster (i, settings, sign out) reads in Daybook's accent so it's

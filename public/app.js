@@ -1974,12 +1974,32 @@ function startPresence() { const beat = () => api('/api/presence', { method: 'PO
 const friendPending = () => ((state.friendStatus || {}).incoming || 0) + ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
 const unreadFrom = (id) => (((state.friendStatus || {}).unreadBy) || {})[id] || 0;
+// Name of a Daybook contact by id, from whatever's loaded (friends list, then
+// the online roster). Falls back to a generic label.
+function friendName(id) {
+  const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id));
+  if (f && f.name) return f.name;
+  const o = ((state.friendStatus && state.friendStatus.online) || []).find((x) => String(x.id) === String(id));
+  return (o && o.name) || '';
+}
 async function refreshFriendStatus() {
   try {
+    const prevUnread = (state.friendStatus && state.friendStatus.unreadBy) || {};
+    const hadBaseline = !!state.friendStatus;   // don't ping for unread that was already there on first load
     const r = await api('/api/friends/status');
     const sig = JSON.stringify([r.incoming || 0, r.unread || 0, r.unreadBy || {}, (r.online || []).map((o) => o.id).sort()]);
     const changed = sig !== state.__friendSig; state.__friendSig = sig;
     state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, unreadBy: r.unreadBy || {}, friends: r.friends || 0 };
+    // Ping when a contact's unread rises (a new message) - unless you're already
+    // in that chat. A toast alerts you wherever you are in Daybook.
+    if (hadBaseline) {
+      const openWith = state.chat && state.chat.with;
+      Object.keys(r.unreadBy || {}).forEach((id) => {
+        if ((r.unreadBy[id] || 0) > (prevUnread[id] || 0) && Number(id) !== Number(openWith)) {
+          toast(`💬 ${friendName(id) || 'A Daybook contact'} messaged you`);
+        }
+      });
+    }
     if (changed) renderNav();   // only when the badge actually changes - a needless rebuild can steal a nav tap
     // Refresh Home's People section on a real change - but never while the user is
     // typing (e.g. in the notepad), which a full re-render would interrupt.
