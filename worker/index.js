@@ -2487,10 +2487,9 @@ async function homeAlerts(request, env, json) {
 }
 
 // Connect: EVERY person you keep in touch with, not just the overdue ones, so
-// the section can show the whole picture (close, drifting, overdue) with a status
-// per person. Same underlying data as keepInTouch above - a kit task per contact
-// carrying repeat/last/snooze - but without the "due only" filter. `circle` is a
-// light per-contact tag (unset until the circles step); the Wheel is untouched.
+// the section can show the whole picture (close, overdue) with a status per
+// person. Same underlying data as keepInTouch above - a kit task per contact
+// carrying repeat/last/snooze - but without the "due only" filter.
 async function connectList(request, env, json) {
   const [cts, tks] = await Promise.all([
     env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?").bind(env.uid).all(),
@@ -2499,7 +2498,7 @@ async function connectList(request, env, json) {
   const contacts = new Map();
   for (const r of cts.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
-    contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null, circle: p.circle || null });
+    contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null });
   }
   const today = localParts(new Date(), TZ).date;
   const people = [];
@@ -2508,7 +2507,7 @@ async function connectList(request, env, json) {
     if (p.done || !p.kit) continue;
     const c = p.contact && contacts.get(p.contact);
     if (!c) continue;   // a nudge whose contact was deleted has nobody to name
-    people.push({ id: p.contact, taskId: r.id, name: c.name, area: c.area, circle: c.circle, due: p.snooze || today, last: p.last || null, every: p.repeat || null });
+    people.push({ id: p.contact, taskId: r.id, name: c.name, area: c.area, due: p.snooze || today, last: p.last || null, every: p.repeat || null });
   }
   people.sort((a, b) => String(a.due).localeCompare(String(b.due)));
   return json({ people, today }, request);

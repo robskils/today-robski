@@ -9994,13 +9994,6 @@ const KIT_EVERY = [
 ];
 const KIT_UNITS = [['w', 'weeks'], ['m', 'months'], ['d', 'days']];
 const kitTitle = (name) => `Catch up with ${(name || '').trim() || 'them'}`;
-// Circles are OPTIONAL and USER-DEFINED: a free-text tag you write on a person
-// (Family, cycling club, whatever) - NOT a fixed taxonomy, and never required.
-// Connect groups by them only once you've actually used some; with none it stays
-// a flat list. The hue is derived from the name, so a circle keeps a stable
-// colour without needing to be registered anywhere.
-function usedCircles() { const s = new Set(); (state.contacts || []).forEach((c) => { const v = ((c.props || {}).circle || '').trim(); if (v) s.add(v); }); return [...s].sort((a, b) => a.localeCompare(b)); }
-function circleHue(name) { const n = (name || '').trim().toLowerCase(); if (!n) return 220; let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360; return h; }
 // A nudge is a task by construction, not by intent: it has no priority, it isn't
 // work you do at a desk, and it belongs to a person rather than to a board. So it
 // is filtered out where tasks load, and every list downstream stays honest
@@ -10161,9 +10154,6 @@ function keepInTouchSection(c) {
         <label class="kit-row"><span class="tf-label">How often</span><select class="sel kit-every" data-kit-every>${opts}</select></label>
         ${customRow}
       </div>
-      <div class="kit-line">
-        <label class="kit-row"><span class="tf-label">Circle</span><input class="sel kit-circle" data-kit-circle list="kit-circle-opts" value="${esc((c.props || {}).circle || '')}" placeholder="Optional — e.g. Family, leave blank for none" autocomplete="off"><datalist id="kit-circle-opts">${usedCircles().map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist></label>
-      </div>
       ${status}
     </div>` : ''}
   </div>`;
@@ -10193,14 +10183,6 @@ async function kitToggle(on) {
 // With nothing to measure from yet, the first nudge is one interval from today.
 function kitNextFrom(every, lastISO) {
   return lastISO ? taskAddPeriod(lastISO, every) : nextRepeat(every, todayISO());
-}
-// A person's circle (Family / Friends / Work / Mentors) - a light tag that only
-// groups them in Connect. Stored on the contact, not on a life area.
-async function circleSet(circle) {
-  const c = state.contact_open && state.contact_open.contact; if (!c) return;
-  c.props = c.props || {}; c.props.circle = circle || null;
-  try { await patchContact(c.id, { circle: circle || null }, true); } catch (e) { toast(e.message); }
-  renderContactCard();
 }
 async function kitSetEvery(every) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
@@ -15376,7 +15358,6 @@ document.addEventListener('change', (e) => {
     kitSetEvery(`every:${n}:${u}`);
     return;
   }
-  if (e.target.matches('[data-kit-circle]')) { circleSet((e.target.value || '').trim() || null); return; }
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
@@ -16249,7 +16230,7 @@ function connectRow(p, today) {
     : '<span class="cn-pip close">on track</span>';
   const last = p.last ? `Last spoke ${kitWhen(p.last)}` : 'Not spoken yet';
   const cad = kitEveryLabel(p.every);
-  return `<div class="cn-row" data-open-contact="${p.id}" style="--ch:${circleHue(p.circle)}">
+  return `<div class="cn-row" data-open-contact="${p.id}">
     <span class="cn-av">${esc(initial(p.name || '?'))}</span>
     <span class="cn-main"><span class="cn-name">${esc(p.name || 'Someone')}</span><span class="cn-sub">${esc(last)}${cad ? ` · ${esc(cad)}` : ''}</span></span>
     ${pip}
@@ -16267,26 +16248,13 @@ function renderConnect() {
     body = C.loading ? '<div class="home-empty" style="padding:26px 0">Loading…</div>'
       : `<div class="home-empty" style="padding:26px 0">No one to keep up with yet. Open a contact and set <b>Keep in touch</b> — a cadence like “every month” — and they'll appear here.<br><button class="add-btn wide" data-open-contacts style="margin-top:14px">Go to Contacts</button></div>`;
   } else {
-    // Reach out = the overdue, across every circle: act on the most-slipped first,
-    // whoever they are. Once you've spoken, they drop back into their circle roster.
+    // Reach out = the overdue: act on the most-slipped first. Once you've spoken,
+    // they drop back into "Keeping up" with their next nudge rolled forward.
     const lead = over.length
       ? `<section class="cn-band cn-lead"><div class="cn-h">Reach out<span class="cn-c">${over.length}</span></div>${over.map((p) => connectRow(p, today)).join('')}</section>`
       : '<section class="cn-band cn-allok"><div class="cn-okmsg">✓ No one is slipping. Nicely tended.</div></section>';
-    // The rest. Group by circle ONLY if you've actually assigned some; otherwise
-    // it stays one clean "Keeping up" list. No imposed categories.
-    const circles = [...new Set(ok.map((p) => (p.circle || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-    let bands;
-    if (!circles.length) {
-      const list = ok.slice().sort((a, b) => String(a.due).localeCompare(String(b.due)));
-      bands = list.length ? `<section class="cn-band"><div class="cn-h">Keeping up<span class="cn-c">${list.length}</span></div>${list.map((p) => connectRow(p, today)).join('')}</section>` : '';
-    } else {
-      bands = [...circles, ''].map((k) => {
-        const list = ok.filter((p) => (p.circle || '').trim() === k).sort((a, b) => String(a.due).localeCompare(String(b.due)));
-        if (!list.length) return '';
-        return `<section class="cn-band" style="--ch:${circleHue(k)}"><div class="cn-h"><span class="cn-cdot"></span>${esc(k || 'Everyone else')}<span class="cn-c">${list.length}</span></div>${list.map((p) => connectRow(p, today)).join('')}</section>`;
-      }).join('');
-    }
-    body = lead + bands;
+    const upcoming = ok.length ? `<section class="cn-band"><div class="cn-h">Keeping up<span class="cn-c">${ok.length}</span></div>${ok.map((p) => connectRow(p, today)).join('')}</section>` : '';
+    body = lead + upcoming;
   }
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.connect'))}
