@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
-  'nav.grp.daily': 'Daily', 'nav.grp.meaningful': 'Meaningful', 'nav.grp.people': 'People', 'nav.grp.tools': 'General Tools',
+  'nav.grp.daily': 'Daily', 'nav.grp.meaningful': 'Meaningful', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -58,7 +58,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
-  'nav.grp.daily': 'Dia a dia', 'nav.grp.meaningful': 'O que importa', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Ferramentas',
+  'nav.grp.daily': 'Dia a dia', 'nav.grp.meaningful': 'O que importa', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -2564,7 +2564,7 @@ function navGridHtml(v) {
     // room you enter: a whole row that writes a journal entry or logs a dream in
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
-    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
+    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('nav.journal')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
@@ -15841,6 +15841,29 @@ document.addEventListener('pointercancel', areaSecDragEnd);
 // Practices (Settings › Practices): drag the ⠿ grip to reorder within its life
 // area, so the ones you do most sit at the top. Persists via each activity's
 // position, which the Today palette reads too.
+// Sidebar resize: apply the saved width on load, and drag the edge handle to
+// change it (clamped 240-480px), persisted in life.sidebarW. The handle lives at
+// body level (not inside .nav, whose backdrop-filter would trap a fixed child).
+(function () {
+  try { const w = parseInt(localStorage.getItem('life.sidebarW') || '', 10); if (w >= 240 && w <= 480) document.documentElement.style.setProperty('--sidebar-w', w + 'px'); } catch {}
+  const add = () => { if (document.body && !document.querySelector('.nav-resize')) { const h = document.createElement('div'); h.className = 'nav-resize'; h.setAttribute('data-nav-resize', ''); h.title = 'Drag to resize the sidebar'; document.body.appendChild(h); } };
+  if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
+})();
+document.addEventListener('pointerdown', (e) => {
+  const h = e.target.closest && e.target.closest('[data-nav-resize]'); if (!h) return;
+  e.preventDefault();
+  const startX = e.clientX;
+  const startW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'), 10) || 326;
+  document.body.classList.add('resizing-nav');
+  const move = (ev) => { const w = Math.max(240, Math.min(480, startW + (ev.clientX - startX))); document.documentElement.style.setProperty('--sidebar-w', w + 'px'); };
+  const up = () => {
+    document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
+    document.body.classList.remove('resizing-nav');
+    const w = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'), 10) || 326;
+    try { localStorage.setItem('life.sidebarW', String(w)); } catch {}
+  };
+  document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
+});
 let prcDrag = null;
 document.addEventListener('pointerdown', (e) => {
   const grip = e.target.closest && e.target.closest('[data-prc-grip]'); if (!grip) return;

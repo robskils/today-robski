@@ -1866,7 +1866,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 @media (max-width:760px){ .notes-grid { grid-template-columns:1fr; } .notes-side { position:static; } }
 
 /* ── unified app shell ───────────────────────────── */
-.app-shell { display:grid; grid-template-columns:282px minmax(0,1fr); min-height:100vh; }
+.app-shell { display:grid; grid-template-columns:var(--sidebar-w,326px) minmax(0,1fr); min-height:100vh; }
+/* Drag the sidebar's right edge to resize it; the width persists (life.sidebarW). */
+.nav-resize { position:fixed; top:0; bottom:0; left:calc(var(--sidebar-w,326px) - 4px); width:9px; cursor:col-resize; z-index:45; }
+.nav-resize::after { content:""; position:absolute; top:0; bottom:0; left:4px; width:2px; border-radius:2px; background:transparent; transition:background .12s; }
+.nav-resize:hover::after, body.resizing-nav .nav-resize::after { background:var(--accent); }
+body.resizing-nav { cursor:col-resize; user-select:none; }
+@media (max-width:820px){ .nav-resize { display:none; } }
 .nav {
   border-right:1px solid var(--line); background:var(--paper-2);
   position:sticky; top:0; height:100vh; overflow-y:auto;
@@ -1911,17 +1917,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* One column, clustered into labelled bands (Day / Capture / People / Grow):
    fourteen tools read as four things. Each row is a light line with an icon that
    anchors the eye; the active one lifts to a bordered card. */
-.nav-grid { display:flex; flex-direction:column; gap:2px; margin-bottom:4px; }
-.nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
+/* Two tools per row within each labelled group; headers span the full width. */
+.nav-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px 6px; margin-bottom:4px; align-items:stretch; }
+.nav-grp { grid-column:1 / -1; font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
   font-weight:700; padding:13px 6px 4px; }
 .nav-grp:first-of-type { padding-top:6px; }
-/* The ungrouped leftovers (Contacts, Money, Toolbox) sit below a hairline, not
-   under a pretend heading - honest about not sharing a theme. */
-.nav-div { height:1px; background:var(--line); margin:12px 8px 8px; }
+.nav-div { grid-column:1 / -1; height:1px; background:var(--line); margin:12px 8px 8px; }
 .nav-item {
-  display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+  display:flex; align-items:center; gap:8px; width:100%; text-align:left;
   padding:8px 10px; border:1px solid transparent; border-radius:9px; background:transparent;
-  color:var(--ink-2); font-size:15px; transition:background .12s,border-color .12s,color .12s; overflow:hidden; white-space:nowrap;
+  color:var(--ink-2); font-size:14.5px; transition:background .12s,border-color .12s,color .12s; overflow:hidden; white-space:nowrap;
 }
 /* A glyph in the app's own icon language leads; label next; the "+" at the right. */
 .nav-ic { flex:none; width:18px; text-align:center; font-size:14px; color:var(--ink-3); line-height:1; }
