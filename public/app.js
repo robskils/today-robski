@@ -10339,7 +10339,7 @@ function renderContactCard() {
     </div>`;
     })()}
     <div class="cc-sec">
-      <div class="cc-sec-h">Details ${state.contact_open && state.contact_open.editDetails ? '<button type="button" class="tf-clear cc-details-done" data-cc-details-done>Done</button>' : '<button type="button" class="tf-clear" data-cc-edit-details>Edit</button>'}</div>
+      <div class="cc-sec-h">Details ${state.contact_open && state.contact_open.editDetails ? '<button type="button" class="cc-edit-btn cc-details-done" data-cc-details-done>Done</button>' : '<button type="button" class="cc-edit-btn" data-cc-edit-details>✎ Edit</button>'}</div>
       ${(state.contact_open && state.contact_open.editDetails)
         ? `<div class="tf-meta">
         ${contactEmailFields(p)}

@@ -5495,6 +5495,11 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Tidy the card into labelled sections. */
 .cc-sec { margin-top:22px; }
 .cc-sec-h { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; color:var(--ink); margin-bottom:10px; }
+/* Details Edit / Done: a small rounded, minimal button (Done reads as the save). */
+.cc-edit-btn { font-family:var(--sans,inherit); font-size:12.5px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:4px 12px; cursor:pointer; margin-left:9px; vertical-align:2px; transition:border-color .12s, color .12s, background .12s; }
+.cc-edit-btn:hover { border-color:var(--accent); color:var(--accent); }
+.cc-edit-btn.cc-details-done { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); }
+.cc-edit-btn.cc-details-done:hover { filter:brightness(1.05); color:var(--accent-ink); }
 .cc-sec .tf-meta { margin-top:0; }
 .cc-connected { margin-top:22px; }
 .cc-conn-empty { font-size:13.5px; color:var(--ink-3); margin:4px 0 10px; }
