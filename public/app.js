@@ -849,7 +849,7 @@ function labelForView(v) {
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return t('nav.areas');
     case 'financial': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
-    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Daybook people';
+    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Daybook';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
     case 'wheel': return 'Wheel of Life';
@@ -2598,7 +2598,7 @@ function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', n
 function peopleBox() {
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Daybook people</span></button>` : ''].filter(Boolean);
+    modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Daybook</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
   // The live Daybook people, names and all, under a collapsible header so it can
   // fold away once the list gets long. The count still shows when it's closed.
@@ -4168,7 +4168,7 @@ function renderHome() {
           ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
           ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">☺</span><span class="hl-t">Contacts</span>${friendPending() ? `<span class="hl-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>` : ''}
           ${modOn('contacts') ? `<button class="hl-btn" data-open-connect><span class="hl-ic">❥</span><span class="hl-t">Connect</span></button>` : ''}
-          ${modOn('contacts') ? `<button class="hl-btn" data-open-daybook><span class="hl-ic">❖</span><span class="hl-t">Daybook people</span></button>` : ''}
+          ${modOn('contacts') ? `<button class="hl-btn" data-open-daybook><span class="hl-ic">❖</span><span class="hl-t">Daybook</span></button>` : ''}
         </nav>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
@@ -9921,8 +9921,8 @@ async function openDaybookPeople() {
 }
 function renderDaybookPeople() {
   $('#pane').innerHTML = `
-    ${pageCrumb('Daybook people')}
-    <div class="pane-head"><h1>Daybook people</h1></div>
+    ${pageCrumb('Daybook People')}
+    <div class="pane-head"><h1>Daybook People</h1></div>
     <p class="t2-sub">Your people on Daybook - share a life area, a note or a few tasks with them.</p>
     <section class="home-sec"><div class="home-sec-h">Your Daybook card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
@@ -9954,9 +9954,7 @@ function renderContacts() {
     <section class="home-sec">
       <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
     </section>` : `
-    ${contactsKitHtml()}
     <section class="home-sec contacts-mine">
-      ${selfContactHtml()}
       <div class="cts-head">
         <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
         ${contactAreaBarHtml()}
@@ -14528,6 +14526,7 @@ document.addEventListener('input', (e) => {
   const liveSearch = (sel, set, render) => { if (!e.target.matches(sel)) return; const pos = e.target.selectionStart; set(e.target.value); render(); const i = $(sel); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } };
   liveSearch('[data-task-q]', (v) => (state.taskQuery = v), renderTasks);
   liveSearch('[data-contacts-q]', (v) => (state.contactsQuery = v), renderContacts);
+  liveSearch('[data-connect-add-q]', (v) => (state.connectAddQ = v), renderConnect);
   liveSearch('[data-notes-q]', (v) => (state.notesQuery = v), renderNotesList);
   liveSearch('[data-cal-q]', (v) => (state.calQuery = v), renderCalendar);
   // Table search + filter value inputs: only the tbody re-renders, so the input keeps focus.
@@ -14976,6 +14975,7 @@ document.addEventListener('click', (e) => {
   { const kits = t.closest('[data-kit-snooze]'); if (kits) { homeKitSnooze(kits.dataset.kitSnooze); return; } }   // the × on a Keep-in-touch row: snooze a week
   const kitd0 = t.closest('[data-kit-done]'); if (kitd0) { homeKitTouched(kitd0.dataset.kitDone); return; }   // the ✓ on a Keep-in-touch row (checked before the row's open-contact)
   { const cs = t.closest('[data-connect-spoke]'); if (cs) { connectSpoke(cs.dataset.connectSpoke); return; } }   // ✓ Spoke on a Connect row (before the row's open-contact)
+  { const ca = t.closest('[data-connect-add]'); if (ca) { connectAdd(ca.dataset.connectAdd); return; } }   // add someone to keep in touch, from Connect
   { const aca = t.closest('[data-area-contact-add]'); if (aca) { addContactToArea(aca.dataset.areaContactAdd); return; } }
   { const acr = t.closest('[data-area-contact-rm]'); if (acr) { e.stopPropagation(); removeContactFromArea(acr.dataset.areaContactRm); return; } }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
@@ -16335,9 +16335,28 @@ async function openConnect() {
   renderNav();
   if (!state.connect || !state.connect.people) state.connect = { loading: true };
   renderConnect();
+  // Contacts power the "add someone" search; load them once, then repaint.
+  if (state.contacts === undefined) loadContacts().then(() => { if (state.view && state.view.type === 'connect') renderConnect(); }).catch(() => {});
   try { const r = await api('/api/connect'); state.connect = { people: r.people || [], today: r.today || todayISO() }; }
   catch (e) { state.connect = { people: [], error: e.message }; }
   if (state.view && state.view.type === 'connect') renderConnect();
+}
+// Start keeping in touch with a contact from the Connect page: mint their kit
+// task at a sensible default (monthly), which they can retune on the contact card.
+async function connectAdd(contactId) {
+  const c = findContact(contactId); if (!c) return;
+  const every = 'monthly';
+  const snooze = kitNextFrom(every, null);
+  const areas = blockAreas(c);
+  const props = { kit: true, contact: c.id, repeat: every, snooze, done: false, area: areas[0] || null, areas: areas.slice(0, 1) };
+  try {
+    const task = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: kitTitle(c.title), props }) });
+    c.props = c.props || {}; c.props.kitEvery = every; c.props.kitTask = task.id;
+    await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { kitEvery: every, kitTask: task.id } }) });
+    state.connectAddQ = '';
+    toast(`Keeping in touch with ${c.title} - monthly. Change the rhythm on their card.`);
+    await refreshConnect();
+  } catch (e) { toast(e.message); }
 }
 async function refreshConnect() {
   try { const r = await api('/api/connect'); if (state.view && state.view.type === 'connect') { state.connect = { people: r.people || [], today: r.today || todayISO() }; renderConnect(); } } catch {}
@@ -16377,10 +16396,21 @@ function renderConnect() {
     const upcoming = ok.length ? `<section class="cn-band"><div class="cn-h">Keeping up<span class="cn-c">${ok.length}</span></div>${ok.map((p) => connectRow(p, today)).join('')}</section>` : '';
     body = lead + upcoming;
   }
+  // Add someone: search your contacts (those not already tended) and start a
+  // keep-in-touch in a tap.
+  const inConnect = new Set(people.map((p) => String(p.id)));
+  const q = (state.connectAddQ || '').trim().toLowerCase();
+  const cands = q ? (state.contacts || []).filter((c) => !inConnect.has(String(c.id)) && (c.title || '').toLowerCase().includes(q)).slice(0, 8) : [];
+  const addResults = q
+    ? (cands.length ? `<div class="cn-add-results">${cands.map((c) => `<button class="cn-add-row" data-connect-add="${c.id}"><span class="cn-av cn-av-sm">${esc(initial(c.title || '?'))}</span><span class="cn-add-name">${esc(c.title || 'Unnamed')}</span><span class="cn-add-plus">＋ Keep in touch</span></button>`).join('')}</div>`
+      : `<div class="cn-add-none">No contact matches “${esc(q)}”. ${(state.contacts === undefined) ? 'Loading your contacts…' : '<button class="linkish" data-open-contacts>Add them in Contacts first</button>'}</div>`)
+    : '';
+  const addBox = `<div class="cn-add"><input class="list-search sel cn-add-q" data-connect-add-q placeholder="Add someone — search your contacts…" value="${esc(state.connectAddQ || '')}" autocomplete="off">${addResults}</div>`;
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.connect'))}
     <div class="pane-head home-head"><h1>${t('nav.connect')}</h1></div>
     <p class="cn-intro">Who have you let drift? Tend the people who matter — a tap on <b>✓ Spoke</b> resets the clock from today.</p>
+    ${addBox}
     <div class="cn-list">${body}</div>`;
 }
 async function connectSpoke(taskId) {
