@@ -4029,47 +4029,6 @@ function homeDiscoverHtml() {
     ${open ? `<div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>` : ''}
   </section>`;
 }
-// ── Home hub: Robin's mind map (the six branches) rendered as calm, expandable
-// tiles beneath the Today wall. Daily lives in the lead and Capture is the verbs
-// bar, so the hub carries the other branches. Expand state is remembered per tile.
-function hubOpen(key) { try { const o = JSON.parse(localStorage.getItem('life.home.hub') || '{}'); return key in o ? !!o[key] : false; } catch { return false; } }
-function toggleHub(key) { let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.hub') || '{}'); } catch {} o[key] = !hubOpen(key); try { localStorage.setItem('life.home.hub', JSON.stringify(o)); } catch {} renderHome(); }
-function homeHubHtml() {
-  const kid = (attr, label) => `<button class="hb-kid" ${attr}>${esc(label)}</button>`;
-  const branch = (key, hue, ic, name, kids) => {
-    const on = kids.filter(Boolean); if (!on.length) return '';
-    const open = hubOpen(key);
-    return `<section class="hb ${open ? 'open' : ''}" style="--bh:${hue}">
-      <button class="hb-head" data-hub-toggle="${key}"><span class="hb-ic">${ic}</span><span class="hb-name">${esc(name)}</span><span class="hb-chev">${open ? '▾' : '▸'}</span></button>
-      ${open ? `<div class="hb-kids">${on.join('')}</div>` : ''}
-    </section>`;
-  };
-  const meaningful = branch('meaningful', 8, '✦', 'Meaningful', [
-    modOn('areas') ? kid('data-open-areas', t('nav.areas')) : '',
-    modOn('goals') ? kid('data-open-goals', 'Vision & Goals') : '',
-    modOn('goals') ? kid('data-open-reviews-tool', t('nav.reviews')) : '',
-    modOn('reflect') ? kid('data-quick-add="journal"', 'Journal') : '',
-    modOn('reflect') ? kid('data-open-journal', 'Coaching & Insight') : '',
-  ]);
-  const money = modOn('financial') ? branch('money', 168, '£', t('nav.financial'), [
-    kid('data-fin-tab="spending"', 'Spending'),
-    kid('data-fin-tab="portfolio"', 'Investments'),
-    kid('data-fin-tab="tracker"', 'Follow / Track'),
-    kid('data-fin-tab="advice"', 'News & Advice'),
-  ]) : '';
-  const connect = modOn('contacts') ? branch('connect', 42, '❥', t('nav.connect'), [
-    kid('data-open-connect', "Who's slipping"),
-    kid('data-open-contacts', 'All contacts'),
-  ]) : '';
-  const tools = branch('tools', 220, '⚙', 'General Tools', [
-    modOn('saved') ? kid('data-open-readwatch', t('nav.saved')) : '',
-    modOn('reflect') ? kid('data-open-journal', 'Well-being') : '',
-    modOn('timer') ? kid('data-open-toolbox', 'Toolbox') : '',
-  ]);
-  const branches = [meaningful, money, connect, tools].filter(Boolean).join('');
-  if (!branches) return '';
-  return `<div class="home-hub"><div class="home-hub-h">Explore your life</div><div class="home-hub-grid">${branches}</div></div>`;
-}
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
@@ -4241,8 +4200,9 @@ function renderHome() {
           let open = state.home.tileOpen || order[0];
           if (!order.includes(open)) open = order[0];
           const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
-          // Today wall on top (kept), then Robin's mind-map branches as the hub.
-          return `${leadHtml}${homeHubHtml()}`;
+          // The Today wall is the whole of the main column; navigation lives in the
+          // sidebar and the "+ New" menu, not in a hub of boxes here.
+          return `${leadHtml}`;
         })()}</div>
         <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
@@ -14717,7 +14677,6 @@ document.addEventListener('click', (e) => {
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
-  { const ht = t.closest('[data-hub-toggle]'); if (ht) { toggleHub(ht.dataset.hubToggle); return; } }   // expand/collapse a Home hub branch
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
