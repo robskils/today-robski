@@ -2534,7 +2534,7 @@ function navGridHtml(v) {
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
     saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
     reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : '',
-    mail: modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
+    mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
@@ -2543,11 +2543,14 @@ function navGridHtml(v) {
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
   };
   const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<div class="nav-grp">${esc(label)}</div>${on.join('')}` : ''; };
+  // Home and Mail are the two you open all day, so they lead the rail pinned
+  // together above the first band; Mail carries the prominence Robin asked for.
   return `<div class="nav-grid">
     ${NI.home}
+    ${NI.mail}
     ${grp(t('nav.grp.day'), [NI.today, NI.tasks, NI.calendar])}
     ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.reflect])}
-    ${grp(t('nav.grp.people'), [NI.mail, NI.contacts])}
+    ${grp(t('nav.grp.people'), [NI.contacts])}
     ${grp(t('nav.grp.grow'), [NI.areas, NI.goals, NI.reviews, NI.financial])}
     ${NI.timer}
   </div>`;
