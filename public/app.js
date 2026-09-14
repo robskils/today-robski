@@ -9920,8 +9920,8 @@ async function openDaybookPeople() {
 }
 function renderDaybookPeople() {
   $('#pane').innerHTML = `
-    ${pageCrumb('Daybook People')}
-    <div class="pane-head"><h1>Daybook People</h1></div>
+    ${pageCrumb('Daybook Contacts')}
+    <div class="pane-head"><h1>Daybook Contacts</h1></div>
     <p class="t2-sub">Your people on Daybook - share a life area, a note or a few tasks with them.</p>
     <section class="home-sec"><div class="home-sec-h">Your Daybook card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
@@ -15922,6 +15922,20 @@ document.addEventListener('pointercancel', areaSecDragEnd);
   try { const w = parseInt(localStorage.getItem('life.sidebarW') || '', 10); if (w >= 240 && w <= 480) document.documentElement.style.setProperty('--sidebar-w', w + 'px'); } catch {}
   const add = () => { if (document.body && !document.querySelector('.nav-resize')) { const h = document.createElement('div'); h.className = 'nav-resize'; h.setAttribute('data-nav-resize', ''); h.title = 'Drag to resize the sidebar'; document.body.appendChild(h); } };
   if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
+})();
+// Give every search box a native clear "X": mark search inputs type=search so the
+// browser shows a clear button once you've typed. Clearing fires an input event,
+// so the live search re-runs. A MutationObserver re-marks inputs after any
+// re-render, so it needs no change at each render site.
+(function () {
+  const SEL = 'input.list-search, input[data-mail-q], input[data-task-q], input[data-cal-q], input[data-contacts-q], input[data-notes-q], input[data-connect-add-q], input[data-completed-q]';
+  const mark = (root) => { try { (root.matches && root.matches(SEL) ? [root] : []).concat([...(root.querySelectorAll ? root.querySelectorAll(SEL) : [])]).forEach((i) => { if (i.type !== 'search') i.type = 'search'; }); } catch {} };
+  const start = () => {
+    if (!document.body) { document.addEventListener('DOMContentLoaded', start); return; }
+    mark(document);
+    new MutationObserver((muts) => { for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1) mark(n); }).observe(document.body, { childList: true, subtree: true });
+  };
+  start();
 })();
 document.addEventListener('pointerdown', (e) => {
   const h = e.target.closest && e.target.closest('[data-nav-resize]'); if (!h) return;

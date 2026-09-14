@@ -5494,6 +5494,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 @media (max-width:560px){ .cc-focus { padding:16px; gap:13px; } .cc-focus .contact-av.big { width:52px; height:52px; font-size:21px; } }
 /* Tidy the card into labelled sections. */
 .cc-sec { margin-top:22px; }
+/* Native clear "X" on every search box (they're marked type=search in JS). */
+input[type=search]::-webkit-search-cancel-button {
+  -webkit-appearance:none; appearance:none; height:15px; width:15px; margin-left:8px; cursor:pointer;
+  background-color:var(--ink-3); opacity:.6; transition:opacity .12s, background-color .12s;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M6%206l12%2012M18%206L6%2018'%20stroke='black'%20stroke-width='2.6'%20stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M6%206l12%2012M18%206L6%2018'%20stroke='black'%20stroke-width='2.6'%20stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+input[type=search]::-webkit-search-cancel-button:hover { opacity:1; background-color:var(--accent); }
 .cc-sec-h { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; color:var(--ink); margin-bottom:10px; }
 /* Details Edit / Done: a small rounded, minimal button (Done reads as the save). */
 .cc-edit-btn { font-family:var(--sans,inherit); font-size:12.5px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:4px 12px; cursor:pointer; margin-left:9px; vertical-align:2px; transition:border-color .12s, color .12s, background .12s; }
