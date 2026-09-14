@@ -3180,9 +3180,9 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .pm-rows { display:flex; flex-direction:column; }
 .pm-row { display:flex; align-items:center; gap:5px; width:100%; border-bottom:1px solid var(--line); }
 .pm-row:last-child { border-bottom:0; }
-.pm-grip { flex:none; cursor:grab; color:var(--ink-3); opacity:.4; font-size:13px; line-height:1; padding:4px 2px; touch-action:none; -webkit-user-select:none; user-select:none; }
-.pm-grip:hover { opacity:.9; }
-.pm-row:hover .pm-grip { opacity:.7; }
+.pm-grip { flex:none; cursor:grab; color:var(--ink-3); opacity:.62; font-size:15px; line-height:1; padding:6px 4px; touch-action:none; -webkit-user-select:none; user-select:none; }
+.pm-grip:hover { opacity:1; color:var(--accent); }
+.pm-row:hover .pm-grip { opacity:.85; }
 .pm-grip:active { cursor:grabbing; }
 .pm-open { flex:1; min-width:0; display:flex; align-items:center; gap:11px; padding:11px 2px; border:0; background:none; text-align:left; cursor:pointer; font:inherit; color:var(--ink); }
 .pm-name { flex:1; min-width:0; font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
