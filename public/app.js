@@ -6475,6 +6475,7 @@ function renderCalendar() {
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
+    ${c.mode === 'week' ? '<div class="cal-upcoming-h"><span class="cal-ag-eyebrow">Upcoming</span></div>' : ''}
     ${body}`}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
