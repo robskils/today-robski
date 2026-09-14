@@ -2801,7 +2801,7 @@ function renderTabbar(v) {
   if (!el) { el = document.createElement('nav'); el.id = 'tabbar'; el.className = 'tabbar'; document.body.appendChild(el); }
   const tab = (on, attr, ic, label, badge) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span>${ic}${badge ? `<span class="tab-badge">${badge}</span>` : ''}</span>${label}</button>`;
   el.innerHTML = tab(v.type === 'home', 'data-view-home', '⌂', 'Home')
-    + tab(v.type === 'mail' || v.type === 'mailaccounts', 'data-open-mail', '✉', 'Mail', state.mailUnreadTotal ? (state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal) : '')
+    + tab(v.type === 'mail' || v.type === 'mailaccounts', 'data-open-mail', '✉︎', 'Mail', state.mailUnreadTotal ? (state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal) : '')
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
     + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
     + tab(['note', 'notes', 'table', 'tables'].includes(v.type), 'data-open-notes', '▤', 'Notes');
