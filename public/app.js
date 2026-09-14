@@ -5826,6 +5826,9 @@ function renderArea() {
   const bookmarks = blocks.filter((b) => b.kind === 'bookmark');
   const journals = blocks.filter((b) => b.kind === 'journal');
   const activeGoals = goals.filter((g) => (gp(g).status || 'active') === 'active');
+  // Achieved goals aren't gone - they fold into a "Completed" section you can
+  // reopen to look back on what you've done in this area.
+  const doneGoals = goals.filter((g) => (gp(g).status || 'active') === 'achieved');
   const h = hueOf(area);
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
   const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
@@ -5937,7 +5940,7 @@ function renderArea() {
     'Overview': dash,
     // Vision and Goals share one tab now (button says "Goals", page says "Vision
     // and Goals") - the vision sets the direction the goals serve.
-    'Goals': `<div class="area-vg"><div class="avg-h">Vision</div>${visionInner}<div class="avg-h avg-h-goals">Goals</div>${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>'}</div>`,
+    'Goals': `<div class="area-vg"><div class="avg-h">Vision</div>${visionInner}<div class="avg-h avg-h-goals">Goals</div>${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>'}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`,
     'Wheel of Life': areaWheelPanel(area),
     'Notes and tables': notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
     'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',

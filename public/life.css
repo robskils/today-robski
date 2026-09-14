@@ -4858,6 +4858,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Combined Vision + Goals tab. */
 .area-vg .avg-h { font-size:13px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-3); margin:0 0 10px; }
 .area-vg .avg-h-goals { margin-top:22px; }
+/* Completed goals: a collapsible look-back section under the active ones. */
+.area-done-goals { margin-top:20px; }
+.avg-done-h { list-style:none; cursor:pointer; font-size:13px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--done); padding:7px 2px; display:flex; align-items:center; gap:7px; }
+.avg-done-h::-webkit-details-marker { display:none; }
+.avg-done-h::before { content:"▸"; color:var(--ink-3); font-size:11px; }
+.area-done-goals[open] .avg-done-h::before { content:"▾"; }
+.area-done-grid { margin-top:12px; opacity:.82; }
 .att-grid { display:flex; flex-wrap:wrap; gap:12px; }
 .att { position:relative; display:flex; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; overflow:hidden; transition:box-shadow .12s, border-color .12s; }
 .att:hover { border-color:var(--line-2); box-shadow:var(--shadow); }
