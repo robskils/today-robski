@@ -3398,6 +3398,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .tabstrip .tab-util { flex:none; width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13.5px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .tabstrip .tab-util:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
 .tabstrip .tab-util.on { color:var(--accent); border-color:var(--accent); }
+/* The top-right cluster (i, settings, sign out) reads in Daybook's accent so it's
+   clearly part of the app, filling on hover / when active. */
+.tabstrip .help-btn, .tabstrip .tab-util { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 46%, var(--line-2)); }
+.tabstrip .help-btn:hover, .tabstrip .tab-util:hover, .tabstrip .tab-util.on { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); }
 #help-pop.help-pop { position:fixed; z-index:60; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 36px -14px rgba(0,0,0,.42); padding:13px 15px; display:none; }
 .help-pop-t { font-size:14px; font-weight:650; color:var(--ink); margin-bottom:5px; }
 .help-pop-b { font-size:13.5px; line-height:1.5; color:var(--ink-2); }
