@@ -1897,18 +1897,25 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .nav-k { position:sticky; top:var(--nav-headh,56px); z-index:3; margin-top:0; margin-bottom:12px; box-shadow:0 9px 0 var(--paper-2); }
 }
 /* Primary nav: two half-width tiles per row. */
-.nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:4px; }
-/* Text buttons, no icons: a thin outline + faint fill make each read as a
-   button, and the label has room to show in full (e.g. Reflection). */
+/* One column, clustered into labelled bands (Day / Capture / People / Grow):
+   fourteen tools read as four things. Each row is a light line with an icon that
+   anchors the eye; the active one lifts to a bordered card. */
+.nav-grid { display:flex; flex-direction:column; gap:2px; margin-bottom:4px; }
+.nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
+  font-weight:700; padding:13px 6px 4px; }
+.nav-grp:first-of-type { padding-top:6px; }
 .nav-item {
-  display:flex; align-items:center; gap:6px; width:100%; text-align:left;
-  padding:9px 11px; border:1px solid var(--line); border-radius:10px; background:var(--paper);
-  color:var(--ink-2); font-size:14.5px; transition:background .12s,border-color .12s,color .12s; overflow:hidden; white-space:nowrap;
+  display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+  padding:8px 10px; border:1px solid transparent; border-radius:9px; background:transparent;
+  color:var(--ink-2); font-size:15px; transition:background .12s,border-color .12s,color .12s; overflow:hidden; white-space:nowrap;
 }
-/* The label leads; the "+" sits at the right and stays visible. */
+/* A glyph in the app's own icon language leads; label next; the "+" at the right. */
+.nav-ic { flex:none; width:18px; text-align:center; font-size:14px; color:var(--ink-3); line-height:1; }
 .nav-lbl { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-.nav-item:hover { background:var(--card); border-color:var(--line-2); color:var(--ink); }
+.nav-item:hover { background:var(--paper); color:var(--ink); }
+.nav-item:hover .nav-ic { color:var(--ink-2); }
 .nav-item.on { background:var(--card); border-color:var(--accent); color:var(--ink); font-weight:500; box-shadow:var(--shadow); }
+.nav-item.on .nav-ic { color:var(--accent); }
 .nav-secs { display:flex; flex-direction:column; }
 .nav-sec { margin-top:14px; }
 .nav-sec.drop-target { box-shadow:inset 0 2px 0 var(--accent); }

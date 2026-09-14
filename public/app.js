@@ -36,6 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
+  'nav.grp.day': 'Day', 'nav.grp.capture': 'Capture', 'nav.grp.people': 'People', 'nav.grp.grow': 'Grow',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security',
@@ -56,6 +57,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
+  'nav.grp.day': 'Dia', 'nav.grp.capture': 'Registar', 'nav.grp.people': 'Pessoas', 'nav.grp.grow': 'Crescer',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança',
@@ -2517,6 +2519,39 @@ document.addEventListener('pointerdown', (e) => { navHeld = !!(e.target && e.tar
 function flushNavHold() { clearTimeout(navHoldT); navHoldT = null; navHeld = false; if (navDeferred) { navDeferred = false; renderNav(); } }
 document.addEventListener('pointerup', () => { if (navHeld) { clearTimeout(navHoldT); navHoldT = setTimeout(flushNavHold, 500); } }, true);
 document.addEventListener('pointercancel', flushNavHold, true);
+// The tool rail. Fourteen tools read as a wall unless you group them, so they're
+// clustered into four labelled bands (Day / Capture / People / Grow) with an icon
+// on each - the eye parses four things, not fourteen. Home leads and Toolbox tails
+// on their own; a band's heading only shows if at least one of its tools is on
+// (tools can be switched off in Settings), so a hidden module never leaves a
+// dangling label. Icons reuse the app's own glyph language (▤ note, ✓ task, ◈ area).
+function navGridHtml(v) {
+  const NI = {
+    home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
+    today: modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.today')}</span></button>` : '',
+    tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
+    calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
+    notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
+    saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
+    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : '',
+    mail: modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
+    contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+    areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
+    goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
+    reviews: modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
+    financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
+    timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
+  };
+  const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<div class="nav-grp">${esc(label)}</div>${on.join('')}` : ''; };
+  return `<div class="nav-grid">
+    ${NI.home}
+    ${grp(t('nav.grp.day'), [NI.today, NI.tasks, NI.calendar])}
+    ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.reflect])}
+    ${grp(t('nav.grp.people'), [NI.mail, NI.contacts])}
+    ${grp(t('nav.grp.grow'), [NI.areas, NI.goals, NI.reviews, NI.financial])}
+    ${NI.timer}
+  </div>`;
+}
 function renderNav() {
   const v = state.view;
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
@@ -2532,22 +2567,7 @@ function renderNav() {
       <button class="foot-search" data-palette title="Search">⌕</button>
     </div>
     <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
-    <div class="nav-grid">
-    <button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-lbl">${t('nav.home')}</span></button>
-    ${modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : ''}
-    ${modOn('mail') ? `<button class="nav-item ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : ''}
-    ${modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : ''}
-    ${modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : ''}
-    ${modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-lbl">${t('nav.today')}</span></button>` : ''}
-    ${modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : ''}
-    ${modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-lbl">${t('nav.areas')}</span></button>` : ''}
-    ${modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-lbl">${t('nav.reflect')}</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : ''}
-    ${modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-lbl">${t('nav.reviews')}</span></button>` : ''}
-    ${modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : ''}
-    ${modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-lbl">${t('nav.financial')}</span></button>` : ''}
-    ${modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : ''}
-    ${modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-lbl">${t('nav.timer')}</span></button>` : ''}
-    </div>
+    ${navGridHtml(v)}
     <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes')) || (k === 'people' && !modOn('contacts'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
       <div class="nav-bottom-row">
