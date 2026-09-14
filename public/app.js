@@ -5697,7 +5697,7 @@ const areaSecOpen = (k) => {
 };
 // Tracker area sections: collapsible, remembered per area.
 const trkOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}')[k]); } catch { return true; } };
-function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} renderToday(); }
+function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} rerenderCurrent(); }
 function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); c[k] = areaSecOpen(k) ? 1 : 0; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like
 // Home's), so your arrangement is the same on every area page.
@@ -7078,8 +7078,7 @@ function t2TrackerHtml() {
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
-  return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p>
-    <div class="trk-tophead"><button class="trk-manage-top" data-open-practices title="Edit, add, group or delete your practices">⚙ Manage practices →</button></div>
+  return `<div class="trk-tophead"><button class="trk-manage-top" data-open-practices title="Edit, add, group or delete your practices">⚙ Manage practices →</button></div>
     <div class="trk-dash">${body}</div><div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
