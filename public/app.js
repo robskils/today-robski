@@ -2593,12 +2593,25 @@ function navGridHtml(v) {
 // The one People box: the Contacts + Connect tools up top, and - when online
 // contacts are switched on - the live Daybook people below, in the same box, so
 // there's a single place for everyone rather than a group plus a separate list.
+function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
+function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
-  const friends = (modOn('contacts') && peopleOn()) ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : '';
-  return `<section class="nav-sec-box"><div class="nav-grp">${esc(t('nav.grp.people'))}</div><div class="nav-sec-items">${items.join('')}</div>${friends}</section>`;
+  // The live Daybook people, names and all, under a collapsible header so it can
+  // fold away once the list gets long. The count still shows when it's closed.
+  let friendsBlock = '';
+  if (modOn('contacts') && peopleOn()) {
+    if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
+    const count = (state.friends && state.friends.friends) ? state.friends.friends.length : 0;
+    const open = navPeopleOpen();
+    friendsBlock = `<div class="nav-people-wrap">
+      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Daybook people</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
+      ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
+    </div>`;
+  }
+  return `<section class="nav-sec-box"><div class="nav-grp">${esc(t('nav.grp.people'))}</div><div class="nav-sec-items">${items.join('')}</div>${friendsBlock}</section>`;
 }
 // The live Daybook-friends list (online first), reused inside the People box.
 function navPeopleRows() {
@@ -14712,6 +14725,7 @@ document.addEventListener('click', (e) => {
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }

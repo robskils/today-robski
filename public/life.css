@@ -1925,8 +1925,15 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
   background:color-mix(in srgb, var(--card) 45%, transparent); }
 .nav-sec-box:first-of-type { margin-top:6px; }
 .nav-sec-items { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3px 3px; }
-/* The live Daybook-people list sits in the same People box, under a hairline. */
-.nav-box-people { margin-top:6px; padding-top:6px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:1px; }
+/* The live Daybook-people list sits in the same People box, under a collapsible
+   header (a hairline divides it from the buttons). */
+.nav-people-wrap { margin-top:6px; padding-top:5px; border-top:1px solid var(--line); }
+.nav-people-h { display:flex; align-items:center; gap:6px; width:100%; text-align:left; background:none; border:0; cursor:pointer;
+  padding:4px 5px; font-size:11px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; color:var(--ink-3); }
+.nav-people-h:hover { color:var(--ink-2); }
+.nav-people-h .np-chev { flex:none; width:12px; font-size:10px; color:var(--ink-3); }
+.nav-people-h .np-count { margin-left:auto; letter-spacing:0; font-size:11px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:0 7px; }
+.nav-box-people { display:flex; flex-direction:column; gap:1px; margin-top:2px; }
 .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
   font-weight:700; padding:8px 5px 6px; }
 .nav-div { grid-column:1 / -1; height:1px; background:var(--line); margin:12px 8px 8px; }
