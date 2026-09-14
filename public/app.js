@@ -836,7 +836,7 @@ function labelForView(v) {
     case 'help': return v.tool === 'index' ? 'Guide' : `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
     case 'tasks': return taskTabLabel(v);
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
-    case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today');
+    case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today'); case 'tracker': return t('today.tracker');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
     case 'journal': return t('nav.reflect'); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('nav.reflect');
@@ -861,7 +861,7 @@ function labelForView(v) {
 function openView(v) {
   switch (v.type) {
     case 'tasks': return openTasks(); case 'taskcard': return openTaskCard(v.id);
-    case 'calendar': return openCalendar(); case 'mail': return openMail(v.open); case 'today': return openToday();
+    case 'calendar': return openCalendar(); case 'mail': return openMail(v.open); case 'today': return openToday(); case 'tracker': return openTracker();
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'journal': return openJournal(); case 'journalentry': return openJournalEntry(v.id);
@@ -2551,10 +2551,10 @@ document.addEventListener('pointercancel', flushNavHold, true);
 function navGridHtml(v) {
   const NI = {
     home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
-    today: modOn('today') ? `<button class="nav-item ${v.type === 'today' && !(state.today && state.today.tab === 'tracker') ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.planner')}</span></button>` : '',
+    today: modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.planner')}</span></button>` : '',
     // Tracker (the Today tool's streak view) and Practices (where you define them)
     // are their own rail items now, so the daily-practice loop is one tap, not buried.
-    tracker: modOn('today') ? `<button class="nav-item ${v.type === 'today' && state.today && state.today.tab === 'tracker' ? 'on' : ''}" data-open-tracker><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.tracker')}</span></button>` : '',
+    tracker: modOn('today') ? `<button class="nav-item ${v.type === 'tracker' ? 'on' : ''}" data-open-tracker><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.tracker')}</span></button>` : '',
     practices: modOn('today') ? `<button class="nav-item ${v.type === 'practices' ? 'on' : ''}" data-open-practices><span class="nav-ic">☯</span><span class="nav-lbl">${t('nav.practices')}</span></button>` : '',
     tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
@@ -6916,6 +6916,23 @@ function reviewsDueToday() {
       return { k, submitted: !!doneRev, id: (doneRev || exs[0]) ? (doneRev || exs[0]).id : null };
     });
 }
+// The Tracker is its own tool now (its own view), not a tab of the planner.
+// Same t2TrackerHtml render, standalone with its own crumb.
+async function openTracker() {
+  state.view = { type: 'tracker' };
+  renderNav();
+  renderTracker();
+  try { await loadPractices(); } catch (e) { toast(e.message); }
+  if (state.view && state.view.type === 'tracker') renderTracker();
+}
+function renderTracker() {
+  const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#pane').innerHTML = `
+    ${pageCrumb(t('today.tracker'))}
+    <div class="pane-head t2-head"><h1>${t('today.tracker')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1></div>
+    <p class="t2-sub">Tick your practices, keep your run of days</p>
+    ${(state.practices && state.practices.activities) ? t2TrackerHtml() : '<div class="home-empty" style="padding:24px">Loading your tracker…</div>'}`;
+}
 function renderToday() {
   const T = state.today; const data = T.data;
   if (!T.tab) T.tab = 'today';
@@ -6924,17 +6941,9 @@ function renderToday() {
   const dateLabel = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   // Always show the day + date; when it's today, lead with "Today" and set the date beside it.
-  const h1 = T.tab === 'tracker' ? `${t('today.tracker')} <span class="t2-dsmall">${esc(todayLabel)}</span>` : (isToday ? `${t('nav.today')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel));
+  const h1 = isToday ? `${t('nav.today')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel);
   const nav = `<span class="t2-nav">${!isToday ? `<button class="t2-navbtn" data-t2-today>${t('nav.today')}</button>` : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
-  const toTick = (state.practices && (state.practices.activities || []).filter((a) => a.tracked && !a.avoid && !practiceMarked(a.id, dayKey(new Date()))).length) || 0;
-  // The day tab reads "Today" on today, but the weekday (e.g. Friday) once you've
-  // stepped to another day, so the label matches the calendar you're looking at.
-  const dayTabLabel = isToday ? t('nav.today') : d.toLocaleDateString('en-GB', { weekday: 'long' });
-  const tabs = `<div class="t2-tabs">
-    <button class="t2-tab ${T.tab === 'today' ? 'on' : ''}" data-t2-tab="today">${esc(dayTabLabel)}</button>
-    <button class="t2-tab ${T.tab === 'tracker' ? 'on' : ''}" data-t2-tab="tracker">${t('today.tracker')}${toTick ? `<span class="t2-tabc">${toTick}</span>` : ''}</button>
-  </div>`;
-  const dueReviews = (isToday && T.tab === 'today') ? reviewsDueToday() : [];
+  const dueReviews = isToday ? reviewsDueToday() : [];
   // If a review is due today but we haven't loaded reviews yet, fetch them once so
   // the banner can tell "due" from "already submitted".
   if (dueReviews.length && state.reviews === undefined) {
@@ -6945,25 +6954,24 @@ function renderToday() {
     : `<button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
   $('#pane').innerHTML = `
     ${pageCrumb('Today')}
-    <div class="pane-head t2-head"><h1>${h1}</h1>${T.tab === 'today' ? nav : ''}</div>
-    <p class="t2-sub">Plan your day, track your day</p>
-    ${tabs}
+    <div class="pane-head t2-head"><h1>${h1}</h1>${nav}</div>
+    <p class="t2-sub">Plan your day</p>
     ${dueBanner}
-    ${T.tab === 'today' ? `<div class="t2-quickadd"><button class="t2-qa-btn" data-quick-event><span class="t2-qa-ic">＋</span> Event</button><button class="t2-qa-btn" data-quick-task><span class="t2-qa-ic">＋</span> Task</button></div><div id="qt-wrap"></div>` : ''}
+    <div class="t2-quickadd"><button class="t2-qa-btn" data-quick-event><span class="t2-qa-ic">＋</span> Event</button><button class="t2-qa-btn" data-quick-task><span class="t2-qa-ic">＋</span> Task</button></div><div id="qt-wrap"></div>
     ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>'
-      : (T.tab === 'tracker' ? t2TrackerHtml() : `
+      : `
     <div class="t2-grid" style="--t2h:${t2Height}px">
       <aside class="t2-col t2-practices">${t2PracticesHtml()}</aside>
       <section class="t2-col t2-day">${t2DayHtml()}</section>
       <aside class="t2-col t2-tasks">${t2TasksHtml()}</aside>
-    </div>`)}`;
+    </div>`}`;
   // The Today/Tracker switch pins just under the breadcrumb; measure the crumb's
   // height so the sticky offset sits exactly at its bottom edge (see .t2-tabs).
   requestAnimationFrame(() => {
     const root = document.documentElement;
     const cb = document.querySelector('#pane .crumbbar'); if (cb) root.style.setProperty('--t2-crumbh', cb.offsetHeight + 'px');
     // Tabs height too, so the column headers can pin just below the sticky tabs.
-    const tb = document.querySelector('#pane .t2-tabs'); if (tb) root.style.setProperty('--t2-tabsh', tb.offsetHeight + 'px');
+    const tb = document.querySelector('#pane .t2-tabs'); root.style.setProperty('--t2-tabsh', (tb ? tb.offsetHeight : 0) + 'px');
     sizeTodayGrid();
   });
 }
@@ -9159,6 +9167,7 @@ function rerenderCurrent() {
   else if (v === 'contactcard') renderContactCard();
   else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail();
   else if (v === 'today') renderToday();
+  else if (v === 'tracker') renderTracker();
   else if (v === 'contacts' || v === 'friends') renderContacts();
   else if (v === 'connect') renderConnect();
   else if (v === 'home') renderHome();
@@ -14949,7 +14958,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-p1]')) { openP1Tasks(); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-open-tracker]')) { openToday('tracker'); return; }
+  if (t.closest('[data-open-tracker]')) { openTracker().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
   if (t.closest('[data-open-mail]')) {
     const onList = state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing;
