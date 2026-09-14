@@ -6298,7 +6298,13 @@ async function loadCalendar() {
 function gcalBarHtml() {
   const s = state.gcal;
   if (!s || !s.available) return '';
-  if (state.me && state.me.id === 1) return '';
+  // Owner-only feature, and the guard fails CLOSED: the owner reads the shared
+  // Workspace calendar and must never connect as a member (it 403s and hides
+  // their events). If we don't yet positively know this is a non-owner member,
+  // show nothing rather than risk offering the owner a connect that breaks them.
+  const acct = state.account;
+  const knownMember = acct && acct.isOwner === false && !(state.me && state.me.id === 1);
+  if (!knownMember) return '';
   if (s.connected) return `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`;
   return `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Daybook ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
 }

@@ -175,12 +175,17 @@ async function googleAccessToken(env) {
 // their own account uses it (their primary calendar); the owner falls back to
 // the shared Workspace calendar. Null = no Google for this user (native only).
 async function googleCtx(env) {
+  // The owner ALWAYS reads the shared Workspace calendar through the owner token.
+  // The per-member connect flow is for members only; a member token accidentally
+  // stored on the owner's row (the owner clicking "Connect Google Calendar") must
+  // never shadow the working owner path - that swap is what made the owner's
+  // events vanish behind a google_403.
+  if (env.uid === 1 && env.GOOGLE_REFRESH_TOKEN) {
+    return { token: await googleAccessToken(env), calId: env.GOOGLE_CALENDAR_ID || 'primary' };
+  }
   if (env.user && env.user.gcal_refresh_enc && gcalAvailable(env)) {
     const token = await gcalMemberToken(env);
     if (token) return { token, calId: 'primary' };
-  }
-  if (env.uid === 1 && env.GOOGLE_REFRESH_TOKEN) {
-    return { token: await googleAccessToken(env), calId: env.GOOGLE_CALENDAR_ID || 'primary' };
   }
   return null;
 }
