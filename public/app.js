@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
-  'nav.grp.daily': 'Daily', 'nav.grp.meaningful': 'Meaningful', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference',
+  'nav.grp.daily': 'Today', 'nav.planner': 'Planner', 'nav.grp.meaningful': 'Meaningful', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -58,7 +58,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
-  'nav.grp.daily': 'Dia a dia', 'nav.grp.meaningful': 'O que importa', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência',
+  'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador', 'nav.grp.meaningful': 'O que importa', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -2551,7 +2551,7 @@ document.addEventListener('pointercancel', flushNavHold, true);
 function navGridHtml(v) {
   const NI = {
     home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
-    today: modOn('today') ? `<button class="nav-item ${v.type === 'today' && !(state.today && state.today.tab === 'tracker') ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.today')}</span></button>` : '',
+    today: modOn('today') ? `<button class="nav-item ${v.type === 'today' && !(state.today && state.today.tab === 'tracker') ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.planner')}</span></button>` : '',
     // Tracker (the Today tool's streak view) and Practices (where you define them)
     // are their own rail items now, so the daily-practice loop is one tap, not buried.
     tracker: modOn('today') ? `<button class="nav-item ${v.type === 'today' && state.today && state.today.tab === 'tracker' ? 'on' : ''}" data-open-tracker><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.tracker')}</span></button>` : '',
