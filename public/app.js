@@ -2565,6 +2565,9 @@ function navGridHtml(v) {
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
     reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('nav.journal')}</span></button>` : '',
+    // Well-being opens the same reflect hub as Journal; a companion entry Robin
+    // wanted, so it carries no active state (Journal is the one that lights up).
+    wellbeing: modOn('reflect') ? `<button class="nav-item" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
@@ -2583,7 +2586,7 @@ function navGridHtml(v) {
     ${NI.mail}
     ${grp(t('nav.grp.daily'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
     ${grp(t('nav.grp.tools'), [NI.notes, NI.saved, NI.financial, NI.timer])}
-    ${grp(t('nav.grp.meaningful'), [NI.areas, NI.goals, NI.reviews, NI.reflect])}
+    ${grp(t('nav.grp.meaningful'), [NI.areas, NI.goals, NI.reviews, NI.reflect, NI.wellbeing])}
     ${grp(t('nav.grp.people'), [NI.contacts, NI.connect])}
   </div>`;
 }
