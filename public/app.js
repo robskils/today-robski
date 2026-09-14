@@ -37,6 +37,7 @@ const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
   'nav.grp.capture': 'Capture', 'nav.grp.sort': 'Sort', 'nav.grp.prioritise': 'Prioritise', 'nav.grp.action': 'Action',
+  'nav.journal': 'Journal', 'nav.dream': 'Dream',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security',
@@ -58,6 +59,7 @@ const T_EN = {
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
   'nav.grp.capture': 'Capturar', 'nav.grp.sort': 'Organizar', 'nav.grp.prioritise': 'Priorizar', 'nav.grp.action': 'Agir',
+  'nav.journal': 'Diário', 'nav.dream': 'Sonho',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança',
@@ -2534,7 +2536,12 @@ function navGridHtml(v) {
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
     saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
-    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span><span class="nav-quick" data-quick-add="journal" title="New entry">+</span></button>` : '',
+    // Capture is a verb, so its Well-being tools appear as actions you DO, not a
+    // room you enter: a whole row that writes a journal entry or logs a dream in
+    // one tap (both land in the Well-being hub, where the rest - meditation, I
+    // Ching, horoscope - lives). "＋" stays visible so they read as actions.
+    journalAct: modOn('reflect') ? `<button class="nav-item nav-act" data-quick-add="journal"><span class="nav-ic">✎</span><span class="nav-lbl">${t('nav.journal')}</span><span class="nav-quick" aria-hidden="true">＋</span></button>` : '',
+    dreamAct: modOn('reflect') ? `<button class="nav-item nav-act" data-quick-add="dream"><span class="nav-ic">☾</span><span class="nav-lbl">${t('nav.dream')}</span><span class="nav-quick" aria-hidden="true">＋</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
@@ -2549,7 +2556,7 @@ function navGridHtml(v) {
   return `<div class="nav-grid">
     ${NI.home}
     ${NI.mail}
-    ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.reflect])}
+    ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.journalAct, NI.dreamAct])}
     ${grp(t('nav.grp.sort'), [NI.contacts, NI.areas])}
     ${grp(t('nav.grp.prioritise'), [NI.goals, NI.reviews, NI.financial])}
     ${grp(t('nav.grp.action'), [NI.today, NI.tasks, NI.calendar])}
@@ -2697,6 +2704,7 @@ async function quickAdd(kind) {
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
+    else if (kind === 'dream') { await openJournal(); await newJournalEntry('dreams', 'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.'); }
     else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus(); }, 0); }
     else if (kind === 'contact') { await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus(); }, 0); }
     else if (kind === 'goal') { await openGoals('goals'); await newGoal(null); }

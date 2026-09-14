@@ -1936,6 +1936,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-badge + .nav-quick { margin-left:6px; }
 .nav-quick { margin-left:auto; flex:none; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:var(--ink-3); font-size:16px; line-height:1; opacity:0; transition:opacity .12s, background .12s, color .12s; }
 .nav-item:hover .nav-quick, .nav-item.on .nav-quick { opacity:1; }
+/* Capture actions (Journal, Dream): the whole row is the verb, so its "＋" stays
+   visible - it reads as "do this", not "go here". */
+.nav-item.nav-act .nav-quick { opacity:.6; }
+.nav-item.nav-act:hover { background:var(--paper); color:var(--ink); }
+.nav-item.nav-act:hover .nav-quick { opacity:1; color:var(--accent); }
 .nav-quick:hover { background:var(--paper-2); color:var(--accent); }
 @media (pointer:coarse){ .nav-quick { opacity:1; } }
 .nav-grip { color:var(--ink-3); font-size:12px; cursor:grab; opacity:0; transition:opacity .12s; flex:none; padding:0 4px; letter-spacing:-2px; }
