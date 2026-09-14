@@ -3716,6 +3716,33 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .lead-more:hover { color:var(--accent); background:var(--paper-2); }
 .home-secondary { margin-top:4px; }
 
+/* ── Capture bar: the five verbs, a tap away ── */
+.home-capture { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:2px 0 2px; }
+.cap-lead { font-family:'Cormorant Garamond',Georgia,serif; font-size:16px; font-weight:600; color:var(--ink-3); margin-right:3px; }
+.cap-chip { display:inline-flex; align-items:center; gap:7px; font-size:15px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:11px; padding:9px 15px; cursor:pointer; transition:border-color .12s, color .12s, transform .08s; }
+.cap-chip:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+.cap-plus { font-size:15px; color:var(--accent); line-height:1; }
+
+/* ── Home hub: the mind-map branches as calm, expandable tiles ── */
+.home-hub { margin-top:24px; }
+.home-hub-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:16px; color:var(--ink-3); font-weight:600; margin:0 0 12px; }
+.home-hub-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
+@media (max-width:640px){ .home-hub-grid { grid-template-columns:minmax(0,1fr); } }
+.hb { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; position:relative; }
+.hb::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:hsl(var(--bh,220) 50% 52%); }
+.hb-head { display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:15px 16px 15px 18px; background:none; border:0; cursor:pointer; font:inherit; }
+.hb-head:hover .hb-name { color:hsl(var(--bh,220) 42% 44%); }
+.hb-ic { width:32px; height:32px; border-radius:9px; flex:none; display:flex; align-items:center; justify-content:center; font-size:15px; color:#fff; background:hsl(var(--bh,220) 48% 50%); }
+.hb-name { flex:1; min-width:0; font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; font-weight:600; color:var(--ink); }
+.hb-chev { flex:none; color:var(--ink-3); font-size:14px; }
+.hb.open .hb-head { padding-bottom:6px; }
+.hb-kids { display:flex; flex-direction:column; gap:1px; padding:0 12px 12px 18px; }
+.hb-kid { display:flex; align-items:center; width:100%; text-align:left; font-size:15.5px; color:var(--ink-2); background:none; border:0; border-radius:9px; padding:9px 10px; cursor:pointer; transition:background .12s, color .12s; }
+.hb-kid::before { content:"›"; color:hsl(var(--bh,220) 46% 52%); margin-right:10px; font-weight:700; }
+.hb-kid:hover { background:var(--paper); color:hsl(var(--bh,220) 42% 44%); }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .hb-head:hover .hb-name, :root:not([data-theme="light"]) .hb-kid:hover { color:hsl(var(--bh,220) 62% 70%); } }
+:root[data-theme="dark"] .hb-head:hover .hb-name, :root[data-theme="dark"] .hb-kid:hover { color:hsl(var(--bh,220) 62% 70%); }
+
 /* ── Connect: tending the people you keep in touch with ── */
 .cn-intro { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:19px; color:var(--ink-3); margin:2px 0 20px; max-width:60ch; }
 .cn-list { display:flex; flex-direction:column; gap:18px; }
