@@ -2040,8 +2040,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 @media (max-width:480px){
   .add-event .ce-when { flex-direction:column; align-items:stretch; }
   .add-event .ce-wcell { display:flex; flex-wrap:wrap; width:100%; min-width:0; align-items:center; gap:7px 9px; }
-  .add-event .ce-wcell .date-field { flex:1 1 120px; min-width:0; }
-  .add-event .ce-wcell .ce-timefield { flex:1 1 90px; min-width:0; max-width:100%; }
+  /* Start and End render identically: the label + the full date on line one, the
+     time on its own full-width line below. The time's 100% basis forces the wrap
+     for BOTH cells, so the end date never truncates to "Tue 15 Septemb". */
+  .add-event .ce-wcell .date-field { flex:1 1 auto; min-width:0; }
+  .add-event .ce-wcell .ce-timefield { flex:1 1 100%; min-width:0; max-width:100%; }
   .add-event .ce-warrow { display:none; }
   .add-event .ce-allday { align-self:flex-start; }
   /* Backstop: nothing in the form may force the page to scroll sideways. */
