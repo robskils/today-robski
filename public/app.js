@@ -6970,8 +6970,13 @@ function t2TrackerHtml() {
   const groups = new Map();
   tracked.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, area: ar, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
   const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
-  // Today-focused: what matters is whether you did it TODAY. The streak carries
-  // the "run of days" on its own, so there's no week grid or week navigator here.
+  // A DAILY habit tracker: today is the point (the big ✓), but you can still tick
+  // back a recent day you missed. So we keep a short run of day-dots ENDING TODAY -
+  // no "7-13 Sept" range label and no week-paging navigator, nothing that frames
+  // it as a week you leaf through. Today is the anchor; the earlier dots are just
+  // "yesterday, the day before…" you can fill in.
+  const days = trackerWindow(today);
+  const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   // A short, plain list - just the cadence, no "check in" prefix.
   const body = ordered.map((g) => {
     const areaCad = g.area ? ((g.area.props || {}).cadence || '') : '';
@@ -6990,6 +6995,7 @@ function t2TrackerHtml() {
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="trk-pname">${esc(a.title)}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
+        <span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>
         <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span>
       </div>`;
     }).join('');
