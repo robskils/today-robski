@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
-  'nav.grp.day': 'Day', 'nav.grp.capture': 'Capture', 'nav.grp.people': 'People', 'nav.grp.grow': 'Grow',
+  'nav.grp.capture': 'Capture', 'nav.grp.sort': 'Sort', 'nav.grp.prioritise': 'Prioritise', 'nav.grp.action': 'Action',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security',
@@ -57,7 +57,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
-  'nav.grp.day': 'Dia', 'nav.grp.capture': 'Registar', 'nav.grp.people': 'Pessoas', 'nav.grp.grow': 'Crescer',
+  'nav.grp.capture': 'Capturar', 'nav.grp.sort': 'Organizar', 'nav.grp.prioritise': 'Priorizar', 'nav.grp.action': 'Agir',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança',
@@ -2520,11 +2520,12 @@ function flushNavHold() { clearTimeout(navHoldT); navHoldT = null; navHeld = fal
 document.addEventListener('pointerup', () => { if (navHeld) { clearTimeout(navHoldT); navHoldT = setTimeout(flushNavHold, 500); } }, true);
 document.addEventListener('pointercancel', flushNavHold, true);
 // The tool rail. Fourteen tools read as a wall unless you group them, so they're
-// clustered into four labelled bands (Day / Capture / People / Grow) with an icon
-// on each - the eye parses four things, not fourteen. Home leads and Toolbox tails
-// on their own; a band's heading only shows if at least one of its tools is on
-// (tools can be switched off in Settings), so a hidden module never leaves a
-// dangling label. Icons reuse the app's own glyph language (▤ note, ✓ task, ◈ area).
+// clustered by ONE consistent ruler - a tool's place in your flow: Capture (what
+// comes in) -> Sort (where it's filed) -> Prioritise (the longer arc) -> Action
+// (where you do it). Mixed rulers (time + topic) are what made the old bands feel
+// arbitrary. Home + Mail lead pinned, Toolbox tails; a band's heading only shows
+// if at least one of its tools is on (tools switch off in Settings), so a hidden
+// module never leaves a dangling label. Icons reuse the app's own glyph language.
 function navGridHtml(v) {
   const NI = {
     home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
@@ -2548,10 +2549,10 @@ function navGridHtml(v) {
   return `<div class="nav-grid">
     ${NI.home}
     ${NI.mail}
-    ${grp(t('nav.grp.day'), [NI.today, NI.tasks, NI.calendar])}
     ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.reflect])}
-    ${grp(t('nav.grp.people'), [NI.contacts])}
-    ${grp(t('nav.grp.grow'), [NI.areas, NI.goals, NI.reviews, NI.financial])}
+    ${grp(t('nav.grp.sort'), [NI.contacts, NI.areas])}
+    ${grp(t('nav.grp.prioritise'), [NI.goals, NI.reviews, NI.financial])}
+    ${grp(t('nav.grp.action'), [NI.today, NI.tasks, NI.calendar])}
     ${NI.timer}
   </div>`;
 }
