@@ -1934,6 +1934,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-people-h .np-chev { flex:none; width:12px; font-size:10px; color:var(--ink-3); }
 .nav-people-h .np-count { margin-left:auto; letter-spacing:0; font-size:11px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:0 7px; }
 .nav-box-people { display:flex; flex-direction:column; gap:1px; margin-top:2px; }
+.nav-sec-items .nav-full { grid-column:1 / -1; }
 .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
   font-weight:700; padding:8px 5px 6px; }
 .nav-div { grid-column:1 / -1; height:1px; background:var(--line); margin:12px 8px 8px; }
