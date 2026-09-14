@@ -1925,6 +1925,8 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
   background:color-mix(in srgb, var(--card) 45%, transparent); }
 .nav-sec-box:first-of-type { margin-top:6px; }
 .nav-sec-items { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3px 3px; }
+/* The live Daybook-people list sits in the same People box, under a hairline. */
+.nav-box-people { margin-top:6px; padding-top:6px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:1px; }
 .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
   font-weight:700; padding:8px 5px 6px; }
 .nav-div { grid-column:1 / -1; height:1px; background:var(--line); margin:12px 8px 8px; }

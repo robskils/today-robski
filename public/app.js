@@ -2587,8 +2587,30 @@ function navGridHtml(v) {
     ${grp(t('nav.grp.daily'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
     ${grp(t('nav.grp.tools'), [NI.notes, NI.saved, NI.financial, NI.timer])}
     ${grp(t('nav.grp.meaningful'), [NI.areas, NI.goals, NI.reviews, NI.reflect, NI.wellbeing])}
-    ${grp(t('nav.grp.people'), [NI.contacts, NI.connect])}
+    ${peopleBox(v)}
   </div>`;
+}
+// The one People box: the Contacts + Connect tools up top, and - when online
+// contacts are switched on - the live Daybook people below, in the same box, so
+// there's a single place for everyone rather than a group plus a separate list.
+function peopleBox() {
+  const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
+  if (!items.length) return '';
+  const friends = (modOn('contacts') && peopleOn()) ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : '';
+  return `<section class="nav-sec-box"><div class="nav-grp">${esc(t('nav.grp.people'))}</div><div class="nav-sec-items">${items.join('')}</div>${friends}</section>`;
+}
+// The live Daybook-friends list (online first), reused inside the People box.
+function navPeopleRows() {
+  if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
+  const friends = (state.friends && state.friends.friends) || [];
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  const isOnline = (f) => onSet.has(f.id) || !!f.online;
+  const sorted = friends.slice().sort((a, b) => (isOnline(b) - isOnline(a)) || (a.name || '').localeCompare(b.name || ''));
+  return sorted.map((f) => {
+    const on = isOnline(f); const un = unreadFrom(f.id);
+    return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
+  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Daybook</button>');
 }
 function renderNav() {
   const v = state.view;
@@ -2606,7 +2628,7 @@ function renderNav() {
     </div>
     <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
     ${navGridHtml(v)}
-    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ((k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes')) || (k === 'people' && !modOn('contacts'))) ? '' : navSection(k, v)).join('')}</div>
+    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => (k === 'people' || (k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
     <div class="nav-bottom">
       <div class="nav-bottom-row">
         ${helpIconHtml()}
