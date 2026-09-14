@@ -4068,6 +4068,14 @@ function homeDiscoverHtml() {
     ${open ? `<div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>` : ''}
   </section>`;
 }
+// Which sections show in the Home MAIN area, and their fold state - both yours to
+// change (kept in localStorage). Defaults to Today + Do next + Practices.
+function homeMainEnabled() { try { const o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); if (Array.isArray(o)) return o; } catch {} return ['today', 'priority', 'tracker']; }
+function setHomeMainEnabled(arr) { try { localStorage.setItem('life.home.mainSecs', JSON.stringify(arr)); } catch {} renderHome(); }
+function homeMainOpen(k) { try { const o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); return o[k] !== false; } catch { return true; } }
+function toggleHomeMainOpen(k) { let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); } catch {} o[k] = !homeMainOpen(k); try { localStorage.setItem('life.home.mainOpen', JSON.stringify(o)); } catch {} renderHome(); }
+function homeMainRemove(k) { setHomeMainEnabled(homeMainEnabled().filter((x) => x !== k)); }
+function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHomeMainEnabled([...e, k]); }
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
@@ -4224,29 +4232,31 @@ function renderHome() {
             mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
           };
-          // ── The fused lead (blueprint step 1): your day, what to do next, and
-          // today's practices, STACKED as one answer instead of tabs you switch
-          // between. Priority and the practice tracker were separate tabs; here
-          // they sit together so "what's on + what to do + what I keep up" is one
-          // glance. Everything else drops to a quieter secondary strip below.
-          const leadTop = p1all.slice(0, 3);
-          const leadPri = leadTop.length
-            ? `<div class="p1-list">${leadTop.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div>${p1total > leadTop.length ? `<button class="p1-all" data-open-p1>See all ${p1total} priority tasks →</button>` : ''}`
-            : '<div class="home-empty">No priority tasks right now - nicely done.</div>';
-          const leadHtml = `<section class="home-lead">
-            <div class="lead-block lead-day"><div class="lead-h"><span class="lead-ic">☀</span>${meta.today.label}<span class="lead-nav">${dayNav}</span></div>${bodies.today}</div>
-            ${modOn('tasks') ? `<div class="lead-block"><div class="lead-h"><span class="lead-ic">✓</span>Do next${p1total ? ` <span class="lead-c">${p1total}</span>` : ''}</div>${leadPri}</div>` : ''}
-            ${modOn('today') ? `<div class="lead-block"><div class="lead-h"><span class="lead-ic">✦</span>${t('nav.practices')}<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button></div>${bodies.tracker}</div>` : ''}
-          </section>`;
-          // The leftovers become a quiet secondary tile strip; Today/Priority/
-          // Tracker have graduated into the lead, so they leave the tabs.
-          const order = [...(modOn('mail') ? ['mail'] : []), 'favareas', 'favs'];
-          let open = state.home.tileOpen || order[0];
-          if (!order.includes(open)) open = order[0];
-          const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
-          // The Today wall is the whole of the main column; navigation lives in the
-          // sidebar and the "+ New" menu, not in a hub of boxes here.
-          return `${leadHtml}`;
+          // The Home main area is a stack of sections YOU choose: click a header
+          // to fold it, × to remove it, and re-add any from the bar below. Defaults
+          // to Today + Do next + Practices. (Sidebar / right rail are separate.)
+          const MAIN_DEF = [
+            { k: 'today', ic: '☀', label: 'Today', extra: `<span class="lead-nav">${dayNav}</span>`, on: true },
+            { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
+            { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
+            { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
+            { k: 'favareas', ic: '◈', label: 'Life areas', count: sortedAreas.length, on: modOn('areas') },
+            { k: 'favs', ic: '★', label: 'Starred', on: modOn('notes') },
+            { k: 'mail', ic: '✉', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
+          ];
+          const avail = MAIN_DEF.filter((s) => s.on);
+          const enabled = homeMainEnabled().filter((k) => avail.some((s) => s.k === k));
+          const blocks = enabled.map((k) => {
+            const s = avail.find((x) => x.k === k); const op = homeMainOpen(k);
+            const cnt = (s.count != null && s.count) ? ` <span class="lead-c">${s.count}</span>` : '';
+            return `<section class="lead-block ${s.k === 'today' ? 'lead-day' : ''}${op ? '' : ' lead-collapsed'}">
+              <div class="lead-h" data-home-main-toggle="${s.k}" role="button" tabindex="0"><span class="lead-chev">${op ? '▾' : '▸'}</span><span class="lead-ic">${s.ic}</span><span class="lead-name">${esc(s.label)}</span>${cnt}<span class="lead-h-r">${op ? (s.extra || '') : ''}<button class="lead-x" data-home-main-x="${s.k}" title="Remove from Home" aria-label="Remove ${esc(s.label)} from Home">×</button></span></div>
+              ${op ? bodies[s.k] : ''}
+            </section>`;
+          }).join('');
+          const addable = avail.filter((s) => !enabled.includes(s.k));
+          const addBar = addable.length ? `<div class="home-main-add"><span class="hma-lbl">Add to Home</span>${addable.map((s) => `<button class="hma-chip" data-home-main-add="${s.k}">＋ ${esc(s.label)}</button>`).join('')}</div>` : '';
+          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — add a section below.</div>'}</section>${addBar}`;
         })()}</div>
         <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
@@ -14677,6 +14687,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-shortcuts-bg]') && !t.closest('.sc-panel')) { closeShortcuts(); return; }
   { const an = t.closest('[data-addnew-toggle]'); if (an) { const menu = an.parentElement.querySelector('.addnew-menu'); if (menu) { const willOpen = menu.hasAttribute('hidden'); if (willOpen) menu.removeAttribute('hidden'); else menu.setAttribute('hidden', ''); an.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); } return; } }
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
+  { const hx = t.closest('[data-home-main-x]'); if (hx) { homeMainRemove(hx.dataset.homeMainX); return; } }   // × removes a Home section
+  { const ha = t.closest('[data-home-main-add]'); if (ha) { homeMainAdd(ha.dataset.homeMainAdd); return; } }   // ＋ chip re-adds one
+  // Click a Home section header (not a button/link inside it) to fold/unfold it.
+  { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day]')) { toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
   if (t.closest('[data-linkpick-bg]') && !t.closest('.pal')) { closeLinkPicker(); return; }
   const lpt = t.closest('[data-linkpick-to]'); if (lpt) { linkPickPick(lpt.dataset.linkpickTo); return; }

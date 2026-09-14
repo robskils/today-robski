@@ -3739,12 +3739,24 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-lead { display:flex; flex-direction:column; gap:14px; margin-bottom:22px; }
 .lead-block { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:16px 18px; }
 .lead-block.lead-day { border-color:color-mix(in srgb,var(--accent) 34%,var(--line)); box-shadow:0 1px 2px rgba(0,0,0,.04),0 16px 36px -22px color-mix(in srgb,var(--accent) 48%,transparent); }
-.lead-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:12px; }
+.lead-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:12px; cursor:pointer; }
+.lead-chev { flex:none; width:13px; font-size:12px; color:var(--ink-3); }
 .lead-ic { font-size:17px; color:var(--accent); flex:none; }
+.lead-name { color:var(--ink); }
 .lead-c { font-size:13px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 8px; }
+.lead-h-r { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.lead-h-r .lead-nav, .lead-h-r .lead-more { margin-left:0; }
 .lead-nav { margin-left:auto; }
 .lead-more { margin-left:auto; font-size:13px; color:var(--ink-3); background:none; border:0; cursor:pointer; padding:4px 6px; border-radius:7px; }
 .lead-more:hover { color:var(--accent); background:var(--paper-2); }
+.lead-x { flex:none; width:22px; height:22px; border-radius:6px; border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; opacity:0; transition:opacity .12s, color .12s, background .12s; }
+.lead-block:hover .lead-x { opacity:.55; }
+.lead-x:hover { opacity:1 !important; color:var(--danger,#c0392b); background:var(--paper-2); }
+.lead-collapsed .lead-h { margin-bottom:0; }
+.home-main-add { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:16px; }
+.hma-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.11em; color:var(--ink-3); font-weight:700; }
+.hma-chip { font-size:13.5px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:7px 13px; cursor:pointer; transition:border-color .12s, color .12s; }
+.hma-chip:hover { border-color:var(--accent); color:var(--accent); }
 .home-secondary { margin-top:4px; }
 
 
