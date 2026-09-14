@@ -1917,11 +1917,16 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 /* One column, clustered into labelled bands (Day / Capture / People / Grow):
    fourteen tools read as four things. Each row is a light line with an icon that
    anchors the eye; the active one lifts to a bordered card. */
-/* Two tools per row within each labelled group; headers span the full width. */
+/* Home + Mail pin two-up at the top; each labelled group then sits in its own
+   soft-bordered box, with its tools two per row inside. The box quietly frames
+   the section so the rail reads as a few blocks, not one long list. */
 .nav-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px 6px; margin-bottom:4px; align-items:stretch; }
-.nav-grp { grid-column:1 / -1; font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
-  font-weight:700; padding:13px 6px 4px; }
-.nav-grp:first-of-type { padding-top:6px; }
+.nav-sec-box { grid-column:1 / -1; margin-top:9px; padding:3px 7px 8px; border:1px solid var(--line); border-radius:13px;
+  background:color-mix(in srgb, var(--card) 45%, transparent); }
+.nav-sec-box:first-of-type { margin-top:6px; }
+.nav-sec-items { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3px 6px; }
+.nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
+  font-weight:700; padding:8px 5px 6px; }
 .nav-div { grid-column:1 / -1; height:1px; background:var(--line); margin:12px 8px 8px; }
 .nav-item {
   display:flex; align-items:center; gap:8px; width:100%; text-align:left;

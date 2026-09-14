@@ -2577,7 +2577,7 @@ function navGridHtml(v) {
     financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
   };
-  const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<div class="nav-grp">${esc(label)}</div>${on.join('')}` : ''; };
+  const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<section class="nav-sec-box"><div class="nav-grp">${esc(label)}</div><div class="nav-sec-items">${on.join('')}</div></section>` : ''; };
   // Home + Mail pinned, then Robin's mind-map branches - Daily / Meaningful /
   // People / General Tools. There's no "Capture" band: the make-a-new verbs live
   // in the "+ New" menu (breadcrumb row) and the Home buttons instead.
