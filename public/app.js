@@ -4161,11 +4161,27 @@ function renderHome() {
             mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
           };
-          const order = ['today', ...(modOn('mail') ? ['mail'] : []), 'priority', 'favareas', 'favs', ...(modOn('today') ? ['tracker'] : [])];
-          let open = state.home.tileOpen || 'today';
-          if (!order.includes(open)) open = 'today';
+          // ── The fused lead (blueprint step 1): your day, what to do next, and
+          // today's practices, STACKED as one answer instead of tabs you switch
+          // between. Priority and the practice tracker were separate tabs; here
+          // they sit together so "what's on + what to do + what I keep up" is one
+          // glance. Everything else drops to a quieter secondary strip below.
+          const leadTop = p1all.slice(0, 3);
+          const leadPri = leadTop.length
+            ? `<div class="p1-list">${leadTop.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div>${p1total > leadTop.length ? `<button class="p1-all" data-open-p1>See all ${p1total} priority tasks →</button>` : ''}`
+            : '<div class="home-empty">No priority tasks right now - nicely done.</div>';
+          const leadHtml = `<section class="home-lead">
+            <div class="lead-block lead-day"><div class="lead-h"><span class="lead-ic">☀</span>${meta.today.label}<span class="lead-nav">${dayNav}</span></div>${bodies.today}</div>
+            ${modOn('tasks') ? `<div class="lead-block"><div class="lead-h"><span class="lead-ic">✓</span>Do next${p1total ? ` <span class="lead-c">${p1total}</span>` : ''}</div>${leadPri}</div>` : ''}
+            ${modOn('today') ? `<div class="lead-block"><div class="lead-h"><span class="lead-ic">✦</span>${t('nav.practices')}<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button></div>${bodies.tracker}</div>` : ''}
+          </section>`;
+          // The leftovers become a quiet secondary tile strip; Today/Priority/
+          // Tracker have graduated into the lead, so they leave the tabs.
+          const order = [...(modOn('mail') ? ['mail'] : []), 'favareas', 'favs'];
+          let open = state.home.tileOpen || order[0];
+          if (!order.includes(open)) open = order[0];
           const tiles = order.map((k) => { const m = meta[k]; return `<button class="home-tile ${open === k ? 'on' : ''}" data-htile="${k}"><span class="ht-ic">${m.ic}</span><span class="ht-l">${m.label}</span>${m.count != null ? `<span class="ht-c">${m.count}</span>` : ''}</button>`; }).join('');
-          return `<div class="home-tiles">${tiles}</div><div class="home-tilepanel"><div class="htp-head"><span class="htp-t"><span class="htp-ic">${meta[open].ic}</span>${meta[open].label}</span>${meta[open].nav || ''}</div>${bodies[open]}</div>`;
+          return `${leadHtml}<div class="home-secondary"><div class="home-tiles">${tiles}</div><div class="home-tilepanel"><div class="htp-head"><span class="htp-t"><span class="htp-ic">${meta[open].ic}</span>${meta[open].label}</span>${meta[open].nav || ''}</div>${bodies[open]}</div></div>`;
         })()}</div>
         <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each

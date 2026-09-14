@@ -3699,6 +3699,19 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .htp-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
 .htp-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:8px; }
 .htp-ic { font-size:17px; }
+/* The fused lead: your day + what to do next + today's practices, stacked as the
+   hero above the demoted secondary tiles. The day block carries a faint accent
+   edge so the eye lands on it first. */
+.home-lead { display:flex; flex-direction:column; gap:14px; margin-bottom:22px; }
+.lead-block { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:16px 18px; }
+.lead-block.lead-day { border-color:color-mix(in srgb,var(--accent) 34%,var(--line)); box-shadow:0 1px 2px rgba(0,0,0,.04),0 16px 36px -22px color-mix(in srgb,var(--accent) 48%,transparent); }
+.lead-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:12px; }
+.lead-ic { font-size:17px; color:var(--accent); flex:none; }
+.lead-c { font-size:13px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 8px; }
+.lead-nav { margin-left:auto; }
+.lead-more { margin-left:auto; font-size:13px; color:var(--ink-3); background:none; border:0; cursor:pointer; padding:4px 6px; border-radius:7px; }
+.lead-more:hover { color:var(--accent); background:var(--paper-2); }
+.home-secondary { margin-top:4px; }
 .home-side { position:sticky; top:20px; }
 .home-side .home-sec { margin-top:0; }
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
