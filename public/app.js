@@ -6003,7 +6003,7 @@ function renderArea() {
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
-      ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-event>+ Event</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button></div>'}
+      ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-event>+ Event</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button><button class="add-btn wide" data-area-add-contact>+ Contact</button></div>'}
     </div>
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
@@ -6552,7 +6552,7 @@ function renderCalendar() {
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
-    ${c.mode === 'week' ? '<div class="cal-upcoming-h"><span class="cal-ag-eyebrow">Upcoming</span></div>' : ''}
+    <div class="cal-upcoming-h"><span class="cal-ag-eyebrow">${c.mode === 'week' ? 'Upcoming' : esc(MONTHS_LONG[c.m])}</span></div>
     ${body}`}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
@@ -6999,7 +6999,10 @@ async function openTracker() {
   state.view = { type: 'tracker' };
   renderNav();
   renderTracker();
-  try { await loadPractices(); } catch (e) { toast(e.message); }
+  // Force a fresh fetch (like the Practices page): the app stays open for days as
+  // a PWA, so a plain loadPractices() would short-circuit on practicesLoaded and
+  // never surface a practice added since - "I added it but the Tracker's empty".
+  try { await loadPractices(true); } catch (e) { toast(e.message); }
   if (state.view && state.view.type === 'tracker') renderTracker();
 }
 function renderTracker() {
@@ -10034,13 +10037,23 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${areas.length ? `<label class="atf atf-full"><span>Life area</span><select id="ct-area" class="sel"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    ${areas.length ? `<label class="atf atf-full"><span>Life area</span><select id="ct-area" class="sel"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
   </form>`;
 }
+// "+ Contact" on a life-area page: open the Contacts add form with this area
+// preselected, so the new person is tied to the area you're in.
+function areaAddContact() {
+  const a = state.area_open && state.area_open.area; if (!a) return;
+  state.contactAddArea = a.id;
+  state.contactAdding = true;
+  openContacts();
+  setTimeout(() => { const i = $('#ct-name'); if (i) i.focus(); }, 0);
+}
 async function addContact(o) {
+  state.contactAddArea = null;
   const props = { email: o.email || null, phone: o.phone || null, birthday: o.birthday || null, address: o.address || null };
   if (props.address && typeof props.address === 'object' && !Object.keys(props.address).length) props.address = null;
   if (o.area) { props.area = o.area; props.areas = [o.area]; }   // life area, read by blockAreas
@@ -15012,7 +15025,7 @@ document.addEventListener('click', (e) => {
   { const aca = t.closest('[data-area-contact-add]'); if (aca) { addContactToArea(aca.dataset.areaContactAdd); return; } }
   { const acr = t.closest('[data-area-contact-rm]'); if (acr) { e.stopPropagation(); removeContactFromArea(acr.dataset.areaContactRm); return; } }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-contact-add]')) { state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
+  if (t.closest('[data-contact-add]')) { state.contactAddArea = null; state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
   if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
   if (t.closest('[data-contact-import]')) { $('#contact-file')?.click(); return; }
   const delc = t.closest('[data-del-contact]'); if (delc) { delContact(delc.dataset.delContact); return; }
@@ -15209,6 +15222,7 @@ document.addEventListener('click', (e) => {
   { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
+  if (t.closest('[data-area-add-contact]')) { areaAddContact(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-add-event]')) { const a = state.area_open && state.area_open.area; if (a) areaNewEvent(a.id); return; }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
