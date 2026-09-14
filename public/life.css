@@ -1904,6 +1904,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
   font-weight:700; padding:13px 6px 4px; }
 .nav-grp:first-of-type { padding-top:6px; }
+/* The ungrouped leftovers (Contacts, Money, Toolbox) sit below a hairline, not
+   under a pretend heading - honest about not sharing a theme. */
+.nav-div { height:1px; background:var(--line); margin:12px 8px 8px; }
 .nav-item {
   display:flex; align-items:center; gap:9px; width:100%; text-align:left;
   padding:8px 10px; border:1px solid transparent; border-radius:9px; background:transparent;

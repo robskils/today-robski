@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
-  'nav.grp.capture': 'Capture', 'nav.grp.sort': 'Sort', 'nav.grp.prioritise': 'Prioritise', 'nav.grp.action': 'Action',
+  'nav.grp.day': 'Day', 'nav.grp.capture': 'Capture', 'nav.grp.matters': 'What matters',
   'nav.journal': 'Journal', 'nav.dream': 'Dream',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -58,7 +58,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
-  'nav.grp.capture': 'Capturar', 'nav.grp.sort': 'Organizar', 'nav.grp.prioritise': 'Priorizar', 'nav.grp.action': 'Agir',
+  'nav.grp.day': 'Dia', 'nav.grp.capture': 'Capturar', 'nav.grp.matters': 'O que importa',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -2521,13 +2521,13 @@ document.addEventListener('pointerdown', (e) => { navHeld = !!(e.target && e.tar
 function flushNavHold() { clearTimeout(navHoldT); navHoldT = null; navHeld = false; if (navDeferred) { navDeferred = false; renderNav(); } }
 document.addEventListener('pointerup', () => { if (navHeld) { clearTimeout(navHoldT); navHoldT = setTimeout(flushNavHold, 500); } }, true);
 document.addEventListener('pointercancel', flushNavHold, true);
-// The tool rail. Fourteen tools read as a wall unless you group them, so they're
-// clustered by ONE consistent ruler - a tool's place in your flow: Capture (what
-// comes in) -> Sort (where it's filed) -> Prioritise (the longer arc) -> Action
-// (where you do it). Mixed rulers (time + topic) are what made the old bands feel
-// arbitrary. Home + Mail lead pinned, Toolbox tails; a band's heading only shows
-// if at least one of its tools is on (tools switch off in Settings), so a hidden
-// module never leaves a dangling label. Icons reuse the app's own glyph language.
+// The tool rail. A group only earns a heading when it names something PATENTLY
+// ONE thing - forcing tools into abstract stages (is Contacts really "sort"? is
+// Reviews "prioritise"? no) is what made earlier bands feel arbitrary. So: three
+// true groups - Day (your time), Capture (what you jot or save), What matters
+// (your compass: areas, goals, reviews) - with Home + Mail pinned above and the
+// genuine leftovers (Contacts, Money, Toolbox) sitting ungrouped below rather
+// than under a pretend label. A heading only shows if a member tool is on.
 function navGridHtml(v) {
   const NI = {
     home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
@@ -2553,14 +2553,15 @@ function navGridHtml(v) {
   const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<div class="nav-grp">${esc(label)}</div>${on.join('')}` : ''; };
   // Home and Mail are the two you open all day, so they lead the rail pinned
   // together above the first band; Mail carries the prominence Robin asked for.
+  // Only the leftovers that share no honest theme sit below the divider.
+  const tail = [NI.contacts, NI.financial, NI.timer].filter(Boolean).join('');
   return `<div class="nav-grid">
     ${NI.home}
     ${NI.mail}
+    ${grp(t('nav.grp.day'), [NI.today, NI.tasks, NI.calendar])}
     ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.journalAct, NI.dreamAct])}
-    ${grp(t('nav.grp.sort'), [NI.contacts, NI.areas])}
-    ${grp(t('nav.grp.prioritise'), [NI.goals, NI.reviews, NI.financial])}
-    ${grp(t('nav.grp.action'), [NI.today, NI.tasks, NI.calendar])}
-    ${NI.timer}
+    ${grp(t('nav.grp.matters'), [NI.areas, NI.goals, NI.reviews])}
+    ${tail ? `<div class="nav-div"></div>${tail}` : ''}
   </div>`;
 }
 function renderNav() {
