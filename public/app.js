@@ -6183,7 +6183,10 @@ function dpLabel(iso) {
   if (ny) return `${Number(ny[2])} ${MONTHS_LONG[Number(ny[1]) - 1]}`;
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return 'Pick a date';
   const [y, m, d] = iso.split('-').map(Number);
-  return `${DOW_ABBR[new Date(y, m - 1, d).getDay()]} ${d} ${MONTHS_LONG[m - 1]} ${y}`;
+  // Drop the year when it's this year (the common case) so it fits the field;
+  // keep it for other years, where it's the point.
+  const yr = y === new Date().getFullYear() ? '' : ` ${y}`;
+  return `${DOW_ABBR[new Date(y, m - 1, d).getDay()]} ${d} ${MONTHS_LONG[m - 1]}${yr}`;
 }
 function dateFieldHtml(id, iso) {
   return `<input type="hidden" id="${id}" value="${esc(iso || '')}"><button type="button" class="date-field sel" data-dp-open="${id}">${esc(dpLabel(iso))}</button>`;
