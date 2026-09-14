@@ -37,7 +37,7 @@ const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
   'nav.grp.day': 'Day', 'nav.grp.capture': 'Capture', 'nav.grp.matters': 'What matters',
-  'nav.journal': 'Journal', 'nav.dream': 'Dream',
+  'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security',
@@ -59,7 +59,7 @@ const T_EN = {
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
   'nav.grp.day': 'Dia', 'nav.grp.capture': 'Capturar', 'nav.grp.matters': 'O que importa',
-  'nav.journal': 'Diário', 'nav.dream': 'Sonho',
+  'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança',
@@ -2531,7 +2531,11 @@ document.addEventListener('pointercancel', flushNavHold, true);
 function navGridHtml(v) {
   const NI = {
     home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
-    today: modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.today')}</span></button>` : '',
+    today: modOn('today') ? `<button class="nav-item ${v.type === 'today' && !(state.today && state.today.tab === 'tracker') ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.today')}</span></button>` : '',
+    // Tracker (the Today tool's streak view) and Practices (where you define them)
+    // are their own rail items now, so the daily-practice loop is one tap, not buried.
+    tracker: modOn('today') ? `<button class="nav-item ${v.type === 'today' && state.today && state.today.tab === 'tracker' ? 'on' : ''}" data-open-tracker><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.tracker')}</span></button>` : '',
+    practices: modOn('today') ? `<button class="nav-item ${v.type === 'practices' ? 'on' : ''}" data-open-practices><span class="nav-ic">☯</span><span class="nav-lbl">${t('nav.practices')}</span></button>` : '',
     tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
@@ -2558,7 +2562,7 @@ function navGridHtml(v) {
   return `<div class="nav-grid">
     ${NI.home}
     ${NI.mail}
-    ${grp(t('nav.grp.day'), [NI.today, NI.tasks, NI.calendar])}
+    ${grp(t('nav.grp.day'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
     ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.journalAct, NI.dreamAct])}
     ${grp(t('nav.grp.matters'), [NI.areas, NI.goals, NI.reviews])}
     ${tail ? `<div class="nav-div"></div>${tail}` : ''}
