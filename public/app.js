@@ -9859,12 +9859,8 @@ function contactMenuHtml() {
     <div class="ctx-sep"></div>` : '';
   // A few recently-opened contacts up top, most recent first - a quick hop to
   // whoever you were just looking at, without leaving the menu to search.
-  const recentContacts = recentContactIds().filter((rid) => rid !== m.id).map(findContact).filter(Boolean).slice(0, 4);
-  const recentRow = (rc) => { const ra = areaById(blockAreas(rc)[0]); return `<button class="ctx-item ctx-recent" data-ctx-recent="${rc.id}" style="--h:${ra ? hueOf(ra) : 220}"><span class="ctx-recent-av">${esc(initial(rc.title || '?'))}</span><span class="ctx-recent-n">${esc(rc.title || 'Contact')}</span></button>`; };
-  const recentSection = recentContacts.length ? `<div class="ctx-lbl">Recent</div>${recentContacts.map(recentRow).join('')}<div class="ctx-sep"></div>` : '';
   return `<div class="ctx-bg" data-ctx-close><div class="ctx-menu" style="top:${m.y}px;left:${m.x}px;max-height:${m.maxh}px" role="menu">
     <div class="ctx-h">${esc(c.title || 'Contact')}</div>
-    ${recentSection}
     <button class="ctx-item" data-ctx-star="${c.id}">${(c.props && c.props.starred) ? '★ Unstar' : '☆ Star contact'}</button>
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
