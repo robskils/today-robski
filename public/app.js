@@ -6967,22 +6967,8 @@ function t2TrackerHtml() {
   const groups = new Map();
   tracked.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, area: ar, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
   const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
-  // The visible 7-day window. It ends today by default; the prev/next controls
-  // step it back and forth a week at a time (never past today - you can't tick
-  // the future). Ticking a dot still logs that exact day, so past weeks are
-  // fillable retroactively.
-  const winEnd = (T && T.trackerEnd && T.trackerEnd <= today) ? T.trackerEnd : today;
-  const days = trackerWindow(winEnd);
-  const atNow = winEnd === today;
-  const fmtD = (iso) => new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  const rangeLabel = `${fmtD(days[0])} - ${fmtD(days[6])}`;
-  const trkNav = `<div class="trk-nav">
-    <button class="trk-arw" data-trk-week="-1" aria-label="Earlier week">‹</button>
-    <span class="trk-range">${esc(rangeLabel)}</span>
-    <button class="trk-arw" data-trk-week="1" aria-label="Later week"${atNow ? ' disabled' : ''}>›</button>
-    ${atNow ? '' : '<button class="trk-nav-now" data-trk-now>Today</button>'}
-  </div>`;
-  const dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  // Today-focused: what matters is whether you did it TODAY. The streak carries
+  // the "run of days" on its own, so there's no week grid or week navigator here.
   // A short, plain list - just the cadence, no "check in" prefix.
   const body = ordered.map((g) => {
     const areaCad = g.area ? ((g.area.props || {}).cadence || '') : '';
@@ -6997,12 +6983,9 @@ function t2TrackerHtml() {
       const s = cadenceStatus(prcMarkedDays(a.id), a.cadence);
       const marked = practiceMarked(a.id, today);
       const streak = practiceStreak(a.id);
-      // The run of recent days - tap any dot to log it, the chain you don't want to break.
-      const week = days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${a.avoid ? (practiceMarked(a.id, d) ? 'slipped' : 'clean') + ' · ' + d : d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('');
       return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''}">
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="trk-pname">${esc(a.title)}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
-        <span class="trk-week">${week}</span>
         <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span>
       </div>`;
     }).join('');
@@ -7017,7 +7000,7 @@ function t2TrackerHtml() {
   }).join('');
   return `<p class="home-empty trk-intro"><b>Is every part of your life ticking over?</b> Tick practices as you go - each keeps its run of days. Give an area a <b>check-in</b> and it tells you how long until you should do something in it next.</p>
     <div class="trk-tophead"><button class="trk-manage-top" data-open-practices title="Edit, add, group or delete your practices">⚙ Manage practices →</button></div>
-    ${trkNav}<div class="trk-dash">${body}</div><div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div>`;
+    <div class="trk-dash">${body}</div><div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
