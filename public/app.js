@@ -14053,6 +14053,9 @@ const ACTIONS = [
   { kind: 'action', title: 'New goal', run: () => quickAdd('goal') },
   { kind: 'action', title: 'Bucket list', run: () => openGoals('bucket') },
 ];
+// Search-result ordering by kind: life areas first, then goals, contacts and
+// the pages you actually keep; table rows last. Anything unlisted lands mid-pack.
+const SEARCH_KIND_RANK = { area: 0, goal: 1, contact: 2, note: 3, table: 4, task: 6, row: 9 };
 let palT;
 function buildPalette() {
   const q = state.pal.q.trim();
@@ -14070,7 +14073,12 @@ function buildPalette() {
       const hits = await api(`/api/search?q=${encodeURIComponent(q)}`);
       // A slower earlier search must not overwrite the current query's results.
       if (state.pal.q.trim() !== q) return;
-      state.pal.items = [...acts, ...hits.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
+      // Lead with the good stuff: a life area is a whole corner of your life, so
+      // it comes first; then goals, contacts and the pages; a lone table row is
+      // the least you searched for, so it sinks to the bottom. Stable within a
+      // kind, so the worker's relevance order still holds inside each band.
+      const ranked = hits.slice().sort((a, b) => (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
+      state.pal.items = [...acts, ...ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
       state.pal.sel = 0; renderPalItems();
     } catch (e) { toast(e.message); }
   }, 150);
