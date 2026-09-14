@@ -9994,12 +9994,13 @@ const KIT_EVERY = [
 ];
 const KIT_UNITS = [['w', 'weeks'], ['m', 'months'], ['d', 'days']];
 const kitTitle = (name) => `Catch up with ${(name || '').trim() || 'them'}`;
-// Circles: a light single tag on a person, purely for grouping who you tend in
-// Connect. NOT a life area, nothing on the Wheel; lighter than the old Groups.
-const CIRCLES = [['family', 'Family', 330], ['friends', 'Friends', 190], ['work', 'Work', 16], ['mentors', 'Mentors', 255]];
-const circleOf = (k) => CIRCLES.find((x) => x[0] === k);
-const circleLabel = (k) => (circleOf(k) || [null, ''])[1];
-const circleHue = (k) => (circleOf(k) || [null, null, 220])[2];
+// Circles are OPTIONAL and USER-DEFINED: a free-text tag you write on a person
+// (Family, cycling club, whatever) - NOT a fixed taxonomy, and never required.
+// Connect groups by them only once you've actually used some; with none it stays
+// a flat list. The hue is derived from the name, so a circle keeps a stable
+// colour without needing to be registered anywhere.
+function usedCircles() { const s = new Set(); (state.contacts || []).forEach((c) => { const v = ((c.props || {}).circle || '').trim(); if (v) s.add(v); }); return [...s].sort((a, b) => a.localeCompare(b)); }
+function circleHue(name) { const n = (name || '').trim().toLowerCase(); if (!n) return 220; let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360; return h; }
 // A nudge is a task by construction, not by intent: it has no priority, it isn't
 // work you do at a desk, and it belongs to a person rather than to a board. So it
 // is filtered out where tasks load, and every list downstream stays honest
@@ -10161,7 +10162,7 @@ function keepInTouchSection(c) {
         ${customRow}
       </div>
       <div class="kit-line">
-        <label class="kit-row"><span class="tf-label">Circle</span><select class="sel kit-circle" data-kit-circle><option value="">No circle</option>${CIRCLES.map(([v, l]) => `<option value="${v}" ${(c.props || {}).circle === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="kit-row"><span class="tf-label">Circle</span><input class="sel kit-circle" data-kit-circle list="kit-circle-opts" value="${esc((c.props || {}).circle || '')}" placeholder="Optional — e.g. Family, leave blank for none" autocomplete="off"><datalist id="kit-circle-opts">${usedCircles().map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist></label>
       </div>
       ${status}
     </div>` : ''}
@@ -15375,7 +15376,7 @@ document.addEventListener('change', (e) => {
     kitSetEvery(`every:${n}:${u}`);
     return;
   }
-  if (e.target.matches('[data-kit-circle]')) { circleSet(e.target.value || null); return; }
+  if (e.target.matches('[data-kit-circle]')) { circleSet((e.target.value || '').trim() || null); return; }
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
@@ -16271,16 +16272,20 @@ function renderConnect() {
     const lead = over.length
       ? `<section class="cn-band cn-lead"><div class="cn-h">Reach out<span class="cn-c">${over.length}</span></div>${over.map((p) => connectRow(p, today)).join('')}</section>`
       : '<section class="cn-band cn-allok"><div class="cn-okmsg">✓ No one is slipping. Nicely tended.</div></section>';
-    // The rest, grouped by circle (Family / Friends / Work / Mentors), then a
-    // catch-all for anyone without a circle yet.
-    const byCircle = new Map(); [...CIRCLES.map(([k]) => k), ''].forEach((k) => byCircle.set(k, []));
-    ok.forEach((p) => { const k = circleOf(p.circle) ? p.circle : ''; byCircle.get(k).push(p); });
-    const bands = [...CIRCLES.map(([k]) => k), ''].map((k) => {
-      const list = byCircle.get(k) || []; if (!list.length) return '';
-      list.sort((a, b) => String(a.due).localeCompare(String(b.due)));
-      const label = k ? circleLabel(k) : 'No circle yet';
-      return `<section class="cn-band" style="--ch:${k ? circleHue(k) : 220}"><div class="cn-h"><span class="cn-cdot"></span>${esc(label)}<span class="cn-c">${list.length}</span></div>${list.map((p) => connectRow(p, today)).join('')}</section>`;
-    }).join('');
+    // The rest. Group by circle ONLY if you've actually assigned some; otherwise
+    // it stays one clean "Keeping up" list. No imposed categories.
+    const circles = [...new Set(ok.map((p) => (p.circle || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    let bands;
+    if (!circles.length) {
+      const list = ok.slice().sort((a, b) => String(a.due).localeCompare(String(b.due)));
+      bands = list.length ? `<section class="cn-band"><div class="cn-h">Keeping up<span class="cn-c">${list.length}</span></div>${list.map((p) => connectRow(p, today)).join('')}</section>` : '';
+    } else {
+      bands = [...circles, ''].map((k) => {
+        const list = ok.filter((p) => (p.circle || '').trim() === k).sort((a, b) => String(a.due).localeCompare(String(b.due)));
+        if (!list.length) return '';
+        return `<section class="cn-band" style="--ch:${circleHue(k)}"><div class="cn-h"><span class="cn-cdot"></span>${esc(k || 'Everyone else')}<span class="cn-c">${list.length}</span></div>${list.map((p) => connectRow(p, today)).join('')}</section>`;
+      }).join('');
+    }
     body = lead + bands;
   }
   $('#pane').innerHTML = `
