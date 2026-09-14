@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
-  'nav.grp.day': 'Day', 'nav.grp.capture': 'Capture', 'nav.grp.matters': 'What matters',
+  'nav.grp.daily': 'Daily', 'nav.grp.meaningful': 'Meaningful', 'nav.grp.people': 'People', 'nav.grp.tools': 'General Tools',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -58,7 +58,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
-  'nav.grp.day': 'Dia', 'nav.grp.capture': 'Capturar', 'nav.grp.matters': 'O que importa',
+  'nav.grp.daily': 'Dia a dia', 'nav.grp.meaningful': 'O que importa', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Ferramentas',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -962,7 +962,25 @@ function crumbNav(trail, areaId) {
   const t = trail.map((c, i) => (i === trail.length - 1
     ? `<span class="crumb cur">${esc(c.label)}</span>`
     : `<button class="crumb" ${c.attr || ''}>${esc(c.label)}</button>`)).join(sep);
-  return `<div class="crumbbar">${back}<div class="crumbs">${t}</div>${areaLinkHtml(areaId)}</div>`;
+  return `<div class="crumbbar">${back}<div class="crumbs">${t}</div>${addNewMenuHtml()}${areaLinkHtml(areaId)}</div>`;
+}
+// A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
+// button opening a small submenu of the things you make. Same quickAdd verbs the
+// Home buttons use, reachable from anywhere without going Home first.
+function addNewMenuHtml() {
+  const item = (kind, ic, label) => `<button class="addnew-item" data-quick-add="${kind}"><span class="addnew-ic">${ic}</span>${esc(label)}</button>`;
+  const items = [
+    modOn('notes') ? item('note', '▤', 'Note') : '',
+    modOn('tasks') ? item('task', '✓', 'Task') : '',
+    modOn('calendar') ? item('event', '▦', 'Event') : '',
+    modOn('goals') ? item('goal', '◎', 'Goal') : '',
+    modOn('contacts') ? item('contact', '☺', 'Contact') : '',
+    modOn('reflect') ? item('journal', '✎', 'Journal') : '',
+    modOn('reflect') ? item('dream', '☾', 'Dream') : '',
+    modOn('saved') ? item('save', '▷', 'Save a link') : '',
+  ].filter(Boolean).join('');
+  if (!items) return '';
+  return `<div class="addnew"><button class="addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Add something new"><span class="an-plus">＋</span>New<span class="an-ch">▾</span></button><div class="addnew-menu" hidden>${items}</div></div>`;
 }
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
@@ -2546,8 +2564,7 @@ function navGridHtml(v) {
     // room you enter: a whole row that writes a journal entry or logs a dream in
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
-    journalAct: modOn('reflect') ? `<button class="nav-item nav-act" data-quick-add="journal"><span class="nav-ic">✎</span><span class="nav-lbl">${t('nav.journal')}</span><span class="nav-quick" aria-hidden="true">＋</span></button>` : '',
-    dreamAct: modOn('reflect') ? `<button class="nav-item nav-act" data-quick-add="dream"><span class="nav-ic">☾</span><span class="nav-lbl">${t('nav.dream')}</span><span class="nav-quick" aria-hidden="true">＋</span></button>` : '',
+    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
@@ -2558,17 +2575,16 @@ function navGridHtml(v) {
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
   };
   const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<div class="nav-grp">${esc(label)}</div>${on.join('')}` : ''; };
-  // Home and Mail are the two you open all day, so they lead the rail pinned
-  // together above the first band; Mail carries the prominence Robin asked for.
-  // Only the leftovers that share no honest theme sit below the divider.
-  const tail = [NI.contacts, NI.financial, NI.timer].filter(Boolean).join('');
+  // Home + Mail pinned, then Robin's mind-map branches - Daily / Meaningful /
+  // People / General Tools. There's no "Capture" band: the make-a-new verbs live
+  // in the "+ New" menu (breadcrumb row) and the Home buttons instead.
   return `<div class="nav-grid">
     ${NI.home}
     ${NI.mail}
-    ${grp(t('nav.grp.day'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
-    ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.journalAct, NI.dreamAct])}
-    ${grp(t('nav.grp.matters'), [NI.areas, NI.goals, NI.reviews, NI.connect])}
-    ${tail ? `<div class="nav-div"></div>${tail}` : ''}
+    ${grp(t('nav.grp.daily'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
+    ${grp(t('nav.grp.meaningful'), [NI.areas, NI.goals, NI.reviews, NI.reflect])}
+    ${grp(t('nav.grp.people'), [NI.contacts, NI.connect])}
+    ${grp(t('nav.grp.tools'), [NI.notes, NI.saved, NI.financial, NI.timer])}
   </div>`;
 }
 function renderNav() {
@@ -4123,15 +4139,7 @@ function renderHome() {
       </div>
       <div class="home-actionbar">
         <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}<span class="home-time">${homeTimeStr()}</span></div>
-      </div>
-      <!-- Capture is a verb: the five things you make, always a tap away. -->
-      <div class="home-capture" aria-label="Capture">
-        <span class="cap-lead">Capture</span>
-        <button class="cap-chip" data-quick-add="note"><span class="cap-plus">＋</span>Note</button>
-        <button class="cap-chip" data-quick-add="task"><span class="cap-plus">＋</span>Task</button>
-        ${modOn('calendar') ? `<button class="cap-chip" data-quick-add="event"><span class="cap-plus">＋</span>Event</button>` : ''}
-        ${modOn('goals') ? `<button class="cap-chip" data-quick-add="goal"><span class="cap-plus">＋</span>Goal</button>` : ''}
-        ${modOn('contacts') ? `<button class="cap-chip" data-quick-add="contact"><span class="cap-plus">＋</span>Contact</button>` : ''}
+        <div class="home-actions"><button class="add-btn wide" data-quick-add="note">${t('home.newnote')}</button><button class="add-btn wide" data-quick-add="task">${t('home.newtask')}</button><button class="add-btn wide" data-quick-add="event">${t('home.newevent')}</button></div>
       </div>
       ${alertsHtml()}
       ${homeQuoteHtml()}
@@ -14594,6 +14602,8 @@ document.addEventListener('click', (e) => {
   // the browser hit-tested at pointerdown is still the button under this click - a
   // plain e.target routes correctly, no press-target bookkeeping needed.
   const t = e.target;
+  // Close an open "+ New" capture menu on any click outside it.
+  if (!t.closest('.addnew')) document.querySelectorAll('.addnew-menu:not([hidden])').forEach((m) => { m.setAttribute('hidden', ''); const b = m.parentElement && m.parentElement.querySelector('[data-addnew-toggle]'); if (b) b.setAttribute('aria-expanded', 'false'); });
   // Bottom-nav tab: tapping it jumps to the top of that page. If you're already
   // on it, just scroll up; otherwise navigate (fall through) and scroll after.
   const tabb = t.closest('.tab-b');
@@ -14633,6 +14643,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-shortcuts]')) { openShortcuts(); return; }
   if (t.closest('[data-close-shortcuts]')) { closeShortcuts(); return; }
   if (t.closest('[data-shortcuts-bg]') && !t.closest('.sc-panel')) { closeShortcuts(); return; }
+  { const an = t.closest('[data-addnew-toggle]'); if (an) { const menu = an.parentElement.querySelector('.addnew-menu'); if (menu) { const willOpen = menu.hasAttribute('hidden'); if (willOpen) menu.removeAttribute('hidden'); else menu.setAttribute('hidden', ''); an.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); } return; } }
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
   if (t.closest('[data-linkpick-bg]') && !t.closest('.pal')) { closeLinkPicker(); return; }

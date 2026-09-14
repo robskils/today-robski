@@ -1718,6 +1718,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .crumb-back { flex:none; width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-2); font-size:18px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
 .crumb-back:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
 .note-crumbs .crumb-back, .area-hero-top .crumb-back { margin-right:2px; }
+/* "+ New" quick-capture menu, right-aligned in the breadcrumb row on every page. */
+.addnew { margin-left:auto; position:relative; flex:none; }
+.addnew-btn { display:inline-flex; align-items:center; gap:6px; font-size:14.5px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:9px; padding:7px 13px; cursor:pointer; transition:border-color .12s,color .12s; }
+.addnew-btn:hover, .addnew-btn[aria-expanded="true"] { border-color:var(--accent); color:var(--accent); }
+.an-plus { color:var(--accent); font-size:15px; line-height:1; }
+.an-ch { font-size:11px; color:var(--ink-3); }
+.addnew-menu { position:absolute; top:calc(100% + 6px); right:0; z-index:60; min-width:194px; background:var(--card); border:1px solid var(--line); border-radius:13px; box-shadow:var(--shadow); padding:6px; display:flex; flex-direction:column; gap:1px; }
+.addnew-item { display:flex; align-items:center; gap:11px; width:100%; text-align:left; font-size:15px; color:var(--ink); background:none; border:0; border-radius:9px; padding:10px 12px; cursor:pointer; transition:background .12s,color .12s; }
+.addnew-item:hover { background:var(--paper); color:var(--accent); }
+.addnew-ic { width:20px; text-align:center; color:var(--ink-3); font-size:14px; flex:none; }
+.addnew-item:hover .addnew-ic { color:var(--accent); }
 /* Back to where you were, above the Home greeting (only when there's history). */
 .home-back { width:auto; gap:6px; padding:0 12px; font-size:14px; margin-bottom:14px; }
 /* The per-tab help "i" on Settings, pushed to the right of the section header. */
@@ -3715,13 +3726,6 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .lead-more { margin-left:auto; font-size:13px; color:var(--ink-3); background:none; border:0; cursor:pointer; padding:4px 6px; border-radius:7px; }
 .lead-more:hover { color:var(--accent); background:var(--paper-2); }
 .home-secondary { margin-top:4px; }
-
-/* ── Capture bar: the five verbs, a tap away ── */
-.home-capture { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:2px 0 2px; }
-.cap-lead { font-family:'Cormorant Garamond',Georgia,serif; font-size:16px; font-weight:600; color:var(--ink-3); margin-right:3px; }
-.cap-chip { display:inline-flex; align-items:center; gap:7px; font-size:15px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:11px; padding:9px 15px; cursor:pointer; transition:border-color .12s, color .12s, transform .08s; }
-.cap-chip:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
-.cap-plus { font-size:15px; color:var(--accent); line-height:1; }
 
 /* ── Home hub: the mind-map branches as calm, expandable tiles ── */
 .home-hub { margin-top:24px; }
