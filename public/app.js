@@ -3728,7 +3728,7 @@ function practiceEditorHtml() {
             const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
             return `<select class="sel pe-mini-sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
           })()}</div>
-          <div class="pe-mini-row"><span class="pe-mini-l">🎥 Video</span><input class="sel pe-mini-in" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a link (optional)" autocomplete="off"></div>
+          <div class="pe-mini-row"><span class="pe-mini-l">▶ Video or link</span><input class="sel pe-mini-in" id="pe-video" value="${esc(a.video || '')}" placeholder="YouTube, a workout, any page — to do it now" autocomplete="off"></div>
         </div>
         <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="2" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
         <div class="pe-attach">${peAttachHtml()}</div>
@@ -6989,6 +6989,7 @@ function t2TrackerHtml() {
       return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''}">
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="trk-pname">${esc(a.title)}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
+        ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span>
       </div>`;
     }).join('');
@@ -14730,6 +14731,7 @@ document.addEventListener('click', (e) => {
   { const dev = t.closest('[data-t2-delev]'); if (dev) { e.stopPropagation(); t2DelEvent(dev.dataset.t2Delev, dev.dataset.t2Recur === '1'); return; } }
   { const eev = t.closest('[data-t2-editev]'); if (eev) { if (Date.now() - t2SuppressClick < 350) return; e.stopPropagation(); t2EditEvent(eev.dataset.t2Editev); return; } }
   { const ov = t.closest('[data-t2-open-slot]'); if (ov) { const s = (state.today.data.slots || []).find((x) => String(x.id) === String(ov.dataset.t2OpenSlot)); const a = s && (state.practices.activities || []).find((x) => String(x.id) === String(s.activity_id)); if (a && a.video) window.open(a.video, '_blank', 'noopener'); return; } }
+  { const pv = t.closest('[data-prc-video]'); if (pv) { openExternal(pv.dataset.prcVideo); return; } }   // ▶ on a practice: open its video/link so you can get straight on with it
   if (t.closest('[data-task-close]')) { closeTaskPopover(); return; }
   if (t.closest('[data-task-save]')) { saveTaskPopover(); return; }
   { const tdel = t.closest('[data-task-del]'); if (tdel) { deleteTaskFromPopover(tdel.dataset.taskDel); return; } }
