@@ -6424,7 +6424,7 @@ function renderCalendar() {
         <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
     }).join('')}</div>`;
   } else {
-    title = `${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span>`;
+    title = `All of ${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span>`;
     const nowMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
     const cell = (d) => {
       let evs = byDay[d.iso] || [];
