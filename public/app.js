@@ -9984,6 +9984,12 @@ const KIT_EVERY = [
 ];
 const KIT_UNITS = [['w', 'weeks'], ['m', 'months'], ['d', 'days']];
 const kitTitle = (name) => `Catch up with ${(name || '').trim() || 'them'}`;
+// Circles: a light single tag on a person, purely for grouping who you tend in
+// Connect. NOT a life area, nothing on the Wheel; lighter than the old Groups.
+const CIRCLES = [['family', 'Family', 330], ['friends', 'Friends', 190], ['work', 'Work', 16], ['mentors', 'Mentors', 255]];
+const circleOf = (k) => CIRCLES.find((x) => x[0] === k);
+const circleLabel = (k) => (circleOf(k) || [null, ''])[1];
+const circleHue = (k) => (circleOf(k) || [null, null, 220])[2];
 // A nudge is a task by construction, not by intent: it has no priority, it isn't
 // work you do at a desk, and it belongs to a person rather than to a board. So it
 // is filtered out where tasks load, and every list downstream stays honest
@@ -10144,6 +10150,9 @@ function keepInTouchSection(c) {
         <label class="kit-row"><span class="tf-label">How often</span><select class="sel kit-every" data-kit-every>${opts}</select></label>
         ${customRow}
       </div>
+      <div class="kit-line">
+        <label class="kit-row"><span class="tf-label">Circle</span><select class="sel kit-circle" data-kit-circle><option value="">No circle</option>${CIRCLES.map(([v, l]) => `<option value="${v}" ${(c.props || {}).circle === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      </div>
       ${status}
     </div>` : ''}
   </div>`;
@@ -10173,6 +10182,14 @@ async function kitToggle(on) {
 // With nothing to measure from yet, the first nudge is one interval from today.
 function kitNextFrom(every, lastISO) {
   return lastISO ? taskAddPeriod(lastISO, every) : nextRepeat(every, todayISO());
+}
+// A person's circle (Family / Friends / Work / Mentors) - a light tag that only
+// groups them in Connect. Stored on the contact, not on a life area.
+async function circleSet(circle) {
+  const c = state.contact_open && state.contact_open.contact; if (!c) return;
+  c.props = c.props || {}; c.props.circle = circle || null;
+  try { await patchContact(c.id, { circle: circle || null }, true); } catch (e) { toast(e.message); }
+  renderContactCard();
 }
 async function kitSetEvery(every) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
@@ -15347,6 +15364,7 @@ document.addEventListener('change', (e) => {
     kitSetEvery(`every:${n}:${u}`);
     return;
   }
+  if (e.target.matches('[data-kit-circle]')) { circleSet(e.target.value || null); return; }
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
@@ -16219,7 +16237,7 @@ function connectRow(p, today) {
     : '<span class="cn-pip close">on track</span>';
   const last = p.last ? `Last spoke ${kitWhen(p.last)}` : 'Not spoken yet';
   const cad = kitEveryLabel(p.every);
-  return `<div class="cn-row" data-open-contact="${p.id}">
+  return `<div class="cn-row" data-open-contact="${p.id}" style="--ch:${circleHue(p.circle)}">
     <span class="cn-av">${esc(initial(p.name || '?'))}</span>
     <span class="cn-main"><span class="cn-name">${esc(p.name || 'Someone')}</span><span class="cn-sub">${esc(last)}${cad ? ` · ${esc(cad)}` : ''}</span></span>
     ${pip}
@@ -16237,11 +16255,22 @@ function renderConnect() {
     body = C.loading ? '<div class="home-empty" style="padding:26px 0">Loading…</div>'
       : `<div class="home-empty" style="padding:26px 0">No one to keep up with yet. Open a contact and set <b>Keep in touch</b> — a cadence like “every month” — and they'll appear here.<br><button class="add-btn wide" data-open-contacts style="margin-top:14px">Go to Contacts</button></div>`;
   } else {
+    // Reach out = the overdue, across every circle: act on the most-slipped first,
+    // whoever they are. Once you've spoken, they drop back into their circle roster.
     const lead = over.length
       ? `<section class="cn-band cn-lead"><div class="cn-h">Reach out<span class="cn-c">${over.length}</span></div>${over.map((p) => connectRow(p, today)).join('')}</section>`
       : '<section class="cn-band cn-allok"><div class="cn-okmsg">✓ No one is slipping. Nicely tended.</div></section>';
-    const upcoming = ok.length ? `<section class="cn-band"><div class="cn-h">Keeping up<span class="cn-c">${ok.length}</span></div>${ok.map((p) => connectRow(p, today)).join('')}</section>` : '';
-    body = lead + upcoming;
+    // The rest, grouped by circle (Family / Friends / Work / Mentors), then a
+    // catch-all for anyone without a circle yet.
+    const byCircle = new Map(); [...CIRCLES.map(([k]) => k), ''].forEach((k) => byCircle.set(k, []));
+    ok.forEach((p) => { const k = circleOf(p.circle) ? p.circle : ''; byCircle.get(k).push(p); });
+    const bands = [...CIRCLES.map(([k]) => k), ''].map((k) => {
+      const list = byCircle.get(k) || []; if (!list.length) return '';
+      list.sort((a, b) => String(a.due).localeCompare(String(b.due)));
+      const label = k ? circleLabel(k) : 'No circle yet';
+      return `<section class="cn-band" style="--ch:${k ? circleHue(k) : 220}"><div class="cn-h"><span class="cn-cdot"></span>${esc(label)}<span class="cn-c">${list.length}</span></div>${list.map((p) => connectRow(p, today)).join('')}</section>`;
+    }).join('');
+    body = lead + bands;
   }
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.connect'))}
