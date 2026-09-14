@@ -37,7 +37,7 @@ const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
   'nav.grp.day': 'Day', 'nav.grp.capture': 'Capture', 'nav.grp.matters': 'What matters',
-  'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices',
+  'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security',
@@ -59,7 +59,7 @@ const T_EN = {
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
   'nav.grp.day': 'Dia', 'nav.grp.capture': 'Capturar', 'nav.grp.matters': 'O que importa',
-  'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas',
+  'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança',
@@ -849,6 +849,7 @@ function labelForView(v) {
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return t('nav.areas');
     case 'financial': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
+    case 'connect': return t('nav.connect');
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
     case 'wheel': return 'Wheel of Life';
@@ -874,6 +875,7 @@ function openView(v) {
     case 'practices': return openPractices();
     case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
+    case 'connect': return openConnect();
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
     case 'reviews': return openReviews(); case 'reviewcard': return openReviewCard(v.id);
     case 'wheel': return openWheel();
@@ -2548,6 +2550,7 @@ function navGridHtml(v) {
     dreamAct: modOn('reflect') ? `<button class="nav-item nav-act" data-quick-add="dream"><span class="nav-ic">☾</span><span class="nav-lbl">${t('nav.dream')}</span><span class="nav-quick" aria-hidden="true">＋</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+    connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
     reviews: modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
@@ -2564,7 +2567,7 @@ function navGridHtml(v) {
     ${NI.mail}
     ${grp(t('nav.grp.day'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
     ${grp(t('nav.grp.capture'), [NI.notes, NI.saved, NI.journalAct, NI.dreamAct])}
-    ${grp(t('nav.grp.matters'), [NI.areas, NI.goals, NI.reviews])}
+    ${grp(t('nav.grp.matters'), [NI.areas, NI.goals, NI.reviews, NI.connect])}
     ${tail ? `<div class="nav-div"></div>${tail}` : ''}
   </div>`;
 }
@@ -9127,6 +9130,7 @@ function rerenderCurrent() {
   else if (v === 'calendar') renderCalendar(); else if (v === 'mail') renderMail();
   else if (v === 'today') renderToday();
   else if (v === 'contacts' || v === 'friends') renderContacts();
+  else if (v === 'connect') renderConnect();
   else if (v === 'home') renderHome();
   // No `else openHome()`: falling back to Home for an unhandled view was THE
   // "Contacts sends me to the homepage" bug - a background re-render (a friend
@@ -14640,6 +14644,7 @@ document.addEventListener('click', (e) => {
   { const ar = t.closest('[data-area-remove]'); if (ar) { const p = ar.dataset.areaRemove.split(':'); removeBlockArea(p[0], p[1], p[2]); return; } }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
@@ -14861,6 +14866,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-contacts-selclear]')) { state.contactSel = new Set(); renderContacts(); return; }
   { const kits = t.closest('[data-kit-snooze]'); if (kits) { homeKitSnooze(kits.dataset.kitSnooze); return; } }   // the × on a Keep-in-touch row: snooze a week
   const kitd0 = t.closest('[data-kit-done]'); if (kitd0) { homeKitTouched(kitd0.dataset.kitDone); return; }   // the ✓ on a Keep-in-touch row (checked before the row's open-contact)
+  { const cs = t.closest('[data-connect-spoke]'); if (cs) { connectSpoke(cs.dataset.connectSpoke); return; } }   // ✓ Spoke on a Connect row (before the row's open-contact)
   { const aca = t.closest('[data-area-contact-add]'); if (aca) { addContactToArea(aca.dataset.areaContactAdd); return; } }
   { const acr = t.closest('[data-area-contact-rm]'); if (acr) { e.stopPropagation(); removeContactFromArea(acr.dataset.areaContactRm); return; } }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
@@ -16186,6 +16192,70 @@ async function homeKitSnooze(taskId) {
   taskCopies(taskId).forEach((tk) => { tk.props = tk.props || {}; tk.props.snooze = next; });
   try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { snooze: next } }) }); toast(`Snoozed — ${removed.name} again in a week`); }
   catch (e) { toast(e.message); }
+}
+// ── Connect ──────────────────────────────────────────────────────────────
+// Tending the people you keep in touch with, as its own thread - built on the
+// contact + cadence machinery (Keep in touch), NOT on life areas. Reads every
+// kit person (not just the overdue few) so it can show the whole picture. A tap
+// on ✓ Spoke marks the kit task done, which rolls its next-due forward from today.
+async function openConnect() {
+  state.view = { type: 'connect' };
+  renderNav();
+  if (!state.connect || !state.connect.people) state.connect = { loading: true };
+  renderConnect();
+  try { const r = await api('/api/connect'); state.connect = { people: r.people || [], today: r.today || todayISO() }; }
+  catch (e) { state.connect = { people: [], error: e.message }; }
+  if (state.view && state.view.type === 'connect') renderConnect();
+}
+async function refreshConnect() {
+  try { const r = await api('/api/connect'); if (state.view && state.view.type === 'connect') { state.connect = { people: r.people || [], today: r.today || todayISO() }; renderConnect(); } } catch {}
+}
+function kitEveryLabel(every) { return (KIT_EVERY.find(([v]) => v === every) || [])[1] || repeatShort(every) || ''; }
+function connectRow(p, today) {
+  const overdue = String(p.due) <= today;
+  const over = overdue ? daysBetween(p.due, today) : 0;   // today - due, positive when overdue
+  const pip = overdue
+    ? `<span class="cn-pip over">${over >= 14 ? Math.round(over / 7) + 'w over' : over >= 1 ? over + 'd over' : 'due today'}</span>`
+    : '<span class="cn-pip close">on track</span>';
+  const last = p.last ? `Last spoke ${kitWhen(p.last)}` : 'Not spoken yet';
+  const cad = kitEveryLabel(p.every);
+  return `<div class="cn-row" data-open-contact="${p.id}">
+    <span class="cn-av">${esc(initial(p.name || '?'))}</span>
+    <span class="cn-main"><span class="cn-name">${esc(p.name || 'Someone')}</span><span class="cn-sub">${esc(last)}${cad ? ` · ${esc(cad)}` : ''}</span></span>
+    ${pip}
+    <button class="cn-spoke" data-connect-spoke="${esc(p.taskId)}" title="I've been in touch — reset the clock from today">✓ Spoke</button>
+  </div>`;
+}
+function renderConnect() {
+  const C = state.connect || {};
+  const today = C.today || todayISO();
+  const people = C.people || [];
+  const over = people.filter((p) => String(p.due) <= today);
+  const ok = people.filter((p) => String(p.due) > today).sort((a, b) => String(a.due).localeCompare(String(b.due)));
+  let body;
+  if (!people.length) {
+    body = C.loading ? '<div class="home-empty" style="padding:26px 0">Loading…</div>'
+      : `<div class="home-empty" style="padding:26px 0">No one to keep up with yet. Open a contact and set <b>Keep in touch</b> — a cadence like “every month” — and they'll appear here.<br><button class="add-btn wide" data-open-contacts style="margin-top:14px">Go to Contacts</button></div>`;
+  } else {
+    const lead = over.length
+      ? `<section class="cn-band cn-lead"><div class="cn-h">Reach out<span class="cn-c">${over.length}</span></div>${over.map((p) => connectRow(p, today)).join('')}</section>`
+      : '<section class="cn-band cn-allok"><div class="cn-okmsg">✓ No one is slipping. Nicely tended.</div></section>';
+    const upcoming = ok.length ? `<section class="cn-band"><div class="cn-h">Keeping up<span class="cn-c">${ok.length}</span></div>${ok.map((p) => connectRow(p, today)).join('')}</section>` : '';
+    body = lead + upcoming;
+  }
+  $('#pane').innerHTML = `
+    ${pageCrumb(t('nav.connect'))}
+    <div class="pane-head home-head"><h1>${t('nav.connect')}</h1></div>
+    <p class="cn-intro">Who have you let drift? Tend the people who matter — a tap on <b>✓ Spoke</b> resets the clock from today.</p>
+    <div class="cn-list">${body}</div>`;
+}
+async function connectSpoke(taskId) {
+  const C = state.connect; if (!C || !C.people) return;
+  const person = C.people.find((p) => String(p.taskId) === String(taskId));
+  C.people = C.people.filter((p) => String(p.taskId) !== String(taskId));   // optimistic: it jumps forward
+  renderConnect();
+  try { await api(`/api/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); if (person) toast(`Noted — back in touch with ${person.name}`); await refreshConnect(); }
+  catch (e) { toast(e.message); await refreshConnect(); }
 }
 // Remove a surfaced task from Today WITHOUT completing it: clear its snooze so
 // it stops surfacing. The task stays open on the Tasks board.

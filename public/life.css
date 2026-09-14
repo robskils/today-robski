@@ -3712,6 +3712,28 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .lead-more { margin-left:auto; font-size:13px; color:var(--ink-3); background:none; border:0; cursor:pointer; padding:4px 6px; border-radius:7px; }
 .lead-more:hover { color:var(--accent); background:var(--paper-2); }
 .home-secondary { margin-top:4px; }
+
+/* ── Connect: tending the people you keep in touch with ── */
+.cn-intro { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:19px; color:var(--ink-3); margin:2px 0 20px; max-width:60ch; }
+.cn-list { display:flex; flex-direction:column; gap:18px; }
+.cn-band { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 12px; }
+.cn-band.cn-lead { border-color:color-mix(in srgb,var(--accent) 34%,var(--line)); box-shadow:0 1px 2px rgba(0,0,0,.04),0 16px 36px -22px color-mix(in srgb,var(--accent) 48%,transparent); }
+.cn-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); padding:12px 0 8px; }
+.cn-c { font-size:13px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 9px; }
+.cn-row { display:flex; align-items:center; gap:13px; padding:11px 2px; border-top:1px solid var(--line); cursor:pointer; text-align:left; }
+.cn-row:first-of-type { border-top:0; }
+.cn-row:hover .cn-name { color:var(--accent); }
+.cn-av { width:34px; height:34px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--accent-ink); background:var(--accent); }
+.cn-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+.cn-name { font-size:16px; color:var(--ink); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cn-sub { font-size:13px; color:var(--ink-3); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cn-pip { flex:none; font-size:12px; font-weight:700; letter-spacing:.02em; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+.cn-pip.over { color:var(--accent-ink); background:var(--accent); }
+.cn-pip.close { color:var(--done); background:color-mix(in srgb,var(--done) 15%,var(--card)); border:1px solid color-mix(in srgb,var(--done) 32%,transparent); }
+.cn-spoke { flex:none; font-size:13.5px; font-weight:600; color:var(--ink-2); background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:8px 13px; cursor:pointer; touch-action:manipulation; }
+.cn-spoke:hover { border-color:var(--done); color:var(--done); background:color-mix(in srgb,var(--done) 8%,var(--card)); }
+.cn-okmsg { padding:14px 2px; color:var(--done); font-weight:600; font-size:15.5px; }
+@media (max-width:560px){ .cn-pip { display:none; } .cn-spoke { padding:8px 11px; } }
 .home-side { position:sticky; top:20px; }
 .home-side .home-sec { margin-top:0; }
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }

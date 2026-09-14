@@ -2486,6 +2486,34 @@ async function homeAlerts(request, env, json) {
   return json({ birthdays, p1, p1list, surfaced: surfaced.slice(0, 50), keepInTouch: keepInTouch.slice(0, 50) }, request);
 }
 
+// Connect: EVERY person you keep in touch with, not just the overdue ones, so
+// the section can show the whole picture (close, drifting, overdue) with a status
+// per person. Same underlying data as keepInTouch above - a kit task per contact
+// carrying repeat/last/snooze - but without the "due only" filter. `circle` is a
+// light per-contact tag (unset until the circles step); the Wheel is untouched.
+async function connectList(request, env, json) {
+  const [cts, tks] = await Promise.all([
+    env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?").bind(env.uid).all(),
+    env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='task' AND archived=0 AND user_id=?").bind(env.uid).all(),
+  ]);
+  const contacts = new Map();
+  for (const r of cts.results || []) {
+    let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
+    contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null, circle: p.circle || null });
+  }
+  const today = localParts(new Date(), TZ).date;
+  const people = [];
+  for (const r of tks.results || []) {
+    let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
+    if (p.done || !p.kit) continue;
+    const c = p.contact && contacts.get(p.contact);
+    if (!c) continue;   // a nudge whose contact was deleted has nobody to name
+    people.push({ id: p.contact, taskId: r.id, name: c.name, area: c.area, circle: c.circle, due: p.snooze || today, last: p.last || null, every: p.repeat || null });
+  }
+  people.sort((a, b) => String(a.due).localeCompare(String(b.due)));
+  return json({ people, today }, request);
+}
+
 // Per-area counts + last-activity, for the Life areas dashboard. One scan of the
 // user's blocks (tasks/goals/notes/…), plus a share count per area. Cheap enough
 // to compute live; the page shows it as counts and an "how active" indicator.
@@ -3837,6 +3865,7 @@ export default {
       if (path === '/api/weather' && request.method === 'GET') return weatherNow(request, env, json, err);
       if (path === '/api/areas/summary' && request.method === 'GET') return areasSummary(request, env);
       if (path === '/api/home/alerts' && request.method === 'GET') return homeAlerts(request, env, json);
+      if (path === '/api/connect' && request.method === 'GET') return connectList(request, env, json);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
 
       // Portfolio (moved across from portfolio.robski.uk; shares that D1).
