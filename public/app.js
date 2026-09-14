@@ -2582,9 +2582,9 @@ function navGridHtml(v) {
     ${NI.home}
     ${NI.mail}
     ${grp(t('nav.grp.daily'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
+    ${grp(t('nav.grp.tools'), [NI.notes, NI.saved, NI.financial, NI.timer])}
     ${grp(t('nav.grp.meaningful'), [NI.areas, NI.goals, NI.reviews, NI.reflect])}
     ${grp(t('nav.grp.people'), [NI.contacts, NI.connect])}
-    ${grp(t('nav.grp.tools'), [NI.notes, NI.saved, NI.financial, NI.timer])}
   </div>`;
 }
 function renderNav() {
