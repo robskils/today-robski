@@ -2608,8 +2608,8 @@ function navGridHtml(v) {
     ${leadBox(NI.home)}
     ${leadBox(NI.mail)}
     ${grp(t('nav.grp.daily'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
-    ${grp(t('nav.grp.tools'), [NI.notes, NI.saved, NI.financial, NI.timer])}
-    ${grp(t('nav.grp.meaningful'), [NI.areas, NI.goals, NI.reviews, NI.reflect, NI.wellbeing])}
+    ${grp(t('nav.grp.tools'), [NI.areas, NI.notes, NI.saved, NI.financial, NI.timer])}
+    ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews, NI.reflect, NI.wellbeing])}
     ${peopleBox(v)}
   </div>`;
 }
@@ -8528,6 +8528,159 @@ function applySigColor(id, raw, src) {
   const ed = document.querySelector(`[data-sig-acct="${id}"]`); if (!ed) return;
   ed.querySelectorAll('[style*="border-left"]').forEach((el) => { el.style.borderLeftColor = hex; });
 }
+// ── Premium email signature builder ──────────────────────────────────────
+// Structured fields -> an email-safe, table-based HTML block that renders the
+// same in Gmail, Outlook and Apple Mail (inline styles, no external CSS). The
+// photo is HOSTED (see /api/mail/sig-img) because inbox clients strip data:
+// URIs. We store the rendered HTML in the account's `signature` (the send path
+// appends it unchanged) plus the fields in `sigData`, so the builder reopens
+// filled in.
+const SIG_TEMPLATES = [['classic', 'Classic'], ['modern', 'Modern'], ['minimal', 'Minimal']];
+function sigDefaults(a) {
+  let d = {};
+  try { d = a.sigData ? (typeof a.sigData === 'string' ? JSON.parse(a.sigData) : a.sigData) : {}; } catch {}
+  return {
+    template: d.template || 'classic',
+    photo: d.photo || '', shape: d.shape || 'circle', showPhoto: d.showPhoto !== false,
+    name: d.name != null ? d.name : (a.name && a.name !== a.email ? a.name : ''),
+    title: d.title || '', company: d.company || '',
+    phone: d.phone || '', email: d.email != null ? d.email : (a.email || ''),
+    website: d.website || '', address: d.address || '', tagline: d.tagline || '',
+    accent: normHex(d.accent) || normHex(a.color) || '#c4412e',
+  };
+}
+function sigWorking(a) { state.sigEdit = state.sigEdit || {}; if (!state.sigEdit[a.id]) state.sigEdit[a.id] = sigDefaults(a); return state.sigEdit[a.id]; }
+// The email-safe signature markup for a set of fields. Table-based, inline
+// styles only, web-safe fonts. Shared by the live preview and the saved output.
+function renderSignatureHtml(d) {
+  const acc = normHex(d.accent) || '#c4412e';
+  const ink = '#1b1820', sub = '#8a8072', val = '#4a4238';
+  const sans = "-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
+  const serif = "Georgia,'Times New Roman',serif";
+  const nameFam = d.template === 'classic' ? serif : sans;
+  const e = (s) => esc(String(s || ''));
+  const A = (href, text, color, bold) => `<a href="${e(href)}" style="color:${color};text-decoration:none;${bold ? 'font-weight:600;' : ''}">${e(text)}</a>`;
+  const telHref = (p) => 'tel:' + String(p).replace(/[^\d+]/g, '');
+  const webParts = (w) => { const url = /^https?:/i.test(w) ? w : 'https://' + w; const label = w.replace(/^https?:\/\//i, '').replace(/\/$/, ''); return [url, label]; };
+  const photo = (size, radius) => (d.showPhoto && d.photo)
+    ? `<img src="${e(d.photo)}" width="${size}" height="${size}" alt="${e(d.name || '')}" style="display:block;width:${size}px;height:${size}px;border-radius:${radius};object-fit:cover;border:0;outline:0;">` : '';
+  const nameHtml = d.name ? `<div style="font:600 18px/1.25 ${nameFam};color:${ink};">${e(d.name)}</div>` : '';
+  const roleBits = [d.title, d.company].filter(Boolean).map(e).join('&nbsp;·&nbsp;');
+  const roleHtml = roleBits ? `<div style="font:400 13px/1.5 ${sans};color:${sub};padding-top:2px;">${roleBits}</div>` : '';
+  const taglineHtml = d.tagline ? `<div style="font:italic 400 13px/1.5 ${serif};color:${sub};padding-top:5px;">${e(d.tagline)}</div>` : '';
+  // A stacked, labelled detail table (Classic).
+  const detailRows = () => {
+    const R = (lbl, inner) => `<tr><td style="padding:1.5px 0;font:400 13px/1.55 ${sans};color:${val};">${lbl ? `<span style="display:inline-block;min-width:34px;color:${sub};font-size:10px;letter-spacing:.06em;text-transform:uppercase;">${lbl}</span>` : ''}${inner}</td></tr>`;
+    const rows = [];
+    if (d.phone) rows.push(R('Tel', A(telHref(d.phone), d.phone, val)));
+    if (d.email) rows.push(R('Mail', A('mailto:' + d.email, d.email, acc)));
+    if (d.website) { const [u, l] = webParts(d.website); rows.push(R('Web', A(u, l, acc))); }
+    if (d.address) rows.push(R('', `<span style="color:${val};">${e(d.address)}</span>`));
+    return rows.length ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:8px;">${rows.join('')}</table>` : '';
+  };
+  // A single inline contact line (Modern / Minimal), accent dot separators.
+  const inlineContacts = () => {
+    const bits = [];
+    if (d.phone) bits.push(A(telHref(d.phone), d.phone, val));
+    if (d.email) bits.push(A('mailto:' + d.email, d.email, acc));
+    if (d.website) { const [u, l] = webParts(d.website); bits.push(A(u, l, acc)); }
+    const line = bits.join(`<span style="color:${acc};padding:0 7px;">•</span>`);
+    const addr = d.address ? `<div style="font:400 12.5px/1.5 ${sans};color:${sub};padding-top:3px;">${e(d.address)}</div>` : '';
+    return (line || addr) ? `<div style="font:400 13px/1.6 ${sans};color:${val};padding-top:8px;">${line}</div>${addr}` : '';
+  };
+  if (d.template === 'minimal') {
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:${sans};"><tr><td style="padding:0;">
+      ${nameHtml}${roleHtml}
+      <div style="width:34px;height:2px;background:${acc};margin:8px 0 2px;"></div>
+      ${inlineContacts()}${taglineHtml}
+    </td></tr></table>`;
+  }
+  if (d.template === 'modern') {
+    const ph = photo(54, '50%');
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:${sans};"><tr>
+      ${ph ? `<td valign="middle" style="padding-right:13px;">${ph}</td>` : ''}
+      <td valign="middle" style="border-left:3px solid ${acc};padding-left:13px;">${nameHtml}${roleHtml}</td>
+    </tr><tr><td colspan="2" style="padding-top:9px;">${inlineContacts()}${taglineHtml}</td></tr></table>`;
+  }
+  // classic
+  const ph = photo(76, d.shape === 'square' ? '10px' : '50%');
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:${sans};"><tr>
+    ${ph ? `<td valign="top" style="padding-right:16px;">${ph}</td>` : ''}
+    <td valign="top" style="border-left:3px solid ${acc};padding-left:16px;">
+      ${nameHtml}${roleHtml}${taglineHtml}${detailRows()}
+    </td></tr></table>`;
+}
+// Resize a picked image (keeping aspect) to a signature-sized blob for upload.
+// PNG keeps transparency for logos; photos go to JPEG to stay light.
+async function sigImageBlob(file) {
+  if (!isImgType(file.type)) throw new Error('Please choose an image');
+  let url, bmp;
+  try {
+    bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) { url = URL.createObjectURL(file); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = url; }); }
+    const w = bmp.width, h = bmp.height; if (!w || !h) throw new Error('decode');
+    const MAX = 400; const scale = Math.min(1, MAX / Math.max(w, h));
+    const dw = Math.round(w * scale), dh = Math.round(h * scale);
+    const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
+    cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh); if (bmp.close) bmp.close();
+    const type = /png|webp|gif/i.test(file.type) ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise((res) => cv.toBlob(res, type, 0.86));
+    if (!blob) throw new Error('Could not process that image');
+    return { blob, type };
+  } finally { if (url) URL.revokeObjectURL(url); }
+}
+async function uploadSigImage(acctId, file) {
+  const { blob, type } = await sigImageBlob(file);
+  const res = await fetch(`/api/mail/sig-img?account=${encodeURIComponent(acctId)}&type=${encodeURIComponent(type)}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('today.token')}` }, body: blob,
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Upload failed (${res.status})`);
+  return (await res.json()).url;
+}
+async function sigSetPhoto(id, file) {
+  const a = (state.mail.accounts || []).find((x) => x.id === id); if (!a) return;
+  toast('Uploading photo…');
+  try { const u = await uploadSigImage(id, file); const d = sigWorking(a); d.photo = u; d.showPhoto = true; sigRerender(id); toast('Photo added'); }
+  catch (e) { toast(e.message || 'Could not add that image'); }
+}
+// Field -> working-copy edits. A text change repaints only the preview (keeps
+// focus); a structural change (template, photo) repaints the whole builder.
+function sigField(id, field, value) { const a = (state.mail.accounts || []).find((x) => x.id === id); if (!a) return; sigWorking(a)[field] = value; sigRenderPreview(id); }
+function sigPick(id, field, value) { const a = (state.mail.accounts || []).find((x) => x.id === id); if (!a) return; sigWorking(a)[field] = value; sigRerender(id); }
+function sigRenderPreview(id) { const box = document.querySelector(`[data-sig-preview="${id}"]`); const a = (state.mail.accounts || []).find((x) => x.id === id); if (box && a) box.innerHTML = renderSignatureHtml(sigWorking(a)); }
+function sigRerender(id) { const host = document.getElementById(`sig-build-${id}`); const a = (state.mail.accounts || []).find((x) => x.id === id); if (host && a) { host.innerHTML = sigBuilderInner(a); } }
+// The builder: a fields column and a live preview, plus template + accent pickers.
+function sigBuilderInner(a) {
+  const d = sigWorking(a);
+  const tplChips = SIG_TEMPLATES.map(([k, lbl]) => `<button type="button" class="sig-tpl ${d.template === k ? 'on' : ''}" data-sig-tpl="${a.id}:${k}">${lbl}</button>`).join('');
+  const f = (field, label, ph, type) => `<label class="sig-f"><span>${label}</span><input class="sel" type="${type || 'text'}" data-sig-f="${a.id}:${field}" value="${esc(d[field] || '')}" placeholder="${esc(ph || '')}" autocomplete="off"></label>`;
+  return `<div class="sig-build-grid">
+    <div class="sig-fields">
+      <div class="sig-tpls">${tplChips}</div>
+      <div class="sig-photo-row">
+        ${d.photo ? `<img class="sig-photo-thumb ${d.shape === 'square' ? 'sq' : ''}" src="${esc(d.photo)}" alt="">` : '<span class="sig-photo-ph">No photo</span>'}
+        <div class="sig-photo-btns">
+          <label class="ghost sig-photo-btn"><input type="file" accept="image/*" hidden data-sig-photo="${a.id}"><span>${d.photo ? 'Change photo' : 'Add photo / logo'}</span></label>
+          ${d.photo ? `<button type="button" class="ghost" data-sig-photo-x="${a.id}">Remove</button><button type="button" class="ghost sig-shape" data-sig-shape="${a.id}">${d.shape === 'square' ? '□ Square' : '○ Round'}</button>` : ''}
+        </div>
+      </div>
+      ${f('name', 'Name', 'Robin Lumley-Savile')}
+      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Daybook')}</div>
+      <div class="sig-two">${f('phone', 'Phone', '+351 …', 'tel')}${f('email', 'Email', a.email, 'email')}</div>
+      ${f('website', 'Website', 'daybook.fyi', 'url')}
+      ${f('address', 'Address / location', 'Lisbon, Portugal')}
+      ${f('tagline', 'Tagline (optional)', 'A life well lived')}
+      <label class="sig-f sig-accent"><span>Accent colour</span><span class="sig-accent-row">
+        <input type="color" class="sig-color-sw" data-sig-accent-sw="${a.id}" value="${d.accent}">
+        <input type="text" class="sig-hex" data-sig-accent-hex="${a.id}" value="${d.accent}" maxlength="7" spellcheck="false" autocomplete="off"></span></label>
+      <div class="mail-sig-act"><button class="add-btn" data-sig-save="${a.id}">Save signature</button><span class="sig-hint">Added to the bottom of messages you send from ${esc(a.email)}.</span></div>
+    </div>
+    <div class="sig-preview-col">
+      <div class="sig-preview-lbl">Live preview</div>
+      <div class="sig-preview-card"><div data-sig-preview="${a.id}">${renderSignatureHtml(d)}</div></div>
+    </div>
+  </div>`;
+}
 // Accounts breadcrumb: gains a "Signatures" step whenever a signature editor is open.
 function acctCrumbHtml(sigOpen) {
   const trail = [{ label: 'Home', attr: 'data-view-home' }, { label: 'Mail', attr: 'data-open-mail' }];
@@ -8559,11 +8712,7 @@ function renderMailAccounts(note) {
       </form>
     </div>
     <div class="mail-sig" data-sig-panel="${a.id}" hidden>
-      <label class="sig-color-row"><span class="sig-color-lbl">Bar colour</span>
-        <input type="color" class="sig-color-sw" data-sig-color-sw="${a.id}" value="${sigBarColor(a)}" title="Pick a colour">
-        <input type="text" class="sig-hex" data-sig-hex="${a.id}" value="${sigBarColor(a)}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Signature bar hex colour"></label>
-      <div class="mail-sig-ed prose" contenteditable="true" data-sig-acct="${a.id}" data-ph="Your signature…">${a.signature || ''}</div>
-      <div class="mail-sig-act"><button class="add-btn" data-sig-save="${a.id}">Save signature</button><span class="sig-hint">Added to the bottom of messages you send from this address.</span></div>
+      <div class="sig-build" id="sig-build-${a.id}">${sigBuilderInner(a)}</div>
     </div>
     ${(a.blocked && a.blocked.length) ? `<div class="mail-blocked"><span class="mail-blocked-h">Blocked senders · ${a.blocked.length}</span><div class="mail-blocked-chips">${a.blocked.map((addr) => `<span class="mail-blocked-chip">${esc(addr)}<button data-mail-unblock="${esc(addr)}" data-mail-unblock-acct="${a.id}" title="Unblock">×</button></span>`).join('')}</div></div>` : ''}
     </div>`).join('');
@@ -8579,10 +8728,11 @@ function renderMailAccounts(note) {
       <button class="add-btn wide" data-mail-handler>Set Robski Life as my email app</button></section>`;
 }
 async function saveSignature(id) {
-  const ed = document.querySelector(`[data-sig-acct="${id}"]`); if (!ed) return;
-  const html = sanitizeEmailHtml(ed.innerHTML);
+  const a0 = (state.mail.accounts || []).find((x) => x.id === id); if (!a0) return;
+  const d = sigWorking(a0);
+  const html = sanitizeEmailHtml(renderSignatureHtml(d));
   try {
-    const a = await mailApi(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify({ signature: html }) });
+    const a = await mailApi(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify({ signature: html, sigData: JSON.stringify(d) }) });
     const i = (state.mail.accounts || []).findIndex((x) => x.id === id); if (i >= 0) state.mail.accounts[i] = a;
     toast('Signature saved');
   } catch (e) { toast(e.message); }
@@ -14640,6 +14790,13 @@ document.addEventListener('input', (e) => {
   // Signature bar colour: live-recolour the bar; swatch and hex box stay synced.
   if (e.target.matches('[data-sig-hex]')) applySigColor(e.target.dataset.sigHex, e.target.value, 'hex');
   if (e.target.matches('[data-sig-color-sw]')) applySigColor(e.target.dataset.sigColorSw, e.target.value, 'sw');
+  if (e.target.matches('[data-sig-f]')) { const [id, field] = e.target.dataset.sigF.split(':'); sigField(id, field, e.target.value); return; }
+  if (e.target.matches('[data-sig-accent-sw]') || e.target.matches('[data-sig-accent-hex]')) {
+    const id = e.target.dataset.sigAccentSw || e.target.dataset.sigAccentHex; const hex = normHex(e.target.value); if (!hex) return;
+    const isSw = e.target.matches('[data-sig-accent-sw]');
+    const other = document.querySelector(`[data-sig-accent-${isSw ? 'hex' : 'sw'}="${id}"]`); if (other) other.value = hex;
+    sigField(id, 'accent', hex); return;
+  }
   // Compose fields: keep the draft object in sync as you type, then auto-save.
   if (state.mail && state.mail.composing && ['mc-to', 'mc-cc', 'mc-bcc', 'mc-subject', 'mc-body'].includes(e.target.id)) {
     const c = state.mail.composing;
@@ -15182,6 +15339,9 @@ document.addEventListener('click', (e) => {
   const aec = t.closest('[data-acct-edit-cancel]'); if (aec) { const p = document.querySelector(`[data-acct-edit="${aec.dataset.acctEditCancel}"]`); if (p) p.hidden = true; return; }
   const sigt = t.closest('[data-sig-toggle]'); if (sigt) { const p = document.querySelector(`[data-sig-panel="${sigt.dataset.sigToggle}"]`); if (p) p.hidden = !p.hidden; refreshAcctCrumb(); return; }
   const sigs = t.closest('[data-sig-save]'); if (sigs) { saveSignature(sigs.dataset.sigSave); return; }
+  { const tp = t.closest('[data-sig-tpl]'); if (tp) { const [id, key] = tp.dataset.sigTpl.split(':'); sigPick(id, 'template', key); return; } }
+  { const px = t.closest('[data-sig-photo-x]'); if (px) { sigPick(px.dataset.sigPhotoX, 'photo', ''); return; } }
+  { const sh = t.closest('[data-sig-shape]'); if (sh) { const a = (state.mail.accounts || []).find((x) => x.id === sh.dataset.sigShape); if (a) sigPick(a.id, 'shape', sigWorking(a).shape === 'square' ? 'circle' : 'square'); return; } }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
   const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.adding = false; } renderCalendar(); } return; }
@@ -15462,6 +15622,7 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'ce-alarm') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) { const on = e.target.value === 'custom'; cc.hidden = !on; if (on) { const n = document.getElementById('ce-alarm-n'); if (n) { n.focus(); n.select(); } } } const chw = document.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = (e.target.value === ''); return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
+  if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
   if (e.target.matches('[data-card-email]')) {
     const addr = e.target.dataset.cardEmail; state.card = state.card || {};

@@ -4867,6 +4867,33 @@ table.ttable tr:last-child td { border-bottom:0; }
 .sig-hint { color:var(--ink-3); font-size:13px; }
 .mail-sig-note { color:var(--ink-3); font-size:13.5px; padding:2px 2px; }
 .mail-sig-note b { color:var(--ink-2); font-weight:600; }
+/* Premium signature builder: a fields column beside a live preview. The account
+   card is normally narrow; widen it while the builder is open so both fit. */
+.mail-acct-card:has(.mail-sig:not([hidden])) { max-width:900px; }
+.sig-build-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; }
+@media (max-width:720px){ .sig-build-grid { grid-template-columns:minmax(0,1fr); } }
+.sig-fields { display:flex; flex-direction:column; gap:11px; }
+.sig-tpls { display:flex; gap:8px; }
+.sig-tpl { flex:1; padding:8px 6px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; }
+.sig-tpl:hover { border-color:var(--accent); color:var(--accent); }
+.sig-tpl.on { border-color:var(--accent); color:#fff; background:var(--accent); }
+.sig-photo-row { display:flex; align-items:center; gap:14px; padding:4px 0 2px; }
+.sig-photo-thumb { width:56px; height:56px; border-radius:50%; object-fit:cover; border:1px solid var(--line); flex:none; }
+.sig-photo-thumb.sq { border-radius:10px; }
+.sig-photo-ph { width:56px; height:56px; border-radius:50%; border:1px dashed var(--line-2); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--ink-3); text-align:center; flex:none; }
+.sig-photo-btns { display:flex; flex-wrap:wrap; gap:8px; }
+.sig-photo-btns .ghost, .sig-photo-btn { display:inline-flex; align-items:center; font-size:13.5px; padding:7px 13px; border:1px solid var(--line); border-radius:999px; color:var(--ink-2); cursor:pointer; background:var(--card); }
+.sig-photo-btns .ghost:hover, .sig-photo-btn:hover { border-color:var(--accent); color:var(--accent); }
+.sig-f { display:flex; flex-direction:column; gap:5px; }
+.sig-f > span { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); font-weight:600; }
+.sig-f .sel { width:100%; }
+.sig-two { display:flex; gap:11px; }
+.sig-two .sig-f { flex:1; min-width:0; }
+.sig-accent-row { display:flex; align-items:center; gap:10px; }
+.sig-preview-col { display:flex; flex-direction:column; gap:8px; }
+.sig-preview-lbl { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); font-weight:600; }
+.sig-preview-card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:22px; min-height:120px; overflow-x:auto; }
+.sig-preview-card a { text-decoration:none; }
 .mail-add-more { display:inline-flex; align-items:center; gap:6px; margin-top:14px; padding:10px 16px; border:1.5px dashed var(--line-2); border-radius:12px; color:var(--ink-2); font-size:15px; }
 .mail-add-more:hover { border-color:var(--accent); color:var(--accent); background:var(--paper-2); }
 .push-sec { margin-top:32px; padding-top:24px; border-top:1px solid var(--line); max-width:620px; }
