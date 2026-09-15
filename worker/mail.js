@@ -54,7 +54,7 @@ async function saveBlocked(env, id, list) {
 }
 // The password (pass_enc) is never exposed. Host/port/username are connection
 // settings, not secrets, so the account editor can show and change them.
-const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '', blocked: blockedList(a), imapHost: a.imap_host, imapPort: a.imap_port, smtpHost: a.smtp_host, smtpPort: a.smtp_port, username: a.username });
+const publicAccount = (a) => ({ id: a.id, email: a.email, name: a.name, color: a.color, signature: a.signature || '', sigData: a.sig_data || '', blocked: blockedList(a), imapHost: a.imap_host, imapPort: a.imap_port, smtpHost: a.smtp_host, smtpPort: a.smtp_port, username: a.username });
 // uid scopes to one tenant's accounts (the request path). The cron cache-warmer
 // passes no uid and gets EVERY account, across all users, on purpose.
 async function listAccounts(env, uid = null) {
@@ -734,6 +734,7 @@ export async function handleMail(request, env, url, json, err) {
       const existing = await getAcct(env, seg[1]); if (!existing) return err('account not found', request, 404);
       const fields = []; const vals = [];
       if ('signature' in b) { fields.push('signature = ?'); vals.push(b.signature || ''); }
+      if ('sigData' in b) { fields.push('sig_data = ?'); vals.push(typeof b.sigData === 'string' ? b.sigData : JSON.stringify(b.sigData || '')); }
       if ('name' in b) { fields.push('name = ?'); vals.push(b.name || existing.name); }
       if ('color' in b) { fields.push('color = ?'); vals.push(b.color || null); }
       if ('email' in b && b.email) { fields.push('email = ?'); vals.push(b.email); }
@@ -1142,6 +1143,22 @@ export async function handleMail(request, env, url, json, err) {
     if (sub === 'attach' && method === 'DELETE' && seg[1]) {
       if (env.ATTACHMENTS) { try { await env.ATTACHMENTS.delete(`mailout/${seg[1]}`); } catch {} }
       return json({ ok: true }, request);
+    }
+
+    // A signature image, stored permanently in R2 and served (unauthenticated,
+    // see index.js) at /api/mail/sig-img/<id> so it renders in a stranger's inbox
+    // - a data: URI would be stripped by Gmail/Outlook. The client resizes before
+    // upload; we cap hard here too. Returns the absolute URL to bake into the sig.
+    if (sub === 'sig-img' && method === 'POST') {
+      if (!env.ATTACHMENTS) return err('image storage is not enabled', request, 501);
+      const type = url.searchParams.get('type') || 'image/png';
+      if (!/^image\/(png|jpeg|gif|webp)$/.test(type)) return err('unsupported image type', request, 415);
+      const buf = await request.arrayBuffer();
+      if (!buf.byteLength) return err('empty image', request);
+      if (buf.byteLength > 2 * 1024 * 1024) return err('image too large (max 2 MB)', request, 413);
+      const id = crypto.randomUUID();
+      await env.ATTACHMENTS.put(`sigimg/${id}`, buf, { httpMetadata: { contentType: type } });
+      return json({ id, url: `${new URL(request.url).origin}/api/mail/sig-img/${id}` }, request, 201);
     }
 
     if (sub === 'send' && method === 'POST') {

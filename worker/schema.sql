@@ -283,7 +283,8 @@ CREATE TABLE IF NOT EXISTS mail_accounts (
   username  TEXT NOT NULL,
   pass_enc  TEXT NOT NULL,
   position  INTEGER NOT NULL DEFAULT 0,
-  signature TEXT,
+  signature TEXT,             -- rendered, email-safe HTML (appended on send)
+  sig_data  TEXT,             -- JSON of the structured signature builder fields
   blocked   TEXT              -- JSON array of blocked sender addresses
 );
 

@@ -1924,6 +1924,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-sec-box { grid-column:1 / -1; margin-top:9px; padding:3px 7px 8px; border:1px solid var(--line); border-radius:13px;
   background:color-mix(in srgb, var(--card) 45%, transparent); }
 .nav-sec-box:first-of-type { margin-top:6px; }
+/* The pinned Home / Mail pair: each its own single-column box, side by side. */
+.nav-lead-box { grid-column:auto; margin-top:0; padding:4px; }
+.nav-lead-box, .nav-lead-box:first-of-type { margin-top:6px; }
+.nav-lead-box .nav-item { width:100%; }
 .nav-sec-items { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3px 3px; }
 /* The live Daybook-people list sits in the same People box, under a collapsible
    header (a hairline divides it from the buttons). */

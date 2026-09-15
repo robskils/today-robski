@@ -3647,6 +3647,21 @@ export default {
       return handleMail(request, { ...env, uid: owner.user_id }, url, json, err);
     }
 
+    // Public: a signature image. It is embedded in emails sent to strangers, so
+    // it MUST be fetchable with no Daybook session - hence it sits before the auth
+    // gate, keyed by an unguessable id, served straight from R2 with a permanent
+    // cache. Only image bytes ever live under this prefix.
+    { const m = path.match(/^\/api\/mail\/sig-img\/([\w-]+)$/); if (m && request.method === 'GET') {
+      if (!env.ATTACHMENTS) return err('not found', request, 404);
+      const obj = await env.ATTACHMENTS.get(`sigimg/${m[1]}`);
+      if (!obj) return err('not found', request, 404);
+      return new Response(obj.body, { headers: {
+        'Content-Type': obj.httpMetadata?.contentType || 'image/png',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Access-Control-Allow-Origin': '*',
+      } });
+    } }
+
     // Public: getting in. Rate limited inside; see auth.js.
     if (path === '/auth/request-code' && request.method === 'POST') {
       return requestCode(request, env,

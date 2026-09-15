@@ -2601,9 +2601,12 @@ function navGridHtml(v) {
   // Home + Mail pinned, then Robin's mind-map branches - Daily / Meaningful /
   // People / General Tools. There's no "Capture" band: the make-a-new verbs live
   // in the "+ New" menu (breadcrumb row) and the Home buttons instead.
+  // Home and Mail each sit in their own small rounded box (one grid column each,
+  // side by side) so the pinned pair reads like the section boxes below it.
+  const leadBox = (item) => item ? `<section class="nav-sec-box nav-lead-box">${item}</section>` : '';
   return `<div class="nav-grid">
-    ${NI.home}
-    ${NI.mail}
+    ${leadBox(NI.home)}
+    ${leadBox(NI.mail)}
     ${grp(t('nav.grp.daily'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
     ${grp(t('nav.grp.tools'), [NI.notes, NI.saved, NI.financial, NI.timer])}
     ${grp(t('nav.grp.meaningful'), [NI.areas, NI.goals, NI.reviews, NI.reflect, NI.wellbeing])}
@@ -3663,7 +3666,7 @@ function cadenceStreak(daysDesc, cad, today) {
 }
 function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
 const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
-function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'today') renderToday(); else if (v === 'toolbox') renderToolbox(); }
+function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'tracker') renderTracker(); else if (v === 'today') renderToday(); else if (v === 'toolbox') renderToolbox(); }
 async function openPractices() { state.view = { type: 'practices' }; renderNav(); await loadPractices(true); renderPractices(); }
 function renderPractices() {
   if (!state.practices) return;
