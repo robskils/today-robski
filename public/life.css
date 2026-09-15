@@ -1888,6 +1888,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
   -webkit-user-select:none; user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 /* The ⋯ tools toggle is a mobile-only affordance; desktop shows the full sidebar. */
 .nav-util-toggle { display:none; }
+/* The drawer wrapper is transparent on desktop, so its children lay out in the
+   sidebar exactly as before; the ☰ button, drawer chrome and backdrop are all
+   mobile-only. */
+.nav-drawer { display:contents; }
+.nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:italic; color:var(--accent); }
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
@@ -5035,7 +5040,39 @@ table.ttable tr:last-child td { border-bottom:0; }
   .crumb-tools, .tbl-head { flex-wrap:wrap; }
   .crumb-tools { margin-left:0; max-width:100%; min-width:0; }
   .crumb-tools .area-sel, .tbl-head .area-sel { max-width:100%; }
-  .nav-item, .nav-grid, .nav-secs, .nav-spacer, .foot-search { display:none; }
+  .nav-spacer, .foot-search { display:none; }
+  /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
+  .nav-menu-toggle { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
+  .nav-menu-toggle:active { background:var(--paper-2); }
+  .nav-topline { justify-content:flex-start; }
+  body.nav-drawer-open { overflow:hidden; }
+  /* backdrop-filter on .nav would make the fixed drawer position relative to the
+     header, not the viewport; drop it while the drawer is open. */
+  body.nav-drawer-open .nav { backdrop-filter:none; }
+  .nav-drawer {
+    position:fixed; top:0; left:0; z-index:120; height:100dvh; width:min(87vw,340px);
+    display:flex; flex-direction:column; gap:2px;
+    padding:12px 14px calc(22px + env(safe-area-inset-bottom));
+    background:var(--paper-2); border-right:1px solid var(--line);
+    box-shadow:22px 0 60px -22px rgba(0,0,0,.45);
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    transform:translateX(-101%); transition:transform .28s cubic-bezier(.4,0,.2,1); will-change:transform;
+  }
+  body.nav-drawer-open .nav-drawer { transform:translateX(0); }
+  .nav-drawer-head { display:flex; justify-content:flex-end; margin-bottom:4px; }
+  .nav-drawer-x { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:16px; }
+  .nav-drawer-bg { display:block; position:fixed; inset:0; z-index:119; background:rgba(20,16,10,.46); opacity:0; pointer-events:none; transition:opacity .28s ease; }
+  body.nav-drawer-open .nav-drawer-bg { opacity:1; pointer-events:auto; }
+  /* Inside the drawer, restore the desktop grouped look. */
+  .nav-drawer .nav-grid { display:grid; margin:0; }
+  .nav-drawer .nav-item { display:flex; }
+  .nav-drawer .nav-secs { display:flex; }
+  .nav-drawer .nav-k { display:none; }
+  .nav-drawer .nav-bottom { display:flex; flex-direction:column; gap:8px; order:0; flex-basis:auto; margin:14px 0 0; padding:12px 0 0; border-top:1px solid var(--line); }
+  .nav-drawer .nav-bottom-row { display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
+  .nav-drawer .nav-bottom-row .nav-theme { flex:1; width:auto; }
+  .nav-drawer .nav-bottom-row .help-btn { display:inline-flex; width:42px; height:42px; font-size:17px; border:1px solid var(--line-2); background:var(--card); border-radius:10px; }
+  .nav-drawer .nav-settings, .nav-drawer .nav-adminlink, .nav-drawer .nav-signout { width:100%; justify-content:flex-start; }
   /* A persistent search bar under the wordmark, part of the sticky header, so it
      stays put on every page while the content scrolls. Opens the ⌘K palette. */
   .nav-msearch {

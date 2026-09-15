@@ -2652,30 +2652,36 @@ function navPeopleRows() {
 function renderNav() {
   const v = state.view;
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
+  // The mobile nav drawer closes itself the moment you navigate to a new view.
+  if (document.body.classList.contains('nav-drawer-open') && ((v && v.type) || '') !== state.__drawerView) closeNavDrawer();
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   const dark = document.documentElement.dataset.theme === 'dark';
   const navHtml = `
     <div class="nav-topline" title="Home">
+      <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu" title="Menu">☰</button>
       <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></button>
-      <button class="nav-util-toggle" data-util-toggle aria-label="${t('nav.tools')}" aria-expanded="${state.navUtilOpen ? 'true' : 'false'}" title="Tools">${state.navUtilOpen ? '✕' : '⋯'}</button>
     </div>
     <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
-    <div class="nav-foot">
-      <button class="foot-search" data-palette title="Search">⌕</button>
-    </div>
-    <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
-    ${navGridHtml(v)}
-    <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => (k === 'people' || (k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
-    <div class="nav-bottom">
-      <div class="nav-bottom-row">
-        ${helpIconHtml()}
-        <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
-        <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="${t('nav.settings')}"><span class="ns-ic">⚙</span><span class="ns-lbl"> ${t('nav.settings')}</span></button>
+    <div class="nav-drawer">
+      <div class="nav-drawer-head"><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-foot">
+        <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
-      ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
-      ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Daybook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
-      <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Daybook</span></div>
-    </div>`;
+      <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
+      ${navGridHtml(v)}
+      <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => (k === 'people' || (k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
+      <div class="nav-bottom">
+        <div class="nav-bottom-row">
+          ${helpIconHtml()}
+          <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
+          <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="${t('nav.settings')}"><span class="ns-ic">⚙</span><span class="ns-lbl"> ${t('nav.settings')}</span></button>
+        </div>
+        ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
+        ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Daybook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
+        <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Daybook</span></div>
+      </div>
+    </div>
+    <div class="nav-drawer-bg" data-nav-drawer-close></div>`;
   // Only touch the DOM when the markup actually changed. Background polls (friend
   // status every 90s, chat, presence) call renderNav often; rebuilding #nav out
   // from under a tap re-targets the click - which is how a Contacts tap sometimes
@@ -2699,6 +2705,12 @@ function renderNav() {
 // tap the ⋯ toggle on the fixed brand header. Re-measure so the breadcrumb below
 // pins at the header's new height whether the bar is open or shut.
 function toggleNavUtil() { state.navUtilOpen = !state.navUtilOpen; document.body.classList.toggle('util-open', state.navUtilOpen); const b = document.querySelector('[data-util-toggle]'); if (b) { b.textContent = state.navUtilOpen ? '✕' : '⋯'; b.setAttribute('aria-expanded', state.navUtilOpen ? 'true' : 'false'); } setNavH(); }
+// The mobile nav drawer: the desktop grouped sidebar, slid in from the left. It
+// closes on the backdrop, its ✕, or as soon as you navigate (renderNav notices
+// the view changed). We remember the view it opened on to detect that.
+function openNavDrawer() { state.__drawerView = (state.view && state.view.type) || ''; document.body.classList.add('nav-drawer-open'); }
+function closeNavDrawer() { document.body.classList.remove('nav-drawer-open'); }
+function toggleNavDrawer() { if (document.body.classList.contains('nav-drawer-open')) closeNavDrawer(); else openNavDrawer(); }
 // The mobile top bar (brand + full-width search box) is sticky and its height
 // varies as it wraps, so measure it into --navh; the breadcrumb pins just below
 // it (see .crumbbar in the mobile CSS). Desktop ignores --navh.
@@ -14953,6 +14965,8 @@ document.addEventListener('click', (e) => {
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
   if (t.closest('[data-tab-new]')) { newTab(); return; }
   if (t.closest('[data-util-toggle]')) { toggleNavUtil(); return; }
+  if (t.closest('[data-nav-drawer]')) { toggleNavDrawer(); return; }
+  if (t.closest('[data-nav-drawer-close]')) { closeNavDrawer(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
   // Any main nav link (wordmark, a tool, a favourite) closes the mobile tools
   // drawer as it navigates - the destination's renderNav() then paints it shut.
