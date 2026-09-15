@@ -394,7 +394,7 @@ export async function smtpSend(env, acct, msg) {
   await say('AUTH LOGIN'); await expect(['334'], 'AUTH');
   await say(btoa(acct.username)); await expect(['334'], 'AUTH user');
   await say(btoa(pass)); await expect(['235'], 'AUTH pass');
-  await say(`MAIL FROM:<${acct.email}>`); await expect(['250'], 'MAIL FROM');
+  await say(`MAIL FROM:<${cleanAddr(acct.email)}>`); await expect(['250'], 'MAIL FROM');
   for (const to of msg.rcpts) { await say(`RCPT TO:<${to}>`); await expect(['250', '251'], 'RCPT TO'); }
   await say('DATA'); await expect(['354'], 'DATA');
   const body = msg.raw.replace(/\r?\n/g, '\r\n').replace(/\r\n\./g, '\r\n..'); // dot-stuff
@@ -406,16 +406,27 @@ export async function smtpSend(env, acct, msg) {
 // With an html part it's multipart/alternative (plain + html) so a signature
 // renders, while text-only clients still get a clean plain version.
 const b64utf8 = (s) => btoa(unescape(encodeURIComponent(s || ''))).replace(/(.{76})/g, '$1\r\n');
+// The bare addr-spec for an envelope/From: no display name, no angle brackets,
+// no CR/LF or spaces. A trailing space or a "Name <addr>" pasted into the email
+// field would otherwise make the From header unparseable (Purelymail: 501 5.1.7).
+const cleanAddr = (e) => { const s = String(e || '').replace(/[\r\n]/g, '').trim(); const m = s.match(/<([^>]+)>/); return (m ? m[1] : s).replace(/[<>\s]/g, ''); };
+// A display-name phrase for a From/To header. A name with RFC 5322 "specials"
+// (comma, dot, parens, colon, quote…) MUST be a quoted-string or the whole
+// address is unparseable; a plain atom passes through; non-ASCII goes through
+// mimeWord as an encoded-word (already header-safe).
+const fromPhrase = (s) => { if (!s) return ''; if (/[^\x00-\x7F]/.test(s)) return mimeWord(s); return /[()<>@,;:\\".[\]]/.test(s) ? `"${s.replace(/(["\\])/g, '\\$1')}"` : s; };
 export function buildMessage(acct, msg) {
   const subj = /[^\x00-\x7F]/.test(msg.subject || '') ? `=?UTF-8?B?${btoa(unescape(encodeURIComponent(msg.subject)))}?=` : (msg.subject || '(no subject)');
+  const addr = cleanAddr(acct.email);
+  const phrase = fromPhrase(acct.name);
   const headers = [
-    `From: ${acct.name ? `${mimeWord(acct.name)} ` : ''}<${acct.email}>`,
+    `From: ${phrase ? `${phrase} ` : ''}<${addr}>`,
     `To: ${msg.to}`,
     msg.cc ? `Cc: ${msg.cc}` : null,
     msg.replyTo ? `Reply-To: ${String(msg.replyTo).replace(/[\r\n]/g, '')}` : null,
     `Subject: ${subj}`,
     `Date: ${new Date().toUTCString()}`,
-    `Message-ID: <${crypto.randomUUID()}@${acct.email.split('@')[1]}>`,
+    `Message-ID: <${crypto.randomUUID()}@${addr.split('@')[1] || 'daybook.fyi'}>`,
     msg.inReplyTo ? `In-Reply-To: ${msg.inReplyTo}` : null,
     msg.inReplyTo ? `References: ${msg.inReplyTo}` : null,
     'MIME-Version: 1.0',
