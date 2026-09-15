@@ -1972,6 +1972,8 @@ function startPresence() { const beat = () => api('/api/presence', { method: 'PO
 // contacts (that just looked like an unread count sitting on the button). Unread
 // chat and the online list still feed Home's "People" section, not this badge.
 const friendPending = () => ((state.friendStatus || {}).incoming || 0) + ((state.friendStatus || {}).unread || 0);
+// Unread Daybook MESSAGES (not friend requests) - the signal we make loud.
+const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
 const unreadFrom = (id) => (((state.friendStatus || {}).unreadBy) || {})[id] || 0;
 // Name of a Daybook contact by id, from whatever's loaded (friends list, then
@@ -2589,7 +2591,7 @@ function navGridHtml(v) {
     // wanted, so it carries no active state (Journal is the one that lights up).
     wellbeing: modOn('reflect') ? `<button class="nav-item" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
-    contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+    contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
@@ -2619,7 +2621,7 @@ function navGridHtml(v) {
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+  const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Daybook</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
@@ -2658,7 +2660,7 @@ function renderNav() {
   const dark = document.documentElement.dataset.theme === 'dark';
   const navHtml = `
     <div class="nav-topline" title="Home">
-      <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu" title="Menu">☰</button>
+      <button class="nav-menu-toggle ${unreadMsgs() ? 'has-msg' : ''}" data-nav-drawer aria-label="Menu${friendPending() ? ` — ${friendPending()} new` : ''}" title="Menu">☰${friendPending() ? `<span class="nav-menu-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>
       <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></button>
     </div>
     <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
@@ -6030,8 +6032,8 @@ function renderArea() {
   const areaTilesHtml = `<div class="area-tiles">${avail.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
     <div class="area-tilepanel"><div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span></div>${panels[openTile]}</div>`;
   $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Life areas', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-hero" style="--h:${h}">
-      <div class="area-hero-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-areas>Life areas</button></div>
       <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
       <p class="area-meta">${notes.length + tables.length} note${(notes.length + tables.length) === 1 ? '' : 's'} &amp; table${(notes.length + tables.length) === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${areaSentimentHtml(area)}

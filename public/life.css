@@ -1977,6 +1977,13 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 /* Quick-add "+" on Tasks/Calendar/Mail/Notes: right-aligned, appears on hover. */
 .nav-badge { margin-left:auto; flex:none; min-width:20px; height:19px; padding:0 6px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:700; line-height:1; }
 .nav-badge + .nav-quick { margin-left:6px; }
+/* Unread Daybook messages: a red, gently pulsing badge so it's impossible to
+   miss - on the Contacts item, and on the mobile ☰ button (always on screen). */
+.nav-badge.has-msg { background:var(--danger,#c4412e); color:#fff; animation:msg-badge-pulse 1.5s ease-in-out infinite; }
+.nav-menu-badge { position:absolute; top:-6px; right:-6px; min-width:19px; height:19px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--danger,#c4412e); color:#fff; font-size:11.5px; font-weight:700; line-height:1; box-shadow:0 0 0 2px var(--paper); }
+.nav-menu-toggle.has-msg .nav-menu-badge { animation:msg-badge-pulse 1.5s ease-in-out infinite; }
+@keyframes msg-badge-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.16); } }
+@media (prefers-reduced-motion:reduce) { .nav-badge.has-msg, .nav-menu-toggle.has-msg .nav-menu-badge { animation:none; } }
 .nav-quick { margin-left:auto; flex:none; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:var(--ink-3); font-size:16px; line-height:1; opacity:0; transition:opacity .12s, background .12s, color .12s; }
 .nav-item:hover .nav-quick, .nav-item.on .nav-quick { opacity:1; }
 /* Capture actions (Journal, Dream): the whole row is the verb, so its "＋" stays
@@ -5045,7 +5052,7 @@ table.ttable tr:last-child td { border-bottom:0; }
   .crumb-tools .area-sel, .tbl-head .area-sel { max-width:100%; }
   .nav-spacer, .foot-search { display:none; }
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
-  .nav-menu-toggle { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
+  .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
   .nav-menu-toggle:active { background:var(--paper-2); }
   .nav-topline { justify-content:flex-start; }
   body.nav-drawer-open { overflow:hidden; }
