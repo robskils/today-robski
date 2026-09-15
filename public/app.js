@@ -2584,7 +2584,7 @@ function navGridHtml(v) {
     // room you enter: a whole row that writes a journal entry or logs a dream in
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
-    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('nav.journal')}</span></button>` : '',
+    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('nav.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
     // Well-being opens the same reflect hub as Journal; a companion entry Robin
     // wanted, so it carries no active state (Journal is the one that lights up).
     wellbeing: modOn('reflect') ? `<button class="nav-item" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
