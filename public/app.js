@@ -3138,9 +3138,10 @@ function homeViewDay() { return addDaysStr(state.home.today || dayKey(new Date()
 function homeDayLabel(off) {
   if (!off) return 'Today';
   if (off === 1) return 'Tomorrow';
+  // Beyond tomorrow, just the weekday name (Monday, Tuesday…).
   const ds = addDaysStr(state.home.today || dayKey(new Date()), off);
   const [y, m, d] = ds.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
 }
 function homeTodayItems() {
   const off = state.home.dayOffset || 0;
@@ -4277,7 +4278,7 @@ function renderHome() {
             favs: `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>`,
           };
           const meta = {
-            today: { ic: '☀', label: 'Today', count: null, nav: dayNav },
+            today: { ic: '☀', label: homeDayLabel(off), count: null, nav: dayNav },
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
             favareas: { ic: '◈', label: 'Life areas', count: sortedAreas.length || null },
@@ -4289,7 +4290,7 @@ function renderHome() {
           // to fold it, × to remove it, and re-add any from the bar below. Defaults
           // to Today + Do next + Practices. (Sidebar / right rail are separate.)
           const MAIN_DEF = [
-            { k: 'today', ic: '☀', label: 'Today', extra: `<span class="lead-nav">${dayNav}</span>`, on: true },
+            { k: 'today', ic: '☀', label: homeDayLabel(off), extra: `<span class="lead-nav">${dayNav}</span>`, on: true },
             { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
