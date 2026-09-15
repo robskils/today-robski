@@ -4228,32 +4228,9 @@ function renderHome() {
       ${modOn('reflect') ? spiritPinnedHtml() + reflectPinsHtml() : ''}
       <div id="qt-wrap"></div>
       <div class="home-body">
-        <!-- Mobile-only launcher. On desktop the sidebar already lists every
-             section, so this is hidden (see .home-launch in life.css). On mobile
-             the sidebar is gone, so this is how you reach the sections the bottom
-             tab bar doesn't hold. It lives inside home-body so the mobile flex
-             order can sit it just below Today. -->
-        <nav class="home-launch">
-          <button class="hl-btn hl-guide" data-open-guide><span class="hl-ic">${MARK_TIGHT}</span><span class="hl-t">Guide</span></button>
-          ${modOn('calendar') ? `<button class="hl-btn" data-open-calendar><span class="hl-ic">▦</span><span class="hl-t">Calendar</span></button>` : ''}
-          ${modOn('tasks') ? `<button class="hl-btn" data-view-tasks><span class="hl-ic">✓</span><span class="hl-t">Tasks</span></button>` : ''}
-          ${modOn('today') ? `<button class="hl-btn" data-open-today><span class="hl-ic">☀</span><span class="hl-t">Planner</span></button>` : ''}
-          ${modOn('today') ? `<button class="hl-btn" data-open-tracker><span class="hl-ic">✦</span><span class="hl-t">Tracker</span></button>` : ''}
-          ${modOn('today') ? `<button class="hl-btn" data-open-practices><span class="hl-ic">☯</span><span class="hl-t">Practices</span></button>` : ''}
-          ${modOn('notes') ? `<button class="hl-btn" data-open-notes><span class="hl-ic">▤</span><span class="hl-t">Notes</span></button>` : ''}
-          ${modOn('saved') ? `<button class="hl-btn" data-open-readwatch><span class="hl-ic">▷</span><span class="hl-t">Read &amp; Watch</span></button>` : ''}
-          ${modOn('financial') ? `<button class="hl-btn" data-open-financial><span class="hl-ic">£</span><span class="hl-t">Money</span></button>` : ''}
-          ${modOn('timer') ? `<button class="hl-btn" data-open-toolbox><span class="hl-ic">⚙</span><span class="hl-t">Toolbox</span></button>` : ''}
-          ${modOn('areas') ? `<button class="hl-btn" data-open-areas><span class="hl-ic">◈</span><span class="hl-t">Life areas</span></button>` : ''}
-          ${modOn('goals') ? `<button class="hl-btn" data-open-goals><span class="hl-ic">◎</span><span class="hl-t">Goals</span></button>` : ''}
-          ${modOn('goals') ? `<button class="hl-btn" data-open-reviews-tool><span class="hl-ic">↻</span><span class="hl-t">Reviews</span></button>` : ''}
-          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">✎</span><span class="hl-t">Journal</span></button>` : ''}
-          ${modOn('reflect') ? `<button class="hl-btn" data-open-journal><span class="hl-ic">❀</span><span class="hl-t">Well-being</span></button>` : ''}
-          ${modOn('mail') ? `<button class="hl-btn" data-open-mail><span class="hl-ic">✉</span><span class="hl-t">Mail</span>${state.mailUnreadTotal ? `<span class="hl-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}</button>` : ''}
-          ${modOn('contacts') ? `<button class="hl-btn" data-open-contacts><span class="hl-ic">☺</span><span class="hl-t">Contacts</span>${friendPending() ? `<span class="hl-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>` : ''}
-          ${modOn('contacts') ? `<button class="hl-btn" data-open-connect><span class="hl-ic">❥</span><span class="hl-t">Connect</span></button>` : ''}
-          ${modOn('contacts') ? `<button class="hl-btn" data-open-daybook><span class="hl-ic">❖</span><span class="hl-t">Daybook</span></button>` : ''}
-        </nav>
+        <!-- The mobile section launcher used to live here (it stood in for the
+             hidden sidebar). The ☰ nav drawer now carries every section, so the
+             grid was pure duplication and has been removed. -->
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
           // The Life areas tile lists ALL areas, starred first, then by a chosen
