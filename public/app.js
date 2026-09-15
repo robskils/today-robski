@@ -3735,11 +3735,40 @@ async function practiceAdd(area, title) {
   catch (e) { toast(e.message); }
 }
 async function practiceDelete(id) {
+  const acts = (state.practices && state.practices.activities) || [];
+  const a = acts.find((x) => String(x.id) === String(id));
+  // Snapshot both the practice and its ticked days, so Undo can rebuild the
+  // streak history (marks are keyed by id, and a re-created practice gets a new
+  // one, so we remap them across).
+  const snap = a ? { ...a } : null;
+  const marks = (state.practices && state.practices.marks) || {};
+  const keptDays = Object.keys(marks).filter((k) => k.startsWith(id + ':')).map((k) => k.slice((id + ':').length));
   try {
     await api('/api/activities/' + id, { method: 'DELETE' });
-    if (state.practices) state.practices.activities = state.practices.activities.filter((a) => String(a.id) !== String(id));
-    if (state.practiceEdit && String(state.practiceEdit.id) === String(id)) state.practiceEdit = null;
+    if (state.practices) state.practices.activities = acts.filter((x) => String(x.id) !== String(id));
+    keptDays.forEach((day) => { delete marks[`${id}:${day}`]; });
+    savePracticeMarks();
+    if (state.practiceEdit && String(state.practiceEdit.id) === String(id)) { state.practiceEdit = null; const host = document.getElementById('prac-editor-host'); if (host) host.innerHTML = ''; }
     rerenderPractices();
+    toast(snap ? `Deleted "${snap.title}"` : 'Practice deleted', snap ? () => undoPracticeDelete(snap, keptDays) : null);
+  } catch (e) { toast(e.message); }
+}
+async function undoPracticeDelete(snap, keptDays) {
+  const body = {
+    title: snap.title, duration: snap.duration || 30, url: snap.url || undefined, lane: snap.lane,
+    area: snap.area || undefined, note: snap.note || undefined, video: snap.video || undefined,
+    timed: !!snap.timed, tracked: !!snap.tracked, days: snap.days || undefined,
+    time_min: snap.time_min != null ? snap.time_min : undefined, cadence: snap.cadence || undefined,
+    priority: snap.priority || undefined, avoid: !!snap.avoid, avoidSince: snap.avoid_since || undefined, meta: snap.meta || undefined,
+  };
+  try {
+    const na = await api('/api/activities', { method: 'POST', body: JSON.stringify(body) });
+    state.practices.activities.push(na);
+    const marks = state.practices.marks || (state.practices.marks = {});
+    keptDays.forEach((day) => { marks[`${na.id}:${day}`] = 1; });
+    savePracticeMarks();
+    rerenderPractices();
+    toast('Restored');
   } catch (e) { toast(e.message); }
 }
 // Practices grouped by LIFE AREA (falling back to the legacy lane label for any
