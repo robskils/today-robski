@@ -3800,7 +3800,7 @@ function practiceEditorHtml() {
   const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
   const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
   return `<div class="pe-bg" data-prc-close></div>
-    <div class="pe-panel ${timed ? 'timed-on' : ''}" role="dialog" aria-label="Practice">
+    <div class="pe-panel ${timed ? 'timed-on' : ''} ${tracked ? 'tracked-on' : ''}" role="dialog" aria-label="Practice">
       <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">
         <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
@@ -3811,13 +3811,13 @@ function practiceEditorHtml() {
         <div class="pe-mini">
           <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
           <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></div>
-          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" ${tracked ? 'checked' : ''}></label>
-          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
-          <div class="pe-mini-row"><span class="pe-mini-l">Aim to do it</span>${(() => {
+          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" data-pe-tracked ${tracked ? 'checked' : ''}></label>
+          <div class="pe-mini-row pe-aim"><span class="pe-mini-l">Aim to do it</span>${(() => {
             const cur = a.cadence || '';
             const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
             return `<select class="sel pe-mini-sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
           })()}</div>
+          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
           <div class="pe-mini-row"><span class="pe-mini-l">▶ Video or link</span><input class="sel pe-mini-in" id="pe-video" value="${esc(a.video || '')}" placeholder="YouTube, a workout, any page — to do it now" autocomplete="off"></div>
         </div>
         <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="2" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
@@ -15026,6 +15026,7 @@ document.addEventListener('click', (e) => {
   { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
+  { const pk = t.closest('[data-pe-tracked]'); if (pk) { const panel = pk.closest('.pe-panel'); if (panel) panel.classList.toggle('tracked-on', pk.checked); return; } }
   // Today (native) view
   { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad]')) { trkToggle(tt.dataset.trkToggle); return; } }
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }

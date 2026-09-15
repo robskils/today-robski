@@ -3038,6 +3038,10 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .pe-num { width:84px; }
 /* "Takes time" off hides the timing block. */
 .pe-panel:not(.timed-on) .pe-timing { display:none; }
+/* Cadence belongs to "Track it": show it only when tracking, as an inset sub-row. */
+.pe-panel:not(.tracked-on) .pe-aim { display:none; }
+.pe-aim, .pe-timing { background:color-mix(in srgb, var(--accent) 4%, transparent); }
+.pe-aim .pe-mini-l, .pe-timing .pe-mini-l { padding-left:6px; }
 /* Practice editor: connected notes / contacts / links, the usual attach set. */
 .pe-attach { display:flex; flex-direction:column; gap:16px; }
 .pe-attach-sec .sub-h { margin-bottom:7px; }
