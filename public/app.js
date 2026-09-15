@@ -2572,10 +2572,10 @@ function navGridHtml(v) {
   const NI = {
     home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
     today: modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.planner')}</span></button>` : '',
-    // Tracker (the Today tool's streak view) and Practices (where you define them)
-    // are their own rail items now, so the daily-practice loop is one tap, not buried.
-    tracker: modOn('today') ? `<button class="nav-item ${v.type === 'tracker' ? 'on' : ''}" data-open-tracker><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.tracker')}</span></button>` : '',
-    practices: modOn('today') ? `<button class="nav-item ${v.type === 'practices' ? 'on' : ''}" data-open-practices><span class="nav-ic">☯</span><span class="nav-lbl">${t('nav.practices')}</span></button>` : '',
+    // Practices and Tracker are one tool now: a single rail item that both tracks
+    // (tick + streaks) and shapes (rename inline, drag, ✎ details) your practices.
+    tracker: '',
+    practices: modOn('today') ? `<button class="nav-item ${v.type === 'practices' || v.type === 'tracker' ? 'on' : ''}" data-open-practices><span class="nav-ic">☯</span><span class="nav-lbl">${t('nav.practices')}</span></button>` : '',
     tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
@@ -3667,7 +3667,9 @@ function cadenceStreak(daysDesc, cad, today) {
 function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
 const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
 function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'tracker') renderTracker(); else if (v === 'today') renderToday(); else if (v === 'toolbox') renderToolbox(); }
-async function openPractices() { state.view = { type: 'practices' }; renderNav(); await loadPractices(true); renderPractices(); }
+// Practices and Tracker are ONE tool now. Every data-open-practices link lands on
+// the merged view (rename inline, drag to reorder, ✎ for details, tick + streaks).
+async function openPractices() { return openTracker(); }
 function renderPractices() {
   if (!state.practices) return;
   $('#pane').innerHTML = `
@@ -3702,6 +3704,16 @@ function practicesManageHtml() {
   return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
 }
 function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
+// Inline rename from the merged Practices tool: click the name, type, Enter/blur.
+async function renamePractice(id, title) {
+  const a = (state.practices && state.practices.activities || []).find((x) => String(x.id) === String(id)); if (!a) return;
+  const clean = String(title || '').replace(/\s+/g, ' ').trim();
+  if (!clean || clean === a.title) return;   // empty or unchanged: leave it be
+  a.title = clean;
+  try { await api('/api/activities/' + id, { method: 'PATCH', body: JSON.stringify({ title: clean }) }); }
+  catch (e) { toast(e.message); }
+  rerenderPractices();
+}
 function practiceStreak(id) {
   if (!state.practices) return 0;
   const a = (state.practices.activities || []).find((x) => String(x.id) === String(id));
@@ -7011,10 +7023,10 @@ async function openTracker() {
 function renderTracker() {
   const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   $('#pane').innerHTML = `
-    ${pageCrumb(t('today.tracker'))}
-    <div class="pane-head t2-head"><h1>${t('today.tracker')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1></div>
-    <p class="t2-sub">Tick your practices, keep your run of days</p>
-    ${(state.practices && state.practices.activities) ? t2TrackerHtml() : '<div class="home-empty" style="padding:24px">Loading your tracker…</div>'}`;
+    ${pageCrumb(t('nav.practices'))}
+    <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1></div>
+    <p class="t2-sub">Tick a practice, rename it inline, drag to reorder, ✎ for the details</p>
+    ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your practices…</div>'}`;
 }
 function renderToday() {
   const T = state.today; const data = T.data;
@@ -7075,10 +7087,13 @@ window.addEventListener('resize', () => { if (state.view && state.view.type === 
 // forwards, how many days until you should do something in it next. An area
 // counts a day done if you did ANY of its practices. Each practice shows its own
 // run + status against its own aim.
-function t2TrackerHtml() {
+// `manage` (the full Practices tool) adds a drag grip, click-to-rename on the
+// name, and a ✎ for the deeper fields, so one tool both tracks AND shapes your
+// practices. Home passes it falsy, so the mini-tracker stays tick-only.
+function t2TrackerHtml(manage) {
   const P = state.practices || {}; const T = state.today || {};   // callable from Home too
   const tracked = (P.activities || []).filter((a) => a.tracked);
-  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">Nothing tracked yet. Add a practice with <b>Track it</b> on and its run of days appears here.<br><div class="trk-foot" style="margin-top:14px;justify-content:center"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div></div>';
+  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">No practices yet. Add one and its run of days appears here.<br><div class="trk-foot" style="margin-top:14px;justify-content:center"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button></div></div>';
   const today = dayKey(new Date());
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
@@ -7105,10 +7120,15 @@ function t2TrackerHtml() {
       const s = cadenceStatus(prcMarkedDays(a.id), a.cadence);
       const marked = practiceMarked(a.id, today);
       const streak = practiceStreak(a.id);
-      return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''}">
+      const nameInner = manage
+        ? `<span class="trk-rename" data-prc-rename="${a.id}" contenteditable="true" spellcheck="false" title="Click to rename">${esc(a.title)}</span>`
+        : esc(a.title);
+      return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''}" data-prc-id="${a.id}">
+        ${manage ? `<span class="trk-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span>` : ''}
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-        <span class="trk-pname">${esc(a.title)}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
+        <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
+        ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
         <span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>
         <span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span>
       </div>`;
@@ -7118,12 +7138,11 @@ function t2TrackerHtml() {
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
       ${open ? `${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
-      ${rows}
+      <div class="pm-rows">${rows}</div>
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
-  return `<div class="trk-tophead"><button class="trk-manage-top" data-open-practices title="Edit, add, group or delete your practices">⚙ Manage practices →</button></div>
-    <div class="trk-dash">${body}</div><div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button><button class="ghost trk-manage" data-open-practices title="Edit, reorder or delete your practices">⚙ Manage practices</button></div>`;
+  return `<div class="trk-dash">${body}</div>${manage ? '<div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button></div>' : ''}`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
@@ -16199,6 +16218,15 @@ function prcDragEnd(e) {
 }
 document.addEventListener('pointerup', prcDragEnd);
 document.addEventListener('pointercancel', prcDragEnd);
+// Inline practice rename: Enter saves (blur), Escape reverts, blur commits.
+document.addEventListener('keydown', (e) => {
+  const r = e.target.closest && e.target.closest('[data-prc-rename]'); if (!r) return;
+  if (e.key === 'Enter') { e.preventDefault(); r.blur(); }
+  else if (e.key === 'Escape') { e.preventDefault(); const a = (state.practices && state.practices.activities || []).find((x) => String(x.id) === String(r.dataset.prcRename)); if (a) r.textContent = a.title; r.blur(); }
+}, true);
+document.addEventListener('focusout', (e) => {
+  const r = e.target.closest && e.target.closest('[data-prc-rename]'); if (r) renamePractice(r.dataset.prcRename, r.textContent);
+}, true);
 // Reassign positions to a life area's practices in the new order, persist each
 // changed one, then re-sort so the page reflects it at once.
 function savePracticeOrder(orderedIds) {
