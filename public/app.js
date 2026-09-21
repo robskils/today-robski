@@ -2903,6 +2903,10 @@ async function openNote(id) {
   state.view = { type: 'note', id };
   recordRecent('note', id, note.title, blockAreas(note)[0]);
   renderNav(); renderNote();
+  // Always land at the very top of a freshly opened note - the render swaps the
+  // pane after renderNav's scroll reset, and a long previous page (or the notes
+  // list) would otherwise leave you scrolled down.
+  try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; } catch {}
   // A shared note (given to me, or one I've shared out) syncs live while open.
   if (note.sharedBy || note.sharedWith) startNotePoll(id);
   // Who this note is shared with, for the members section + wall. Owner only -
@@ -14010,10 +14014,9 @@ function renderNote() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
       <span class="crumb-tools">${noteAreasControl(n)}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
-      ${n.sharedBy ? '' : '<button class="note-tidy ghost" data-note-tidy data-tip="Tidy the spacing" aria-label="Tidy the spacing - remove blank lines and even out the paragraphs">Tidy</button>'}
-      ${shareBtn(n, 'note')}
-      ${n.sharedBy ? '' : `<button class="note-move ghost" data-move-note data-tip="File this note in a life area" aria-label="File this note in a life area">Life area</button>
-      <button class="note-lock ghost ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
+      <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
+      ${n.sharedBy ? '' : `<button class="note-move ghost note-hide-mobile" data-move-note data-tip="File this note in a life area" aria-label="File this note in a life area">Life area</button>
+      <button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
       <button class="note-lock ghost ${n.props && n.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="note:${n.id}" data-tip="${n.props && n.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${n.props && n.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${n.props && n.props.noSearch ? '🙈' : '🔍'}</button>
       <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
