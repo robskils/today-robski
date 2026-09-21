@@ -5057,6 +5057,11 @@ table.ttable tr:last-child td { border-bottom:0; }
      task title. The accent stripe down the row's left edge still carries the area. */
   .p1-area { display:none; }
   .p1-t { white-space:normal; }
+  /* Home "Practices": the 7-day streak dots crowd out the practice name on a phone.
+     Seeing what the practice IS matters more than last week's run, so drop the dots
+     here (the today-tick and 🔥 streak stay). The full Tracker page keeps them. */
+  body[data-view="home"] .trk-week { display:none; }
+  body[data-view="home"] .trk-pname { white-space:normal; }
   .nav-spacer, .foot-search { display:none; }
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
   .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
