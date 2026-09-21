@@ -2905,8 +2905,10 @@ async function openNote(id) {
   renderNav(); renderNote();
   // Always land at the very top of a freshly opened note - the render swaps the
   // pane after renderNav's scroll reset, and a long previous page (or the notes
-  // list) would otherwise leave you scrolled down.
-  try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; } catch {}
+  // list) would otherwise leave you scrolled down. A second pass on the next frame
+  // beats any late shift (sticky-header measure, editor focus).
+  const toTop = () => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; } catch {} };
+  toTop(); requestAnimationFrame(toTop);
   // A shared note (given to me, or one I've shared out) syncs live while open.
   if (note.sharedBy || note.sharedWith) startNotePoll(id);
   // Who this note is shared with, for the members section + wall. Owner only -
@@ -14017,7 +14019,7 @@ function renderNote() {
       <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
       ${n.sharedBy ? '' : `<button class="note-move ghost note-hide-mobile" data-move-note data-tip="File this note in a life area" aria-label="File this note in a life area">Life area</button>
       <button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-      <button class="note-lock ghost ${n.props && n.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="note:${n.id}" data-tip="${n.props && n.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${n.props && n.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${n.props && n.props.noSearch ? '🙈' : '🔍'}</button>
+      <button class="note-lock ghost note-hide-mobile ${n.props && n.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="note:${n.id}" data-tip="${n.props && n.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${n.props && n.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${n.props && n.props.noSearch ? '🙈' : '🔍'}</button>
       <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
@@ -14385,7 +14387,10 @@ async function newNote(connectToId) {
   state.noteTops.push(note);
   await openNote(note.id);
   const ti = $('#note-title');
-  if (ti) { ti.focus(); }   // empty field, cursor ready; keyboard carries over from the primer
+  // preventScroll: focusing the title must NOT drag the page down - a new note has
+  // to open at the very top. The keyboard still carries over from the primer.
+  if (ti) { try { ti.focus({ preventScroll: true }); } catch { ti.focus(); } }
+  try { window.scrollTo(0, 0); } catch {}
   if (primer) primer.remove();
 }
 async function newArea() {
