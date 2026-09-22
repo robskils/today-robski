@@ -3269,6 +3269,8 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .trk-cadsel { margin-left:auto; font-size:12.5px; padding:5px 28px 5px 10px; color:var(--ink-3); flex:none; max-width:180px; }
 .trk-prow { display:flex; align-items:center; gap:11px; padding:9px 2px; border-bottom:1px solid var(--line); }
 .trk-prow:last-child { border-bottom:0; }
+/* Week dots + streak, grouped so mobile can drop the pair to a second line. */
+.trk-hist { display:flex; align-items:center; gap:11px; flex:none; }
 .trk-pname { flex:1; min-width:0; font-size:15px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .trk-pname:has(.trk-rename:focus) { overflow:visible; white-space:normal; }
 /* Merged Practices tool: drag grip, click-to-rename, and the ✎ details button. */
@@ -5062,6 +5064,11 @@ table.ttable tr:last-child td { border-bottom:0; }
      here (the today-tick and 🔥 streak stay). The full Tracker page keeps them. */
   body[data-view="home"] .trk-week { display:none; }
   body[data-view="home"] .trk-pname { white-space:normal; }
+  /* Tracker/Practices page: keep the name legible by dropping the week + streak to
+     a second line, rather than letting the 7 dots squeeze the name to an ellipsis. */
+  body[data-view="tracker"] .trk-prow { flex-wrap:wrap; align-items:center; }
+  body[data-view="tracker"] .trk-pname { white-space:normal; }
+  body[data-view="tracker"] .trk-hist { flex:1 1 100%; margin-top:8px; justify-content:flex-start; }
   .nav-spacer, .foot-search { display:none; }
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
   .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
