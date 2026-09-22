@@ -5287,8 +5287,10 @@ table.ttable tr:last-child td { border-bottom:0; }
    newcomer signing up with an outside address glides past it, while a returning
    user whose mailbox now lives inside Daybook - and so can't open the emailed code
    - spots their way in. It texts the code to THEIR own saved phone. */
-.gate2-smslink { display:block; width:100%; background:none; border:0; margin:-2px 0 0;
-  padding:8px 4px; font-size:14px; line-height:1.45; color:var(--ink-3); cursor:pointer; text-wrap:balance; }
+.gate2-smslink { display:block; width:100%; background:none; border:1px solid transparent; margin:6px 0 0;
+  padding:11px 14px; border-radius:12px; font-size:14px; line-height:1.45; color:var(--ink-3); cursor:pointer; text-wrap:balance;
+  transition:background .12s, border-color .12s; }
+.gate2-smslink:hover { background:var(--paper-2); border-color:var(--line-2); }
 .gate2-smslink b { color:var(--ink-2); font-weight:600; text-decoration:underline; text-underline-offset:3px; }
 .gate2-smslink:hover b { color:var(--accent); }
 .gate2-smslink:disabled { opacity:.5; cursor:default; }

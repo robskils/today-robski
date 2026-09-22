@@ -17989,7 +17989,10 @@ async function gateSubmit(e) {
   btn.disabled = false; gateBusy = false;
 }
 document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') gateSubmit(e); });
-document.addEventListener('click', (e) => { if (e.target.id === 'gate-sms') gateSend('sms'); });
+// closest, not e.target.id: the button's text is wrapped in <b>, so a click on
+// the bold part (most of the link) has e.target === the <b> and was being ignored
+// - which is why the tappable area felt tiny.
+document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#gate-sms')) gateSend('sms'); });
 
 // ── boot ─────────────────────────────────────────────
 // Parse a mailto: URI (to + ?subject/body/cc/bcc) into compose fields.
