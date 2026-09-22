@@ -36,7 +36,6 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
         <tr><td style="padding:34px 38px 0" align="center">
           <img src="https://daybook.fyi/email-mark.png" width="66" height="35" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Daybook</p>
-          <p style="margin:7px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:14.5px;letter-spacing:0.01em;color:#8b7f72">For a life well lived</p>
         </td></tr>
 
         <tr><td style="padding:22px 38px 0">
@@ -75,8 +74,12 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
           <p style="margin:0;font-size:13px;color:#8b7f72;line-height:1.6;text-align:center">The link signs you in and sets up your Daybook - there is no code to enter. If the button does not work, open<br><a href="${escHtml(link)}" style="color:#c4412e;text-decoration:none">${escHtml(link)}</a></p>
         </td></tr>
 
-        <tr><td style="padding:26px 38px 34px" align="center">
+        <tr><td style="padding:26px 38px 8px" align="center">
           <p style="margin:0;font-size:12.5px;color:#a2988a;line-height:1.5">Not expecting this? You can safely ignore it - nothing happens until you accept.</p>
+        </td></tr>
+
+        <tr><td style="padding:14px 38px 30px;border-top:1px solid #e4ddcf" align="center">
+          <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;color:#8b7f72">For a life well lived</p>
         </td></tr>
       </table>
     </td></tr>

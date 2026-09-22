@@ -379,7 +379,6 @@ export function codeEmail(code, kind) {
         <tr><td style="padding:34px 38px 0" align="center">
           <img src="https://daybook.fyi/email-mark.png" width="66" height="35" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Daybook</p>
-          <p style="margin:7px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:14.5px;letter-spacing:0.01em;color:#8b7f72">For a life well lived</p>
         </td></tr>
 
         <!-- A warm keyline. Solid cells: gradients are the first thing Outlook drops. -->
@@ -410,6 +409,7 @@ export function codeEmail(code, kind) {
         </td></tr>
 
         <tr><td style="padding:16px 38px;border-top:1px solid #e4ddcf">
+          <p style="margin:0 0 6px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;color:#8b7f72;text-align:center">For a life well lived</p>
           <p style="margin:0;font-size:11px;color:#8b7f72;text-align:center">
             <a href="https://daybook.fyi" style="color:#c4412e;text-decoration:none">daybook.fyi</a>
           </p>
