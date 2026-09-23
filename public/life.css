@@ -2116,6 +2116,15 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 /* The three ways to link an event out - a URL, a person, a note - grouped in one
    soft panel so they read as a set rather than scattered fields. (Robin.) */
 .ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
+/* Collapsible: closed by default so adding an event/task isn't cluttered by the
+   connected box - open it only when you need to attach a link, contact or note. */
+details.ce-links:not([open]) { gap:0; }
+summary.ce-links-h { list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; -webkit-tap-highlight-color:transparent; }
+summary.ce-links-h::-webkit-details-marker { display:none; }
+summary.ce-links-h::before { content:'▸'; font-size:10px; color:var(--ink-3); transition:transform .12s; }
+details.ce-links[open] > summary.ce-links-h::before { content:'▾'; }
+summary.ce-links-h:hover { color:var(--ink-2); }
+.ce-links-hint { text-transform:none; letter-spacing:0; font-weight:400; font-size:12.5px; color:var(--ink-3); opacity:.85; }
 .ce-links-h { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
 /* The three link entry points - URL, contact, note - a third of the row each. */
 .ce-links3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px 12px; }
