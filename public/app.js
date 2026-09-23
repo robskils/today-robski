@@ -4230,7 +4230,11 @@ function renderHome() {
       </div>
       <div class="home-actionbar">
         <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}<span class="home-time">${homeTimeStr()}</span></div>
-        <div class="home-actions"><button class="add-btn wide" data-quick-add="note">${t('home.newnote')}</button><button class="add-btn wide" data-quick-add="task">${t('home.newtask')}</button><button class="add-btn wide" data-quick-add="event">${t('home.newevent')}</button></div>
+        <div class="home-actions">${[
+          modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note'] : null,
+          modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event'] : null,
+          modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task'] : null,
+        ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span></button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('')}</div>
       </div>
       ${alertsHtml()}
       ${homeQuoteHtml()}
