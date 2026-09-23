@@ -8873,7 +8873,7 @@ function wrapEmailHtml(html, blockImages) {
   // to the parent, which opens it in the OS default browser (a sandboxed iframe
   // can't do that itself, and its own scripts were already stripped).
   return `<!doctype html><html><head><meta name="color-scheme" content="light">
-    <style>html,body{margin:0}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
+    <style>html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
     </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href')||'';if(/^(https?:|mailto:)/i.test(href)){e.preventDefault();parent.postMessage({__mailLink:href},'*');}},true);document.addEventListener('keydown',function(e){if(e.metaKey||e.ctrlKey||e.altKey)return;var k=e.key;if(/^[a-zA-Z!#]$/.test(k)||k==='Escape')parent.postMessage({__mailKey:k},'*');},true);})();<\/script></body></html>`;
 }
 // Open a URL in the OS default browser via a marked, user-initiated anchor click
@@ -8890,7 +8890,12 @@ if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
   window.addEventListener('message', (ev) => {
     if (!ev.data || typeof ev.data.__mailHeight !== 'number') return;
     const f = document.getElementById('mail-body-frame');
-    if (f) f.style.height = `${Math.max(200, Math.min(ev.data.__mailHeight + 6, 40000))}px`;
+    if (!f) return;
+    // No +N creep, and only resize on a real change (>3px): an email whose CSS
+    // makes its body track the iframe height would otherwise report-grow-report
+    // forever - the "falling down the screen" bug.
+    const target = Math.max(200, Math.min(ev.data.__mailHeight, 40000));
+    if (Math.abs(parseFloat(f.style.height || '0') - target) > 3) f.style.height = `${target}px`;
   });
   // A single-key shortcut pressed while the email body iframe has focus: the
   // parent's keydown handler never sees it, so the iframe forwards the key and
