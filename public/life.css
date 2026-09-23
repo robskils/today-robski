@@ -3768,13 +3768,14 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-qa-open:hover { background:var(--paper-2); }
 .home-qa-add { flex:none; width:44px; border:0; border-left:1px solid var(--line); background:none; color:var(--accent); font-size:23px; line-height:1; cursor:pointer; }
 .home-qa-add:hover { background:color-mix(in srgb,var(--accent) 13%,transparent); }
-/* Mobile: the three controls share the row as equal thirds, big and legible. */
+/* Mobile: stack the three controls full-width so each is easy to see and read,
+   rather than cramming them into thirds. */
 @media (max-width:640px){
-  .home-actions { gap:8px; flex:1 1 100%; width:100%; max-width:100%; box-sizing:border-box; }
-  .home-qa { flex:1 1 0; min-width:0; }
-  .home-qa-open { flex:1 1 auto; min-width:0; justify-content:center; padding:13px 6px; font-size:15px; }
-  .home-qa-open .hqa-ic { font-size:16px; }
-  .home-qa-add { width:42px; font-size:22px; }
+  .home-actions { flex-direction:column; gap:9px; flex:1 1 100%; width:100%; max-width:100%; box-sizing:border-box; }
+  .home-qa { width:100%; }
+  .home-qa-open { flex:1 1 auto; min-width:0; padding:14px 16px; font-size:16px; }
+  .home-qa-open .hqa-ic { font-size:18px; }
+  .home-qa-add { width:52px; font-size:24px; }
 }
 .home-sec { margin:26px 0; }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
