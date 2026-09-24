@@ -1889,7 +1889,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 /* The wordmark is a real <button> (not a div): a native button is the only thing
    iOS Safari reliably fires a bubbling click on, so tap-to-go-home works on the
    phone. Reset the button chrome back to the plain wordmark it was. */
-.nav-brand { display:block; width:100%; text-align:left; background:none; border:0; -webkit-appearance:none; appearance:none; color:var(--ink);
+.nav-brand { display:block; width:100%; text-align:center; background:none; border:0; -webkit-appearance:none; appearance:none; color:var(--ink);
   font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:600; padding:6px 10px 8px; cursor:pointer; border-radius:8px; transition:background .12s,opacity .12s;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   /* Stop iOS turning a tap into a text selection, and kill the tap delay. */
@@ -1902,8 +1902,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-drawer { display:contents; }
 .nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
-.nav-brand em { font-style:italic; color:var(--accent); }
+.nav-brand em { font-style:normal; color:var(--accent); }
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
+/* A quiet Daybook mark closing the Home main column, in the chosen accent. */
+.home-mark { display:flex; justify-content:center; margin:36px 0 6px; }
+.home-mark .brand-mark { width:46px; height:46px; margin:0; color:var(--accent); opacity:.9; }
 .nav-brand .brand-mark { margin:0 .16em 0 .2em; }
 .nav-msearch { display:none; }   /* mobile-only sticky search (see media query) */
 .nav-k {

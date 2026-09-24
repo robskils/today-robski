@@ -4339,7 +4339,7 @@ function renderHome() {
           }).join('');
           const addable = avail.filter((s) => !enabled.includes(s.k));
           const addBar = addable.length ? `<div class="home-main-add"><span class="hma-lbl">Add to Home</span>${addable.map((s) => `<button class="hma-chip" data-home-main-add="${s.k}">＋ ${esc(s.label)}</button>`).join('')}</div>` : '';
-          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — add a section below.</div>'}</section>${addBar}`;
+          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — add a section below.</div>'}</section>${addBar}<div class="home-mark" aria-hidden="true">${MARK}</div>`;
         })()}</div>
         <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
