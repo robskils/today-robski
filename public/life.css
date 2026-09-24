@@ -5148,7 +5148,14 @@ table.ttable tr:last-child td { border-bottom:0; }
      the desktop grouped grid. Hide the grid + favourites; show the flat list. */
   .nav-drawer .nav-grid, .nav-drawer .nav-secs { display:none; }
   .nav-mlist { display:flex; flex-direction:column; gap:6px; margin:2px 0 0; }
-  .nav-mlist .nav-item { display:flex; align-items:center; gap:13px; width:100%; padding:14px 15px; border:1px solid var(--line); border-radius:13px; background:var(--card); font-size:17px; color:var(--ink); }
+  .nav-mlist .mnav-row { display:flex; align-items:center; gap:2px; }
+  .mnav-grip { flex:none; width:26px; text-align:center; color:var(--ink-3); font-size:16px; line-height:1; cursor:grab; touch-action:none; opacity:.4; padding:14px 2px; -webkit-user-select:none; user-select:none; }
+  .mnav-grip:active { cursor:grabbing; opacity:.85; color:var(--accent); }
+  .mnav-row.mdragging { z-index:5; }
+  .mnav-row.mdragging .nav-item { box-shadow:0 14px 30px -12px rgba(0,0,0,.5); border-color:var(--accent); }
+  .mnav-row.mdrop-top .nav-item { box-shadow:0 -3px 0 -1px var(--accent); }
+  .mnav-row.mdrop-bottom .nav-item { box-shadow:0 3px 0 -1px var(--accent); }
+  .nav-mlist .nav-item { display:flex; align-items:center; gap:13px; flex:1 1 auto; min-width:0; width:auto; padding:14px 15px; border:1px solid var(--line); border-radius:13px; background:var(--card); font-size:17px; color:var(--ink); }
   .nav-mlist .nav-item.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--card)); color:var(--accent); }
   .nav-mlist .nav-item .nav-ic { font-size:20px; width:24px; text-align:center; color:var(--accent); flex:none; }
   .nav-mlist .nav-item.on .nav-ic { color:var(--accent); }

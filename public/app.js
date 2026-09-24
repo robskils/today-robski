@@ -2604,10 +2604,19 @@ function navItems(v) {
 // A flat, importance-ordered single column of clear tool buttons - the mobile
 // drawer. No group boxes, no 2-up grid: just tap what you want. (The desktop
 // sidebar keeps the grouped grid.)
+const MNAV_DEFAULT = ['home', 'mail', 'calendar', 'tasks', 'notes', 'today', 'practices', 'areas', 'reflect', 'wellbeing', 'goals', 'reviews', 'financial', 'saved', 'contacts', 'connect', 'daybook', 'timer'];
+// The user's saved drawer order, with any new tools appended in the default spot.
+function mobileNavOrder() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('life.nav.morder') || '[]'); } catch {}
+  saved = Array.isArray(saved) ? saved.filter((k) => MNAV_DEFAULT.includes(k)) : [];
+  return [...saved, ...MNAV_DEFAULT.filter((k) => !saved.includes(k))];
+}
+function saveMobileNavOrder(arr) { try { localStorage.setItem('life.nav.morder', JSON.stringify(arr)); } catch {} }
 function navMobileListHtml(v) {
   const NI = navItems(v);
-  const order = ['home', 'mail', 'calendar', 'tasks', 'notes', 'today', 'practices', 'areas', 'reflect', 'wellbeing', 'goals', 'reviews', 'financial', 'saved', 'contacts', 'connect', 'daybook', 'timer'];
-  return `<nav class="nav-mlist">${order.map((k) => NI[k]).filter(Boolean).join('')}</nav>`;
+  // Each button rides in a row with a drag grip so the drawer can be reordered.
+  return `<nav class="nav-mlist">${mobileNavOrder().map((k) => NI[k] ? `<div class="mnav-row" data-mnav-id="${k}"><span class="mnav-grip" data-mnav-grip aria-hidden="true">⠿</span>${NI[k]}</div>` : '').filter(Boolean).join('')}</nav>`;
 }
 function navGridHtml(v) {
   const NI = navItems(v);
@@ -16293,6 +16302,43 @@ function prcDragEnd(e) {
 }
 document.addEventListener('pointerup', prcDragEnd);
 document.addEventListener('pointercancel', prcDragEnd);
+// ── Mobile drawer: drag a nav button up/down to reorder ────────────────────
+let mnavDrag = null;
+document.addEventListener('pointerdown', (e) => {
+  const g = e.target.closest && e.target.closest('[data-mnav-grip]'); if (!g) return;
+  const row = g.closest('[data-mnav-id]'); const cont = row && row.closest('.nav-mlist'); if (!row || !cont) return;
+  e.preventDefault(); e.stopPropagation();
+  const order = [...cont.querySelectorAll(':scope > [data-mnav-id]')].map((el) => el.dataset.mnavId);
+  mnavDrag = { id: row.dataset.mnavId, row, cont, pid: e.pointerId, startY: e.clientY, moved: false, order, before: null };
+  row.classList.add('mdragging');
+  try { g.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  const d = mnavDrag; if (!d || e.pointerId !== d.pid) return;
+  e.preventDefault();
+  const dy = e.clientY - d.startY; if (Math.abs(dy) > 4) d.moved = true;
+  d.row.style.position = 'relative'; d.row.style.zIndex = '5'; d.row.style.transform = `translateY(${dy}px)`;
+  const others = [...d.cont.querySelectorAll(':scope > [data-mnav-id]')].filter((el) => el !== d.row);
+  others.forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  let beforeEl = null;
+  for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
+  d.before = beforeEl ? beforeEl.dataset.mnavId : null;
+  if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
+  // Auto-scroll the drawer when dragging near its top/bottom edge.
+  const dr = d.cont.closest('.nav-drawer'); if (dr) { const r = dr.getBoundingClientRect(); if (e.clientY < r.top + 70) dr.scrollTop -= 12; else if (e.clientY > r.bottom - 70) dr.scrollTop += 12; }
+});
+function mnavDragEnd(e) {
+  const d = mnavDrag; if (!d || (e && e.pointerId !== d.pid)) return; mnavDrag = null;
+  d.row.style.transform = ''; d.row.style.zIndex = ''; d.row.style.position = ''; d.row.classList.remove('mdragging');
+  d.cont.querySelectorAll('[data-mnav-id]').forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  if (!d.moved) return;
+  const arr = d.order.filter((k) => k !== d.id);
+  let i = d.before ? arr.indexOf(d.before) : arr.length; if (i < 0) i = arr.length;
+  arr.splice(i, 0, d.id);
+  if (arr.join() !== d.order.join()) { saveMobileNavOrder(arr); renderNav(); }
+}
+document.addEventListener('pointerup', mnavDragEnd);
+document.addEventListener('pointercancel', mnavDragEnd);
 // Inline practice rename: Enter saves (blur), Escape reverts, blur commits.
 document.addEventListener('keydown', (e) => {
   const r = e.target.closest && e.target.closest('[data-prc-rename]'); if (!r) return;
