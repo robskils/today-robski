@@ -4187,6 +4187,7 @@ function homeMainOpen(k) { try { const o = JSON.parse(localStorage.getItem('life
 function toggleHomeMainOpen(k) { let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); } catch {} o[k] = !homeMainOpen(k); try { localStorage.setItem('life.home.mainOpen', JSON.stringify(o)); } catch {} renderHome(); }
 function homeMainRemove(k) { setHomeMainEnabled(homeMainEnabled().filter((x) => x !== k)); }
 function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHomeMainEnabled([...e, k]); }
+function homeMainToggle(k) { const e = homeMainEnabled(); if (e.includes(k)) homeMainRemove(k); else homeMainAdd(k); }
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
@@ -4348,8 +4349,10 @@ function renderHome() {
             </section>`;
           }).join('');
           const addable = avail.filter((s) => !enabled.includes(s.k));
-          const addBar = addable.length ? `<div class="home-main-add"><span class="hma-lbl">Add to Home</span>${addable.map((s) => `<button class="hma-chip" data-home-main-add="${s.k}">＋ ${esc(s.label)}</button>`).join('')}</div>` : '';
-          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — add a section below.</div>'}</section>${addBar}<div class="home-mark" aria-hidden="true">${MARK}</div>`;
+          // Homepage features: one clickable toggle per section - shown ones are
+          // lit, tap to show/hide. Replaces the old add-only bar.
+          const featBar = avail.length ? `<details class="home-features"><summary class="hf-h"><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">show or hide</span></summary><div class="hf-chips">${avail.map((s) => { const on = enabled.includes(s.k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
+          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
         <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
@@ -4367,6 +4370,7 @@ function renderHome() {
       </div>
       ${homeDiscoverHtml()}
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
+      <div class="home-mark" aria-hidden="true">${MARK}</div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
   startHomeClock();         // keep the time beside the date ticking
@@ -14981,6 +14985,7 @@ document.addEventListener('click', (e) => {
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
   { const hx = t.closest('[data-home-main-x]'); if (hx) { homeMainRemove(hx.dataset.homeMainX); return; } }   // × removes a Home section
   { const ha = t.closest('[data-home-main-add]'); if (ha) { homeMainAdd(ha.dataset.homeMainAdd); return; } }   // ＋ chip re-adds one
+  { const hf = t.closest('[data-home-feature]'); if (hf) { homeMainToggle(hf.dataset.homeFeature); return; } }   // show/hide a Home section
   // Click a Home section header (not a button/link inside it) to fold/unfold it.
   { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day]')) { toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
