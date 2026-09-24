@@ -2939,8 +2939,18 @@ async function openNote(id) {
   if (note.sharedBy || note.sharedWith) startNotePoll(id);
   // Who this note is shared with, for the members section + wall. Owner only -
   // a borrowed note's membership is the owner's to see; you get the banner.
-  if (!note.sharedBy) api(`/api/blocks/${id}/shares`).then((r) => { if (state.note && state.note.current.id === id) { state.note.shares = r.shares || []; if (state.view.type === 'note') renderNote(); } }).catch(() => { if (state.note) state.note.shares = []; });
-  if (!state.friends) api('/api/friends').then((fr) => { state.friends = fr; if (state.view.type === 'note') renderNote(); }).catch(() => {});
+  if (!note.sharedBy) api(`/api/blocks/${id}/shares`).then((r) => { if (state.note && state.note.current.id === id) { state.note.shares = r.shares || []; if (state.view.type === 'note') renderNoteKeepFocus(); } }).catch(() => { if (state.note) state.note.shares = []; });
+  if (!state.friends) api('/api/friends').then((fr) => { state.friends = fr; if (state.view.type === 'note') renderNoteKeepFocus(); }).catch(() => {});
+}
+// Re-render the note WITHOUT stealing the cursor: a fresh note focuses its title,
+// but the shares/friends fetches resolve a beat later and would rebuild the pane -
+// throwing the focus away. Preserve the title's focus + caret across the re-render.
+function renderNoteKeepFocus() {
+  const ae = document.activeElement;
+  const keepTitle = ae && ae.id === 'note-title';
+  const pos = keepTitle ? ae.selectionStart : null;
+  renderNote();
+  if (keepTitle) { const t = document.getElementById('note-title'); if (t) { try { t.focus({ preventScroll: true }); if (pos != null) t.setSelectionRange(pos, pos); } catch { t.focus(); } } }
 }
 async function openTable(id) {
   const table = await api(`/api/blocks/${id}`);
@@ -16109,24 +16119,36 @@ document.addEventListener('pointercancel', msecDragEnd);
 // stay in lockstep. Only the dragged card moves - a coloured line shows where it
 // will land - and everything snaps to the new order on release.
 let homeSecDrag = null;
+let homeSecPress = null;
 let suppressSecClick = 0;
 const msecEl = (k) => document.querySelector('.' + MSEC_CLASS[k]);
+// Drag the WHOLE card (no grip): a long-press starts the reorder, so a quick swipe
+// still scrolls and a tap still toggles the card open/closed.
 document.addEventListener('pointerdown', (e) => {
-  const grip = e.target.closest && e.target.closest('[data-hsec-mgrip]');
-  if (!grip) return;
-  const sec = grip.closest('[data-hsec]'); if (!sec) return;
-  e.preventDefault(); e.stopPropagation();
-  const cfg = mobileHomeCfg();
-  const order = cfg.order.filter((k) => !cfg.hidden.includes(k) && msecEl(k));
-  homeSecDrag = { key: grip.dataset.hsecMgrip, sec, grip, id: e.pointerId, startY: e.clientY, moved: false, order, newOrder: order.slice() };
-  sec.classList.add('mdragging');
-  try { grip.setPointerCapture(e.pointerId); } catch {}
+  if (!matchMedia('(pointer:coarse)').matches) return;
+  const hdr = e.target.closest && e.target.closest('.home-mdrag-h'); if (!hdr) return;
+  if (e.target.closest('button:not(.home-sec-toggle), a, input, textarea, select')) return;
+  const sec = hdr.closest('[data-hsec]'); if (!sec) return;
+  const pid = e.pointerId, startY = e.clientY, startX = e.clientX, key = sec.dataset.hsec;
+  homeSecPress = { pid, startX, startY, timer: setTimeout(() => {
+    if (!homeSecPress) return; homeSecPress.timer = null;
+    const cfg = mobileHomeCfg();
+    const order = cfg.order.filter((k) => !cfg.hidden.includes(k) && msecEl(k));
+    homeSecDrag = { key, sec, id: pid, startY, moved: true, order, newOrder: order.slice() };
+    sec.classList.add('mdragging');
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch {}
+    try { hdr.setPointerCapture(pid); } catch {}
+  }, 300) };
 });
 document.addEventListener('pointermove', (e) => {
+  // Before the long-press fires, any real movement means scroll/tap - cancel it.
+  if (homeSecPress && e.pointerId === homeSecPress.pid && homeSecPress.timer) {
+    if (Math.abs(e.clientY - homeSecPress.startY) > 8 || Math.abs(e.clientX - homeSecPress.startX) > 8) { clearTimeout(homeSecPress.timer); homeSecPress = null; }
+    return;
+  }
   const d = homeSecDrag; if (!d || e.pointerId !== d.id) return;
   e.preventDefault();
   const dy = e.clientY - d.startY;
-  if (Math.abs(dy) > 4) d.moved = true;
   d.sec.style.transform = `translateY(${dy}px)`;
   const others = d.order.filter((k) => k !== d.key);
   let ins = others.length;
@@ -16140,6 +16162,7 @@ document.addEventListener('pointermove', (e) => {
   if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
 });
 function homeSecDragEnd(e) {
+  if (homeSecPress && (!e || e.pointerId === homeSecPress.pid)) { if (homeSecPress.timer) clearTimeout(homeSecPress.timer); homeSecPress = null; }
   const d = homeSecDrag; if (!d || (e && e.pointerId !== d.id)) return;
   homeSecDrag = null;
   d.sec.style.transform = ''; d.sec.classList.remove('mdragging');
