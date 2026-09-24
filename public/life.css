@@ -5139,10 +5139,13 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-mlist .nav-item .nav-badge { margin-left:auto; }
   .nav-drawer .nav-k { display:none; }
   .nav-drawer .nav-bottom { display:flex; flex-direction:column; gap:8px; order:0; flex-basis:auto; margin:14px 0 0; padding:12px 0 0; border-top:1px solid var(--line); }
-  .nav-drawer .nav-bottom-row { display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
-  .nav-drawer .nav-bottom-row .nav-theme { flex:1; width:auto; }
-  .nav-drawer .nav-bottom-row .help-btn { display:inline-flex; width:42px; height:42px; font-size:17px; border:1px solid var(--line-2); background:var(--card); border-radius:10px; }
-  .nav-drawer .nav-settings, .nav-drawer .nav-adminlink, .nav-drawer .nav-signout { width:100%; justify-content:flex-start; }
+  .nav-drawer .nav-bottom-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  /* Info + theme share the top line; Settings drops to its own full-width row so a
+     long label (PT "Definições") has room and never breaks out of the button. */
+  .nav-drawer .nav-bottom-row .nav-theme:not(.nav-settings) { flex:1 1 auto; width:auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nav-drawer .nav-bottom-row .help-btn { flex:0 0 auto; display:inline-flex; width:42px; height:42px; font-size:17px; border:1px solid var(--line-2); background:var(--card); border-radius:10px; }
+  .nav-drawer .nav-bottom-row .nav-settings { flex:1 1 100%; }
+  .nav-drawer .nav-settings, .nav-drawer .nav-adminlink, .nav-drawer .nav-signout { width:100%; justify-content:flex-start; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   /* A persistent search bar under the wordmark, part of the sticky header, so it
      stays put on every page while the content scrolls. Opens the ⌘K palette. */
   .nav-msearch {
