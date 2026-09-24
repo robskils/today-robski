@@ -6747,7 +6747,7 @@ function showCalForm(ev) {
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
     <div class="ce-grid">
-      <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location</span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
+      <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location<button type="button" class="ce-directions" id="ce-directions" data-ce-directions ${loc ? '' : 'hidden'} title="Open directions in Google Maps">🧭 Directions</button></span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
       ${(() => { const av = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const presets = ['', '0', '5', '10', '15', '30', '60', '120', '1440']; const isCustom = av !== '' && !presets.includes(av); const opt = (v, l) => `<option value="${v}" ${(!isCustom && av === v) ? 'selected' : ''}>${l}</option>`; const mins = isCustom ? Math.max(1, parseInt(av, 10) || 1) : 0; const unit = isCustom ? (mins % 1440 === 0 ? 'd' : mins % 60 === 0 ? 'h' : 'm') : 'm'; const num = isCustom ? (unit === 'd' ? mins / 1440 : unit === 'h' ? mins / 60 : mins) : ''; const uOpt = (v, l) => `<option value="${v}" ${unit === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}<option value="custom" ${isCustom ? 'selected' : ''}>Custom…</option></select><div class="ce-alarm-custom" ${isCustom ? '' : 'hidden'}><input id="ce-alarm-n" class="sel" type="number" min="1" max="999" inputmode="numeric" value="${num}" placeholder="e.g. 45"><select id="ce-alarm-u" class="sel">${uOpt('m', 'minutes before')}${uOpt('h', 'hours before')}${uOpt('d', 'days before')}</select></div>${(() => { const ch = (ev && ev.alarmCh) || 'app'; const cOpt = (v, l) => `<option value="${v}" ${ch === v ? 'selected' : ''}>${l}</option>`; return `<div class="ce-alarm-ch" ${av === '' ? 'hidden' : ''}><select id="ce-alarm-ch" class="sel">${cOpt('app', 'In the app')}${cOpt('email', 'By email')}${cOpt('sms', 'By text')}${cOpt('both', 'Text &amp; email')}</select></div>`; })()}</label>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
@@ -14803,7 +14803,7 @@ document.addEventListener('input', (e) => {
   // Event "With": a search box, not a dropdown. Resolve the typed name to a
   // contact id in the hidden field the save reads; blank (or no match) = nobody.
   if (e.target.id === 'ce-contact-search') { const v = e.target.value.trim().toLowerCase(); const hid = document.getElementById('ce-contact'); if (hid) { const m = (state.contacts || []).find((c) => (c.title || '').trim().toLowerCase() === v); hid.value = m ? m.id : ''; } }
-  if (e.target.id === 'ce-loc') { renderCeLocSugg(e.target.value); }
+  if (e.target.id === 'ce-loc') { renderCeLocSugg(e.target.value); const d = document.getElementById('ce-directions'); if (d) d.hidden = !e.target.value.trim(); }
   if (e.target.id === 'linkpick-input' && state.linkpick) { state.linkpick.q = e.target.value; renderLinkPickerList(); }
   if (e.target.matches('[data-completed-q]')) { const pos = e.target.selectionStart; state.completedQuery = e.target.value; renderTasks(); const i = $('[data-completed-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   // Page search boxes (Tasks / Notes / Calendar): keep focus + caret across the re-render.
@@ -15443,7 +15443,8 @@ document.addEventListener('click', (e) => {
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
-  { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } return; } }
+  { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } const d = document.getElementById('ce-directions'); if (d) d.hidden = !(inp && inp.value.trim()); return; } }
+  { const dr = t.closest('[data-ce-directions]'); if (dr) { const loc = (document.getElementById('ce-loc') || {}).value; if (loc && loc.trim()) openExternal('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(loc.trim())); return; } }
   if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
@@ -17079,6 +17080,7 @@ function attachSection(block) {
     <div class="att-h">Attachments${list.length ? ` · ${list.length}` : ''}</div>
     <div class="att-grid">${tiles}
       <label class="att-add"><input type="file" multiple hidden data-att-input="${block.id}"><span class="att-add-ic">+</span><span>Add file</span></label>
+      <label class="att-add" title="Take a photo (saved low-res)"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${block.id}"><span class="att-add-ic">📷</span><span>Camera</span></label>
       <button type="button" class="att-add" data-scan="${block.id}"><span class="att-add-ic">🖨</span><span>Scan</span></button>
     </div></section>`;
 }
