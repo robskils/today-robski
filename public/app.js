@@ -2678,7 +2678,7 @@ function renderNav() {
     <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
-      <div class="nav-drawer-head"><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
