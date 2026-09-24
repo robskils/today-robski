@@ -1892,7 +1892,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    sidebar exactly as before; the ☰ button, drawer chrome and backdrop are all
    mobile-only. */
 .nav-drawer { display:contents; }
-.nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg { display:none; }
+.nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:italic; color:var(--accent); }
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
@@ -3907,6 +3907,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      override the sections below via inline `order`, and hide any with .mob-hide. */
   .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }
   .home-sec-focus { order:4; } .home-sec-notepad { order:5; } .home-sec-favs { order:6; }
+  /* Notepad above the day+Do-next block: on mobile the main sections live in one
+     .home-lead block (order 0), so the scratchpad rides above it for quick jotting. */
+  .home-body .home-sec-notepad { order:-1; }
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* Sections switched off for mobile in Settings → Mobile. */
   .home .mob-hide { display:none; }
@@ -5109,10 +5112,17 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-drawer-x { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:16px; }
   .nav-drawer-bg { display:block; position:fixed; inset:0; z-index:119; background:rgba(20,16,10,.46); opacity:0; pointer-events:none; transition:opacity .28s ease; }
   body.nav-drawer-open .nav-drawer-bg { opacity:1; pointer-events:auto; }
-  /* Inside the drawer, restore the desktop grouped look. */
-  .nav-drawer .nav-grid { display:grid; margin:0; }
-  .nav-drawer .nav-item { display:flex; }
-  .nav-drawer .nav-secs { display:flex; }
+  /* Mobile drawer: a plain, importance-ordered column of big clear buttons, not
+     the desktop grouped grid. Hide the grid + favourites; show the flat list. */
+  .nav-drawer .nav-grid, .nav-drawer .nav-secs { display:none; }
+  .nav-mlist { display:flex; flex-direction:column; gap:6px; margin:2px 0 0; }
+  .nav-mlist .nav-item { display:flex; align-items:center; gap:13px; width:100%; padding:14px 15px; border:1px solid var(--line); border-radius:13px; background:var(--card); font-size:17px; color:var(--ink); }
+  .nav-mlist .nav-item.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--card)); color:var(--accent); }
+  .nav-mlist .nav-item .nav-ic { font-size:20px; width:24px; text-align:center; color:var(--accent); flex:none; }
+  .nav-mlist .nav-item.on .nav-ic { color:var(--accent); }
+  .nav-mlist .nav-item .nav-lbl { flex:1 1 auto; min-width:0; font-weight:500; }
+  .nav-mlist .nav-item .nav-quick { display:none; }   /* keep the drawer clean - add via the tool itself */
+  .nav-mlist .nav-item .nav-badge { margin-left:auto; }
   .nav-drawer .nav-k { display:none; }
   .nav-drawer .nav-bottom { display:flex; flex-direction:column; gap:8px; order:0; flex-basis:auto; margin:14px 0 0; padding:12px 0 0; border-top:1px solid var(--line); }
   .nav-drawer .nav-bottom-row { display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }

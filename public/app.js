@@ -2570,8 +2570,8 @@ document.addEventListener('pointercancel', flushNavHold, true);
 // (your compass: areas, goals, reviews) - with Home + Mail pinned above and the
 // genuine leftovers (Contacts, Money, Toolbox) sitting ungrouped below rather
 // than under a pretend label. A heading only shows if a member tool is on.
-function navGridHtml(v) {
-  const NI = {
+function navItems(v) {
+  return {
     home: `<button class="nav-item ${v.type === 'home' ? 'on' : ''}" data-view-home><span class="nav-ic">⌂</span><span class="nav-lbl">${t('nav.home')}</span></button>`,
     today: modOn('today') ? `<button class="nav-item ${v.type === 'today' ? 'on' : ''}" data-open-today><span class="nav-ic">☀</span><span class="nav-lbl">${t('nav.planner')}</span></button>` : '',
     // Practices and Tracker are one tool now: a single rail item that both tracks
@@ -2598,7 +2598,19 @@ function navGridHtml(v) {
     reviews: modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
     financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
+    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Daybook</span></button>` : '',
   };
+}
+// A flat, importance-ordered single column of clear tool buttons - the mobile
+// drawer. No group boxes, no 2-up grid: just tap what you want. (The desktop
+// sidebar keeps the grouped grid.)
+function navMobileListHtml(v) {
+  const NI = navItems(v);
+  const order = ['home', 'mail', 'calendar', 'tasks', 'notes', 'today', 'practices', 'areas', 'reflect', 'wellbeing', 'goals', 'reviews', 'financial', 'saved', 'contacts', 'connect', 'daybook', 'timer'];
+  return `<nav class="nav-mlist">${order.map((k) => NI[k]).filter(Boolean).join('')}</nav>`;
+}
+function navGridHtml(v) {
+  const NI = navItems(v);
   const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<section class="nav-sec-box"><div class="nav-grp">${esc(label)}</div><div class="nav-sec-items">${on.join('')}</div></section>` : ''; };
   // Home + Mail pinned, then Robin's mind-map branches - Daily / Meaningful /
   // People / General Tools. There's no "Capture" band: the make-a-new verbs live
@@ -2670,6 +2682,7 @@ function renderNav() {
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
       <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
+      ${navMobileListHtml(v)}
       ${navGridHtml(v)}
       <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => (k === 'people' || (k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
       <div class="nav-bottom">
