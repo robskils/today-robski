@@ -1900,7 +1900,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    sidebar exactly as before; the ☰ button, drawer chrome and backdrop are all
    mobile-only. */
 .nav-drawer { display:contents; }
-.nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist { display:none; }
+.nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:normal; color:var(--accent); }
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
@@ -3921,10 +3921,18 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      override the sections below via inline `order`, and hide any with .mob-hide. */
   .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }
   .home-sec-focus { order:4; } .home-sec-notepad { order:5; } .home-sec-favs { order:6; }
-  /* Notepad above the day+Do-next block: on mobile the main sections live in one
-     .home-lead block (order 0), so the scratchpad rides above it for quick jotting.
-     !important beats the inline order the mobile-arrangement sets on each section. */
-  .home-body .home-sec-notepad { order:-1 !important; }
+  /* Slot the Notepad between Today and Do-next: dissolve the .home-lead wrapper so
+     its blocks (Today, Do-next, Tracker…) become orderable flex children, then
+     order them with the notepad at position 1. !important beats the inline order
+     the mobile-arrangement writes onto each section. */
+  .home-lead { display:contents; }
+  .home-body .lead-block { order:4; }
+  .home-body .lead-day { order:0; }
+  .home-body .home-sec-notepad { order:1 !important; }
+  .home-body .lead-priority { order:2; }
+  .home-body .lead-tracker { order:3; }
+  .home-body .home-main-add { order:6; }
+  .home-body .home-mark { order:30; }
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* Sections switched off for mobile in Settings → Mobile. */
   .home .mob-hide { display:none; }
@@ -4183,7 +4191,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ash-toggle { flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:none; border:0; padding:0; cursor:pointer; text-align:left; color:inherit; }
 .ash-toggle:hover { color:var(--ink); }
 .ash-ic { flex:none; font-size:15px; line-height:1; color:color-mix(in srgb,var(--c) 72%,var(--ink-3)); }
-.ash-l { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ash-l { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ash-c { flex:none; font-size:12px; font-weight:700; color:var(--ink-2); background:color-mix(in srgb,var(--c) 15%,transparent); padding:1px 8px; border-radius:999px; }
 /* The → opens this section on its own (its focused tile). */
 .ash-open { flex:none; margin-left:auto; background:none; border:0; cursor:pointer; font-size:15px; color:var(--ink-3); padding:2px 4px; border-radius:7px; opacity:0; transition:opacity .14s, color .12s, background .12s; }
@@ -5078,7 +5086,13 @@ table.ttable tr:last-child td { border-bottom:0; }
   }
   /* Wordmark + toggle share the always-visible top row. */
   .nav-topline { flex:1 1 100%; display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; -webkit-user-select:none; user-select:none; }
-  .nav-brand { flex:1 1 auto; width:auto; min-width:0; padding:8px 10px; margin:0; font-size:24px; }
+  .nav-brand { flex:1 1 auto; width:auto; min-width:0; padding:8px 10px; margin:0; font-size:27px; }
+  /* A right-hand spacer the width of the ☰ button, so the centered brand sits in
+     the true middle of the header rather than being pushed right by the toggle. */
+  .nav-topline-sp { display:block; flex:0 0 42px; width:42px; }
+  .nav-topline .nav-brand .brand-mark { width:1.34em; height:1.34em; }
+  .nav-drawer-brand { font-size:26px; }
+  .nav-drawer-brand .brand-mark { width:1.3em; height:1.3em; }
   .nav-util-toggle { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:22px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
   .nav-util-toggle:active { background:var(--paper-2); }
   .nav-foot { display:none; }
@@ -5147,9 +5161,18 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* Info + theme share the top line; Settings drops to its own full-width row so a
      long label (PT "Definições") has room and never breaks out of the button. */
   .nav-drawer .nav-bottom-row .nav-theme:not(.nav-settings) { flex:1 1 auto; width:auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .nav-drawer .nav-bottom-row .help-btn { flex:0 0 auto; display:inline-flex; width:42px; height:42px; font-size:17px; border:1px solid var(--line-2); background:var(--card); border-radius:10px; }
+  .nav-drawer .nav-bottom-row .help-btn { flex:0 0 auto; display:inline-flex; width:42px; height:42px; font-size:17px; border-radius:10px; }
   .nav-drawer .nav-bottom-row .nav-settings { flex:1 1 100%; }
   .nav-drawer .nav-settings, .nav-drawer .nav-adminlink, .nav-drawer .nav-signout { width:100%; justify-content:flex-start; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* The utility trio - info · theme · Settings - share an accent-tinted highlight
+     so they read as one settings cluster. */
+  .nav-drawer .nav-bottom-row .help-btn,
+  .nav-drawer .nav-bottom-row .nav-theme,
+  .nav-drawer .nav-settings { background:color-mix(in srgb,var(--accent) 11%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line-2)); color:var(--accent); }
+  .nav-drawer .nav-bottom-row .help-btn:active,
+  .nav-drawer .nav-bottom-row .nav-theme:active,
+  .nav-drawer .nav-settings:active { background:color-mix(in srgb,var(--accent) 20%,var(--card)); }
+  .nav-drawer .nav-settings .ns-ic { color:var(--accent); }
   /* A persistent search bar under the wordmark, part of the sticky header, so it
      stays put on every page while the content scrolls. Opens the ⌘K palette. */
   .nav-msearch {

@@ -2674,6 +2674,7 @@ function renderNav() {
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle ${unreadMsgs() ? 'has-msg' : ''}" data-nav-drawer aria-label="Menu${friendPending() ? ` — ${friendPending()} new` : ''}" title="Menu">☰${friendPending() ? `<span class="nav-menu-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>
       <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em></button>
+      <span class="nav-topline-sp" aria-hidden="true"></span>
     </div>
     <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
     <div class="nav-new">${addNewMenuHtml()}</div>
@@ -4332,7 +4333,7 @@ function renderHome() {
           const blocks = enabled.map((k) => {
             const s = avail.find((x) => x.k === k); const op = homeMainOpen(k);
             const cnt = (s.count != null && s.count) ? ` <span class="lead-c">${s.count}</span>` : '';
-            return `<section class="lead-block ${s.k === 'today' ? 'lead-day' : ''}${op ? '' : ' lead-collapsed'}">
+            return `<section class="lead-block lead-${s.k} ${s.k === 'today' ? 'lead-day' : ''}${op ? '' : ' lead-collapsed'}">
               <div class="lead-h" data-home-main-toggle="${s.k}" role="button" tabindex="0"><span class="lead-chev">${op ? '▾' : '▸'}</span><span class="lead-ic">${s.ic}</span><span class="lead-name">${esc(s.label)}</span>${cnt}<span class="lead-h-r">${op ? (s.extra || '') : ''}<button class="lead-x" data-home-main-x="${s.k}" title="Remove from Home" aria-label="Remove ${esc(s.label)} from Home">×</button></span></div>
               ${op ? bodies[s.k] : ''}
             </section>`;
