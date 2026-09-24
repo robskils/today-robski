@@ -2811,17 +2811,19 @@ function openShortcuts() {
 function closeShortcuts() { const el = document.getElementById('sc-overlay'); if (el) el.innerHTML = ''; state.shortcutsOpen = false; }
 // Sidebar quick-add: jump to the tool and open its "new" affordance directly.
 async function quickAdd(kind) {
+  const primer = primeMobileKeyboard();   // keep the phone keyboard up across the async open+render
   try {
     if (kind === 'task') { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
-    else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); }
+    else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
     else if (kind === 'dream') { await openJournal(); await newJournalEntry('dreams', 'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.'); }
-    else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus(); }, 0); }
-    else if (kind === 'contact') { await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus(); }, 0); }
+    else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus({ preventScroll: true }); }, 0); }
+    else if (kind === 'contact') { await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'goal') { await openGoals('goals'); await newGoal(null); }
   } catch (e) { toast(e.message); }
+  keepKeyboardUntilFocus(primer);
 }
 // The mobile bottom tab bar lives at body level, NOT inside .nav: .nav has a
 // backdrop-filter, which would make it the containing block for a fixed child
@@ -14389,6 +14391,22 @@ function primeMobileKeyboard() {
   tmp.focus();
   return tmp;
 }
+// Hold the mobile keyboard open (via the primer) until the real field a create
+// flow focuses takes over - then drop the primer. So "＋ New task/event/…" lands
+// the cursor in the title AND opens the keyboard, no extra tap. No-op on desktop
+// (primer is null there). Universal: it watches for ANY element to steal focus,
+// so it works whatever field each flow focuses.
+function keepKeyboardUntilFocus(primer) {
+  if (!primer) return;
+  let n = 0;
+  const tick = () => {
+    if (!primer.parentNode) return;
+    if (document.activeElement && document.activeElement !== primer && document.activeElement !== document.body) { primer.remove(); return; }
+    if (++n > 60) { primer.remove(); return; }   // ~1s: give up rather than trap focus
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 async function newNote(connectToId) {
   const primer = primeMobileKeyboard();
   // Every note is top-level (no parent). Start with an empty title (the field
@@ -15420,12 +15438,12 @@ document.addEventListener('click', (e) => {
   const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.adding = false; } renderCalendar(); } return; }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
-  { const cad = t.closest('[data-cal-add-day]'); if (cad) { state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus(); }, 0); return; } }
+  { const cad = t.closest('[data-cal-add-day]'); if (cad) { const p = primeMobileKeyboard(); state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; } }
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
   { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } return; } }
-  if (t.closest('[data-cal-add]')) { state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); return; }
+  if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
@@ -15438,7 +15456,7 @@ document.addEventListener('click', (e) => {
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
-  if (t.closest('[data-task-add]')) { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); return; }
+  if (t.closest('[data-task-add]')) { const p = primeMobileKeyboard(); state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-qt-close]')) { const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
