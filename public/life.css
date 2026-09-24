@@ -5917,6 +5917,16 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
 .ev-join-btn { flex:none; display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:999px; border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line-2)); background:color-mix(in srgb,var(--accent) 10%,var(--card)); color:var(--accent); font-size:13.5px; font-weight:650; text-decoration:none; white-space:nowrap; }
 .ev-join-btn:hover { background:color-mix(in srgb,var(--accent) 18%,var(--card)); border-color:var(--accent); }
 .ev-row .ev-join-btn { grid-column:2; justify-self:start; margin-top:6px; }
+/* Mobile agenda row: the fixed 112px time + the "Open" link squeezed the event
+   title. Give the title priority on line one (next to a slimmer time) and drop
+   the location and the link to their own full-width lines. */
+@media (max-width:640px){
+  .cal-ag-row { flex-wrap:wrap; align-items:baseline; gap:4px 10px; padding:12px 6px; }
+  .cal-ag-time { width:auto; flex:0 0 auto; font-size:14px; }
+  .cal-ag-t { flex:1 1 60px; min-width:0; font-size:16px; }
+  .cal-ag-loc { flex:1 1 100%; font-size:14px; }
+  .cal-ag-row .ev-join-btn { flex:0 0 100%; margin:7px 0 0; justify-content:center; padding:9px 12px; font-size:14px; }
+}
 /* Join-the-meeting link on an event's detail form. */
 .ce-join { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:9px 15px; border-radius:11px; background:var(--accent); color:var(--accent-ink); font-size:15px; font-weight:600; text-decoration:none; box-shadow:var(--shadow); }
 .ce-join:hover { filter:brightness(1.05); }
