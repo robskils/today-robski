@@ -4183,7 +4183,12 @@ function homeDiscoverHtml() {
 // change (kept in localStorage). Defaults to Today + Do next + Practices.
 function homeMainEnabled() { try { const o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); if (Array.isArray(o)) return o; } catch {} return ['today', 'priority', 'tracker']; }
 function setHomeMainEnabled(arr) { try { localStorage.setItem('life.home.mainSecs', JSON.stringify(arr)); } catch {} renderHome(); }
-function homeMainOpen(k) { try { const o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); return o[k] !== false; } catch { return true; } }
+function homeMainOpen(k) {
+  // Explicit choice wins; otherwise on mobile every card except Today starts
+  // collapsed, so Home opens as a uniform stack of one-row cards (mirrors secOpen).
+  try { const o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); if (k in o) return o[k] !== false; } catch {}
+  return !isMobileHome() || k === 'today';
+}
 function toggleHomeMainOpen(k) { let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); } catch {} o[k] = !homeMainOpen(k); try { localStorage.setItem('life.home.mainOpen', JSON.stringify(o)); } catch {} renderHome(); }
 function homeMainRemove(k) { setHomeMainEnabled(homeMainEnabled().filter((x) => x !== k)); }
 function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHomeMainEnabled([...e, k]); }

@@ -3962,7 +3962,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      same plain style as Do next / Práticas, collapsing to one tidy row. */
   .lead-block.lead-day { border-color:var(--line); box-shadow:var(--shadow); }
   .lead-block, .home-sec-card { padding:14px 16px; }
-  .lead-h, .home-sec-card > .home-sec-h { font-size:19px; margin-bottom:11px; }
+  /* Identical collapsed depth: same header min-height, same padding, and the drag
+     grip constrained so it never makes a rail card taller than a lead card. */
+  .lead-h, .home-sec-card > .home-sec-h { font-size:19px; min-height:30px; align-items:center; }
+  .lead-block:not(.lead-collapsed) .lead-h, .home-sec-card:not(.home-sec-shut) > .home-sec-h { margin-bottom:11px; }
+  .home-mgrip { width:24px; height:30px; margin:0 3px 0 -2px; font-size:15px; }
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* Sections switched off for mobile in Settings → Mobile. */
   .home .mob-hide { display:none; }
