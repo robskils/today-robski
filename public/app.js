@@ -169,6 +169,7 @@ document.addEventListener('keydown', (ev) => {
 // the view. The id changes on restore, but the item and its content return.
 function undoableBlockDelete(block) {
   if (!block) return;
+  try { removeRecent(block.kind, block.id); } catch {}   // a deleted block must leave Recently viewed
   const snap = { kind: block.kind, title: block.title || '', body: block.body || null, props: block.props ? JSON.parse(JSON.stringify(block.props)) : {} };
   const name = (block.title || '').trim().slice(0, 30);
   pushUndo(name ? `Deleted "${name}"` : 'Deleted', async () => {
@@ -4246,7 +4247,21 @@ function renderHome() {
       <span class="ev-t"><span class="ev-dot" style="--h:${hue}"></span>${esc(t.title)}</span><span class="ev-loc ev-surfaced">back from snooze</span>
       <button class="ev-x" data-home-task-dismiss="${t.id}" title="Remove from Today (keeps the task; doesn't complete it)" aria-label="Remove from Today">×</button></div>`;
   }).join('');
-  const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind)).slice(0, 8);
+  // Recently viewed hides the noise: an item with no real title (an empty card),
+  // a life area that's since been deleted, or a task that's been ticked off.
+  const recentLiveTitle = (r) => {
+    if (r.kind === 'area') { const a = areaById(r.id); return a ? (a.title || '') : (r.title || ''); }
+    const b = (state.favs || []).find((x) => x.id === r.id) || (state.tables || []).find((x) => x.id === r.id) || (state.noteTops || []).find((x) => x.id === r.id) || (state.allTasks || []).find((x) => String(x.id) === String(r.id));
+    return b ? (b.title || '') : (r.title || '');
+  };
+  const recentDead = (r) => {
+    const title = (recentLiveTitle(r) || '').trim();
+    if (!title || title === 'Untitled') return true;
+    if (r.kind === 'area' && !areaById(r.id)) return true;
+    if (r.kind === 'task' && Array.isArray(state.allTasks)) { const tk = state.allTasks.find((x) => String(x.id) === String(r.id)); if (tk && tk.props && tk.props.done) return true; }
+    return false;
+  };
+  const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind) && !recentDead(r)).slice(0, 8);
   // Tint each icon in its life area's colour (an area item is its own area);
   // with no area it falls back to the accent (terracotta by default) via CSS.
   const recentHue = (r) => {
@@ -16655,6 +16670,7 @@ async function patchTaskProps(id, patch) {
   // replaces the whole list, so a task is never left with a stale props.areas.
   if ('area' in patch && !('areas' in patch)) patch = { ...patch, areas: patch.area ? [patch.area] : [] };
   const prev = copies.map((b) => ({ ...b.props }));
+  if (patch.done === true) { try { removeRecent('task', id); } catch {} }   // ticked off → leave Recently viewed
   copies.forEach((b) => Object.assign(b.props, patch)); rerenderCurrent();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: patch }) }); }
   catch (e) { copies.forEach((b, i) => (b.props = prev[i])); rerenderCurrent(); toast(e.message); }
@@ -16697,6 +16713,7 @@ async function homeTaskTick(id) {
   const arr = (state.home.alerts && state.home.alerts.surfaced) || [];
   const idx = arr.findIndex((t) => t.id === id); if (idx < 0) return;
   const [removed] = arr.splice(idx, 1);
+  try { removeRecent('task', id); } catch {}   // ticked off → leave Recently viewed
   renderHome();
   try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast('Done ✓'); }
   catch (e) { arr.splice(idx, 0, removed); renderHome(); toast(e.message); }

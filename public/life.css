@@ -3816,7 +3816,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .lead-block { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:16px 18px; }
 .lead-block.lead-day { border-color:color-mix(in srgb,var(--accent) 34%,var(--line)); box-shadow:0 1px 2px rgba(0,0,0,.04),0 16px 36px -22px color-mix(in srgb,var(--accent) 48%,transparent); }
 .lead-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:12px; cursor:pointer; }
-.lead-chev { flex:none; width:13px; font-size:12px; color:var(--ink-3); }
+/* No tiny collapse arrows on the Home cards - tap the header to open/close. */
+.lead-chev, .home-sec-card > .home-sec-h .hs-chev { display:none; }
 .lead-ic { font-size:17px; color:var(--accent); flex:none; }
 .lead-name { color:var(--ink); }
 .lead-c { font-size:13px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 8px; }
@@ -3964,8 +3965,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .lead-block, .home-sec-card { padding:14px 16px; }
   .lead-h, .home-sec-card > .home-sec-h { font-size:19px; align-items:center; }
   .lead-block:not(.lead-collapsed) .lead-h, .home-sec-card:not(.home-sec-shut) > .home-sec-h { margin-bottom:11px; }
-  /* No chevron, no drag dots - just the title. Drag the whole card to reorder. */
-  .home-body .lead-chev, .home-body .home-sec-card .hs-chev, .home-body .home-mgrip { display:none; }
+  /* No drag dots on mobile - drag the whole card to reorder (chevrons are hidden
+     everywhere by the base rule). */
+  .home-body .home-mgrip { display:none; }
   .home-body .home-mdrag-h { cursor:grab; }
   /* Collapsed cards are a FIXED identical height, whatever the title or icons. */
   .lead-block.lead-collapsed, .home-sec-card.home-sec-shut { height:56px; min-height:56px; padding-top:0; padding-bottom:0; display:flex; align-items:center; }
