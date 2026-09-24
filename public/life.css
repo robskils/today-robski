@@ -5221,6 +5221,12 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-drawer .nav-bottom-row .nav-theme:active,
   .nav-drawer .nav-settings:active { background:color-mix(in srgb,var(--accent) 20%,var(--card)); }
   .nav-drawer .nav-settings .ns-ic { color:var(--accent); }
+  /* Force the info · theme · Settings trio to true full width (the old util-bar
+     rules set width:auto / inline-flex / max-width and were winning). */
+  .nav-drawer .nav-bottom-row { display:flex !important; flex-direction:column !important; align-items:stretch !important; width:100% !important; flex-wrap:nowrap !important; }
+  .nav-drawer .nav-bottom-row > .help-btn,
+  .nav-drawer .nav-bottom-row > .nav-theme,
+  .nav-drawer .nav-bottom-row > .nav-settings { display:flex !important; width:100% !important; max-width:none !important; align-self:stretch !important; justify-content:flex-start !important; box-sizing:border-box; }
   /* A persistent search bar under the wordmark, part of the sticky header, so it
      stays put on every page while the content scrolls. Opens the ⌘K palette. */
   .nav-msearch {
