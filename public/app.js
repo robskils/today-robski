@@ -4231,6 +4231,7 @@ function renderHome() {
       <div class="home-actionbar">
         <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}<span class="home-time">${homeTimeStr()}</span></div>
         <div class="home-actions">${[
+          modOn('mail') ? ['✉', t('nav.mail'), 'data-open-mail', 'mail', 'New email'] : null,
           modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note'] : null,
           modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event'] : null,
           modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task'] : null,
