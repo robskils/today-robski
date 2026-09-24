@@ -3922,8 +3922,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }
   .home-sec-focus { order:4; } .home-sec-notepad { order:5; } .home-sec-favs { order:6; }
   /* Notepad above the day+Do-next block: on mobile the main sections live in one
-     .home-lead block (order 0), so the scratchpad rides above it for quick jotting. */
-  .home-body .home-sec-notepad { order:-1; }
+     .home-lead block (order 0), so the scratchpad rides above it for quick jotting.
+     !important beats the inline order the mobile-arrangement sets on each section. */
+  .home-body .home-sec-notepad { order:-1 !important; }
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* Sections switched off for mobile in Settings → Mobile. */
   .home .mob-hide { display:none; }
