@@ -3829,6 +3829,14 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .lead-block:hover .lead-x { opacity:.55; }
 .lead-x:hover { opacity:1 !important; color:var(--danger,#c0392b); background:var(--paper-2); }
 .lead-collapsed .lead-h { margin-bottom:0; }
+/* Rail sections (Recently viewed, People, Starred, Notepad) as the same elegant
+   collapsible card as the lead blocks: card shell, serif title, collapses to just
+   the title. */
+.home-sec-card { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:16px 18px; margin:0 0 16px; }
+.home-sec-card > .home-sec-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--ink); align-items:center; gap:9px; margin-bottom:12px; }
+.home-sec-card.home-sec-shut > .home-sec-h { margin-bottom:0; }
+.home-sec-card > .home-sec-h .hs-chev { color:var(--ink-3); font-size:12px; }
+.home-sec-card > .home-sec-h .muted { font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 8px; }
 .home-main-add { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:16px; }
 .hma-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.11em; color:var(--ink-3); font-weight:700; }
 .hma-chip { font-size:13.5px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:7px 13px; cursor:pointer; transition:border-color .12s, color .12s; }
@@ -3933,6 +3941,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .home-body .lead-tracker { order:3; }
   .home-body .home-main-add { order:6; }
   .home-body .home-mark { order:30; }
+  .home-body .home-sec-card { margin:0; }   /* flex gap handles spacing on mobile */
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* Sections switched off for mobile in Settings → Mobile. */
   .home .mob-hide { display:none; }
