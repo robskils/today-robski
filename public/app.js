@@ -4204,6 +4204,16 @@ function toggleHomeMainOpen(k) { let o = {}; try { o = JSON.parse(localStorage.g
 function homeMainRemove(k) { setHomeMainEnabled(homeMainEnabled().filter((x) => x !== k)); }
 function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHomeMainEnabled([...e, k]); }
 function homeMainToggle(k) { const e = homeMainEnabled(); if (e.includes(k)) homeMainRemove(k); else homeMainAdd(k); }
+// The order of ALL Home sections (enabled or not) - what the show/hide chips can
+// be dragged into. The enabled ones render on Home in this order.
+const MAIN_KEYS = ['today', 'priority', 'tracker', 'focus', 'favareas', 'favs', 'mail'];
+function homeMainOrder() {
+  let o = [];
+  try { o = JSON.parse(localStorage.getItem('life.home.mainOrder') || 'null'); } catch {}
+  o = Array.isArray(o) ? o.filter((k) => MAIN_KEYS.includes(k)) : [];
+  return [...o, ...MAIN_KEYS.filter((k) => !o.includes(k))];
+}
+function setHomeMainOrder(arr) { try { localStorage.setItem('life.home.mainOrder', JSON.stringify(arr)); } catch {} renderHome(); }
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
@@ -4369,7 +4379,10 @@ function renderHome() {
             { k: 'mail', ic: '✉', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
           const avail = MAIN_DEF.filter((s) => s.on);
-          const enabled = homeMainEnabled().filter((k) => avail.some((s) => s.k === k));
+          const availKeys = avail.map((s) => s.k);
+          const enabledSet = new Set(homeMainEnabled().filter((k) => availKeys.includes(k)));
+          const order = homeMainOrder().filter((k) => availKeys.includes(k));   // full section order (on + off)
+          const enabled = order.filter((k) => enabledSet.has(k));
           const blocks = enabled.map((k) => {
             const s = avail.find((x) => x.k === k); const op = homeMainOpen(k);
             const cnt = (s.count != null && s.count) ? ` <span class="lead-c">${s.count}</span>` : '';
@@ -4378,10 +4391,9 @@ function renderHome() {
               ${op ? bodies[s.k] : ''}
             </section>`;
           }).join('');
-          const addable = avail.filter((s) => !enabled.includes(s.k));
-          // Homepage features: one clickable toggle per section - shown ones are
-          // lit, tap to show/hide. Replaces the old add-only bar.
-          const featBar = avail.length ? `<details class="home-features"><summary class="hf-h"><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">show or hide</span></summary><div class="hf-chips">${avail.map((s) => { const on = enabled.includes(s.k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
+          // Homepage features: one chip per section - tap to show/hide (lit = shown),
+          // drag to reorder how the sections stack on Home.
+          const featBar = order.length ? `<details class="home-features"><summary class="hf-h"><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
         <aside class="home-side">${(() => {
@@ -15015,7 +15027,7 @@ document.addEventListener('click', (e) => {
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
   { const hx = t.closest('[data-home-main-x]'); if (hx) { homeMainRemove(hx.dataset.homeMainX); return; } }   // × removes a Home section
   { const ha = t.closest('[data-home-main-add]'); if (ha) { homeMainAdd(ha.dataset.homeMainAdd); return; } }   // ＋ chip re-adds one
-  { const hf = t.closest('[data-home-feature]'); if (hf) { homeMainToggle(hf.dataset.homeFeature); return; } }   // show/hide a Home section
+  { const hf = t.closest('[data-home-feature]'); if (hf) { if (Date.now() - hfSuppressClick < 400) return; homeMainToggle(hf.dataset.homeFeature); return; } }   // show/hide a Home section (a drag won't toggle)
   // Click a Home section header (not a button/link inside it) to fold/unfold it.
   { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day]')) { toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
@@ -16196,6 +16208,43 @@ function homeSecDragEnd(e) {
 }
 document.addEventListener('pointerup', homeSecDragEnd);
 document.addEventListener('pointercancel', homeSecDragEnd);
+// ── Homepage-sections panel: drag a chip to reorder how sections stack on Home ──
+let hfDrag = null; let hfSuppressClick = 0;
+document.addEventListener('pointerdown', (e) => {
+  const chip = e.target.closest && e.target.closest('.hf-chip[data-hf-id]'); if (!chip) return;
+  const cont = chip.closest('.hf-chips'); if (!cont) return;
+  hfDrag = { id: chip.dataset.hfId, chip, cont, pid: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false, targetIdx: null };
+});
+document.addEventListener('pointermove', (e) => {
+  const d = hfDrag; if (!d || e.pointerId !== d.pid) return;
+  if (!d.moved) {
+    if (Math.abs(e.clientX - d.startX) > 6 || Math.abs(e.clientY - d.startY) > 6) { d.moved = true; d.chip.classList.add('hf-dragging'); try { d.chip.setPointerCapture(d.pid); } catch {} }
+    else return;
+  }
+  e.preventDefault();
+  d.chip.style.transform = `translate(${e.clientX - d.startX}px, ${e.clientY - d.startY}px)`;
+  const chips = [...d.cont.querySelectorAll('.hf-chip[data-hf-id]')].filter((c) => c !== d.chip);
+  let idx = 0;
+  for (const c of chips) { const r = c.getBoundingClientRect(); const cy = r.top + r.height / 2, cx = r.left + r.width / 2; if (cy < e.clientY - r.height / 2 || (Math.abs(cy - e.clientY) <= r.height / 2 && cx < e.clientX)) idx++; }
+  d.targetIdx = idx;
+  chips.forEach((c, i) => c.classList.toggle('hf-drop', i === idx));
+});
+function hfDragEnd(e) {
+  const d = hfDrag; if (!d || (e && e.pointerId !== d.pid)) return; hfDrag = null;
+  d.chip.style.transform = ''; d.chip.classList.remove('hf-dragging');
+  d.cont.querySelectorAll('.hf-chip').forEach((c) => c.classList.remove('hf-drop'));
+  if (!d.moved) return;   // a tap - let the click toggle show/hide
+  hfSuppressClick = Date.now();
+  const visible = [...d.cont.querySelectorAll('.hf-chip[data-hf-id]')].map((c) => c.dataset.hfId).filter((k) => k !== d.id);
+  const beforeKey = (d.targetIdx != null && d.targetIdx < visible.length) ? visible[d.targetIdx] : null;
+  const cur = homeMainOrder();
+  const arr = cur.filter((k) => k !== d.id);
+  let i = beforeKey ? arr.indexOf(beforeKey) : arr.length; if (i < 0) i = arr.length;
+  arr.splice(i, 0, d.id);
+  if (arr.join() !== cur.join()) setHomeMainOrder(arr);
+}
+document.addEventListener('pointerup', hfDragEnd);
+document.addEventListener('pointercancel', hfDragEnd);
 // Desktop home-section drag: pointer-based (grab the ⠿ grip), reordering within
 // the section's own column (main or side). Replaces the finicky HTML5 drag.
 let deskSecDrag = null;
