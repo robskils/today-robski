@@ -3958,6 +3958,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .home-body .lead-tracker { order:3; }
   .home-body .home-features { order:25; }   /* the show/hide panel sits below the sections */
   .home-body .home-sec-card { margin:0; }   /* flex gap handles spacing on mobile */
+  /* Uniform cards: Today drops its accent-hero treatment so every card is the
+     same plain style as Do next / Práticas, collapsing to one tidy row. */
+  .lead-block.lead-day { border-color:var(--line); box-shadow:var(--shadow); }
+  .lead-block, .home-sec-card { padding:14px 16px; }
+  .lead-h, .home-sec-card > .home-sec-h { font-size:19px; margin-bottom:11px; }
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* Sections switched off for mobile in Settings → Mobile. */
   .home .mob-hide { display:none; }
@@ -5174,8 +5179,8 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-drawer .nav-grid, .nav-drawer .nav-secs { display:none; }
   .nav-mlist { display:flex; flex-direction:column; gap:6px; margin:2px 0 0; }
   .nav-mlist .mnav-row { display:flex; align-items:center; gap:2px; }
-  .mnav-grip { flex:none; width:26px; text-align:center; color:var(--ink-3); font-size:16px; line-height:1; cursor:grab; touch-action:none; opacity:.4; padding:14px 2px; -webkit-user-select:none; user-select:none; }
-  .mnav-grip:active { cursor:grabbing; opacity:.85; color:var(--accent); }
+  .mnav-grip { flex:none; width:26px; text-align:center; color:var(--accent); font-size:16px; line-height:1; cursor:grab; touch-action:none; opacity:.75; padding:14px 2px; -webkit-user-select:none; user-select:none; }
+  .mnav-grip:active { cursor:grabbing; opacity:1; }
   .mnav-row.mdragging { z-index:5; }
   .mnav-row.mdragging .nav-item { box-shadow:0 14px 30px -12px rgba(0,0,0,.5); border-color:var(--accent); }
   .mnav-row.mdrop-top .nav-item { box-shadow:0 -3px 0 -1px var(--accent); }
@@ -5189,13 +5194,13 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-mlist .nav-item .nav-badge { margin-left:auto; }
   .nav-drawer .nav-k { display:none; }
   .nav-drawer .nav-bottom { display:flex; flex-direction:column; gap:8px; order:0; flex-basis:auto; margin:14px 0 0; padding:12px 0 0; border-top:1px solid var(--line); }
-  .nav-drawer .nav-bottom-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  /* Info + theme share the top line; Settings drops to its own full-width row so a
-     long label (PT "Definições") has room and never breaks out of the button. */
-  .nav-drawer .nav-bottom-row .nav-theme:not(.nav-settings) { flex:1 1 auto; width:auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .nav-drawer .nav-bottom-row .help-btn { flex:0 0 auto; display:inline-flex; width:42px; height:42px; font-size:17px; border-radius:10px; }
-  .nav-drawer .nav-bottom-row .nav-settings { flex:1 1 100%; }
-  .nav-drawer .nav-settings, .nav-drawer .nav-adminlink, .nav-drawer .nav-signout { width:100%; justify-content:flex-start; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* The utility trio - info · theme · Settings - each full-width, stacked, flush
+     with the nav buttons above (no side gaps). */
+  .nav-drawer .nav-bottom-row { display:flex; flex-direction:column; align-items:stretch; gap:6px; }
+  .nav-drawer .nav-bottom-row .nav-theme:not(.nav-settings) { width:100%; justify-content:flex-start; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nav-drawer .nav-bottom-row .help-btn { display:inline-flex; align-items:center; justify-content:flex-start; width:100%; height:auto; padding:11px 15px; font-size:16px; border-radius:11px; }
+  .nav-drawer .nav-bottom-row .nav-settings { width:100%; }
+  .nav-drawer .nav-theme, .nav-drawer .nav-settings, .nav-drawer .nav-adminlink, .nav-drawer .nav-signout { width:100%; justify-content:flex-start; padding:11px 15px; border-radius:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   /* The utility trio - info · theme · Settings - share an accent-tinted highlight
      so they read as one settings cluster. */
   .nav-drawer .nav-bottom-row .help-btn,
