@@ -2673,9 +2673,10 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle ${unreadMsgs() ? 'has-msg' : ''}" data-nav-drawer aria-label="Menu${friendPending() ? ` — ${friendPending()} new` : ''}" title="Menu">☰${friendPending() ? `<span class="nav-menu-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${firstName() ? esc(firstName()) : ''}${MARK}<em>${esc(BRAND.app)}</em></button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em></button>
     </div>
     <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
+    <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
       <div class="nav-drawer-head"><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">

@@ -1729,6 +1729,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .addnew-item:hover { background:var(--paper); color:var(--accent); }
 .addnew-ic { width:20px; text-align:center; color:var(--ink-3); font-size:14px; flex:none; }
 .addnew-item:hover .addnew-ic { color:var(--accent); }
+/* The sidebar's own "+ New" button: full-width and prominent at the top of the rail. */
+.nav-new { margin:0 6px 8px; }
+.nav-new .addnew { margin-left:0; width:100%; }
+.nav-new .addnew-btn { width:100%; justify-content:center; gap:8px; padding:11px 14px; font-size:15.5px; color:var(--accent-ink,#fff); background:var(--accent); border-color:var(--accent); border-radius:11px; }
+.nav-new .addnew-btn:hover, .nav-new .addnew-btn[aria-expanded="true"] { color:var(--accent-ink,#fff); background:color-mix(in srgb,var(--accent) 86%,#000); border-color:transparent; }
+.nav-new .an-plus { color:var(--accent-ink,#fff); font-size:17px; }
+.nav-new .an-ch { color:color-mix(in srgb,var(--accent-ink,#fff) 70%,transparent); }
+.nav-new .addnew-menu { left:0; right:auto; width:100%; box-sizing:border-box; }
 /* Back to where you were, above the Home greeting (only when there's history). */
 .home-back { width:auto; gap:6px; padding:0 12px; font-size:14px; margin-bottom:14px; }
 /* The per-tab help "i" on Settings, pushed to the right of the section header. */
@@ -5089,7 +5097,7 @@ table.ttable tr:last-child td { border-bottom:0; }
   body[data-view="tracker"] .trk-prow { flex-wrap:wrap; align-items:center; }
   body[data-view="tracker"] .trk-pname { white-space:normal; }
   body[data-view="tracker"] .trk-hist { flex:1 1 100%; margin-top:8px; justify-content:flex-start; }
-  .nav-spacer, .foot-search { display:none; }
+  .nav-spacer, .foot-search, .nav-new { display:none; }
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
   .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
   .nav-menu-toggle:active { background:var(--paper-2); }
