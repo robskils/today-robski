@@ -1909,7 +1909,8 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .home-mark { display:flex; justify-content:center; margin:36px 0 6px; }
 .home-mark .brand-mark { width:46px; height:46px; margin:0; color:var(--accent); opacity:.9; }
 .nav-brand .brand-mark { margin:0 .16em 0 .2em; }
-.nav-msearch { display:none; }   /* mobile-only sticky search (see media query) */
+.nav-msearch, .nav-msearch-row { display:none; }   /* mobile-only sticky search (see media query) */
+.home-crumbbar { display:none; }   /* the "Home" breadcrumb row is mobile-only */
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
   padding:10px 12px; margin-bottom:8px; border-radius:10px; border:1px solid var(--line-2);
@@ -5295,15 +5296,25 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-drawer .nav-bottom-row > .nav-settings { display:flex !important; width:100% !important; max-width:none !important; align-self:stretch !important; justify-content:flex-start !important; box-sizing:border-box; }
   /* A persistent search bar under the wordmark, part of the sticky header, so it
      stays put on every page while the content scrolls. Opens the ⌘K palette. */
+  /* The search row: an optional back arrow, then the full-width search pill. */
+  .nav-msearch-row { display:flex; order:3; flex-basis:100%; align-items:center; gap:9px; width:100%; margin:2px 0 0; }
+  .nav-mback { flex:none; }
   .nav-msearch {
-    display:flex; order:3; flex-basis:100%; align-items:center; gap:11px; width:100%; margin:2px 0 0;
+    display:flex; flex:1 1 auto; align-items:center; gap:11px; min-width:0;
     padding:12px 15px; font-size:16px; color:var(--ink-3); text-align:left;
     background:var(--card); border:1px solid var(--line-2); border-radius:12px; cursor:pointer;
   }
   .nav-msearch .hs-ic { font-size:19px; line-height:1; color:var(--accent); }
   .nav-msearch:active { transform:scale(.99); }
   /* Mail has its own inbox search; the reader is full-screen (nav hidden). */
-  body[data-view="mail"] .nav-msearch { display:none; }
+  body[data-view="mail"] .nav-msearch-row { display:none; }
+  /* Back now lives in the search row, so drop the in-pane breadcrumb's own back
+     (except the mail reader, which hides the whole header and keeps its own). */
+  .crumbbar > .crumb-back, .note-crumbs > .crumb-back { display:none; }
+  body.mail-reading .note-crumbs > .crumb-back { display:inline-flex; }
+  .home-back { display:none; }   /* home's back is in the search row on mobile */
+  /* Home's "Home" breadcrumb + New row (mobile only; desktop uses the sidebar). */
+  .home-crumbbar { display:flex; }
   /* The home launcher stands in for the hidden sidebar: a tap-grid to every
      section, Today included (the planner is now responsive). Big targets and
      big labels, comfortable for thumbs and eyes. */
@@ -5374,19 +5385,8 @@ table.ttable tr:last-child td { border-bottom:0; }
   }
   /* The mail reader hides the top bar, so its breadcrumb pins to the very top. */
   body.mail-reading .crumbbar { top:0; }
-  /* The top bar now shows "Daybook <Tool>" + back, so the in-pane breadcrumb text
-     and its back button are redundant on mobile - hide them, but KEEP each row's
-     tools (+ New, Delete, Star, life-area chip). A row left with nothing useful
-     collapses entirely (:has), so tool-less pages don't show an empty strip. */
-  .crumbbar > .crumb-back, .crumbbar .crumbs,
-  .note-crumbs > .crumb-back, .note-crumbs > .crumb, .note-crumbs > .crumb-sep { display:none; }
-  .crumbbar:not(:has(.crumb-tools)):not(:has(.addnew)):not(:has(.area-link)),
-  .note-crumbs:not(:has(.crumb-tools)):not(:has(.addnew)) { display:none; }
-  /* The mail reader hides the whole top bar, so its own breadcrumb (with the back
-     to the inbox) must stay - override the hides above for that view only. */
-  body.mail-reading .note-crumbs { display:flex !important; }
-  body.mail-reading .note-crumbs > .crumb-back, body.mail-reading .note-crumbs > .crumb { display:inline-flex !important; }
-  body.mail-reading .note-crumbs > .crumb-sep { display:inline !important; }
+  /* Breadcrumbs stay visible on mobile - the trail, its back arrow and the "+ New"
+     menu - sitting just under the header (or a page's search box). */
   /* Tasks: swap the row of category chips for a single dropdown. */
   .area-chips, .area-chips-tog { display:none; }
   .area-chips-wrap { margin:0; }

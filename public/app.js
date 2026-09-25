@@ -2710,11 +2710,10 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle ${unreadMsgs() ? 'has-msg' : ''}" data-nav-drawer aria-label="Menu${friendPending() ? ` — ${friendPending()} new` : ''}" title="Menu">☰${friendPending() ? `<span class="nav-menu-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>
-      ${mobileBackHtml()}
       <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
       <span class="nav-topline-sp" aria-hidden="true"></span>
     </div>
-    <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
+    <div class="nav-msearch-row">${navHist.length ? '<button class="crumb-back nav-mback" data-nav-back title="Back" aria-label="Back">←</button>' : ''}<button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
       <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
@@ -4321,6 +4320,7 @@ function renderHome() {
     <div class="home">
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
+      <div class="crumbbar home-crumbbar"><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
       <div class="home-head">
         <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1></div>
       </div>
