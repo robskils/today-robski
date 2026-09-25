@@ -16197,8 +16197,12 @@ function homeSecDragEnd(e) {
   homeSecDrag = null;
   d.sec.style.transform = ''; d.sec.classList.remove('mdragging');
   d.order.forEach((k) => { const el = msecEl(k); if (el) el.classList.remove('mdrop-top', 'mdrop-bottom'); });
-  suppressSecClick = Date.now();   // don't let the release toggle the header's collapse
-  if (d.moved && d.newOrder && d.newOrder.join() !== d.order.join()) {
+  // Only swallow the release-click when the card actually moved. A long-press that
+  // fired but didn't reorder is really a tap, so it must still toggle the card
+  // (otherwise "press and nothing happens" - the grip-swallows-the-tap bug).
+  const reordered = d.newOrder && d.newOrder.join() !== d.order.join();
+  if (reordered) {
+    suppressSecClick = Date.now();
     const cfg = mobileHomeCfg();
     // Refill only the visible-section slots of the saved order, leaving hidden
     // sections where they sit, so a later un-hide reappears sensibly.
@@ -16207,6 +16211,14 @@ function homeSecDragEnd(e) {
     cfg.order = cfg.order.map((k) => visible.has(k) ? d.newOrder[vi++] : k);
     saveMobileHomeCfg(cfg); applyMobileHomeOrder();
     toast('Moved');
+  } else if (d.key) {
+    // Long-press fired but the card never moved: treat it as a tap and toggle
+    // here, swallowing the follow-up click so it doesn't double-toggle. (Pointer
+    // capture can otherwise eat the click entirely - hence toggling ourselves.)
+    suppressSecClick = Date.now();
+    const c = homeCollapsed(); c[d.key] = secOpen(d.key);
+    try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {}
+    renderHome();
   }
 }
 document.addEventListener('pointerup', homeSecDragEnd);
