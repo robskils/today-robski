@@ -4412,8 +4412,8 @@ function renderHome() {
           const blocks = enabled.map((k) => {
             const s = avail.find((x) => x.k === k); const op = homeMainOpen(k);
             const cnt = (s.count != null && s.count) ? ` <span class="lead-c">${s.count}</span>` : '';
-            return `<section class="lead-block lead-${s.k} ${s.k === 'today' ? 'lead-day' : ''}${op ? '' : ' lead-collapsed'}">
-              <div class="lead-h" data-home-main-toggle="${s.k}" role="button" tabindex="0"><span class="lead-chev">${op ? '▾' : '▸'}</span><span class="lead-ic">${s.ic}</span><span class="lead-name">${esc(s.label)}</span>${cnt}<span class="lead-h-r">${op ? (s.extra || '') : ''}<button class="lead-x" data-home-main-x="${s.k}" title="Remove from Home" aria-label="Remove ${esc(s.label)} from Home">×</button></span></div>
+            return `<section class="lead-block lead-${s.k} ${s.k === 'today' ? 'lead-day' : ''}${op ? '' : ' lead-collapsed'}" data-lead-key="${s.k}">
+              <div class="lead-h" data-home-main-toggle="${s.k}" role="button" tabindex="0"><span class="lead-grip" data-lead-pgrip="${s.k}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span><span class="lead-chev">${op ? '▾' : '▸'}</span><span class="lead-ic">${s.ic}</span><span class="lead-name">${esc(s.label)}</span>${cnt}<span class="lead-h-r">${op ? (s.extra || '') : ''}<button class="lead-x" data-home-main-x="${s.k}" title="Remove from Home" aria-label="Remove ${esc(s.label)} from Home">×</button></span></div>
               ${op ? bodies[s.k] : ''}
             </section>`;
           }).join('');
@@ -15056,7 +15056,7 @@ document.addEventListener('click', (e) => {
   { const ha = t.closest('[data-home-main-add]'); if (ha) { homeMainAdd(ha.dataset.homeMainAdd); return; } }   // ＋ chip re-adds one
   { const hf = t.closest('[data-home-feature]'); if (hf) { if (Date.now() - hfSuppressClick < 400) return; homeMainToggle(hf.dataset.homeFeature); return; } }   // show/hide a Home section (a drag won't toggle)
   // Click a Home section header (not a button/link inside it) to fold/unfold it.
-  { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day]')) { toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
+  { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day], [data-lead-pgrip]')) { if (Date.now() - suppressLeadClick < 400) return; toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
   if (t.closest('[data-linkpick-bg]') && !t.closest('.pal')) { closeLinkPicker(); return; }
   const lpt = t.closest('[data-linkpick-to]'); if (lpt) { linkPickPick(lpt.dataset.linkpickTo); return; }
@@ -16324,6 +16324,49 @@ function deskSecDragEnd(e) {
 }
 document.addEventListener('pointerup', deskSecDragEnd);
 document.addEventListener('pointercancel', deskSecDragEnd);
+// Main-area cards (the lead blocks: Today, Do next, Practices, ...): grab the ⠿
+// grip in the header and drag up/down to reorder them, saved to homeMainOrder.
+// Desktop only - the mobile Home uses its own arrangement (Settings › Mobile).
+let leadDrag = null; let suppressLeadClick = 0;
+document.addEventListener('pointerdown', (e) => {
+  if (matchMedia('(max-width:820px)').matches) return;
+  const grip = e.target.closest && e.target.closest('[data-lead-pgrip]'); if (!grip) return;
+  const sec = grip.closest('[data-lead-key]'); const col = sec && sec.closest('.home-lead'); if (!sec || !col) return;
+  e.preventDefault(); e.stopPropagation();
+  leadDrag = { key: grip.dataset.leadPgrip, sec, col, id: e.pointerId, startY: e.clientY, moved: false, before: null };
+  sec.classList.add('mdragging');
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', (e) => {
+  const d = leadDrag; if (!d || e.pointerId !== d.id) return;
+  e.preventDefault();
+  const dy = e.clientY - d.startY;
+  if (Math.abs(dy) > 4) d.moved = true;
+  d.sec.style.position = 'relative'; d.sec.style.zIndex = '20'; d.sec.style.transform = `translateY(${dy}px)`;
+  const others = [...d.col.querySelectorAll(':scope > [data-lead-key]')].filter((el) => el !== d.sec);
+  others.forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  let beforeEl = null;
+  for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
+  d.before = beforeEl ? beforeEl.dataset.leadKey : null;
+  if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
+  const vh = window.innerHeight; if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
+});
+function leadDragEnd(e) {
+  const d = leadDrag; if (!d || (e && e.pointerId !== d.id)) return;
+  leadDrag = null;
+  d.sec.style.transform = ''; d.sec.style.zIndex = ''; d.sec.style.position = ''; d.sec.classList.remove('mdragging');
+  d.col.querySelectorAll('[data-lead-key]').forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
+  if (!d.moved) return;
+  suppressLeadClick = Date.now();   // don't let the release toggle the card open/shut
+  const cur = [...d.col.querySelectorAll(':scope > [data-lead-key]')].map((el) => el.dataset.leadKey);
+  const without = cur.filter((k) => k !== d.key);
+  let i = d.before ? without.indexOf(d.before) : without.length; if (i < 0) i = without.length;
+  const newEnabled = [...without.slice(0, i), d.key, ...without.slice(i)];
+  const rest = homeMainOrder().filter((k) => !newEnabled.includes(k));
+  setHomeMainOrder([...newEnabled, ...rest]);
+}
+document.addEventListener('pointerup', leadDragEnd);
+document.addEventListener('pointercancel', leadDragEnd);
 // Life-area overview sections: grab the ⠿ grip to reorder within the single
 // column, saved globally so every area page follows the same arrangement.
 let areaSecDrag = null;

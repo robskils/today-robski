@@ -2789,6 +2789,16 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .home-sec.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
 .home-sec.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
 .home-sec[data-hsec].dragging { opacity:.4; }
+/* Main-area lead-block drag: a grip in the header (desktop), drop lines + lift. */
+.lead-grip { color:var(--ink-3); font-size:14px; opacity:.32; cursor:grab; margin-right:2px; padding:2px 3px; border-radius:5px; touch-action:none; -webkit-user-select:none; user-select:none; line-height:1; }
+.lead-h:hover .lead-grip { opacity:.75; }
+.lead-grip:hover { background:var(--paper-2); color:var(--ink-2); }
+.lead-grip:active { cursor:grabbing; color:var(--accent); }
+.lead-block.mdragging { position:relative; z-index:20; }
+.lead-block.mdragging .lead-h { border-radius:10px; background:var(--card); box-shadow:0 14px 34px -12px rgba(0,0,0,.45); }
+.lead-block.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
+.lead-block.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
+@media (max-width:820px){ .lead-grip { display:none; } }
 .home-main [data-hsec] { position:relative; }
 .home-main .drop-before::before, .home-main .drop-after::after { content:''; position:absolute; left:0; right:0; height:3px; border-radius:2px; background:var(--accent); z-index:4; }
 .home-main .drop-before::before { top:-7px; } .home-main .drop-after::after { bottom:-7px; }
