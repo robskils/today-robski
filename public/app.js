@@ -4426,7 +4426,7 @@ function renderHome() {
           }).join('');
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
           // drag to reorder how the sections stack on Home.
-          const featBar = order.length ? `<details class="home-features"><summary class="hf-h"><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
+          const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
         <aside class="home-side">${(() => {
@@ -15193,7 +15193,10 @@ document.addEventListener('click', (e) => {
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
   { const hx = t.closest('[data-home-main-x]'); if (hx) { homeMainRemove(hx.dataset.homeMainX); return; } }   // × removes a Home section
   { const ha = t.closest('[data-home-main-add]'); if (ha) { homeMainAdd(ha.dataset.homeMainAdd); return; } }   // ＋ chip re-adds one
-  { const hf = t.closest('[data-home-feature]'); if (hf) { if (Date.now() - hfSuppressClick < 400) return; homeMainToggle(hf.dataset.homeFeature); return; } }   // show/hide a Home section (a drag won't toggle)
+  // The Homepage-sections panel is controlled: we manage its open state so a chip
+  // toggle or a reorder (both re-render Home) doesn't snap it shut.
+  { const hft = t.closest('[data-hf-toggle]'); if (hft) { e.preventDefault(); state.home = state.home || {}; state.home.featOpen = !state.home.featOpen; renderHome(); return; } }
+  { const hf = t.closest('[data-home-feature]'); if (hf) { if (Date.now() - hfSuppressClick < 400) return; state.home = state.home || {}; state.home.featOpen = true; homeMainToggle(hf.dataset.homeFeature); return; } }   // show/hide a Home section (a drag won't toggle); keep the panel open
   // Click a Home section header (not a button/link inside it) to fold/unfold it.
   { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day], [data-lead-pgrip]')) { if (Date.now() - suppressLeadClick < 400) return; toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
@@ -16428,7 +16431,8 @@ function hfDragEnd(e) {
   const arr = cur.filter((k) => k !== d.id);
   let i = beforeKey ? arr.indexOf(beforeKey) : arr.length; if (i < 0) i = arr.length;
   arr.splice(i, 0, d.id);
-  if (arr.join() !== cur.join()) setHomeMainOrder(arr);
+  state.home = state.home || {}; state.home.featOpen = true;   // keep the panel open after a reorder
+  if (arr.join() !== cur.join()) setHomeMainOrder(arr); else renderHome();
 }
 document.addEventListener('pointerup', hfDragEnd);
 document.addEventListener('pointercancel', hfDragEnd);
