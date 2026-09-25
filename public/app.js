@@ -7822,46 +7822,28 @@ const MAIL_QUADS = [
   { key: 'chilled', label: 'Chilled', hint: 'Some importance or urgency', mailbox: 'INBOX', quad: 'chilled' },
   { key: 'others', label: 'Others', hint: 'Everything else', mailbox: 'INBOX', quad: 'others' },
 ];
-const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_QUADS.find((f) => f.key === state.mail.folder) || MAIL_FOLDERS[0];
-// The quadrant currently being viewed (null unless a quadrant view is active).
-const mailActiveQuad = () => { const q = MAIL_QUADS.find((f) => f.key === state.mail.folder); return q ? q.quad : null; };
-const mailFromAddr = (o) => (o && o.from && o.from.address && String(o.from.address).toLowerCase()) || '';
-// A message's quadrant. An explicit per-message label wins; otherwise it inherits
-// the quadrant learned for that sender (the "training" - filing one email teaches
-// Daybook where that sender's mail belongs); unfiled falls to 'others'.
-const mailQuadOf = (o) => {
-  if (!o) return 'others';
-  const k = mailFileKey(o);
-  if (state.mailQuads && state.mailQuads[k]) return state.mailQuads[k];
-  const from = mailFromAddr(o);
-  if (from && state.mailQuadSenders && state.mailQuadSenders[from]) return state.mailQuadSenders[from];
-  return 'others';
-};
+const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
+// A message's quadrant is strictly its own label - filing one email never moves
+// others (a sender can send an urgent note and a chatty one). Unfiled = 'others'.
+const mailQuadOf = (o) => (o && state.mailQuads && state.mailQuads[mailFileKey(o)]) || 'others';
 const mailMsgByKey = (key) => (state.mail && state.mail.messages || []).find((x) => x._key === key);
 function setMailFolder(key) {
   state.mail.folder = key; state.mail.open = null; state.mail.limit = 40;
   const f = mailFolder();
   if (f.local) { renderMail(); return; }   // Drafts is client-side, no fetch
-  // A quadrant view reads INBOX; if we already have it loaded, just re-filter.
-  if (f.quad) { if (state.mail.mailbox === 'INBOX' && Array.isArray(state.mail.messages)) { renderMail(); return; } state.mail.mailbox = 'INBOX'; loadMessages(); return; }
   state.mail.mailbox = f.mailbox; loadMessages();
 }
-// File one or more messages into a quadrant (or clear back to 'others'). Filing
-// also TRAINS the sender: that address's future (and other unfiled) mail inherits
-// the quadrant, so triage gets faster the more you do it. Both maps persist
-// (kv_mail_quadrants + kv_mail_quad_senders), mirroring the life-area filing.
+// File one or more messages into a quadrant (or clear back to 'others'). Strictly
+// per-message - filing one never moves other mail - persisted to kv_mail_quadrants.
 function mailToQuad(msgs, quad) {
   const list = (Array.isArray(msgs) ? msgs : [msgs]).map((x) => (typeof x === 'string' ? mailMsgByKey(x) : x)).filter(Boolean);
   if (!list.length) return;
   state.mailQuads = state.mailQuads || {};
-  state.mailQuadSenders = state.mailQuadSenders || {};
   for (const o of list) {
-    const k = mailFileKey(o); const from = mailFromAddr(o);
-    if (quad && quad !== 'others') { state.mailQuads[k] = quad; if (from) state.mailQuadSenders[from] = quad; }
-    else { delete state.mailQuads[k]; if (from) delete state.mailQuadSenders[from]; }
+    const k = mailFileKey(o);
+    if (quad && quad !== 'others') state.mailQuads[k] = quad; else delete state.mailQuads[k];
   }
   api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {});
-  api('/api/kv/mail_quad_senders', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuadSenders) }) }).catch(() => {});
   const q = MAIL_QUADS.find((x) => x.quad === quad);
   state.mail.quadMenu = null;
   toast(quad && quad !== 'others' ? `Filed in ${q ? q.label : quad}` : 'Moved to Others');
@@ -8330,12 +8312,7 @@ async function openMail(openKey) {
     state.mailQuads = {};
     api('/api/kv/mail_quadrants').then((r) => { try { state.mailQuads = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail') renderMail(); }).catch(() => {});
   }
-  // The learned sender→quadrant defaults ("training"): filing an email teaches
-  // Daybook where that sender belongs, and future mail inherits it.
-  if (!state.mailQuadSenders) {
-    state.mailQuadSenders = {};
-    api('/api/kv/mail_quad_senders').then((r) => { try { state.mailQuadSenders = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail') renderMail(); }).catch(() => {});
-  }
+  if (!state.mail.quadFilter) state.mail.quadFilter = new Set();
   // Important senders (VIPs): mail from anyone on this list is lifted into its own
   // box at the top of the inbox. `on` toggles the whole feature. Addresses are
   // stored lowercased. (Robin wanted his Spark "important senders" back, 2026-09.)
@@ -9337,8 +9314,8 @@ function mailQuadCardsHtml() {
   const m = state.mail;
   const counts = { urgent: 0, important: 0, chilled: 0, others: 0 };
   if (m.mailbox === 'INBOX') for (const th of buildThreads(m.messages || [])) counts[mailQuadOf(th.latest)] = (counts[mailQuadOf(th.latest)] || 0) + 1;
-  const active = m.folder;
-  return `<div class="mail-quads">${MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${active === q.key ? 'on' : ''}" data-mail-quad-view="${q.key}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('')}</div>`;
+  const qf = m.quadFilter || new Set();
+  return `<div class="mail-quads">${MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${qf.has(q.quad) ? 'on' : ''}" data-mail-quad-view="${q.quad}" data-mail-quad-drop="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('')}</div>`;
 }
 // The little 4-way menu that opens from a row's priority button.
 function mailQuadMenuHtml() {
@@ -9364,10 +9341,11 @@ function mailListInner(loading) {
   // message), with a quiet count when there's more than one. Opening it shows
   // the whole conversation. No toggle, no chevrons, no big-deal badges.
   let threads = buildThreads(m.messages || []);
-  // A quadrant view (Urgent / Important / Chilled / Others) filters INBOX by the
-  // label each conversation carries; 'others' catches everything unfiled.
-  const activeQuad = mailActiveQuad();
-  if (activeQuad) threads = threads.filter((th) => mailQuadOf(th.latest) === activeQuad);
+  // The quadrant cards are multi-select filters over the inbox: tap Urgent to see
+  // only urgent, tap Important too to see both, and so on. No cards active = the
+  // whole inbox. Only applies to the inbox itself, not Sent/Archive/etc.
+  const qf = m.quadFilter;
+  if (qf && qf.size && ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox')) threads = threads.filter((th) => qf.has(mailQuadOf(th.latest)));
   // Important senders: in the inbox (not searching), lift threads from VIPs into
   // their own box at the top so they don't get lost in the stream.
   const v = mailVips();
@@ -9496,7 +9474,7 @@ function renderMail(loading) {
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
-    ${['inbox', 'unread', 'starred', 'urgent', 'important', 'chilled', 'others'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
+    ${['inbox', 'unread', 'starred'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
     ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
@@ -15610,7 +15588,7 @@ document.addEventListener('click', (e) => {
   const ddel = t.closest('[data-del-draft]'); if (ddel) { e.preventDefault(); e.stopPropagation(); delDraft(ddel.dataset.delDraft); return; }
   const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
-  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { setMailFolder(qv.dataset.mailQuadView); return; } }
+  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const k = qv.dataset.mailQuadView; if (qf.has(k)) qf.delete(k); else qf.add(k); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); return; } }
   { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(o, qf.dataset.mailQuadFile); return; } }
   // Quick-file straight from an inbox row: a small button opens a 4-way menu.
   { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
@@ -15638,7 +15616,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
   const mvip = t.closest('[data-mail-vip]'); if (mvip) { e.preventDefault(); e.stopPropagation(); toggleVipSender(mvip.dataset.mailVip); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
-  const mo = t.closest('[data-mail-open]'); if (mo) { if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
   if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }
@@ -16551,6 +16529,55 @@ function leadDragEnd(e) {
 }
 document.addEventListener('pointerup', leadDragEnd);
 document.addEventListener('pointercancel', leadDragEnd);
+// Drag an inbox row up onto a quadrant card to file it fast. Touch: long-press
+// then drag (so a tap still opens and a swipe still scrolls). Mouse: drag on move.
+let mailDrag = null; let mailDragPress = null; let mailDragSuppressClick = 0;
+document.addEventListener('pointerdown', (e) => {
+  if (e.button != null && e.button !== 0) return;
+  const row = e.target.closest && e.target.closest('.mail-row[data-mail-open]');
+  if (!row) return;
+  if (e.target.closest('.mail-check, .mail-star, .mail-quadbtn, a, button:not(.mail-row)')) return;   // leave the row's own controls alone
+  if (!document.querySelector('[data-mail-quad-drop]')) return;   // only where the quadrant cards are the drop targets
+  const key = row.dataset.mailOpen, pid = e.pointerId, sx = e.clientX, sy = e.clientY;
+  const begin = () => {
+    mailDragPress = null;
+    mailDrag = { key, row, pid, over: null, ghost: null };
+    row.classList.add('mail-dragging');
+    const g = document.createElement('div'); g.className = 'mail-drag-ghost';
+    const subj = row.querySelector('.mail-subject'); g.textContent = ((subj && subj.textContent) || 'Email').slice(0, 60);
+    g.style.left = sx + 'px'; g.style.top = sy + 'px'; document.body.appendChild(g); mailDrag.ghost = g;
+    const q = document.querySelector('.mail-quads'); if (q) q.classList.add('mail-quads-armed');
+    try { row.setPointerCapture(pid); } catch {}
+  };
+  if (matchMedia('(pointer:coarse)').matches) mailDragPress = { pid, sx, sy, timer: setTimeout(begin, 280) };
+  else mailDragPress = { pid, sx, sy, timer: null, begin };
+});
+document.addEventListener('pointermove', (e) => {
+  if (mailDragPress && e.pointerId === mailDragPress.pid && !mailDrag) {
+    const dx = Math.abs(e.clientX - mailDragPress.sx), dy = Math.abs(e.clientY - mailDragPress.sy);
+    if (mailDragPress.timer) { if (dx > 8 || dy > 8) { clearTimeout(mailDragPress.timer); mailDragPress = null; } return; }
+    if (mailDragPress.begin && (dx > 6 || dy > 6)) mailDragPress.begin();
+    return;
+  }
+  const d = mailDrag; if (!d || e.pointerId !== d.pid) return;
+  e.preventDefault();
+  if (d.ghost) { d.ghost.style.left = e.clientX + 'px'; d.ghost.style.top = e.clientY + 'px'; }
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const card = el && el.closest && el.closest('[data-mail-quad-drop]');
+  if (card !== d.over) { if (d.over) d.over.classList.remove('mail-quad-hot'); d.over = card; if (card) card.classList.add('mail-quad-hot'); }
+});
+function mailDragEnd(e) {
+  if (mailDragPress && (!e || e.pointerId === mailDragPress.pid)) { if (mailDragPress.timer) clearTimeout(mailDragPress.timer); mailDragPress = null; }
+  const d = mailDrag; if (!d || (e && e.pointerId !== d.pid)) return;
+  mailDrag = null;
+  if (d.ghost) d.ghost.remove();
+  d.row.classList.remove('mail-dragging');
+  const q = document.querySelector('.mail-quads'); if (q) q.classList.remove('mail-quads-armed');
+  if (d.over) d.over.classList.remove('mail-quad-hot');
+  if (d.over) { mailDragSuppressClick = Date.now(); mailToQuad(d.key, d.over.dataset.mailQuadDrop); }
+}
+document.addEventListener('pointerup', mailDragEnd);
+document.addEventListener('pointercancel', mailDragEnd);
 // Life-area overview sections: grab the ⠿ grip to reorder within the single
 // column, saved globally so every area page follows the same arrangement.
 let areaSecDrag = null;

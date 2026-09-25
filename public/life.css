@@ -4765,6 +4765,11 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-quadmenu .mail-quad-dot { width:12px; height:12px; flex:none; }
 .mail-quadmenu-l { font-weight:600; font-size:15px; }
 .mail-quadmenu-h { color:var(--ink-3); font-size:12.5px; margin-left:auto; }
+/* Drag a row onto a card to file it. */
+.mail-row.mail-dragging { opacity:.4; }
+.mail-drag-ghost { position:fixed; z-index:1000; transform:translate(-50%,-140%); pointer-events:none; max-width:220px; padding:8px 13px; border-radius:11px; background:var(--accent); color:var(--accent-ink); font-size:14px; font-weight:600; box-shadow:0 12px 30px -10px rgba(0,0,0,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-quads-armed .mail-quad { border-style:dashed; border-color:var(--q); }
+.mail-quad.mail-quad-hot { border-style:solid; background:color-mix(in srgb,var(--q) 18%,var(--card)); transform:translateY(-2px); box-shadow:0 0 0 2px var(--q) inset, var(--shadow); }
 @media (max-width:820px){
   .mail-quads { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
   /* Inbox stays (you triage from it into the quadrants); Unread/Starred are folded
