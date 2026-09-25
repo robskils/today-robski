@@ -1458,12 +1458,12 @@ function nativeRangeShape(blockId, title, p, occDate) {
   const total = startMin + duration;
   return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId, repeat, recurStart, until };
 }
-async function nativeEventBlocks(env) {
-  const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(env.uid).all();
+async function nativeEventBlocks(env, uid = env.uid) {
+  const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(uid).all();
   return (r.results || []).map((b) => { let p = {}; try { p = JSON.parse(b.props || '{}'); } catch {} return { id: b.id, title: b.title || '(no title)', p }; });
 }
-async function nativeDayEvents(env, day) {
-  const blocks = await nativeEventBlocks(env);
+async function nativeDayEvents(env, day, uid = env.uid) {
+  const blocks = await nativeEventBlocks(env, uid);
   const out = [];
   for (const b of blocks) if (occurrencesInRange(b.p, day, day).length) out.push(nativeDayShape(b.id, b.title, b.p, day));
   return out;
@@ -2255,7 +2255,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     // owner's live on Google) and any subscribed feeds (holidays / fixtures), so
     // the brief matches the day in the app.
     let events = cal.events || [];
-    try { const nd = await nativeDayEvents(env, now.date); if (nd.length) events = [...events, ...nd]; } catch {}
+    try { const nd = await nativeDayEvents(env, now.date, uid); if (nd.length) events = [...events, ...nd]; } catch {}
     try {
       const feeds = await getFeeds(env);
       if (feedCountries(feeds).length || feedTeams(feeds).length) {
