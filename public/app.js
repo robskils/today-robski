@@ -4035,7 +4035,7 @@ function secOpen(key) {
 }
 // Reposition-by-drag is a desktop affordance; on a phone the grip only misaligns
 // the header and can swallow the tap, so mobile headers are plain tap-to-collapse.
-function secH(key, title, extra, drag) {
+function secH(key, title, extra, drag, ic) {
   const mobile = matchMedia('(max-width:820px)').matches;
   const deskDrag = drag && !mobile;
   // On mobile the sections are draggable in place too, but only the ones the mobile
@@ -4046,7 +4046,7 @@ function secH(key, title, extra, drag) {
   // it doesn't fight the header's tap-to-collapse the way HTML5 drag did).
   const grip = deskDrag ? `<span class="home-grip" data-hsec-pgrip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span>`
     : mobDrag ? `<span class="home-mgrip" data-hsec-mgrip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span>` : '';
-  return `<div class="home-sec-h home-sec-toggle${deskDrag ? ' home-drag-h' : ''}${mobDrag ? ' home-mdrag-h' : ''}" data-sec-collapse="${key}">${grip}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${title}${extra || ''}</div>`;
+  return `<div class="home-sec-h home-sec-toggle${deskDrag ? ' home-drag-h' : ''}${mobDrag ? ' home-mdrag-h' : ''}" data-sec-collapse="${key}">${grip}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${ic ? `<span class="hs-ic">${ic}</span>` : ''}<span class="hs-name">${title}</span>${extra || ''}</div>`;
 }
 // The Priority Tasks list, in whatever order you've dragged it into. A custom
 // order persists in localStorage; anything not yet ordered (a freshly-flagged
@@ -4226,13 +4226,11 @@ function renderHome() {
   const favIc = (k) => (k === 'note' ? NOTE_ICO : (KIND_IC[k] || '•'));
   // A starred note/table tagged to a life area gets a left edge in that area's
   // colour, the same at-a-glance sorting the Priority Task cards carry.
-  const favCard = (f) => { const a = areaById(blockAreas(f)[0]); return `<div class="fav-card${a ? ' has-area' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} draggable="true" data-fav-id="${f.id}"><button class="fav-card-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`; };
-  const favGroup = (label, list) => list.length ? `<div class="fav-group"><div class="fav-group-h">${label}</div><div class="fav-cards">${list.map(favCard).join('')}</div></div>` : '';
-  const favDocs = favs.filter((f) => f.kind === 'note' || f.kind === 'table');
-  const favGroups = [
-    favGroup('Tasks', favs.filter((f) => f.kind === 'task')),
-    favDocs.length ? `<div class="fav-group"><div class="fav-cards">${favDocs.map(favCard).join('')}</div></div>` : '',
-  ].join('');
+  // One starred item per line (icon + title), like the Do-next rows. A note/table
+  // tagged to a life area gets a left edge in that area's colour.
+  const favLine = (f) => { const a = areaById(blockAreas(f)[0]); return `<div class="fav-line${a ? ' has-area' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} draggable="true" data-fav-id="${f.id}"><button class="fav-line-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-line-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`; };
+  // Starred, most-recent first, one per line, capped at 12 with a "see more".
+  const favListHtml = () => { if (!favs.length) return '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'; const shown = favs.slice(0, 12); return `<div class="fav-lines">${shown.map(favLine).join('')}</div><button class="p1-all" data-open-notes>${favs.length > 12 ? `See all ${favs.length} starred` : 'See all notes'} →</button>`; };
   const evRows = todayItems.map((it) => {
     if (it.kind === 'birthday') {
       return `<div class="ev-row ev-bday ev-click" data-open-contact="${it.id}" role="button" tabindex="0" title="Open this contact"><span class="ev-time">🎂</span><span class="ev-t">${esc(it.title)}'s birthday</span><button class="ev-bday-x" data-alert-x="bday:${it.id}" title="Hide this for today" aria-label="Hide ${esc(it.title)}'s birthday for today">×</button></div>`;
@@ -4297,12 +4295,16 @@ function renderHome() {
       </div>
       <div class="home-actionbar">
         <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}<span class="home-time">${homeTimeStr()}</span></div>
-        <div class="home-actions">${[
-          modOn('mail') ? ['✉', t('nav.mail'), 'data-open-mail', 'mail', 'New email'] : null,
-          modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note'] : null,
-          modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event'] : null,
-          modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task'] : null,
-        ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span></button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('')}</div>
+        <div class="home-actions">${(() => {
+          const mailN = state.mailUnreadTotal || 0;
+          const taskN = (state.home && state.home.alerts && state.home.alerts.taskOpen) || 0;
+          return [
+            modOn('mail') ? ['✉', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN] : null,
+            modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note', 0] : null,
+            modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event', 0] : null,
+            modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', taskN] : null,
+          ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl, n]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span>${n ? `<span class="hqa-n">${n > 99 ? '99+' : n}</span>` : ''}</button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('');
+        })()}</div>
       </div>
       ${alertsHtml()}
       ${homeQuoteHtml()}
@@ -4350,12 +4352,12 @@ function renderHome() {
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
             today: `<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
-            priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 8).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 8 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
+            priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
             tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
-            favs: `${favGroups || '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'}<button class="p1-all" data-open-notes>See all notes →</button>`,
+            favs: favListHtml(),
           };
           const meta = {
             today: { ic: '☀', label: homeDayLabel(off), count: null, nav: dayNav },
@@ -4375,7 +4377,7 @@ function renderHome() {
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
             { k: 'favareas', ic: '◈', label: 'Life areas', count: sortedAreas.length, on: modOn('areas') },
-            { k: 'favs', ic: '★', label: 'Starred', on: modOn('notes') },
+            { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
           const avail = MAIN_DEF.filter((s) => s.on);
@@ -4399,11 +4401,12 @@ function renderHome() {
         <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
           // section carrying data-hsec so the drop logic can read the order.
+          const secCount = (n) => (n ? `<span class="sec-c">${n}</span>` : '');
           const sideSec = {
-            recent: `<section class="home-sec home-sec-card home-sec-recent${secOpen('recent') ? '' : ' home-sec-shut'}" data-hsec="recent">${secH('recent', t('home.sec.recent'), '', true)}${secOpen('recent') ? recentHtml : ''}</section>`,
-            notepad: modOn('notepad') ? `<section class="home-sec home-sec-card home-sec-notepad${secOpen('notepad') ? '' : ' home-sec-shut'}" data-hsec="notepad">${secH('notepad', t('home.sec.notepad'), '', true)}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
-            people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-card home-sec-people${secOpen('people') ? '' : ' home-sec-shut'}" data-hsec="people">${secH('people', t('home.sec.people'), '', true)}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
-            starred: (state.favs && state.favs.length) ? `<section class="home-sec home-sec-card home-sec-starred${secOpen('starred') ? '' : ' home-sec-shut'}" data-hsec="starred">${secH('starred', t('home.sec.favs'), `<span class="muted">${state.favs.length}</span>`, true)}${secOpen('starred') ? `<div class="fav-cards">${state.favs.map(favCard).join('')}</div><button class="p1-all" data-open-notes>See all notes →</button>` : ''}</section>` : '',
+            recent: `<section class="home-sec home-sec-card home-sec-recent${secOpen('recent') ? '' : ' home-sec-shut'}" data-hsec="recent">${secH('recent', t('home.sec.recent'), secCount(recents.length), true, '↺')}${secOpen('recent') ? recentHtml : ''}</section>`,
+            notepad: modOn('notepad') ? `<section class="home-sec home-sec-card home-sec-notepad${secOpen('notepad') ? '' : ' home-sec-shut'}" data-hsec="notepad">${secH('notepad', t('home.sec.notepad'), '', true, '✎')}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
+            people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-card home-sec-people${secOpen('people') ? '' : ' home-sec-shut'}" data-hsec="people">${secH('people', t('home.sec.people'), '', true, '☺')}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
+            starred: (state.favs && state.favs.length) ? `<section class="home-sec home-sec-card home-sec-starred${secOpen('starred') ? '' : ' home-sec-shut'}" data-hsec="starred">${secH('starred', t('home.sec.favs'), secCount(state.favs.length), true, '★')}${secOpen('starred') ? favListHtml() : ''}</section>` : '',
           };
           const sdef = ['recent', 'starred', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}

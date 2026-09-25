@@ -2453,10 +2453,13 @@ async function homeAlerts(request, env, json) {
     if (p.birthday && String(p.birthday).slice(-5) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' });
   }
   const today = localParts(new Date(), TZ).date;   // YYYY-MM-DD in Lisbon
-  let p1 = 0; const p1list = []; const surfaced = []; const keepInTouch = [];
+  let p1 = 0; let taskOpen = 0; const p1list = []; const surfaced = []; const keepInTouch = [];
   for (const r of tks.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     if (p.done) continue;
+    // Total open tasks (excludes done above, and keep-in-touch nudges below): the
+    // number shown on the Home "Tasks" quick button.
+    if (!p.kit) taskOpen++;
     // A keep-in-touch nudge has its own Home section, so it leaves the ordinary
     // task paths here entirely: counted as a P1 it would reach the morning brief,
     // and left in `surfaced` it would show in Today as well and read as two
@@ -2483,7 +2486,7 @@ async function homeAlerts(request, env, json) {
   surfaced.sort((a, b) => String(a.snooze).localeCompare(String(b.snooze)));
   // Longest overdue first: the person you've left longest is the one to ring.
   keepInTouch.sort((a, b) => String(a.due).localeCompare(String(b.due)));
-  return json({ birthdays, p1, p1list, surfaced: surfaced.slice(0, 50), keepInTouch: keepInTouch.slice(0, 50) }, request);
+  return json({ birthdays, p1, taskOpen, p1list, surfaced: surfaced.slice(0, 50), keepInTouch: keepInTouch.slice(0, 50) }, request);
 }
 
 // Connect: EVERY person you keep in touch with, not just the overdue ones, so
