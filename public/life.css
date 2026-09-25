@@ -5308,12 +5308,9 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-msearch:active { transform:scale(.99); }
   /* Mail has its own inbox search; the reader is full-screen (nav hidden). */
   body[data-view="mail"] .nav-msearch-row { display:none; }
-  /* Back now lives in the search row, so drop the in-pane breadcrumb's own back
-     (except the mail reader, which hides the whole header and keeps its own). */
-  .crumbbar > .crumb-back, .note-crumbs > .crumb-back { display:none; }
-  body.mail-reading .note-crumbs > .crumb-back { display:inline-flex; }
-  .home-back { display:none; }   /* home's back is in the search row on mobile */
-  /* Home's "Home" breadcrumb + New row (mobile only; desktop uses the sidebar). */
+  /* The back arrow rides in the breadcrumb row (kept visible on mobile). */
+  .home-back { display:none; }   /* home's back is in the breadcrumb row on mobile */
+  /* Home's back + "Home" breadcrumb + New row (mobile only; desktop uses sidebar). */
   .home-crumbbar { display:flex; }
   /* The home launcher stands in for the hidden sidebar: a tap-grid to every
      section, Today included (the planner is now responsive). Big targets and
