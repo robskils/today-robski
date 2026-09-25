@@ -630,7 +630,16 @@ export async function syncMailCache(env, { force = false } = {}) {
   }
   await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,'mail_sync_at',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
   const accts = await listAccounts(env);
-  const results = await Promise.allSettled(accts.map((a) => syncOneInbox(env, a)));
+  // Sync in small batches, not all at once: a Worker invocation can only hold a
+  // handful of simultaneous outbound sockets, so firing 10+ IMAP connections
+  // together makes the overflow ones fail (and a failed SELECT reads as an empty
+  // inbox, which then blanks the cache). Batching keeps every account healthy.
+  const results = [];
+  const CHUNK = 4;
+  for (let i = 0; i < accts.length; i += CHUNK) {
+    const part = await Promise.allSettled(accts.slice(i, i + CHUNK).map((a) => syncOneInbox(env, a)));
+    results.push(...part);
+  }
   // Count genuinely new unread arrivals across every account (message-id based,
   // so it fires even if the total count didn't net-rise or another client read
   // something in the same window), and group them by the account's owner so the
@@ -656,6 +665,11 @@ async function syncOneInbox(env, acct) {
     // arrival. Skip the very first population of an account (would flood).
     const prev = await env.DB.prepare("SELECT message_id FROM mail_cache WHERE account=? AND mailbox='INBOX'").bind(acct.id).all();
     const known = new Set((prev.results || []).map((r) => r.message_id).filter(Boolean));
+    // Resilience: a SELECT that comes back empty is almost always a hiccup (a
+    // throttled connection, a half-open socket), not a genuinely emptied inbox.
+    // If we had messages a moment ago, keep the last known-good rather than
+    // wiping the cache to nothing (which is what made Mail look "all gone").
+    if (!msgs.length && known.size > 0) return { account: acct.id, newUnread: 0, unseen: known.size, kept: true };
     const newUnread = known.size === 0 ? 0 : msgs.filter((m) => !m.seen && m.messageId && !known.has(m.messageId)).length;
     const nowIso = new Date().toISOString();
     const stmts = [env.DB.prepare('DELETE FROM mail_cache WHERE account=? AND mailbox=?').bind(acct.id, 'INBOX')];
