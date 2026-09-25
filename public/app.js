@@ -6687,7 +6687,7 @@ function renderCalendar() {
   // Rolling agenda: today, then every day forward for the loaded window, each in
   // one uniform style. Empty days stay as a slim date line so the scroll never
   // dead-ends; days with events list them. Extend with "Show more days".
-  const agRow = (e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); return `<div class="cal-ag-row" data-cal-ev="${e.id}" role="button" tabindex="0"><span class="cal-ag-time">${agTime(e)}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; };
+  const agRow = (e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); const a = e.area ? areaById(e.area) : null; return `<div class="cal-ag-row${a ? ' has-area' : ''}${e.allDay ? ' allday' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} data-cal-ev="${e.id}" role="button" tabindex="0"><span class="cal-ag-time">${agTime(e)}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${a ? `<span class="cal-ag-area"><span class="cal-ag-adot"></span>${esc(a.title)}</span>` : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; };
   const cq = (state.calQuery || '').trim().toLowerCase();
   const isAgenda = c.mode === 'agenda' && !cq;
   let rollHtml = '';
@@ -6714,7 +6714,7 @@ function renderCalendar() {
       <h1>${title}</h1>
       <div class="cal-nav">
         ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Today tool">☀ Plan day</button>' : ''}
-        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
+        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Calendar Day View</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
