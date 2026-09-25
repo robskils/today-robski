@@ -6577,8 +6577,9 @@ async function openCalendar(dateStr) {
   const [y, m] = base.split('-').map(Number);
   // weekAnchor = the first day of the rolling week window (today by default),
   // kept separate from `selected` so clicking a day doesn't shift the window.
+  // Modes are now Day (a scrollable list) and Month. Old saved 'week' maps to Day.
   const savedMode = localStorage.getItem('life.calMode');
-  const startMode = (savedMode === 'week' || savedMode === 'month' || savedMode === 'agenda') ? savedMode : (matchMedia('(max-width:820px)').matches ? 'agenda' : 'month');
+  const startMode = savedMode === 'month' ? 'month' : 'agenda';
   state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: startMode, agendaDays: 30, events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
@@ -6643,7 +6644,7 @@ function renderCalendar() {
   if ((c.adding || c.editing)) { const f = document.getElementById('cal-ev-form'); if (f && document.activeElement && f.contains(document.activeElement)) return; }
   _calFormSnap = snapshotCalForm();   // keep any unsaved edits across this rebuild
   let title, body;
-  if (c.mode === 'agenda') { title = 'Agenda'; body = ''; }
+  if (c.mode === 'agenda') { title = 'Day'; body = ''; }
   else if (c.mode === 'week') {
     const wk = weekDays(c.weekAnchor || todayISO()), a = wk[0], b = wk[6];
     title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
@@ -6713,7 +6714,7 @@ function renderCalendar() {
       <h1>${title}</h1>
       <div class="cal-nav">
         ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Today tool">☀ Plan day</button>' : ''}
-        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Agenda</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button><button class="cal-mode ${c.mode === 'week' ? 'on' : ''}" data-cal-mode="week">Week</button></div>
+        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
