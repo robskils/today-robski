@@ -985,7 +985,11 @@ function addNewMenuHtml() {
 }
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
-function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label, pinned: !!t.pinned })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); } catch {} }
+function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label, pinned: !!t.pinned })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); localStorage.setItem('life.lastActive', String(Date.now())); } catch {} }
+// After a long time away, open straight on Home at the top rather than restoring
+// whatever page you happened to leave on. A quick reopen keeps your place.
+const REOPEN_FRESH_MS = 60 * 60 * 1000;   // an hour counts as "in a while"
+function reopenedAfterAWhile() { try { const t = Number(localStorage.getItem('life.lastActive') || 0); return !t || (Date.now() - t) > REOPEN_FRESH_MS; } catch { return false; } }
 // A tab must own an INDEPENDENT copy of its view. A Tasks view carries mutable
 // filters/sort; a shallow copy leaves every Tasks tab pointing at one shared
 // array, so they all show identical content (the "two tabs, same content" bug).
@@ -18460,9 +18464,18 @@ async function onbConnectGmail() {
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
+    // Reopening after a long time away lands on Home, at the top - not on some
+    // random page you left open last week. The active tab resets to Home; any
+    // pinned tabs are kept (just not focused).
+    const staleReopen = reopenedAfterAWhile();
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
       state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home', pinned: !!t.pinned }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
+      if (staleReopen) {
+        const act = state.tabs.find((t) => t.id === state.activeTab);
+        if (act) { act.view = { type: 'home' }; act.label = 'Home'; }
+        window.scrollTo(0, 0);
+      }
     } else { state.tabs = [{ id: uid(), view: { type: 'home' }, label: 'Home' }]; state.activeTab = state.tabs[0].id; }
     const route = location.pathname.replace(/\/$/, '');
     const mailtoParam = new URLSearchParams(location.search).get('mailto');
