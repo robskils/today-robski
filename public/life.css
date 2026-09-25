@@ -3785,11 +3785,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Mobile: stack the three controls full-width so each is easy to see and read,
    rather than cramming them into thirds. */
 @media (max-width:640px){
-  .home-actions { flex-direction:column; gap:9px; flex:1 1 100%; width:100%; max-width:100%; box-sizing:border-box; }
-  .home-qa { width:100%; }
-  .home-qa-open { flex:1 1 auto; min-width:0; padding:14px 16px; font-size:16px; }
-  .home-qa-open .hqa-ic { font-size:18px; }
-  .home-qa-add { width:52px; font-size:24px; }
+  /* Two per row: Mail · Notes over Calendar · Tasks (4 over 2 rows). */
+  .home-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:9px; flex:1 1 100%; width:100%; max-width:100%; box-sizing:border-box; }
+  .home-qa { width:100%; min-width:0; }
+  .home-qa-open { flex:1 1 auto; min-width:0; padding:14px 10px; font-size:15px; }
+  .home-qa-open .hqa-ic { font-size:17px; }
+  .home-qa-add { width:46px; font-size:22px; }
 }
 .home-sec { margin:26px 0; }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
