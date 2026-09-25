@@ -45,7 +45,7 @@ const T_EN = {
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes & Tables', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
@@ -67,7 +67,7 @@ const T_PT = {
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas e tabelas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
@@ -2278,7 +2278,7 @@ const MOBILE_SECTIONS = [
   ['priority', 'home-sec-p1', 'Priority Tasks'],
   ['focus', 'home-sec-focus', "This quarter's focus"],
   ['notepad', 'home-sec-notepad', 'Notepad'],
-  ['favs', 'home-sec-favs', 'Starred Notes & Tables'],
+  ['favs', 'home-sec-favs', 'Starred Notes'],
   ['favareas', 'home-sec-favareas', 'Life areas'],
   ['recent', 'home-sec-recent', 'Recently viewed'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
@@ -4503,7 +4503,8 @@ function notesControlsHtml(full) {
   const typeChips = `<div class="note-type-chips">${NOTE_TYPES.map(([v, l]) => `<button class="ntype ${type === v ? 'on' : ''}" data-notes-type="${v}">${l}</button>`).join('')}</div>`;
   const areaSel = `<select class="sel notes-area" data-notes-area title="Filter by life area"><option value="">${t('filter.allareas')}</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
   const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
-  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${full ? `<button class="add-btn wide notes-new" data-new-note>${t('notes.newnote')}</button>` : ''}</div>`;
+  const makeBtns = full ? `<button class="add-btn wide notes-new" data-new-note>${t('notes.newnote')}</button><button class="add-btn wide notes-new-table" data-new-table>${t('btn.newtable')}</button>` : '';
+  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${makeBtns}</div>`;
 }
 function noteCard(n) {
   const t = isTableNote(n);
@@ -7752,8 +7753,19 @@ const MAIL_QUADS = [
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_QUADS.find((f) => f.key === state.mail.folder) || MAIL_FOLDERS[0];
 // The quadrant currently being viewed (null unless a quadrant view is active).
 const mailActiveQuad = () => { const q = MAIL_QUADS.find((f) => f.key === state.mail.folder); return q ? q.quad : null; };
-// A message's quadrant: its saved label, or 'others' when unfiled.
-const mailQuadOf = (o) => (o && state.mailQuads && state.mailQuads[mailFileKey(o)]) || 'others';
+const mailFromAddr = (o) => (o && o.from && o.from.address && String(o.from.address).toLowerCase()) || '';
+// A message's quadrant. An explicit per-message label wins; otherwise it inherits
+// the quadrant learned for that sender (the "training" - filing one email teaches
+// Daybook where that sender's mail belongs); unfiled falls to 'others'.
+const mailQuadOf = (o) => {
+  if (!o) return 'others';
+  const k = mailFileKey(o);
+  if (state.mailQuads && state.mailQuads[k]) return state.mailQuads[k];
+  const from = mailFromAddr(o);
+  if (from && state.mailQuadSenders && state.mailQuadSenders[from]) return state.mailQuadSenders[from];
+  return 'others';
+};
+const mailMsgByKey = (key) => (state.mail && state.mail.messages || []).find((x) => x._key === key);
 function setMailFolder(key) {
   state.mail.folder = key; state.mail.open = null; state.mail.limit = 40;
   const f = mailFolder();
@@ -7762,14 +7774,24 @@ function setMailFolder(key) {
   if (f.quad) { if (state.mail.mailbox === 'INBOX' && Array.isArray(state.mail.messages)) { renderMail(); return; } state.mail.mailbox = 'INBOX'; loadMessages(); return; }
   state.mail.mailbox = f.mailbox; loadMessages();
 }
-// File one or more messages into a quadrant (or clear back to 'others'). Persisted
-// to kv_mail_quadrants, mirroring how life-area filing (mail_areas) is stored.
-function mailToQuad(keys, quad) {
-  const list = Array.isArray(keys) ? keys : [keys];
+// File one or more messages into a quadrant (or clear back to 'others'). Filing
+// also TRAINS the sender: that address's future (and other unfiled) mail inherits
+// the quadrant, so triage gets faster the more you do it. Both maps persist
+// (kv_mail_quadrants + kv_mail_quad_senders), mirroring the life-area filing.
+function mailToQuad(msgs, quad) {
+  const list = (Array.isArray(msgs) ? msgs : [msgs]).map((x) => (typeof x === 'string' ? mailMsgByKey(x) : x)).filter(Boolean);
+  if (!list.length) return;
   state.mailQuads = state.mailQuads || {};
-  for (const k of list) { if (!k) continue; if (quad && quad !== 'others') state.mailQuads[k] = quad; else delete state.mailQuads[k]; }
+  state.mailQuadSenders = state.mailQuadSenders || {};
+  for (const o of list) {
+    const k = mailFileKey(o); const from = mailFromAddr(o);
+    if (quad && quad !== 'others') { state.mailQuads[k] = quad; if (from) state.mailQuadSenders[from] = quad; }
+    else { delete state.mailQuads[k]; if (from) delete state.mailQuadSenders[from]; }
+  }
   api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {});
+  api('/api/kv/mail_quad_senders', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuadSenders) }) }).catch(() => {});
   const q = MAIL_QUADS.find((x) => x.quad === quad);
+  state.mail.quadMenu = null;
   toast(quad && quad !== 'others' ? `Filed in ${q ? q.label : quad}` : 'Moved to Others');
   renderMail();
 }
@@ -8235,6 +8257,12 @@ async function openMail(openKey) {
   if (!state.mailQuads) {
     state.mailQuads = {};
     api('/api/kv/mail_quadrants').then((r) => { try { state.mailQuads = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail') renderMail(); }).catch(() => {});
+  }
+  // The learned sender→quadrant defaults ("training"): filing an email teaches
+  // Daybook where that sender belongs, and future mail inherits it.
+  if (!state.mailQuadSenders) {
+    state.mailQuadSenders = {};
+    api('/api/kv/mail_quad_senders').then((r) => { try { state.mailQuadSenders = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail') renderMail(); }).catch(() => {});
   }
   // Important senders (VIPs): mail from anyone on this list is lifted into its own
   // box at the top of the inbox. `on` toggles the whole feature. Addresses are
@@ -9117,6 +9145,7 @@ const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' 
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
+    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Chilled / Others)"><span class="mail-quad-dot"></span></span>
     <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
 // it reads as one set rather than a jumble of emoji.
@@ -9238,6 +9267,14 @@ function mailQuadCardsHtml() {
   if (m.mailbox === 'INBOX') for (const th of buildThreads(m.messages || [])) counts[mailQuadOf(th.latest)] = (counts[mailQuadOf(th.latest)] || 0) + 1;
   const active = m.folder;
   return `<div class="mail-quads">${MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${active === q.key ? 'on' : ''}" data-mail-quad-view="${q.key}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('')}</div>`;
+}
+// The little 4-way menu that opens from a row's priority button.
+function mailQuadMenuHtml() {
+  const mm = state.mail.quadMenu; if (!mm) return '';
+  const o = mailMsgByKey(mm.key); const cur = o ? mailQuadOf(o) : 'others';
+  return `<div class="mail-movebg" data-mail-quad-close><div class="mail-move mail-quadmenu" style="top:${mm.y}px;left:${mm.x}px" role="menu">
+    ${MAIL_QUADS.map((q) => `<button class="mail-move-item mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-pick="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quadmenu-l">${esc(q.label)}</span><span class="mail-quadmenu-h">${esc(q.hint)}</span></button>`).join('')}
+  </div></div>`;
 }
 // The priority picker in the reader: tap to file the open email into a quadrant.
 function mailQuadPickerHtml(o) {
@@ -9414,6 +9451,7 @@ ${''/* The "older unread sits further down" banner is retired: the background
     </div>
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
     ${m.moveMenu ? mailMoveMenuHtml() : ''}
+    ${m.quadMenu ? mailQuadMenuHtml() : ''}
     ${m.areaMenu ? mailAreaMenuHtml() : ''}
     ${m.taskMenu ? mailTaskMenuHtml() : ''}`;
   if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
@@ -15498,7 +15536,11 @@ document.addEventListener('click', (e) => {
   const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
   { const qv = t.closest('[data-mail-quad-view]'); if (qv) { setMailFolder(qv.dataset.mailQuadView); return; } }
-  { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(mailFileKey(o), qf.dataset.mailQuadFile); return; } }
+  { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(o, qf.dataset.mailQuadFile); return; } }
+  // Quick-file straight from an inbox row: a small button opens a 4-way menu.
+  { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
+  { const qp = t.closest('[data-mail-quad-pick]'); if (qp) { const mm = state.mail.quadMenu; if (mm) mailToQuad(mm.key, qp.dataset.mailQuadPick); return; } }
+  if (t.closest('[data-mail-quad-close]')) { state.mail.quadMenu = null; renderMail(); return; }
   if (t.closest('[data-mail-empty]')) { mailEmptyFolder(); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(false, true); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
