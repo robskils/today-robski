@@ -16578,6 +16578,19 @@ function mailDragEnd(e) {
 }
 document.addEventListener('pointerup', mailDragEnd);
 document.addEventListener('pointercancel', mailDragEnd);
+// After editing the Home notepad on mobile, bring the card's TOP back into view -
+// the keyboard closing otherwise leaves you looking at the bottom of a long note,
+// unable to see what's on it.
+document.addEventListener('focusout', (e) => {
+  if (!(e.target && e.target.matches && e.target.matches('[data-home-notepad]'))) return;
+  if (!matchMedia('(max-width:820px)').matches) return;
+  const card = e.target.closest('.home-sec'); if (!card) return;
+  setTimeout(() => {
+    const navh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navh'), 10) || 56;
+    const y = card.getBoundingClientRect().top + window.scrollY - navh - 10;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  }, 120);
+});
 // Life-area overview sections: grab the ⠿ grip to reorder within the single
 // column, saved globally so every area page follows the same arrangement.
 let areaSecDrag = null;
