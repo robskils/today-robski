@@ -1903,6 +1903,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:normal; color:var(--accent); }
+.nav-tool { display:none; }   /* the "<Tool>" after the wordmark is mobile-only */
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
 /* A quiet Daybook mark closing the Home main column, in the chosen accent. */
 .home-mark { display:flex; justify-content:center; margin:36px 0 6px; }
@@ -3915,8 +3916,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Recently viewed reads as cards (matching the Starred section next to it), not
    a plain word list: bordered chips on the card ground, wrapping across the row,
    each carrying its life-area colour as a left edge. */
-.recent-list { display:flex; flex-wrap:wrap; gap:8px; }
-.recent-item { display:inline-flex; align-items:center; gap:9px; min-width:0; max-width:100%; padding:11px 15px; border-radius:11px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink); font-size:15.5px; text-align:left; transition:border-color .12s,color .12s; }
+.recent-list { display:flex; flex-direction:column; gap:8px; }
+.recent-item { display:flex; align-items:center; gap:11px; width:100%; min-width:0; max-width:100%; padding:12px 15px; border-radius:12px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink); font-size:15.5px; text-align:left; transition:border-color .12s,color .12s,transform .12s,box-shadow .12s; }
+.recent-item:hover { transform:translateY(-1px); box-shadow:0 8px 20px -12px rgba(0,0,0,.34); }
 .recent-item:hover { border-color:var(--accent); color:var(--accent); }
 .recent-item.has-area { border-left:3px solid hsl(var(--h,4) 60% 52%); }
 /* Icon tint: the item's life-area colour, or the accent (terracotta) with none. */
@@ -5148,13 +5150,17 @@ table.ttable tr:last-child td { border-bottom:0; }
     border-bottom:1px solid var(--line);
     background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(12px);
   }
-  /* Wordmark + toggle share the always-visible top row. */
-  .nav-topline { flex:1 1 100%; display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; -webkit-user-select:none; user-select:none; }
-  .nav-brand { flex:1 1 auto; width:auto; min-width:0; padding:8px 10px; margin:0; font-size:27px; }
-  /* A right-hand spacer the width of the ☰ button, so the centered brand sits in
-     the true middle of the header rather than being pushed right by the toggle. */
-  .nav-topline-sp { display:block; flex:0 0 42px; width:42px; }
-  .nav-topline .nav-brand .brand-mark { width:1.34em; height:1.34em; }
+  /* ☰ menu · ← back · "Daybook <Tool>" - all left-aligned on one row. */
+  .nav-topline { flex:1 1 100%; display:flex; align-items:center; justify-content:flex-start; gap:8px; min-width:0; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; -webkit-user-select:none; user-select:none; }
+  .nav-brand { flex:0 1 auto; width:auto; min-width:0; padding:8px 6px; margin:0; font-size:23px; text-align:left; display:flex; align-items:center; gap:.28em; overflow:hidden; }
+  .nav-brand em { flex:none; }
+  /* The current tool's name, sitting after the wordmark: lighter, so "Daybook"
+     still reads as the brand and the tool as where you are. */
+  .nav-brand .nav-tool { display:inline; font-style:normal; font-weight:600; color:var(--ink-2); font-size:.86em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  /* Left-aligned now, so the centering spacer is gone. */
+  .nav-topline-sp { display:none; }
+  .mtop-back { flex:none; }
+  .nav-topline .nav-brand .brand-mark { width:1.24em; height:1.24em; }
   .nav-drawer-brand { font-size:26px; }
   .nav-drawer-brand .brand-mark { width:1.3em; height:1.3em; }
   .nav-util-toggle { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:22px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
@@ -5331,6 +5337,19 @@ table.ttable tr:last-child td { border-bottom:0; }
   }
   /* The mail reader hides the top bar, so its breadcrumb pins to the very top. */
   body.mail-reading .crumbbar { top:0; }
+  /* The top bar now shows "Daybook <Tool>" + back, so the in-pane breadcrumb text
+     and its back button are redundant on mobile - hide them, but KEEP each row's
+     tools (+ New, Delete, Star, life-area chip). A row left with nothing useful
+     collapses entirely (:has), so tool-less pages don't show an empty strip. */
+  .crumbbar > .crumb-back, .crumbbar .crumbs,
+  .note-crumbs > .crumb-back, .note-crumbs > .crumb, .note-crumbs > .crumb-sep { display:none; }
+  .crumbbar:not(:has(.crumb-tools)):not(:has(.addnew)):not(:has(.area-link)),
+  .note-crumbs:not(:has(.crumb-tools)):not(:has(.addnew)) { display:none; }
+  /* The mail reader hides the whole top bar, so its own breadcrumb (with the back
+     to the inbox) must stay - override the hides above for that view only. */
+  body.mail-reading .note-crumbs { display:flex !important; }
+  body.mail-reading .note-crumbs > .crumb-back, body.mail-reading .note-crumbs > .crumb { display:inline-flex !important; }
+  body.mail-reading .note-crumbs > .crumb-sep { display:inline !important; }
   /* Tasks: swap the row of category chips for a single dropdown. */
   .area-chips, .area-chips-tog { display:none; }
   .area-chips-wrap { margin:0; }

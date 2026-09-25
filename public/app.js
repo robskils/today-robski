@@ -859,6 +859,22 @@ function labelForView(v) {
     default: return 'Home';
   }
 }
+// Detail views resolve to their parent tool for the mobile top-bar title, so a
+// single note reads "Daybook Notes", a contact "Daybook Contacts", etc.
+const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas' };
+// The current tool's name for the mobile top bar (blank on Home): shown after the
+// "Daybook" wordmark so the bar reads "Daybook Mail", "Daybook Calendar", ...
+function mobileToolName() {
+  const v = state.view || { type: 'home' };
+  if (!v.type || v.type === 'home') return '';
+  const toolType = CRUMB_PARENT[v.type] || v.type;
+  try { return labelForView({ type: toolType }); } catch { return ''; }
+}
+// The back button that rides in the top line (to the right of the ☰ menu), shown
+// only when there is somewhere to go back to.
+function mobileBackHtml() {
+  return navHist.length ? '<button class="crumb-back mtop-back" data-nav-back title="Back" aria-label="Back">←</button>' : '';
+}
 function openView(v) {
   switch (v.type) {
     case 'tasks': return openTasks(); case 'taskcard': return openTaskCard(v.id);
@@ -2687,7 +2703,8 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle ${unreadMsgs() ? 'has-msg' : ''}" data-nav-drawer aria-label="Menu${friendPending() ? ` — ${friendPending()} new` : ''}" title="Menu">☰${friendPending() ? `<span class="nav-menu-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em></button>
+      ${mobileBackHtml()}
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
       <span class="nav-topline-sp" aria-hidden="true"></span>
     </div>
     <button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button>
@@ -4273,7 +4290,7 @@ function renderHome() {
     if (r.kind === 'task' && Array.isArray(state.allTasks)) { const tk = state.allTasks.find((x) => String(x.id) === String(r.id)); if (tk && tk.props && tk.props.done) return true; }
     return false;
   };
-  const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind) && !recentDead(r)).slice(0, 8);
+  const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind) && !recentDead(r));
   // Tint each icon in its life area's colour (an area item is its own area);
   // with no area it falls back to the accent (terracotta by default) via CSS.
   const recentHue = (r) => {
@@ -4287,8 +4304,11 @@ function renderHome() {
     const a = aid && areaById(aid);
     return a ? hueOf(a) : null;
   };
+  // One item per line, most-recent first, capped at 10 with a see-more toggle -
+  // the same rhythm as Do next and Starred.
+  const recentShown = (state.home && state.home.recentAll) ? recents : recents.slice(0, 10);
   const recentHtml = recents.length
-    ? `<div class="recent-list">${recents.map((r) => { const hue = recentHue(r); return `<button class="recent-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`; }).join('')}</div>`
+    ? `<div class="recent-list">${recentShown.map((r) => { const hue = recentHue(r); return `<button class="recent-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`; }).join('')}</div>${recents.length > 10 ? `<button class="p1-all" data-recent-more>${(state.home && state.home.recentAll) ? 'Show fewer' : `See all ${recents.length}`} →</button>` : ''}`
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
@@ -15201,6 +15221,7 @@ document.addEventListener('click', (e) => {
     try { localStorage.setItem('life.home.tileOpen', next); } catch {}
     renderHome(); return;
   } }
+  if (t.closest('[data-recent-more]')) { state.home = state.home || {}; state.home.recentAll = !state.home.recentAll; renderHome(); return; }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); return; } }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
