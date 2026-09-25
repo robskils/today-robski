@@ -6647,10 +6647,12 @@ function renderCalendar() {
     // The day shown in full up top (today by default) isn't repeated in the strip
     // below - otherwise you see it twice. (Robin.) When the selected day sits
     // outside the shown week, nothing is filtered, so it stays a full seven.
-    const strip = wk.filter((d) => d.iso !== c.selected);
+    // Every day of the week reads the same - today is not styled apart from the
+    // rest; only the day you've selected gets a quiet highlight. (Robin.)
+    const strip = wk;
     body = `<div class="cal-week" style="--cwn:${strip.length}">${strip.map((d) => {
       const evs = byDay[d.iso] || [];
-      return `<div class="cw-day ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
+      return `<div class="cw-day ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
         <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span><button class="cal-add-day cw-add" data-cal-add-day="${d.iso}" title="Add an event on this day" aria-label="Add an event on this day">＋</button></div>
         <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
     }).join('')}</div>`;
@@ -6696,13 +6698,14 @@ function renderCalendar() {
         <button class="cal-btn ic" data-cal-prev title="Previous">‹</button>
         <button class="cal-btn ic" data-cal-next title="Next">›</button>
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
+        <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
       </div>
     </div>
     ${gcalBarHtml()}
     <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
     ${cq ? searchBlock : `<section class="cal-agenda cal-agenda-top">
-      <div class="cal-ag-head"><div class="cal-ag-when"><h2>${calDayLabel(c.selected)}</h2></div><button class="add-btn cal-ag-add" data-cal-add title="Add an event">+ Event</button></div>
+      <div class="cal-ag-head"><div class="cal-ag-when"><h2>${calDayLabel(c.selected)}</h2></div></div>
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>

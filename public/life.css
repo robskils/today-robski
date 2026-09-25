@@ -6063,19 +6063,23 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
      current day and the add button stay to hand while everything else scrolls.
      (Robin.) */
   .cal-head { position:static; margin:0 0 12px; padding:0; background:none; backdrop-filter:none; border-bottom:0; }
+  /* Today's date is the hero on mobile - the week/month range title is dropped so
+     it doesn't upstage it. (Robin.) */
+  .cal-head h1 { display:none; }
+  .cal-nav { width:100%; }
   .cal-agenda-top { margin-top:2px; }
   /* On mobile this header scrolls with the day - no need to pin it (sticky is a
      desktop nicety). (Robin.) */
-  /* Today's date gets its own full line; the + Event button sits below it so it
-     never crowds or covers the date. */
-  .cal-ag-head { position:static; margin:0 0 12px; padding:0; background:none; backdrop-filter:none; border-bottom:0; flex-direction:column; align-items:stretch; gap:10px; }
-  .cal-ag-head h2 { font-size:22px; white-space:normal; }
+  /* Today's date stands alone (the + Event button now lives in the toolbar row). */
+  .cal-ag-head { position:static; margin:0 0 12px; padding:0; background:none; backdrop-filter:none; border-bottom:0; }
+  .cal-ag-head h2 { font-size:23px; white-space:normal; }
   .cal-ag-when { width:100%; }
-  .cal-ag-add { align-self:flex-start; }
 }
 /* Recurrence marker on a calendar event - tells a repeating event from a one-off. */
 .cal-recur { color:var(--accent); font-size:.85em; margin-left:6px; opacity:.8; }
 .cal-btn { padding:9px 15px; border-radius:11px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; background:var(--card); box-shadow:var(--shadow); transition:border-color .15s,color .15s; }
+.cal-nav-add { background:var(--accent); color:var(--accent-ink); border-color:transparent; font-weight:600; }
+.cal-nav-add:hover { filter:brightness(1.05); border-color:transparent; }
 .cal-planbtn { border-color:color-mix(in srgb,var(--accent) 42%,var(--line-2)); color:var(--accent); font-weight:600; }
 .cal-planbtn:hover { background:color-mix(in srgb,var(--accent) 8%,var(--card)); border-color:var(--accent); }
 .cal-btn:hover { border-color:var(--accent); color:var(--accent); }
