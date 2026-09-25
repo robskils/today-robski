@@ -6644,7 +6644,7 @@ function renderCalendar() {
   if ((c.adding || c.editing)) { const f = document.getElementById('cal-ev-form'); if (f && document.activeElement && f.contains(document.activeElement)) return; }
   _calFormSnap = snapshotCalForm();   // keep any unsaved edits across this rebuild
   let title, body;
-  if (c.mode === 'agenda') { title = 'Day'; body = ''; }
+  if (c.mode === 'agenda') { title = 'Calendar Day View'; body = ''; }
   else if (c.mode === 'week') {
     const wk = weekDays(c.weekAnchor || todayISO()), a = wk[0], b = wk[6];
     title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
@@ -6714,7 +6714,7 @@ function renderCalendar() {
       <h1>${title}</h1>
       <div class="cal-nav">
         ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Today tool">☀ Plan day</button>' : ''}
-        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Calendar Day View</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
+        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
@@ -7806,7 +7806,6 @@ const mailDate = (iso) => { if (!iso) return ''; const d = new Date(iso), now = 
 const MAIL_FOLDERS = [
   { key: 'inbox', label: 'Inbox', mailbox: 'INBOX' },
   { key: 'unread', label: 'Unread', mailbox: 'INBOX', unseen: true },
-  { key: 'starred', label: '★ Starred', mailbox: 'INBOX', flagged: true },
   { key: 'drafts', label: 'Drafts', local: true },
   { key: 'sent', label: 'Sent', mailbox: 'Sent' },
   { key: 'archive', label: 'Archive', mailbox: 'Archive' },
@@ -7825,8 +7824,16 @@ const MAIL_QUADS = [
 ];
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
 // A message's quadrant is strictly its own label - filing one email never moves
-// others (a sender can send an urgent note and a chatty one). Unfiled = 'others'.
-const mailQuadOf = (o) => (o && state.mailQuads && state.mailQuads[mailFileKey(o)]) || 'others';
+// others (a sender can send an urgent note and a chatty one). An email you had
+// starred before we dropped the star counts as Important until you file it
+// otherwise. Unfiled and unstarred = 'others'.
+const mailQuadOf = (o) => {
+  if (!o) return 'others';
+  const own = state.mailQuads && state.mailQuads[mailFileKey(o)];
+  if (own) return own;
+  if (o.flagged) return 'important';
+  return 'others';
+};
 const mailMsgByKey = (key) => (state.mail && state.mail.messages || []).find((x) => x._key === key);
 function setMailFolder(key) {
   state.mail.folder = key; state.mail.open = null; state.mail.limit = 40;
@@ -9195,8 +9202,7 @@ const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' 
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
-    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Chilled / Others)"><span class="mail-quad-dot"></span></span>
-    <span class="mail-star ${x.flagged ? 'on' : ''}" data-mail-star="${esc(x._key)}" title="${x.flagged ? 'Unstar' : 'Star'}">${x.flagged ? '★' : '☆'}</span></button>`;
+    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Chilled / Others)"><span class="mail-quad-dot"></span></span></button>`;
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
 // it reads as one set rather than a jumble of emoji.
 const mIco = (p, fill) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -9439,7 +9445,7 @@ function renderMail(loading) {
     // "capture into Daybook" actions (file in a life area, make a task), the AI
     // draft, and the rare spam/block last. On mobile the whole bar wraps so none
     // of these hide off-screen (the life-area button used to scroll out of view).
-    const msgActs = `<button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic mail-star-btn ${o.flagged ? 'on' : ''}" data-mail-star="${esc(o._key)}" title="Star  ·  S">${o.flagged ? MAIL_ICO.starOn : MAIL_ICO.starOff}</button><button class="ghost mail-act-ic mail-vip-btn ${o.from && isVipAddr(o.from.address) ? 'on' : ''}" data-mail-vip="${esc(o.from ? o.from.address : '')}" title="${o.from && isVipAddr(o.from.address) ? 'Important sender - tap to remove' : 'Mark as an important sender'}">${o.from && isVipAddr(o.from.address) ? MAIL_ICO.vipOn : MAIL_ICO.vip}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>`;
+    const msgActs = `<button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic mail-vip-btn ${o.from && isVipAddr(o.from.address) ? 'on' : ''}" data-mail-vip="${esc(o.from ? o.from.address : '')}" title="${o.from && isVipAddr(o.from.address) ? 'Important sender - tap to remove' : 'Mark as an important sender'}">${o.from && isVipAddr(o.from.address) ? MAIL_ICO.vipOn : MAIL_ICO.vip}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -9482,7 +9488,6 @@ function renderMail(loading) {
       <button class="ghost" data-mail-bulk="archive">Archive</button>
       <button class="ghost" data-mail-bulk="read">Mark read</button>
       <button class="ghost" data-mail-bulk="unread">Mark unread</button>
-      <button class="ghost" data-mail-bulk="star">Star</button>
       <button class="ghost" data-mail-bulk="move">Move…</button>
       <button class="ghost" data-mail-bulk="delete">Delete</button>
       <button class="ghost mail-bulk-x" data-mail-bulk="clear">Cancel</button>
