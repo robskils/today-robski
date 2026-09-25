@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
-  'nav.grp.daily': 'Today', 'nav.planner': 'Planner', 'nav.grp.meaningful': 'Meaningful', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference',
+  'nav.grp.daily': 'Today', 'nav.planner': 'Planner', 'nav.grp.meaningful': 'Meaningful', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -58,7 +58,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
-  'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador', 'nav.grp.meaningful': 'O que importa', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência',
+  'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador', 'nav.grp.meaningful': 'O que importa', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -2607,10 +2607,14 @@ function navItems(v) {
     // room you enter: a whole row that writes a journal entry or logs a dream in
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
-    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('nav.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
-    // Well-being opens the same reflect hub as Journal; a companion entry Robin
-    // wanted, so it carries no active state (Journal is the one that lights up).
-    wellbeing: modOn('reflect') ? `<button class="nav-item" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
+    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
+    // The Well-being tools, each its own button (the single "Well-being" button is
+    // gone). They fire the same actions as the hub tiles, so they work from anywhere.
+    coaching: modOn('reflect') ? `<button class="nav-item" data-journal-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
+    dreams: modOn('reflect') ? `<button class="nav-item" data-journal-dream><span class="nav-ic">☾</span><span class="nav-lbl">${t('wb.dreams')}</span></button>` : '',
+    meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'toolbox' ? '' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
+    spirit: modOn('reflect') ? `<button class="nav-item" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
+    iching: modOn('reflect') ? `<button class="nav-item" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? `<span class="nav-badge">${state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal}</span>` : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
@@ -2625,7 +2629,7 @@ function navItems(v) {
 // A flat, importance-ordered single column of clear tool buttons - the mobile
 // drawer. No group boxes, no 2-up grid: just tap what you want. (The desktop
 // sidebar keeps the grouped grid.)
-const MNAV_DEFAULT = ['home', 'mail', 'calendar', 'tasks', 'notes', 'today', 'practices', 'areas', 'reflect', 'wellbeing', 'goals', 'reviews', 'financial', 'saved', 'contacts', 'connect', 'daybook', 'timer'];
+const MNAV_DEFAULT = ['home', 'mail', 'notes', 'calendar', 'tasks', 'today', 'practices', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'financial', 'saved', 'contacts', 'connect', 'daybook', 'timer'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -2641,19 +2645,22 @@ function navMobileListHtml(v) {
 }
 function navGridHtml(v) {
   const NI = navItems(v);
-  const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<section class="nav-sec-box"><div class="nav-grp">${esc(label)}</div><div class="nav-sec-items">${on.join('')}</div></section>` : ''; };
+  const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<section class="nav-sec-box">${label ? `<div class="nav-grp">${esc(label)}</div>` : ''}<div class="nav-sec-items">${on.join('')}</div></section>` : ''; };
   // Home + Mail pinned, then Robin's mind-map branches - Daily / Meaningful /
   // People / General Tools. There's no "Capture" band: the make-a-new verbs live
   // in the "+ New" menu (breadcrumb row) and the Home buttons instead.
   // Home and Mail each sit in their own small rounded box (one grid column each,
   // side by side) so the pinned pair reads like the section boxes below it.
   const leadBox = (item) => item ? `<section class="nav-sec-box nav-lead-box">${item}</section>` : '';
+  // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
+  // Home quick buttons; Today drops into the Daily group below.
   return `<div class="nav-grid">
     ${leadBox(NI.home)}
-    ${leadBox(NI.mail)}
-    ${grp(t('nav.grp.daily'), [NI.calendar, NI.tasks, NI.today, NI.tracker, NI.practices])}
-    ${grp(t('nav.grp.tools'), [NI.areas, NI.notes, NI.saved, NI.financial, NI.timer])}
-    ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews, NI.reflect, NI.wellbeing])}
+    ${grp('', [NI.mail, NI.notes, NI.calendar, NI.tasks])}
+    ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
+    ${grp(t('nav.grp.tools'), [NI.areas, NI.saved, NI.financial, NI.timer])}
+    ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews])}
+    ${grp(t('nav.grp.wellbeing'), [NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${peopleBox(v)}
   </div>`;
 }
