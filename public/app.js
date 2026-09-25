@@ -7732,12 +7732,39 @@ const MAIL_FOLDERS = [
   { key: 'spam', label: 'Spam', mailbox: 'Junk' },
   { key: 'trash', label: 'Trash', mailbox: 'Trash' },
 ];
-const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
+// The Eisenhower quadrants: four INBOX views you sort mail into by urgency ×
+// importance. "Others" is the default (anything you haven't filed), so new mail
+// simply waits there until you promote what matters. They're virtual views over
+// INBOX (a per-message label in kv_mail_quadrants), not real mailboxes.
+const MAIL_QUADS = [
+  { key: 'urgent', label: 'Urgent', hint: 'Important & timely', mailbox: 'INBOX', quad: 'urgent' },
+  { key: 'important', label: 'Important', hint: 'Important, not rushed', mailbox: 'INBOX', quad: 'important' },
+  { key: 'chilled', label: 'Chilled', hint: 'Some importance or urgency', mailbox: 'INBOX', quad: 'chilled' },
+  { key: 'others', label: 'Others', hint: 'Everything else', mailbox: 'INBOX', quad: 'others' },
+];
+const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_QUADS.find((f) => f.key === state.mail.folder) || MAIL_FOLDERS[0];
+// The quadrant currently being viewed (null unless a quadrant view is active).
+const mailActiveQuad = () => { const q = MAIL_QUADS.find((f) => f.key === state.mail.folder); return q ? q.quad : null; };
+// A message's quadrant: its saved label, or 'others' when unfiled.
+const mailQuadOf = (o) => (o && state.mailQuads && state.mailQuads[mailFileKey(o)]) || 'others';
 function setMailFolder(key) {
   state.mail.folder = key; state.mail.open = null; state.mail.limit = 40;
   const f = mailFolder();
   if (f.local) { renderMail(); return; }   // Drafts is client-side, no fetch
+  // A quadrant view reads INBOX; if we already have it loaded, just re-filter.
+  if (f.quad) { if (state.mail.mailbox === 'INBOX' && Array.isArray(state.mail.messages)) { renderMail(); return; } state.mail.mailbox = 'INBOX'; loadMessages(); return; }
   state.mail.mailbox = f.mailbox; loadMessages();
+}
+// File one or more messages into a quadrant (or clear back to 'others'). Persisted
+// to kv_mail_quadrants, mirroring how life-area filing (mail_areas) is stored.
+function mailToQuad(keys, quad) {
+  const list = Array.isArray(keys) ? keys : [keys];
+  state.mailQuads = state.mailQuads || {};
+  for (const k of list) { if (!k) continue; if (quad && quad !== 'others') state.mailQuads[k] = quad; else delete state.mailQuads[k]; }
+  api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {});
+  const q = MAIL_QUADS.find((x) => x.quad === quad);
+  toast(quad && quad !== 'others' ? `Filed in ${q ? q.label : quad}` : 'Moved to Others');
+  renderMail();
 }
 // Every message row is tagged with the account it came from (_acct / _mailbox /
 // _acctName) and a composite _key = `${account}:${uid}`. IMAP UIDs are only
@@ -8195,6 +8222,12 @@ async function openMail(openKey) {
   if (!state.mailAreas) {
     state.mailAreas = {};
     api('/api/kv/mail_areas').then((r) => { try { state.mailAreas = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
+  }
+  // Which quadrant (Urgent / Important / Chilled) each email is filed in; anything
+  // absent is 'Others'. Keyed by the stable Message-ID like the life-area filing.
+  if (!state.mailQuads) {
+    state.mailQuads = {};
+    api('/api/kv/mail_quadrants').then((r) => { try { state.mailQuads = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail') renderMail(); }).catch(() => {});
   }
   // Important senders (VIPs): mail from anyone on this list is lifted into its own
   // box at the top of the inbox. `on` toggles the whole feature. Addresses are
@@ -9189,6 +9222,21 @@ async function mailInviteAdd() {
     toast(r && r.existed ? 'Already on your calendar' : 'Added to your calendar'); renderMail();
   } catch (e) { toast(e.message); }
 }
+// The 2x2 Eisenhower cards above the inbox: Urgent / Important / Chilled / Others,
+// each with a live count of the conversations filed there. Tap one to focus that
+// quadrant. Counts come from the loaded INBOX.
+function mailQuadCardsHtml() {
+  const m = state.mail;
+  const counts = { urgent: 0, important: 0, chilled: 0, others: 0 };
+  if (m.mailbox === 'INBOX') for (const th of buildThreads(m.messages || [])) counts[mailQuadOf(th.latest)] = (counts[mailQuadOf(th.latest)] || 0) + 1;
+  const active = m.folder;
+  return `<div class="mail-quads">${MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${active === q.key ? 'on' : ''}" data-mail-quad-view="${q.key}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('')}</div>`;
+}
+// The priority picker in the reader: tap to file the open email into a quadrant.
+function mailQuadPickerHtml(o) {
+  const cur = mailQuadOf(o);
+  return `<div class="mail-quadpick"><span class="mail-quadpick-l">Priority</span>${MAIL_QUADS.map((q) => `<button class="mail-quadpick-b mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span>${esc(q.label)}</button>`).join('')}</div>`;
+}
 // The inner HTML of the .mail-list container (rows / loading / empty state).
 // Kept separate so a live search can refresh just the list without rebuilding
 // the header - which would destroy the search box and steal focus mid-type.
@@ -9199,7 +9247,11 @@ function mailListInner(loading) {
   // Always threaded, Spark-style: one clean row per conversation (the latest
   // message), with a quiet count when there's more than one. Opening it shows
   // the whole conversation. No toggle, no chevrons, no big-deal badges.
-  const threads = buildThreads(m.messages || []);
+  let threads = buildThreads(m.messages || []);
+  // A quadrant view (Urgent / Important / Chilled / Others) filters INBOX by the
+  // label each conversation carries; 'others' catches everything unfiled.
+  const activeQuad = mailActiveQuad();
+  if (activeQuad) threads = threads.filter((th) => mailQuadOf(th.latest) === activeQuad);
   // Important senders: in the inbox (not searching), lift threads from VIPs into
   // their own box at the top so they don't get lost in the stream.
   const v = mailVips();
@@ -9308,6 +9360,7 @@ function renderMail(loading) {
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
         ${o.from && o.from.address ? (haveContact(o.from.address) ? '<span class="mail-contact-have" title="In your contacts">👤 Contact</span>' : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`) : ''}
         ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
+      ${mailQuadPickerHtml(o)}
       ${mailFiledHtml(o)}
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<a class="mail-att-chip mail-att-dl" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open attachment in your browser">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↗</a>`).join('')}</div>` : ''}
       ${o.invite ? inviteCardHtml(o.invite) : ''}
@@ -9327,6 +9380,7 @@ function renderMail(loading) {
       <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
+    ${['inbox', 'unread', 'starred', 'urgent', 'important', 'chilled', 'others'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
     <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
     ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
@@ -15436,6 +15490,8 @@ document.addEventListener('click', (e) => {
   const ddel = t.closest('[data-del-draft]'); if (ddel) { e.preventDefault(); e.stopPropagation(); delDraft(ddel.dataset.delDraft); return; }
   const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
+  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { setMailFolder(qv.dataset.mailQuadView); return; } }
+  { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(mailFileKey(o), qf.dataset.mailQuadFile); return; } }
   if (t.closest('[data-mail-empty]')) { mailEmptyFolder(); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(false, true); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
