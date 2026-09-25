@@ -1990,6 +1990,9 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 /* Quick-add "+" on Tasks/Calendar/Mail/Notes: right-aligned, appears on hover. */
 .nav-badge { margin-left:auto; flex:none; min-width:0; height:18px; padding:0 7px; display:inline-flex; align-items:center; justify-content:center; border-radius:9px; background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--accent); font-size:11px; font-weight:600; line-height:1; }
 .nav-badge + .nav-quick { margin-left:6px; }
+/* A quiet "there's new mail" dot - no number to crowd the label. */
+.nav-dot { margin-left:auto; flex:none; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.nav-dot + .nav-quick { margin-left:8px; }
 /* Unread Daybook messages: a red, gently pulsing badge so it's impossible to
    miss - on the Contacts item, and on the mobile ☰ button (always on screen). */
 .nav-badge.has-msg { background:var(--danger,#c4412e); color:#fff; animation:msg-badge-pulse 1.5s ease-in-out infinite; }
