@@ -3791,6 +3791,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .home-qa { width:100%; min-width:0; }
   .home-qa-open { flex:1 1 auto; min-width:0; padding:14px 10px; font-size:15px; }
   .home-qa-open .hqa-ic { font-size:17px; }
+  /* No count badge on the 2x2 mobile buttons - it crowds out the name. */
+  .home-qa-open .hqa-n { display:none; }
   .home-qa-add { width:46px; font-size:22px; }
 }
 .home-sec { margin:26px 0; }
