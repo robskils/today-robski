@@ -6578,7 +6578,9 @@ async function openCalendar(dateStr) {
   const [y, m] = base.split('-').map(Number);
   // weekAnchor = the first day of the rolling week window (today by default),
   // kept separate from `selected` so clicking a day doesn't shift the window.
-  state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: localStorage.getItem('life.calMode') === 'week' ? 'week' : 'month', events: [], error: null, editing: null, adding: false };
+  const savedMode = localStorage.getItem('life.calMode');
+  const startMode = (savedMode === 'week' || savedMode === 'month' || savedMode === 'agenda') ? savedMode : (matchMedia('(max-width:820px)').matches ? 'agenda' : 'month');
+  state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: startMode, agendaDays: 30, events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
   // Contacts power the event form's "With" picker; load them quietly so the
@@ -6594,7 +6596,8 @@ async function openCalendar(dateStr) {
 }
 async function loadCalendar() {
   let from, to;
-  if (state.cal.mode === 'week') { const wk = weekDays(state.cal.weekAnchor || todayISO()); from = wk[0].iso; to = wk[6].iso; }
+  if (state.cal.mode === 'agenda') { from = todayISO(); to = addDayISO(todayISO(), state.cal.agendaDays || 30); }
+  else if (state.cal.mode === 'week') { const wk = weekDays(state.cal.weekAnchor || todayISO()); from = wk[0].iso; to = wk[6].iso; }
   else { const weeks = monthWeeks(state.cal.y, state.cal.m); from = weeks[0][0].iso; to = weeks[5][6].iso; }
   try {
     const r = await api(`/api/calendar?from=${from}&to=${to}`);
@@ -6641,7 +6644,8 @@ function renderCalendar() {
   if ((c.adding || c.editing)) { const f = document.getElementById('cal-ev-form'); if (f && document.activeElement && f.contains(document.activeElement)) return; }
   _calFormSnap = snapshotCalForm();   // keep any unsaved edits across this rebuild
   let title, body;
-  if (c.mode === 'week') {
+  if (c.mode === 'agenda') { title = 'Agenda'; body = ''; }
+  else if (c.mode === 'week') {
     const wk = weekDays(c.weekAnchor || todayISO()), a = wk[0], b = wk[6];
     title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
     // The day shown in full up top (today by default) isn't repeated in the strip
@@ -6680,7 +6684,24 @@ function renderCalendar() {
       <span class="cal-ag-time">${agTime(e)}</span>
       <span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; }).join('')
     : '<div class="home-empty">Nothing on this day.</div>';
+  // Rolling agenda: today, then every day forward for the loaded window, each in
+  // one uniform style. Empty days stay as a slim date line so the scroll never
+  // dead-ends; days with events list them. Extend with "Show more days".
+  const agRow = (e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); return `<div class="cal-ag-row" data-cal-ev="${e.id}" role="button" tabindex="0"><span class="cal-ag-time">${agTime(e)}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; };
   const cq = (state.calQuery || '').trim().toLowerCase();
+  const isAgenda = c.mode === 'agenda' && !cq;
+  let rollHtml = '';
+  if (isAgenda) {
+    const agN = c.agendaDays || 30; const t0 = todayISO();
+    const days = []; for (let i = 0; i <= agN; i++) days.push(addDayISO(t0, i));
+    rollHtml = days.map((iso) => {
+      const evs = byDay[iso] || [];
+      return `<section class="roll-day${evs.length ? '' : ' roll-empty-day'}">
+        <div class="roll-day-h" data-cal-add-day="${iso}" role="button" tabindex="0"><span class="roll-day-date">${esc(prettyDate(iso))}</span><span class="roll-day-yr">${iso.slice(0, 4)}</span><span class="roll-add" aria-hidden="true">＋</span></div>
+        ${evs.length ? `<div class="roll-evs">${evs.map(agRow).join('')}</div>` : ''}
+      </section>`;
+    }).join('');
+  }
   const matches = cq ? state.cal.events
     .filter((e) => (e.title || '').toLowerCase().includes(cq) || (e.location || '').toLowerCase().includes(cq))
     .sort((a, b) => `${a.date}${a.allDay ? '' : p2(Math.floor((a.start_min || 0) / 60))}`.localeCompare(`${b.date}${b.allDay ? '' : p2(Math.floor((b.start_min || 0) / 60))}`)) : [];
@@ -6693,10 +6714,9 @@ function renderCalendar() {
       <h1>${title}</h1>
       <div class="cal-nav">
         ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Today tool">☀ Plan day</button>' : ''}
-        <div class="cal-modes"><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button><button class="cal-mode ${c.mode === 'week' ? 'on' : ''}" data-cal-mode="week">Week</button></div>
+        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Agenda</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button><button class="cal-mode ${c.mode === 'week' ? 'on' : ''}" data-cal-mode="week">Week</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
-        <button class="cal-btn ic" data-cal-prev title="Previous">‹</button>
-        <button class="cal-btn ic" data-cal-next title="Next">›</button>
+        ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
         <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
       </div>
@@ -6704,13 +6724,17 @@ function renderCalendar() {
     ${gcalBarHtml()}
     <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
-    ${cq ? searchBlock : `<section class="cal-agenda cal-agenda-top">
+    ${cq ? searchBlock : (isAgenda ? `<section class="cal-agenda cal-agenda-top">
+      <div id="cal-form"></div>
+      <div class="cal-roll">${rollHtml}</div>
+      <button class="cal-loadmore" data-cal-agenda-more>Show more days →</button>
+    </section>` : `<section class="cal-agenda cal-agenda-top">
       <div class="cal-ag-head"><div class="cal-ag-when"><h2>${calDayLabel(c.selected)}</h2></div></div>
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
     <div class="cal-upcoming-h"><span class="cal-ag-eyebrow">${c.mode === 'week' ? 'Upcoming' : esc(MONTHS_LONG[c.m])}</span></div>
-    ${body}`}`;
+    ${body}`)}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
   else if (c.viewing) showCalView(c.viewing);
@@ -15692,6 +15716,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
+  if (t.closest('[data-cal-agenda-more]')) { state.cal.agendaDays = (state.cal.agendaDays || 30) + 30; loadCalendar(); return; }
   if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar(); return; }
   if (t.closest('[data-cal-prev]')) { stepCal(-1); return; }
   if (t.closest('[data-cal-next]')) { stepCal(1); return; }

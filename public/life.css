@@ -6080,6 +6080,22 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
 .cal-btn { padding:9px 15px; border-radius:11px; border:1px solid var(--line-2); color:var(--ink-2); font-size:15px; background:var(--card); box-shadow:var(--shadow); transition:border-color .15s,color .15s; }
 .cal-nav-add { background:var(--accent); color:var(--accent-ink); border-color:transparent; font-weight:600; }
 .cal-nav-add:hover { filter:brightness(1.05); border-color:transparent; }
+/* Rolling agenda: today, then each day forward - one uniform style per day. */
+.cal-roll { display:flex; flex-direction:column; }
+.roll-day { padding:2px 0; border-top:1px solid var(--line); }
+.roll-day:first-child { border-top:0; }
+.roll-day-h { display:flex; align-items:baseline; gap:8px; padding:10px 2px; cursor:pointer; }
+.roll-day-date { font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; font-weight:600; color:var(--ink); }
+.roll-day-yr { font-size:13px; color:var(--ink-3); }
+.roll-add { margin-left:auto; align-self:center; color:var(--ink-3); font-size:19px; line-height:1; opacity:0; transition:opacity .12s; }
+.roll-day-h:hover .roll-add { opacity:.7; }
+@media (hover:none){ .roll-add { opacity:.45; } }
+/* Empty days stay slim so the scroll flows day to day without dead space. */
+.roll-empty-day .roll-day-h { padding:6px 2px; }
+.roll-empty-day .roll-day-date { font-weight:500; font-size:16px; color:var(--ink-3); }
+.roll-evs { display:flex; flex-direction:column; gap:8px; padding:0 0 8px; }
+.cal-loadmore { margin:18px auto 6px; display:block; padding:11px 20px; border-radius:11px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:15px; box-shadow:var(--shadow); }
+.cal-loadmore:hover { border-color:var(--accent); color:var(--accent); }
 .cal-planbtn { border-color:color-mix(in srgb,var(--accent) 42%,var(--line-2)); color:var(--accent); font-weight:600; }
 .cal-planbtn:hover { background:color-mix(in srgb,var(--accent) 8%,var(--card)); border-color:var(--accent); }
 .cal-btn:hover { border-color:var(--accent); color:var(--accent); }
