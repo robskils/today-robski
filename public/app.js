@@ -4410,9 +4410,9 @@ function renderHome() {
             recent: `<section class="home-sec home-sec-card home-sec-recent${secOpen('recent') ? '' : ' home-sec-shut'}" data-hsec="recent">${secH('recent', t('home.sec.recent'), secCount(recents.length), true, '↺')}${secOpen('recent') ? recentHtml : ''}</section>`,
             notepad: modOn('notepad') ? `<section class="home-sec home-sec-card home-sec-notepad${secOpen('notepad') ? '' : ' home-sec-shut'}" data-hsec="notepad">${secH('notepad', t('home.sec.notepad'), '', true, '✎')}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
             people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-card home-sec-people${secOpen('people') ? '' : ' home-sec-shut'}" data-hsec="people">${secH('people', t('home.sec.people'), '', true, '☺')}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
-            starred: (state.favs && state.favs.length) ? `<section class="home-sec home-sec-card home-sec-starred${secOpen('starred') ? '' : ' home-sec-shut'}" data-hsec="starred">${secH('starred', t('home.sec.favs'), secCount(state.favs.length), true, '★')}${secOpen('starred') ? favListHtml() : ''}</section>` : '',
+            favs: (state.favs && state.favs.length) ? `<section class="home-sec home-sec-card home-sec-starred home-sec-favs${secOpen('favs') ? '' : ' home-sec-shut'}" data-hsec="favs">${secH('favs', t('home.sec.favs'), secCount(state.favs.length), true, '★')}${secOpen('favs') ? favListHtml() : ''}</section>` : '',
           };
-          const sdef = ['recent', 'starred', 'notepad', 'people'];
+          const sdef = ['recent', 'favs', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
           return sorder.map((k) => sideSec[k] || '').join('');
         })()}</aside>
@@ -16297,8 +16297,9 @@ function deskSecDragEnd(e) {
   deskSecDrag = null;
   d.sec.style.transform = ''; d.sec.style.zIndex = ''; d.sec.style.position = ''; d.sec.classList.remove('mdragging');
   d.col.querySelectorAll('[data-hsec]').forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
-  suppressSecClick = Date.now();
-  if (d.moved) (d.side ? reorderHomeSide : reorderHomeSec)(d.key, d.before, d.order);
+  // Only swallow the click when the grip was actually dragged; a plain grab-and-
+  // release must still let the header's tap toggle the card.
+  if (d.moved) { suppressSecClick = Date.now(); (d.side ? reorderHomeSide : reorderHomeSec)(d.key, d.before, d.order); }
 }
 document.addEventListener('pointerup', deskSecDragEnd);
 document.addEventListener('pointercancel', deskSecDragEnd);
