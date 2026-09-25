@@ -7852,7 +7852,7 @@ const MAIL_FOLDERS = [
 const MAIL_QUADS = [
   { key: 'urgent', label: 'Urgent', hint: 'Important & timely', mailbox: 'INBOX', quad: 'urgent' },
   { key: 'important', label: 'Important', hint: 'Important, not rushed', mailbox: 'INBOX', quad: 'important' },
-  { key: 'chilled', label: 'Chilled', hint: 'Some importance or urgency', mailbox: 'INBOX', quad: 'chilled' },
+  { key: 'chilled', label: 'Read Later', hint: 'Worth a read, no rush', mailbox: 'INBOX', quad: 'chilled' },
   { key: 'others', label: 'Others', hint: 'Everything else', mailbox: 'INBOX', quad: 'others' },
 ];
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
@@ -9235,7 +9235,7 @@ const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' 
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
-    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Chilled / Others)"><span class="mail-quad-dot"></span></span></button>`;
+    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Read Later / Others)"><span class="mail-quad-dot"></span></span></button>`;
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
 // it reads as one set rather than a jumble of emoji.
 const mIco = (p, fill) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
