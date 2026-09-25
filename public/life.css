@@ -1988,7 +1988,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-sec-title { flex:1; min-width:0; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--accent); font-weight:700; padding:2px 0; }
 .nav-add { color:var(--ink-3); font-size:18px; line-height:1; padding:0 6px; flex:none; } .nav-add:hover { color:var(--accent); }
 /* Quick-add "+" on Tasks/Calendar/Mail/Notes: right-aligned, appears on hover. */
-.nav-badge { margin-left:auto; flex:none; min-width:20px; height:19px; padding:0 6px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:700; line-height:1; }
+.nav-badge { margin-left:auto; flex:none; min-width:0; height:18px; padding:0 7px; display:inline-flex; align-items:center; justify-content:center; border-radius:9px; background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--accent); font-size:11px; font-weight:600; line-height:1; }
 .nav-badge + .nav-quick { margin-left:6px; }
 /* Unread Daybook messages: a red, gently pulsing badge so it's impossible to
    miss - on the Contacts item, and on the mobile ☰ button (always on screen). */
@@ -2090,6 +2090,23 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .ce-head-t { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
 .ce-close { flex:none; width:30px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; }
 .ce-close:hover { border-color:var(--accent); color:var(--accent); }
+/* Read-only event card: directions first, then a clean set of detail rows. */
+.ce-view { display:flex; flex-direction:column; gap:14px; }
+.ce-view-title { margin:2px 0 0; font-family:'Cormorant Garamond',Georgia,serif; font-size:27px; font-weight:600; line-height:1.15; color:var(--ink); }
+.ce-view-maprow { display:flex; gap:10px; flex-wrap:wrap; }
+.ce-view-dir, .ce-view-map { display:inline-flex; align-items:center; gap:7px; padding:11px 16px; border-radius:12px; font-size:15.5px; font-weight:600; text-decoration:none; box-shadow:var(--shadow); }
+.ce-view-dir { background:var(--accent); color:var(--accent-ink); }
+.ce-view-dir:hover { filter:brightness(1.05); }
+.ce-view-map { background:var(--card); border:1px solid var(--line-2); color:var(--ink); }
+.ce-view-map:hover { border-color:var(--accent); color:var(--accent); }
+.ce-view-rows { display:flex; flex-direction:column; gap:11px; }
+.ce-view-row { display:flex; align-items:flex-start; gap:12px; font-size:16px; color:var(--ink); }
+.ce-view-ic { flex:none; width:22px; text-align:center; color:var(--ink-3); font-size:15px; line-height:1.4; }
+.ce-view-rt { min-width:0; word-break:break-word; }
+.ce-view-rt a { color:var(--accent); }
+.ce-view-area { display:inline-flex; align-items:center; gap:7px; }
+.ce-view-dot { width:10px; height:10px; border-radius:50%; background:hsl(var(--h,4) 55% 55%); }
+.ce-view-notes { font-size:15.5px; line-height:1.6; color:var(--ink-2); white-space:pre-wrap; padding:13px 15px; background:var(--paper-2); border-radius:12px; }
 .add-event .ce-title { flex:none; width:100%; min-width:0; font-size:18px; font-weight:500; }
 .add-event .ce-when { gap:9px 11px; background:var(--paper-2); border-radius:12px; padding:11px 13px; }
 .add-event .ce-when-row { padding:2px 0; }
@@ -3869,10 +3886,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .hf-chev { font-size:10px; transition:transform .15s; }
 .home-features[open] .hf-chev { transform:rotate(90deg); }
 .hf-hint { text-transform:none; letter-spacing:0; font-weight:400; font-size:12.5px; color:var(--ink-3); opacity:.85; margin-left:auto; }
-.hf-chips { display:flex; flex-wrap:wrap; gap:8px; padding:2px 15px 15px; }
-.hf-chip { display:inline-flex; align-items:center; gap:7px; padding:8px 13px; border:1px solid var(--line-2); border-radius:999px; background:var(--paper-2); color:var(--ink-3); font-size:14px; font-weight:500; cursor:grab; touch-action:none; opacity:.7; transition:background .12s,border-color .12s,color .12s,opacity .12s; }
+.hf-chips { display:flex; flex-direction:column; gap:8px; padding:2px 15px 15px; }
+.hf-chip { display:flex; width:100%; align-items:center; gap:9px; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--paper-2); color:var(--ink-3); font-size:15px; font-weight:500; cursor:grab; touch-action:none; opacity:.75; transition:background .12s,border-color .12s,color .12s,opacity .12s; text-align:left; }
+.hf-chip::before { content:'⠿'; flex:none; color:var(--ink-3); opacity:.6; font-size:13px; }
+.hf-chip .hf-state { margin-left:auto; }
 .hf-chip.hf-dragging { cursor:grabbing; opacity:.97; box-shadow:0 10px 24px -10px rgba(0,0,0,.45); position:relative; z-index:5; }
-.hf-chip.hf-drop { box-shadow:-3px 0 0 -1px var(--accent); }
+.hf-chip.hf-drop { box-shadow:0 -3px 0 -1px var(--accent); }
 .hf-chip .hf-ic { font-size:15px; line-height:1; }
 .hf-chip.on { background:color-mix(in srgb,var(--accent) 12%,var(--card)); border-color:color-mix(in srgb,var(--accent) 45%,transparent); color:var(--accent); opacity:1; }
 .hf-chip .hf-state { color:var(--accent); font-weight:700; margin-left:1px; }

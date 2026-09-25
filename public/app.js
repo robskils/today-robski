@@ -954,7 +954,7 @@ function appHandleBack() {
   const pal = document.getElementById('palette'); if (pal && pal.innerHTML.trim()) { closePalette(); return true; }
   const mv = document.getElementById('move-overlay'); if (mv && mv.innerHTML) { closeMove(); return true; }
   if (document.getElementById('prac-editor-host')) { closePracticeEditor(); return true; }
-  if (state.cal && (state.cal.adding || state.cal.editing)) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return true; }
+  if (state.cal && (state.cal.adding || state.cal.editing || state.cal.viewing)) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; state.cal.viewing = null; renderCalendar(); return true; }
   if (navHist.length) { navBack(); return true; }
   return false;
 }
@@ -2853,7 +2853,7 @@ async function quickAdd(kind) {
   const primer = primeMobileKeyboard();   // keep the phone keyboard up across the async open+render
   try {
     if (kind === 'task') { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
-    else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); }
+    else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
@@ -6352,7 +6352,7 @@ function blockAreasControl(kind, b) {
 async function areaNewEvent(id) {
   const a = state.area_open && state.area_open.area; if (!a || String(a.id) !== String(id)) return;
   await openCalendar();
-  state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = [];
+  state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = [];
   renderCalendar();
   // Prefill the new event's life area with this one (the form reads ce-area).
   setTimeout(() => { const ar = document.getElementById('ce-area'); if (ar) ar.value = a.id; const ti = document.getElementById('ce-title'); if (ti) ti.focus(); }, 40);
@@ -6626,11 +6626,11 @@ async function gcalDisconnect() {
   try { await api('/api/gcal/disconnect', { method: 'POST' }); state.gcal = { ...(state.gcal || {}), connected: false, email: null }; toast('Google Calendar disconnected'); if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); } }
   catch (e) { toast(e.message); }
 }
-function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); }
+function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar(); }
 function stepCal(delta) {
   if (state.cal.mode === 'week') { state.cal.weekAnchor = addDayISO(state.cal.weekAnchor || todayISO(), delta * 7); state.cal.selected = state.cal.weekAnchor; const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
   else { let m = state.cal.m + delta, y = state.cal.y; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.cal.y = y; state.cal.m = m; }
-  state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar();
+  state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar();
 }
 function renderCalendar() {
   const c = state.cal, byDay = eventsByDay();
@@ -6710,6 +6710,7 @@ function renderCalendar() {
     ${body}`}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
+  else if (c.viewing) showCalView(c.viewing);
   restoreCalForm(_calFormSnap); _calFormSnap = null;
   // Measure the breadcrumb so the sticky day-header (mobile) pins right below it.
   { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--cal-crumbh', cb.offsetHeight + 'px'); }
@@ -6804,6 +6805,45 @@ function ceQuickBar(ev) {
   if (ev && ev.id) out.push(chip('[data-ev-note-q]', '▤', noteN ? `${noteN} note${noteN > 1 ? 's' : ''}` : 'Link note', noteN > 0));
   if (ev && ev.id) out.push('<button type="button" class="ce-q ce-q-del" data-cal-del aria-label="Delete event" title="Delete event"><span class="ce-q-ic">🗑</span><span class="ce-q-l">Delete</span></button>');
   return `<div class="ce-quick">${out.join('')}</div>`;
+}
+// A calm date/time line for the read-only event card.
+function calWhenLabel(ev) {
+  const dateStr = prettyDate(ev.date);
+  const yr = String(ev.date || '').slice(0, 4);
+  if (ev.allDay) {
+    if (ev.end_date) { const last = new Date(Date.parse(ev.end_date) - 86400000).toISOString().slice(0, 10); if (last !== ev.date) return `${dateStr} – ${prettyDate(last)} · all day`; }
+    return `${dateStr} ${yr} · all day`;
+  }
+  const s = minToLabel(ev.start_min);
+  const e = ev.end_min != null ? minToLabel(ev.end_min) : '';
+  return `${dateStr} ${yr} · ${s}${e ? ' – ' + e : ''}`;
+}
+// The read-only event card: what you see when you tap an event. Directions sit
+// right at the top; everything reads at a glance; "Edit" opens the form.
+function showCalView(ev) {
+  const area = ev.area ? areaById(ev.area) : null;
+  const loc = (ev.location || '').trim();
+  const q = encodeURIComponent(loc);
+  const contact = ev.contact ? findContact(ev.contact) : null;
+  const row = (ic, body) => `<div class="ce-view-row"><span class="ce-view-ic">${ic}</span><span class="ce-view-rt">${body}</span></div>`;
+  const repeats = (ev.repeat && ev.repeat !== 'none') || ev.recurringId;
+  $('#cal-form').innerHTML = `<div class="ce-view" data-ev="${esc(ev.id)}">
+    <div class="ce-head"><span class="ce-head-t">Event</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
+    <h2 class="ce-view-title">${esc(ev.title || 'Untitled event')}</h2>
+    ${loc ? `<div class="ce-view-maprow"><a class="ce-view-dir" href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener noreferrer">🧭 Directions</a><a class="ce-view-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">🗺 Map</a></div>` : ''}
+    ${ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
+    <div class="ce-view-rows">
+      ${row('🕒', esc(calWhenLabel(ev)))}
+      ${loc ? row('📍', esc(loc)) : ''}
+      ${area ? row('◈', `<span class="ce-view-area" style="--h:${hueOf(area)}"><span class="ce-view-dot"></span>${esc(area.title)}</span>`) : ''}
+      ${contact ? row('👤', esc(contact.title || 'Contact')) : ''}
+      ${(ev.alarm != null && ev.alarm !== '') ? row('🔔', esc(alarmChipLabel(ev.alarm))) : ''}
+      ${repeats ? row('↻', esc(recurDescribe(ev) || 'Repeats')) : ''}
+      ${ev.url ? row('🔗', `<a href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">${esc(ev.url)}</a>`) : ''}
+    </div>
+    ${ev.notes ? `<div class="ce-view-notes">${linkifyText(ev.notes)}</div>` : ''}
+    <div class="ce-foot"><button class="add-btn wide" type="button" data-cal-edit>Edit</button><button type="button" class="ghost" data-cal-close>Close</button></div>
+  </div>`;
 }
 function showCalForm(ev) {
   const c = state.cal;
@@ -6956,7 +6996,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
     }
     state.cal.draftNotes = [];
     toast(id ? 'Event updated' : 'Added to your calendar');
-    state.cal.adding = false; state.cal.editing = null;
+    state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
     // Jump the view to the event's day so it's visible even if it moved months.
     state.cal.selected = startDate; const [yy, mm] = startDate.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; }
     await loadCalendar();
@@ -7037,7 +7077,7 @@ async function calDeleteEvent(id) {
   try {
     await api(`/api/events/${id}${scope !== 'single' ? `?scope=${scope}` : ''}`, { method: 'DELETE' });
     toast(scope === 'future' ? 'This and following removed' : scope === 'all' ? 'Whole series removed' : 'Event deleted');
-    state.cal.editing = null; state.cal.adding = false; await loadCalendar();
+    state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; await loadCalendar();
   } catch (e) { toast(e.message); }
 }
 // A recurring instance can be dropped on its own or trimmed "from here on".
@@ -10638,7 +10678,7 @@ async function contactNewNote(id) {
 async function contactNewEvent(id) {
   const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
   await openCalendar();
-  state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = [];
+  state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = [];
   renderCalendar();
   // Prefill the new event's contact with this person (the form reads ce-contact).
   setTimeout(() => {
@@ -15626,20 +15666,21 @@ document.addEventListener('click', (e) => {
   { const sh = t.closest('[data-sig-shape]'); if (sh) { const a = (state.mail.accounts || []).find((x) => x.id === sh.dataset.sigShape); if (a) sigPick(a.id, 'shape', sigWorking(a).shape === 'square' ? 'circle' : 'square'); return; } }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
-  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.adding = false; } renderCalendar(); } return; }
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.viewing = e; state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; } renderCalendar(); } return; }
+  if (t.closest('[data-cal-edit]')) { if (state.cal.viewing) { state.cal.editing = state.cal.viewing; state.cal.viewing = null; state.cal.adding = false; renderCalendar(); } return; }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
-  { const cad = t.closest('[data-cal-add-day]'); if (cad) { const p = primeMobileKeyboard(); state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; } }
-  const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
+  { const cad = t.closest('[data-cal-add-day]'); if (cad) { const p = primeMobileKeyboard(); state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; } }
+  const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
   { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } const d = document.getElementById('ce-directions'); if (d) d.hidden = !(inp && inp.value.trim()); return; } }
   { const dr = t.closest('[data-ce-directions]'); if (dr) { const loc = (document.getElementById('ce-loc') || {}).value; if (loc && loc.trim()) openExternal('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(loc.trim())); return; } }
-  if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
-  if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; renderCalendar(); return; }
+  if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
+  if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
-  if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; renderCalendar(); loadCalendar(); return; }
+  if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar(); return; }
   if (t.closest('[data-cal-prev]')) { stepCal(-1); return; }
   if (t.closest('[data-cal-next]')) { stepCal(1); return; }
   // Event quick-chip: jump to that field, focus it, and open the picker if it's a
@@ -16369,8 +16410,9 @@ document.addEventListener('pointermove', (e) => {
   e.preventDefault();
   d.chip.style.transform = `translate(${e.clientX - d.startX}px, ${e.clientY - d.startY}px)`;
   const chips = [...d.cont.querySelectorAll('.hf-chip[data-hf-id]')].filter((c) => c !== d.chip);
+  // Vertical list: drop before the first chip whose middle is below the pointer.
   let idx = 0;
-  for (const c of chips) { const r = c.getBoundingClientRect(); const cy = r.top + r.height / 2, cx = r.left + r.width / 2; if (cy < e.clientY - r.height / 2 || (Math.abs(cy - e.clientY) <= r.height / 2 && cx < e.clientX)) idx++; }
+  for (const c of chips) { const r = c.getBoundingClientRect(); if (e.clientY > r.top + r.height / 2) idx++; }
   d.targetIdx = idx;
   chips.forEach((c, i) => c.classList.toggle('hf-drop', i === idx));
 });
