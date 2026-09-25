@@ -6702,7 +6702,7 @@ function renderCalendar() {
     <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
     ${cq ? searchBlock : `<section class="cal-agenda cal-agenda-top">
-      <div class="cal-ag-head"><div class="cal-ag-when"><h2>${c.selected === todayISO() ? '<span class="cal-ag-today">Today</span> · ' : ''}${prettyDate(c.selected)} <span class="cal-ag-yr">${esc(String(c.selected || '').slice(0, 4))}</span></h2></div><button class="add-btn wide" data-cal-add>+ Event</button></div>
+      <div class="cal-ag-head"><div class="cal-ag-when"><h2>${calDayLabel(c.selected)}</h2></div><button class="add-btn cal-ag-add" data-cal-add title="Add an event">+ Event</button></div>
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
@@ -6844,6 +6844,12 @@ function showCalView(ev) {
     ${ev.notes ? `<div class="ce-view-notes">${linkifyText(ev.notes)}</div>` : ''}
     <div class="ce-foot"><button class="add-btn wide" type="button" data-cal-edit>Edit</button><button type="button" class="ghost" data-cal-close>Close</button></div>
   </div>`;
+}
+// One consistent format for every day's agenda header - weekday, date, year -
+// so today and tomorrow read exactly the same shape (no "Today ·" prefix on one
+// day and a bare date on the next, which read as two different formats).
+function calDayLabel(iso) {
+  return `${esc(prettyDate(iso))} <span class="cal-ag-yr">${esc(String(iso || '').slice(0, 4))}</span>`;
 }
 function showCalForm(ev) {
   const c = state.cal;
