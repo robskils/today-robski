@@ -6148,6 +6148,17 @@ function renderArea() {
   if (!avail.includes(openTile)) openTile = avail[0] || 'Overview';
   const areaTilesHtml = `<div class="area-tiles">${avail.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
     <div class="area-tilepanel"><div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span></div>${panels[openTile]}</div>`;
+  // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
+  // a stats strip plus what you last opened here.
+  const dashStats = [[notes.length + tables.length, 'notes & tables'], [openTs.length, 'open tasks'], [activeGoals.length, 'goals'], [bookmarks.length, 'saved'], [journals.length, 'reflections']]
+    .filter(([n]) => n).map(([n, l]) => `<div class="area-stat"><b>${n}</b><span>${esc(l)}</span></div>`).join('');
+  const rvArea = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
+  const RV_IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
+  const rvAreaHtml = rvArea.map((x) => `<button class="area-rv-item" data-fav-open="${x.kind}:${x.id}"><span class="area-rv-ic">${RV_IC[x.kind] || '•'}</span><span class="area-rv-t">${esc(x.title || 'Untitled')}</span></button>`).join('');
+  const areaDash = (dashStats || rvAreaHtml) ? `<div class="area-dash">
+      ${dashStats ? `<div class="area-stats">${dashStats}</div>` : ''}
+      ${rvAreaHtml ? `<div class="area-recent"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></div>` : ''}
+    </div>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Life areas', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-hero" style="--h:${h}">
@@ -6156,8 +6167,19 @@ function renderArea() {
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
-      ${area.sharedBy ? '' : '<div class="area-actions"><button class="add-btn wide" data-area-add-bucket>+ Bucket</button><button class="add-btn wide" data-area-add-goal>+ Goal</button><button class="add-btn wide" data-area-add-event>+ Event</button><button class="add-btn wide" data-area-add-task>+ Task</button><button class="add-btn wide" data-area-add-note>+ Note</button><button class="add-btn wide" data-area-add-contact>+ Contact</button></div>'}
+      ${area.sharedBy ? '' : `<div class="area-actions"><div class="addnew area-addnew">
+        <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
+        <div class="addnew-menu" hidden>
+          <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
+          <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Note</button>
+          <button class="addnew-item" data-area-add-event><span class="addnew-ic">◑</span>Event</button>
+          <button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>
+          <button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>
+          <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
+        </div>
+      </div></div>`}
     </div>
+    ${areaDash}
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
@@ -6222,10 +6244,8 @@ function areaOverviewHtml(area, c, blocks) {
     </div>`;
   return `<section class="area-ov">
     ${lead}
-    <div class="ov-metrics">${metrics}</div>
     <div class="ov-cols">
       <div class="ov-block"><div class="ov-h"><span>Who has access</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite</button>'}</div><div class="ov-people">${people}</div></div>
-      <div class="ov-block"><div class="ov-h"><span>Recently viewed</span></div><div class="ov-acts">${viewedHtml}</div></div>
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
     ${reviewsBlock}
