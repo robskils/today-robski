@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox',
-  'nav.grp.daily': 'Today', 'nav.planner': 'Planner', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools',
+  'nav.grp.daily': 'Today', 'nav.planner': 'Planner', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -58,7 +58,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas',
-  'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar', 'nav.grp.main': 'Ferramentas',
+  'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -2625,6 +2625,11 @@ function navItems(v) {
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
     reviews: modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
     financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
+    // The Money section's four buttons, each opening the Money tool on its tab.
+    finSpending: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'spending' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.money.spending')}</span></button>` : '',
+    finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
+    finTracker: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'tracker' ? 'on' : ''}" data-open-financial data-fin-tab="tracker"><span class="nav-ic">▥</span><span class="nav-lbl">${t('nav.money.tracker')}</span></button>` : '',
+    finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
     daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Daybook</span></button>` : '',
   };
@@ -2632,7 +2637,7 @@ function navItems(v) {
 // A flat, importance-ordered single column of clear tool buttons - the mobile
 // drawer. No group boxes, no 2-up grid: just tap what you want. (The desktop
 // sidebar keeps the grouped grid.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'today', 'practices', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'financial', 'saved', 'contacts', 'connect', 'daybook', 'timer'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'today', 'practices', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved', 'timer'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -2660,10 +2665,11 @@ function navGridHtml(v) {
   return `<div class="nav-grid">
     ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
-    ${grp(t('nav.grp.tools'), [NI.areas, NI.saved, NI.financial, NI.timer])}
+    ${grp(t('nav.grp.tools'), [NI.areas, NI.saved, NI.timer])}
     ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews])}
     ${grp(t('nav.grp.wellbeing'), [NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${peopleBox(v)}
+    ${grp(t('nav.grp.money'), [NI.finSpending, NI.finPortfolio, NI.finTracker, NI.finAdvice])}
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
@@ -6158,8 +6164,23 @@ function renderArea() {
   const rvArea = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const RV_IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const rvAreaHtml = rvArea.map((x) => `<button class="area-rv-item" data-fav-open="${x.kind}:${x.id}"><span class="area-rv-ic">${RV_IC[x.kind] || '•'}</span><span class="area-rv-t">${esc(x.title || 'Untitled')}</span></button>`).join('');
-  const areaDash = (dashStats || rvAreaHtml) ? `<div class="area-dash">
-      ${dashStats ? `<div class="area-stats">${dashStats}</div>` : ''}
+  // The "Add to this area" dropdown shares the stats row (never a row to itself).
+  const areaAddBtn = area.sharedBy ? '' : `<div class="addnew area-addnew">
+        <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
+        <div class="addnew-menu" hidden>
+          <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
+          <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Note</button>
+          <button class="addnew-item" data-area-add-event><span class="addnew-ic">◑</span>Event</button>
+          <button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>
+          <button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>
+          <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
+        </div>
+      </div>`;
+  const areaDash = (areaAddBtn || dashStats || rvAreaHtml) ? `<div class="area-dash">
+      <div class="area-dash-top">
+        <div class="area-stats">${dashStats}</div>
+        ${areaAddBtn}
+      </div>
       ${rvAreaHtml ? `<div class="area-recent"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></div>` : ''}
     </div>` : '';
   $('#pane').innerHTML = `
@@ -6170,17 +6191,6 @@ function renderArea() {
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
-      ${area.sharedBy ? '' : `<div class="area-actions"><div class="addnew area-addnew">
-        <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
-        <div class="addnew-menu" hidden>
-          <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
-          <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Note</button>
-          <button class="addnew-item" data-area-add-event><span class="addnew-ic">◑</span>Event</button>
-          <button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>
-          <button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>
-          <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
-        </div>
-      </div></div>`}
     </div>
     ${areaDash}
     ${areaTilesHtml}`;
@@ -15318,7 +15328,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
   if (t.closest('[data-open-daybook]')) { openDaybookPeople().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-open-financial]')) { openFinancial().catch((x) => toast(x.message)); return; }
+  { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-open-feeds]')) { openSettings('feeds'); return; }
   { const fa = t.closest('[data-feed-add]'); if (fa) { addTeam({ id: fa.dataset.teamId, name: fa.dataset.teamName }); return; } }
