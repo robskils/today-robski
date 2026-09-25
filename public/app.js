@@ -15701,7 +15701,7 @@ document.addEventListener('click', (e) => {
   { const sh = t.closest('[data-sig-shape]'); if (sh) { const a = (state.mail.accounts || []).find((x) => x.id === sh.dataset.sigShape); if (a) sigPick(a.id, 'shape', sigWorking(a).shape === 'square' ? 'circle' : 'square'); return; } }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
-  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.viewing = e; state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; } renderCalendar(); } return; }
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.viewing = e; state.cal.editing = null; state.cal.adding = false; } renderCalendar(); } return; }
   if (t.closest('[data-cal-edit]')) { if (state.cal.viewing) { state.cal.editing = state.cal.viewing; state.cal.viewing = null; state.cal.adding = false; renderCalendar(); } return; }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
