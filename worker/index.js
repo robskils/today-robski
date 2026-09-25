@@ -3310,6 +3310,13 @@ async function maybePushMail(env, res) {
   // total (summed only over the mailboxes they own), delivered to their devices.
   for (const [uid, newUnread] of Object.entries(res.byUser)) {
     if (!newUnread) continue;
+    // Respect the per-account switch, and never push more than once every 30
+    // minutes - a push a minute (one per sync) was too much. New mail still lands
+    // in the inbox; this only throttles the buzz.
+    if (await getSetting(env, 'mail_push', uid) === '0') continue;
+    const lastPush = Number(await getSetting(env, 'last_mail_push', uid) || 0);
+    if (Date.now() - lastPush < 30 * 60 * 1000) continue;
+    await setSetting(env, 'last_mail_push', String(Date.now()), uid).catch(() => {});
     const row = await env.DB.prepare(
       "SELECT COALESCE(SUM(m.unseen),0) AS n FROM mail_cache_meta m JOIN mail_accounts a ON a.id = m.account WHERE m.mailbox='INBOX' AND a.user_id = ?",
     ).bind(uid).first().catch(() => null);

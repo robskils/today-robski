@@ -357,6 +357,7 @@ export async function getAccount(env) {
   const surfSms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'surface_sms'").bind(env.uid).first().catch(() => null);
   const wkStart = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'week_start'").bind(env.uid).first().catch(() => null);
   const curr = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'currency'").bind(env.uid).first().catch(() => null);
+  const mpush = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'mail_push'").bind(env.uid).first().catch(() => null);
   return {
     weekStart: (wkStart && /^[0-6]$/.test(wkStart.value)) ? Number(wkStart.value) : 1,   // 0=Sun..6=Sat; default Monday
     currency: (curr && /^[A-Z]{3}$/.test(curr.value)) ? curr.value : 'EUR',   // display currency for the money tools
@@ -367,6 +368,7 @@ export async function getAccount(env) {
     surfaceEmail: !surfEmail || surfEmail.value !== '0',   // default on
     surfaceSms: !surfSms || surfSms.value !== '0',          // default on (only sends if a phone is on file)
     dailyQuote: !(qOff && qOff.value === '1'),
+    mailPush: !(mpush && mpush.value === '0'),   // new-mail push alerts; default on
     aiOff: !!(aiOff && aiOff.value === '1'),
     aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),
     // Never return the keys themselves - only whether one is stored.
@@ -387,6 +389,7 @@ export async function patchAccount(env, body) {
   if (body.phone !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'phone', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(body.phone).slice(0, 40)).run();
   if (body.briefEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'brief_enabled', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.briefEmail ? '1' : '0').run();
   if (body.dailyQuote !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'quote_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.dailyQuote ? '0' : '1').run();
+  if (body.mailPush !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'mail_push', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.mailPush ? '1' : '0').run();
   if (body.aiOff !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'ai_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.aiOff ? '1' : '0').run();
   if (body.surfaceEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_email', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceEmail ? '1' : '0').run();
   if (body.surfaceSms !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_sms', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceSms ? '1' : '0').run();

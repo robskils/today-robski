@@ -2481,6 +2481,9 @@ function renderSettings() {
           <label class="set-mod"><span>Reminders you set on your day<small>A text 5 minutes before an item you've asked about - turn the bell on for any task or practice in the Today planner${state.account.phone ? '' : '. Add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
           <label class="set-mod"><span>When something surfaces<small>A text the morning a "surface on" task comes back${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-surface-sms ${state.account.surfaceSms ? 'checked' : ''}></label>
         </div>
+        <div class="set-notif-group"><div class="set-notif-h">On your phone</div>
+          <label class="set-mod"><span>New-mail alerts<small>A push when new mail arrives - at most one every 30 minutes, never a buzz per email. Turn off for quiet.</small></span><input type="checkbox" data-account-mailpush ${state.account.mailPush !== false ? 'checked' : ''}></label>
+        </div>
         <div class="set-notif-group"><div class="set-notif-h">Around the app</div>
           <label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>
           ${modOn('contacts') ? `<label class="set-mod"><span>See online contacts<small>Show which of your contacts are online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
@@ -15119,6 +15122,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
+  if (e.target.matches('[data-account-mailpush]')) { saveAccount({ mailPush: e.target.checked }); toast(e.target.checked ? 'New-mail alerts on' : 'New-mail alerts off'); }
   if (e.target.matches('[data-set-locale]')) { setLocale(e.target.value); return; }
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
