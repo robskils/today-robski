@@ -6149,7 +6149,7 @@ function renderArea() {
   // session (state only), so a fresh visit always opens on the dashboard again.
   let openTile = state.area_open.tileOpen || 'Overview';
   if (!avail.includes(openTile)) openTile = avail[0] || 'Overview';
-  const areaTilesHtml = `<div class="area-tiles">${avail.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
+  const areaTilesHtml = `<div class="area-tiles" style="--cols:${Math.max(3, Math.ceil(avail.length / 2))}">${avail.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
     <div class="area-tilepanel"><div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span></div>${panels[openTile]}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
@@ -12363,7 +12363,8 @@ function bucketBody() {
 }
 function bucketCard(b) {
   const p = b.props || {}; const a = areaById(p.area);
-  return `<button class="bucket-card ${p.status === 'done' ? 'done' : ''}" data-open-bucket="${b.id}" style="--h:${hueOf(a)}"><span class="bk-check">${p.status === 'done' ? '✓' : ''}</span><span class="bk-body"><span class="bk-title">${esc(b.title || 'Untitled')}</span>${(a || p.targetYear) ? `<span class="bk-meta">${a ? esc(a.title) : ''}${p.targetYear ? `${a ? ' · ' : ''}by ${esc(p.targetYear)}` : ''}</span>` : ''}</span></button>`;
+  const meta = (a || p.targetYear) ? `<span class="bk-meta">${a ? esc(a.title) : ''}${p.targetYear ? `${a ? ' · ' : ''}by ${esc(p.targetYear)}` : ''}</span>` : '';
+  return `<div class="bucket-card ${p.status === 'done' ? 'done' : ''}" style="--h:${hueOf(a)}"><button class="bucket-card-open" data-open-bucket="${b.id}"><span class="bk-check">${p.status === 'done' ? '✓' : ''}</span><span class="bk-body"><span class="bk-title">${esc(b.title || 'Untitled')}</span>${meta}</span></button><button class="bk-togoal" data-bucket-to-goal="${b.id}" title="Turn this into a goal you're working towards" aria-label="Make a goal">🎯</button></div>`;
 }
 async function newBucket() {
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: null, status: 'someday' } }) });
@@ -12406,8 +12407,9 @@ function bucketToggleDone(id) { const b = state.bucket_open.item; const done = (
 // Promote a bucket-list dream into an actively-pursued goal. The bucket item
 // stays (the dream), and the new goal links back to it (props.fromBucket); a
 // long-term horizon fits a lifetime ambition. Opens the fresh goal to shape it.
-async function bucketToGoal() {
-  const b = state.bucket_open && state.bucket_open.item; if (!b) return;
+async function bucketToGoal(id) {
+  let b = id ? ((state.bucket || []).find((x) => String(x.id) === String(id)) || await api('/api/blocks/' + id).catch(() => null)) : (state.bucket_open && state.bucket_open.item);
+  if (!b) return;
   const p = b.props || {};
   const props = { area: p.area || null, why: '', horizon: 'longterm', gtype: 'done', status: 'active', focus: false, fromBucket: b.id };
   try {
@@ -15515,7 +15517,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-bucket]')) { newBucket().catch((x) => toast(x.message)); return; }
   const dgl = t.closest('[data-del-goal]'); if (dgl) { delGoal(dgl.dataset.delGoal); return; }
   const dbk = t.closest('[data-del-bucket]'); if (dbk) { delBucket(dbk.dataset.delBucket); return; }
-  if (t.closest('[data-bucket-to-goal]')) { bucketToGoal().catch((x) => toast(x.message)); return; }
+  { const b2g = t.closest('[data-bucket-to-goal]'); if (b2g) { e.stopPropagation(); bucketToGoal(b2g.dataset.bucketToGoal).catch((x) => toast(x.message)); return; } }
   const glink = t.closest('[data-goal-link]'); if (glink) { linkTaskToGoal(glink.dataset.goalLink); return; }
   { const gut = t.closest('[data-goal-untask]'); if (gut) { unlinkTaskFromGoal(gut.dataset.goalUntask); return; } }
   const nlink = t.closest('[data-goal-link-note]'); if (nlink) { linkNoteToGoal(nlink.dataset.goalLinkNote); return; }

@@ -732,8 +732,14 @@ button { cursor:pointer; background:none; border:0; }
 .gt-loose { margin-top:16px; }
 .gt-loose-h { margin-bottom:2px; }
 .bucket-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
-.bucket-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:flex-start; gap:12px; text-align:left; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; }
+.bucket-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:stretch; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); }
 .bucket-card:hover { border-color:var(--accent); }
+.bucket-card-open { flex:1; min-width:0; display:flex; align-items:flex-start; gap:12px; text-align:left; padding:14px 8px 14px 16px; color:inherit; cursor:pointer; }
+.bk-togoal { flex:none; align-self:center; width:36px; height:36px; margin-right:8px; border-radius:9px; font-size:16px; line-height:1; opacity:.45; transition:opacity .12s, background .12s; }
+.bucket-card:hover .bk-togoal { opacity:1; }
+.bk-togoal:hover { background:color-mix(in srgb,var(--accent) 12%,transparent); }
+@media (hover:none){ .bk-togoal { opacity:.7; } }
+.bucket-card.done .bk-togoal { display:none; }
 .bk-check { flex:none; width:22px; height:22px; border-radius:50%; border:2px solid var(--c); display:grid; place-items:center; font-size:13px; color:transparent; margin-top:1px; }
 .bucket-card.done .bk-check { background:var(--done); border-color:var(--done); color:#fff; }
 .bk-body { display:flex; flex-direction:column; gap:3px; min-width:0; }
@@ -4335,7 +4341,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-addnew { position:relative; }
 .area-addnew .addnew-btn { min-height:46px; padding:11px 22px; }
 /* Area sections as equal icon tiles + one expanding panel (like Home/Toolbox). */
-.area-tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:12px; margin:8px 0 18px; }
+/* Tiles balance into two tidy rows: columns = half the tile count (min 3). */
+.area-tiles { display:grid; grid-template-columns:repeat(var(--cols, 5), minmax(0, 1fr)); gap:12px; margin:8px 0 18px; }
+@media (max-width:560px){ .area-tiles { grid-template-columns:repeat(3, minmax(0,1fr)); } }
 .area-tile { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; align-items:center; gap:7px; padding:18px 10px 15px; border:1px solid var(--line); border-radius:15px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; position:relative; transition:border-color .12s, transform .08s; }
 .area-tile:hover { border-color:var(--line-2); transform:translateY(-1px); }
 .area-tile.on { border-color:var(--c); box-shadow:0 10px 26px -16px color-mix(in srgb,var(--c) 60%,transparent); }
