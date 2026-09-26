@@ -7329,7 +7329,11 @@ function reviewsDueToday() {
   // Due today if the cadence's most recent occurrence is today. Each also carries
   // whether this period's review is already submitted, so Today can show a green
   // "done" note instead of nagging you to do what you've done.
-  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); if (c.pausedUntil && c.pausedUntil > t) return false; return c.on && reviewCadRecent(k, t) === t; })
+  // Today always surfaces a review on its deadline day, whether or not push/email
+  // alerts are switched on for it - Today is the plan-your-day surface, so it
+  // informs rather than interrupts. We still honour an explicit snooze
+  // (pausedUntil) and drop it once the period's review is submitted.
+  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); if (c.pausedUntil && c.pausedUntil > t) return false; return reviewCadRecent(k, t, true) === t; })
     .map((k) => {
       const win = periodWindow(k, t);
       const exs = (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
@@ -13085,8 +13089,8 @@ function reviewCadNext(k, fromISO) {
   }
   return null;
 }
-function reviewCadRecent(k, todayI) {
-  const c = reviewCad(k); if (!c.on) return null;
+function reviewCadRecent(k, todayI, ignoreOn) {
+  const c = reviewCad(k); if (!c.on && !ignoreOn) return null;
   const tISO = todayI || todayISO(); const t = new Date(tISO + 'T00:00');
   if (k === 'weekly') { const r = new Date(t); r.setDate(r.getDate() - ((t.getDay() - c.dow + 7) % 7)); return localISO(r); }
   let y = t.getFullYear(), m = t.getMonth();
