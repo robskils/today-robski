@@ -862,6 +862,7 @@ function labelForView(v) {
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
     case 'journal': return t('nav.reflect'); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('nav.reflect');
     case 'readwatch': return 'Read & Watch';
+    case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
     case 'card': return 'Daybook card';
     case 'admin': return 'Admin';
@@ -903,6 +904,7 @@ function openView(v) {
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'journal': return openJournal(); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
+    case 'bookmarkcard': return openBookmarkCard(v.id);
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
     case 'financial': return openFinancial(v.tab);
@@ -5524,9 +5526,9 @@ function renderReadwatch() {
     const ar = p.area ? areaById(p.area) : null; const ahue = ar ? hueOf(ar) : null;
     return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''} ${isEd ? 'editing' : ''}${ar ? ' has-area' : ''}"${ar ? ` style="--h:${ahue}"` : ''}>
       <button class="rw-tick ${done ? 'on' : ''}" data-rw-done="${b.id}" role="checkbox" aria-checked="${done}" title="${done ? 'Read - tap to mark unread' : 'Tap when you\'ve read/watched it'}">${done ? '✓' : ''}</button>
-      <a class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''} ${link ? 'link' : ''} ${art ? 'article' : ''}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></a>
+      <button class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''} ${link ? 'link' : ''} ${art ? 'article' : ''}" data-open-bookmark="${b.id}" title="Open its card">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></button>
       <div class="rw-body">
-        <a class="rw-title" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
+        <button class="rw-title" data-open-bookmark="${b.id}" title="Open its card">${esc(p.title || p.url)}</button>
         <div class="rw-meta"><span class="rw-media">${icon} ${RW_MEDIA[mk].label}</span>${ar ? `<span class="rw-area" style="--h:${ahue}"><span class="cd"></span>${esc(ar.title)}</span>` : ''}${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
         ${rwRatingHtml(b)}
         ${isEd ? `<div class="rw-edit">
@@ -5613,7 +5615,7 @@ async function rwSave(input) {
 async function rwSetDone(id, done) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
   b.props = b.props || {}; b.props.status = done ? 'done' : 'todo';
-  renderReadwatch();
+  rwRerender();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { status: b.props.status } }) }); } catch (e) { toast(e.message); }
 }
 // Your own rating out of 5, shown on every saved item. Five stars fill up to the
@@ -5631,7 +5633,7 @@ async function rwSetRating(id, n) {
   const cur = (Number(b.props.rating) || 0); const curStar = cur > 5 ? Math.round(cur / 2) : cur;
   const rating = curStar === n ? 0 : n;   // tap current score to clear
   b.props.rating = rating;
-  renderReadwatch();
+  rwRerender();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { rating } }) }); } catch (e) { toast(e.message); }
 }
 function rwToggleEdit(id) {
@@ -5643,7 +5645,7 @@ function rwToggleEdit(id) {
 async function rwSetType(id, media) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b || !RW_MEDIA[media]) return;
   b.props = b.props || {}; b.props.media = media;
-  renderReadwatch();
+  rwRerender();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { media } }) }); } catch (e) { toast(e.message); }
 }
 async function rwSetName(id, name) {
@@ -5657,17 +5659,58 @@ async function rwSetDate(id, dateStr) {
   // Store at local-noon UTC so the shown date never slips across a time zone.
   const added = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? `${dateStr}T12:00:00.000Z` : (b.props && b.props.added) || b.created_at;
   b.props = b.props || {}; b.props.added = added;
-  renderReadwatch();
+  rwRerender();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { added } }) }); } catch (e) { toast(e.message); }
 }
 async function rwSetArea(id, areaId) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
   b.props = b.props || {}; b.props.area = areaId || null;
-  renderReadwatch();
+  rwRerender();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { area: areaId || null } }) }); } catch (e) { toast(e.message); }
 }
 async function rwDelete(id) {
-  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); state.rw.items = (state.rw.items || []).filter((x) => x.id !== id); renderReadwatch(); } catch (e) { toast(e.message); }
+  const inCard = state.view && state.view.type === 'bookmarkcard';
+  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); state.rw.items = (state.rw.items || []).filter((x) => x.id !== id); if (inCard) openReadwatch(); else renderReadwatch(); } catch (e) { toast(e.message); }
+}
+async function rwSetNote(id, note) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  b.props = b.props || {}; b.props.note = note;
+  clearTimeout(window.__rwNoteT); window.__rwNoteT = setTimeout(() => { api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { note } }) }).catch(() => {}); }, 600);
+}
+// Re-render whichever Read & Watch surface is showing (the list, or one item's card).
+function rwRerender() { if (state.view && state.view.type === 'bookmarkcard') renderBookmarkCard(); else if (state.view && state.view.type === 'readwatch') renderReadwatch(); }
+// The detail card for one saved item: cover, life area, big star rating, notes.
+function openBookmarkCard(id) {
+  if (!state.rw || !state.rw.items) { return openReadwatch().then(() => { state.rw_open = { id }; state.view = { type: 'bookmarkcard', id }; renderNav(); renderBookmarkCard(); }); }
+  state.rw_open = { id }; state.view = { type: 'bookmarkcard', id }; renderNav(); renderBookmarkCard(); return Promise.resolve();
+}
+function renderBookmarkCard() {
+  const b = (state.rw && state.rw.items || []).find((x) => x.id === (state.rw_open && state.rw_open.id));
+  if (!b) { openReadwatch(); return; }
+  const p = b.props || {}; const mk = rwMediaKey(p); const media = RW_MEDIA[mk]; const done = p.status === 'done';
+  const ar = p.area ? areaById(p.area) : null; const ahue = ar ? hueOf(ar) : null;
+  const href = p.url || (mk === 'book' ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' book')}`
+    : mk === 'film' ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' film')}`
+    : mk === 'video' ? `https://www.youtube.com/results?search_query=${encodeURIComponent(p.title || '')}` : (p.url || '#'));
+  const TODO = { film: 'want to see', book: 'want to read', article: 'to read', video: 'to watch', link: 'to visit' };
+  const DONE = { film: 'Seen', book: 'Read', article: 'Read', video: 'Watched', link: 'Visited' };
+  const openLbl = mk === 'book' ? '📖 Find the book' : mk === 'film' ? '🎬 Watch / find it' : mk === 'video' ? '▶ Watch it' : 'Open ↗';
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('saved.title'), attr: 'data-open-readwatch' }, { label: p.title || 'Saved' }])}
+    <div class="rwc${ar ? ' has-area' : ''}"${ar ? ` style="--h:${ahue}"` : ''}>
+      <div class="rwc-cover rwc-${mk}">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rwc-cover-ic">${media.ic}</span></div>
+      <div class="rwc-main">
+        <input class="rwc-title" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off">
+        <div class="rwc-media">${media.ic} ${esc(media.label)}${p.site ? ` · ${esc(p.site)}` : ''}</div>
+        ${href && href !== '#' ? `<a class="add-btn wide rwc-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${openLbl}</a>` : ''}
+        <div class="rwc-rate">${rwRatingHtml(b)}</div>
+        <div class="rwc-row"><span class="rwc-lbl">Status</span><button class="rwc-status ${done ? 'done' : ''}" data-rw-done="${b.id}">${done ? `✓ ${DONE[mk] || 'Done'}` : `Mark ${TODO[mk] || 'done'}`}</button></div>
+        <label class="rwc-row"><span class="rwc-lbl">Life area</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
+        <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="4">${esc(p.note || '')}</textarea></label>
+        <div class="rwc-foot"><span class="rwc-added">Added ${fmtDate(p.added || b.created_at)}</span><button class="ghost rwc-del" data-rw-del="${b.id}">Delete</button></div>
+      </div>
+    </div>`;
 }
 
 // ── view: life areas ─────────────────────────────────
@@ -15343,6 +15386,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-coach]')) { journalCoach(); return; }
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
+  { const ob = t.closest('[data-open-bookmark]'); if (ob) { openBookmarkCard(ob.dataset.openBookmark); return; } }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
   const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { const typed = ($('#rw-url') || {}).value || ''; state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) { i.value = typed; i.focus(); try { i.setSelectionRange(typed.length, typed.length); } catch {} } } return; }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
@@ -16125,6 +16169,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-pe-add-contact]')) { const cid = e.target.value; if (cid && state.practiceEdit) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(cid)])]; renderPeAttach(); } return; }
   if (e.target.matches('[data-rw-type-sel]')) { rwSetType(e.target.dataset.rwTypeSel, e.target.value); return; }
   if (e.target.matches('[data-rw-name]')) { rwSetName(e.target.dataset.rwName, e.target.value); return; }
+  if (e.target.matches('[data-rw-note]')) { rwSetNote(e.target.dataset.rwNote, e.target.value); return; }
   if (e.target.matches('[data-rw-area]')) { rwSetArea(e.target.dataset.rwArea, e.target.value); return; }
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
