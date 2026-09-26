@@ -3690,6 +3690,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Gmail app-password step list, shared by the mail form note and onboarding. */
 .gpw-steps { margin:8px 0 0; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:1.5; color:var(--ink-2); }
 .gpw-steps a { color:var(--accent); font-weight:500; }
+.gpw-help { font-size:13.5px; line-height:1.55; color:var(--ink-2); background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:10px 0 2px; }
+.gpw-help a { color:var(--accent); font-weight:500; }
+.gpw-expiry { margin:8px 0 0; font-size:12.5px; color:var(--ink-3); }
+.gpw-details { margin:18px 0 4px; }
+.gpw-details > summary { cursor:pointer; font-size:14.5px; font-weight:600; color:var(--accent); padding:6px 0; }
 .gpw-admin { display:block; margin-top:8px; font-size:12px; color:var(--ink-3); }
 
 /* ── First-run onboarding overlay ─────────────────────────────────────── */
@@ -4771,6 +4776,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Quadrant hues (work in both themes). */
 .mail-quad-urgent { --q:#d9483b; } .mail-quad-important { --q:#e08a1e; }
 .mail-quad-chilled { --q:#3e9b6c; } .mail-quad-others { --q:#8b8177; }
+.mail-quad-inbox { --q:var(--ink-3); }   /* untriaged - still in the queue */
 /* Reader priority picker: file the open email into a quadrant. */
 .mail-quadpick { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin:6px 0 4px; }
 .mail-quadpick-l { font-size:13px; color:var(--ink-3); margin-right:2px; }

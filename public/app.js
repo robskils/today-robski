@@ -633,11 +633,15 @@ const HELP = {
       <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
       <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>
       <p><b>Add holidays &amp; sport.</b> Tap <b>＋ Holidays &amp; sport</b> (or the ⚙ on this page) to open <b>Settings › Calendar</b>. Search for any <b>country</b> and its national public holidays appear on your calendar, and search for your <b>football team</b> (or any club) to add its upcoming fixtures with kick-off in your local time. These are read-only - untick a country or team to remove them.</p>` },
-  mail: { title: 'Mail', tip: 'All your inboxes in one place. Read, reply, and search across every account.',
-    body: `<p>Mail merges your real mailboxes (IMAP/SMTP) into one inbox. Add an account in <b>Settings › Mail accounts</b>.</p>
-      <ul><li>Read, reply, forward and compose, choosing which account you send from.</li>
-      <li>The inbox stays warm in the background, so opening Mail is instant, and a new message can nudge you.</li>
-      <li>Search runs across your accounts.</li></ul>
+  mail: { title: 'Mail', tip: 'All your inboxes in one place, triaged into four buckets so the inbox reaches zero.',
+    body: `<p>Mail merges your real mailboxes (IMAP/SMTP) into one inbox. Add an account with <b>Accounts</b> at the top of Mail.</p>
+      <p><b>Triage to zero.</b> New mail lands in the <b>Inbox</b> queue. File each email into one of four buckets - and it leaves the inbox:</p>
+      <ul><li><b>Urgent</b> - important and time-sensitive; do it now.</li>
+      <li><b>Important</b> - matters, but not a rush; plan it.</li>
+      <li><b>Read Later</b> - worth a read when you have space.</li>
+      <li><b>Others</b> - low priority; out of the way.</li></ul>
+      <p>File from an open email, from the colour dot on any row, or by dragging a row onto a card. Tap a card to see that bucket (tap two to see both). When the Inbox count hits zero, you're done.</p>
+      <p><b>Connecting Gmail / Google Workspace:</b> Google needs a one-time <b>App Password</b>, not your normal password. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, and paste it in. They don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - then just make a new one.</p>
       <p>Sending, and anything that leaves your account, always waits for you to press the button.</p>` },
   contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from life areas - and a nudge when it has been too long.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a life area.</p>
@@ -7845,27 +7849,25 @@ const MAIL_FOLDERS = [
   { key: 'spam', label: 'Spam', mailbox: 'Junk' },
   { key: 'trash', label: 'Trash', mailbox: 'Trash' },
 ];
-// The Eisenhower quadrants: four INBOX views you sort mail into by urgency ×
-// importance. "Others" is the default (anything you haven't filed), so new mail
-// simply waits there until you promote what matters. They're virtual views over
-// INBOX (a per-message label in kv_mail_quadrants), not real mailboxes.
+// The Eisenhower buckets you triage mail INTO (urgency × importance). New mail
+// lands in the Inbox queue; filing it here moves it OUT of the inbox into one of
+// these four. Labels persist per-message in kv_mail_quadrants.
 const MAIL_QUADS = [
   { key: 'urgent', label: 'Urgent', hint: 'Important & timely', mailbox: 'INBOX', quad: 'urgent' },
   { key: 'important', label: 'Important', hint: 'Important, not rushed', mailbox: 'INBOX', quad: 'important' },
   { key: 'chilled', label: 'Read Later', hint: 'Worth a read, no rush', mailbox: 'INBOX', quad: 'chilled' },
-  { key: 'others', label: 'Others', hint: 'Everything else', mailbox: 'INBOX', quad: 'others' },
+  { key: 'others', label: 'Others', hint: 'Low priority - out of the way', mailbox: 'INBOX', quad: 'others' },
 ];
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
-// A message's quadrant is strictly its own label - filing one email never moves
-// others (a sender can send an urgent note and a chatty one). An email you had
-// starred before we dropped the star counts as Important until you file it
-// otherwise. Unfiled and unstarred = 'others'.
+// A message's bucket. Untriaged mail is 'inbox' - it sits in the triage queue
+// until you file it into one of the four quadrants (Others included, which is now
+// a real destination, not the default). Filing is strictly per-message.
 const mailQuadOf = (o) => {
-  if (!o) return 'others';
+  if (!o) return 'inbox';
   const own = state.mailQuads && state.mailQuads[mailFileKey(o)];
   if (own) return own;
-  if (o.flagged) return 'important';
-  return 'others';
+  if (o.flagged) return 'important';   // a previously-starred email counts as Important
+  return 'inbox';
 };
 const mailMsgByKey = (key) => (state.mail && state.mail.messages || []).find((x) => x._key === key);
 function setMailFolder(key) {
@@ -7874,20 +7876,22 @@ function setMailFolder(key) {
   if (f.local) { renderMail(); return; }   // Drafts is client-side, no fetch
   state.mail.mailbox = f.mailbox; loadMessages();
 }
-// File one or more messages into a quadrant (or clear back to 'others'). Strictly
-// per-message - filing one never moves other mail - persisted to kv_mail_quadrants.
+// File one or more messages into a bucket, moving them OUT of the Inbox queue.
+// quad 'inbox' (or empty) puts a message back in the queue. Strictly per-message,
+// persisted to kv_mail_quadrants.
 function mailToQuad(msgs, quad) {
   const list = (Array.isArray(msgs) ? msgs : [msgs]).map((x) => (typeof x === 'string' ? mailMsgByKey(x) : x)).filter(Boolean);
   if (!list.length) return;
+  const toInbox = !quad || quad === 'inbox';
   state.mailQuads = state.mailQuads || {};
   for (const o of list) {
     const k = mailFileKey(o);
-    if (quad && quad !== 'others') state.mailQuads[k] = quad; else delete state.mailQuads[k];
+    if (toInbox) delete state.mailQuads[k]; else state.mailQuads[k] = quad;
   }
   api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {});
   const q = MAIL_QUADS.find((x) => x.quad === quad);
   state.mail.quadMenu = null;
-  toast(quad && quad !== 'others' ? `Filed in ${q ? q.label : quad}` : 'Moved to Others');
+  toast(toInbox ? 'Back in the inbox' : `Filed in ${q ? q.label : quad}`);
   renderMail();
 }
 // Every message row is tagged with the account it came from (_acct / _mailbox /
@@ -9013,6 +9017,7 @@ function renderMailAccounts(note) {
         <label class="ae-lbl">Username<input class="ae-user" value="${esc(a.username || '')}" placeholder="Usually your email address"></label>
         <label class="ae-lbl">Password<input class="ae-pass" type="password" autocomplete="off" placeholder="Leave blank to keep the current password"></label>
         <div class="mail-sig-note">🔒 Your saved password is hidden and never shown. Leave the box blank to keep it, or type a new one (for Google, an <b>App Password</b>) to replace it.</div>
+        ${/gmail\.com/i.test(a.imapHost || '') ? `<div class="gpw-help">${GMAIL_APP_PW}<p class="gpw-expiry">They don't expire on a timer - but Google revokes them if you change your account password, turn 2-Step Verification off and on, or after a security review. When that happens, just create a fresh one here and paste it above.</p></div>` : ''}
         <div class="ae-act"><button class="add-btn" type="submit">Save changes</button><button type="button" class="ghost" data-acct-edit-cancel="${a.id}">Cancel</button></div>
       </form>
     </div>
@@ -9027,6 +9032,9 @@ function renderMailAccounts(note) {
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>
     ${(state.mail.accounts || []).length ? `<button class="mail-add-more" data-mail-add-acct>+ Add another mailbox</button>` : ''}
+    <details class="gpw-details"><summary>Gmail / Google Workspace not connecting? Get a new App Password</summary>
+      <div class="gpw-help">${GMAIL_APP_PW}<p class="gpw-expiry">App Passwords don't expire on a timer, but Google revokes them if you change your account password, toggle 2-Step Verification, or after a security review - then create a fresh one and paste it into that mailbox's <b>Edit → Password</b>.</p></div>
+    </details>
     ${pushSectionHtml()}
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
       <p class="scope" style="margin:0 0 12px">Make Robski Life open when you click a <b>mailto:</b> email link in your browser. Your browser will ask you to allow it, then you set it as the default (Brave/Chrome: <b>Settings → Site &amp; Shields settings → Handlers</b>, or the ⛓ icon in the address bar).</p>
@@ -9358,15 +9366,17 @@ function mailQuadCardsHtml() {
 // The little 4-way menu that opens from a row's priority button.
 function mailQuadMenuHtml() {
   const mm = state.mail.quadMenu; if (!mm) return '';
-  const o = mailMsgByKey(mm.key); const cur = o ? mailQuadOf(o) : 'others';
+  const o = mailMsgByKey(mm.key); const cur = o ? mailQuadOf(o) : 'inbox';
   return `<div class="mail-movebg" data-mail-quad-close><div class="mail-move mail-quadmenu" style="top:${mm.y}px;left:${mm.x}px" role="menu">
     ${MAIL_QUADS.map((q) => `<button class="mail-move-item mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-pick="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quadmenu-l">${esc(q.label)}</span><span class="mail-quadmenu-h">${esc(q.hint)}</span></button>`).join('')}
+    ${cur !== 'inbox' ? '<button class="mail-move-item mail-quad-inbox" data-mail-quad-pick="inbox"><span class="mail-quad-dot"></span><span class="mail-quadmenu-l">Inbox</span><span class="mail-quadmenu-h">Back to the queue</span></button>' : ''}
   </div></div>`;
 }
-// The priority picker in the reader: tap to file the open email into a quadrant.
+// The priority picker in the reader: tap to file the open email into a bucket
+// (or send it back to the inbox queue).
 function mailQuadPickerHtml(o) {
   const cur = mailQuadOf(o);
-  return `<div class="mail-quadpick"><span class="mail-quadpick-l">Priority</span>${MAIL_QUADS.map((q) => `<button class="mail-quadpick-b mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span>${esc(q.label)}</button>`).join('')}</div>`;
+  return `<div class="mail-quadpick"><span class="mail-quadpick-l">File into</span>${MAIL_QUADS.map((q) => `<button class="mail-quadpick-b mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span>${esc(q.label)}</button>`).join('')}${cur !== 'inbox' ? '<button class="mail-quadpick-b mail-quad-inbox" data-mail-quad-file="inbox" title="Back to the inbox queue"><span class="mail-quad-dot"></span>Inbox</button>' : ''}</div>`;
 }
 // The inner HTML of the .mail-list container (rows / loading / empty state).
 // Kept separate so a live search can refresh just the list without rebuilding
@@ -9379,11 +9389,15 @@ function mailListInner(loading) {
   // message), with a quiet count when there's more than one. Opening it shows
   // the whole conversation. No toggle, no chevrons, no big-deal badges.
   let threads = buildThreads(m.messages || []);
-  // The quadrant cards are multi-select filters over the inbox: tap Urgent to see
-  // only urgent, tap Important too to see both, and so on. No cards active = the
-  // whole inbox. Only applies to the inbox itself, not Sent/Archive/etc.
+  // Inbox-zero triage: the Inbox shows only UNTRIAGED mail (the queue); tapping a
+  // quadrant card filters to that bucket's filed mail (multi-select - Urgent, or
+  // Urgent + Important, etc.). Only over the inbox itself, not Sent/Archive/etc.
   const qf = m.quadFilter;
-  if (qf && qf.size && ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox')) threads = threads.filter((th) => qf.has(mailQuadOf(th.latest)));
+  const inboxCtx = ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox');
+  if (inboxCtx) {
+    if (qf && qf.size) threads = threads.filter((th) => qf.has(mailQuadOf(th.latest)));
+    else threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
+  }
   // Important senders: in the inbox (not searching), lift threads from VIPs into
   // their own box at the top so they don't get lost in the stream.
   const v = mailVips();
@@ -9513,7 +9527,7 @@ function renderMail(loading) {
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
     ${['inbox', 'unread', 'starred'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
-    <div class="mail-folders">${MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('')}</div>
+    <div class="mail-folders">${(() => { const untriaged = m.mailbox === 'INBOX' ? buildThreads(m.messages || []).filter((th) => mailQuadOf(th.latest) === 'inbox').length : 0; return MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : f.key === 'inbox' ? untriaged : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join(''); })()}</div>
     ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
       <button class="ghost" data-mail-bulk="archive">Archive</button>
