@@ -8005,6 +8005,11 @@ async function mailMoveTo(key, target, label) {
   const keys = threadKeysFor(key);
   const rows = keys.map((k) => mailRow(k)).filter(Boolean);
   if (!rows.length) return;
+  // These sets can be absent if the mail state was seeded from a partial cache;
+  // guard so an archive/move never throws "reading 'add'" after the server move.
+  if (!state.mail.gone) state.mail.gone = new Set();
+  if (!state.mail.selected) state.mail.selected = new Set();
+  if (!state.mail.pending) state.mail.pending = new Set();
   const msgs = state.mail.messages || []; const idx = msgs.findIndex((m) => m._key === key);
   try {
     for (const row of rows) {
