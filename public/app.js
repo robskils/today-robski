@@ -9054,7 +9054,7 @@ function renderMailAccounts(note) {
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>
     ${(state.mail.accounts || []).length ? `<button class="mail-add-more" data-mail-add-acct>+ Add another mailbox</button>` : ''}
-    <details class="gpw-details"><summary>Gmail / Google Workspace not connecting? Get a new App Password</summary>
+    <details class="gpw-details" open><summary>Adding a Gmail / Google Workspace account (App Password)</summary>
       <div class="gpw-help">${GMAIL_APP_PW}<p class="gpw-expiry">App Passwords don't expire on a timer, but Google revokes them if you change your account password, toggle 2-Step Verification, or after a security review - then create a fresh one and paste it into that mailbox's <b>Edit → Password</b>.</p></div>
     </details>
     ${pushSectionHtml()}
@@ -9546,7 +9546,7 @@ function renderMail(loading) {
   $('#pane').innerHTML = `
     ${mailCrumb}
     <div class="pane-head home-head"><h1>${t('nav.mail')}</h1>
-      <div class="mail-head-act"><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
+      <div class="mail-head-act"><button class="ghost" data-help-open="mail" title="How Mail works - setup, Gmail, triage">ⓘ Guide</button><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
     ${['inbox', 'unread', 'starred'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
