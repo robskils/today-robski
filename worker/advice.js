@@ -7,7 +7,7 @@
  * New videos are found from each channel's RSS feed (no API key, no scraping a
  * player). The watching is Gemini, because Claude can't ingest video.
  *
- * Storage is Robski Life's own block table:
+ * Storage is Daybook's own block table:
  *   kind='finchannel'  title=channel name   props={channelId, url}
  *   kind='finvideo'    title=video title     props={videoId, channelId,
  *                        channelTitle, url, thumb, published, actions[], topics[]}
@@ -31,7 +31,7 @@ function decodeXml(s) {
 }
 const safeJSON = (s) => { try { return s ? JSON.parse(s) : {}; } catch { return {}; } };
 
-// ── D1 helpers (Robski Life's block table) ──────────────────────────────
+// ── D1 helpers (Daybook's block table) ──────────────────────────────
 async function blocksOfKind(env, kind) {
   const { results } = await env.DB.prepare(
     'SELECT id, title, props, body, created_at FROM blocks WHERE kind = ? AND user_id = ? AND archived = 0 ORDER BY created_at DESC',

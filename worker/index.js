@@ -1572,7 +1572,7 @@ async function handleExport(request, env) {
   });
 }
 
-// ── blocks: the Robski Life core API ──────────────────────────────────
+// ── blocks: the Daybook core API ──────────────────────────────────
 //
 // One set of endpoints for everything the Life app owns. A task, a note, an
 // area, a table, a row - all blocks, told apart by `kind`. props is a JSON bag
@@ -2635,7 +2635,7 @@ async function handleTasks(request, env, url) {
   const q = (url.searchParams.get('q') || '').toLowerCase();
   const cfg = await getLaneConfig(env);
 
-  // Pull from Robski Life: open, priority-tagged task blocks.
+  // Pull from Daybook: open, priority-tagged task blocks.
   const { results } = await env.DB.prepare(
     `SELECT id, title, props, created_at FROM blocks
       WHERE user_id = ? AND kind = 'task' AND archived = 0
@@ -3077,7 +3077,7 @@ async function createTask(request, env) {
     return err('bad duration', request);
   }
 
-  // A native Robski Life task block. `area` is a Life Area block id (the client
+  // A native Daybook task block. `area` is a Life Area block id (the client
   // picks from /api/lanes). It shows up in the Life Tasks list too.
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -3242,7 +3242,7 @@ async function handlePush(request, env, path, json, err) {
     return json({ ok: true }, request);
   }
   if (path === '/api/push/test' && request.method === 'POST') {
-    const r = await pushAll(env, { type: 'test', title: 'Robski Life', body: 'Notifications are working ✓', unread: 0 });
+    const r = await pushAll(env, { type: 'test', title: 'Daybook', body: 'Notifications are working ✓', unread: 0 });
     return json(r, request);
   }
   return err('not found', request, 404);
@@ -3978,7 +3978,7 @@ export default {
         }
       }
 
-      // Robski Life block core + search.
+      // Daybook block core + search.
       if (path === '/api/blocks' && request.method === 'GET') return listBlocks(request, env, url);
       if (path === '/api/favorites' && request.method === 'GET') return handleFavorites(request, env);
       // Small key-value store (settings table) for freeform bits like the home

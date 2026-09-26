@@ -236,7 +236,7 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('day_start',    '360'),   -- 06:00
   ('day_end',      '1380');  -- 23:00
 
--- ── Robski Life: the block core ───────────────────────────────────────
+-- ── Daybook: the block core ───────────────────────────────────────
 -- The one model the whole Life app sits on. A task, a note, a table, a table
 -- row - all the same thing: a block. This is what lets a note hold a task and
 -- a task link to a table row without three separate silos.

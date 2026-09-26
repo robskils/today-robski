@@ -1,4 +1,4 @@
-// Robski Life — one surface. Sidebar + a single pane that renders any block,
+// Daybook — one surface. Sidebar + a single pane that renders any block,
 // and a ⌘K palette to jump anywhere. No page reloads.
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -580,7 +580,7 @@ function sanitizeProse(html) {
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
       if (span) { if (span.colspan && +span.colspan > 1) el.setAttribute('colspan', span.colspan); if (span.rowspan && +span.rowspan > 1) el.setAttribute('rowspan', span.rowspan); }
-      // Internal links to other Robski Life pages FIRST: an internal link the
+      // Internal links to other Daybook pages FIRST: an internal link the
       // browser resolved to an absolute URL (https://life.robski.uk/#rl-note-…)
       // would otherwise match the http test below, get target=_blank, and open
       // in a browser tab instead of navigating in-app. Store just the #rl-…
@@ -5575,10 +5575,10 @@ function rwSetupHtml() {
   return `<div class="rw-setup-panel">
     <div class="rw-setup-h">One-tap saving</div>
     <div class="rw-setup-sec"><b>On your Mac</b> — drag this to your bookmarks bar, then click it on any page to save it:
-      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Robski</a></div></div>
-    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Robski”:
+      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Daybook</a></div></div>
+    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Daybook”:
       <ol><li>Shortcuts app → <b>+</b> → add action <b>Get Contents of URL</b>.</li><li>Set its URL to <code class="rw-code">${esc(capUrl)}</code> and then insert the <b>Shortcut Input</b> variable right after <code>url=</code>.</li><li>In the shortcut settings (ⓘ) turn on <b>Show in Share Sheet</b> and accept <b>URLs</b>.</li></ol>
-      Then anywhere: <b>Share → Save to Robski</b>.</div>
+      Then anywhere: <b>Share → Save to Daybook</b>.</div>
     <div class="rw-setup-note">This save link is private to you.</div>
   </div>`;
 }
@@ -8344,7 +8344,7 @@ async function subscribePush(reg) {
 }
 // User tapped "Enable notifications": prompt, subscribe, register with server.
 async function enablePush() {
-  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Robski Life to your Home Screen from Safari first.'); return; }
+  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Daybook to your Home Screen from Safari first.'); return; }
   try {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') { toast(perm === 'denied' ? 'Notifications are blocked - allow them in browser settings.' : 'Notifications not enabled.'); return; }
@@ -8362,12 +8362,12 @@ async function pushTest() {
 function pushSectionHtml() {
   if (!pushSupported()) {
     return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-      <p class="scope">To get a badge on the app icon when mail arrives, add Robski Life to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
+      <p class="scope">To get a badge on the app icon when mail arrives, add Daybook to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
   }
   const perm = Notification.permission;
   const on = perm === 'granted';
   return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-    <p class="scope">Show a number on the Robski Life app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
+    <p class="scope">Show a number on the Daybook app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
     <div class="push-acts">${perm === 'denied'
       ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
       : `<button class="add-btn wide" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
@@ -9102,8 +9102,8 @@ function renderMailAccounts(note) {
     </details>
     ${pushSectionHtml()}
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
-      <p class="scope" style="margin:0 0 12px">Make Robski Life open when you click a <b>mailto:</b> email link in your browser. Your browser will ask you to allow it, then you set it as the default (Brave/Chrome: <b>Settings → Site &amp; Shields settings → Handlers</b>, or the ⛓ icon in the address bar).</p>
-      <button class="add-btn wide" data-mail-handler>Set Robski Life as my email app</button></section>`;
+      <p class="scope" style="margin:0 0 12px">Make Daybook open when you click a <b>mailto:</b> email link in your browser. Your browser will ask you to allow it, then you set it as the default (Brave/Chrome: <b>Settings → Site &amp; Shields settings → Handlers</b>, or the ⛓ icon in the address bar).</p>
+      <button class="add-btn wide" data-mail-handler>Set Daybook as my email app</button></section>`;
 }
 async function saveSignature(id) {
   const a0 = (state.mail.accounts || []).find((x) => x.id === id); if (!a0) return;
@@ -9645,7 +9645,7 @@ function showQuickTask() {
     <div class="atf-actions"><button class="add-btn wide" type="submit">Add task</button><button type="button" class="ghost" data-qt-close>Done</button></div></form>`;
   $('#qt-title').focus();
 }
-// Turn the open email into a Robski Life task: subject becomes the title, and
+// Turn the open email into a Daybook task: subject becomes the title, and
 // the sender line + the email's text are carried into the task's note (body).
 // It lands in Tasks with no priority/area set.
 // Turning an email into a task opens a little popover first, so the title, life
@@ -15291,7 +15291,7 @@ document.addEventListener('click', (e) => {
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
-  // Internal links jump within Robski Life instead of opening a browser tab.
+  // Internal links jump within Daybook instead of opening a browser tab.
   if (alink) {
     // Match the #rl- fragment anywhere in the href, so a link stored as an
     // absolute URL still routes in-app rather than opening a browser tab.
@@ -15782,7 +15782,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-push-enable]')) { enablePush(); return; }
   if (t.closest('[data-push-test]')) { pushTest(); return; }
   { const bt = t.closest('[data-brief-test]'); if (bt) { bt.disabled = true; toast('Sending your brief…'); api('/api/brief/test', { method: 'POST' }).then(() => toast('Sent - check your inbox ✉')).catch((x) => toast(x.message || 'Could not send')).finally(() => { bt.disabled = false; }); return; } }
-  if (t.closest('[data-mail-handler]')) { if (navigator.registerProtocolHandler) { registerMailHandler(); toast('Allow it in the prompt, then set Robski Life as your default in the browser’s handler settings.'); } else toast('This browser doesn’t support setting a mail handler (Safari/iOS don’t).'); return; }
+  if (t.closest('[data-mail-handler]')) { if (navigator.registerProtocolHandler) { registerMailHandler(); toast('Allow it in the prompt, then set Daybook as your default in the browser’s handler settings.'); } else toast('This browser doesn’t support setting a mail handler (Safari/iOS don’t).'); return; }
   const dpo = t.closest('[data-dp-open]'); if (dpo) { openDatePicker(dpo.dataset.dpOpen); return; }
   const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick); return; }
   const dpst = t.closest('[data-dp-step]'); if (dpst) { dpStep(+dpst.dataset.dpStep); return; }
@@ -18631,7 +18631,7 @@ async function openMailCompose(c) {
   renderMail();
   setTimeout(() => { const el = document.getElementById(c.to ? 'mc-body' : 'mc-to'); if (el) el.focus(); }, 40);
 }
-// Offer Robski Life as the browser's mailto handler (Chromium/Firefox). The
+// Offer Daybook as the browser's mailto handler (Chromium/Firefox). The
 // browser then asks the user to allow it, and to make it the default.
 function registerMailHandler() { try { if (navigator.registerProtocolHandler) navigator.registerProtocolHandler('mailto', location.origin + '/?mailto=%s'); } catch {} }
 
@@ -18920,7 +18920,7 @@ async function onbConnectGmail() {
     api('/api/kv/home_people').then((r) => { if (r && (r.value === '0' || r.value === '1')) { try { localStorage.setItem('life.home.people', r.value); } catch {} if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
     registerSW();            // offline / instant-open caching (works even where push isn't supported)
     initPush();              // register the SW; refresh the push subscription if already granted
-    registerMailHandler();   // offer Robski Life as the browser's mailto: handler
+    registerMailHandler();   // offer Daybook as the browser's mailto: handler
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
     loadAccount();           // name, handle & contact details for the Daybook card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});

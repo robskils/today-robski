@@ -1,4 +1,4 @@
-// Robski Life — Tables. Structured records on the block core: a table is a
+// Daybook — Tables. Structured records on the block core: a table is a
 // block with typed columns; each row is a child block holding cell values.
 
 const $ = (s, r = document) => r.querySelector(s);

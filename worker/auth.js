@@ -144,7 +144,7 @@ export async function requestCode(request, env, json, err) {
   const email = String(body.email || '').trim().toLowerCase();
   if (!validEmail(email)) return err('That does not look like an email address', 400);
   // 'sms' texts the code to ALERT_PHONE instead of emailing it. This is the
-  // fix for the Catch-22 once Robski Life *is* the mailbox: if email breaks or
+  // fix for the Catch-22 once Daybook *is* the mailbox: if email breaks or
   // is locked behind this very sign-in, the phone still gets you in.
   const channel = body.channel === 'sms' ? 'sms' : 'email';
 
