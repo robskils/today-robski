@@ -2494,6 +2494,7 @@ function renderSettings() {
   const notificationsPane = state.account ? `<div class="set-card set-notifs">
         <div class="set-notif-group"><div class="set-notif-h">By email</div>
           <label class="set-mod"><span>Morning brief<small>Your day's calendar, open P1 tasks and the quote, emailed at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
+          <div class="set-notif-act"><button class="ghost" data-brief-test>✉ Send me one now</button><span class="set-notif-hint">A test brief, right now - doesn't affect tomorrow's.</span></div>
           <label class="set-mod"><span>When something surfaces<small>An email the morning a "surface on" task comes back to your Home</small></span><input type="checkbox" data-account-surface-email ${state.account.surfaceEmail !== false ? 'checked' : ''}></label>
         </div>
         <div class="set-notif-group"><div class="set-notif-h">By text</div>
@@ -15729,6 +15730,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-accounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-push-enable]')) { enablePush(); return; }
   if (t.closest('[data-push-test]')) { pushTest(); return; }
+  { const bt = t.closest('[data-brief-test]'); if (bt) { bt.disabled = true; toast('Sending your brief…'); api('/api/brief/test', { method: 'POST' }).then(() => toast('Sent - check your inbox ✉')).catch((x) => toast(x.message || 'Could not send')).finally(() => { bt.disabled = false; }); return; } }
   if (t.closest('[data-mail-handler]')) { if (navigator.registerProtocolHandler) { registerMailHandler(); toast('Allow it in the prompt, then set Robski Life as your default in the browser’s handler settings.'); } else toast('This browser doesn’t support setting a mail handler (Safari/iOS don’t).'); return; }
   const dpo = t.closest('[data-dp-open]'); if (dpo) { openDatePicker(dpo.dataset.dpOpen); return; }
   const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick); return; }
