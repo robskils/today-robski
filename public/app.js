@@ -7919,17 +7919,37 @@ const MAIL_QUADS = [
   { key: 'others', label: 'Others', hint: 'Low priority - out of the way', mailbox: 'INBOX', quad: 'others' },
 ];
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
-// A message's bucket. Untriaged mail is 'inbox' - it sits in the triage queue
-// until you file it into one of the four quadrants (Others included, which is now
-// a real destination, not the default). Filing is strictly per-message.
+// A filed email is stored as { q: quad, m: snapshot } so its box KEEPS it even
+// after it leaves the loaded inbox (Daybook remembers it). Old data stored a bare
+// quad string; both shapes are read here. Works the same for Gmail and IMAP - the
+// snapshot carries the account it came from.
+const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[key]; return v == null ? null : (typeof v === 'string' ? { q: v, m: null } : v); };
+// A message's bucket. Untriaged = 'inbox' (the triage queue).
 const mailQuadOf = (o) => {
   if (!o) return 'inbox';
-  const own = state.mailQuads && state.mailQuads[mailFileKey(o)];
-  if (own) return own;
+  const e = mailQuadEntry(mailFileKey(o));
+  if (e && e.q) return e.q;
   if (o.flagged) return 'important';   // a previously-starred email counts as Important
   return 'inbox';
 };
-const mailMsgByKey = (key) => (state.mail && state.mail.messages || []).find((x) => x._key === key);
+// A durable snapshot of an email - enough to show its row and reopen it later.
+function mailSnap(o) {
+  return { _key: o._key, messageId: o.messageId || '', account: o._acct, mailbox: o._mailbox || 'INBOX', uid: o.uid, acctName: o._acctName || '', subject: o.subject || '', from: o.from || null, date: o.date || '', preview: o.preview || '', seen: !!o.seen, flagged: !!o.flagged };
+}
+// Rebuild a message-like object from a snapshot (marked _snap so the reader can
+// fetch its body from the account it names).
+const snapToMsg = (m) => ({ _key: m._key, messageId: m.messageId || '', _acct: m.account, _mailbox: m.mailbox || 'INBOX', uid: m.uid, _acctName: m.acctName || '', subject: m.subject || '', from: m.from || null, date: m.date || '', preview: m.preview || '', seen: !!m.seen, flagged: !!m.flagged, _snap: true });
+// Every email currently in a bucket: the remembered snapshots UNION anything of
+// that bucket in the loaded inbox (deduped by Message-ID). Also caches the
+// snapshot messages so the reader can open one that has left the inbox.
+function mailQuadMsgs(quad) {
+  const byId = new Map(); state.mail.snapMsgs = state.mail.snapMsgs || {};
+  for (const k in (state.mailQuads || {})) { const e = mailQuadEntry(k); if (e && e.q === quad && e.m) { const m = snapToMsg(e.m); state.mail.snapMsgs[m._key] = m; byId.set(m.messageId || m._key, m); } }
+  for (const m of (state.mail.messages || [])) { if (mailQuadOf(m) === quad) byId.set(m.messageId || m._key, m); }
+  return [...byId.values()];
+}
+function persistMailQuads() { api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {}); }
+const mailMsgByKey = (key) => (state.mail && state.mail.messages || []).find((x) => x._key === key) || (state.mail && state.mail.snapMsgs && state.mail.snapMsgs[key]);
 function setMailFolder(key) {
   state.mail.folder = key; state.mail.open = null; state.mail.limit = 40;
   const f = mailFolder();
@@ -7946,9 +7966,9 @@ function mailToQuad(msgs, quad) {
   state.mailQuads = state.mailQuads || {};
   for (const o of list) {
     const k = mailFileKey(o);
-    if (toInbox) delete state.mailQuads[k]; else state.mailQuads[k] = quad;
+    if (toInbox) delete state.mailQuads[k]; else state.mailQuads[k] = { q: quad, m: mailSnap(o) };
   }
-  api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {});
+  persistMailQuads();
   const q = MAIL_QUADS.find((x) => x.quad === quad);
   state.mail.quadMenu = null;
   toast(toInbox ? 'Back in the inbox' : `Filed in ${q ? q.label : quad}`);
@@ -7959,7 +7979,8 @@ function mailToQuad(msgs, quad) {
 // unique within one mailbox, so in the All-accounts view uid alone would clash;
 // keying and acting by _key lets every row carry its own account.
 const mailRow = (key) => (state.mail.messages || []).find((m) => m._key === key)
-  || (state.mail.open && state.mail.open._key === key ? state.mail.open : null);
+  || (state.mail.open && state.mail.open._key === key ? state.mail.open : null)
+  || (state.mail.snapMsgs && state.mail.snapMsgs[key]) || null;
 async function mailStar(key) {
   const target = mailRow(key); if (!target) return;
   const row = (state.mail.messages || []).find((m) => m._key === key);
@@ -8637,7 +8658,7 @@ function mailForgetKeys(keys) {
   for (const k in lc) lc[k] = (lc[k] || []).filter((m) => !set.has(m._key));
 }
 async function openMessage(key) {
-  const row = (state.mail.messages || []).find((x) => x._key === key); if (!row) return;
+  const row = (state.mail.messages || []).find((x) => x._key === key) || (state.mail.snapMsgs && state.mail.snapMsgs[key]); if (!row) return;
   state.mail.sel = key; state.mail.hoverThread = null;   // the cursor follows what you open, so it's here after Back
   // Record the open message on the view so this tab reopens it after a switch.
   state.view = { type: 'mail', open: key }; syncActiveTab();
@@ -9430,8 +9451,9 @@ async function mailInviteAdd() {
 // quadrant. Counts come from the loaded INBOX.
 function mailQuadCardsHtml() {
   const m = state.mail;
+  // Counts are durable: how many emails each bucket holds (snapshots + loaded).
   const counts = { urgent: 0, important: 0, chilled: 0, others: 0 };
-  if (m.mailbox === 'INBOX') for (const th of buildThreads(m.messages || [])) counts[mailQuadOf(th.latest)] = (counts[mailQuadOf(th.latest)] || 0) + 1;
+  for (const q of ['urgent', 'important', 'chilled', 'others']) counts[q] = mailQuadMsgs(q).length;
   const qf = m.quadFilter || new Set();
   return `<div class="mail-quads">${MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${qf.has(q.quad) ? 'on' : ''}" data-mail-quad-view="${q.quad}" data-mail-quad-drop="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('')}</div>`;
 }
@@ -9467,8 +9489,16 @@ function mailListInner(loading) {
   const qf = m.quadFilter;
   const inboxCtx = ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox');
   if (inboxCtx) {
-    if (qf && qf.size) threads = threads.filter((th) => qf.has(mailQuadOf(th.latest)));
-    else threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
+    if (qf && qf.size) {
+      // A bucket view is durable: the remembered snapshots + any loaded inbox mail
+      // in the selected buckets (deduped), so filed mail stays even once it's left
+      // the inbox.
+      const seen = new Set(); const msgs = [];
+      for (const q of qf) for (const mm of mailQuadMsgs(q)) { const id = mm.messageId || mm._key; if (!seen.has(id)) { seen.add(id); msgs.push(mm); } }
+      threads = buildThreads(msgs);
+    } else {
+      threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
+    }
   }
   // Important senders: in the inbox (not searching), lift threads from VIPs into
   // their own box at the top so they don't get lost in the stream.
