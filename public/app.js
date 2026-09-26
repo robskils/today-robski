@@ -13022,7 +13022,56 @@ function reviewsBody() {
   const pastSection = allSorted.length
     ? `<section class="home-sec">${rvSecH('past', `Past reviews · ${allSorted.length}`)}${rvSecOpen('past') ? `${fchips}${typeGroups}` : ''}</section>`
     : '<div class="empty" style="padding:24px 0">No reviews yet. Start with this week - a few minutes well spent.</div>';
-  return `${hero}${wheelOfLifeHtml()}${inProgressHtml}${pastSection}${reviewsListHtml()}`;
+  return `${reviewCarousels()}${wheelOfLifeHtml()}${reviewsListHtml()}`;
+}
+// Four rows - weekly, monthly, quarterly, yearly - each a horizontal carousel of
+// its periods. The CURRENT period is pinned on the LEFT; you scroll right to travel
+// back through earlier ones. A past period never done just reads "Incomplete" and
+// never bumps the current one off the left. (Robin's design, 2026-09-26.)
+function reviewCarousels() {
+  const past = state.reviews || [];
+  const today = localISO(new Date());
+  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const BACK = { weekly: 8, monthly: 6, quarterly: 4, yearly: 3 };   // how many to show when there's no older review to reach back to
+  const rows = RTYPE_ORDER.map((k) => {
+    const ofType = past.filter((r) => ((r.props || {}).rtype || 'weekly') === k);
+    const earliest = ofType.map((r) => (r.props || {}).to).filter(Boolean).sort()[0] || null;
+    // Walk back from the current period until we've shown enough AND reached past
+    // the oldest existing review of this type.
+    const wins = []; let w = currentPeriodWindow(k, today);
+    for (let i = 0; i < 260; i++) {
+      wins.push(w);
+      if (i + 1 >= BACK[k] && (!earliest || w.from <= earliest)) break;
+      w = prevPeriodWindow(k, w);
+    }
+    const cards = wins.map((win, idx) => {
+      const ex = ofType.find((r) => (r.props || {}).to === win.to);
+      const p = ex ? (ex.props || {}) : null;
+      const isCurrent = idx === 0;
+      const s = (p && p.status === 'done') ? 'done' : (p && p.status === 'inprogress') ? 'prog' : isCurrent ? 'now' : 'miss';
+      const pt = periodTitle(k, win.from, win.to);
+      const period = (k === 'weekly') ? `${shortD(win.from)} – ${shortD(win.to)}` : pt.main;
+      const sub = (k === 'weekly') ? (() => { const wi = isoWeekInfo(win.to); return wi ? `Week ${wi.week}` : ''; })() : (pt.range || '');
+      const badge = { done: '✓ Done', prog: '● In progress', now: 'Ready', miss: 'Incomplete' }[s];
+      const cta = { done: 'Look back', prog: 'Continue', now: 'Start', miss: 'Fill in' }[s];
+      const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review-period="${k}|${win.from}|${win.to}"`;
+      const wv = p ? Math.min(wheelAvg(p.wheel || {}), 5) : 0;
+      return `<button class="rvcar-card rvcar-${s}${isCurrent ? ' is-current' : ''}" ${attr}>
+        <span class="rvcar-cur">${isCurrent ? 'Current' : '&nbsp;'}</span>
+        <span class="rvcar-period">${esc(period)}</span>
+        <span class="rvcar-sub">${esc(sub || '')}</span>
+        <span class="rvcar-badge rvcar-b-${s}">${badge}</span>
+        <span class="rvcar-score">${wv ? `Wheel ${wv}/5` : ''}</span>
+        <span class="rvcar-cta">${cta} →</span>
+      </button>`;
+    }).join('');
+    const doneN = ofType.filter((r) => (r.props || {}).status === 'done').length;
+    return `<div class="rvcar-row">
+      <div class="rvcar-rowh rv-l-${k}"><span class="rvcar-rowl">${REVIEWS[k].label}</span>${doneN ? `<span class="rvcar-rowc">${doneN} done</span>` : ''}</div>
+      <div class="rvcar-track">${cards}</div>
+    </div>`;
+  }).join('');
+  return `<section class="rvcar">${rows}</section>`;
 }
 // When is a review of this type next due? The last one of that type + its
 // period. Null if none done yet. Used for the hero line and the reminder subs.
@@ -13309,13 +13358,12 @@ function reviewInsight(m, p) {
 function reviewScrollTop() { try { window.scrollTo(0, 0); const pane = document.getElementById('pane'); if (pane) pane.scrollTop = 0; const sc = document.querySelector('.app-main, .app-scroll, main'); if (sc) sc.scrollTop = 0; } catch {} }
 async function openReviewCard(id) {
   const r = await api(`/api/blocks/${id}`);
-  // A review whose period has ended opens as the read-only report - even if it was
-  // never formally submitted - so a past week/month is a clean look-back, not a
-  // form full of empty fields. Only a CURRENT-period review opens editable; you can
-  // still tap Edit on any report to change it. (Robin: past monthlies showed a form.)
+  // A review is finalised as a read-only report ONLY once you've submitted it.
+  // Anything not yet submitted - including a past period you never got to - opens
+  // in the working form so you can still fill it in. From the report you can always
+  // tap Edit to change it (it stays submitted). (Robin: read-only = after submit.)
   const p = r.props || {};
-  const ended = p.to && p.to < localISO(new Date());
-  state.review_open = { review: r, mode: (p.status === 'done' || ended) ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
+  state.review_open = { review: r, mode: p.status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview(); reviewScrollTop();
   // Load tasks so the wins strip can enrich each done task (age, goal, priority,
   // day) and the deeper reviews can map tasks onto goals.
@@ -13798,7 +13846,9 @@ function renderReviewCard() {
     <section class="rv-analysis">
       ${rvSecH('read', '✦ The read')}
       ${rvSecOpen('read') ? `${reviewSentimentHtml(p, r)}<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>
-      ${p.doneSummary
+      ${st !== 'done'
+        ? `<p class="rv-read-note">✦ Claude's written read of your ${periodWord} arrives once you submit this review.</p>`
+        : p.doneSummary
         ? `<div class="rv-summary rv-summary-open"><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">A deeper read, written from your record by Claude. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div></div>`
         : (!!(state.account && state.account.aiOff))
           ? `<p class="rv-read-note">Turn on AI in Settings for a deeper, written read of your ${periodWord}.</p>`
@@ -14135,6 +14185,7 @@ async function reviewDoneSummary(force, auto) {
 // automatically when AI is on. Cached on the review, so it runs once.
 function maybeAutoReadReview() {
   const R = state.review_open; if (!R) return; const p = (R.review || {}).props || {};
+  if (p.status !== 'done') return;   // the AI read is written only once you've submitted
   if (p.doneSummary || R.summaryLoading || R.summaryFailed) return;
   if (state.account && state.account.aiOff) return;
   reviewDoneSummary(false, true);
@@ -15762,7 +15813,7 @@ document.addEventListener('click', (e) => {
   { const it = t.closest('[data-rv-inputtab]'); if (it) { flushProse(); flushReviewAnswers(); if (state.review_open) { state.review_open.inputTab = it.dataset.rvInputtab; renderReviewCard(); } return; } }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
-  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(() => { renderReviewCard(); reviewScrollTop(); }); toast('Filed ✓ - here is your report'); return; }
+  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(() => { renderReviewCard(); maybeAutoReadReview(); reviewScrollTop(); }); toast('Filed ✓ - here is your report'); return; }
   const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
   { const rt = t.closest('[data-rr-tab]'); if (rt) { if (state.review_open) { state.review_open.reportTab = rt.dataset.rrTab; renderReviewCard(); } return; } }
   { const rvs = t.closest('[data-rvd-sort]'); if (rvs) { if (state.review_open) { state.review_open.doneSort = rvs.dataset.rvdSort; state.review_open.doneOpen = true; renderReviewCard(); } return; } }
