@@ -174,13 +174,13 @@ async function googleAccessToken(env) {
 // Whose Google calendar to read/write for this request: a member who connected
 // their own account uses it (their primary calendar); the owner falls back to
 // the shared Workspace calendar. Null = no Google for this user (native only).
-async function googleCtx(env) {
+async function googleCtx(env, uid = env.uid) {
   // The owner ALWAYS reads the shared Workspace calendar through the owner token.
   // The per-member connect flow is for members only; a member token accidentally
   // stored on the owner's row (the owner clicking "Connect Google Calendar") must
   // never shadow the working owner path - that swap is what made the owner's
   // events vanish behind a google_403.
-  if (env.uid === 1 && env.GOOGLE_REFRESH_TOKEN) {
+  if (uid === 1 && env.GOOGLE_REFRESH_TOKEN) {
     return { token: await googleAccessToken(env), calId: env.GOOGLE_CALENDAR_ID || 'primary' };
   }
   if (env.user && env.user.gcal_refresh_enc && gcalAvailable(env)) {
@@ -201,8 +201,8 @@ function eventMeetingUrl(e) {
   const m = `${e.location || ''}\n${e.description || ''}`.match(MEETING_URL_RE);
   return m ? m[0].replace(/["'&<>]+$/, '') : '';
 }
-async function calendarEvents(env, day) {
-  const g = await googleCtx(env);
+async function calendarEvents(env, day, uid = env.uid) {
+  const g = await googleCtx(env, uid);
   if (!g) return { events: [], error: null };   // not connected = native only, no error
 
   const start = zonedDayStart(day, TZ);
@@ -2230,7 +2230,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       // The calendar rides a single Google refresh token - the owner's. Fetching
       // it for anyone else would put Robin's diary in their brief, so only the
       // owner's brief carries a calendar; others get tasks + the day's quote.
-      owner ? calendarEvents(env, now.date) : Promise.resolve({ events: [] }),
+      owner ? calendarEvents(env, now.date, uid) : Promise.resolve({ events: [] }),
       quoteForDay(env, now.date, uid),
       // Every open P1's life area, so a task can be labelled with the part of life
       // it belongs to rather than the practice lane it happens to map onto.
