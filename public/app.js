@@ -1029,6 +1029,25 @@ function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ t
 // whatever page you happened to leave on. A quick reopen keeps your place.
 const REOPEN_FRESH_MS = 60 * 60 * 1000;   // an hour counts as "in a while"
 function reopenedAfterAWhile() { try { const t = Number(localStorage.getItem('life.lastActive') || 0); return !t || (Date.now() - t) > REOPEN_FRESH_MS; } catch { return false; } }
+// Cold boot handles "reopen on Home after a while" in boot(). But the installed
+// app usually just SUSPENDS in the background - reopening it resumes the same page
+// without re-running boot. So mirror it here: when the app comes back to the
+// foreground after an hour+ away, drop onto Home at the top. Only for the installed
+// app (standalone), so a desktop browser tab you return to mid-task is left be. We
+// stamp lastActive when it goes to the background, so the clock measures how long
+// it was actually away.
+(function reopenHomeOnResume() {
+  const standalone = () => { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch { return false; } };
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
+    if (!standalone() || !reopenedAfterAWhile()) { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
+    const act = state.tabs && state.tabs.find((t) => t.id === state.activeTab);
+    if (act) { act.view = { type: 'home' }; act.label = 'Home'; }
+    try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {}
+    if (state.view && state.view.type === 'home') { renderHome(); window.scrollTo(0, 0); }
+    else { Promise.resolve(openHome()).catch(() => {}); window.scrollTo(0, 0); }
+  });
+})();
 // A tab must own an INDEPENDENT copy of its view. A Tasks view carries mutable
 // filters/sort; a shallow copy leaves every Tasks tab pointing at one shared
 // array, so they all show identical content (the "two tabs, same content" bug).
