@@ -9554,11 +9554,19 @@ async function mailInviteAdd() {
 // quadrant. Counts come from the loaded INBOX.
 function mailQuadCardsHtml() {
   const m = state.mail;
-  // Counts are durable: how many emails each bucket holds (snapshots + loaded).
+  // An email lives in exactly one of six pots, laid out left→right as it flows:
+  // Inbox (to sort) → the four priority buckets → Archive (done). Counts are
+  // durable: how many emails each bucket holds (snapshots + loaded).
   const counts = { urgent: 0, important: 0, chilled: 0, others: 0 };
   for (const q of ['urgent', 'important', 'chilled', 'others']) counts[q] = mailQuadMsgs(q).length;
   const qf = m.quadFilter || new Set();
-  return `<div class="mail-quads">${MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${qf.has(q.quad) ? 'on' : ''}" data-mail-quad-view="${q.quad}" data-mail-quad-drop="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('')}</div>`;
+  const untriaged = buildThreads(m.messages || []).filter((th) => mailQuadOf(th.latest) === 'inbox').length;
+  const inboxOn = (m.folder || 'inbox') === 'inbox' && qf.size === 0;
+  const archiveOn = m.folder === 'archive';
+  const inboxCard = `<button class="mail-quad mail-quad-inbox ${inboxOn ? 'on' : ''}" data-mail-quad-inbox data-mail-quad-drop="inbox" title="To sort - your triage queue"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">Inbox</span><span class="mail-quad-h">To sort</span></span><span class="mail-quad-c">${untriaged || 0}</span></button>`;
+  const bucketCards = MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${qf.has(q.quad) ? 'on' : ''}" data-mail-quad-view="${q.quad}" data-mail-quad-drop="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('');
+  const archiveCard = `<button class="mail-quad mail-quad-archive ${archiveOn ? 'on' : ''}" data-mail-quad-archive title="Done - filed away in your Archive"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">Archive</span><span class="mail-quad-h">Done</span></span></button>`;
+  return `<div class="mail-quads">${inboxCard}${bucketCards}${archiveCard}</div>`;
 }
 // The little 4-way menu that opens from a row's priority button.
 function mailQuadMenuHtml() {
@@ -9731,8 +9739,12 @@ function renderMail(loading) {
       <div class="mail-head-act"><button class="ghost" data-help-open="mail" title="How Mail works - setup, Gmail, triage">ⓘ Guide</button><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
-    ${['inbox', 'unread', 'starred'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
-    <div class="mail-folders">${(() => { const untriaged = m.mailbox === 'INBOX' ? buildThreads(m.messages || []).filter((th) => mailQuadOf(th.latest) === 'inbox').length : 0; return MAIL_FOLDERS.map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : f.key === 'inbox' ? untriaged : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join(''); })()}</div>
+    ${['inbox', 'unread', 'starred', 'archive'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
+    <div class="mail-folders">${(() => {
+      // Inbox and Archive are now pots in the strip above, so the folder row holds
+      // only the rest (Unread / Drafts / Sent / Spam / Trash).
+      return MAIL_FOLDERS.filter((f) => f.key !== 'inbox' && f.key !== 'archive').map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('');
+    })()}</div>
     ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
       <button class="ghost" data-mail-bulk="archive">Archive</button>
@@ -15848,7 +15860,9 @@ document.addEventListener('click', (e) => {
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
   const ddel = t.closest('[data-del-draft]'); if (ddel) { e.preventDefault(); e.stopPropagation(); delDraft(ddel.dataset.delDraft); return; }
   const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
-  const mfld = t.closest('[data-mail-folder]'); if (mfld) { setMailFolder(mfld.dataset.mailFolder); return; }
+  const mfld = t.closest('[data-mail-folder]'); if (mfld) { state.mail.quadFilter = new Set(); setMailFolder(mfld.dataset.mailFolder); return; }
+  if (t.closest('[data-mail-quad-inbox]')) { state.mail.quadFilter = new Set(); setMailFolder('inbox'); return; }
+  if (t.closest('[data-mail-quad-archive]')) { state.mail.quadFilter = new Set(); setMailFolder('archive'); return; }
   { const qv = t.closest('[data-mail-quad-view]'); if (qv) { const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const k = qv.dataset.mailQuadView; if (qf.has(k)) qf.delete(k); else qf.add(k); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); return; } }
   { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(o, qf.dataset.mailQuadFile); return; } }
   // Quick-file straight from an inbox row: a small button opens a 4-way menu.

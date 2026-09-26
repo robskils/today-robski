@@ -4772,7 +4772,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Folder switcher: Inbox / Starred / Archive / Spam / Trash. */
 /* Eisenhower quadrant cards above the inbox: a 2x2 grid on mobile, a row on
    wider screens. Each carries a colour dot, its meaning and a live count. */
-.mail-quads { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0 0 16px; }
+.mail-quads { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin:0 0 16px; }
 .mail-quad { display:flex; align-items:center; gap:11px; text-align:left; padding:13px 15px; border-radius:14px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink); transition:border-color .12s,transform .12s,box-shadow .12s; min-width:0; }
 .mail-quad:hover { transform:translateY(-1px); box-shadow:0 8px 20px -12px rgba(0,0,0,.34); }
 .mail-quad.on { border-color:var(--q); box-shadow:0 0 0 1px var(--q) inset, var(--shadow); }
@@ -4785,6 +4785,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-quad-urgent { --q:#d9483b; } .mail-quad-important { --q:#e08a1e; }
 .mail-quad-chilled { --q:#3e9b6c; } .mail-quad-others { --q:#8b8177; }
 .mail-quad-inbox { --q:var(--ink-3); }   /* untriaged - still in the queue */
+.mail-quad-archive { --q:#5a7a9b; }      /* done - filed away in Archive */
 /* Reader priority picker: file the open email into a quadrant. */
 .mail-quadpick { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin:6px 0 4px; }
 .mail-quadpick-l { font-size:13px; color:var(--ink-3); margin-right:2px; }
