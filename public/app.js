@@ -9102,7 +9102,8 @@ function renderMailAccounts(note) {
     </details>
     ${pushSectionHtml()}
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
-      <p class="scope" style="margin:0 0 12px">Make Daybook open when you click a <b>mailto:</b> email link in your browser. Your browser will ask you to allow it, then you set it as the default (Brave/Chrome: <b>Settings → Site &amp; Shields settings → Handlers</b>, or the ⛓ icon in the address bar).</p>
+      <p class="scope" style="margin:0 0 10px">Make Daybook open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app. Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open Daybook in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below and <b>Allow</b> when Brave asks. Confirm it in Brave under <b>Settings → Site and Shields settings → Handlers</b> (or the ⛓ icon in the address bar). Safari / iOS can't do this.</p>
       <button class="add-btn wide" data-mail-handler>Set Daybook as my email app</button></section>`;
 }
 async function saveSignature(id) {
