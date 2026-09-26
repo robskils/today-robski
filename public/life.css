@@ -4396,6 +4396,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-tabs .at-ic { font-size:18px; }
 .area-tabs .at-l { font-size:15px; }
 .area-tabs .at-c { position:static; top:auto; right:auto; margin-left:1px; }
+@media (max-width:560px){ .area-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+/* The tab-controlled top card sits a touch prouder than the cards below it. */
+.area-top-card { border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); }
 .atp-back { margin-left:auto; font-size:13px; }
 /* Each part of a life area is its own card now (not one big panel). The panel is a
    plain column; the cards inside carry the frame. */

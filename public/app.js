@@ -6161,7 +6161,6 @@ function renderArea() {
       <div class="area-sec-h">
         <span class="ash-grip" data-aflow-grip="${esc(key)}" title="Drag to reorder" aria-hidden="true">⠿</span>
         <button class="ash-toggle" data-area-sec="${esc(key)}" aria-expanded="${open}" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="ash-ic">${TILE_META[key]}</span><span class="ash-l">${esc(key)}</span>${count != null ? `<span class="ash-c">${count}</span>` : ''}</button>
-        <button class="ash-open" data-area-tile="${esc(target || key)}" title="Open ${esc(key)} on its own">→</button>
       </div>
       ${open ? `<div class="area-sec-body">${body}</div>` : ''}
     </section>`; };
@@ -6177,77 +6176,39 @@ function renderArea() {
   const visionBodyHtml = `${hlHtml}${visionText}${hlToggle}`;
   const goalsBody = (activeGoals.length ? `<div class="goal-grid">${activeGoals.map((g) => goalCardMini(g)).join('')}</div>` : (canEditArea ? '' : '<div class="home-empty">No goals yet.</div>'))
     + (canEditArea ? `<button class="adc-addgoal" data-area-add-goal>+ ${activeGoals.length ? 'Add another goal' : 'Add a goal'}</button>` : '');
-  const TASK_CAP = 8;
-  const tasksBody = openTs.length
-    ? taskTableHtml(openTs.slice(0, TASK_CAP), 'No open tasks here.') + (openTs.length > TASK_CAP ? `<button class="area-sec-more" data-area-tile="Tasks">${openTs.length - TASK_CAP} more open task${openTs.length - TASK_CAP === 1 ? '' : 's'} →</button>` : '')
-    : '<div class="home-empty">No open tasks.</div>';
-  // A long notes list would swamp the overview, so cap it and offer a See-more
-  // that opens the full Notes and tables tile. (The tile itself still shows all.)
-  const NOTE_CAP = 8;
-  const notesDashBody = `<div class="tbl-cards noteord-cards">${noteTblOrdered.slice(0, NOTE_CAP).map(ntCard).join('')}</div>`
-    + (noteTblOrdered.length > NOTE_CAP ? `<button class="area-sec-more" data-area-tile="Notes and tables">See all ${noteTblOrdered.length} notes &amp; tables →</button>` : '');
-  // [key, present?, tile-target, count, body]. Present, un-hidden sections are
-  // shown in your saved drag order; anything without a saved place keeps its
-  // sensible default position.
-  // Goals and Bucket list are their own top-level tabs now, so the Overview does
-  // NOT repeat them - otherwise every tab looked like it showed the same content.
-  // (Robin, 2026-09-26.) Overview = the rest of the area's activity.
-  const flowDefs = [
-    ['Vision', canEditArea || !!visionSnip, null, null, visionBodyHtml],
-    ['Wheel of Life', !(area.props && area.props.reviewOff), 'Wheel of Life', wheelNow, areaWheelPanel(area)],
-    ['Tasks', true, 'Tasks', openTs.length, tasksBody],
-    ['Notes and tables', !!notesTotal, null, notesTotal, notesDashBody],
-    ['Contacts', !!contacts.length, null, contacts.length, `<div class="contact-grid">${contactCards}</div>`],
-    ['Saved links', !!bookmarks.length, null, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`],
-    ['Reflections', !!journals.length, null, journals.length, `<div class="tbl-cards">${journalCards}</div>`],
-    ['Emails', !!emails.length, null, emails.length, `<div class="tbl-cards">${emailCards}</div>`],
+  // The page has two parts. The TOP changes with the selected tab (Vision / Goals /
+  // Bucket list). Everything BELOW is the same on every tab: each of the area's
+  // other parts as its own collapsible card - notes & tables, tasks, contacts,
+  // wheel, saved links, reflections, emails. (Robin, 2026-09-26: the tabs change
+  // only the top bit; the rest of the cards always show.)
+  const tasksBody = openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks.</div>';
+  const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>';
+  // [key, present?, count, body] - shown in your saved drag order; Tasks last.
+  const restDefs = [
+    ['Notes and tables', !!notesTotal, notesTotal, notesBody],
+    ['Contacts', !!contacts.length, contacts.length, `<div class="contact-grid">${contactCards}</div>`],
+    ['Saved links', !!bookmarks.length, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`],
+    ['Reflections', !!journals.length, journals.length, `<div class="tbl-cards">${journalCards}</div>`],
+    ['Emails', !!emails.length, emails.length, `<div class="tbl-cards">${emailCards}</div>`],
+    ['Tasks', true, openTs.length, tasksBody],
   ];
   const flowOrder = areaFlowOrder();
-  // Tasks always sit at the very bottom of the dashboard (just above the files
-  // section), whatever the saved drag order - they're the doing, read last.
   const flowRank = (k) => (k === 'Tasks' ? 100000 : (flowOrder.indexOf(k) < 0 ? 999 : flowOrder.indexOf(k)));
-  const flowSecs = flowDefs.filter(([key, ok]) => ok && !secHidden(key))
-    .sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
-  const dash = `<div class="area-flow" style="--h:${h}">${flowSecs.map(([key, , target, count, body]) => flowSec(key, target, count, body)).join('')}</div>
+  const restSecs = restDefs.filter(([key, ok]) => ok && !secHidden(key)).sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
+  const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   <section class="area-dash-files">${areaAttachHtml(area)}</section>
   ${canEditArea || blockLinks(area).length ? `<section class="area-dash-links">${externalLinksHtml('area', area)}</section>` : ''}
   ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
   ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
-  const panels = {
-    // Vision tab: the area's overview, led by the vision card, each part its own card.
-    'Vision': dash,
-    // Goals tab: just the goals (the vision lives on its own tab now).
-    'Goals': `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`,
-    'Wheel of Life': areaWheelPanel(area),
-    'Notes and tables': notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
-    'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',
-    'Contacts': areaContactsPanel(area, contacts),
-    'Saved links': `<div class="tbl-cards">${bookmarkCards}</div>`,
-    'Reflections': `<div class="tbl-cards">${journalCards}</div>`,
-    'Emails': `<div class="tbl-cards">${emailCards}</div>`,
-    // Bucket list tab: the items, or a warm empty state that invites adding one.
-    'Bucket list': bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`,
-    'Shared with': areaMembersBody(area),
-    'Wall': areaWallBody(area),
-  };
-  const TILE_TITLE = {};
-  const CORE = new Set(['Vision', 'Goals', 'Notes and tables', 'Tasks']);
-  const tileOrder = ['Overview', 'Goals', 'Wheel of Life', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with'];
-  // The Wheel of Life tile stays available even when the area is turned off, so
-  // its panel (and the "track this again" switch) is always one tap away.
-  // The area page leads with three horizontal tabs - Overview, Goals, Bucket list -
-  // click one to open it. (Robin, 2026-09-26.) Overview holds the full dashboard;
-  // its section → / "See all" links still drill into the other panels (Tasks, Notes,
-  // Contacts, Wheel…), which remain valid targets even though they aren't top tabs.
-  const TABS = ['Vision', 'Goals', 'Bucket list'];
+  // The tab-controlled top: Vision / Goals / Bucket list.
+  const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
+  const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
+  const tops = { 'Vision': visionBodyHtml, 'Goals': goalsTop, 'Bucket list': bucketTop, 'Wheel of Life': areaWheelPanel(area) };
+  const TABS = ['Vision', 'Goals', 'Bucket list', 'Wheel of Life'];
   let openTile = state.area_open.tileOpen || 'Vision';
-  if (!panels[openTile]) openTile = 'Vision';
-  const inTabs = TABS.includes(openTile);
-  // The Vision tab is the overview - its parts each render as their own card. Every
-  // other panel (a single part, or a drill-in) sits in one card of its own.
-  const panelInner = openTile === 'Vision' ? panels[openTile] : `<div class="area-card">${panels[openTile]}</div>`;
-  const areaTilesHtml = `<div class="area-tiles area-tabs" style="--cols:3">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
-    <div class="area-tilepanel">${inTabs ? '' : `<div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span><button class="ghost atp-back" data-area-tile="Vision">← Vision</button></div>`}${panelInner}</div>`;
+  if (!tops[openTile]) openTile = 'Vision';
+  const tabBar = `<div class="area-tiles area-tabs" style="--cols:4">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>`;
+  const areaTilesHtml = `${tabBar}<div class="area-tilepanel"><div class="area-card area-top-card">${tops[openTile]}</div>${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   const dashStats = [[notes.length + tables.length, 'notes & tables'], [openTs.length, 'open tasks'], [activeGoals.length, 'goals'], [bookmarks.length, 'saved'], [journals.length, 'reflections']]
