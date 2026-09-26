@@ -4397,7 +4397,19 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-tabs .at-l { font-size:15px; }
 .area-tabs .at-c { position:static; top:auto; right:auto; margin-left:1px; }
 .atp-back { margin-left:auto; font-size:13px; }
-.area-tilepanel { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); padding:22px 24px; }
+/* Each part of a life area is its own card now (not one big panel). The panel is a
+   plain column; the cards inside carry the frame. */
+.area-tilepanel { border:none; background:none; box-shadow:none; padding:0; display:flex; flex-direction:column; gap:16px; }
+.area-card,
+.area-flow .area-sec,
+.area-dash-files, .area-dash-links, .area-dash-shared, .area-dash-wall {
+  border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:18px 20px;
+}
+.area-flow { gap:16px; }
+.area-flow .area-sec.area-sec-collapsed { padding-bottom:14px; }
+.area-sec-h { border-bottom:none; }
+.area-tab-empty { display:flex; flex-direction:column; align-items:center; gap:14px; padding:34px 20px; text-align:center; color:var(--ink-3); }
+.area-tab-empty .area-tab-add { max-width:280px; }
 .atp-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
 .atp-t { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:9px; }
 .atp-ic { font-size:17px; }

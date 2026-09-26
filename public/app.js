@@ -6193,7 +6193,7 @@ function renderArea() {
   // NOT repeat them - otherwise every tab looked like it showed the same content.
   // (Robin, 2026-09-26.) Overview = the rest of the area's activity.
   const flowDefs = [
-    ['Vision', canEditArea || !!visionSnip, 'Goals', null, visionBodyHtml],
+    ['Vision', canEditArea || !!visionSnip, null, null, visionBodyHtml],
     ['Wheel of Life', !(area.props && area.props.reviewOff), 'Wheel of Life', wheelNow, areaWheelPanel(area)],
     ['Tasks', true, 'Tasks', openTs.length, tasksBody],
     ['Notes and tables', !!notesTotal, null, notesTotal, notesDashBody],
@@ -6214,10 +6214,10 @@ function renderArea() {
   ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
   ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
   const panels = {
-    'Overview': dash,
-    // Vision and Goals share one tab now (button says "Goals", page says "Vision
-    // and Goals") - the vision sets the direction the goals serve.
-    'Goals': `<div class="area-vg"><div class="avg-h">Vision</div>${visionInner}<div class="avg-h avg-h-goals">Goals</div>${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : '<div class="home-empty">No goals yet — use “+ Goal” above.</div>'}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`,
+    // Vision tab: the area's overview, led by the vision card, each part its own card.
+    'Vision': dash,
+    // Goals tab: just the goals (the vision lives on its own tab now).
+    'Goals': `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`,
     'Wheel of Life': areaWheelPanel(area),
     'Notes and tables': notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>',
     'Tasks': openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks — use “+ Task” above.</div>',
@@ -6225,13 +6225,13 @@ function renderArea() {
     'Saved links': `<div class="tbl-cards">${bookmarkCards}</div>`,
     'Reflections': `<div class="tbl-cards">${journalCards}</div>`,
     'Emails': `<div class="tbl-cards">${emailCards}</div>`,
-    'Bucket list': `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`,
+    // Bucket list tab: the items, or a warm empty state that invites adding one.
+    'Bucket list': bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`,
     'Shared with': areaMembersBody(area),
     'Wall': areaWallBody(area),
   };
-  // Vision folded into Goals; Wall lives on the Overview dashboard, not a tile.
-  const TILE_TITLE = { 'Goals': 'Vision and Goals' };
-  const CORE = new Set(['Overview', 'Goals', 'Notes and tables', 'Tasks']);
+  const TILE_TITLE = {};
+  const CORE = new Set(['Vision', 'Goals', 'Notes and tables', 'Tasks']);
   const tileOrder = ['Overview', 'Goals', 'Wheel of Life', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with'];
   // The Wheel of Life tile stays available even when the area is turned off, so
   // its panel (and the "track this again" switch) is always one tap away.
@@ -6239,12 +6239,15 @@ function renderArea() {
   // click one to open it. (Robin, 2026-09-26.) Overview holds the full dashboard;
   // its section → / "See all" links still drill into the other panels (Tasks, Notes,
   // Contacts, Wheel…), which remain valid targets even though they aren't top tabs.
-  const TABS = ['Overview', 'Goals', 'Bucket list'];
-  let openTile = state.area_open.tileOpen || 'Overview';
-  if (!panels[openTile]) openTile = 'Overview';
+  const TABS = ['Vision', 'Goals', 'Bucket list'];
+  let openTile = state.area_open.tileOpen || 'Vision';
+  if (!panels[openTile]) openTile = 'Vision';
   const inTabs = TABS.includes(openTile);
+  // The Vision tab is the overview - its parts each render as their own card. Every
+  // other panel (a single part, or a drill-in) sits in one card of its own.
+  const panelInner = openTile === 'Vision' ? panels[openTile] : `<div class="area-card">${panels[openTile]}</div>`;
   const areaTilesHtml = `<div class="area-tiles area-tabs" style="--cols:3">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
-    <div class="area-tilepanel">${inTabs ? '' : `<div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span><button class="ghost atp-back" data-area-tile="Overview">← Overview</button></div>`}${panels[openTile]}</div>`;
+    <div class="area-tilepanel">${inTabs ? '' : `<div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span><button class="ghost atp-back" data-area-tile="Vision">← Vision</button></div>`}${panelInner}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   const dashStats = [[notes.length + tables.length, 'notes & tables'], [openTs.length, 'open tasks'], [activeGoals.length, 'goals'], [bookmarks.length, 'saved'], [journals.length, 'reflections']]
