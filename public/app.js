@@ -9741,9 +9741,10 @@ function renderMail(loading) {
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
     ${['inbox', 'unread', 'starred', 'archive'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
     <div class="mail-folders">${(() => {
-      // Inbox and Archive are now pots in the strip above, so the folder row holds
-      // only the rest (Unread / Drafts / Sent / Spam / Trash).
-      return MAIL_FOLDERS.filter((f) => f.key !== 'inbox' && f.key !== 'archive').map((f) => { const dc = f.key === 'drafts' ? draftCount() : f.key === 'unread' ? (m.account ? unseenOf(m.account) : totalUnseen) : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('');
+      // Inbox and Archive are pots in the strip above, and Unread is just the Inbox
+      // queue by another name - so the folder row holds only Drafts / Sent / Spam /
+      // Trash.
+      return MAIL_FOLDERS.filter((f) => !['inbox', 'archive', 'unread'].includes(f.key)).map((f) => { const dc = f.key === 'drafts' ? draftCount() : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('');
     })()}</div>
     ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
