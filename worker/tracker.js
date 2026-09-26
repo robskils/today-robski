@@ -93,8 +93,13 @@ export async function getTracker(env) {
       const res = await yahoo(it.ySym);
       const m = res.meta; const ts = res.timestamp || []; const closes = (res.indicators.quote[0] || {}).close || [];
       const cur = m.regularMarketPrice != null ? m.regularMarketPrice : nearestClose(ts, closes, now);
-      const c24 = m.chartPreviousClose != null ? m.chartPreviousClose : nearestClose(ts, closes, now - 86400);
-      return { ...base, price: cur, currency: m.currency || it.currency || '', ch24: pct(cur, c24), ch7: pct(cur, nearestClose(ts, closes, now - 7 * 86400)), ch30: pct(cur, nearestClose(ts, closes, now - 30 * 86400)) };
+      // 24h: use Yahoo's own change %, which is the real day move. NOT
+      // chartPreviousClose - on a multi-month range that's the close at the START
+      // of the range (months ago), so it read as a +40% "24h" move. Fall back to
+      // yesterday's close only if the % is missing.
+      const ch24 = m.regularMarketChangePercent != null ? m.regularMarketChangePercent
+        : pct(cur, nearestClose(ts, closes, now - 86400));
+      return { ...base, price: cur, currency: m.currency || it.currency || '', ch24, ch7: pct(cur, nearestClose(ts, closes, now - 7 * 86400)), ch30: pct(cur, nearestClose(ts, closes, now - 30 * 86400)) };
     } catch { return { ...base, price: null, currency: it.currency || '', ch24: null, ch7: null, ch30: null }; }
   }));
   return { ts: new Date().toISOString(), items: priced, categories: await trackerCategories(env) };
