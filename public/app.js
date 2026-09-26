@@ -641,6 +641,7 @@ const HELP = {
       <li><b>Read Later</b> - worth a read when you have space.</li>
       <li><b>Others</b> - low priority; out of the way.</li></ul>
       <p>File from an open email, from the colour dot on any row, or by dragging a row onto a card. Tap a card to see that bucket (tap two to see both). When the Inbox count hits zero, you're done.</p>
+      <p><b>Working a bucket.</b> Open a card like Urgent, deal with each email, then <b>archive</b> it - tap the archive button on the row (or in the open email) and it's filed away and removed from the box in one go. Archiving, trashing or moving an email always clears its bucket, so nothing lingers once you've actioned it. To un-file without archiving, use the <b>Inbox</b> option in the picker to drop it back in the queue.</p>
       <h4>Which email accounts can I add?</h4>
       <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
       <h4>How to add one</h4>
