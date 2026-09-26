@@ -641,7 +641,8 @@ const HELP = {
       <li><b>Read Later</b> - worth a read when you have space.</li>
       <li><b>Others</b> - low priority; out of the way.</li></ul>
       <p>File from an open email, from the colour dot on any row, or by dragging a row onto a card. Tap a card to see that bucket (tap two to see both). When the Inbox count hits zero, you're done.</p>
-      <p><b>Working a bucket.</b> Open a card like Urgent, deal with each email, then <b>archive</b> it - tap the archive button on the row (or in the open email) and it's filed away and removed from the box in one go. Archiving, trashing or moving an email always clears its bucket, so nothing lingers once you've actioned it. To un-file without archiving, use the <b>Inbox</b> option in the picker to drop it back in the queue.</p>
+      <p><b>Filing clears your inbox.</b> The moment you file an email into a bucket, it's <b>archived off your inbox</b> - out of your face - while the bucket keeps hold of it. So the inbox empties as you triage, and each bucket still shows everything you filed there, on any account (Gmail or IMAP alike). Change your mind? The <b>Inbox</b> option in the picker un-files it and puts it back in the queue.</p>
+      <p><b>Working a bucket.</b> Open a card like Urgent, deal with each email, then hit <b>archive</b> (the archive button on the row or in the open email) - since it's already archived, that just clears it out of the box; it stays safe in your Archive folder. Trashing or moving an email also clears its bucket, so nothing lingers once you've actioned it.</p>
       <h4>Which email accounts can I add?</h4>
       <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
       <h4>How to add one</h4>
@@ -7988,22 +7989,64 @@ function setMailFolder(key) {
   if (f.local) { renderMail(); return; }   // Drafts is client-side, no fetch
   state.mail.mailbox = f.mailbox; loadMessages();
 }
-// File one or more messages into a bucket, moving them OUT of the Inbox queue.
-// quad 'inbox' (or empty) puts a message back in the queue. Strictly per-message,
-// persisted to kv_mail_quadrants.
-function mailToQuad(msgs, quad) {
+// File one or more messages into a bucket. Inbox-zero: filing an email that's
+// sitting in the real Inbox ARCHIVES it off the server inbox (out of your face)
+// while the bucket keeps it - stored as a snapshot pointing at the Archive,
+// re-findable by Message-ID so it still opens. quad 'inbox' un-files and, if we'd
+// archived it, moves it back to the queue. Strictly per-message; persisted to
+// kv_mail_quadrants. Works the same for Gmail and IMAP.
+async function mailToQuad(msgs, quad) {
   const list = (Array.isArray(msgs) ? msgs : [msgs]).map((x) => (typeof x === 'string' ? mailMsgByKey(x) : x)).filter(Boolean);
   if (!list.length) return;
   const toInbox = !quad || quad === 'inbox';
   state.mailQuads = state.mailQuads || {};
+  if (!state.mail.gone) state.mail.gone = new Set();
+  const q = MAIL_QUADS.find((x) => x.quad === quad);
+  const msgsArr = state.mail.messages || [];
+  const openKey = state.mail.open && state.mail.open._key;
+  const openIdx = openKey ? msgsArr.findIndex((m) => m._key === openKey) : -1;
+  const undoRows = []; const removedKeys = []; let archived = 0;
   for (const o of list) {
     const k = mailFileKey(o);
-    if (toInbox) delete state.mailQuads[k]; else state.mailQuads[k] = { q: quad, m: mailSnap(o) };
+    const inInbox = /^inbox$/i.test(o._mailbox || '') && !o._snap;
+    const wasArchivedFile = (o._snap || /^archive$/i.test(o._mailbox || '')) && o.messageId;
+    if (toInbox) {
+      delete state.mailQuads[k];
+      if (wasArchivedFile) { try { await mailApi('/move-by-msgid', { method: 'POST', body: JSON.stringify({ account: o._acct, from: 'Archive', messageId: o.messageId, to: 'INBOX' }) }); } catch {} }
+      state.mail.gone.delete(o._key);
+      if (state.mail.snapMsgs) delete state.mail.snapMsgs[o._key];
+      continue;
+    }
+    if (inInbox && o.messageId) {
+      try {
+        await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: o._acct, mailbox: 'INBOX', uid: o.uid, target: 'Archive' }) });
+        if (!o.seen) bumpUnread(o._acct, -1);
+        undoRows.push({ account: o._acct, from: 'Archive', messageId: o.messageId, to: 'INBOX' });
+        state.mailQuads[k] = { q: quad, m: { ...mailSnap(o), mailbox: 'Archive', uid: 0, seen: true, _key: `${o._acct}:archive:${o.messageId}` } };
+        state.mail.gone.add(o._key); removedKeys.push(o._key); archived++;
+      } catch (e) { state.mailQuads[k] = { q: quad, m: mailSnap(o) }; }   // move failed - at least label it
+    } else {
+      state.mailQuads[k] = { q: quad, m: mailSnap(o) };
+    }
   }
   persistMailQuads();
-  const q = MAIL_QUADS.find((x) => x.quad === quad);
   state.mail.quadMenu = null;
-  toast(toInbox ? 'Back in the inbox' : `Filed in ${q ? q.label : quad}`);
+  if (removedKeys.length) { state.mail.messages = msgsArr.filter((m) => !removedKeys.includes(m._key)); mailForgetKeys(removedKeys); }
+  const undo = undoRows.length ? async () => {
+    toast('Restoring…'); let ok = 0;
+    for (const u of undoRows) { try { await mailApi('/move-by-msgid', { method: 'POST', body: JSON.stringify(u) }); ok++; } catch {} }
+    for (const o of list) { delete state.mailQuads[mailFileKey(o)]; state.mail.gone.delete(o._key); }
+    persistMailQuads(); toast(ok ? 'Restored to inbox' : 'Could not undo'); loadMessages();
+  } : null;
+  toast(toInbox ? 'Back in the inbox' : (archived ? `Filed in ${q ? q.label : quad} - archived from inbox` : `Filed in ${q ? q.label : quad}`), undo);
+  // Reading one we just filed+archived? Advance to the next message, triage-style.
+  if (openKey && removedKeys.includes(openKey)) {
+    let next = null;
+    for (let i = openIdx + 1; i < msgsArr.length && !next; i++) if (!removedKeys.includes(msgsArr[i]._key)) next = msgsArr[i];
+    for (let i = openIdx - 1; i >= 0 && !next; i--) if (!removedKeys.includes(msgsArr[i]._key)) next = msgsArr[i];
+    state.mail.open = null;
+    if (next) { renderMail(); openMessage(next._key); return; }
+  }
   renderMail();
 }
 // Every message row is tagged with the account it came from (_acct / _mailbox /
@@ -8063,6 +8106,21 @@ async function mailMoveTo(key, target, label) {
   if (!state.mail.gone) state.mail.gone = new Set();
   if (!state.mail.selected) state.mail.selected = new Set();
   if (!state.mail.pending) state.mail.pending = new Set();
+  // A bucket email filed with archive-on-file already LIVES in the Archive. So
+  // "Archive - done with it" from within a bucket just clears it out of the box;
+  // no IMAP move (a MOVE Archive→Archive would fail) - it stays in the Archive.
+  if (/^archive$/i.test(target) && rows.length && rows.every((r) => r._snap || /^archive$/i.test(r._mailbox || ''))) {
+    let changed = false;
+    for (const r of rows) { const fk = mailFileKey(r); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; changed = true; } state.mail.gone.add(r._key); if (state.mail.snapMsgs) delete state.mail.snapMsgs[r._key]; }
+    if (changed) persistMailQuads();
+    state.mail.messages = (state.mail.messages || []).filter((m) => !keys.includes(m._key));
+    mailForgetKeys(keys);
+    const ok0 = state.mail.open && state.mail.open._key;
+    if (ok0 && keys.includes(ok0)) state.mail.open = null;
+    toast('Done - cleared from the box');
+    renderMail();
+    return;
+  }
   const msgs = state.mail.messages || []; const idx = msgs.findIndex((m) => m._key === key);
   try {
     for (const row of rows) {
@@ -8664,7 +8722,8 @@ function mailFetchMsg(row) {
   if (state.mail.msgCache[key]) return Promise.resolve(state.mail.msgCache[key]);
   state.mail._inflight = state.mail._inflight || {};
   if (!state.mail._inflight[key]) {
-    state.mail._inflight[key] = mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid}`)
+    const midQ = row.messageId ? `&messageId=${encodeURIComponent(row.messageId)}` : '';
+    state.mail._inflight[key] = mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid || 0}${midQ}`)
       .then((m) => { const c = state.mail.msgCache; c[key] = m; const ks = Object.keys(c); if (ks.length > 40) delete c[ks[0]]; return m; })
       .finally(() => { delete state.mail._inflight[key]; });
   }

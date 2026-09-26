@@ -301,6 +301,26 @@ async function resolveMailbox(im, wanted) {
   return suffix ? suffix.path : wanted;
 }
 
+// Re-find a message by its Message-ID when its UID is stale - e.g. filing an
+// email archives it off the Inbox, which changes its UID. Try the hinted mailbox
+// first, then All Mail / Archive and the Inbox, then the rest (never Junk/Trash).
+// Returns { mailbox, uid } or null. Leaves that mailbox SELECTed on success.
+async function findByMsgId(im, mid, hint) {
+  const clean = String(mid || '').replace(/^<|>$/g, '').trim();
+  if (!clean) return null;
+  const tryBox = async (box) => {
+    try { const t = await im.select(box); if (!t) return null; const uid = await im.searchMessageId(clean); return uid ? { mailbox: box, uid: Number(uid) } : null; } catch { return null; }
+  };
+  if (hint) { const r = await tryBox(hint); if (r) return r; }
+  let boxes = []; try { boxes = await im.listMailboxes(); } catch {}
+  const skip = (b) => /\\Junk|\\Trash/i.test(b.flags || '') || /(^|[/.\\])(spam|junk|trash|bin|deleted)$/i.test(b.path || '');
+  const rank = (b) => { const f = b.flags || ''; const p = (b.path || '').toUpperCase(); if (/\\All/i.test(f)) return 0; if (/\\Archive/i.test(f)) return 1; if (p === 'INBOX') return 2; return 3; };
+  const ordered = boxes.filter((b) => !/\\Noselect/i.test(b.flags || '') && !skip(b)).sort((a, c) => rank(a) - rank(c));
+  const deadline = Date.now() + 30000;
+  for (const b of ordered) { if (Date.now() > deadline) break; if (hint && b.path === hint) continue; const r = await tryBox(b.path); if (r) return r; }
+  return null;
+}
+
 // ── header decoding ───────────────────────────────────────────────────
 function decodeWords(s) {
   if (!s) return s;
@@ -955,10 +975,25 @@ export async function handleMail(request, env, url, json, err) {
     }
 
     if (sub === 'message') {
-      const mailbox = url.searchParams.get('mailbox') || 'INBOX', uid = Number(url.searchParams.get('uid'));
+      let mailbox = url.searchParams.get('mailbox') || 'INBOX', uid = Number(url.searchParams.get('uid'));
+      const mid = (url.searchParams.get('messageId') || '').trim();
       const im = await imapOpen(env, acct);
       try {
-        await im.login(); await im.select(mailbox);
+        await im.login();
+        mailbox = await resolveMailbox(im, mailbox);
+        await im.select(mailbox);
+        // A durable-bucket email was archived when filed, so its stored UID no
+        // longer resolves (a moved message gets a fresh UID) - and a stale UID could
+        // even point at a different message in the archive. When a Message-ID is
+        // given it is authoritative: resolve the real UID from it (this mailbox
+        // first, then a sweep), ignoring the passed UID.
+        if (mid) {
+          let found = null;
+          try { const u = await im.searchMessageId(mid); if (u) found = { mailbox, uid: Number(u) }; } catch {}
+          if (!found) found = await findByMsgId(im, mid, mailbox);
+          if (found) { mailbox = found.mailbox; uid = found.uid; }
+          else if (!uid) return err('message not found', request, 404);
+        }
         // Fast path: for heavy messages, fetch only the body (see lightFetchMessage).
         // Falls back to a full parse on anything unusual, so display never breaks.
         let light = null; try { light = await lightFetchMessage(im, uid); } catch { light = null; }
