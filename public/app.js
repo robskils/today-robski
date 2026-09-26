@@ -6189,16 +6189,17 @@ function renderArea() {
   // [key, present?, tile-target, count, body]. Present, un-hidden sections are
   // shown in your saved drag order; anything without a saved place keeps its
   // sensible default position.
+  // Goals and Bucket list are their own top-level tabs now, so the Overview does
+  // NOT repeat them - otherwise every tab looked like it showed the same content.
+  // (Robin, 2026-09-26.) Overview = the rest of the area's activity.
   const flowDefs = [
     ['Vision', canEditArea || !!visionSnip, 'Goals', null, visionBodyHtml],
     ['Wheel of Life', !(area.props && area.props.reviewOff), 'Wheel of Life', wheelNow, areaWheelPanel(area)],
-    ['Goals', true, 'Goals', activeGoals.length, goalsBody],
     ['Tasks', true, 'Tasks', openTs.length, tasksBody],
     ['Notes and tables', !!notesTotal, null, notesTotal, notesDashBody],
     ['Contacts', !!contacts.length, null, contacts.length, `<div class="contact-grid">${contactCards}</div>`],
     ['Saved links', !!bookmarks.length, null, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`],
     ['Reflections', !!journals.length, null, journals.length, `<div class="tbl-cards">${journalCards}</div>`],
-    ['Bucket list', !!bucket.length, null, bucket.length, `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>`],
     ['Emails', !!emails.length, null, emails.length, `<div class="tbl-cards">${emailCards}</div>`],
   ];
   const flowOrder = areaFlowOrder();
@@ -15087,11 +15088,18 @@ function buildPalette() {
       const hits = await api(`/api/search?q=${encodeURIComponent(q)}`);
       // A slower earlier search must not overwrite the current query's results.
       if (state.pal.q.trim() !== q) return;
-      // Lead with the good stuff: a life area is a whole corner of your life, so
-      // it comes first; then goals, contacts and the pages; a lone table row is
-      // the least you searched for, so it sinks to the bottom. Stable within a
-      // kind, so the worker's relevance order still holds inside each band.
-      const ranked = hits.slice().sort((a, b) => (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
+      const ql = q.toLowerCase();
+      // A life area is a whole corner of your life, so a matching one should always
+      // be near the top - even if the worker's row cap dropped it. Inject matching
+      // areas locally (from state.areas) and merge with the worker hits, deduped.
+      const areaHits = (state.areas || []).filter((a) => (a.title || '').toLowerCase().includes(ql) && !(a.props && a.props.noSearch)).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }));
+      const seen = new Set(areaHits.map((a) => a.id));
+      const merged = [...areaHits, ...hits.filter((h) => !seen.has(h.id))];
+      // Rank: an exact title match first, then a title that STARTS with what you
+      // typed, then by kind (area, goal, contact, note, table, task, row). Stable
+      // within a band, so the worker's relevance order still holds.
+      const titleRank = (b) => { const t0 = (b.title || '').toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
+      const ranked = merged.slice().sort((a, b) => titleRank(a) - titleRank(b) || (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
       state.pal.items = [...acts, ...ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
       state.pal.sel = 0; renderPalItems();
     } catch (e) { toast(e.message); }

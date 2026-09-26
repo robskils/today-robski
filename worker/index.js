@@ -1835,7 +1835,7 @@ async function searchBlocks(request, env, url) {
   const TAIL = `AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
         AND COALESCE(json_extract(props, '$.noSearch'), 0) = 0
         AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo', 'txn', 'tracker', 'insight')
-      ORDER BY CASE kind WHEN 'note' THEN 0 WHEN 'table' THEN 1 WHEN 'area' THEN 2 WHEN 'task' THEN 3 WHEN 'row' THEN 4 ELSE 5 END, updated_at DESC
+      ORDER BY CASE kind WHEN 'area' THEN 0 WHEN 'goal' THEN 1 WHEN 'contact' THEN 2 WHEN 'note' THEN 3 WHEN 'table' THEN 4 WHEN 'task' THEN 5 WHEN 'row' THEN 6 ELSE 7 END, updated_at DESC
       LIMIT 60`;
   const groupSql = () => `(title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))`;
   const runQuery = async (groups, binds) => {
