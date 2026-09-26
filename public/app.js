@@ -9604,7 +9604,9 @@ function mailQuadMenuHtml() {
 // (or send it back to the inbox queue).
 function mailQuadPickerHtml(o) {
   const cur = mailQuadOf(o);
-  return `<div class="mail-quadpick"><span class="mail-quadpick-l">File into</span>${MAIL_QUADS.map((q) => `<button class="mail-quadpick-b mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span>${esc(q.label)}</button>`).join('')}${cur !== 'inbox' ? '<button class="mail-quadpick-b mail-quad-inbox" data-mail-quad-file="inbox" title="Back to the inbox queue"><span class="mail-quad-dot"></span>Inbox</button>' : ''}</div>`;
+  // The bucket picker, plus an explicit Archive button so you can file it away the
+  // moment you're done with it, right from the open email. (Robin.)
+  return `<div class="mail-quadpick"><span class="mail-quadpick-l">File into</span>${MAIL_QUADS.map((q) => `<button class="mail-quadpick-b mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span>${esc(q.label)}</button>`).join('')}${cur !== 'inbox' ? '<button class="mail-quadpick-b mail-quad-inbox" data-mail-quad-file="inbox" title="Back to the inbox queue"><span class="mail-quad-dot"></span>Inbox</button>' : ''}<span class="mail-quadpick-sep" aria-hidden="true"></span><button class="mail-quadpick-b mail-quadpick-archive" data-mail-archive="${esc(o._key)}" title="Done with it - move to your Archive"><span class="mail-quad-dot"></span>Archive</button></div>`;
 }
 // The inner HTML of the .mail-list container (rows / loading / empty state).
 // Kept separate so a live search can refresh just the list without rebuilding
