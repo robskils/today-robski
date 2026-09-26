@@ -4381,7 +4381,7 @@ function renderHome() {
           const mailN = state.mailUnreadTotal || 0;
           const taskN = (state.home && state.home.alerts && state.home.alerts.taskOpen) || 0;
           return [
-            modOn('mail') ? ['✉', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN] : null,
+            modOn('mail') ? ['✉︎', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN] : null,
             modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note', 0] : null,
             modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event', 0] : null,
             modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', taskN] : null,
@@ -4447,7 +4447,7 @@ function renderHome() {
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
             favareas: { ic: '◈', label: 'Life areas', count: sortedAreas.length || null },
             tracker: { ic: '📊', label: 'Tracker', count: null },
-            mail: { ic: '✉', label: 'Inbox', count: state.mailUnreadTotal || null },
+            mail: { ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
           };
           // The Home main area is a stack of sections YOU choose: click a header
@@ -4460,7 +4460,7 @@ function renderHome() {
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
             { k: 'favareas', ic: '◈', label: 'Life areas', count: sortedAreas.length, on: modOn('areas') },
             { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
-            { k: 'mail', ic: '✉', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
+            { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
           const avail = MAIN_DEF.filter((s) => s.on);
           const availKeys = avail.map((s) => s.k);
