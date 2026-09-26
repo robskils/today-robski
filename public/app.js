@@ -7972,6 +7972,11 @@ async function mailMoveTo(key, target, label) {
     // Remember them as gone so a lagging Gmail refetch can't list them again for a
     // moment. Undo clears the flag so a restored message can come back.
     keys.forEach((k) => state.mail.gone.add(k));
+    // Leaving the inbox (archive/trash/spam/move) also clears the email's quadrant
+    // filing, so an actioned email doesn't linger in Urgent / Important / etc.
+    let quadChanged = false;
+    for (const row of rows) { const fk = mailFileKey(row); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; quadChanged = true; } }
+    if (quadChanged) api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {});
     const openKey = state.mail.open && state.mail.open._key;
     const openIdx = openKey ? msgs.findIndex((m) => m._key === openKey) : -1;
     // Undo: move each message back from `target` to where it came from, found by
@@ -9257,7 +9262,8 @@ const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' 
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
-    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Read Later / Others)"><span class="mail-quad-dot"></span></span></button>`;
+    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Read Later / Others)"><span class="mail-quad-dot"></span></span>
+    <span class="mail-rowarch" data-mail-archive="${esc(x._key)}" title="Archive - done with it, take it out">${MAIL_ICO.archive}</span></button>`;
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
 // it reads as one set rather than a jumble of emoji.
 const mIco = (p, fill) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -16607,7 +16613,7 @@ document.addEventListener('pointerdown', (e) => {
   if (e.button != null && e.button !== 0) return;
   const row = e.target.closest && e.target.closest('.mail-row[data-mail-open]');
   if (!row) return;
-  if (e.target.closest('.mail-check, .mail-star, .mail-quadbtn, a, button:not(.mail-row)')) return;   // leave the row's own controls alone
+  if (e.target.closest('.mail-check, .mail-star, .mail-quadbtn, .mail-rowarch, a, button:not(.mail-row)')) return;   // leave the row's own controls alone
   if (!document.querySelector('[data-mail-quad-drop]')) return;   // only where the quadrant cards are the drop targets
   const key = row.dataset.mailOpen, pid = e.pointerId, sx = e.clientX, sy = e.clientY;
   const begin = () => {
