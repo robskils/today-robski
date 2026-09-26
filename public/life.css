@@ -4390,6 +4390,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-tile.on .at-l { color:var(--ink); }
 .at-c { position:absolute; top:7px; right:9px; font-size:11px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 7px; min-width:18px; text-align:center; }
 .area-tile.on .at-c { color:var(--c); background:color-mix(in srgb,var(--c) 14%,var(--card)); }
+/* The three primary tabs (Overview / Goals / Bucket list): a clean horizontal row,
+   icon + label + count inline, rather than tall tiles. */
+.area-tabs .area-tile { flex-direction:row; justify-content:center; gap:9px; padding:13px 12px; }
+.area-tabs .at-ic { font-size:18px; }
+.area-tabs .at-l { font-size:15px; }
+.area-tabs .at-c { position:static; top:auto; right:auto; margin-left:1px; }
+.atp-back { margin-left:auto; font-size:13px; }
 .area-tilepanel { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); padding:22px 24px; }
 .atp-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
 .atp-t { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:9px; }

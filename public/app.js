@@ -6234,13 +6234,16 @@ function renderArea() {
   const tileOrder = ['Overview', 'Goals', 'Wheel of Life', 'Tasks', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with'];
   // The Wheel of Life tile stays available even when the area is turned off, so
   // its panel (and the "track this again" switch) is always one tap away.
-  const avail = tileOrder.filter((k) => { if (k === 'Overview') return true; if (secHidden(k)) return false; if (k === 'Shared with') return !area.sharedBy; return CORE.has(k) || counts[k] > 0 || k === 'Wheel of Life'; });
-  // Landing on an area shows the Overview dashboard; a tile click switches for the
-  // session (state only), so a fresh visit always opens on the dashboard again.
+  // The area page leads with three horizontal tabs - Overview, Goals, Bucket list -
+  // click one to open it. (Robin, 2026-09-26.) Overview holds the full dashboard;
+  // its section → / "See all" links still drill into the other panels (Tasks, Notes,
+  // Contacts, Wheel…), which remain valid targets even though they aren't top tabs.
+  const TABS = ['Overview', 'Goals', 'Bucket list'];
   let openTile = state.area_open.tileOpen || 'Overview';
-  if (!avail.includes(openTile)) openTile = avail[0] || 'Overview';
-  const areaTilesHtml = `<div class="area-tiles" style="--cols:${Math.max(3, Math.ceil(avail.length / 2))}">${avail.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
-    <div class="area-tilepanel"><div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span></div>${panels[openTile]}</div>`;
+  if (!panels[openTile]) openTile = 'Overview';
+  const inTabs = TABS.includes(openTile);
+  const areaTilesHtml = `<div class="area-tiles area-tabs" style="--cols:3">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>
+    <div class="area-tilepanel">${inTabs ? '' : `<div class="atp-head"><span class="atp-t"><span class="atp-ic">${TILE_META[openTile]}</span>${esc(TILE_TITLE[openTile] || openTile)}</span><button class="ghost atp-back" data-area-tile="Overview">← Overview</button></div>`}${panels[openTile]}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   const dashStats = [[notes.length + tables.length, 'notes & tables'], [openTs.length, 'open tasks'], [activeGoals.length, 'goals'], [bookmarks.length, 'saved'], [journals.length, 'reflections']]
