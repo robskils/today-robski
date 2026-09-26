@@ -641,7 +641,22 @@ const HELP = {
       <li><b>Read Later</b> - worth a read when you have space.</li>
       <li><b>Others</b> - low priority; out of the way.</li></ul>
       <p>File from an open email, from the colour dot on any row, or by dragging a row onto a card. Tap a card to see that bucket (tap two to see both). When the Inbox count hits zero, you're done.</p>
-      <p><b>Connecting Gmail / Google Workspace:</b> Google needs a one-time <b>App Password</b>, not your normal password. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, and paste it in. They don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - then just make a new one.</p>
+      <h4>Which email accounts can I add?</h4>
+      <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
+      <h4>How to add one</h4>
+      <ol>
+        <li>Open Mail and tap <b>Accounts</b> (top right), then <b>Add mailbox</b>.</li>
+        <li>Pick your <b>provider</b> - it fills in the IMAP/SMTP hosts and ports for you (or leave it custom and type your own).</li>
+        <li>Enter your <b>email address</b> and <b>password</b>. For Google and iCloud that's an <b>App Password</b> (see below), not your normal one.</li>
+        <li>Save. It connects and your mail starts flowing in.</li>
+      </ol>
+      <h4>Passwords by provider</h4>
+      <ul>
+        <li><b>Gmail / Google Workspace</b> - needs a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "Daybook", press Create), and paste the 16-character code. On <b>Workspace</b>, your admin must also have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your account password or toggle 2-Step Verification - then just make a new one.</li>
+        <li><b>iCloud</b> - needs an <b>app-specific password</b> from <a href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a> (Sign-In &amp; Security → App-Specific Passwords).</li>
+        <li><b>Outlook / Office 365</b> - your normal password usually works; if the account has MFA, generate an app password in your Microsoft security settings.</li>
+        <li><b>Purelymail &amp; most others</b> - your normal mailbox password (or an app password if the provider uses two-factor).</li>
+      </ul>
       <p>Sending, and anything that leaves your account, always waits for you to press the button.</p>` },
   contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from life areas - and a nudge when it has been too long.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a life area.</p>
