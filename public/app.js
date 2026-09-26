@@ -19111,18 +19111,15 @@ async function onbConnectGmail() {
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
-    // Reopening after a long time away lands on Home, at the top - not on some
-    // random page you left open last week. The active tab resets to Home; any
-    // pinned tabs are kept (just not focused).
-    const staleReopen = reopenedAfterAWhile();
+    // Opening Daybook always lands on Home, not whatever page you left open last
+    // time - unless a deep-link route below asks for somewhere specific. Pinned tabs
+    // are kept (just not focused). (Robin: open Daybook → Home, unless deep-linked.)
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
       state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home', pinned: !!t.pinned }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
-      if (staleReopen) {
-        const act = state.tabs.find((t) => t.id === state.activeTab);
-        if (act) { act.view = { type: 'home' }; act.label = 'Home'; }
-        window.scrollTo(0, 0);
-      }
+      const act = state.tabs.find((t) => t.id === state.activeTab);
+      if (act) { act.view = { type: 'home' }; act.label = 'Home'; }
+      window.scrollTo(0, 0);
     } else { state.tabs = [{ id: uid(), view: { type: 'home' }, label: 'Home' }]; state.activeTab = state.tabs[0].id; }
     const route = location.pathname.replace(/\/$/, '');
     const mailtoParam = new URLSearchParams(location.search).get('mailto');
