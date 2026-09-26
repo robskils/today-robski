@@ -7949,6 +7949,38 @@ function mailQuadMsgs(quad) {
   return [...byId.values()];
 }
 function persistMailQuads() { api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {}); }
+// One-time backfill: everything you'd previously STARRED belongs in the Important
+// box. A star is the \Flagged flag, and the server's flagged view sweeps EVERY
+// folder per account (Inbox, Archive / Gmail All Mail, custom labels) - so this
+// catches starred mail that has long since left the inbox. Each hit is snapshotted
+// into the Important bucket, the same durable store hand-filing uses, so it stays
+// put. Works across Gmail and IMAP alike (the snapshot carries its own account).
+// An email you've already filed by hand keeps its bucket - we never overwrite.
+async function importStarredToImportant(opts) {
+  const auto = opts && opts.auto;
+  const accts = state.mail.accounts || [];
+  if (!accts.length) return 0;
+  if (!auto) toast('Importing starred emails…');
+  state.mailQuads = state.mailQuads || {};
+  let added = 0;
+  for (const a of accts) {
+    let msgs = [];
+    try { const r = await mailApi(`/messages?account=${a.id}&flagged=1&limit=200`); msgs = r.messages || []; }
+    catch { continue; }
+    for (const x of msgs) {
+      const mb = x.mailbox || 'INBOX';
+      const row = { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}`, flagged: true };
+      const k = mailFileKey(row);
+      if (!k || mailQuadEntry(k)) continue;   // no id, or already filed - leave it
+      state.mailQuads[k] = { q: 'important', m: mailSnap(row) };
+      added++;
+    }
+  }
+  if (added) persistMailQuads();
+  if (!auto) toast(added ? `Imported ${added} starred email${added === 1 ? '' : 's'} into Important` : 'No starred emails found to import');
+  if (added && state.view.type === 'mail') renderMail();
+  return added;
+}
 const mailMsgByKey = (key) => (state.mail && state.mail.messages || []).find((x) => x._key === key) || (state.mail && state.mail.snapMsgs && state.mail.snapMsgs[key]);
 function setMailFolder(key) {
   state.mail.folder = key; state.mail.open = null; state.mail.limit = 40;
@@ -8466,6 +8498,18 @@ async function openMail(openKey) {
     state.mail.accounts = fresh;
     if (!fresh.length) { renderMailAccounts('Add a mailbox to get started.'); return; }
     if (!state.mail.account) state.mail.account = fresh.length > 1 ? 'all' : fresh[0].id;
+    // One-time: lift every previously-starred email into the Important box so the
+    // buckets start life carrying his real priorities. Guarded by a persisted flag
+    // so the (heavy, all-folder) sweep runs exactly once per account, in the
+    // background - never blocking the inbox paint. The flag is checked live to
+    // dodge the race where its own GET hasn't resolved yet.
+    (async () => {
+      if (state.mailStarredImported) return;
+      try { const r = await api('/api/kv/mail_starred_imported'); if (r && r.value) { state.mailStarredImported = true; return; } } catch { return; }
+      state.mailStarredImported = true;
+      api('/api/kv/mail_starred_imported', { method: 'PUT', body: JSON.stringify({ value: '1' }) }).catch(() => {});
+      importStarredToImportant({ auto: true }).catch(() => {});
+    })();
     // Cache the folder list (for "Move to folder") from the active/first account.
     const primary = state.mail.account !== 'all' ? state.mail.account : fresh[0].id;
     mailApi(`/mailboxes?account=${primary}`).then((mb) => { state.mail.mailboxes = Array.isArray(mb) ? mb : []; }).catch(() => {});
@@ -9642,6 +9686,7 @@ function renderMail(loading) {
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
       <button class="tbl-filter-btn mail-vip-tog ${mailVips().on ? 'on' : ''}" data-mail-vip-tog title="${mailVips().on ? 'Important senders on - group them at the top' : 'Important senders off'}">⭐</button>
+      ${(m.quadFilter && m.quadFilter.has('important')) ? '<button class="tbl-filter-btn" data-mail-import-starred title="Pull every previously-starred email into the Important box">★ Import starred</button>' : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}`}
 ${''/* The "older unread sits further down" banner is retired: the background
@@ -15752,6 +15797,7 @@ document.addEventListener('click', (e) => {
   { const qp = t.closest('[data-mail-quad-pick]'); if (qp) { const mm = state.mail.quadMenu; if (mm) mailToQuad(mm.key, qp.dataset.mailQuadPick); return; } }
   if (t.closest('[data-mail-quad-close]')) { state.mail.quadMenu = null; renderMail(); return; }
   if (t.closest('[data-mail-empty]')) { mailEmptyFolder(); return; }
+  if (t.closest('[data-mail-import-starred]')) { importStarredToImportant({}); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(false, true); return; }
   if (t.closest('[data-mail-more]')) { state.mail.limit = (state.mail.limit || 40) + 60; loadMessages(); return; }
   if (t.closest('[data-mail-thread-toggle]')) { state.mail.threaded = !state.mail.threaded; try { localStorage.setItem('life.mail.threaded', state.mail.threaded ? '1' : '0'); } catch {} renderMail(); return; }
