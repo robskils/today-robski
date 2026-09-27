@@ -6204,10 +6204,13 @@ function renderArea() {
   const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
   const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
   const tops = { 'Vision': visionBodyHtml, 'Goals': goalsTop, 'Bucket list': bucketTop, 'Wheel of Life': areaWheelPanel(area) };
-  const TABS = ['Vision', 'Goals', 'Bucket list', 'Wheel of Life'];
+  // Wheel of Life is a tab only for areas you actually track in the wheel; untracked
+  // ones drop it (toggle tracking from the Wheel of Life page). (Robin, 2026-09-27.)
+  const wheelTracked = !(area.props && area.props.reviewOff);
+  const TABS = ['Vision', 'Goals', 'Bucket list', ...(wheelTracked ? ['Wheel of Life'] : [])];
   let openTile = state.area_open.tileOpen || 'Vision';
-  if (!tops[openTile]) openTile = 'Vision';
-  const tabBar = `<div class="area-tiles area-tabs" style="--cols:4">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>`;
+  if (!TABS.includes(openTile)) openTile = 'Vision';
+  const tabBar = `<div class="area-tiles area-tabs" style="--cols:${TABS.length}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>`;
   const areaTilesHtml = `${tabBar}<div class="area-tilepanel"><div class="area-card area-top-card">${tops[openTile]}</div>${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
@@ -12936,10 +12939,28 @@ function renderWheel() {
     : `<div class="wheelpage-hero"><div class="wol-chart">${wheelSvgHtml(data, 260)}<div class="wol-cap">Average <b>${avg}</b> / 5 · ${scored.length} area${scored.length === 1 ? '' : 's'} rated across ${revs.length} review${revs.length === 1 ? '' : 's'}</div></div>
         <div class="wheelpage-side">${keysHtml}${avgTrendHtml}</div></div>
       <section class="wheelpage-trends"><div class="home-sec-h">Each area over time</div><div class="wheeltrend-list">${rows}</div></section>`;
+  // The one obvious place to choose which life areas are in your wheel. Ticking one
+  // off drops it from the wheel, your reviews and its own page - it stays an area,
+  // just out of the wheel. (Robin, 2026-09-27.)
+  const allAreas = (state.areas || []).filter((a) => a && a.title && !a.sharedBy).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const trackHtml = allAreas.length ? `<section class="wheeltrack">
+      <div class="home-sec-h">Which areas to track</div>
+      <p class="scope">Tick the areas you want in your Wheel of Life. Unticked ones drop off the wheel, out of your reviews, and off their own page - they stay as life areas, just not part of the wheel.</p>
+      <div class="wheeltrack-list">${allAreas.map((a) => { const tracked = !(a.props && a.props.reviewOff); return `<div class="wheeltrack-row" style="--h:${hueOf(a)}"><span class="wt-dot"></span><span class="wheeltrack-n">${esc(a.title)}</span><label class="msec-switch" title="${tracked ? 'Tracked - tap to remove' : 'Not tracked - tap to add'}"><input type="checkbox" data-wheel-track="${a.id}" ${tracked ? 'checked' : ''}><span class="switch-sl"></span></label></div>`; }).join('')}</div>
+    </section>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
     <div class="pane-head"><h1>Wheel of Life</h1></div>
-    ${body}`;
+    ${body}${trackHtml}`;
+}
+// Toggle an area in/out of the Wheel of Life from anywhere (props.reviewOff).
+function setWheelTrack(id, track) {
+  const patch = { reviewOff: !track };
+  const al = (state.areas || []).find((x) => String(x.id) === String(id)); if (al) { al.props = al.props || {}; Object.assign(al.props, patch); }
+  if (state.area_open && String(state.area_open.area.id) === String(id)) { state.area_open.area.props = state.area_open.area.props || {}; Object.assign(state.area_open.area.props, patch); }
+  api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
+  toast(track ? 'Added to your Wheel of Life' : 'Removed from your Wheel of Life');
+  if (state.view.type === 'wheel') renderWheel(); else if (state.view.type === 'area') renderArea();
 }
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
@@ -16336,6 +16357,7 @@ function openLinkMenu(x, y, href, view) {
 }
 // change: cells + selects
 document.addEventListener('change', (e) => {
+  if (e.target.matches && e.target.matches('[data-wheel-track]')) { setWheelTrack(e.target.dataset.wheelTrack, e.target.checked); return; }
   // Event reminder: reveal the number+unit inputs when "Custom…" is chosen.
   if (e.target.id === 'ce-alarm') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) { const on = e.target.value === 'custom'; cc.hidden = !on; if (on) { const n = document.getElementById('ce-alarm-n'); if (n) { n.focus(); n.select(); } } } const chw = document.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = (e.target.value === ''); return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
