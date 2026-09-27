@@ -908,6 +908,10 @@ button { cursor:pointer; background:none; border:0; }
 .rvg-donerow { display:flex; align-items:center; gap:9px; font-size:14.5px; color:var(--ink); cursor:pointer; }
 .rvg-donerow input { width:18px; height:18px; accent-color:var(--done); flex:none; }
 .rvg-goal .rvg-bar { width:100%; }
+/* Slidable progress in the review's Your-focus goals. */
+.rvg-barwrap { position:relative; display:flex; align-items:center; width:100%; height:16px; margin:2px 0 2px; }
+.rvg-barwrap .rvg-bar { flex:1; margin:0; }
+.rvg-barwrap .rvg-slider { --h:var(--h); }
 .rvg-note { width:100%; border:1px solid var(--line); border-radius:8px; background:var(--paper-2,var(--card)); padding:8px 10px; font:inherit; font-size:14px; color:var(--ink); }
 .rvg-note:focus { outline:none; border-color:var(--accent); }
 .rvg-note::placeholder { color:var(--ink-3); }

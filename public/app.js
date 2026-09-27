@@ -389,6 +389,20 @@ function decorateProse(html) {
     card.innerHTML = `<span class="lc-main"><span class="lc-title">${esc(prettyHost(href))}</span><span class="lc-site">${esc(prettyHost(href))}</span></span><button class="lc-x" data-card-del title="Remove">×</button>`;
     p.replaceWith(card);
   });
+  // A bare YouTube URL as plain text (not a link) - e.g. typed or imported before
+  // it was linkified - still becomes the player, so a video is a video everywhere.
+  d.querySelectorAll('p, div').forEach((p) => {
+    if (!/^(P|DIV)$/.test(p.tagName)) return;
+    if (p.querySelector('a, img, iframe, .embed-yt, .link-card, table')) return;
+    const txt = p.textContent.trim();
+    if (!/^https?:\/\/\S+$/.test(txt)) return;
+    const yid = youtubeIds(txt)[0]; if (!yid) return;
+    const emb = document.createElement('div');
+    emb.className = 'embed-yt lc-inline'; emb.setAttribute('contenteditable', 'false');
+    emb.setAttribute('data-yt', yid); emb.setAttribute('data-yturl', txt);
+    emb.innerHTML = `<img class="yt-poster" src="https://i.ytimg.com/vi/${yid}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span><button class="lc-x embed-x" data-card-del title="Remove">×</button>`;
+    p.replaceWith(emb);
+  });
   // Wrap pasted tables so a wide one scrolls sideways instead of stretching the
   // page. sanitizeProse strips the wrapper back off when saving.
   d.querySelectorAll('table').forEach((t) => {
@@ -13464,6 +13478,7 @@ async function openReviewCard(id) {
   // Anything not yet submitted - including a past period you never got to - opens
   // in the working form so you can still fill it in. From the report you can always
   // tap Edit to change it (it stays submitted). (Robin: read-only = after submit.)
+  restoreReviewDraft(r);   // fold back any writing that didn't reach the server last time
   const p = r.props || {};
   state.review_open = { review: r, mode: p.status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview(); reviewScrollTop();
@@ -13565,11 +13580,13 @@ let rvAreaT;
 function saveReviewAreaNote(id, v) {
   const r = state.review_open && state.review_open.review; if (!r) return;
   r.props = r.props || {}; r.props.areaNotes = { ...(r.props.areaNotes || {}), [id]: v };
+  stashReviewDraft();
   clearTimeout(rvAreaT); rvAreaT = setTimeout(() => { rvAreaT = null; patchReview(r.id, { areaNotes: r.props.areaNotes }, true); }, 700);
 }
 function saveReviewAnswer(i, v, immediate) {
   const r = state.review_open && state.review_open.review; if (!r) return;
   r.props = r.props || {}; r.props.answers = { ...(r.props.answers || {}), [i]: v };
+  stashReviewDraft();
   clearTimeout(rvAnsT);
   if (immediate) { rvAnsT = null; patchReview(r.id, { answers: r.props.answers }, true); }
   else rvAnsT = setTimeout(() => { rvAnsT = null; patchReview(r.id, { answers: r.props.answers }, true); }, 700);
@@ -13586,6 +13603,49 @@ function flushReviewAnswers() {
   document.querySelectorAll('[data-rv-areanote]').forEach((el) => { const id = el.dataset.rvAreanote; if (notes[id] !== el.value) { notes[id] = el.value; nChanged = true; } });
   clearTimeout(rvAreaT); rvAreaT = null;
   if (nChanged) { r.props = r.props || {}; r.props.areaNotes = notes; patchReview(r.id, { areaNotes: notes }, true); }
+  stashReviewDraft();
+}
+// Belt-and-braces safety net: on EVERY edit, snapshot the whole review (answers,
+// area notes, wheel, free-write) to localStorage, stamped now. Server saves can be
+// missed (a killed PWA, a flaky network, a mistimed re-render); the draft never is.
+// On reopen, restoreReviewDraft folds back anything the server didn't get - so
+// nothing you write is ever lost. (Robin, 2026-09-27.)
+function stashReviewDraft() {
+  const r = state.review_open && state.review_open.review; if (!r) return;
+  const p = r.props || {};
+  const answers = { ...(p.answers || {}) };
+  document.querySelectorAll('[data-rv-answer]').forEach((x) => { answers[x.dataset.rvAnswer] = x.value; });
+  const areaNotes = { ...(p.areaNotes || {}) };
+  document.querySelectorAll('[data-rv-areanote]').forEach((x) => { areaNotes[x.dataset.rvAreanote] = x.value; });
+  let body = r.body || '';
+  const el = document.querySelector(`.prose[data-prose="review"][data-block-id="${r.id}"]`);
+  if (el) { try { body = sanitizeProse(el.innerHTML); } catch { body = el.innerHTML; } }
+  try { localStorage.setItem('life.review.draft.' + r.id, JSON.stringify({ answers, areaNotes, wheel: p.wheel || {}, body, ts: Date.now() })); } catch {}
+}
+// Fold a local draft back into the freshly-fetched review, but ONLY the parts that
+// are newer than the server copy (draft.ts > the block's updated_at) - so we recover
+// unsynced edits without resurrecting anything you deliberately cleared. Persists
+// whatever it recovers straight back to the server.
+function restoreReviewDraft(r) {
+  if (!r) return;
+  let d; try { d = JSON.parse(localStorage.getItem('life.review.draft.' + r.id) || 'null'); } catch {}
+  if (!d || !d.ts) return;
+  const serverTs = Date.parse(r.updated_at || '') || 0;
+  if (d.ts <= serverTs) return;   // server already has everything (or newer)
+  const p = r.props = r.props || {};
+  const propPatch = {}; let bodyPatch = null;
+  const ans = { ...(p.answers || {}) }; let ansCh = false;
+  for (const [i, v] of Object.entries(d.answers || {})) if (String(v || '').trim() && v !== ans[i]) { ans[i] = v; ansCh = true; }
+  if (ansCh) { p.answers = ans; propPatch.answers = ans; }
+  const notes = { ...(p.areaNotes || {}) }; let nCh = false;
+  for (const [k, v] of Object.entries(d.areaNotes || {})) if (String(v || '').trim() && v !== notes[k]) { notes[k] = v; nCh = true; }
+  if (nCh) { p.areaNotes = notes; propPatch.areaNotes = notes; }
+  const wheel = { ...(p.wheel || {}) }; let wCh = false;
+  for (const [k, v] of Object.entries(d.wheel || {})) if (v > 0 && v !== wheel[k]) { wheel[k] = v; wCh = true; }
+  if (wCh) { p.wheel = wheel; propPatch.wheel = wheel; }
+  if (d.body && d.body.trim() && d.body !== (r.body || '')) { r.body = d.body; bodyPatch = d.body; }
+  if (Object.keys(propPatch).length) api(`/api/blocks/${r.id}`, { method: 'PATCH', body: JSON.stringify({ props: propPatch }) }).catch(() => {});
+  if (bodyPatch != null) api(`/api/blocks/${r.id}`, { method: 'PATCH', body: JSON.stringify({ body: bodyPatch }) }).catch(() => {});
 }
 // A gentle sentiment read of a review, from what you wrote (the prompt answers +
 // freewrite) nudged by your Wheel of Life. Supportive, never clinical - it's your
@@ -14015,6 +14075,7 @@ function setWheel(areaId, score) {
   const ns = w[areaId] === score ? 0 : score;   // tap the same pip to clear
   w[areaId] = ns;
   patchReview(r.id, { wheel: w }, true).then(renderReviewCard);
+  stashReviewDraft();
   if (ns > 0) bumpAreaSentiment(areaId, ns, p.to || localISO());   // carry the latest score onto the area itself
 }
 // The wheel score doubles as a life-area sentiment: keep the newest one on the
@@ -14063,7 +14124,7 @@ function weeklyGoalsGlance() {
     return `<div class="rvg-goal" style="--h:${hueOf(a)}">
       <div class="rvg-goal-h"><button class="rvg-t2" data-open-goal="${g.id}" title="Open ${esc(g.title || 'this goal')}">${esc(g.title || 'Untitled')}</button><span class="rvg-pct" data-rvg-pct="${g.id}">${pct}%</span></div>
       ${a ? `<div class="rvg-goal-m">${esc(a.title)}</div>` : ''}
-      <span class="rvg-bar"><i data-rvg-bar="${g.id}" style="width:${pct}%"></i></span>
+      <span class="rvg-barwrap"><span class="rvg-bar"><i data-rvg-bar="${g.id}" style="width:${pct}%"></i></span>${gtype !== 'number' ? `<input type="range" class="gc-slider rvg-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Slide to set how far along this goal is">` : ''}</span>
       ${control}
       <input class="rvg-note" data-goalrev-note="${esc(g.id)}" value="${esc(note)}" placeholder="A line on how this went this week…" autocomplete="off">
     </div>`;
@@ -15456,8 +15517,8 @@ document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[data-goal-progress]')) {
     const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     // Works for a goal card (.gc-progress) and a Goals-tab list row (.glist-row).
-    const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card');
-    if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct'); if (lab) lab.textContent = v + '%'; }
+    const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card, .rvg-goal');
+    if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i, [data-rvg-bar]'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct, .rvg-pct'); if (lab) lab.textContent = v + '%'; }
     e.target.setAttribute('aria-label', `Progress: ${v}%`);
     clearTimeout(window.__goalProgT); window.__goalProgT = setTimeout(() => saveGoalProgress(e.target.dataset.goalProgress, v), 450);
   }
@@ -15583,7 +15644,7 @@ document.addEventListener('input', (e) => {
     clearTimeout(window.__mailDraftT); window.__mailDraftT = setTimeout(saveDraft, 600);
   }
   const fvi = e.target.closest('input[data-filt-val]'); if (fvi) { const i = +fvi.dataset.filtVal; if (state.tables_view.filters[i]) { state.tables_view.filters[i].value = e.target.value; renderTableBody(); } }
-  if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); }
+  if (e.target.dataset && e.target.dataset.prose) { const pe = e.target; clearTimeout(proseT); proseT = setTimeout(() => saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId), 800); if (pe.dataset.prose === 'review') stashReviewDraft(); }
   if (e.target.matches && e.target.matches('[data-rv-answer]')) saveReviewAnswer(e.target.dataset.rvAnswer, e.target.value);
   if (e.target.matches && e.target.matches('[data-rv-areanote]')) saveReviewAreaNote(e.target.dataset.rvAreanote, e.target.value);
   if (e.target.matches && e.target.matches('[data-rvg-current]')) rvgSetCurrent(e.target.dataset.rvgCurrent, e.target.value);
