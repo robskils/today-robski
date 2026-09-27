@@ -5761,26 +5761,31 @@ table.ttable tr:last-child td { border-bottom:0; }
 
 /* ── inline rich-text editor ─────────────────────────── */
 .prose { font-size:18.5px; line-height:1.75; color:var(--ink); outline:none; cursor:text; }
-.prose.prose-heads { padding-left:42px; }   /* gutter for the fold chevrons, only when the note has headings */
+/* No left gutter: the fold chevron and grip are absolute and hang into the
+   pane's own left padding, so the note text stays flush-left - a single stray
+   heading no longer indents the whole note. (Robin.) */
 .prose:empty::before, .prose[data-empty]::before { content:attr(data-ph); color:var(--ink-3); font-style:italic; pointer-events:none; }
 .prose > *:first-child { margin-top:0; }
 .prose p { margin:0 0 14px; }
 /* Collapsible headings: a subtle chevron before each heading folds its content.
-   The chevron and drag grip sit in a fixed left gutter (absolute), so they don't
-   push the heading TEXT right - otherwise content indented under a heading looked
-   outdented, sitting left of the heading it belongs to. (Robin.) */
+   The chevron and drag grip are absolute and hang just left of the heading, into
+   the pane's own left padding - so the note TEXT stays flush-left and a heading
+   doesn't indent the note. The chevron sits within ~18px (the tightest pane
+   padding, on mobile) so it never clips off the edge. (Robin.) */
 .prose h1, .prose h2, .prose h3 { position:relative; }
-/* A generous tap target - the glyph is small but the clickable box is ~20px wide
-   and the height of the heading line, so the arrow is easy to hit. (Robin.) */
-.fold-toggle { position:absolute; left:-34px; top:0; width:30px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:pointer; user-select:none; font-size:19px; line-height:1; border-radius:8px; transition:color .12s, background .12s; }
+/* A generous tap target - the glyph is small but the clickable box fills the
+   height of the heading line, so the arrow is easy to hit. (Robin.) */
+.fold-toggle { position:absolute; left:-18px; top:0; width:16px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:pointer; user-select:none; font-size:17px; line-height:1; border-radius:6px; transition:color .12s, background .12s; }
 .fold-toggle:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 13%,transparent); }
 /* Drag grip to reorder a heading's whole section. Faint until you hover the
-   heading, so it doesn't clutter the note. Sits just left of the fold chevron. */
-.head-grip { position:absolute; left:-52px; top:0; width:15px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:grab; user-select:none; font-size:13px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
+   heading. It needs a second slot in the margin, so it only appears on pointer
+   devices (which have the wider pane padding); on touch it's hidden - dragging a
+   section by a tiny grip is a mouse gesture anyway. */
+.head-grip { position:absolute; left:-36px; top:0; width:15px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-3); cursor:grab; user-select:none; font-size:13px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
 .prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.6; }
 .head-grip:hover { opacity:1 !important; color:var(--accent); }
 .head-grip:active { cursor:grabbing; }
-@media (hover:none){ .head-grip { opacity:.5; } }
+@media (hover:none){ .head-grip { display:none; } }
 .prose h1.head-dragging, .prose h2.head-dragging, .prose h3.head-dragging { opacity:.4; }
 /* Drop indicator: a line above the heading the section will land in front of. */
 .prose h1.head-drop, .prose h2.head-drop, .prose h3.head-drop { box-shadow:0 -2px 0 var(--accent); }
