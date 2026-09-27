@@ -1064,6 +1064,29 @@ function reopenedAfterAWhile() { try { const t = Number(localStorage.getItem('li
     else { Promise.resolve(openHome()).catch(() => {}); window.scrollTo(0, 0); }
   });
 })();
+// Self-update on resume. The installed app usually SUSPENDS in the background and
+// resumes the same page - so a deploy never reaches it until a full relaunch, and
+// the phone keeps running yesterday's code (this is why fixes "still" looked
+// unfixed on mobile: the fix was live on the server, stale in the app). The
+// versioned asset URL (/app.js?v=<stamp>) is baked into app.html, so on return to
+// the foreground we fetch app.html fresh (never cached) and, if its stamp differs
+// from the one we booted with, reload once to pick up the new bundle. (Robin.)
+const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/app.js"]'); const m = s && s.src.match(/[?&]v=([0-9]+)/); return (m && m[1]) || ''; } catch { return ''; } })();
+(function selfUpdateOnResume() {
+  let updating = false; let lastCheck = 0;
+  async function checkForUpdate() {
+    if (updating || !BOOT_VER || Date.now() - lastCheck < 60000) return;
+    lastCheck = Date.now();
+    try {
+      const res = await fetch('/app.html', { cache: 'no-store' });
+      if (!res.ok) return;
+      const html = await res.text();
+      const m = html.match(/app\.js\?v=([0-9]+)/);
+      if (m && m[1] && m[1] !== BOOT_VER) { updating = true; location.reload(); }
+    } catch { /* offline - keep running what we have */ }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
+})();
 // A tab must own an INDEPENDENT copy of its view. A Tasks view carries mutable
 // filters/sort; a shallow copy leaves every Tasks tab pointing at one shared
 // array, so they all show identical content (the "two tabs, same content" bug).
