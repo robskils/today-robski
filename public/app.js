@@ -7316,6 +7316,25 @@ function uiConfirm(message, opts = {}) {
     el.querySelectorAll('[data-ud]').forEach((b) => b.addEventListener('click', () => close(b.dataset.ud === '1')));
   });
 }
+// A small multi-choice dialog: pass {title, message, choices:[{v,label,danger?}]}.
+// Resolves the chosen `v`, or null on cancel/escape/backdrop.
+function uiChoice({ title, message, choices = [], cancelLabel = 'Cancel' } = {}) {
+  return new Promise((resolve) => {
+    const el = uiDialogHost();
+    el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box">
+      <div class="recur-h">${esc(title || 'Choose')}</div>
+      ${message ? `<p class="recur-p">${esc(message)}</p>` : ''}
+      <div class="ui-dialog-btns ui-dialog-btns-col">
+        ${choices.map((c, i) => `<button class="ui-btn ${c.danger ? 'danger' : 'primary'}" data-uc="${i}">${esc(c.label)}</button>`).join('')}
+        <button class="ui-btn cancel" data-uc="-1">${esc(cancelLabel)}</button>
+      </div></div></div>`;
+    const close = (v) => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(null); } };
+    document.addEventListener('keydown', onKey, true);
+    el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(null); });
+    el.querySelectorAll('[data-uc]').forEach((b) => b.addEventListener('click', () => { const i = Number(b.dataset.uc); close(i < 0 ? null : (choices[i] && choices[i].v)); }));
+  });
+}
 function uiPrompt(message, opts = {}) {
   return new Promise((resolve) => {
     const el = uiDialogHost();
@@ -8674,11 +8693,32 @@ async function openMail(openKey) {
   } catch (e) { if (!mine()) return; state.mail.error = e.message; renderMail(); }
 }
 // Map the D1 inbox-cache response into the keyed message shape the list uses.
+// A local memory of emails you've opened (by Message-ID), so an opened email always
+// shows as read even if the server - Gmail especially - is slow to reflect the
+// \Seen flag on a re-fetch. Self-prunes once the server confirms it read.
+function mailReadSet() {
+  if (!state.mail.readIds) { let a = []; try { a = JSON.parse(localStorage.getItem('life.mail.read') || '[]'); } catch {} state.mail.readIds = new Set(Array.isArray(a) ? a : []); }
+  return state.mail.readIds;
+}
+function mailMarkReadLocal(mid) {
+  if (!mid) return; const s = mailReadSet(); if (s.has(mid)) return; s.add(mid);
+  if (s.size > 1000) state.mail.readIds = new Set([...s].slice(-1000));
+  try { localStorage.setItem('life.mail.read', JSON.stringify([...state.mail.readIds])); } catch {}
+}
+function applyMailReads(list) {
+  const s = mailReadSet(); let pruned = false;
+  for (const m of (list || [])) {
+    if (!m.messageId || !s.has(m.messageId)) continue;
+    if (m.seen) { s.delete(m.messageId); pruned = true; } else { m.seen = true; }
+  }
+  if (pruned) { try { localStorage.setItem('life.mail.read', JSON.stringify([...s])); } catch {} }
+  return list;
+}
 function applyCachedList(r) {
   state.mail.unseen = r.unseen || {};
   state.mail._cacheSyncedAt = r.syncedAt || null;
   const nameOf = (id) => { const a = (state.mail.accounts || []).find((x) => x.id === id) || {}; return a.name || a.email || ''; };
-  state.mail.messages = (r.messages || []).map((x) => { const mb = x.mailbox || 'INBOX'; return { ...x, _acct: x.account, _acctName: nameOf(x.account), _mailbox: mb, _key: `${x.account}:${mb}:${x.uid}` }; }).filter((m) => !(state.mail.gone && state.mail.gone.has(m._key)));
+  state.mail.messages = applyMailReads((r.messages || []).map((x) => { const mb = x.mailbox || 'INBOX'; return { ...x, _acct: x.account, _acctName: nameOf(x.account), _mailbox: mb, _key: `${x.account}:${mb}:${x.uid}` }; }).filter((m) => !(state.mail.gone && state.mail.gone.has(m._key))));
   state.mail.error = null; state.mail.acctErrors = []; state.mail.hasMore = false;
 }
 async function loadMessages(quiet, force) {
@@ -8764,7 +8804,7 @@ async function loadMessages(quiet, force) {
       if (f.mailbox === 'INBOX' && !f.flagged && !q) { state.mail.liveUnseen = state.mail.liveUnseen || {}; state.mail.liveUnseen[a.id] = r.unseen || 0; }
       // A search sweeps every folder, so each hit carries its own mailbox; key by
       // it too, since UIDs are only unique within a mailbox.
-      bucket[a.id] = (r.messages || []).map((x) => { const mb = x.mailbox || f.mailbox; return { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}` }; });
+      bucket[a.id] = applyMailReads((r.messages || []).map((x) => { const mb = x.mailbox || f.mailbox; return { ...x, _acct: a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${a.id}:${mb}:${x.uid}` }; }));
       if ((r.failed || []).length) acctErrors.push({ name: a.name || a.email, msg: `could not search ${r.failed.length} folder${r.failed.length === 1 ? '' : 's'} (${r.failed.slice(0, 3).join(', ')})` });
       if (!r.searchedAll && (r.total || 0) > bucket[a.id].length) more = true;
     } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); if (bucket[a.id] === undefined) bucket[a.id] = []; }
@@ -8861,6 +8901,7 @@ async function openMessage(key) {
   // otherwise the reader star always shows empty and needs two clicks to set.
   const apply = (m) => { state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged }; };
   if (cached) apply(cached); else renderMail(true);   // cached opens instantly, no loading flash
+  if (row.messageId) mailMarkReadLocal(row.messageId);   // remember it read, so it never shows as new again
   if (!row.seen) { row.seen = true; bumpUnread(row._acct, -1); mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
   if (cached) { renderMail(); return; }
   try { apply(await mailFetchMsg(row)); } catch (e) { toast(e.message); }
@@ -13043,7 +13084,7 @@ function setWheelTrack(id, track) {
   if (state.area_open && String(state.area_open.area.id) === String(id)) { state.area_open.area.props = state.area_open.area.props || {}; Object.assign(state.area_open.area.props, patch); }
   api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
   toast(track ? 'Added to your Wheel of Life' : 'Removed from your Wheel of Life');
-  if (state.view.type === 'wheel') renderWheel(); else if (state.view.type === 'area') renderArea();
+  if (state.view.type === 'wheel') renderWheel(); else if (state.view.type === 'area') renderArea(); else if (state.view.type === 'reviewcard') renderReviewCard();
 }
 function reviewsBody() {
   const past = state.reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
@@ -14109,6 +14150,21 @@ function wheelHide(areaId) {
   const hidden = new Set(p.wheelHidden || []); hidden.add(areaId);
   const w = { ...(p.wheel || {}) }; delete w[areaId];
   patchReview(r.id, { wheelHidden: [...hidden], wheel: w }, true).then(renderReviewCard);
+}
+// Tapping the × on an area asks whether to drop it from just this review or from
+// every review (the latter turns tracking off for the area everywhere). (Robin.)
+async function wheelHideAsk(areaId) {
+  const a = areaById(areaId); const name = a ? a.title : 'this area';
+  const v = await uiChoice({
+    title: `Remove ${name}?`,
+    message: `Take ${name} out of just this review, or out of every review (and the Wheel of Life)?`,
+    choices: [
+      { v: 'one', label: 'Just this review' },
+      { v: 'all', label: 'Every review', danger: true },
+    ],
+  });
+  if (v === 'one') wheelHide(areaId);
+  else if (v === 'all') setWheelTrack(areaId, false);   // props.reviewOff - excludes it everywhere
 }
 function wheelRestore() {
   const r = state.review_open.review;
@@ -16009,7 +16065,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-review-edit]')) { if (state.review_open) { state.review_open.mode = 'edit'; renderReviewCard(); } return; }
   if (t.closest('[data-review-report]')) { if (state.review_open) { flushProse(); flushReviewAnswers(); state.review_open.mode = 'report'; renderReviewCard(); } return; }
   const whp = t.closest('[data-wheel]'); if (whp) { const [aid, sc] = whp.dataset.wheel.split(':'); setWheel(aid, +sc); return; }
-  const whx = t.closest('[data-wheel-hide]'); if (whx) { wheelHide(whx.dataset.wheelHide); return; }
+  const whx = t.closest('[data-wheel-hide]'); if (whx) { wheelHideAsk(whx.dataset.wheelHide); return; }
   if (t.closest('[data-wheel-restore]')) { wheelRestore(); return; }
   const grp = t.closest('[data-goalrev]'); if (grp) { const s = grp.dataset.goalrev; const i = s.lastIndexOf(':'); setGoalReviewScore(s.slice(0, i), +s.slice(i + 1)); return; }
   if (t.closest('[data-open-vision-tab]')) { openGoals('vision').catch((x) => toast(x.message)); return; }
