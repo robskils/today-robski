@@ -19408,15 +19408,18 @@ async function onbConnectGmail() {
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
-    // Opening Daybook always lands on Home, not whatever page you left open last
-    // time - unless a deep-link route below asks for somewhere specific. Pinned tabs
-    // are kept (just not focused). (Robin: open Daybook → Home, unless deep-linked.)
+    // Restore the tabs you had open, focused on the one you were using - so
+    // reopening Daybook on desktop puts you back exactly where you left off. The
+    // installed PHONE app is the exception: after an hour away it still drops you
+    // on Home (a fresh glance beats last night's page), though a quick reopen keeps
+    // your place. A deep-link route below still wins over all of this. (Robin:
+    // desktop reopens the whole session; only the phone app resets to Home.)
+    const installedApp = (() => { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch { return false; } })();
+    const forceHome = installedApp && reopenedAfterAWhile();
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
       state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home', pinned: !!t.pinned }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
-      const act = state.tabs.find((t) => t.id === state.activeTab);
-      if (act) { act.view = { type: 'home' }; act.label = 'Home'; }
-      window.scrollTo(0, 0);
+      if (forceHome) { const act = state.tabs.find((t) => t.id === state.activeTab); if (act) { act.view = { type: 'home' }; act.label = 'Home'; } window.scrollTo(0, 0); }
     } else { state.tabs = [{ id: uid(), view: { type: 'home' }, label: 'Home' }]; state.activeTab = state.tabs[0].id; }
     const route = location.pathname.replace(/\/$/, '');
     const mailtoParam = new URLSearchParams(location.search).get('mailto');
