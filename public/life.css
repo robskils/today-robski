@@ -850,7 +850,7 @@ button { cursor:pointer; background:none; border:0; }
 .gr-vision { font-size:14px; font-style:italic; color:var(--ink-3); line-height:1.4; }
 /* Monthly (and up) goal review: goals laid out ~3 per row, not full width, since
    there can be many. (Robin, 2026-09-27.) */
-.gr-goals-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:12px; align-items:start; }
+.gr-goals-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; align-items:stretch; }
 @media (max-width:560px) { .gr-goals-grid { grid-template-columns:1fr; } }
 .gr-goal { display:flex; flex-direction:column; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); }
 .gr-goal:last-child { margin-bottom:0; }
