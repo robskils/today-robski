@@ -675,6 +675,10 @@ button { cursor:pointer; background:none; border:0; }
 .gc-prog-l { font-size:13px; color:var(--ink-3); }
 .gc-prog-edit input { max-width:92px; text-align:center; } .gc-prog-edit .gc-unit { max-width:110px; text-align:left; }
 .gc-prog-done { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+/* A "mark it done" goal shows a draggable slider on its card too - drag to set
+   how far along it is, no numbers to keep. (Robin.) */
+.gc-prog-slide .gc-slidebar { height:20px; margin:2px 0 14px; }
+.gc-prog-done-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .gc-metric-row { display:flex; align-items:center; gap:9px; margin-top:11px; }
 .gc-metric-l { font-size:13px; color:var(--ink-3); flex:none; }
 .gc-metric-row .sel { max-width:220px; }

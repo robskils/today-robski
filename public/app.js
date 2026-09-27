@@ -2661,7 +2661,7 @@ function navItems(v) {
     // (tick + streaks) and shapes (rename inline, drag, ✎ details) your practices.
     tracker: '',
     practices: modOn('today') ? `<button class="nav-item ${v.type === 'practices' || v.type === 'tracker' ? 'on' : ''}" data-open-practices><span class="nav-ic">☯</span><span class="nav-lbl">${t('nav.practices')}</span></button>` : '',
-    tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span>${(state.home && state.home.alerts && state.home.alerts.taskOpen) ? '<span class="nav-dot" title="You have open tasks" aria-label="Open tasks"></span>' : ''}<span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
+    tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
     saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
@@ -2937,14 +2937,13 @@ async function quickAdd(kind) {
 function renderTabbar(v) {
   let el = document.getElementById('tabbar');
   if (!el) { el = document.createElement('nav'); el.id = 'tabbar'; el.className = 'tabbar'; document.body.appendChild(el); }
-  // A quiet dot (not a count) shows there's something waiting - new mail, or open
-  // tasks - matching the desktop sidebar. (Robin, 2026-09-27.)
+  // A quiet dot (not a count) shows there's new mail. Tasks carries no dot: you
+  // always have open tasks - that's life - so a permanent dot means nothing. (Robin.)
   const tab = (on, attr, ic, label, dot) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span class="tab-ic">${ic}${dot ? '<span class="tab-dot"></span>' : ''}</span>${label}</button>`;
-  const hasTasks = !!(state.home && state.home.alerts && state.home.alerts.taskOpen);
   el.innerHTML = tab(v.type === 'home', 'data-view-home', '⌂', 'Home')
     + tab(v.type === 'mail' || v.type === 'mailaccounts', 'data-open-mail', '✉︎', 'Mail', !!state.mailUnreadTotal)
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
-    + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks', hasTasks)
+    + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
     + tab(['note', 'notes', 'table', 'tables'].includes(v.type), 'data-open-notes', '▤', 'Notes');
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
@@ -4463,7 +4462,6 @@ function renderHome() {
         <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}<span class="home-time">${homeTimeStr()}</span></div>
         <div class="home-actions">${(() => {
           const mailN = state.mailUnreadTotal || 0;
-          const taskN = (state.home && state.home.alerts && state.home.alerts.taskOpen) || 0;
           return [
             // [icon, label, open-attr, add-kind, add-label, n, dot?] - only Mail gets a
             // dot, and only for new mail. The rest always have something going on, so a
@@ -12537,7 +12535,11 @@ function renderGoalCard() {
         <div class="gc-metric-row"><span class="gc-metric-l">Measure by</span><select class="sel" id="gc-metric">${GMETRICS.map(([v, l]) => `<option value="${v}" ${metric === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         ${metricEditRow}
       </div>`
-    : `<div class="gc-prog gc-prog-done"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? t('goal.achieved') : t('goal.markachieved')}</button><span class="goal-done-note">${isDone ? t('goal.nicelydone') : t('goal.tickwhen')}</span></div>`;
+    : `<div class="gc-prog gc-prog-slide gc-progress">
+        <div class="gc-prog-nums"><span class="gc-prog-cur">How far along</span><span class="gc-prog-pct gc-pct">${isDone ? '✓' : pctNum + '%'}</span></div>
+        <span class="glist-bar-wrap gc-slidebar" style="--h:${hueOf(a)}"><span class="glist-bar"><i style="width:${isDone ? 100 : pctNum}%"></i></span>${isDone ? '' : `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%" title="Drag to set how far along this goal is">`}</span>
+        <div class="gc-prog-done-row"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? t('goal.achieved') : t('goal.markachieved')}</button><span class="goal-done-note">${isDone ? t('goal.nicelydone') : t('goal.tickwhen')}</span></div>
+      </div>`;
   const focusMins = focusMinsFor('goal', g.id);
   // Preserve the title's focus + caret across a re-render (the viewers fetch, a
   // progress tick, etc. rebuild this pane). Without this, landing on a goal put
