@@ -7303,7 +7303,9 @@ function reviewsDueToday() {
   // (pausedUntil) and drop it once the period's review is submitted.
   return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); if (c.pausedUntil && c.pausedUntil > t) return false; return reviewCadRecent(k, t, true) === t; })
     .map((k) => {
-      const win = periodWindow(k, t);
+      // Key on the CURRENT period, matching the carousel + startReview, so "due
+      // today" and "start" open the one review block for this period.
+      const win = currentPeriodWindow(k, t);
       const exs = (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
       const doneRev = exs.find((r) => (r.props || {}).status === 'done');
       return { k, submitted: !!doneRev, id: (doneRev || exs[0]) ? (doneRev || exs[0]).id : null };
@@ -12748,7 +12750,13 @@ function periodWindow(rtype, anchorISO) {
   const y = (a < new Date(Y, 11, 31)) ? Y - 1 : Y;
   return { from: localISO(new Date(y, 0, 1)), to: localISO(new Date(y, 11, 31)) };
 }
-function reviewPeriod(rtype) { return activeReviewWindow(rtype, todayISO()); }
+// The review a "start/continue" action targets: the CURRENT period (this week /
+// month / quarter / year). This matches the carousel's leftmost card, so every
+// entry point (carousel, Today/Home banner, Reviews page) opens the SAME review
+// block - previously the banner used the just-completed period while the carousel
+// used the current one, so a review started from one place couldn't be found from
+// the other and its answers looked lost. (Robin, 2026-09-27.)
+function reviewPeriod(rtype) { return currentPeriodWindow(rtype, todayISO()); }
 // The period CONTAINING today (this month / quarter / year), as opposed to the
 // just-completed one. A living review of the current stretch.
 // The week CONTAINING today (still in progress), Mon–Sun per the week-start
