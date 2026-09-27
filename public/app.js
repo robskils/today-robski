@@ -13372,13 +13372,16 @@ function pruneDuplicateReviews() {
     // a duplicate isn't lost when that duplicate is removed.
     const wp = winner.props || (winner.props = {});
     const ans = { ...(wp.answers || {}) }, wheel = { ...(wp.wheel || {}) }, notes = { ...(wp.areaNotes || {}) };
-    let changed = false;
+    let changed = false; let bodyChanged = false;
     for (const l of losers) { const lp = l.props || {};
       for (const [i, v] of Object.entries(lp.answers || {})) if (String(v || '').trim() && !String(ans[i] || '').trim()) { ans[i] = v; changed = true; }
       for (const [aid, sc] of Object.entries(lp.wheel || {})) if (sc > 0 && !(wheel[aid] > 0)) { wheel[aid] = sc; changed = true; }
       for (const [aid, v] of Object.entries(lp.areaNotes || {})) if (String(v || '').trim() && !String(notes[aid] || '').trim()) { notes[aid] = v; changed = true; }
+      // The free-write body was previously lost on a merge - fold it in too.
+      if (String(l.body || '').trim() && !String(winner.body || '').trim()) { winner.body = l.body; bodyChanged = true; }
     }
     if (changed) { wp.answers = ans; wp.wheel = wheel; wp.areaNotes = notes; api(`/api/blocks/${winner.id}`, { method: 'PATCH', body: JSON.stringify({ props: { answers: ans, wheel, areaNotes: notes } }) }).catch(() => {}); }
+    if (bodyChanged) api(`/api/blocks/${winner.id}`, { method: 'PATCH', body: JSON.stringify({ body: winner.body }) }).catch(() => {});
     keep.push(winner); losers.forEach((l) => toDelete.push(l));
   }
   if (!toDelete.length) return false;
@@ -13389,9 +13392,13 @@ function pruneDuplicateReviews() {
 const reviewStarting = new Set();
 async function startReview(rtype, winOverride) {
   const { from, to } = (winOverride && winOverride.from && winOverride.to) ? winOverride : reviewPeriod(rtype);
-  // Check against a real, loaded list - a stale/empty state.reviews is how
-  // duplicates for the same period got minted.
-  if (!Array.isArray(state.reviews)) { try { state.reviews = await api('/api/blocks?kind=review'); } catch { state.reviews = []; } }
+  // ALWAYS fetch the current list before deciding to create. state.reviews can be a
+  // stale placeholder `[]` (the Home/Today "due" banner sets it while its own fetch
+  // is still in flight); trusting that array meant "Start" minted a NEW empty review
+  // even though the period's review already existed on the server - so every visit
+  // began from 0. Re-fetching guarantees we find and OPEN the existing one instead.
+  // (Robin, 2026-09-27: reviews kept resetting.)
+  try { const fresh = await api('/api/blocks?kind=review'); if (Array.isArray(fresh)) state.reviews = fresh; } catch { if (!Array.isArray(state.reviews)) state.reviews = []; }
   const findExisting = () => (state.reviews || []).find((r) => (r.props || {}).rtype === rtype && (r.props || {}).to === to);
   const existing = findExisting();
   if (existing) { openReviewCard(existing.id); return; }
