@@ -877,13 +877,14 @@ function labelForView(v) {
     case 'reviews': return t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
     case 'wheel': return 'Wheel of Life';
     case 'toolbox': return t('nav.timer');
+    case 'practices': return t('nav.practices'); case 'practicecard': { const a = (state.practices && state.practices.activities || []).find((x) => String(x.id) === String(state.view && state.view.id)); return (a && a.title) || t('nav.practices'); }
     case 'visioncard': return (state.vision_open && `${state.vision_open.area.title} · Vision`) || 'Vision'; case 'visionwall': return 'The wall';
     default: return 'Home';
   }
 }
 // Detail views resolve to their parent tool for the mobile top-bar title, so a
 // single note reads "Daybook Notes", a contact "Daybook Contacts", etc.
-const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas' };
+const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas', practicecard: 'practices' };
 // The current tool's name for the mobile top bar (blank on Home): shown after the
 // "Daybook" wordmark so the bar reads "Daybook Mail", "Daybook Calendar", ...
 function mobileToolName() {
@@ -913,6 +914,7 @@ function openView(v) {
     case 'card': return openCard();
     case 'admin': return openAdmin();
     case 'practices': return openPractices();
+    case 'practicecard': return openPracticeCard(v.id);
     case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'connect': return openConnect(); case 'daybookpeople': return openDaybookPeople();
@@ -3802,7 +3804,7 @@ function cadenceStreak(daysDesc, cad, today) {
 }
 function savePracticeMarks() { if (!state.practices) return; api('/api/kv/practice_marks', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.practices.marks) }) }).catch(() => {}); }
 const practiceMarked = (id, day) => !!(state.practices && state.practices.marks[`${id}:${day}`]);
-function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'tracker') renderTracker(); else if (v === 'today') renderToday(); else if (v === 'toolbox') renderToolbox(); }
+function rerenderPractices() { const v = state.view.type; if (v === 'home') renderHome(); else if (v === 'practices') renderPractices(); else if (v === 'tracker') renderTracker(); else if (v === 'today') renderToday(); else if (v === 'toolbox') renderToolbox(); else if (v === 'practicecard') renderPracticeCard(); }
 // Practices and Tracker are ONE tool now. Every data-open-practices link lands on
 // the merged view (rename inline, drag to reorder, ✎ for details, tick + streaks).
 async function openPractices() { return openTracker(); }
@@ -3829,7 +3831,7 @@ function practicesManageHtml() {
   const body = ordered.map((g) => {
     const rows = g.items.map((a) => {
       const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
-      return `<div class="pm-row ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><button class="pm-open" data-prc-edit="${a.id}"><span class="pm-name">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<span class="pm-edit" title="Edit">✎</span></button></div>`;
+      return `<div class="pm-row ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><button class="pm-open" data-prc-open="${a.id}"><span class="pm-name">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}</button><button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
@@ -3838,6 +3840,55 @@ function practicesManageHtml() {
     </div>`;
   }).join('');
   return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
+}
+// The 11-char YouTube id from any of its URL shapes (watch, youtu.be, shorts, embed).
+function youtubeId(url) {
+  const m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:[^#]*&)*v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+// Tapping a practice opens its own page: a guide to doing it - an embedded video if
+// it has a YouTube link, your notes, the aim/streak, and anything you've linked.
+// (Robin, 2026-09-27.) Edit (✎) still opens the editor.
+async function openPracticeCard(id) {
+  state.view = { type: 'practicecard', id };
+  renderNav();
+  if (!state.practices) { try { await loadPractices(); } catch {} }
+  if (state.view.type === 'practicecard' && state.view.id === id) renderPracticeCard();
+}
+function renderPracticeCard() {
+  const id = state.view.id;
+  const a = (state.practices && state.practices.activities || []).find((x) => String(x.id) === String(id));
+  const crumb = `<div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
+  if (!a) { $('#pane').innerHTML = `${crumb}<div class="home-empty" style="padding:24px">This practice was not found.</div>`; return; }
+  const ar = practiceArea(a); const hue = ar ? hueOf(ar) : 220;
+  const meta = parsePracticeMeta(a);
+  const yt = youtubeId(a.video);
+  const today = dayKey(new Date());
+  const done = practiceMarked(a.id, today);
+  const streak = practiceStreak(a.id);
+  const aim = a.cadence ? areaCadLabel(a.cadence) : '';
+  const videoHtml = yt
+    ? `<div class="pc-video"><iframe src="https://www.youtube-nocookie.com/embed/${yt}" title="${esc(a.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`
+    : (a.video ? `<a class="add-btn wide pc-dolink" href="${esc(a.video)}" target="_blank" rel="noopener noreferrer">▶ Do it now →</a>` : '');
+  const noteHtml = (a.note && String(a.note).trim()) ? `<section class="pc-sec"><div class="home-sec-h">Notes</div><div class="pc-note prose readonly">${decorateProse(bodyToHtml(a.note))}</div></section>` : '';
+  const noteChips = (meta.notes || []).map((n) => `<button class="tbl-card" data-open-note="${esc(n.id)}"><span class="tc-ic">▤</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
+  const linkChips = (meta.links || []).map((l) => `<a class="tbl-card" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔗</span><span class="tc-t">${esc(l.title || prettyLinkLabel(l.url))}</span></a>`).join('');
+  const contactChips = (meta.contacts || []).map((cid) => { const c = findContact(cid); return c ? `<button class="tbl-card" data-open-contact="${c.id}"><span class="tc-ic">👤</span><span class="tc-t">${esc(c.title || 'Unnamed')}</span></button>` : ''; }).filter(Boolean).join('');
+  const attachHtml = (noteChips || linkChips || contactChips) ? `<section class="pc-sec"><div class="home-sec-h">Linked</div><div class="tbl-cards">${noteChips}${linkChips}${contactChips}</div></section>` : '';
+  const chips = [
+    ar ? `<span class="pc-chip pc-area"><span class="cd"></span>${esc(ar.title)}</span>` : '',
+    (a.timed && a.duration) ? `<span class="pc-chip">${a.duration} min</span>` : (!a.timed ? '<span class="pc-chip">habit</span>' : ''),
+    aim ? `<span class="pc-chip">Aim: ${esc(aim)}</span>` : '',
+    streak ? `<span class="pc-chip">🔥 ${streak}${a.avoid ? ' clean' : ''}</span>` : '',
+  ].filter(Boolean).join('');
+  $('#pane').innerHTML = `${crumb}
+    <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1>
+      <div class="pc-head-act"><button class="ghost" data-prc-edit="${a.id}" title="Edit this practice">✎ Edit</button></div></div>
+    ${chips ? `<div class="pc-meta">${chips}</div>` : ''}
+    ${videoHtml}
+    <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button></div>
+    ${noteHtml}
+    ${attachHtml}`;
 }
 function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
 // Inline rename from the merged Practices tool: click the name, type, Enter/blur.
@@ -3928,7 +3979,7 @@ function practicesGroups(withWeek) {
       const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? '<span class="prc-badge">🎥</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
       return `<div class="prc-row ${a.avoid ? 't2-avoid' : ''}">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-        <span class="prc-name">${esc(a.title)}${badges}${withWeek ? '' : len}</span>
+        <button class="prc-name prc-name-btn" data-prc-open="${a.id}">${esc(a.title)}${badges}${withWeek ? '' : len}</button>
         ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}${a.avoid ? ' clean' : ''}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
@@ -15718,6 +15769,7 @@ document.addEventListener('click', (e) => {
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
   { const na = t.closest('[data-prc-new-area]'); if (na) { openPracticeEditor(null, na.dataset.prcNewArea); return; } }
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
+  { const po = t.closest('[data-prc-open]'); if (po) { openPracticeCard(po.dataset.prcOpen); return; } }
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }

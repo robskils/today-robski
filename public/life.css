@@ -3339,6 +3339,24 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .pm-edit { flex:none; font-size:15px; color:var(--ink-4,var(--ink-3)); }
 .pm-open:hover .pm-name { color:var(--accent); }
 .pm-open:hover .pm-edit { color:var(--accent); }
+.pm-edit-btn { flex:none; background:none; border:0; cursor:pointer; font-size:15px; color:var(--ink-3); padding:8px 6px; border-radius:8px; }
+.pm-edit-btn:hover { color:var(--accent); background:var(--paper-2); }
+/* Tracker-grid practice name is a button that opens the practice's guide page. */
+.prc-name-btn { background:none; border:0; font:inherit; text-align:left; cursor:pointer; padding:0; color:var(--ink); }
+.prc-name-btn:hover { color:var(--accent); }
+/* Practice guide page: embedded video, notes, aim, streak. */
+.pc-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.pc-head-act { flex:none; }
+.pc-meta { display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 16px; }
+.pc-chip { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink-2); background:var(--paper-2); border-radius:999px; padding:4px 12px; }
+.pc-chip.pc-area .cd { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); display:inline-block; }
+.pc-video { position:relative; width:100%; aspect-ratio:16/9; border-radius:16px; overflow:hidden; margin:4px 0 18px; background:#000; box-shadow:var(--shadow); }
+.pc-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.pc-dolink { max-width:340px; margin:4px 0 18px; }
+.pc-tickrow { margin:0 0 20px; }
+.pc-tick.on { background:var(--done); border-color:var(--done); }
+.pc-sec { margin-top:20px; }
+.pc-note { color:var(--ink); }
 .pm-row.mdragging { position:relative; z-index:20; background:var(--card); border-radius:8px; box-shadow:0 12px 28px -14px rgba(0,0,0,.5); }
 .pm-row.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
 .pm-row.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
