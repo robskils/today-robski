@@ -14909,6 +14909,7 @@ function renderNote() {
       <span class="crumb-tools">${noteAreasControl(n)}
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
+      ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-tidy ghost note-hide-mobile" data-note-tidy data-tip="Tidy the spacing - even out blank lines" aria-label="Tidy the spacing">Tidy</button>`}
       ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
       <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
