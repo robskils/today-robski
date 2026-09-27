@@ -683,24 +683,36 @@ async function syncOneInbox(env, acct) {
     const unseen = total ? await im.unseenCount() : 0;
     // Message-ids we already had. An unseen one that's new to us is a genuine
     // arrival. Skip the very first population of an account (would flood).
-    const prev = await env.DB.prepare("SELECT message_id FROM mail_cache WHERE account=? AND mailbox='INBOX'").bind(acct.id).all();
+    const prev = await env.DB.prepare("SELECT message_id, seen FROM mail_cache WHERE account=? AND mailbox='INBOX'").bind(acct.id).all();
     const known = new Set((prev.results || []).map((r) => r.message_id).filter(Boolean));
+    // Once we've recorded a message as read, keep it read. Some servers - Gmail
+    // especially - are slow or flaky at reflecting an IMAP \Seen back on a re-fetch,
+    // so a plain re-read would flip an email you'd already opened back to unread
+    // every minute. "Read is sticky": a message we knew as seen stays seen even if
+    // this fetch reports it unseen. (A genuinely new message-id uses the server's
+    // own flag.) This is why opened Gmail mail kept re-appearing as unopened.
+    const prevSeen = new Map((prev.results || []).filter((r) => r.message_id).map((r) => [r.message_id, !!r.seen]));
     // Resilience: a SELECT that comes back empty is almost always a hiccup (a
     // throttled connection, a half-open socket), not a genuinely emptied inbox.
     // If we had messages a moment ago, keep the last known-good rather than
     // wiping the cache to nothing (which is what made Mail look "all gone").
     if (!msgs.length && known.size > 0) return { account: acct.id, newUnread: 0, unseen: known.size, kept: true };
+    const seenOf = (m) => m.seen || (m.messageId && prevSeen.get(m.messageId) === true);
     const newUnread = known.size === 0 ? 0 : msgs.filter((m) => !m.seen && m.messageId && !known.has(m.messageId)).length;
+    // Effective unread: the server's inbox unseen count, minus messages it reports
+    // unseen that we already know are read (stuck), so the badge stays honest.
+    const stickyReads = msgs.filter((m) => !m.seen && m.messageId && prevSeen.get(m.messageId) === true).length;
+    const effUnseen = Math.max(0, unseen - stickyReads);
     const nowIso = new Date().toISOString();
     const stmts = [env.DB.prepare('DELETE FROM mail_cache WHERE account=? AND mailbox=?').bind(acct.id, 'INBOX')];
     for (const m of msgs) {
       stmts.push(env.DB.prepare(
         'INSERT INTO mail_cache (account,mailbox,uid,subject,from_addr,from_name,date,seen,flagged,message_id,in_reply_to,refs,preview,synced_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      ).bind(acct.id, 'INBOX', m.uid, m.subject || '', (m.from && m.from.address) || '', (m.from && m.from.name) || '', m.date || '', m.seen ? 1 : 0, m.flagged ? 1 : 0, m.messageId || '', m.inReplyTo || '', JSON.stringify(m.references || []), m.preview || '', nowIso));
+      ).bind(acct.id, 'INBOX', m.uid, m.subject || '', (m.from && m.from.address) || '', (m.from && m.from.name) || '', m.date || '', seenOf(m) ? 1 : 0, m.flagged ? 1 : 0, m.messageId || '', m.inReplyTo || '', JSON.stringify(m.references || []), m.preview || '', nowIso));
     }
-    stmts.push(env.DB.prepare('INSERT INTO mail_cache_meta (account,mailbox,unseen,synced_at) VALUES (?,?,?,?) ON CONFLICT(account,mailbox) DO UPDATE SET unseen=excluded.unseen, synced_at=excluded.synced_at').bind(acct.id, 'INBOX', unseen, nowIso));
+    stmts.push(env.DB.prepare('INSERT INTO mail_cache_meta (account,mailbox,unseen,synced_at) VALUES (?,?,?,?) ON CONFLICT(account,mailbox) DO UPDATE SET unseen=excluded.unseen, synced_at=excluded.synced_at').bind(acct.id, 'INBOX', effUnseen, nowIso));
     await env.DB.batch(stmts);
-    return { account: acct.id, newUnread, unseen };
+    return { account: acct.id, newUnread, unseen: effUnseen };
   } finally { try { await im.logout(); } catch {} }
 }
 async function readCachedInbox(env, accountIds) {
@@ -952,7 +964,19 @@ export async function handleMail(request, env, url, json, err) {
           for (const m of messages.filter(isBlocked)) { try { await im.move(m.uid, 'Junk'); } catch {} }
           messages = messages.filter((m) => !isBlocked(m));
         }
-        const unseenTotal = mailbox === 'INBOX' ? await im.unseenCount() : 0;
+        let unseenTotal = mailbox === 'INBOX' ? await im.unseenCount() : 0;
+        // Read is sticky (see syncOneInbox): a live refresh must not flip a message
+        // you've already opened back to unread just because the server (Gmail) is
+        // slow to reflect the \Seen flag. Force seen from what we've recorded read.
+        if (/^INBOX$/i.test(mailbox) && !flagged && !unseen) {
+          try {
+            const cachedSeen = await env.DB.prepare("SELECT message_id FROM mail_cache WHERE account=? AND mailbox='INBOX' AND seen=1").bind(acct.id).all();
+            const readSet = new Set((cachedSeen.results || []).map((r) => r.message_id).filter(Boolean));
+            let stuck = 0;
+            messages = messages.map((m) => { if (!m.seen && m.messageId && readSet.has(m.messageId)) { stuck++; return { ...m, seen: true }; } return m; });
+            unseenTotal = Math.max(0, unseenTotal - stuck);
+          } catch {}
+        }
         return json({ total, unseen: unseenTotal, offset, messages }, request);
       } finally { await im.logout(); }
     }
