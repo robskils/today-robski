@@ -874,7 +874,9 @@ button { cursor:pointer; background:none; border:0; }
 .gr-scorewrap { position:relative; flex:1; min-width:70px; display:flex; align-items:center; height:16px; }
 .gr-scoretrack { flex:1; height:6px; border-radius:999px; background:var(--paper-2); overflow:hidden; }
 .gr-scoretrack > i { display:block; height:100%; background:hsl(var(--h,220) 55% 55%); border-radius:999px; }
-.gr-note { width:100%; max-width:none; font-size:14.5px; padding:9px 12px; resize:vertical; min-height:52px; line-height:1.45; margin-top:auto; }
+/* .gr-goal prefix beats the late `.sel { max-width:180px }` rule, which would
+   otherwise cap this comment box (equal specificity, defined later). */
+.gr-goal .gr-note { width:100%; max-width:none; box-sizing:border-box; font-size:14.5px; padding:9px 12px; resize:vertical; min-height:52px; line-height:1.45; margin-top:auto; }
 /* Life-area sentiment, carried from the last wheel score */
 .area-sentiment { display:inline-flex; align-items:center; gap:10px; margin:2px 0 6px; padding:6px 13px; border-radius:999px; background:color-mix(in srgb,var(--as-c,var(--ink-3)) 12%,var(--card)); border:1px solid color-mix(in srgb,var(--as-c,var(--ink-3)) 30%,transparent); }
 .area-sentiment .as-dots { letter-spacing:2px; color:var(--as-c,var(--ink-3)); font-size:12px; }
