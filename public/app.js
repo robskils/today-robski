@@ -7370,12 +7370,13 @@ function reviewsDueToday() {
 // Loads the cadence + reviews lazily and re-renders Home when they arrive.
 function homeReviewDueBanner() {
   if (!state.reviewRem) { api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'home') renderHome(); }).catch(() => {}); return ''; }
-  const due = reviewsDueToday();
-  if (!due.length) return '';
+  // Load reviews so 'submitted' is accurate before we decide what to show.
   if (state.reviews === undefined) { state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'home') renderHome(); }).catch(() => {}); }
-  return due.map((d) => d.submitted
-    ? `<button class="t2-reviewdone" ${d.id ? `data-open-review="${d.id}"` : ''}><span class="t2-rd-ic">✓</span><span class="t2-rd-body"><b>${esc(REVIEWS[d.k].label)} review submitted</b><small>Nicely done - tap to look back over it.</small></span><span class="t2-rd-go">→</span></button>`
-    : `<button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
+  // Only nudge for reviews NOT yet submitted - once you've filed it, the Home
+  // notification disappears entirely (no lingering 'submitted' note). (Robin.)
+  const due = reviewsDueToday().filter((d) => !d.submitted);
+  if (!due.length) return '';
+  return due.map((d) => `<button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
 }
 // The Tracker is its own tool now (its own view), not a tab of the planner.
 // Same t2TrackerHtml render, standalone with its own crumb.
