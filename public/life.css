@@ -4823,14 +4823,16 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Eisenhower quadrant cards above the inbox: a 2x2 grid on mobile, a row on
    wider screens. Each carries a colour dot, its meaning and a live count. */
 .mail-quads { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin:0 0 16px; }
-.mail-quad { display:flex; align-items:center; gap:11px; text-align:left; padding:13px 15px; border-radius:14px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink); transition:border-color .12s,transform .12s,box-shadow .12s; min-width:0; }
+.mail-quad { position:relative; display:flex; align-items:center; gap:11px; text-align:left; padding:13px 15px; border-radius:14px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink); transition:border-color .12s,transform .12s,box-shadow .12s; min-width:0; }
 .mail-quad:hover { transform:translateY(-1px); box-shadow:0 8px 20px -12px rgba(0,0,0,.34); }
 .mail-quad.on { border-color:var(--q); box-shadow:0 0 0 1px var(--q) inset, var(--shadow); }
 .mail-quad-dot { flex:none; width:11px; height:11px; border-radius:50%; background:var(--q); }
-.mail-quad-main { display:flex; flex-direction:column; min-width:0; gap:1px; }
+.mail-quad-main { display:flex; flex-direction:column; min-width:0; gap:1px; padding-right:24px; }
 .mail-quad-l { font-size:16px; font-weight:600; line-height:1.15; }
 .mail-quad-h { font-size:12px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mail-quad-c { flex:none; margin-left:auto; font-size:14px; font-weight:700; color:var(--ink-2); background:var(--paper-2); border-radius:999px; padding:2px 9px; }
+/* The count sits in the top-right corner so it never eats into the label. */
+.mail-quad-c { position:absolute; top:7px; right:8px; font-size:12.5px; font-weight:700; color:var(--ink-2); background:var(--paper-2); border-radius:999px; padding:1px 7px; line-height:1.55; }
+.mail-quad.on .mail-quad-c { color:var(--q); background:color-mix(in srgb,var(--q) 15%,var(--card)); }
 /* Quadrant hues (work in both themes). */
 .mail-quad-urgent { --q:#d9483b; } .mail-quad-important { --q:#e08a1e; }
 .mail-quad-chilled { --q:#3e9b6c; } .mail-quad-others { --q:#8b8177; }
