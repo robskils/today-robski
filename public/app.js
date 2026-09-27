@@ -7355,7 +7355,8 @@ function reviewsDueToday() {
   // alerts are switched on for it - Today is the plan-your-day surface, so it
   // informs rather than interrupts. We still honour an explicit snooze
   // (pausedUntil) and drop it once the period's review is submitted.
-  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); if (c.pausedUntil && c.pausedUntil > t) return false; return reviewCadRecent(k, t, true) === t; })
+  const dismissed = reviewDismissedToday();
+  return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); if (c.pausedUntil && c.pausedUntil > t) return false; if (dismissed.has(k)) return false; return reviewCadRecent(k, t, true) === t; })
     .map((k) => {
       // Key on the CURRENT period, matching the carousel + startReview, so "due
       // today" and "start" open the one review block for this period.
@@ -7363,20 +7364,33 @@ function reviewsDueToday() {
       const exs = (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
       const doneRev = exs.find((r) => (r.props || {}).status === 'done');
       return { k, submitted: !!doneRev, id: (doneRev || exs[0]) ? (doneRev || exs[0]).id : null };
-    });
+    })
+    // Never nag once submitted, and honour a for-today dismissal.
+    .filter((d) => !d.submitted);
 }
-// The same review-due banner the Today page shows, for the Home Today section - so a
-// review due today surfaces on the homepage too, not only in the morning email.
-// Loads the cadence + reviews lazily and re-renders Home when they arrive.
+// A review-due reminder is a "today" nudge: dismissing it hides it for the rest of
+// today (per review type); it comes back on its next due day. (Robin, 2026-09-27.)
+function reviewDismissedToday() {
+  try { const o = JSON.parse(localStorage.getItem('life.review.dismissed') || '{}'); if (o && o.date === todayISO()) return new Set(o.keys || []); } catch {}
+  return new Set();
+}
+function reviewDismiss(k) {
+  const s = reviewDismissedToday(); s.add(k);
+  try { localStorage.setItem('life.review.dismissed', JSON.stringify({ date: todayISO(), keys: [...s] })); } catch {}
+  if (state.view.type === 'home') renderHome(); else if (state.view.type === 'today') renderToday();
+}
+// One review-due banner row: the "Start" button plus an × to dismiss it for today.
+function reviewDueBannerHtml() {
+  const due = reviewsDueToday();
+  if (!due.length) return '';
+  return due.map((d) => `<div class="t2-reviewdue-wrap"><button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button><button class="t2-rd-x" data-review-dismiss="${d.k}" title="Dismiss for today" aria-label="Dismiss for today">×</button></div>`).join('');
+}
+// The Home Today section reminder - loads cadence + reviews lazily, then shows the
+// shared banner (nothing once submitted or dismissed).
 function homeReviewDueBanner() {
   if (!state.reviewRem) { api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'home') renderHome(); }).catch(() => {}); return ''; }
-  // Load reviews so 'submitted' is accurate before we decide what to show.
   if (state.reviews === undefined) { state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'home') renderHome(); }).catch(() => {}); }
-  // Only nudge for reviews NOT yet submitted - once you've filed it, the Home
-  // notification disappears entirely (no lingering 'submitted' note). (Robin.)
-  const due = reviewsDueToday().filter((d) => !d.submitted);
-  if (!due.length) return '';
-  return due.map((d) => `<button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
+  return reviewDueBannerHtml();
 }
 // The Tracker is its own tool now (its own view), not a tab of the planner.
 // Same t2TrackerHtml render, standalone with its own crumb.
@@ -7408,15 +7422,12 @@ function renderToday() {
   // Always show the day + date; when it's today, lead with "Today" and set the date beside it.
   const h1 = isToday ? `${t('nav.today')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel);
   const nav = `<span class="t2-nav">${!isToday ? `<button class="t2-navbtn" data-t2-today>${t('nav.today')}</button>` : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
-  const dueReviews = isToday ? reviewsDueToday() : [];
-  // If a review is due today but we haven't loaded reviews yet, fetch them once so
-  // the banner can tell "due" from "already submitted".
-  if (dueReviews.length && state.reviews === undefined) {
+  // Load reviews once so the banner knows what's already submitted (it then shows
+  // nothing for a filed review), then use the shared builder (Start + dismiss ×).
+  if (isToday && state.reviews === undefined) {
     state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'today') renderToday(); }).catch(() => {});
   }
-  const dueBanner = dueReviews.map((d) => d.submitted
-    ? `<button class="t2-reviewdone" ${d.id ? `data-open-review="${d.id}"` : ''}><span class="t2-rd-ic">✓</span><span class="t2-rd-body"><b>${esc(REVIEWS[d.k].label)} review submitted</b><small>Nicely done - tap to look back over it.</small></span><span class="t2-rd-go">→</span></button>`
-    : `<button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
+  const dueBanner = isToday ? reviewDueBannerHtml() : '';
   $('#pane').innerHTML = `
     ${pageCrumb('Today')}
     <div class="pane-head t2-head"><h1>${h1}</h1>${nav}</div>
@@ -13948,6 +13959,8 @@ function renderReviewCard() {
             : `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`}` : ''}
     </section>
 
+    ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
+
     ${(() => {
       const answered = cfg.prompts.filter((q, i) => String((p.answers || {})[i] || '').trim()).length;
       const wheelScored = Object.values(p.wheel || {}).filter((v) => v > 0).length;
@@ -13981,8 +13994,6 @@ function renderReviewCard() {
            <div class="rv-freewrite"><div class="rv-freewrite-h">✎ Anything else on your mind</div>${notesSection(r.body, 'review', r.id)}</div>`}</div>
     </section>`;
     })()}
-
-    ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
 
     <div class="rv-finish">${st === 'done'
       ? `<span class="rv-done-badge">✓ Submitted${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="add-btn wide" data-review-report>View report</button>`
@@ -15770,7 +15781,7 @@ document.addEventListener('click', (e) => {
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
   { const na = t.closest('[data-prc-new-area]'); if (na) { openPracticeEditor(null, na.dataset.prcNewArea); return; } }
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
-  { const po = t.closest('[data-prc-open]'); if (po) { openPracticeCard(po.dataset.prcOpen); return; } }
+  { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, [data-prc-tick], [data-prc-edit], [data-prc-del]')) { if (Date.now() - (typeof t2SuppressClick !== 'undefined' ? t2SuppressClick : 0) < 350) return; openPracticeCard(po.dataset.prcOpen); return; } }
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
@@ -15790,7 +15801,7 @@ document.addEventListener('click', (e) => {
   { const pr = t.closest('[data-t2-prio]'); if (pr) { const s = state.today.taskPrios instanceof Set ? state.today.taskPrios : (state.today.taskPrios = new Set()); const p = pr.dataset.t2Prio; if (s.has(p)) s.delete(p); else s.add(p); renderToday(); return; } }
   { const pr = t.closest('[data-t2-pracprio]'); if (pr) { const s = state.today.pracPrios instanceof Set ? state.today.pracPrios : (state.today.pracPrios = new Set()); const p = pr.dataset.t2Pracprio; if (s.has(p)) s.delete(p); else s.add(p); renderToday(); return; } }
   { const ff = t.closest('[data-t2-filter]'); if (ff) { const k = ff.dataset.t2Filter; if (k === 'task') state.today.taskFilterOpen = !state.today.taskFilterOpen; else state.today.pracFilterOpen = !state.today.pracFilterOpen; renderToday(); return; } }
-  { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, button')) { if (Date.now() - t2SuppressClick < 350) return; openPracticeEditor(po.dataset.prcOpen); return; } }
+  // (Practice open is handled once, above, opening the guide card - not the editor.)
   { const td = t.closest('[data-t2-day]'); if (td) { const dd = new Date(state.today.day + 'T00:00'); dd.setDate(dd.getDate() + Number(td.dataset.t2Day)); loadToday(ymd(dd.getFullYear(), dd.getMonth(), dd.getDate())); return; } }
   if (t.closest('[data-t2-today]')) { loadToday(todayISO()); return; }
   { const pp = t.closest('[data-t2-place-prac]'); if (pp) { t2PlacePractice(pp.dataset.t2PlacePrac); return; } }
@@ -15898,6 +15909,7 @@ document.addEventListener('click', (e) => {
   { const gat = t.closest('[data-goal-area-toggle]'); if (gat) { toggleGoalArea(gat.dataset.goalAreaToggle); return; } }
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
+  { const rdx = t.closest('[data-review-dismiss]'); if (rdx) { e.preventDefault(); e.stopPropagation(); reviewDismiss(rdx.dataset.reviewDismiss); return; } }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   { const srp = t.closest('[data-start-review-period]'); if (srp) { const [k, from, to] = srp.dataset.startReviewPeriod.split('|'); startReview(k, { from, to }).catch((x) => toast(x.message)); return; } }
   const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemOpen = state.reviewRemOpen || {}; state.reviewRemOpen[k] = !state.reviewRemOpen[k]; reReviewRems(); return; }

@@ -795,6 +795,11 @@ button { cursor:pointer; background:none; border:0; }
 .t2-reviewdue { width:100%; display:flex; align-items:center; gap:12px; text-align:left; margin:0 0 14px; padding:13px 16px; border-radius:14px; cursor:pointer;
   background:color-mix(in srgb,var(--accent) 8%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line)); box-shadow:var(--shadow); }
 .t2-reviewdue:hover { border-color:var(--accent); }
+/* The reminder + its dismiss × sit on one row. */
+.t2-reviewdue-wrap { display:flex; align-items:stretch; gap:8px; margin:0 0 14px; }
+.t2-reviewdue-wrap .t2-reviewdue { flex:1; margin:0; }
+.t2-rd-x { flex:none; width:44px; border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line)); border-radius:14px; background:var(--card); color:var(--ink-3); font-size:22px; line-height:1; cursor:pointer; }
+.t2-rd-x:hover { color:var(--ink); border-color:var(--line-2); background:var(--paper-2); }
 /* Submitted-today: a calm green confirmation instead of the nag. */
 .t2-reviewdone { width:100%; display:flex; align-items:center; gap:12px; text-align:left; margin:0 0 14px; padding:13px 16px; border-radius:14px; cursor:pointer; background:color-mix(in srgb,var(--done) 9%,var(--card)); border:1px solid color-mix(in srgb,var(--done) 34%,var(--line)); box-shadow:var(--shadow); }
 .t2-reviewdone:hover { border-color:var(--done); }
@@ -1372,6 +1377,11 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 /* Review section headers stand out in the highlight (accent) colour. (Robin.) */
 .home-sec-h.rv-collap-h, .home-sec-h.rv-collap-h .acw-chev { color:var(--accent); }
 .rvcar-rowl { color:var(--accent); }
+/* Inside a review card, EVERY section title is in the highlight colour and a touch
+   bigger, not grey. (Robin, 2026-09-27.) */
+body[data-view="reviewcard"] .home-sec-h { color:var(--accent); font-size:15.5px; }
+body[data-view="reviewcard"] .home-sec-h .acw-chev { color:var(--accent); }
+body[data-view="reviewcard"] .rv-freewrite-h { color:var(--accent); }
 /* Reflect: one box per question, with room to think. */
 .rv-qa { display:flex; flex-direction:column; gap:16px; margin:6px 0 20px; }
 .rv-qa { counter-reset:rvq; }
