@@ -7413,18 +7413,25 @@ function reviewsDueToday() {
   const dismissed = reviewDismissedToday();
   return RTYPE_ORDER.filter((k) => { const c = reviewCad(k); if (c.pausedUntil && c.pausedUntil > t) return false; if (dismissed.has(k)) return false; return reviewCadRecent(k, t, true) === t; })
     .map((k) => {
-      // Key on the CURRENT period, matching the carousel + startReview, so "due
-      // today" and "start" open the one review block for this period.
+      // A review "for the current period" is one whose period ENDS on or after this
+      // period's start - tolerant of slightly different end-date maths and of blocks
+      // created under an older week-window. Keying on an EXACT `to` match was why a
+      // review you'd already submitted still nagged you to Start. (Robin, 2026-09-27.)
       const win = currentPeriodWindow(k, t);
       const ofType = (state.reviews || []).filter((r) => (r.props || {}).rtype === k);
-      const exs = ofType.filter((r) => (r.props || {}).to === win.to);
-      const doneRev = exs.find((r) => (r.props || {}).status === 'done');
-      // Already got one on the go? Don't nag to START. Prefer this period's
-      // in-progress review, else the most recent unfinished one of the type (covers
-      // a review created under an older week-window before the period fix).
-      const prog = exs.find((r) => (r.props || {}).status === 'inprogress')
+      const forPeriod = ofType.filter((r) => { const to = (r.props || {}).to; return to && to >= win.from; })
+        .sort((a, b) => String((b.props || {}).to || '').localeCompare(String((a.props || {}).to || '')));
+      const doneRev = forPeriod.find((r) => (r.props || {}).status === 'done');
+      // Belt-and-braces: also treat it as done if ANY review of this type was
+      // submitted within the current period by date (doneAt / to / created) - so a
+      // review you finished recently never nags, even if its stored window differs.
+      const periodDays = { weekly: 7, monthly: 31, quarterly: 92, yearly: 366 }[k] || 7;
+      const recentDone = doneRev || ofType.some((r) => { const q = r.props || {}; if (q.status !== 'done') return false; const when = q.doneAt || q.to || r.created_at; if (!when) return false; const days = Math.round((Date.parse(t) - Date.parse(String(when).slice(0, 10))) / 86400000); return days >= -1 && days < periodDays; });
+      // Already got one on the go? Continue it, never a fresh Start. Prefer this
+      // period's in-progress review, else the most recent unfinished one of the type.
+      const prog = forPeriod.find((r) => (r.props || {}).status === 'inprogress')
         || ofType.filter((r) => (r.props || {}).status === 'inprogress').sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0];
-      return { k, submitted: !!doneRev, inprogress: !doneRev && !!prog, id: (doneRev || prog || exs[0]) ? (doneRev || prog || exs[0]).id : null };
+      return { k, submitted: !!recentDone, inprogress: !recentDone && !!prog, id: (doneRev || prog || forPeriod[0]) ? (doneRev || prog || forPeriod[0]).id : null };
     })
     // Never nag once submitted, and honour a for-today dismissal.
     .filter((d) => !d.submitted);
