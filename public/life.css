@@ -587,7 +587,7 @@ button { cursor:pointer; background:none; border:0; }
 .goal-card:hover { border-color:var(--accent); border-left-color:var(--c); }
 .gc-top { display:flex; align-items:flex-start; gap:9px; }
 .gc-focus { color:var(--gold); flex:none; }
-.gc-title { flex:1; min-width:0; font-size:17px; font-weight:600; line-height:1.25; }
+.gc-top .gc-title { flex:1; min-width:0; font-size:16px; font-weight:600; line-height:1.3; font-family:inherit; }
 .gc-status { flex:none; font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; background:var(--paper-2); color:var(--ink-3); white-space:nowrap; }
 .gc-status.s-active { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
 .gc-status.s-done { color:var(--done); background:color-mix(in srgb,var(--done) 16%,transparent); }
@@ -900,6 +900,7 @@ button { cursor:pointer; background:none; border:0; }
 .rvg-pct { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .rvg-goal-m { font-size:12.5px; color:var(--ink-3); margin-top:-2px; }
 .rvg-intro { font-size:13.5px; color:var(--ink-3); line-height:1.5; margin:2px 0 12px; }
+.rvg-hcount { font-size:12px; font-weight:400; color:var(--ink-3); text-transform:none; letter-spacing:0; }
 /* Editable focus controls: a number goal's current value, or a done tick. */
 .rvg-num { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .rvg-num-l { font-size:13px; color:var(--ink-3); }

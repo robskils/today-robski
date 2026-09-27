@@ -14120,8 +14120,10 @@ function wheelRestore() {
 // current progress, each a tap away. A gentle "still the right focus?" nudge.
 function weeklyGoalsGlance() {
   const active = (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active');
+  // Show ALL active goals, starred (focus) ones first - not only the starred few.
+  // (Robin, 2026-09-27.)
+  const list = active.slice().sort((a, b) => (gp(b).focus ? 1 : 0) - (gp(a).focus ? 1 : 0));
   const focused = active.filter((g) => gp(g).focus);
-  const list = (focused.length ? focused : active).slice(0, 5);
   if (!list.length) return '';
   const r = state.review_open && state.review_open.review;
   const gr = (r && r.props && r.props.goalReview) || {};   // reuse the goal-review note store
@@ -14142,8 +14144,8 @@ function weeklyGoalsGlance() {
       <input class="rvg-note" data-goalrev-note="${esc(g.id)}" value="${esc(note)}" placeholder="A line on how this went this week…" autocomplete="off">
     </div>`;
   }).join('');
-  return `<section class="rv-goals-glance"><div class="home-sec-h">${focused.length ? 'Your focus' : 'Your goals'}</div>
-    <p class="rvg-intro">The bar is how far along each goal is. Move it on right here - type the new number (or tick a simple goal done) - and add a line on how it went.</p>
+  return `<section class="rv-goals-glance"><div class="home-sec-h">Your goals${focused.length ? ` <span class="rvg-hcount">· ${focused.length} starred first</span>` : ''}</div>
+    <p class="rvg-intro">The bar is how far along each goal is. Move it right here - slide it, type the new number, or tick a simple goal done - and add a line on how it went.</p>
     <div class="rvg-list rvg-goals">${rows}</div></section>`;
 }
 // Update a goal's current number from inside a review: patch it (debounced) and
