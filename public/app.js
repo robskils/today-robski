@@ -14910,7 +14910,6 @@ function renderNote() {
       <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
       <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
       ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-      <button class="note-lock ghost note-hide-mobile ${n.props && n.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="note:${n.id}" data-tip="${n.props && n.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${n.props && n.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${n.props && n.props.noSearch ? '🙈' : '🔍'}</button>
       <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
@@ -15358,8 +15357,8 @@ function buildPalette() {
   const q = state.pal.q.trim();
   if (!q) {
     state.pal.items = [...ACTIONS,
-      ...state.noteTops.filter((n) => !(n.props && n.props.noSearch)).slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
-      ...state.tables.filter((t) => !(t.props && t.props.noSearch)).slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' })),
+      ...state.noteTops.slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
+      ...state.tables.slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' })),
       ...state.areas.slice(0, 6).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }))];
     state.pal.sel = 0; renderPalItems(); return;
   }
@@ -15374,7 +15373,7 @@ function buildPalette() {
       // A life area is a whole corner of your life, so a matching one should always
       // be near the top - even if the worker's row cap dropped it. Inject matching
       // areas locally (from state.areas) and merge with the worker hits, deduped.
-      const areaHits = (state.areas || []).filter((a) => (a.title || '').toLowerCase().includes(ql) && !(a.props && a.props.noSearch)).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }));
+      const areaHits = (state.areas || []).filter((a) => (a.title || '').toLowerCase().includes(ql)).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }));
       const seen = new Set(areaHits.map((a) => a.id));
       const merged = [...areaHits, ...hits.filter((h) => !seen.has(h.id))];
       // Rank: an exact title match first, then a title that STARTS with what you
@@ -18001,7 +18000,6 @@ function renderTaskCard() {
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
       <span class="crumb-tools">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
-      ${t.sharedBy ? '' : `<button class="note-lock ghost ${t.props.noSearch ? 'on' : ''}" data-block-nosearch-btn="task:${t.id}" data-tip="${t.props.noSearch ? 'Hidden from search - tap to unhide' : 'Hide from search'}" aria-label="${t.props.noSearch ? 'Hidden from search results' : 'Hide from search results'}">${t.props.noSearch ? '🙈' : '🔍'}</button>`}
       ${shareBtn(t, 'task')}
       ${t.sharedBy ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a friend">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
       ${t.sharedBy ? '' : '<button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button>'}</span></div>

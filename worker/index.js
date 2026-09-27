@@ -1833,7 +1833,6 @@ async function searchBlocks(request, env, url) {
   // Title + body covers names and note/task bodies; row cells live in props.values
   // (JSON), searched only for rows so internal flags on other kinds don't match.
   const TAIL = `AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
-        AND COALESCE(json_extract(props, '$.noSearch'), 0) = 0
         AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo', 'txn', 'tracker', 'insight')
       ORDER BY CASE kind WHEN 'area' THEN 0 WHEN 'goal' THEN 1 WHEN 'contact' THEN 2 WHEN 'note' THEN 3 WHEN 'table' THEN 4 WHEN 'task' THEN 5 WHEN 'row' THEN 6 ELSE 7 END, updated_at DESC
       LIMIT 60`;
