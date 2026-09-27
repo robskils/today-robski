@@ -9457,6 +9457,9 @@ const MAIL_ICO = {
   sparkle: mIco('<path d="M12 3.6l1.7 4.9 4.9 1.7-4.9 1.7L12 16.7l-1.7-4.8L5.4 10l4.9-1.7z"/>', true),
   task: mIco('<rect x="4.5" y="4.5" width="15" height="15" rx="3.5"/><path d="M8.4 12.3l2.4 2.4 4.8-5.4"/>'),
   area: mIco('<path d="M12 3.6l8.4 8.4-8.4 8.4L3.6 12z"/>'),   // the ◈ life-area diamond, as a line icon
+  note: mIco('<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>'),   // a lined page
+  transform: mIco('<path d="M4 8h11l-3-3M20 16H9l3 3"/>'),   // convert / turn into…
+  caret: mIco('<path d="M7 10l5 5 5-5"/>'),
   vip: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>'),        // person outline
   vipOn: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>', true), // filled = this sender is a VIP
 };
@@ -9708,7 +9711,12 @@ function renderMail(loading) {
     // "capture into Daybook" actions (file in a life area, make a task), the AI
     // draft, and the rare spam/block last. On mobile the whole bar wraps so none
     // of these hide off-screen (the life-area button used to scroll out of view).
-    const msgActs = `<button class="ghost mail-act-ic" data-mail-reply title="Reply  ·  R">${MAIL_ICO.reply}</button><button class="ghost mail-act-ic" data-mail-reply-all title="Reply all  ·  A">${MAIL_ICO.replyAll}</button><button class="ghost mail-act-ic" data-mail-forward title="Forward  ·  F">${MAIL_ICO.forward}</button><button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic mail-vip-btn ${o.from && isVipAddr(o.from.address) ? 'on' : ''}" data-mail-vip="${esc(o.from ? o.from.address : '')}" title="${o.from && isVipAddr(o.from.address) ? 'Important sender - tap to remove' : 'Mark as an important sender'}">${o.from && isVipAddr(o.from.address) ? MAIL_ICO.vipOn : MAIL_ICO.vip}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button><button class="ghost mail-act-ic" data-mail-task title="Make a task from this email">${MAIL_ICO.task}</button><button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>`;
+    // Reply is a dropdown that defaults to Reply all, with "Reply to sender" and
+    // Forward beneath it. Transform is a dropdown to turn the email into a task or a
+    // note. Both are native <details> so they need no extra state.
+    const replyDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Reply">${MAIL_ICO.replyAll}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-reply-all>${MAIL_ICO.replyAll}<span>Reply to all</span></button><button class="mail-dd-item" data-mail-reply>${MAIL_ICO.reply}<span>Reply to sender</span></button><button class="mail-dd-item" data-mail-forward>${MAIL_ICO.forward}<span>Forward</span></button></div></details>`;
+    const xformDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Turn this email into…">${MAIL_ICO.transform}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-task>${MAIL_ICO.task}<span>Make a task</span></button><button class="mail-dd-item" data-mail-note>${MAIL_ICO.note}<span>Make a note</span></button></div></details>`;
+    const msgActs = `${replyDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic mail-vip-btn ${o.from && isVipAddr(o.from.address) ? 'on' : ''}" data-mail-vip="${esc(o.from ? o.from.address : '')}" title="${o.from && isVipAddr(o.from.address) ? 'Important sender - tap to remove' : 'Mark as an important sender'}">${o.from && isVipAddr(o.from.address) ? MAIL_ICO.vipOn : MAIL_ICO.vip}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -9841,6 +9849,26 @@ async function mailTaskCreate() {
     if (tm.email && (tm.email.html || '').trim()) { props.email = tm.email; props.fromEmail = true; }
     await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props }) });
     toast(`Added to Tasks: “${title.length > 40 ? title.slice(0, 40) + '…' : title}”`);
+  } catch (e) { toast(e.message); }
+}
+// Turn the open email into a Note: its contents become the note body (as HTML, so
+// bodyToHtml renders it), titled with the subject, flagged fromEmail. Opens the new
+// note so you can add your own words straight away. (Robin.)
+async function mailToNote() {
+  const o = state.mail && state.mail.open; if (!o) return;
+  const title = ((o.subject || '').trim()) || '(no subject)';
+  const name = o.from ? (o.from.name || o.from.address || '') : '';
+  const addr = o.from ? (o.from.address || '') : '';
+  const when = o.date ? new Date(o.date).toLocaleString() : '';
+  const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
+  const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
+  const src = (o.text || '').replace(/\r\n/g, '\n').trim();
+  const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '<p></p>';
+  try {
+    const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, parent_id: null, props: { fromEmail: true } }) });
+    if (Array.isArray(state.noteTops)) state.noteTops.push(note);
+    toast('Saved to Notes');
+    if (note && note.id) await openNote(note.id).catch(() => {});
   } catch (e) { toast(e.message); }
 }
 function mailTaskMenuHtml() {
@@ -15489,6 +15517,8 @@ document.addEventListener('focusout', (e) => { if (e.target && e.target.matches 
 // one pair of document listeners covers the button however the tabs re-render.
 document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
 document.addEventListener('mouseout', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.help-btn'))) hideHelpPop(); });
+// Close an open Mail action dropdown (Reply / Transform) on any click outside it.
+document.addEventListener('click', (e) => { document.querySelectorAll('details.mail-dd[open]').forEach((d) => { if (!d.contains(e.target)) d.removeAttribute('open'); }); }, true);
 document.addEventListener('click', (e) => {
   // The sidebar is frozen for the whole gesture (see navHeld above), so the button
   // the browser hit-tested at pointerdown is still the button under this click - a
@@ -15969,6 +15999,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
   { const mt = t.closest('[data-mail-task]'); if (mt) { openMailTaskMenu(mt); return; } }
+  if (t.closest('[data-mail-note]')) { mailToNote(); return; }
   if (t.closest('[data-mail-task-add]')) { mailTaskCreate(); return; }
   if (t.closest('[data-mail-task-close]') || t.matches('[data-mail-task-bg]')) { state.mail.taskMenu = null; renderMail(); return; }
   { const ma = t.closest('[data-mail-area]'); if (ma) { openMailAreaMenu(ma); return; } }

@@ -5096,6 +5096,16 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-act-ic svg { width:20px; height:20px; display:block; }
 .mail-act-ic:hover { color:var(--accent); }
 .mail-act-ic.mail-star-btn.on { color:var(--gold); }
+/* Reply / Transform dropdowns in the reader action row (native <details>). */
+.mail-dd { position:relative; display:inline-block; }
+.mail-dd > summary { list-style:none; cursor:pointer; gap:1px; }
+.mail-dd > summary::-webkit-details-marker { display:none; }
+.mail-dd .mail-dd-car svg { width:13px; height:13px; }
+.mail-dd[open] > summary { color:var(--accent); background:var(--paper-2); border-radius:9px; }
+.mail-dd-menu { position:absolute; z-index:40; top:calc(100% + 4px); right:0; min-width:200px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 16px 40px -16px rgba(0,0,0,.4); padding:6px; }
+.mail-dd-item { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border-radius:9px; color:var(--ink); font-size:15px; background:none; border:0; cursor:pointer; }
+.mail-dd-item:hover { background:var(--paper-2); color:var(--accent); }
+.mail-dd-item svg { width:18px; height:18px; flex:none; }
 /* Claudius sits in the same round icon row - a tinted accent circle, not a pill. */
 .mail-claudius.mail-act-ic { width:38px; min-width:38px; padding:8px; gap:0; font-size:0; border-radius:999px;
   color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,transparent); }
