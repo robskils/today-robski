@@ -7416,9 +7416,15 @@ function reviewsDueToday() {
       // Key on the CURRENT period, matching the carousel + startReview, so "due
       // today" and "start" open the one review block for this period.
       const win = currentPeriodWindow(k, t);
-      const exs = (state.reviews || []).filter((r) => (r.props || {}).rtype === k && (r.props || {}).to === win.to);
+      const ofType = (state.reviews || []).filter((r) => (r.props || {}).rtype === k);
+      const exs = ofType.filter((r) => (r.props || {}).to === win.to);
       const doneRev = exs.find((r) => (r.props || {}).status === 'done');
-      return { k, submitted: !!doneRev, id: (doneRev || exs[0]) ? (doneRev || exs[0]).id : null };
+      // Already got one on the go? Don't nag to START. Prefer this period's
+      // in-progress review, else the most recent unfinished one of the type (covers
+      // a review created under an older week-window before the period fix).
+      const prog = exs.find((r) => (r.props || {}).status === 'inprogress')
+        || ofType.filter((r) => (r.props || {}).status === 'inprogress').sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0];
+      return { k, submitted: !!doneRev, inprogress: !doneRev && !!prog, id: (doneRev || prog || exs[0]) ? (doneRev || prog || exs[0]).id : null };
     })
     // Never nag once submitted, and honour a for-today dismissal.
     .filter((d) => !d.submitted);
@@ -7438,7 +7444,15 @@ function reviewDismiss(k) {
 function reviewDueBannerHtml() {
   const due = reviewsDueToday();
   if (!due.length) return '';
-  return due.map((d) => `<div class="t2-reviewdue-wrap"><button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button><button class="t2-rd-x" data-review-dismiss="${d.k}" title="Dismiss for today" aria-label="Dismiss for today">×</button></div>`).join('');
+  return due.map((d) => {
+    const label = esc(REVIEWS[d.k].label.toLowerCase());
+    const x = `<button class="t2-rd-x" data-review-dismiss="${d.k}" title="Dismiss for today" aria-label="Dismiss for today">×</button>`;
+    // Started already → "Continue" and open that review, never a fresh "Start".
+    if (d.inprogress && d.id) {
+      return `<div class="t2-reviewdue-wrap"><button class="t2-reviewdue" data-open-review="${d.id}"><span class="t2-rd-ic">🔄</span><span class="t2-rd-body"><b>Continue your ${label} review</b><small>You've started it - pick up where you left off</small></span><span class="t2-rd-go">Continue →</span></button>${x}</div>`;
+    }
+    return `<div class="t2-reviewdue-wrap"><button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${label} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>${x}</div>`;
+  }).join('');
 }
 // The Home Today section reminder - loads cadence + reviews lazily, then shows the
 // shared banner (nothing once submitted or dismissed).
