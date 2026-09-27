@@ -4449,13 +4449,13 @@ function renderHome() {
           const mailN = state.mailUnreadTotal || 0;
           const taskN = (state.home && state.home.alerts && state.home.alerts.taskOpen) || 0;
           return [
-            // [icon, label, open-attr, add-kind, add-label, n, dot?] - tasks show a
-            // quiet dot ("you've got some"), not a running total; mail keeps its
-            // unread count, which is actually worth reading. (Robin, 2026-09-27.)
-            modOn('mail') ? ['✉︎', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN, false] : null,
+            // [icon, label, open-attr, add-kind, add-label, n, dot?] - only Mail gets a
+            // dot, and only for new mail. The rest always have something going on, so a
+            // dot says nothing - no badge at all. (Robin, 2026-09-27.)
+            modOn('mail') ? ['✉︎', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN, true] : null,
             modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note', 0, false] : null,
             modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event', 0, false] : null,
-            modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', taskN, true] : null,
+            modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', 0, false] : null,
           ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl, n, dot]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span>${n ? (dot ? '<span class="hqa-dot" title="You have open tasks" aria-label="You have open tasks"></span>' : `<span class="hqa-n">${n > 99 ? '99+' : n}</span>`) : ''}</button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('');
         })()}</div>
       </div>
