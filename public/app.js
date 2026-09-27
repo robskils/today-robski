@@ -2661,7 +2661,7 @@ function navItems(v) {
     // (tick + streaks) and shapes (rename inline, drag, ✎ details) your practices.
     tracker: '',
     practices: modOn('today') ? `<button class="nav-item ${v.type === 'practices' || v.type === 'tracker' ? 'on' : ''}" data-open-practices><span class="nav-ic">☯</span><span class="nav-lbl">${t('nav.practices')}</span></button>` : '',
-    tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
+    tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span>${(state.home && state.home.alerts && state.home.alerts.taskOpen) ? '<span class="nav-dot" title="You have open tasks" aria-label="Open tasks"></span>' : ''}<span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
     saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
@@ -2937,11 +2937,14 @@ async function quickAdd(kind) {
 function renderTabbar(v) {
   let el = document.getElementById('tabbar');
   if (!el) { el = document.createElement('nav'); el.id = 'tabbar'; el.className = 'tabbar'; document.body.appendChild(el); }
-  const tab = (on, attr, ic, label, badge) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span>${ic}${badge ? `<span class="tab-badge">${badge}</span>` : ''}</span>${label}</button>`;
+  // A quiet dot (not a count) shows there's something waiting - new mail, or open
+  // tasks - matching the desktop sidebar. (Robin, 2026-09-27.)
+  const tab = (on, attr, ic, label, dot) => `<button class="tab-b ${on ? 'on' : ''}" ${attr}><span class="tab-ic">${ic}${dot ? '<span class="tab-dot"></span>' : ''}</span>${label}</button>`;
+  const hasTasks = !!(state.home && state.home.alerts && state.home.alerts.taskOpen);
   el.innerHTML = tab(v.type === 'home', 'data-view-home', '⌂', 'Home')
-    + tab(v.type === 'mail' || v.type === 'mailaccounts', 'data-open-mail', '✉︎', 'Mail', state.mailUnreadTotal ? (state.mailUnreadTotal > 99 ? '99+' : state.mailUnreadTotal) : '')
+    + tab(v.type === 'mail' || v.type === 'mailaccounts', 'data-open-mail', '✉︎', 'Mail', !!state.mailUnreadTotal)
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
-    + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
+    + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks', hasTasks)
     + tab(['note', 'notes', 'table', 'tables'].includes(v.type), 'data-open-notes', '▤', 'Notes');
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
@@ -4446,11 +4449,14 @@ function renderHome() {
           const mailN = state.mailUnreadTotal || 0;
           const taskN = (state.home && state.home.alerts && state.home.alerts.taskOpen) || 0;
           return [
-            modOn('mail') ? ['✉︎', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN] : null,
-            modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note', 0] : null,
-            modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event', 0] : null,
-            modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', taskN] : null,
-          ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl, n]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span>${n ? `<span class="hqa-n">${n > 99 ? '99+' : n}</span>` : ''}</button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('');
+            // [icon, label, open-attr, add-kind, add-label, n, dot?] - tasks show a
+            // quiet dot ("you've got some"), not a running total; mail keeps its
+            // unread count, which is actually worth reading. (Robin, 2026-09-27.)
+            modOn('mail') ? ['✉︎', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN, false] : null,
+            modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note', 0, false] : null,
+            modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event', 0, false] : null,
+            modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', taskN, true] : null,
+          ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl, n, dot]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span>${n ? (dot ? '<span class="hqa-dot" title="You have open tasks" aria-label="You have open tasks"></span>' : `<span class="hqa-n">${n > 99 ? '99+' : n}</span>`) : ''}</button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('');
         })()}</div>
       </div>
       ${alertsHtml()}

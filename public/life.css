@@ -2037,6 +2037,9 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 /* A quiet "there's new mail" dot - no number to crowd the label. */
 .nav-dot { margin-left:auto; flex:none; width:8px; height:8px; border-radius:50%; background:var(--accent); }
 .nav-dot + .nav-quick { margin-left:8px; }
+/* Home quick-action "you've got some" dot (tasks) - shown on mobile too, unlike the
+   numeric count. */
+.home-qa-open .hqa-dot { flex:none; margin-left:3px; width:8px; height:8px; border-radius:50%; background:var(--accent); }
 /* Unread Daybook messages: a red, gently pulsing badge so it's impossible to
    miss - on the Contacts item, and on the mobile ☰ button (always on screen). */
 .nav-badge.has-msg { background:var(--danger,#c4412e); color:#fff; animation:msg-badge-pulse 1.5s ease-in-out infinite; }
@@ -5635,6 +5638,8 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* A small floating corner badge, lifted off the icon by a ring the colour of
      the tab bar, so it reads as a tidy count rather than digits stuck to the glyph. */
   .tab-b .tab-badge { position:absolute; top:-7px; left:13px; min-width:16px; height:16px; padding:0 4.5px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:var(--accent); color:#fff; font-size:9.5px; font-weight:600; line-height:1; letter-spacing:.01em; box-shadow:0 0 0 2px var(--paper-2); }
+  /* Quiet presence dot (new mail / open tasks) instead of a count. */
+  .tab-b .tab-dot { position:absolute; top:-2px; right:-6px; width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px var(--paper-2); }
   .tab-b.on { color:var(--accent); }
   /* Keyboard up (typing): hide the bottom bar so it doesn't float over the keyboard. */
   body.kb-open .tabbar { display:none; }
