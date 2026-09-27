@@ -3134,6 +3134,11 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .prc-row { display:flex; align-items:center; gap:12px; padding:7px 2px; border-bottom:1px solid var(--line); }
 .prc-row:last-child { border-bottom:0; }
 .prc-name { flex:1; min-width:0; font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* A whole practice row is clickable to open its guide card; the name reads in the
+   highlight colour so it's clearly the thing to tap. (Robin, 2026-09-27.) */
+.prc-row-click, .pm-row-click { cursor:pointer; border-radius:8px; transition:background .12s; }
+.prc-row-click:hover, .pm-row-click:hover { background:var(--paper-2); }
+.prc-name-link, .pm-name-link { color:var(--accent); }
 .prc-add { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
 .prc-add .prc-lane-sel { flex:0 0 auto; max-width:150px; }
 .prc-add input { flex:1; min-width:120px; }
@@ -3152,7 +3157,11 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .pe-head h2 { font-size:21px; margin:0; }
 .pe-x { width:32px; height:32px; border-radius:50%; color:var(--ink-3); font-size:22px; line-height:1; }
 .pe-x:hover { background:var(--paper-2); color:var(--accent); }
-.pe-body { padding:8px 20px 12px; display:flex; flex-direction:column; gap:14px; }
+.pe-body { padding:8px 20px 12px; display:flex; flex-direction:column; gap:22px; }
+/* The editor reads as clear sections: a highlight heading, then its fields. */
+.pe-sec { display:flex; flex-direction:column; gap:12px; }
+.pe-sec-h { font-size:12.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); padding-bottom:6px; border-bottom:1px solid var(--line); }
+.pe-sec-note { font-size:13px; color:var(--ink-3); line-height:1.45; margin-top:-4px; }
 .pe-f { display:flex; flex-direction:column; gap:6px; }
 .pe-f > span { font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); font-weight:600; }
 .pe-f .sel, .pe-note { width:100%; max-width:none; }

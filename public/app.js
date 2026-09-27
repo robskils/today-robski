@@ -3848,7 +3848,7 @@ function practicesManageHtml() {
   const body = ordered.map((g) => {
     const rows = g.items.map((a) => {
       const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
-      return `<div class="pm-row ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><button class="pm-open" data-prc-open="${a.id}"><span class="pm-name">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}</button><button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
+      return `<div class="pm-row pm-row-click ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><span class="pm-name pm-name-link">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
@@ -3887,7 +3887,7 @@ function renderPracticeCard() {
   const videoHtml = yt
     ? `<div class="pc-video"><iframe src="https://www.youtube-nocookie.com/embed/${yt}" title="${esc(a.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`
     : (a.video ? `<a class="add-btn wide pc-dolink" href="${esc(a.video)}" target="_blank" rel="noopener noreferrer">▶ Do it now →</a>` : '');
-  const noteHtml = (a.note && String(a.note).trim()) ? `<section class="pc-sec"><div class="home-sec-h">Notes</div><div class="pc-note prose readonly">${decorateProse(bodyToHtml(a.note))}</div></section>` : '';
+  const noteHtml = (a.note && String(a.note).trim()) ? `<section class="pc-sec"><div class="home-sec-h">Instructions</div><div class="pc-note prose readonly">${decorateProse(bodyToHtml(a.note))}</div></section>` : '';
   const noteChips = (meta.notes || []).map((n) => `<button class="tbl-card" data-open-note="${esc(n.id)}"><span class="tc-ic">▤</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
   const linkChips = (meta.links || []).map((l) => `<a class="tbl-card" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔗</span><span class="tc-t">${esc(l.title || prettyLinkLabel(l.url))}</span></a>`).join('');
   const contactChips = (meta.contacts || []).map((cid) => { const c = findContact(cid); return c ? `<button class="tbl-card" data-open-contact="${c.id}"><span class="tc-ic">👤</span><span class="tc-t">${esc(c.title || 'Unnamed')}</span></button>` : ''; }).filter(Boolean).join('');
@@ -3994,9 +3994,9 @@ function practicesGroups(withWeek) {
     const rows = g.items.map((a) => {
       const len = (a.timed && a.duration) ? `<span class="prc-sched">${a.duration} min</span>` : '';
       const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? '<span class="prc-badge">🎥</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
-      return `<div class="prc-row ${a.avoid ? 't2-avoid' : ''}">
+      return `<div class="prc-row prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-        <button class="prc-name prc-name-btn" data-prc-open="${a.id}">${esc(a.title)}${badges}${withWeek ? '' : len}</button>
+        <span class="prc-name prc-name-link">${esc(a.title)}${badges}${withWeek ? '' : len}</span>
         ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}${a.avoid ? ' clean' : ''}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
@@ -4036,25 +4036,41 @@ function practiceEditorHtml() {
     <div class="pe-panel ${timed ? 'timed-on' : ''} ${tracked ? 'tracked-on' : ''}" role="dialog" aria-label="Practice">
       <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">
-        <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
-        <div class="pe-two">
-          <label class="pe-f pe-inline"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
-          <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-        </div>
-        <div class="pe-mini">
-          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
-          <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></div>
-          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" data-pe-tracked ${tracked ? 'checked' : ''}></label>
-          <div class="pe-mini-row pe-aim"><span class="pe-mini-l">Aim to do it</span>${(() => {
-            const cur = a.cadence || '';
-            const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
-            return `<select class="sel pe-mini-sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
-          })()}</div>
-          <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
-          <div class="pe-mini-row"><span class="pe-mini-l">▶ Video or link</span><input class="sel pe-mini-in" id="pe-video" value="${esc(a.video || '')}" placeholder="YouTube, a workout, any page — to do it now" autocomplete="off"></div>
-        </div>
-        <label class="pe-f"><span>Note</span><textarea class="sel pe-note" id="pe-note" rows="2" placeholder="How you like to do it (optional)">${esc(noteText)}</textarea></label>
-        <div class="pe-attach">${peAttachHtml()}</div>
+        <section class="pe-sec">
+          <div class="pe-sec-h">Basics</div>
+          <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
+          <div class="pe-two">
+            <label class="pe-f pe-inline"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+            <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+          </div>
+        </section>
+
+        <section class="pe-sec">
+          <div class="pe-sec-h">Guide</div>
+          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice card.</div>
+          <label class="pe-f"><span>▶ Video or link</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube link to embed it, or any page" autocomplete="off"></label>
+          <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
+        </section>
+
+        <section class="pe-sec">
+          <div class="pe-sec-h">Timing &amp; tracking</div>
+          <div class="pe-mini">
+            <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
+            <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></div>
+            <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" data-pe-tracked ${tracked ? 'checked' : ''}></label>
+            <div class="pe-mini-row pe-aim"><span class="pe-mini-l">Aim to do it</span>${(() => {
+              const cur = a.cadence || '';
+              const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
+              return `<select class="sel pe-mini-sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
+            })()}</div>
+            <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
+          </div>
+        </section>
+
+        <section class="pe-sec">
+          <div class="pe-sec-h">Connections</div>
+          <div class="pe-attach">${peAttachHtml()}</div>
+        </section>
       </div>
       <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add practice'}</button></div>
     </div>`;
@@ -15925,7 +15941,7 @@ document.addEventListener('click', (e) => {
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
   { const na = t.closest('[data-prc-new-area]'); if (na) { openPracticeEditor(null, na.dataset.prcNewArea); return; } }
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
-  { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, [data-prc-tick], [data-prc-edit], [data-prc-del]')) { if (Date.now() - (typeof t2SuppressClick !== 'undefined' ? t2SuppressClick : 0) < 350) return; openPracticeCard(po.dataset.prcOpen); return; } }
+  { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, [data-prc-tick], [data-prc-edit], [data-prc-del], [data-prc-grip], [data-prc-day]')) { if (Date.now() - (typeof t2SuppressClick !== 'undefined' ? t2SuppressClick : 0) < 350) return; openPracticeCard(po.dataset.prcOpen); return; } }
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
@@ -19193,9 +19209,11 @@ function onbWelcome() {
   const name = (state.me && state.me.name) ? esc(state.me.name.split(' ')[0]) : '';
   const sub = esc((state.me && state.me.subdomain) || 'you');
   return `<h2 class="onb-h">Welcome to Daybook${name ? `, ${name}` : ''}</h2>
-    <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, and a place to reflect - all on one screen.</p>
-    <p class="onb-p">It lives at <b>${sub}.daybook.fyi</b>. You can change your username anytime in <b>Settings → Account</b>.</p>
-    <p class="onb-p onb-muted">The next two steps are optional - skip them and set anything up later.</p>`;
+    <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
+    <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
+    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a life area - so Daybook helps you <b>join the dots across your life</b> without the overwhelm.</p>
+    <p class="onb-p">It lives at <b>${sub}.daybook.fyi</b>. Change your username anytime in <b>Settings → Account</b>.</p>
+    <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
 }
 function onbAiProv(provider, name, why, host, url, ph, isSet) {
   return `<div class="onb-prov">
