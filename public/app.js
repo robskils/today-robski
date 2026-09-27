@@ -4433,7 +4433,7 @@ function renderHome() {
           const bdayRows = bdays.map((b) => `<div class="kit-hrow"><button class="kit-hopen" data-open-contact="${b.id}"><span class="contact-av kit-hav">🎂</span><span class="kit-hnm">${esc(b.name)}</span><span class="kit-hsub">Birthday today</span></button></div>`).join('');
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
-            today: `<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
+            today: `${off === 0 ? homeReviewDueBanner() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
@@ -7308,6 +7308,18 @@ function reviewsDueToday() {
       const doneRev = exs.find((r) => (r.props || {}).status === 'done');
       return { k, submitted: !!doneRev, id: (doneRev || exs[0]) ? (doneRev || exs[0]).id : null };
     });
+}
+// The same review-due banner the Today page shows, for the Home Today section - so a
+// review due today surfaces on the homepage too, not only in the morning email.
+// Loads the cadence + reviews lazily and re-renders Home when they arrive.
+function homeReviewDueBanner() {
+  if (!state.reviewRem) { api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'home') renderHome(); }).catch(() => {}); return ''; }
+  const due = reviewsDueToday();
+  if (!due.length) return '';
+  if (state.reviews === undefined) { state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'home') renderHome(); }).catch(() => {}); }
+  return due.map((d) => d.submitted
+    ? `<button class="t2-reviewdone" ${d.id ? `data-open-review="${d.id}"` : ''}><span class="t2-rd-ic">✓</span><span class="t2-rd-body"><b>${esc(REVIEWS[d.k].label)} review submitted</b><small>Nicely done - tap to look back over it.</small></span><span class="t2-rd-go">→</span></button>`
+    : `<button class="t2-reviewdue" data-start-review="${d.k}"><span class="t2-rd-ic">✦</span><span class="t2-rd-body"><b>Your ${esc(REVIEWS[d.k].label.toLowerCase())} review is due today</b><small>A few minutes to see where you stand</small></span><span class="t2-rd-go">Start →</span></button>`).join('');
 }
 // The Tracker is its own tool now (its own view), not a tab of the planner.
 // Same t2TrackerHtml render, standalone with its own crumb.

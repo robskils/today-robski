@@ -142,7 +142,7 @@ function empty(text) {
 }
 
 const BRIEF_TASK_CAP = 7;
-export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl = 'https://robski.daybook.fyi', calError = null }) {
+export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl = 'https://robski.daybook.fyi', calError = null, unread = 0 }) {
   const shown = tasks.slice(0, BRIEF_TASK_CAP);
   const moreCount = tasks.length - shown.length;
   const timed = [...events].sort((a, b) => (a.allDay ? -1 : b.allDay ? 1 : a.start_min - b.start_min));
@@ -157,6 +157,16 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
       ? `<p style="margin:16px 0 0"><a href="${siteUrl}/tasks?p1=1" style="font-family:${SANS};font-size:15px;color:${GOLD};text-decoration:none">${moreCount} more &#8594;</a></p>`
       : '')
     : empty('No P1s open. Nothing is on fire.');
+
+  // The Inbox box: only when there's actually new mail. The count is the whole
+  // point - a gold pill you can't miss - and the box links straight into Mail.
+  const inbox = unread > 0 ? `
+          <a href="${siteUrl}/mail" style="display:block;text-decoration:none;border:1px solid ${RULE};border-radius:10px;padding:15px 18px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+              <td style="font-family:${SANS};font-size:17px;color:${INK}">New mail waiting</td>
+              <td align="right"><span style="display:inline-block;font-family:${SANS};font-size:15px;font-weight:700;color:#fff;background:${GOLD};border-radius:999px;padding:3px 13px;min-width:22px;text-align:center">${unread > 99 ? '99+' : unread}</span></td>
+            </tr></table>
+          </a>` : '';
 
   const teaching = quote
     ? `
@@ -194,6 +204,8 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
 
         ${heading('Calendar')}
         ${row(calendar)}
+
+        ${inbox ? heading('Inbox') + row(inbox) : ''}
 
         ${heading('First things')}
         ${row(p1)}

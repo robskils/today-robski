@@ -2226,7 +2226,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
 
   try {
     const cfg = await getLaneConfig(env, uid);
-    const [cal, quote, areasRes, tasksRes] = await Promise.all([
+    const [cal, quote, areasRes, tasksRes, mailRes] = await Promise.all([
       // The calendar rides a single Google refresh token - the owner's. Fetching
       // it for anyone else would put Robin's diary in their brief, so only the
       // owner's brief carries a calendar; others get tasks + the day's quote.
@@ -2246,6 +2246,8 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
             AND (json_extract(props, '$.snooze') IS NULL OR json_extract(props, '$.snooze') <= ?)
           ORDER BY created_at IS NULL, created_at LIMIT 100`,
       ).bind(uid, now.date).all(),
+      // Unread mail across all this user's inboxes, for the brief's Inbox box.
+      env.DB.prepare("SELECT COALESCE(SUM(m.unseen),0) AS n FROM mail_cache_meta m JOIN mail_accounts a ON a.id = m.account WHERE m.mailbox='INBOX' AND a.user_id = ?").bind(uid).first().catch(() => ({ n: 0 })),
     ]);
 
     // A calendar failure must not cost the rest of the brief. It's now surfaced
@@ -2287,7 +2289,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     if (!to) return { sent: false, reason: 'no recipient' };
     const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
 
-    const payload = { day: now.date, events, tasks, quote, siteUrl: home, calError: cal.error || null };
+    const payload = { day: now.date, events, tasks, quote, siteUrl: home, calError: cal.error || null, unread: (mailRes && mailRes.n) || 0 };
     const subject = briefSubject(payload);
     const html = briefEmail(payload);
     if (env.BRIEF_SMTP_PASS) {
