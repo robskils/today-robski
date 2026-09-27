@@ -14055,7 +14055,7 @@ function renderReviewCard() {
       </div>
       <div class="rv-input-panel">${inputTab === 'wheel'
         ? `${reviewWheelPreview(p)}
-           <p class="rva-intro">Score how each area went out of 5 and add a line on how it felt - your scores draw the <b>Wheel of Life</b>${wheelAreas.length >= 3 ? ', which takes shape above as you go' : ''}. Tap the × to leave an area out.</p>
+           <p class="rva-intro">Score how each area went out of 5 and add a line on how it felt - your scores draw the <b>Wheel of Life</b>${wheelAreas.length >= 3 ? ', which takes shape above as you go' : ''}. Tap the × to leave an area out of this review, or set which areas you track everywhere on the <button class="linkish" data-open-wheel>Wheel of Life page</button>.</p>
            <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to reflect on them here.'}</div>`}</div>
            ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} left out · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}`
         : `<p class="rv-reflect-intro">A few prompts to get you going - answer what speaks to you, skip what doesn't.</p>
