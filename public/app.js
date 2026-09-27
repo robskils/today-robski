@@ -14265,25 +14265,31 @@ function goalReviewSection(r) {
     const vision = a && a.props && a.props.vision ? String(a.props.vision).trim() : '';
     const head = `<div class="gr-area"><span class="gr-area-n"><span class="ac-dot" style="--h:${a ? hueOf(a) : 220}"></span>${a ? esc(a.title) : 'No area'}</span>${vision ? `<span class="gr-vision">“${esc(vision.slice(0, 160))}${vision.length > 160 ? '…' : ''}”</span>` : ''}</div>`;
     const rows = gs.map((g) => {
-      const rv = gr[g.id] || {}; const sc = Math.min(rv.score || 0, 5);
+      const rv = gr[g.id] || {};
       const dn = doneForGoal(g.id); const op = openForGoal(g.id);
-      const pct = g.progress != null ? g.progress : null;
+      // Use the LIVE goal so the slider actually moves the goal's progress (the
+      // snapshot is frozen). One control: how far along it is - concrete, and the
+      // same slider as the weekly review. The vision reflection goes in the note.
+      const live = (state.goals || []).find((x) => String(x.id) === String(g.id));
+      const lp = live ? gp(live) : {};
+      const pct = live ? Math.round(goalProgress(live) * 100) : (g.progress != null ? g.progress : 0);
+      const canSlide = live && (lp.status || 'active') === 'active' && lp.gtype !== 'number';
       const tasksBlock = (dn.length || op.length) ? `<div class="gr-tasks">
         ${dn.length ? `<div class="gr-taskline"><span class="gr-taskline-k">Moved it · ${dn.length}</span><div class="gr-chips">${dn.slice(0, 8).map((t) => chip(t, true)).join('')}</div></div>` : ''}
         ${op.length ? `<div class="gr-taskline"><span class="gr-taskline-k">Still open · ${op.length}</span><div class="gr-chips">${op.slice(0, 8).map((t) => chip(t, false)).join('')}</div></div>` : ''}
       </div>` : '';
-      return `<div class="gr-goal">
-        <div class="gr-goal-h"><button class="gr-goal-t" data-open-goal="${esc(g.id)}" title="Open this goal">${esc(g.title)}</button><span class="gr-goal-m">${esc(g.measure || '')}${pct != null ? ` · ${pct}%` : ''}</span></div>
-        ${pct != null ? `<span class="rvg-bar" style="--h:${a ? hueOf(a) : 220}"><i style="width:${pct}%"></i></span>` : ''}
+      return `<div class="gr-goal" style="--h:${a ? hueOf(a) : 220}">
+        <div class="gr-goal-h"><button class="gr-goal-t" data-open-goal="${esc(g.id)}" title="Open this goal">${esc(g.title)}</button><span class="rvg-pct" data-rvg-pct="${esc(g.id)}">${pct}%</span></div>
+        ${g.measure ? `<div class="gr-goal-m">${esc(g.measure)}</div>` : ''}
+        <span class="rvg-barwrap"><span class="rvg-bar"><i data-rvg-bar="${esc(g.id)}" style="width:${pct}%"></i></span>${canSlide ? `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${esc(g.id)}" aria-label="Progress ${pct}%" title="Slide to set how far along this goal is">` : ''}</span>
         ${tasksBlock}
-        <div class="gr-goal-rate"><span class="gr-rate-l">Against your vision</span><span class="gr-scorewrap" style="--h:${a ? hueOf(a) : 220}"><span class="gr-scoretrack"><i style="width:${sc / 5 * 100}%"></i></span><input type="range" class="gc-slider gr-scoreslider" min="0" max="5" step="1" value="${sc}" data-goalrev-score="${esc(g.id)}" aria-label="Score against your vision, 0 to 5"></span><span class="wheel-v gr-scoreval" data-goalrev-val="${esc(g.id)}">${sc || '–'}</span></div>
-        <textarea class="sel gr-note" data-goalrev-note="${esc(g.id)}" rows="2" placeholder="Where does it stand, against the vision?">${esc(rv.note || '')}</textarea>
+        <textarea class="sel gr-note" data-goalrev-note="${esc(g.id)}" rows="2" placeholder="How's it going, against your vision for ${a ? esc(a.title) : 'this area'}?">${esc(rv.note || '')}</textarea>
       </div>`;
     }).join('');
     return `<div class="gr-group">${head}<div class="gr-goals-grid">${rows}</div></div>`;
   }).join('');
   const label = (p.rtype === 'quarterly' || p.rtype === 'yearly') ? 'Goal review' : 'Goals & vision';
-  return `<section class="rv-goalreview"><div class="home-sec-h">${label} <span class="wheel-hint">score each against your vision</span></div>${groups}</section>`;
+  return `<section class="rv-goalreview"><div class="home-sec-h">${label} <span class="wheel-hint">move each goal on, and note how it's going</span></div>${groups}</section>`;
 }
 function setGoalReviewScore(goalId, score) {
   const r = state.review_open.review; const p = r.props || {}; const gr = { ...(p.goalReview || {}) };
@@ -15630,7 +15636,7 @@ document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[data-goal-progress]')) {
     const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     // Works for a goal card (.gc-progress) and a Goals-tab list row (.glist-row).
-    const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card, .rvg-goal');
+    const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card, .rvg-goal, .gr-goal');
     if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i, [data-rvg-bar]'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct, .rvg-pct'); if (lab) lab.textContent = v + '%'; }
     e.target.setAttribute('aria-label', `Progress: ${v}%`);
     clearTimeout(window.__goalProgT); window.__goalProgT = setTimeout(() => saveGoalProgress(e.target.dataset.goalProgress, v), 450);
