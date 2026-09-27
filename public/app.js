@@ -9522,8 +9522,21 @@ function wrapEmailHtml(html, blockImages) {
   // to the parent, which opens it in the OS default browser (a sandboxed iframe
   // can't do that itself, and its own scripts were already stripped).
   return `<!doctype html><html><head><meta name="color-scheme" content="light">
-    <style>html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
-    </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){function h(){parent.postMessage({__mailHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},'*');}window.addEventListener('load',h);document.addEventListener('load',h,true);try{new ResizeObserver(h).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href')||'';if(/^(https?:|mailto:)/i.test(href)){e.preventDefault();parent.postMessage({__mailLink:href},'*');}},true);document.addEventListener('keydown',function(e){if(e.metaKey||e.ctrlKey||e.altKey)return;var k=e.key;if(/^[a-zA-Z!#]$/.test(k)||k==='Escape')parent.postMessage({__mailKey:k},'*');},true);})();<\/script></body></html>`;
+    <style>html{overflow-x:hidden}html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
+    </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){var busy=false;
+    // Shrink-to-fit: a fixed-width email (a 600px bank/marketing table that ignores
+    // max-width) would otherwise force sideways scrolling on a phone. Measure the
+    // email's natural width and, if it's wider than the viewport, scale the whole
+    // body down to fit - good responsive emails measure within width and are left
+    // alone. The reported height is the SCALED (visual) height so the frame fits.
+    function h(){if(busy)return;busy=true;var b=document.body,d=document.documentElement;
+      b.style.transform='';b.style.width='';b.style.transformOrigin='top left';
+      var vw=d.clientWidth||window.innerWidth||0;var w=Math.max(b.scrollWidth,d.scrollWidth);
+      var scale=(w>vw+2&&vw>0)?vw/w:1;
+      if(scale<1){b.style.width=w+'px';b.style.transform='scale('+scale+')';}
+      var vh=scale<1?Math.ceil(b.getBoundingClientRect().height):Math.max(d.scrollHeight,b.scrollHeight);
+      parent.postMessage({__mailHeight:vh},'*');busy=false;}
+    window.addEventListener('load',h);window.addEventListener('resize',h);document.addEventListener('load',h,true);try{new ResizeObserver(function(){requestAnimationFrame(h);}).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href')||'';if(/^(https?:|mailto:)/i.test(href)){e.preventDefault();parent.postMessage({__mailLink:href},'*');}},true);document.addEventListener('keydown',function(e){if(e.metaKey||e.ctrlKey||e.altKey)return;var k=e.key;if(/^[a-zA-Z!#]$/.test(k)||k==='Escape')parent.postMessage({__mailKey:k},'*');},true);})();<\/script></body></html>`;
 }
 // Open a URL in the OS default browser via a marked, user-initiated anchor click
 // (works in installed PWAs / WKWebView wrappers). The data-ext-open marker stops
