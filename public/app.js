@@ -14236,7 +14236,6 @@ function goalReviewSection(r) {
     const head = `<div class="gr-area"><span class="gr-area-n"><span class="ac-dot" style="--h:${a ? hueOf(a) : 220}"></span>${a ? esc(a.title) : 'No area'}</span>${vision ? `<span class="gr-vision">“${esc(vision.slice(0, 160))}${vision.length > 160 ? '…' : ''}”</span>` : ''}</div>`;
     const rows = gs.map((g) => {
       const rv = gr[g.id] || {}; const sc = Math.min(rv.score || 0, 5);
-      const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-goalrev="${esc(g.id)}:${i + 1}" style="--h:${a ? hueOf(a) : 220}"></button>`).join('');
       const dn = doneForGoal(g.id); const op = openForGoal(g.id);
       const pct = g.progress != null ? g.progress : null;
       const tasksBlock = (dn.length || op.length) ? `<div class="gr-tasks">
@@ -14247,11 +14246,11 @@ function goalReviewSection(r) {
         <div class="gr-goal-h"><button class="gr-goal-t" data-open-goal="${esc(g.id)}" title="Open this goal">${esc(g.title)}</button><span class="gr-goal-m">${esc(g.measure || '')}${pct != null ? ` · ${pct}%` : ''}</span></div>
         ${pct != null ? `<span class="rvg-bar" style="--h:${a ? hueOf(a) : 220}"><i style="width:${pct}%"></i></span>` : ''}
         ${tasksBlock}
-        <div class="gr-goal-rate"><span class="gr-rate-l">How's it going?</span><span class="gr-pips">${pips}</span><span class="wheel-v">${sc || '–'}</span></div>
-        <input class="sel gr-note" data-goalrev-note="${esc(g.id)}" value="${esc(rv.note || '')}" placeholder="Where does it stand, against the vision?">
+        <div class="gr-goal-rate"><span class="gr-rate-l">Against your vision</span><span class="gr-scorewrap" style="--h:${a ? hueOf(a) : 220}"><span class="gr-scoretrack"><i style="width:${sc / 5 * 100}%"></i></span><input type="range" class="gc-slider gr-scoreslider" min="0" max="5" step="1" value="${sc}" data-goalrev-score="${esc(g.id)}" aria-label="Score against your vision, 0 to 5"></span><span class="wheel-v gr-scoreval" data-goalrev-val="${esc(g.id)}">${sc || '–'}</span></div>
+        <textarea class="sel gr-note" data-goalrev-note="${esc(g.id)}" rows="2" placeholder="Where does it stand, against the vision?">${esc(rv.note || '')}</textarea>
       </div>`;
     }).join('');
-    return `<div class="gr-group">${head}${rows}</div>`;
+    return `<div class="gr-group">${head}<div class="gr-goals-grid">${rows}</div></div>`;
   }).join('');
   const label = (p.rtype === 'quarterly' || p.rtype === 'yearly') ? 'Goal review' : 'Goals & vision';
   return `<section class="rv-goalreview"><div class="home-sec-h">${label} <span class="wheel-hint">score each against your vision</span></div>${groups}</section>`;
@@ -14261,6 +14260,19 @@ function setGoalReviewScore(goalId, score) {
   const cur = gr[goalId] || {}; const ns = cur.score === score ? 0 : score;
   gr[goalId] = { ...cur, score: ns };
   patchReview(r.id, { goalReview: gr }, true).then(renderReviewCard);
+}
+// The slider version (0-5): sets the score directly (no toggle) and updates the
+// track + value live, without a re-render that would drop the slider mid-drag.
+function setGoalReviewScoreSlide(goalId, score) {
+  const r = state.review_open && state.review_open.review; if (!r) return;
+  const p = r.props || (r.props = {}); const gr = { ...(p.goalReview || {}) };
+  const ns = Math.max(0, Math.min(5, Math.round(Number(score) || 0)));
+  gr[goalId] = { ...(gr[goalId] || {}), score: ns }; p.goalReview = gr;
+  const slider = document.querySelector(`[data-goalrev-score="${goalId}"]`);
+  const wrap = slider && slider.closest('.gr-scorewrap');
+  const fill = wrap && wrap.querySelector('.gr-scoretrack > i'); if (fill) fill.style.width = (ns / 5 * 100) + '%';
+  const val = document.querySelector(`[data-goalrev-val="${goalId}"]`); if (val) val.textContent = ns || '–';
+  clearTimeout(window.__grsT); window.__grsT = setTimeout(() => patchReview(r.id, { goalReview: gr }, true), 400);
 }
 // Render the stored AI summary text (plain prose, blank-line paragraphs) as HTML.
 function reviewSummaryHtml(text) {
@@ -16662,6 +16674,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') { renderGoalCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {}); } else if (k === 'task' && state.view.type === 'taskcard') { renderTaskCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {}); } }); return; }
   if (e.target.matches('[data-rev-cad-on]')) { toggleReviewCad(e.target.dataset.revCadOn, e.target.checked); return; }
   if (e.target.matches('[data-rv-date]')) { const k = e.target.dataset.rvDate; const v = e.target.value; if (v && state.review_open) { patchReview(state.review_open.review.id, { [k]: v }, true); toast('Review dates updated'); } return; }
+  if (e.target.matches('[data-goalrev-score]')) { setGoalReviewScoreSlide(e.target.dataset.goalrevScore, e.target.value); return; }
   if (e.target.matches('[data-goalrev-note]')) { const id = e.target.dataset.goalrevNote; const v = e.target.value; clearTimeout(window.__grnT); window.__grnT = setTimeout(() => { const r = state.review_open && state.review_open.review; if (!r) return; const gr = { ...((r.props || {}).goalReview || {}) }; gr[id] = { ...(gr[id] || {}), note: v }; patchReview(r.id, { goalReview: gr }, true); }, 600); return; }
   if (e.target.matches('[data-area-sec-vis]')) {
     const key = e.target.dataset.areaSecVis; const a = state.area_open && state.area_open.area; if (!a) return;

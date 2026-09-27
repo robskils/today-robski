@@ -848,7 +848,11 @@ button { cursor:pointer; background:none; border:0; }
 .gr-area-n { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; gap:8px; font-size:16px; font-weight:600; color:var(--ink); }
 .gr-area-n .ac-dot { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
 .gr-vision { font-size:14px; font-style:italic; color:var(--ink-3); line-height:1.4; }
-.gr-goal { padding:14px; margin-bottom:10px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); }
+/* Monthly (and up) goal review: goals laid out ~3 per row, not full width, since
+   there can be many. (Robin, 2026-09-27.) */
+.gr-goals-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:12px; align-items:start; }
+@media (max-width:560px) { .gr-goals-grid { grid-template-columns:1fr; } }
+.gr-goal { display:flex; flex-direction:column; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:var(--shadow); }
 .gr-goal:last-child { margin-bottom:0; }
 .gr-goal-h { display:flex; justify-content:space-between; gap:12px; align-items:baseline; margin-bottom:8px; }
 .gr-goal-t { border:0; background:none; padding:0; font:inherit; font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; text-align:left; }
@@ -863,11 +867,14 @@ button { cursor:pointer; background:none; border:0; }
 .gr-task-chip { font-size:13px; color:var(--ink-2); background:var(--paper-2,color-mix(in srgb,var(--ink) 5%,transparent)); border:1px solid var(--line); border-radius:999px; padding:4px 11px; cursor:pointer; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .gr-task-chip:hover { border-color:var(--accent); color:var(--accent); }
 .gr-task-chip.done { color:var(--done); border-color:color-mix(in srgb,var(--done) 30%,var(--line)); }
-.gr-goal-rate { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-.gr-rate-l { font-size:13.5px; color:var(--ink-2); font-weight:600; }
-.gr-goal-rate .wheel-v { margin-left:auto; }
-.gr-pips { display:flex; gap:4px; }
-.gr-note { width:100%; max-width:none; font-size:14.5px; padding:9px 12px; }
+.gr-goal-rate { display:flex; align-items:center; gap:10px; margin:2px 0 10px; }
+.gr-rate-l { font-size:12.5px; color:var(--ink-3); font-weight:600; flex:none; }
+.gr-goal-rate .gr-scoreval { margin-left:0; flex:none; min-width:16px; text-align:right; font-variant-numeric:tabular-nums; }
+/* Score-against-vision slider (0-5): a proper drag, not five fiddly pips. */
+.gr-scorewrap { position:relative; flex:1; min-width:70px; display:flex; align-items:center; height:16px; }
+.gr-scoretrack { flex:1; height:6px; border-radius:999px; background:var(--paper-2); overflow:hidden; }
+.gr-scoretrack > i { display:block; height:100%; background:hsl(var(--h,220) 55% 55%); border-radius:999px; }
+.gr-note { width:100%; max-width:none; font-size:14.5px; padding:9px 12px; resize:vertical; min-height:52px; line-height:1.45; margin-top:auto; }
 /* Life-area sentiment, carried from the last wheel score */
 .area-sentiment { display:inline-flex; align-items:center; gap:10px; margin:2px 0 6px; padding:6px 13px; border-radius:999px; background:color-mix(in srgb,var(--as-c,var(--ink-3)) 12%,var(--card)); border:1px solid color-mix(in srgb,var(--as-c,var(--ink-3)) 30%,transparent); }
 .area-sentiment .as-dots { letter-spacing:2px; color:var(--as-c,var(--ink-3)); font-size:12px; }
