@@ -4523,6 +4523,16 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    stack on a narrow screen. */
 .area-dash-fl { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:20px; align-items:start; }
 .area-dash-fl > .area-dash-files, .area-dash-fl > .area-dash-links { margin-top:0; }
+/* One consistent heading style across the area's Wall / Files / Links / Shared
+   panels, in the area's feature colour. (Links was a serif odd-one-out.) */
+.area-dash-wall > .home-sec-h,
+.area-dash-shared > .home-sec-h,
+.area-dash-files .att-h,
+.area-dash-links .xlinks-h {
+  font-family:inherit; font-size:13px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.1em; margin:0 0 12px; color:hsl(var(--h,220) 48% 58%);
+}
+.area-dash-files .att-h .att-hint { color:var(--ink-3); text-transform:none; letter-spacing:0; font-weight:400; }
 .area-flow { gap:16px; }
 .area-flow .area-sec.area-sec-collapsed { padding-bottom:14px; }
 .area-sec-h { border-bottom:none; }

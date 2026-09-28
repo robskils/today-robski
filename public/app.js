@@ -6324,10 +6324,10 @@ function renderArea() {
   const restSecs = restDefs.filter(([key, ok]) => ok && !secHidden(key)).sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
   // Order (Robin, 2026-09-28): the Wall sits above Files & photos and Links, and
   // those two share a row (half each), stacking on a narrow screen.
-  const wallSec = secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`;
-  const linksSec = (canEditArea || blockLinks(area).length) ? `<section class="area-dash-links">${externalLinksHtml('area', area)}</section>` : '';
-  const filesLinksRow = `<div class="area-dash-fl"><section class="area-dash-files">${areaAttachHtml(area)}</section>${linksSec}</div>`;
-  const sharedSec = memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : '';
+  const wallSec = secHidden('Wall') ? '' : `<section class="area-dash-wall" style="--h:${h}"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`;
+  const linksSec = (canEditArea || blockLinks(area).length) ? `<section class="area-dash-links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
+  const filesLinksRow = `<div class="area-dash-fl"><section class="area-dash-files" style="--h:${h}">${areaAttachHtml(area)}</section>${linksSec}</div>`;
+  const sharedSec = memberCount ? `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : '';
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   ${wallSec}
   ${filesLinksRow}
