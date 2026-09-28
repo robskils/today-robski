@@ -11882,12 +11882,6 @@ function portfolioBody() {
     const cls = p.pct > 0.05 ? 'up' : p.pct < -0.05 ? 'down' : 'flat'; const sign = p.pct >= 0 ? '+' : '';
     return `<div class="fin-chip"><span class="lab">${esc(p.label)}</span><span class="fin-cv ${cls}">${sign}${p.pct.toFixed(2)}%</span><span class="fin-abs">${sign}${eur0(p.abs)}</span></div>`;
   }).join('');
-  const cards = (d.holdings || []).map((h) => `<div class="fin-card" style="--sw:${h.swatch}">
-    <div class="fin-card-top"><span class="fin-name">${esc(h.name)}</span><button class="fin-edit-btn" data-fin-edit="${h.id}" title="Edit holding">✎</button></div>
-    <span class="fin-venue">${esc(h.venue || h.code)}</span>
-    <span class="fin-cv2">${eur0(h.value)}</span>
-    <span class="fin-qty">${fmtQty(h.qty)} ${esc(h.unit)}${total ? ` · ${pctOf(h.value)}%` : ''}</span>
-  </div>`).join('');
   const rates = (d.rates || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
   const asOf = d.ts ? new Date(d.ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
   const gains = [];
@@ -11900,8 +11894,6 @@ function portfolioBody() {
     <div class="fin-head"><div class="fin-total-lab">Total value</div><div class="fin-total">${eur0(total)}</div>${gains.length ? `<div class="fin-gains">${gains.join('')}</div>` : ''}${asOf ? `<div class="fin-asof">Live as of <b>${esc(asOf)}</b> · <button class="fin-link" data-fin-refresh>refresh</button></div>` : ''}</div>
     ${bar ? `<div class="fin-bar">${bar}</div><div class="fin-legend">${legend}</div>` : ''}
     ${perf ? `<div class="fin-perf">${perf}</div>` : ''}
-    <div class="fin-cards">${cards}</div>
-    ${rates ? `<div class="fin-rates"><dl>${rates}</dl></div>` : ''}
     <div class="fin-sec-h"><span>What you hold</span></div>
     <div class="fh-wrap"><table class="fh-table">
       <thead><tr><th>Holding</th><th class="fh-r">Units held</th><th>Where held</th><th class="fh-r">Value</th>${anyCost ? '<th class="fh-r">Gain</th>' : ''}<th></th></tr></thead>
@@ -11927,6 +11919,7 @@ function portfolioBody() {
     </table></div>` : ''}
     <div class="fin-sec-h"><span>Manage holdings</span>${(!f.adding && f.editId == null) ? '<button class="ghost" data-fin-add>+ Add holding</button>' : ''}</div>
     ${financialEditor()}
+    ${rates ? `<details class="fin-rates-fold"><summary>How this is valued · live rates</summary><div class="fin-rates"><dl>${rates}</dl></div></details>` : ''}
   </div>`;
 }
 function holdingFields(h, kinds) {

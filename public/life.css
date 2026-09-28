@@ -415,6 +415,14 @@ button { cursor:pointer; background:none; border:0; }
 .fin-rates dt, .fin-rates dd { margin:0; padding:11px 0; border-bottom:1px solid var(--line); }
 .fin-rates dt { color:var(--ink-2); } .fin-rates dd { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
 .fin-rates dl>:nth-last-child(1), .fin-rates dl>:nth-last-child(2) { border-bottom:0; }
+/* The valuation workings, tucked into a quiet collapsible at the foot of the page. */
+.fin-rates-fold { margin-top:28px; border-top:1px solid var(--line); padding-top:14px; }
+.fin-rates-fold > summary { list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--ink-3); padding:4px 0; }
+.fin-rates-fold > summary::-webkit-details-marker { display:none; }
+.fin-rates-fold > summary::before { content:'▸'; font-size:.8em; transition:transform .15s; }
+.fin-rates-fold[open] > summary::before { transform:rotate(90deg); }
+.fin-rates-fold > summary:hover { color:var(--accent); }
+.fin-rates-fold .fin-rates { margin-top:10px; }
 .fin-sec-h { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:16px; font-weight:600; padding-top:6px; border-top:1px solid var(--line); }
 .fin-editor { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; }
 .fin-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
