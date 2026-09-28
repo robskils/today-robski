@@ -3616,6 +3616,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .help-back-link { color:var(--accent); font-size:14px; }
 .help-back-link:hover { text-decoration:underline; }
 /* Guide home page: the welcome-checklist card, then a grid of tool guides. */
+/* The ethos band - the tagline earns a proper moment here, where we're explaining
+   what Daybook is FOR. Prominent in the Guide only; a quiet whisper elsewhere. */
+.guide-ethos { text-align:center; margin:8px 0 22px; padding:26px 22px 28px; border-radius:20px; border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); background:linear-gradient(170deg, color-mix(in srgb,var(--accent) 9%,var(--card)), var(--card) 72%); }
+.guide-ethos-tag { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:30px; font-weight:500; line-height:1.1; letter-spacing:.005em; color:var(--accent); }
+.guide-ethos-p { max-width:560px; margin:14px auto 0; font-size:16.5px; line-height:1.65; color:var(--ink-2); }
+/* The discreet footer whisper on individual guides and the index bottom. */
+.guide-tagline { text-align:center; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:17px; color:var(--ink-3); margin:26px 0 2px; letter-spacing:.01em; }
 .guide-start { margin:6px 0 24px; padding:18px 20px; border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 6%,transparent); }
 .guide-start-h { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:500; margin-bottom:6px; }
 .guide-start-p { margin:0 0 10px; color:var(--ink-2); }

@@ -803,7 +803,8 @@ function renderHelp(key) {
   $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Guide', attr: 'data-open-guide' }, { label: h.title }])}
     <div class="pane-head home-head"><h1>${esc(h.title)}</h1></div>
     <div class="help-doc"><p class="help-lede">${h.tip}</p>${h.body}
-      <p class="help-foot"><button class="help-back-link" data-open-guide>← All guides</button></p></div>`;
+      <p class="help-foot"><button class="help-back-link" data-open-guide>← All guides</button></p>
+      <p class="guide-tagline">For a life well lived</p></div>`;
 }
 // The Guide home page: the joining checklist up top, then a card per tool guide.
 function renderGuideIndex() {
@@ -814,7 +815,11 @@ function renderGuideIndex() {
   $('#pane').innerHTML = `${pageCrumb('Guide')}
     <div class="pane-head home-head"><h1>Guide</h1></div>
     <div class="help-doc">
-      <p class="help-lede">Everything you need to find your way around Daybook. Start with the welcome guide, or pick a tool.</p>
+      <div class="guide-ethos">
+        <div class="guide-ethos-tag">For a life well lived</div>
+        <p class="guide-ethos-p">Daybook holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
+      </div>
+      <p class="help-lede">Here's how it all works. Start with the welcome guide, or pick a tool.</p>
       <div class="guide-start">
         <div class="guide-start-h">✦ New here? The welcome guide</div>
         <p class="guide-start-p">A quick set-up, any time you want to run through it:</p>
@@ -834,6 +839,7 @@ function renderGuideIndex() {
         <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
         <a class="guide-legal-link" href="mailto:contact@daybook.fyi">Contact us ✉</a>
       </div>
+      <p class="guide-tagline">For a life well lived</p>
       <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.<br>© ${new Date().getFullYear()} Daybook · daybook.fyi</p>
     </div>`;
 }
