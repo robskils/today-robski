@@ -1878,6 +1878,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .note-side .ce-card { background:var(--paper-2); }
   .note-side .subpage { background:var(--paper-2); box-shadow:none; }
 }
+/* Desktop: the sticky side rails (Life areas, Goals, Notes list, Tables) get their
+   own scroll, so a tall rail can be scrolled top-to-bottom independently of the
+   main column - not clamped to how far the main column has scrolled. (Robin.) */
+@media (min-width:901px){
+  .col-areas, .goals-side, .notes-side, .tbl-list {
+    max-height:calc(100vh - 112px); overflow-y:auto; overflow-x:hidden;
+    overscroll-behavior:contain; padding-right:4px;
+  }
+}
 .subpages { margin-top:36px; border-top:1px solid var(--line); padding-top:20px; }
 .nconn { margin-top:6px; }
 .nconn > summary { display:flex; align-items:center; gap:9px; cursor:pointer; font-size:15px; color:var(--ink); font-weight:500; list-style:none; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card); box-shadow:var(--shadow); }

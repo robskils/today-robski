@@ -7618,7 +7618,7 @@ function t2TrackerHtml(manage) {
       const nameInner = manage
         ? `<span class="trk-rename" data-prc-rename="${a.id}" contenteditable="true" spellcheck="false" title="Click to rename">${esc(a.title)}</span>`
         : esc(a.title);
-      return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''}" data-prc-id="${a.id}">
+      return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''} ${!manage ? 'prc-row-click' : ''}" data-prc-id="${a.id}" ${!manage ? `data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"` : ''}>
         ${manage ? `<span class="trk-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span>` : ''}
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
@@ -16065,7 +16065,7 @@ document.addEventListener('click', (e) => {
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
   { const na = t.closest('[data-prc-new-area]'); if (na) { openPracticeEditor(null, na.dataset.prcNewArea); return; } }
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
-  { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, [data-prc-tick], [data-prc-edit], [data-prc-del], [data-prc-grip], [data-prc-day]')) { if (Date.now() - (typeof t2SuppressClick !== 'undefined' ? t2SuppressClick : 0) < 350) return; openPracticeCard(po.dataset.prcOpen); return; } }
+  { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, [data-prc-tick], [data-prc-edit], [data-prc-del], [data-prc-grip], [data-prc-day], [data-prc-video], [data-prc-rename], .trk-cadsel')) { if (Date.now() - (typeof t2SuppressClick !== 'undefined' ? t2SuppressClick : 0) < 350) return; openPracticeCard(po.dataset.prcOpen); return; } }
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
