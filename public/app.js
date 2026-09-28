@@ -9880,6 +9880,12 @@ function renderMailList(loading) {
   if (el) el.innerHTML = mailListInner(loading);
   else renderMail(loading);
 }
+// After tapping a pot on mobile, glide down to the messages - the pots strip is
+// tall on a phone, so the list would otherwise be below the fold. (Robin.)
+function scrollToMailList() {
+  if (!window.matchMedia('(max-width:820px)').matches) return;
+  requestAnimationFrame(() => { const el = document.querySelector('.mail-layout') || document.querySelector('.mail-list'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+}
 function renderMail(loading) {
   // Mail's loads are the slowest in the app (IMAP, over the network, sometimes
   // seconds), so a response can land long after you've moved on. Painting it then
@@ -16306,10 +16312,10 @@ document.addEventListener('click', (e) => {
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
   const ddel = t.closest('[data-del-draft]'); if (ddel) { e.preventDefault(); e.stopPropagation(); delDraft(ddel.dataset.delDraft); return; }
   const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
-  const mfld = t.closest('[data-mail-folder]'); if (mfld) { state.mail.quadFilter = new Set(); setMailFolder(mfld.dataset.mailFolder); return; }
-  if (t.closest('[data-mail-quad-inbox]')) { state.mail.quadFilter = new Set(); setMailFolder('inbox'); return; }
-  if (t.closest('[data-mail-quad-archive]')) { state.mail.quadFilter = new Set(); setMailFolder('archive'); return; }
-  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { const k = qv.dataset.mailQuadView; const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const onlyThis = qf.size === 1 && qf.has(k); state.mail.quadFilter = onlyThis ? new Set() : new Set([k]); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); return; } }
+  const mfld = t.closest('[data-mail-folder]'); if (mfld) { state.mail.quadFilter = new Set(); setMailFolder(mfld.dataset.mailFolder); scrollToMailList(); return; }
+  if (t.closest('[data-mail-quad-inbox]')) { state.mail.quadFilter = new Set(); setMailFolder('inbox'); scrollToMailList(); return; }
+  if (t.closest('[data-mail-quad-archive]')) { state.mail.quadFilter = new Set(); setMailFolder('archive'); scrollToMailList(); return; }
+  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { const k = qv.dataset.mailQuadView; const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const onlyThis = qf.size === 1 && qf.has(k); state.mail.quadFilter = onlyThis ? new Set() : new Set([k]); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); scrollToMailList(); return; } }
   { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(o, qf.dataset.mailQuadFile); return; } }
   // Quick-file straight from an inbox row: a small button opens a 4-way menu.
   { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
