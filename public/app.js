@@ -12623,10 +12623,17 @@ function renderGoalCard() {
     : metric === 'tasks'
       ? `<div class="gc-metric-auto">✓ Counts the tasks you link below${(state.goal_open.tasks || []).length ? ' - tick them off and this fills itself.' : '. Add or link a task below to get going.'}</div>`
       : `<div class="gc-metric-auto">▤ Counts the notes connected below.<span class="gc-metric-aim">Aiming for <input class="sel gc-mini-num" id="gc-target" type="number" min="1" value="${esc(p.target ?? '')}" placeholder="10"> notes.</span></div>`;
+  // A "number I set" goal gets a draggable slider too: drag it and the number fills
+  // in to match its position (round of pct x target), so you needn't type it. Tasks/
+  // notes metrics stay a read-only bar - their number is counted, not chosen. (Robin.)
+  const numManual = metric === 'manual';
+  const numBar = numManual
+    ? `<span class="glist-bar-wrap gc-slidebar" style="--h:${hueOf(a)}"><span class="glist-bar"><i data-goalnum-fill="${g.id}" style="width:${pctNum}%"></i></span><input type="range" class="gc-slider" min="0" max="100" step="1" value="${pctNum}" data-goal-numslide="${g.id}" aria-label="Progress: ${pctNum}%" title="Drag to set how far along - the number fills in to match"></span>`
+    : `<div class="goal-bar gc-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div>`;
   const progressBlock = gtype === 'number'
     ? `<div class="gc-prog">
-        <div class="gc-prog-nums"><span class="gc-prog-cur"><b>${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${unitLbl}</span><span class="gc-prog-pct">${pctNum}%</span></div>
-        <div class="goal-bar gc-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div>
+        <div class="gc-prog-nums"><span class="gc-prog-cur"><b data-goalnum-cur="${g.id}">${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${unitLbl}</span><span class="gc-prog-pct" data-goalnum-pct="${g.id}">${pctNum}%</span></div>
+        ${numBar}
         <div class="gc-metric-row"><span class="gc-metric-l">Measure by</span><select class="sel" id="gc-metric">${GMETRICS.map(([v, l]) => `<option value="${v}" ${metric === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         ${metricEditRow}
       </div>`
@@ -15745,6 +15752,22 @@ document.addEventListener('input', (e) => {
     if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i, [data-rvg-bar]'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct, .rvg-pct'); if (lab) lab.textContent = v + '%'; }
     e.target.setAttribute('aria-label', `Progress: ${v}%`);
     clearTimeout(window.__goalProgT); window.__goalProgT = setTimeout(() => saveGoalProgress(e.target.dataset.goalProgress, v), 450);
+  }
+  // Number-goal slider: the number is worked out from the slider's position (round
+  // of pct x target), so you can drag instead of typing. Live-updates the count,
+  // the % and the "Update" input; saves the computed current when you settle.
+  if (e.target && e.target.matches && e.target.matches('[data-goal-numslide]')) {
+    const gid = e.target.dataset.goalNumslide;
+    const g = state.goal_open && state.goal_open.goal; if (!g || String(g.id) !== String(gid)) return;
+    const target = +((g.props || {}).target) || 0;
+    const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+    const current = Math.round(v / 100 * target);
+    const cur = document.querySelector(`[data-goalnum-cur="${gid}"]`); if (cur) cur.textContent = current;
+    const ci = document.getElementById('gc-current'); if (ci) ci.value = current;
+    const fill = document.querySelector(`[data-goalnum-fill="${gid}"]`); if (fill) fill.style.width = v + '%';
+    const pctEl = document.querySelector(`[data-goalnum-pct="${gid}"]`); if (pctEl) pctEl.textContent = v + '%';
+    e.target.setAttribute('aria-label', `Progress: ${v}%`);
+    clearTimeout(window.__goalNumT); window.__goalNumT = setTimeout(() => patchGoal(gid, { current }, true), 400);
   }
 });
 document.addEventListener('paste', (e) => {
