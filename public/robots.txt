@@ -1,9 +1,0 @@
-# Daybook - https://daybook.fyi
-# Search-engine indexing of our public pages is welcome. Automated scraping,
-# crawling or bulk extraction of the app, its data, its content or its code is
-# prohibited, as is any automated access beyond normal search indexing. See the
-# Terms of Service: https://daybook.fyi/terms
-
-User-agent: *
-Disallow: /api/
-Allow: /

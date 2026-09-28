@@ -3575,7 +3575,7 @@ export default {
       // tenant subdomains must not be.
       if (path === '/robots.txt') {
         const body = isApex
-          ? 'User-agent: *\nAllow: /\nSitemap: https://daybook.fyi/sitemap.xml\n'
+          ? '# Search-engine indexing of our public pages is welcome. Automated scraping,\n# crawling or bulk extraction of Daybook, its data, content or code is prohibited,\n# as is any automated access beyond normal indexing. See https://daybook.fyi/terms\nUser-agent: *\nDisallow: /api/\nAllow: /\nSitemap: https://daybook.fyi/sitemap.xml\n'
           : 'User-agent: *\nDisallow: /\n';
         return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
