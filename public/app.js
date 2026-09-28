@@ -647,16 +647,17 @@ const HELP = {
       <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
       <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>
       <p><b>Add holidays &amp; sport.</b> Tap <b>＋ Holidays &amp; sport</b> (or the ⚙ on this page) to open <b>Settings › Calendar</b>. Search for any <b>country</b> and its national public holidays appear on your calendar, and search for your <b>football team</b> (or any club) to add its upcoming fixtures with kick-off in your local time. These are read-only - untick a country or team to remove them.</p>` },
-  mail: { title: 'Mail', tip: 'All your inboxes in one place, triaged into four buckets so the inbox reaches zero.',
+  mail: { title: 'Mail', tip: 'All your inboxes in one place, triaged into a few buckets so the inbox reaches zero.',
     body: `<p>Mail merges your real mailboxes (IMAP/SMTP) into one inbox. Add an account with <b>Accounts</b> at the top of Mail.</p>
-      <p><b>Triage to zero.</b> New mail lands in the <b>Inbox</b> queue. File each email into one of four buckets - and it leaves the inbox:</p>
+      <p><b>Triage to zero.</b> New mail lands in the <b>Inbox</b> queue. File each email into one of three priority buckets - and it leaves the inbox:</p>
       <ul><li><b>Urgent</b> - important and time-sensitive; do it now.</li>
       <li><b>Important</b> - matters, but not a rush; plan it.</li>
-      <li><b>Read Later</b> - worth a read when you have space.</li>
-      <li><b>Others</b> - low priority; out of the way.</li></ul>
-      <p>File from an open email, from the colour dot on any row, or by dragging a row onto a card. Tap a card to see that bucket (tap two to see both). When the Inbox count hits zero, you're done.</p>
-      <p><b>Filing clears your inbox.</b> The moment you file an email into a bucket, it's <b>archived off your inbox</b> - out of your face - while the bucket keeps hold of it. So the inbox empties as you triage, and each bucket still shows everything you filed there, on any account (Gmail or IMAP alike). Change your mind? The <b>Inbox</b> option in the picker un-files it and puts it back in the queue.</p>
-      <p><b>Working a bucket.</b> Open a card like Urgent, deal with each email, then hit <b>archive</b> (the archive button on the row or in the open email) - since it's already archived, that just clears it out of the box; it stays safe in your Archive folder. Trashing or moving an email also clears its bucket, so nothing lingers once you've actioned it.</p>
+      <li><b>Read Later</b> - worth a read when you have space.</li></ul>
+      <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent</b> · <b>Important</b> · <b>Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the Inbox queue. When the Inbox count hits zero, you're done.</p>
+      <p><b>Filing an email.</b> Open it and use <b>File into ▾</b> to drop it in a bucket, tap the colour dot on any row, or drag a row onto a pot. The moment you file it, it's <b>archived off your inbox</b> - out of your face - while the bucket keeps hold of it, on any account (Gmail or IMAP alike). Change your mind? <b>File into ▾ → Back to Inbox</b> puts it back in the queue.</p>
+      <p><b>Working a bucket.</b> Open a pot like Urgent, deal with each email, then <b>Archive</b> it (the archive button in the open email, or on the row) - it's already out of the inbox, so that just clears it from the bucket; it stays safe in your Archive folder. Trashing or moving an email clears its bucket too, so nothing lingers once you've actioned it.</p>
+      <p><b>Important senders.</b> In an open email, <b>More ▾ → Mark important sender</b> lifts every email from that person into a <b>⭐ Important senders</b> section pinned at the top of your inbox, so they never get lost in the stream. The ⭐ by the search box turns that grouping on or off.</p>
+      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life area</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (mark important sender, spam, block).</p>
       <h4>Which email accounts can I add?</h4>
       <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
       <h4>How to add one</h4>
@@ -9806,8 +9807,8 @@ function mailListInner(loading) {
   if (inboxCtx) {
     if (qf && qf.size) {
       // A bucket view is durable: the remembered snapshots + any loaded inbox mail
-      // in the selected buckets (deduped), so filed mail stays even once it's left
-      // the inbox.
+      // in the selected bucket (deduped), so filed mail stays even once it's left
+      // the inbox. Selection is single: one pot at a time (the Set holds one key).
       const seen = new Set(); const msgs = [];
       for (const q of qf) for (const mm of mailQuadMsgs(q)) { const id = mm.messageId || mm._key; if (!seen.has(id)) { seen.add(id); msgs.push(mm); } }
       threads = buildThreads(msgs);
@@ -16285,7 +16286,7 @@ document.addEventListener('click', (e) => {
   const mfld = t.closest('[data-mail-folder]'); if (mfld) { state.mail.quadFilter = new Set(); setMailFolder(mfld.dataset.mailFolder); return; }
   if (t.closest('[data-mail-quad-inbox]')) { state.mail.quadFilter = new Set(); setMailFolder('inbox'); return; }
   if (t.closest('[data-mail-quad-archive]')) { state.mail.quadFilter = new Set(); setMailFolder('archive'); return; }
-  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const k = qv.dataset.mailQuadView; if (qf.has(k)) qf.delete(k); else qf.add(k); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); return; } }
+  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { const k = qv.dataset.mailQuadView; const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const onlyThis = qf.size === 1 && qf.has(k); state.mail.quadFilter = onlyThis ? new Set() : new Set([k]); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); return; } }
   { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(o, qf.dataset.mailQuadFile); return; } }
   // Quick-file straight from an inbox row: a small button opens a 4-way menu.
   { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
