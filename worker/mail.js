@@ -648,6 +648,42 @@ async function lightFetchMessage(im, uid) {
   };
 }
 
+// ── per-account activity, so warming scales ────────────────────────────
+// Warming EVERY account every minute doesn't scale: at hundreds of users a cron
+// tick can't open that many IMAP connections or finish in its window. So we track
+// when each account last had Mail opened, and the cron warms ACTIVE accounts every
+// minute while backing dormant ones off to a slow refresh. Activity lives in the
+// system settings row (user_id=1), keyed `mailact:<accountId>` = epoch ms. (Robin.)
+const MAIL_ACTIVE_MS = 3 * 24 * 60 * 60 * 1000;   // opened Mail in the last 3 days = active
+const MAIL_DORMANT_EVERY = 15 * 60 * 1000;        // dormant accounts refresh every ~15 min
+async function mailLastActive(env) {
+  const { results } = await env.DB.prepare("SELECT key, value FROM settings WHERE user_id=1 AND key LIKE 'mailact:%'").all();
+  const m = {}; for (const r of (results || [])) m[r.key.slice(8)] = Number(r.value) || 0; return m;
+}
+async function stampMailActive(env, ids, now) {
+  const stmts = (ids || []).map((id) => env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,?,?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind('mailact:' + id, String(now)));
+  if (stmts.length) await env.DB.batch(stmts);
+}
+async function mailLastSynced(env) {
+  const { results } = await env.DB.prepare("SELECT account, synced_at FROM mail_cache_meta WHERE mailbox='INBOX'").all();
+  const m = {}; for (const r of (results || [])) m[r.account] = Date.parse(r.synced_at) || 0; return m;
+}
+// On-open warm for just ONE user's accounts - targeted and immediate (bypasses the
+// global cron throttle), so the person who just opened Mail gets fresh mail fast
+// without warming everyone. Per-account throttle stops a chatty client hammering it.
+async function syncUserInboxes(env, uid) {
+  const accts = await listAccounts(env, uid);
+  const now = Date.now();
+  await stampMailActive(env, accts.map((a) => a.id), now).catch(() => {});
+  const lastSync = await mailLastSynced(env).catch(() => ({}));
+  const due = accts.filter((a) => (now - (lastSync[a.id] || 0)) > 25000);   // skip if synced <25s ago
+  let newUnread = 0; const CHUNK = 4;
+  for (let i = 0; i < due.length; i += CHUNK) {
+    const part = await Promise.allSettled(due.slice(i, i + CHUNK).map((a) => syncOneInbox(env, a)));
+    for (const p of part) if (p.status === 'fulfilled' && p.value) newUnread += p.value.newUnread || 0;
+  }
+  return { newUnread };
+}
 // ── background inbox cache (D1) ────────────────────────────────────────
 // The cron syncs the latest inbox headers into D1, so opening Mail reads from
 // the database (tens of ms) instead of a live IMAP round-trip (seconds) - the
@@ -665,7 +701,16 @@ export async function syncMailCache(env, { force = false } = {}) {
     if (row && now - Number(row.value || 0) < 55000) return { newUnread: 0 };   // at most once a minute
   }
   await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,'mail_sync_at',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
-  const accts = await listAccounts(env);
+  const allAccts = await listAccounts(env);
+  // Warm ACTIVE accounts (Mail opened in the last few days) every tick; back dormant
+  // ones off to a slow refresh - so cost scales with active users, not signups. A
+  // forced warm still does everyone. A brand-new account (no sync yet) counts as due.
+  const active = await mailLastActive(env).catch(() => ({}));
+  const lastSync = await mailLastSynced(env).catch(() => ({}));
+  const accts = force ? allAccts : allAccts.filter((a) => {
+    if ((now - (active[a.id] || 0)) < MAIL_ACTIVE_MS) return true;   // active: every tick
+    return (now - (lastSync[a.id] || 0)) > MAIL_DORMANT_EVERY;       // dormant: only when stale
+  });
   // Sync in small batches, not all at once: a Worker invocation can only hold a
   // handful of simultaneous outbound sockets, so firing 10+ IMAP connections
   // together makes the overflow ones fail (and a failed SELECT reads as an empty
@@ -834,6 +879,8 @@ export async function handleMail(request, env, url, json, err) {
       const accParam = url.searchParams.get('account') || 'all';
       const accts = await listAccounts(env, env.uid);
       const ids = accParam === 'all' ? accts.map((a) => a.id) : [accParam];
+      // Opening Mail marks these accounts active, so the cron keeps them warm.
+      await stampMailActive(env, ids, Date.now()).catch(() => {});
       const { messages, unseen, syncedAt } = await readCachedInbox(env, ids);
       return json({ messages, unseen, syncedAt, cached: true }, request);
     }
@@ -843,7 +890,10 @@ export async function handleMail(request, env, url, json, err) {
     // straight from a fresh cache, so the next open stays warm without ever
     // waiting on a live IMAP round-trip (Gmail is slow to answer from the cloud).
     if (sub === 'sync' && method === 'POST') {
-      const r = await syncMailCache(env, { force: false }).catch(() => ({}));
+      // Warm just THIS user's accounts, now - targeted and immediate, so opening
+      // Mail refreshes your own inbox fast without warming everyone (and marks you
+      // active so the cron keeps you warm).
+      const r = await syncUserInboxes(env, env.uid).catch(() => ({}));
       return json({ ok: true, newUnread: r.newUnread || 0 }, request);
     }
 
