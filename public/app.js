@@ -2727,7 +2727,6 @@ function navItems(v) {
     // The Money section's four buttons, each opening the Money tool on its tab.
     finSpending: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'spending' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.money.spending')}</span></button>` : '',
     finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
-    finTracker: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'tracker' ? 'on' : ''}" data-open-financial data-fin-tab="tracker"><span class="nav-ic">▥</span><span class="nav-lbl">${t('nav.money.tracker')}</span></button>` : '',
     finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
     daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Daybook</span></button>` : '',
@@ -2768,7 +2767,7 @@ function navGridHtml(v) {
     ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews])}
     ${grp(t('nav.grp.wellbeing'), [NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${peopleBox(v)}
-    ${grp(t('nav.grp.money'), [NI.finSpending, NI.finPortfolio, NI.finTracker, NI.finAdvice])}
+    ${grp(t('nav.grp.money'), [NI.finSpending, NI.finPortfolio, NI.finAdvice])}
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
@@ -11741,12 +11740,13 @@ function goalMeasure(g) {
 // Portfolio moved across from portfolio.robski.uk: same data (shared D1), same
 // pricing (silver valued at spot, never the KAG token). Advice + Spending are
 // staged next.
-const FIN_TABS = [['spending', 'Spending'], ['portfolio', 'Portfolio'], ['tracker', 'Tracker'], ['advice', 'Advice']];
+const FIN_TABS = [['spending', 'Spending'], ['portfolio', 'Portfolio'], ['advice', 'Advice']];
 async function openFinancial(tab) {
   // Remember the last tab across reloads (the in-memory default would otherwise
   // reset every session).
   let saved = null; try { saved = localStorage.getItem('life.fin.tab'); } catch {}
   state.financial.tab = tab || saved || state.financial.tab || 'spending';
+  if (state.financial.tab === 'tracker') state.financial.tab = 'spending';   // Money Tracker retired
   try { localStorage.setItem('life.fin.tab', state.financial.tab); } catch {}
   state.view = { type: 'financial', tab: state.financial.tab };
   renderNav();
