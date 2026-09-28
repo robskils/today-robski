@@ -4113,7 +4113,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* The right rail scrolls on its own: it sticks at the top and, when its sections
    (Recent, Starred, Notepad, People) run past the viewport, scrolls inside itself
    rather than dragging the main Today wall with it. */
-.home-side { position:sticky; top:20px; max-height:calc(100vh - 36px); overflow-y:auto; overscroll-behavior:contain; padding-right:2px; }
+/* Pin the right rail BELOW the sticky tab strip (44px) - at top:20px it tucked
+   under the tabs and its own top (the notepad's first lines) was hidden and
+   unreachable. It scrolls independently within this height. (Robin, 2026-09-28.) */
+.home-side { position:sticky; top:56px; max-height:calc(100vh - 72px); overflow-y:auto; overscroll-behavior:contain; padding-right:2px; }
 .home-side::-webkit-scrollbar { width:8px; }
 .home-side::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
 .home-side .home-sec { margin-top:0; }
