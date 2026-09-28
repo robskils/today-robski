@@ -4491,6 +4491,7 @@ function renderHome() {
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
+      <div class="home-scroll">
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="crumbbar home-crumbbar">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button>' : ''}<div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
@@ -4516,10 +4517,6 @@ function renderHome() {
       ${homeQuoteHtml()}
       ${modOn('reflect') ? spiritPinnedHtml() + reflectPinsHtml() : ''}
       <div id="qt-wrap"></div>
-      <div class="home-body">
-        <!-- The mobile section launcher used to live here (it stood in for the
-             hidden sidebar). The ☰ nav drawer now carries every section, so the
-             grid was pure duplication and has been removed. -->
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
           // The Life areas tile lists ALL areas, starred first, then by a chosen
@@ -4602,9 +4599,13 @@ function renderHome() {
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
           // drag to reorder how the sections stack on Home.
           const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
-          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — turn a section on below.</div>'}</section>${featBar}`;
+          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
-        <aside class="home-side"><div class="home-side-inner">${(() => {
+        ${homeDiscoverHtml()}
+        <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
+        <button class="home-mark" data-guide-home aria-label="Back to the top" title="Back to the top">${MARK}</button>
+      </div>
+      <aside class="home-side">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
           // section carrying data-hsec so the drop logic can read the order.
           const secCount = (n) => (n ? `<span class="sec-c">${n}</span>` : '');
@@ -4617,11 +4618,7 @@ function renderHome() {
           const sdef = ['recent', 'favs', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
           return sorder.map((k) => sideSec[k] || '').join('');
-        })()}</div></aside>
-      </div>
-      ${homeDiscoverHtml()}
-      <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
-      <button class="home-mark" data-guide-home aria-label="Back to the top" title="Back to the top">${MARK}</button>
+        })()}</aside>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
   startHomeClock();         // keep the time beside the date ticking

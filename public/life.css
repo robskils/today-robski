@@ -3672,7 +3672,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .guide-ethos-mark { line-height:0; margin-bottom:12px; }
 .guide-ethos-mark .brand-mark { width:52px; height:52px; color:var(--accent); margin:0; }
 .guide-ethos-tag { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:30px; font-weight:500; line-height:1.1; letter-spacing:.005em; color:var(--accent); }
-.guide-ethos-p { max-width:560px; margin:42px auto 0; font-size:16.5px; line-height:1.65; color:var(--ink-2); }
+/* Two classes so this beats `.help-doc p { margin:0 0 14px }` (0,0,1,1),
+   which was silently winning the cascade and flattening the gap. */
+.guide-ethos .guide-ethos-p { max-width:560px; margin:40px auto 0; font-size:16.5px; line-height:1.65; color:var(--ink-2); }
 /* The discreet footer whisper on individual guides and the index bottom. */
 .guide-tagline { text-align:center; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:17px; color:var(--ink-3); margin:26px 0 2px; letter-spacing:.01em; }
 /* The sign-off: the tagline with the Daybook mark beneath it, the mark a quiet
@@ -4004,7 +4006,15 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 }
 .home-sec { margin:26px 0; }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
-.home-body { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:26px; align-items:start; }
+/* Home is a viewport-locked two-column dashboard: the left column (everything)
+   and the right rail each scroll INDEPENDENTLY, so the rail's top is always
+   reachable no matter where the main column is scrolled. Mirrors the same
+   `.pane:has(.today-frame)` full-height pattern the Today planner uses. */
+.pane:has(.home) { height:calc(100vh - 44px); display:flex; flex-direction:column; padding-bottom:0; }
+.home { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:26px; }
+.home-scroll { overflow-y:auto; min-height:0; padding-right:8px; padding-bottom:52px; }
+.home-scroll::-webkit-scrollbar, .home-side::-webkit-scrollbar { width:8px; }
+.home-scroll::-webkit-scrollbar-thumb, .home-side::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
 .home-main > .home-sec:first-child { margin-top:0; }
 /* Home main sections as equal icon tiles + one expanding panel (like the Toolbox). */
 .home-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(94px, 1fr)); gap:10px; margin-bottom:16px; }
@@ -4120,10 +4130,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    never riding the page or sliding under the header. (Both attempts that put sticky
    on the item itself failed: definite-height-no-stretch wouldn't pin, and
    stretch+max-height rode the page.) (Robin, 2026-09-29.) */
-.home-side { align-self:stretch; min-height:0; padding-right:2px; }
-.home-side-inner { position:sticky; top:56px; height:calc(100vh - 72px); overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:16px; }
-.home-side-inner::-webkit-scrollbar { width:8px; }
-.home-side-inner::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
+.home-side { min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:16px; padding:0 2px 52px 0; }
 .home-side .home-sec { margin-top:0; }
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
 .home-notepad::placeholder { color:var(--ink-3); }
@@ -4150,9 +4157,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      focus, then Favourites. display:contents dissolves the two column wrappers so
      every section is a direct flex child that `order` can arrange; the flex gap
      replaces the per-section margins. */
-  .home-body { display:flex; flex-direction:column; gap:26px; grid-template-columns:none; align-items:stretch; }
-  .home-main, .home-side, .home-side-inner { display:contents; position:static; }
-  .home-body .home-sec { margin:0; }
+  /* On mobile there's one column and normal document scroll: undo the desktop
+     viewport lock, and dissolve BOTH column wrappers so every section becomes a
+     direct flex child of `.home` that `order` can arrange. */
+  .pane:has(.home) { height:auto; display:block; padding-bottom:90px; }
+  .home { display:flex; flex-direction:column; gap:26px; }
+  .home-scroll, .home-main, .home-side { display:contents; overflow:visible; }
+  .home .home-sec { margin:0; }
   /* Tap the whole header to collapse - a generous target, and no drag grip, so
      every section title lines up flush left whichever column it came from. The
      bigger vertical padding (a ~44px touch target) is what makes the tap land
@@ -4176,13 +4187,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      order them with the notepad at position 1. !important beats the inline order
      the mobile-arrangement writes onto each section. */
   .home-lead { display:contents; }
-  .home-body .lead-block { order:4; }
-  .home-body .lead-day { order:0; }
-  .home-body .home-sec-notepad { order:1 !important; }
-  .home-body .lead-priority { order:2; }
-  .home-body .lead-tracker { order:3; }
-  .home-body .home-features { order:25; }   /* the show/hide panel sits below the sections */
-  .home-body .home-sec-card { margin:0; }   /* flex gap handles spacing on mobile */
+  .home .lead-block { order:4; }
+  .home .lead-day { order:0; }
+  .home .home-sec-notepad { order:1 !important; }
+  .home .lead-priority { order:2; }
+  .home .lead-tracker { order:3; }
+  .home .home-features { order:25; }   /* the show/hide panel sits below the sections */
+  .home .home-sec-card { margin:0; }   /* flex gap handles spacing on mobile */
   /* Uniform cards: Today drops its accent-hero treatment so every card is the
      same plain style as Do next / Práticas, collapsing to one tidy row. */
   .lead-block.lead-day { border-color:var(--line); box-shadow:var(--shadow); }
@@ -4191,8 +4202,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .lead-block:not(.lead-collapsed) .lead-h, .home-sec-card:not(.home-sec-shut) > .home-sec-h { margin-bottom:11px; }
   /* No drag dots on mobile - drag the whole card to reorder (chevrons are hidden
      everywhere by the base rule). */
-  .home-body .home-mgrip { display:none; }
-  .home-body .home-mdrag-h { cursor:grab; }
+  .home .home-mgrip { display:none; }
+  .home .home-mdrag-h { cursor:grab; }
   /* Collapsed cards are a FIXED identical height, whatever the title or icons. */
   .lead-block.lead-collapsed, .home-sec-card.home-sec-shut { height:56px; min-height:56px; padding-top:0; padding-bottom:0; display:flex; align-items:center; }
   .lead-block.lead-collapsed .lead-h, .home-sec-card.home-sec-shut > .home-sec-h { width:100%; min-height:0; margin:0; }
@@ -4203,7 +4214,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      row (no 280px min to spill into two columns), the home columns can't be
      pushed past the screen, and the home clips any stray horizontal overflow. */
   .goal-grid { grid-template-columns:minmax(0,1fr); }
-  .home, .home-body, .home-main, .home-side { min-width:0; max-width:100%; }
+  .home, .home-scroll, .home-main, .home-side { min-width:0; max-width:100%; }
   .home { overflow-x:clip; }
   .fav-cards, .fav-card, .fav-card-open { min-width:0; max-width:100%; }
 }
