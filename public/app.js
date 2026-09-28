@@ -9857,6 +9857,11 @@ function mailListInner(loading) {
   // their own section at the top so they don't get lost in the stream. (Robin
   // prefers this dedicated box to auto-filing them into the Important bucket.)
   const v = mailVips();
+  const inInboxQueue = (m.folder || 'inbox') === 'inbox' && !m.query;
+  // Turned the grouping off but you still have important senders? A quiet one-line
+  // link brings it back - the old cryptic star in the toolbar is gone.
+  const vipReenable = (!v.on && v.addrs.size && inInboxQueue)
+    ? `<button class="mail-vip-reenable" data-mail-vip-tog title="Group important senders at the top again">⭐ Group important senders</button>` : '';
   const vipActive = v.on && v.addrs.size && (m.folder || 'inbox') === 'inbox' && !m.query;
   if (vipActive) {
     const vipThreads = threads.filter((th) => isVipMsg(th.latest));
@@ -9887,7 +9892,7 @@ function mailListInner(loading) {
   const body = loading ? '<div class="home-empty">Searching…</div>'
     : (rows || (busy ? '' : emptyHtml));
   const busyLine = busy ? `<div class="home-empty mail-searching">Searching ${esc(m.searching)}…</div>` : '';
-  return `${errBanner}${body}${busyLine}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
+  return `${errBanner}${vipReenable}${body}${busyLine}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
 }
 // Refresh only the message list in place, keeping the header/search box intact.
 function renderMailList(loading) {
@@ -10025,7 +10030,6 @@ function renderMail(loading) {
     </div>` : `<div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
-      <button class="tbl-filter-btn mail-vip-tog ${mailVips().on ? 'on' : ''}" data-mail-vip-tog title="${mailVips().on ? 'Important senders on - grouped at the top' : 'Important senders off'}">⭐</button>
       ${(m.quadFilter && m.quadFilter.has('important')) ? '<button class="tbl-filter-btn" data-mail-import-starred title="Pull every previously-starred email into the Important box">★ Import starred</button>' : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}`}
