@@ -15450,7 +15450,7 @@ function renderPalItems() {
   const el = $('#pal-list'); if (!el) return;
   const items = state.pal.items;
   el.innerHTML = items.length ? items.map((it, i) => `<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
-      <span class="pal-kind ${it.kind === 'action' ? '' : 'muted'}">${it.kind === 'action' ? '↵' : esc(it.kind)}</span>
+      <span class="pal-kind ${it.kind === 'action' ? '' : `kmark pal-k-${esc(it.kind)}`}">${it.kind === 'action' ? '↵' : esc(it.kind)}</span>
       <span class="pal-t">${esc(it.title)}</span>${it.kind === 'action' ? '' : '<span class="pal-hint">open</span>'}</div>`).join('') : '<div class="pal-empty">No matches.</div>';
 }
 function execItem(it) {
