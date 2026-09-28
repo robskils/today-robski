@@ -5198,6 +5198,9 @@ table.ttable tr:last-child td { border-bottom:0; }
   .mail-msg-act .mail-dd-menu .mail-quad-dot { width:13px; height:13px; }
 }
 .mail-text { font-size:16px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-wrap:break-word; font-family:inherit; margin:4px 0; }
+/* Plain-text view: full width, comfortable measure - the point is readability, so
+   long lines wrap naturally instead of a fixed email column squeezing them. */
+.mail-text-plain { overflow-wrap:anywhere; }
 .mail-text a { color:var(--accent); text-decoration:underline; }
 .mail-imgbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:6px 0 16px; padding:11px 15px; border:1px solid var(--line-2); border-radius:12px; background:var(--paper-2); color:var(--ink-2); font-size:14px; }
 .mail-imgbar-t { min-width:0; }
@@ -5292,6 +5295,12 @@ table.ttable tr:last-child td { border-bottom:0; }
   /* Reading a mail on mobile: hide the top brand/nav bar so the reader is
      full-screen (Back + bottom tabs are enough) and the toolbar pins at top:0. */
   body.mail-reading .nav { display:none; }
+  /* Reading a mail: the page header (Mail title + Guide/Accounts/Compose) and the
+     breadcrumb are redundant - the toolbar's "← Inbox" is the way back - and left
+     in they stack up and float over each other as you scroll. Hide them so the
+     toolbar is the sole, clean sticky top. (Robin.) */
+  body.mail-reading .note-crumbs,
+  body.mail-reading .pane-head { display:none; }
   .mail-reader-head { position:sticky; top:0; z-index:31; gap:6px 4px; flex-wrap:wrap;
     margin:0 -18px; padding:9px 14px; background:var(--card); border-bottom:1px solid var(--line); }
   /* The action bar drops to its own full-width row and WRAPS, so every action

@@ -8974,7 +8974,7 @@ function mailForgetKeys(keys) {
 }
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key) || (state.mail.snapMsgs && state.mail.snapMsgs[key]); if (!row) return;
-  state.mail.sel = key; state.mail.hoverThread = null;   // the cursor follows what you open, so it's here after Back
+  state.mail.sel = key; state.mail.hoverThread = null; state.mail.plain = false;   // each email opens formatted; toggle to plain if it's cramped
   // Record the open message on the view so this tab reopens it after a switch.
   state.view = { type: 'mail', open: key }; syncActiveTab();
   const cached = state.mail.msgCache && state.mail.msgCache[key];
@@ -9561,6 +9561,17 @@ function wrapEmailHtml(html, blockImages) {
       parent.postMessage({__mailHeight:vh},'*');busy=false;}
     window.addEventListener('load',h);window.addEventListener('resize',h);document.addEventListener('load',h,true);try{new ResizeObserver(function(){requestAnimationFrame(h);}).observe(document.documentElement);}catch(e){}setTimeout(h,60);setTimeout(h,500);document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href')||'';if(/^(https?:|mailto:)/i.test(href)){e.preventDefault();parent.postMessage({__mailLink:href},'*');}},true);document.addEventListener('keydown',function(e){if(e.metaKey||e.ctrlKey||e.altKey)return;var k=e.key;if(/^[a-zA-Z!#]$/.test(k)||k==='Escape')parent.postMessage({__mailKey:k},'*');},true);})();<\/script></body></html>`;
 }
+// A readable, full-width plain-text rendering of an email - for the "Plain text"
+// view, which rescues fixed-layout emails (a narrow table column that wraps to one
+// word a line on a phone). Prefer the message's own text part; fall back to
+// stripping the HTML, keeping line breaks at block boundaries. (Robin.)
+function mailPlainText(o) {
+  if (o.text && o.text.trim()) return o.text;
+  let h = String(o.html || '');
+  h = h.replace(/<\s*(br|\/p|\/div|\/tr|\/li|\/h[1-6])\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+  const ta = document.createElement('textarea'); ta.innerHTML = h;   // decode entities
+  return ta.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
 // Open a URL in the OS default browser via a marked, user-initiated anchor click
 // (works in installed PWAs / WKWebView wrappers). The data-ext-open marker stops
 // the document click handler re-catching it into an infinite loop.
@@ -9959,7 +9970,8 @@ function renderMail(loading) {
     // clean row. "Mark important sender" groups that sender's mail at the top of
     // the inbox (the ⭐ box). (Robin, 2026-09-28.)
     const isVip = o.from && isVipAddr(o.from.address);
-    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button><button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button><button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
+    const plainItem = o.html ? `<button class="mail-dd-item" data-mail-plain>${MAIL_ICO.note}<span>${state.mail.plain ? 'Formatted view' : 'Plain-text view (easier to read)'}</span></button>` : '';
+    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu">${plainItem}<button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button><button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button><button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
     const msgActs = `${replyDD}${fileDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - done with it, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>${moreDD}`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
@@ -9981,7 +9993,7 @@ function renderMail(loading) {
       ${o.invite ? inviteCardHtml(o.invite) : ''}
       ${(() => { const ml = mailMeetingLink(o); return ml ? `<div class="mail-join-bar"><button class="add-btn wide" data-mail-join="${esc(ml)}">🎥 Join meeting</button><span class="mail-join-url">${esc(ml)}</span></div>` : ''; })()}
       ${mailImagesBlocked(o) ? `<div class="mail-imgbar"><span class="mail-imgbar-t">🖼 Remote images are hidden to protect your privacy.</span><span class="mail-imgbar-act"><button class="ghost" data-mail-show-imgs="${o.from && o.from.address ? esc(o.from.address) : ''}">Show images</button>${o.from && o.from.address ? '<span class="mail-imgbar-note">and always from this sender</span>' : ''}</span></div>` : ''}
-      ${o.html ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text">${linkifyText(o.text || '')}</div>`}</div>`;
+      ${(o.html && !state.mail.plain) ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`}</div>`;
   } else {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
   }
@@ -16333,6 +16345,7 @@ document.addEventListener('click', (e) => {
   const mat = t.closest('[data-mail-arch-thread]'); if (mat) { e.preventDefault(); e.stopPropagation(); mailMoveTo(mat.dataset.mailArchThread, 'Archive', 'Archived'); return; }
   const mth = t.closest('[data-mail-thread]'); if (mth) { const k = mth.dataset.mailThread; state.mail.expanded = state.mail.expanded || {}; state.mail.expanded[k] = !state.mail.expanded[k]; renderMail(); return; }
   if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
+  if (t.closest('[data-mail-plain]')) { state.mail.plain = !state.mail.plain; renderMail(); return; }
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
   const mjoin = t.closest('[data-mail-join]'); if (mjoin) { openExternal(mjoin.dataset.mailJoin); return; }
   if (t.closest('[data-mail-invite-add]')) { mailInviteAdd(); return; }
