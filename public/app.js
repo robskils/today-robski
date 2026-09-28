@@ -8099,8 +8099,9 @@ const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[ke
 const mailQuadOf = (o) => {
   if (!o) return 'inbox';
   const e = mailQuadEntry(mailFileKey(o));
-  if (e && e.q) return normQuad(e.q);
-  if (o.flagged) return 'important';   // a previously-starred email counts as Important
+  if (e && e.q) return normQuad(e.q);   // hand-filed wins - you can always override
+  if (isVipMsg(o)) return 'important';  // an important sender's mail auto-files to Important
+  if (o.flagged) return 'important';    // a previously-starred email counts as Important
   return 'inbox';
 };
 // A durable snapshot of an email - enough to show its row and reopen it later.
@@ -9815,22 +9816,9 @@ function mailListInner(loading) {
       threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
     }
   }
-  // Important senders: in the inbox (not searching), lift threads from VIPs into
-  // their own box at the top so they don't get lost in the stream.
-  const v = mailVips();
-  const vipActive = v.on && v.addrs.size && (m.folder || 'inbox') === 'inbox' && !m.query;
-  if (vipActive) {
-    const vipThreads = threads.filter((th) => isVipMsg(th.latest));
-    if (vipThreads.length) {
-      const restThreads = threads.filter((th) => !isVipMsg(th.latest));
-      const vipRows = vipThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
-      const restRows = restThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
-      const errBanner0 = (!loading && (m.acctErrors || []).length)
-        ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
-        : '';
-      return `${errBanner0}<div class="mail-vip-box"><div class="mail-vip-h"><span>⭐ Important</span><button class="mail-vip-off" data-mail-vip-tog title="Turn important senders off">Turn off</button></div>${vipRows}</div>${restRows || `<div class="home-empty">Nothing else in your inbox.</div>`}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
-    }
-  }
+  // Important senders no longer get a separate box: their mail auto-files into the
+  // Important bucket (see mailQuadOf), so it's already lifted out of the queue and
+  // sitting in Important - one place, not two. (Robin, 2026-09-28.)
   const rows = threads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
   const errBanner = (!loading && (m.acctErrors || []).length)
     ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
@@ -9974,7 +9962,6 @@ function renderMail(loading) {
     </div>` : `<div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
-      <button class="tbl-filter-btn mail-vip-tog ${mailVips().on ? 'on' : ''}" data-mail-vip-tog title="${mailVips().on ? 'Important senders on - group them at the top' : 'Important senders off'}">⭐</button>
       ${(m.quadFilter && m.quadFilter.has('important')) ? '<button class="tbl-filter-btn" data-mail-import-starred title="Pull every previously-starred email into the Important box">★ Import starred</button>' : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}`}
