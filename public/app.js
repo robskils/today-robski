@@ -9772,16 +9772,22 @@ async function mailInviteAdd() {
 // quadrant. Counts come from the loaded INBOX.
 function mailQuadCardsHtml() {
   const m = state.mail;
-  // An email lives in exactly one of six pots, laid out left→right as it flows:
-  // Inbox (to sort) → the four priority buckets → Archive (done). Counts are
-  // durable: how many emails each bucket holds (snapshots + loaded).
+  // An email lives in exactly one of five pots, laid out left→right as it flows:
+  // Inbox (to sort) → the three priority buckets → Archive (done). Counts are
+  // durable: how many emails each bucket holds (snapshots + loaded). The strip
+  // shows on every folder so the Inbox pot is always a tap away back from
+  // Spam / Trash / Sent / Drafts. (Robin, 2026-09-28.)
   const counts = { urgent: 0, important: 0, chilled: 0 };
   for (const q of ['urgent', 'important', 'chilled']) counts[q] = mailQuadMsgs(q).length;
   const qf = m.quadFilter || new Set();
-  const untriaged = buildThreads(m.messages || []).filter((th) => mailQuadOf(th.latest) === 'inbox').length;
+  // The Inbox count is the untriaged queue - only meaningful when the inbox itself
+  // is loaded. In Spam/Trash/Sent the loaded mail isn't the inbox, so leave it blank
+  // rather than miscount those as untriaged.
+  const inInbox = ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox');
+  const untriaged = inInbox ? buildThreads(m.messages || []).filter((th) => mailQuadOf(th.latest) === 'inbox').length : null;
   const inboxOn = (m.folder || 'inbox') === 'inbox' && qf.size === 0;
   const archiveOn = m.folder === 'archive';
-  const inboxCard = `<button class="mail-quad mail-quad-inbox ${inboxOn ? 'on' : ''}" data-mail-quad-inbox data-mail-quad-drop="inbox" title="To sort - your triage queue"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">Inbox</span><span class="mail-quad-h">To sort</span></span><span class="mail-quad-c">${untriaged || 0}</span></button>`;
+  const inboxCard = `<button class="mail-quad mail-quad-inbox ${inboxOn ? 'on' : ''}" data-mail-quad-inbox data-mail-quad-drop="inbox" title="To sort - your triage queue"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">Inbox</span><span class="mail-quad-h">To sort</span></span>${untriaged != null ? `<span class="mail-quad-c">${untriaged}</span>` : ''}</button>`;
   const bucketCards = MAIL_QUADS.map((q) => `<button class="mail-quad mail-quad-${q.key} ${qf.has(q.quad) ? 'on' : ''}" data-mail-quad-view="${q.quad}" data-mail-quad-drop="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">${esc(q.label)}</span><span class="mail-quad-h">${esc(q.hint)}</span></span><span class="mail-quad-c">${counts[q.quad] || 0}</span></button>`).join('');
   const archiveCard = `<button class="mail-quad mail-quad-archive ${archiveOn ? 'on' : ''}" data-mail-quad-archive title="Done - filed away in your Archive"><span class="mail-quad-dot"></span><span class="mail-quad-main"><span class="mail-quad-l">Archive</span><span class="mail-quad-h">Done</span></span></button>`;
   return `<div class="mail-quads">${inboxCard}${bucketCards}${archiveCard}</div>`;
@@ -9970,7 +9976,7 @@ function renderMail(loading) {
       <div class="mail-head-act"><button class="ghost" data-help-open="mail" title="How Mail works - setup, Gmail, triage">ⓘ Guide</button><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
     ${(m.open || m.composing) ? '' : `
     ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
-    ${['inbox', 'unread', 'starred', 'archive'].includes(m.folder || 'inbox') ? mailQuadCardsHtml() : ''}
+    ${mailQuadCardsHtml()}
     <div class="mail-folders">${(() => {
       // Inbox and Archive are pots in the strip above, and Unread is just the Inbox
       // queue by another name - so the folder row holds only Drafts / Sent / Spam /
