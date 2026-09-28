@@ -816,6 +816,7 @@ function renderGuideIndex() {
     <div class="pane-head home-head"><h1>Guide</h1></div>
     <div class="help-doc">
       <div class="guide-ethos">
+        <div class="guide-ethos-mark">${MARK}</div>
         <div class="guide-ethos-tag">For a life well lived</div>
         <p class="guide-ethos-p">Daybook holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
       </div>
