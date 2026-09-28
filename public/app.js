@@ -8392,6 +8392,9 @@ async function mailSeen(key, seen) {
   const was = listRow ? !!listRow.seen : !!row.seen;
   if (listRow) listRow.seen = seen;
   if (state.mail.open && state.mail.open._key === key) state.mail.open.seen = seen;
+  // Keep the sticky read-set in step with an explicit mark: read adds it (so it
+  // never re-lights), unread removes it (or applyMailReads would force it back).
+  if (row.messageId) { if (seen) { mailMarkReadLocal(row.messageId); } else { const s = mailReadSet(); if (s.delete(row.messageId)) { try { localStorage.setItem('life.mail.read', JSON.stringify([...s])); } catch {} } } }
   if (was !== !!seen) bumpUnread(row._acct, seen ? -1 : 1);
   renderMail();
   try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen }) }); }
@@ -8783,12 +8786,13 @@ function mailMarkReadLocal(mid) {
   try { localStorage.setItem('life.mail.read', JSON.stringify([...state.mail.readIds])); } catch {}
 }
 function applyMailReads(list) {
-  const s = mailReadSet(); let pruned = false;
-  for (const m of (list || [])) {
-    if (!m.messageId || !s.has(m.messageId)) continue;
-    if (m.seen) { s.delete(m.messageId); pruned = true; } else { m.seen = true; }
-  }
-  if (pruned) { try { localStorage.setItem('life.mail.read', JSON.stringify([...s])); } catch {} }
+  // Once you've read an email in Daybook it stays read - full stop. We DON'T prune
+  // the id when the server happens to report it seen: Gmail's seen flag flip-flops
+  // (eventual consistency + the sticky-read cache), and pruning meant the next
+  // fetch that said "unseen" had nothing to correct it, so a mail you'd already
+  // read lit up as new again. The set is capped in mailMarkReadLocal. (Robin.)
+  const s = mailReadSet();
+  for (const m of (list || [])) { if (m.messageId && s.has(m.messageId)) m.seen = true; }
   return list;
 }
 function applyCachedList(r) {
