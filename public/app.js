@@ -10029,7 +10029,6 @@ function renderMail(loading) {
     </div>` : `<div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
-      ${(m.quadFilter && m.quadFilter.has('important')) ? '<button class="tbl-filter-btn" data-mail-import-starred title="Pull every previously-starred email into the Important box">★ Import starred</button>' : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}`}
 ${''/* The "older unread sits further down" banner is retired: the background
