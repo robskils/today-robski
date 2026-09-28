@@ -719,6 +719,10 @@ button { cursor:pointer; background:none; border:0; }
 .gc-metric-auto { margin-top:10px; font-size:13.5px; line-height:1.5; color:var(--ink-2); background:var(--paper-2,rgba(0,0,0,.03)); border:1px solid var(--line); border-radius:10px; padding:9px 12px; }
 .gc-metric-aim { display:block; margin-top:4px; color:var(--ink-3); }
 .gc-mini-num { max-width:64px; text-align:center; display:inline-block; height:30px; padding:2px 6px; margin:0 2px; }
+/* Switch how a goal is tracked (mark-it-done ↔ a number) right on the card face. */
+.gc-trackby { display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+.gc-trackby-l { font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+.gc-trackby-sel { max-width:230px; font-size:14px; }
 .gc-why { display:flex; flex-direction:column; gap:5px; margin-top:16px; }
 .gc-why-l { font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
 .gc-why textarea { resize:vertical; font-family:'Cormorant Garamond',Georgia,serif; font-size:18px; font-style:italic; line-height:1.5; color:var(--ink); min-height:48px; width:100%; max-width:none; border:0; background:none; padding:0; }

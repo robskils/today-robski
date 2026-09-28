@@ -8402,7 +8402,7 @@ async function mailSeen(key, seen) {
   if (state.mail.open && state.mail.open._key === key) state.mail.open.seen = seen;
   // Keep the sticky read-set in step with an explicit mark: read adds it (so it
   // never re-lights), unread removes it (or applyMailReads would force it back).
-  if (row.messageId) { if (seen) { mailMarkReadLocal(row.messageId); } else { const s = mailReadSet(); if (s.delete(row.messageId)) { try { localStorage.setItem('life.mail.read', JSON.stringify([...s])); } catch {} } } }
+  { const k = mailReadKey(row); if (k) { if (seen) { mailMarkReadLocal(k); } else { const s = mailReadSet(); if (s.delete(k)) { try { localStorage.setItem('life.mail.read', JSON.stringify([...s])); } catch {} } } } }
   if (was !== !!seen) bumpUnread(row._acct, seen ? -1 : 1);
   renderMail();
   try { await mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen }) }); }
@@ -8788,19 +8788,30 @@ function mailReadSet() {
   if (!state.mail.readIds) { let a = []; try { a = JSON.parse(localStorage.getItem('life.mail.read') || '[]'); } catch {} state.mail.readIds = new Set(Array.isArray(a) ? a : []); }
   return state.mail.readIds;
 }
-function mailMarkReadLocal(mid) {
-  if (!mid) return; const s = mailReadSet(); if (s.has(mid)) return; s.add(mid);
+// A stable key for "have I read this". Prefer the Message-ID, but many machine-sent
+// emails (contact-form notifications especially) carry none or a churning one - so
+// fall back to account + sender + subject + date, which is stable across fetches.
+// Without this, a no-Message-ID email could never be remembered as read and kept
+// lighting up as new. (Robin.)
+function mailReadKey(m) {
+  if (!m) return '';
+  if (m.messageId) return m.messageId;
+  const from = (m.from && m.from.address) || '';
+  return `k|${m._acct || m.account || ''}|${from}|${m.subject || ''}|${m.date || ''}`;
+}
+function mailMarkReadLocal(key) {
+  if (!key) return; const s = mailReadSet(); if (s.has(key)) return; s.add(key);
   if (s.size > 1000) state.mail.readIds = new Set([...s].slice(-1000));
   try { localStorage.setItem('life.mail.read', JSON.stringify([...state.mail.readIds])); } catch {}
 }
 function applyMailReads(list) {
   // Once you've read an email in Daybook it stays read - full stop. We DON'T prune
-  // the id when the server happens to report it seen: Gmail's seen flag flip-flops
+  // the key when the server happens to report it seen: Gmail's seen flag flip-flops
   // (eventual consistency + the sticky-read cache), and pruning meant the next
   // fetch that said "unseen" had nothing to correct it, so a mail you'd already
   // read lit up as new again. The set is capped in mailMarkReadLocal. (Robin.)
   const s = mailReadSet();
-  for (const m of (list || [])) { if (m.messageId && s.has(m.messageId)) m.seen = true; }
+  for (const m of (list || [])) { const k = mailReadKey(m); if (k && s.has(k)) m.seen = true; }
   return list;
 }
 function applyCachedList(r) {
@@ -8989,7 +9000,7 @@ async function openMessage(key) {
   // otherwise the reader star always shows empty and needs two clicks to set.
   const apply = (m) => { state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged }; };
   if (cached) apply(cached); else renderMail(true);   // cached opens instantly, no loading flash
-  if (row.messageId) mailMarkReadLocal(row.messageId);   // remember it read, so it never shows as new again
+  mailMarkReadLocal(mailReadKey(row));   // remember it read (by Message-ID or a stable fallback), so it never shows as new again
   if (!row.seen) { row.seen = true; bumpUnread(row._acct, -1); mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
   if (cached) { renderMail(); return; }
   try { apply(await mailFetchMsg(row)); } catch (e) { toast(e.message); }
@@ -12661,6 +12672,7 @@ function renderGoalCard() {
       <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
       <div class="gc-areas"><span class="gc-areas-l">${t('nav.areas')}</span>${blockAreasControl('goal', g)}</div>
       ${progressBlock}
+      <label class="gc-trackby"><span class="gc-trackby-l">How to track this</span><select class="sel gc-trackby-sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="gc-why"><span class="gc-why-l">${t('goal.why')}</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea></label>
       <label class="gc-why"><span class="gc-why-l">${t('goal.how')}</span><textarea class="sel" id="goalcard-how" rows="2" placeholder="${t('goal.howph')}">${esc(p.how || '')}</textarea></label>
       ${(doneN || focusMins) ? `<div class="gc-hero-stats">${doneN ? `<span>✓ ${doneN} task${doneN === 1 ? '' : 's'} done</span>` : ''}${focusMins ? `<span>🍅 ${fmtMins(focusMins)} focused</span>` : ''}</div>` : ''}
@@ -12668,7 +12680,8 @@ function renderGoalCard() {
     <details class="gc-settings">
       <summary>${t('goal.timing')}</summary>
       <div class="tf-meta">
-        <label class="tf-field"><span class="tf-label">${t('goal.type')}</span><select class="sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <!-- Goal Type now lives on the card face (under progress) as "How to track this". -->
+
         <label class="tf-field"><span class="tf-label">${t('goal.horizon')}</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="tf-field"><span class="tf-label">${t('goal.status')}</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         ${(p.horizon === 'quarter' || p.horizon === 'year')
