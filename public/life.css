@@ -4113,10 +4113,14 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* The right rail scrolls on its own: it sticks at the top and, when its sections
    (Recent, Starred, Notepad, People) run past the viewport, scrolls inside itself
    rather than dragging the main Today wall with it. */
-/* Pin the right rail BELOW the sticky tab strip (44px) - at top:20px it tucked
-   under the tabs and its own top (the notepad's first lines) was hidden and
-   unreachable. It scrolls independently within this height. (Robin, 2026-09-28.) */
-.home-side { position:sticky; top:56px; max-height:calc(100vh - 72px); overflow-y:auto; overscroll-behavior:contain; padding-right:2px; }
+/* Independent-scroll right rail. Two things make this work in WebKit:
+   - align-self:stretch, so the rail's grid cell fills the tall row (= the main
+     column's height). Without it (align-items:start) the cell is only as tall as
+     the rail's content, and WebKit clamps the sticky element to that cell - so it
+     has NO room to pin and just scrolls with the page (the bug Robin hit).
+   - max-height + overflow-y:auto, so the rail becomes its own scroll box, pinned
+     BELOW the 44px sticky tab strip, scrollable top-to-bottom on its own. */
+.home-side { position:sticky; align-self:stretch; top:56px; max-height:calc(100vh - 72px); overflow-y:auto; overscroll-behavior:contain; padding-right:2px; }
 .home-side::-webkit-scrollbar { width:8px; }
 .home-side::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
 .home-side .home-sec { margin-top:0; }
