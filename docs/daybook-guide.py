@@ -6,7 +6,7 @@ from reportlab.lib.colors import HexColor
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph,
-                                Spacer, PageBreak, FrameBreak, KeepTogether)
+                                Spacer, PageBreak, FrameBreak, KeepTogether, Table, TableStyle)
 from reportlab.lib.styles import ParagraphStyle
 
 PAPER = HexColor('#FBF7EF')   # warm paper
@@ -34,20 +34,25 @@ def bg(canvas, doc):
         canvas.drawCentredString(W / 2, 12 * mm, str(doc.page))
     canvas.restoreState()
 
+def draw_mark(canvas, cx, base_y, unit, gold=GOLD, faint=HexColor('#D8C39A')):
+    # The REAL Daybook mark, faithful to the app's SVG (viewBox 0 0 32): a filled
+    # half-dome sitting ON a full horizon line, with a shorter, fainter line below.
+    # SVG: dome M9.5 19.5 a6.5 -> centre x16, r6.5, base y19.5; line1 x4.5..27.5 @19.5;
+    # line2 x7.8..24.2 @24.6 (5.1 below), both stroke 2.6. Scaled by `unit` per SVG unit.
+    r = 6.5 * unit
+    canvas.setFillColor(gold); canvas.setStrokeColor(gold)
+    canvas.wedge(cx - r, base_y - r, cx + r, base_y + r, 0, 180, fill=1, stroke=0)   # dome
+    canvas.setLineCap(1)
+    canvas.setLineWidth(2.6 * unit); canvas.setStrokeColor(gold)
+    canvas.line(cx - 11.5 * unit, base_y, cx + 11.5 * unit, base_y)                  # horizon
+    canvas.setStrokeColor(faint)
+    canvas.line(cx - 8.2 * unit, base_y - 5.1 * unit, cx + 8.2 * unit, base_y - 5.1 * unit)  # fainter line below
+
 def cover_bg(canvas, doc):
     canvas.saveState()
     canvas.setFillColor(PAPER)
     canvas.rect(0, 0, W, H, fill=1, stroke=0)
-    # the Daybook mark: a simple dawn arc + horizon in gold
-    cx = W / 2
-    y = H - 46 * mm
-    canvas.setStrokeColor(GOLD); canvas.setLineWidth(2)
-    canvas.setFillColor(GOLD)
-    canvas.wedge(cx - 9 * mm, y - 4 * mm, cx + 9 * mm, y + 14 * mm, 0, 180, fill=1, stroke=0)
-    canvas.setLineCap(1)
-    canvas.line(cx - 13 * mm, y - 4 * mm, cx + 13 * mm, y - 4 * mm)
-    canvas.setStrokeColor(HexColor('#D8C39A'))
-    canvas.line(cx - 9 * mm, y - 7.5 * mm, cx + 9 * mm, y - 7.5 * mm)
+    draw_mark(canvas, W / 2, H - 48 * mm, 0.95 * mm)
     canvas.restoreState()
 
 styles = {}
@@ -56,8 +61,27 @@ styles['num'] = ParagraphStyle('num', fontName='Geo-B', fontSize=9, leading=12, 
 styles['body'] = ParagraphStyle('body', fontName='Geo', fontSize=10.3, leading=16.5, textColor=INK, spaceAfter=8, alignment=TA_LEFT)
 styles['quote'] = ParagraphStyle('quote', fontName='Geo-I', fontSize=12.5, leading=18, textColor=INK, leftIndent=10, spaceBefore=4, spaceAfter=2, borderPadding=0)
 styles['cite'] = ParagraphStyle('cite', fontName='Geo', fontSize=8.5, leading=12, textColor=MIST, leftIndent=10, spaceAfter=10)
-styles['inbook'] = ParagraphStyle('inbook', fontName='Geo', fontSize=9.6, leading=15, textColor=HexColor('#5c5346'), spaceBefore=2, spaceAfter=6, leftIndent=10, rightIndent=6)
-styles['inbook_h'] = ParagraphStyle('inbook_h', fontName='Geo-B', fontSize=8.5, leading=11, textColor=GOLD, leftIndent=10, spaceBefore=8, spaceAfter=2)
+styles['inbook'] = ParagraphStyle('inbook', fontName='Geo', fontSize=9.7, leading=15, textColor=HexColor('#5c5346'), spaceBefore=0, spaceAfter=0)
+styles['inbook_h'] = ParagraphStyle('inbook_h', fontName='Geo-B', fontSize=8.3, leading=11, textColor=GOLD, spaceBefore=0, spaceAfter=3)
+
+CW = W - 36 * mm   # content width (A5 minus the 18mm margins)
+
+def inbook_callout(text):
+    # A quiet gold-ruled aside - the philosophy above, then how it actually shows up
+    # in the app, set apart in a warm panel rather than run on as another paragraph.
+    label = Paragraph('IN&nbsp;&nbsp;DAYBOOK', styles['inbook_h'])
+    body = Paragraph(text, styles['inbook'])
+    t = Table([[[label, body]]], colWidths=[CW])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), HexColor('#F6EEDB')),
+        ('LINEBEFORE', (0, 0), (0, -1), 2.2, GOLD),
+        ('LEFTPADDING', (0, 0), (-1, -1), 14),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 14),
+        ('TOPPADDING', (0, 0), (-1, -1), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    return t
 
 story = []
 
@@ -72,8 +96,8 @@ def chapter(num, title, quote, cite, paras, inbook):
     story.append(KeepTogether(blk))
     for p in paras:
         story.append(Paragraph(p, styles['body']))
-    story.append(Paragraph('IN DAYBOOK', styles['inbook_h']))
-    story.append(Paragraph(inbook, styles['inbook']))
+    story.append(Spacer(1, 6))
+    story.append(inbook_callout(inbook))
     story.append(PageBreak())
 
 # ---- content ----
@@ -143,7 +167,7 @@ for c in CH:
 
 # ---- build ----
 def build():
-    doc = BaseDocTemplate('daybook-guide.pdf', pagesize=A5,
+    doc = BaseDocTemplate('daybook-guide-to-a-life-well-lived.pdf', pagesize=A5,
                           leftMargin=18*mm, rightMargin=18*mm, topMargin=20*mm, bottomMargin=18*mm,
                           title='The Daybook Guide to A Life Well Lived', author='Daybook')
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='body')
