@@ -194,6 +194,22 @@ async function imapOpen(env, acct) {
       const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
     },
+    // Gmail's OWN search engine, via the X-GM-RAW extension - the same index the
+    // Gmail web/app search box uses. One command over All Mail covers the whole
+    // mailbox and returns in a blink, versus SELECT+TEXT-SEARCH across every folder
+    // (which crawls Gmail's IMAP with no index and routinely times out). Returns
+    // null if the server rejects X-GM-RAW, so the caller can fall back. Gmail search
+    // syntax works here too (from:, subject:, "quoted phrases", …).
+    async searchGmailRaw(q, limit) {
+      const s = await cmd(`UID SEARCH X-GM-RAW ${imapStr(q)}`, 45000);
+      if (!s.ok) return null;
+      const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
+      const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
+      if (!ids.length) return [];
+      const set = ids.slice(-limit).join(',');
+      const r = await cmd(`UID FETCH ${set} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
+      return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
+    },
     async searchUnseenUids() {
       const s = await cmd('UID SEARCH UNSEEN');
       const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
@@ -873,6 +889,21 @@ export async function handleMail(request, env, url, json, err) {
           const boxes = await im.listMailboxes();
           const skip = (b) => /\\Junk/i.test(b.flags || '') || /(^|[/.\\])(spam|junk|bulk\s*mail)$/i.test(b.path || '');
           const cap = Math.max(limit, 60);
+          // Gmail: one X-GM-RAW query over All Mail (its own fast index) instead of
+          // crawling every folder. All Mail already holds every message except Spam
+          // and Trash, so a single select+search covers the whole account, quickly.
+          const isGmail = /g(oogle)?mail\.com/i.test(acct.imap_host || '');
+          if (isGmail) {
+            const allBox = boxes.find((b) => /\\All/i.test(b.flags || '')) || boxes.find((b) => /All Mail/i.test(b.path || ''));
+            if (allBox && await im.select(allBox.path)) {
+              const found = await im.searchGmailRaw(q, cap);
+              if (found) {   // null => X-GM-RAW rejected; fall through to the generic sweep
+                const out = found.map((m) => ({ ...m, mailbox: allBox.path }));
+                out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
+                return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll: true, failed: [] }, request);
+              }
+            }
+          }
           // Order matters, because the sweep can run out of time before it runs out
           // of folders. Inbox first, then the archive and sent mail, then everything
           // else - so a partial answer is still the answer most searches wanted. A
