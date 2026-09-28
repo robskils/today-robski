@@ -4622,7 +4622,7 @@ function renderHome() {
       </div>
       ${homeDiscoverHtml()}
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
-      <div class="home-mark" aria-hidden="true">${MARK}</div>
+      <button class="home-mark" data-guide-home aria-label="Back to the top" title="Back to the top">${MARK}</button>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
   startHomeClock();         // keep the time beside the date ticking

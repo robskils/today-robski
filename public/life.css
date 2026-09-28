@@ -1964,8 +1964,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-tool { display:none; }   /* the "<Tool>" after the wordmark is mobile-only */
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
 /* A quiet Daybook mark closing the Home main column, in the chosen accent. */
-.home-mark { display:flex; justify-content:center; margin:36px 0 6px; }
+.home-mark { display:flex; justify-content:center; margin:36px auto 6px; padding:8px; background:none; border:0; border-radius:50%; cursor:pointer; transition:transform .16s cubic-bezier(.2,.8,.2,1), background .16s; }
 .home-mark .brand-mark { width:46px; height:46px; margin:0; color:var(--accent); opacity:.9; }
+.home-mark:hover { transform:translateY(-2px); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+.home-mark:hover .brand-mark { opacity:1; }
+.home-mark:active { transform:translateY(0); }
 .nav-brand .brand-mark { margin:0 .16em 0 .2em; }
 .nav-msearch, .nav-msearch-row { display:none; }   /* mobile-only sticky search (see media query) */
 .home-crumbbar { display:none; }   /* the "Home" breadcrumb row is mobile-only */
