@@ -6322,11 +6322,16 @@ function renderArea() {
   const flowOrder = areaFlowOrder();
   const flowRank = (k) => (k === 'Tasks' ? 100000 : (flowOrder.indexOf(k) < 0 ? 999 : flowOrder.indexOf(k)));
   const restSecs = restDefs.filter(([key, ok]) => ok && !secHidden(key)).sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
+  // Order (Robin, 2026-09-28): the Wall sits above Files & photos and Links, and
+  // those two share a row (half each), stacking on a narrow screen.
+  const wallSec = secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`;
+  const linksSec = (canEditArea || blockLinks(area).length) ? `<section class="area-dash-links">${externalLinksHtml('area', area)}</section>` : '';
+  const filesLinksRow = `<div class="area-dash-fl"><section class="area-dash-files">${areaAttachHtml(area)}</section>${linksSec}</div>`;
+  const sharedSec = memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : '';
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
-  <section class="area-dash-files">${areaAttachHtml(area)}</section>
-  ${canEditArea || blockLinks(area).length ? `<section class="area-dash-links">${externalLinksHtml('area', area)}</section>` : ''}
-  ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
-  ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
+  ${wallSec}
+  ${filesLinksRow}
+  ${sharedSec}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
   const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>${canEditArea ? '<button class="add-btn wide area-tab-add area-addgoal-btn" data-area-add-goal>🎯 Add another goal</button>' : ''}` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
   const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
