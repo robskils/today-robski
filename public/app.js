@@ -767,6 +767,12 @@ function helpKey(v) {
 // The i beside the tabs, keyed to the tool you're on. Hover = the tip; click = pin
 // the full guide in its own tab.
 function helpIconHtml() {
+  // On Home the i opens the Guide's own start page (the whole guide), not a
+  // Home-specific topic - that's where you go to learn how everything works.
+  // (Robin, 2026-09-28.)
+  if (!state.view || state.view.type === 'home') {
+    return `<button class="help-btn" data-open-guide aria-label="Open the Guide" title="Open the Guide">i</button>`;
+  }
   const key = helpKey(state.view); const h = HELP[key]; if (!h) return '';
   // The popover is drawn on hover as a fixed element (below), so it isn't clipped
   // by the tab strip's horizontal scroll.
