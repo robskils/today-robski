@@ -818,8 +818,8 @@ function renderGuideIndex() {
     const h = HELP[k];
     return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-ic">${GUIDE_ICON[k] || '›'}</span><span class="guide-card-body"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></span></button>`;
   }).join('');
-  $('#pane').innerHTML = `${pageCrumb('Guide')}
-    <div class="pane-head home-head"><h1>Guide</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('Daybook Guide')}
+    <div class="pane-head home-head"><h1>Daybook Guide</h1></div>
     <div class="help-doc">
       <div class="guide-ethos">
         <div class="guide-ethos-mark">${MARK}</div>
@@ -846,8 +846,11 @@ function renderGuideIndex() {
         <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
         <a class="guide-legal-link" href="mailto:contact@daybook.fyi">Contact us ✉</a>
       </div>
-      <p class="guide-tagline">For a life well lived</p>
       <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.<br>© ${new Date().getFullYear()} Daybook · daybook.fyi</p>
+      <div class="guide-signoff">
+        <p class="guide-tagline">For a life well lived</p>
+        <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
+      </div>
     </div>`;
 }
 // Click the i: pin this tool's guide in its own tab. If it's already open, just go there.
@@ -15954,6 +15957,7 @@ document.addEventListener('click', (e) => {
   { const nu = t.closest('[data-note-unlink]'); if (nu) { e.stopPropagation(); disconnectNote(nu.dataset.noteUnlink); return; } }
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-guide-home]')) { Promise.resolve(openHome()).then(() => window.scrollTo(0, 0)).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openNotesList(); return; }   // Tables folded into Notes
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
