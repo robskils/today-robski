@@ -3646,7 +3646,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .guide-card-ic { flex:none; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:17px; line-height:1; border-radius:10px; color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
 .guide-card-body { display:flex; flex-direction:column; gap:4px; min-width:0; }
 /* Guide: privacy/terms links + copyright. */
-.guide-legal { display:flex; flex-wrap:wrap; gap:10px; margin:4px 0 0; }
+.guide-legal { display:flex; flex-wrap:wrap; gap:10px; margin:4px 0 20px; }
 .guide-legal-link { display:inline-flex; align-items:center; padding:11px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:15px; box-shadow:var(--shadow-sm); }
 .guide-legal-link:hover { border-color:var(--accent); color:var(--accent); }
 .guide-copyright { margin:18px 0 0; font-size:13px; color:var(--ink-3); }
