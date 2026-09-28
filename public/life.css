@@ -689,10 +689,26 @@ button { cursor:pointer; background:none; border:0; }
 .gc-prog-l { font-size:13px; color:var(--ink-3); }
 .gc-prog-edit input { max-width:92px; text-align:center; } .gc-prog-edit .gc-unit { max-width:110px; text-align:left; }
 .gc-prog-done { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-/* A "mark it done" goal shows a draggable slider on its card too - drag to set
-   how far along it is, no numbers to keep. (Robin.) */
-.gc-prog-slide .gc-slidebar { height:20px; margin:2px 0 14px; }
-.gc-prog-done-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+/* A "mark it done" goal shows a draggable slider on its card - drag the big handle
+   to set how far along it is. The % reads large, the slider sits in its own clear
+   band, and the "mark achieved" action is set apart below a hairline so nothing
+   clashes. (Robin.) */
+.gc-prog-slide { margin:16px 0 2px; }
+.gc-prog-slide .gc-prog-nums { align-items:baseline; margin-bottom:6px; }
+.gc-prog-slide .gc-prog-cur { font-size:12.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); }
+.gc-prog-slide .gc-prog-pct { font-size:27px; font-weight:700; color:var(--c); letter-spacing:-.02em; line-height:1; }
+.gc-prog-slide .gc-slidebar { height:30px; margin:6px 0 20px; }
+.gc-prog-slide .glist-bar { height:10px; border-radius:99px; }
+.gc-prog-done-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:16px; border-top:1px solid color-mix(in srgb,var(--c) 16%,var(--line)); }
+.goal-done-note { font-size:13px; color:var(--ink-3); }
+/* The four connected panels (Tasks / Connected notes / Contacts / Links) as a
+   tidy 2x2 of cards, each lifting a touch on hover and headed in the goal's hue. */
+.gc-conn-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; margin-top:20px; align-items:start; }
+.gc-conn-grid > * { margin-top:0; }
+.gc-conn-grid > .focus-notes, .gc-conn-grid > .xlinks { transition:transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s, border-color .16s; }
+.gc-conn-grid > .focus-notes:hover, .gc-conn-grid > .xlinks:hover { transform:translateY(-2px); border-color:color-mix(in srgb,hsl(var(--h,220) 52% 55%) 34%,var(--line)); box-shadow:0 14px 30px -18px color-mix(in srgb,hsl(var(--h,220) 52% 55%) 55%,rgba(0,0,0,.45)); }
+.gc-conn-grid .fn-h, .gc-conn-grid .xlinks-h { color:hsl(var(--h,220) 46% 56%); }
+@media (max-width:760px){ .gc-conn-grid { grid-template-columns:1fr; } }
 .gc-metric-row { display:flex; align-items:center; gap:9px; margin-top:11px; }
 .gc-metric-l { font-size:13px; color:var(--ink-3); flex:none; }
 .gc-metric-row .sel { max-width:220px; }

@@ -12670,14 +12670,16 @@ function renderGoalCard() {
       </div>
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     </details>
-    <section class="focus-notes gc-tasks-sec">
-      <div class="fn-h">${t('goal.tasks')}${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
-      <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
-      ${goalAreaTasksHtml()}
-    </section>
-    ${connectedNotesHtml()}
-    ${connectedContactsHtml()}
-    ${externalLinksHtml('goal', g)}
+    <div class="gc-conn-grid" style="--h:${hueOf(a)}">
+      <section class="focus-notes gc-tasks-sec">
+        <div class="fn-h">${t('goal.tasks')}${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
+        <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
+        ${goalAreaTasksHtml()}
+      </section>
+      ${connectedNotesHtml()}
+      ${connectedContactsHtml()}
+      ${externalLinksHtml('goal', g)}
+    </div>
     ${notesSection(g.body, 'goal', g.id, false, t('goal.noteswall'))}`;
   autoGrowSoon($('#goalcard-title'));
   if (keepTitleFocus) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.setSelectionRange(selS, selE); } catch {} } }
