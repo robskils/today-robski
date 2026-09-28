@@ -8099,9 +8099,8 @@ const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[ke
 const mailQuadOf = (o) => {
   if (!o) return 'inbox';
   const e = mailQuadEntry(mailFileKey(o));
-  if (e && e.q) return normQuad(e.q);   // hand-filed wins - you can always override
-  if (isVipMsg(o)) return 'important';  // an important sender's mail auto-files to Important
-  if (o.flagged) return 'important';    // a previously-starred email counts as Important
+  if (e && e.q) return normQuad(e.q);   // hand-filed wins
+  if (o.flagged) return 'important';   // a previously-starred email counts as Important
   return 'inbox';
 };
 // A durable snapshot of an email - enough to show its row and reopen it later.
@@ -9816,20 +9815,39 @@ function mailListInner(loading) {
       threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
     }
   }
-  // Important senders no longer get a separate box: their mail auto-files into the
-  // Important bucket (see mailQuadOf), so it's already lifted out of the queue and
-  // sitting in Important - one place, not two. (Robin, 2026-09-28.)
+  // Important senders: in the inbox (not searching), lift threads from VIPs into
+  // their own section at the top so they don't get lost in the stream. (Robin
+  // prefers this dedicated box to auto-filing them into the Important bucket.)
+  const v = mailVips();
+  const vipActive = v.on && v.addrs.size && (m.folder || 'inbox') === 'inbox' && !m.query;
+  if (vipActive) {
+    const vipThreads = threads.filter((th) => isVipMsg(th.latest));
+    if (vipThreads.length) {
+      const restThreads = threads.filter((th) => !isVipMsg(th.latest));
+      const vipRows = vipThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
+      const restRows = restThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
+      const errBanner0 = (!loading && (m.acctErrors || []).length)
+        ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
+        : '';
+      return `${errBanner0}<div class="mail-vip-box"><div class="mail-vip-h"><span>⭐ Important senders</span><button class="mail-vip-off" data-mail-vip-tog title="Turn important senders off">Turn off</button></div>${vipRows}</div>${restRows || `<div class="home-empty">Nothing else in your inbox.</div>`}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
+    }
+  }
   const rows = threads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
   const errBanner = (!loading && (m.acctErrors || []).length)
     ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
     : '';
-  const emptyMsg = m.query
-    ? ((m.acctErrors || []).length ? 'No matches in the accounts that answered - see above.' : 'No matches.')
-    : m.folder === 'unread' ? 'No unread messages. Inbox zero.' : 'No messages.';
+  // A true empty inbox is a small reward, not a shrug: celebrate inbox-zero. Other
+  // empty states get a warm, specific line rather than a bare "No messages".
+  const inboxZero = !m.query && (m.folder || 'inbox') === 'inbox' && !(qf && qf.size);
+  const emptyHtml = m.query
+    ? `<div class="home-empty">${(m.acctErrors || []).length ? 'No matches in the accounts that answered - see above.' : 'No matches.'}</div>`
+    : inboxZero
+      ? `<div class="mail-zero"><div class="mail-zero-ic">✦</div><div class="mail-zero-t">Inbox zero</div><div class="mail-zero-s">Nothing left to sort. Beautifully done.</div></div>`
+      : `<div class="home-empty">${m.folder === 'unread' ? "No unread mail - you're all caught up." : m.folder === 'archive' ? 'Nothing archived yet.' : m.folder === 'sent' ? 'No sent mail yet.' : m.folder === 'spam' ? 'No spam. Peaceful.' : m.folder === 'trash' ? 'Trash is empty.' : (qf && qf.size) ? 'Nothing filed here yet.' : 'No messages.'}</div>`;
   // While a sweep is still running, an empty list means "not yet", not "nothing".
   const busy = !loading && m.query && m.searching;
   const body = loading ? '<div class="home-empty">Searching…</div>'
-    : (rows || (busy ? '' : `<div class="home-empty">${emptyMsg}</div>`));
+    : (rows || (busy ? '' : emptyHtml));
   const busyLine = busy ? `<div class="home-empty mail-searching">Searching ${esc(m.searching)}…</div>` : '';
   return `${errBanner}${body}${busyLine}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
 }
@@ -9962,6 +9980,7 @@ function renderMail(loading) {
     </div>` : `<div class="mail-tools">
       <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
       ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
+      <button class="tbl-filter-btn mail-vip-tog ${mailVips().on ? 'on' : ''}" data-mail-vip-tog title="${mailVips().on ? 'Important senders on - grouped at the top' : 'Important senders off'}">⭐</button>
       ${(m.quadFilter && m.quadFilter.has('important')) ? '<button class="tbl-filter-btn" data-mail-import-starred title="Pull every previously-starred email into the Important box">★ Import starred</button>' : ''}
       <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
     </div>`}`}
