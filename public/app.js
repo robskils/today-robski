@@ -4604,7 +4604,7 @@ function renderHome() {
           const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet — turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
-        <aside class="home-side">${(() => {
+        <aside class="home-side"><div class="home-side-inner">${(() => {
           // The right column is drag-reorderable too (grips on desktop), each
           // section carrying data-hsec so the drop logic can read the order.
           const secCount = (n) => (n ? `<span class="sec-c">${n}</span>` : '');
@@ -4617,7 +4617,7 @@ function renderHome() {
           const sdef = ['recent', 'favs', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
           return sorder.map((k) => sideSec[k] || '').join('');
-        })()}</aside>
+        })()}</div></aside>
       </div>
       ${homeDiscoverHtml()}
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
