@@ -9858,7 +9858,11 @@ function mailListInner(loading) {
   // quadrant card filters to that bucket's filed mail (multi-select - Urgent, or
   // Urgent + Important, etc.). Only over the inbox itself, not Sent/Archive/etc.
   const qf = m.quadFilter;
-  const inboxCtx = ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox');
+  // When SEARCHING, show every match - never apply the inbox-triage filter (which
+  // keeps only untriaged mail) or the bucket filter, or a result that's been filed,
+  // flagged or archived would be hidden. That was why a searched-for email "wasn't
+  // found" even though the server returned it. (Robin, 2026-09-28.)
+  const inboxCtx = !m.query && ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox');
   if (inboxCtx) {
     if (qf && qf.size) {
       // A bucket view is durable: the remembered snapshots + any loaded inbox mail
