@@ -205,6 +205,10 @@ button { cursor:pointer; background:none; border:0; }
    with the rating, but always there when you want out. */
 .awheel-offbtn { align-self:flex-start; background:none; border:0; color:var(--ink-3); font-size:13px; cursor:pointer; padding:2px 0; text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--line-2); }
 .awheel-offbtn:hover { color:var(--ink-2); }
+/* Track / untrack this area on the Wheel of Life - a tick box. */
+.wheel-track-tog { display:flex; align-items:center; gap:10px; margin-top:16px; font-size:14.5px; color:var(--ink-2); cursor:pointer; }
+.wheel-track-tog input { width:18px; height:18px; accent-color:var(--accent); flex:none; cursor:pointer; }
+.area-addgoal-btn { max-width:280px; margin-top:14px; }
 /* Off-state panel: the area is out of the wheel, with a clear way back on. */
 .awheel-off { align-items:center; text-align:center; gap:12px; padding:10px 0 4px; }
 .awheel-off-ic { font-size:40px; color:var(--ink-3); opacity:.7; }
@@ -4447,7 +4451,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-sec.mdragging .area-sec-h { border-radius:10px; background:var(--card); box-shadow:0 14px 34px -12px rgba(0,0,0,.45); }
 .area-sec.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
 .area-sec.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
-.area-vision-edit { width:100%; border:1px solid var(--line); background:var(--card); resize:vertical; padding:12px 14px; font:inherit; font-size:15.5px; line-height:1.6; color:var(--ink); min-height:82px; border-radius:12px; box-shadow:var(--shadow); }
+.area-vision-edit { width:100%; box-sizing:border-box; border:1px solid var(--line); background:var(--card); resize:none; overflow:hidden; padding:12px 14px; font:inherit; font-size:15.5px; line-height:1.6; color:var(--ink); min-height:82px; border-radius:12px; box-shadow:var(--shadow); }
 .area-vision-edit:focus { outline:none; border-color:color-mix(in srgb,var(--c) 55%,var(--line)); }
 .area-vision-edit::placeholder { color:var(--ink-3); font-style:italic; }
 .area-vision-ro { font-size:16px; line-height:1.6; color:var(--ink-2); font-style:italic; }

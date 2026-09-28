@@ -6038,13 +6038,16 @@ function setAreaWheelTracking(id, track) {
 }
 function areaWheelPanel(area) {
   const hue = hueOf(area);
+  // A single tick box tracks / untracks this area on the Wheel of Life (and the
+  // weekly review) - checked = tracked. (Robin, 2026-09-28.)
+  const trackTog = (checked) => area.sharedBy ? '' : `<label class="wheel-track-tog"><input type="checkbox" data-area-reviewon ${checked ? 'checked' : ''}><span>Track this area on the Wheel of Life</span></label>`;
   // Turned off for the wheel: a quiet off-state with an easy way back on, so this
   // never becomes a one-way door.
   if (area.props && area.props.reviewOff) {
     return `<div class="awheel awheel-off">
       <div class="awheel-off-ic">◍</div>
       <p><b>${esc(area.title)}</b> isn't tracked on the Wheel of Life. It stays here as normal, just out of the wheel and the weekly review.</p>
-      ${area.sharedBy ? '' : `<button class="add-btn wide" data-area-wheel-on="${area.id}">Track this area on the Wheel of Life</button>`}
+      ${trackTog(false)}
     </div>`;
   }
   if (state.reviews === undefined) { state.reviews = null; api('/api/blocks?kind=review').then((r) => { state.reviews = r || []; if (state.view.type === 'area') renderArea(); }).catch(() => { state.reviews = []; }); }
@@ -6055,7 +6058,7 @@ function areaWheelPanel(area) {
     return `<div class="awheel awheel-empty"><div class="awheel-gauge" style="--h:${hue};--sc:0"><span class="awg-n">–</span></div>
       <p>Rate <b>${esc(area.title)}</b> in your weekly review and its Wheel of Life takes shape here - watch this one part of your life move over time.</p>
       <button class="add-btn wide" data-start-review="weekly">Start this week's review</button>
-      ${area.sharedBy ? '' : `<button class="awheel-offbtn" data-area-wheel-off="${area.id}" title="Keep this area out of the Wheel of Life">Don't track this area on the Wheel of Life</button>`}</div>`;
+      ${trackTog(true)}</div>`;
   }
   const best = revs.length ? Math.max(...revs.map((r) => r.score)) : curScore;
   const prev = revs.length >= 2 ? revs[revs.length - 2].score : null;
@@ -6082,7 +6085,7 @@ function areaWheelPanel(area) {
     ${revs.length >= 2 ? `<div class="awheel-timeline"><div class="awt-h">Over time</div><div class="awt-bars">${bars}</div><div class="awt-axis"><span>${esc(evShortDate(revs[0].date))}</span><span>now</span></div></div>` : ''}
     <p class="awheel-comm">${areaWheelCommentary(revs, curScore, area)}</p>
     <button class="wheel-more awheel-more" data-open-wheel>See the whole Wheel of Life →</button>
-    ${area.sharedBy ? '' : `<button class="awheel-offbtn" data-area-wheel-off="${area.id}" title="Keep this area out of the Wheel of Life">Don't track this area on the Wheel of Life</button>`}
+    ${trackTog(true)}
   </div>`;
 }
 const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
@@ -6325,7 +6328,7 @@ function renderArea() {
   ${memberCount ? `<section class="area-dash-shared"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : ''}
   ${secHidden('Wall') ? '' : `<section class="area-dash-wall"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
-  const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
+  const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>${canEditArea ? '<button class="add-btn wide area-tab-add area-addgoal-btn" data-area-add-goal>🎯 Add another goal</button>' : ''}` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals"><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
   const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
   const tops = { 'Vision': visionBodyHtml, 'Goals': goalsTop, 'Bucket list': bucketTop, 'Wheel of Life': areaWheelPanel(area) };
   // Wheel of Life is a tab only for areas you actually track in the wheel; untracked
@@ -6375,6 +6378,7 @@ function renderArea() {
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
+  autoGrowSoon(document.querySelector('.area-vision-edit'));   // vision grows to fit, so it all reads
 }
 // The area overview: a collapsible dashboard - counts, the people it's shared
 // with (+ invite), file attachments, and a recent-activity feed derived from the
@@ -15758,7 +15762,7 @@ document.addEventListener('paste', (e) => {
   prose.dispatchEvent(new Event('input', { bubbles: true }));   // trigger the debounced save
 });
 document.addEventListener('input', (e) => {
-  if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
+  if (e.target.classList && (e.target.classList.contains('note-title') || e.target.classList.contains('area-vision-edit'))) autoGrow(e.target);
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
   if (e.target.id === 'friend-email') { clearTimeout(window.__frST); window.__frST = setTimeout(peopleSearch, 250); }
   if (e.target.id === 'move-input') { state.move.q = e.target.value; renderMoveList(); }
