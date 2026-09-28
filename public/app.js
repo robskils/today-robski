@@ -8085,8 +8085,10 @@ const MAIL_QUADS = [
   { key: 'urgent', label: 'Urgent', hint: 'Important & timely', mailbox: 'INBOX', quad: 'urgent' },
   { key: 'important', label: 'Important', hint: 'Important, not rushed', mailbox: 'INBOX', quad: 'important' },
   { key: 'chilled', label: 'Read Later', hint: 'Worth a read, no rush', mailbox: 'INBOX', quad: 'chilled' },
-  { key: 'others', label: 'Others', hint: 'Low priority - out of the way', mailbox: 'INBOX', quad: 'others' },
 ];
+// 'Others' was retired (it was really just "archive it" by another name). Any mail
+// still filed there reads as Read Later, so nothing is stranded. (Robin, 2026-09-28.)
+const normQuad = (q) => (q === 'others' ? 'chilled' : q);
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
 // A filed email is stored as { q: quad, m: snapshot } so its box KEEPS it even
 // after it leaves the loaded inbox (Daybook remembers it). Old data stored a bare
@@ -8097,7 +8099,7 @@ const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[ke
 const mailQuadOf = (o) => {
   if (!o) return 'inbox';
   const e = mailQuadEntry(mailFileKey(o));
-  if (e && e.q) return e.q;
+  if (e && e.q) return normQuad(e.q);
   if (o.flagged) return 'important';   // a previously-starred email counts as Important
   return 'inbox';
 };
@@ -8113,7 +8115,7 @@ const snapToMsg = (m) => ({ _key: m._key, messageId: m.messageId || '', _acct: m
 // snapshot messages so the reader can open one that has left the inbox.
 function mailQuadMsgs(quad) {
   const byId = new Map(); state.mail.snapMsgs = state.mail.snapMsgs || {};
-  for (const k in (state.mailQuads || {})) { const e = mailQuadEntry(k); if (e && e.q === quad && e.m) { const m = snapToMsg(e.m); state.mail.snapMsgs[m._key] = m; byId.set(m.messageId || m._key, m); } }
+  for (const k in (state.mailQuads || {})) { const e = mailQuadEntry(k); if (e && normQuad(e.q) === quad && e.m) { const m = snapToMsg(e.m); state.mail.snapMsgs[m._key] = m; byId.set(m.messageId || m._key, m); } }
   for (const m of (state.mail.messages || [])) { if (mailQuadOf(m) === quad) byId.set(m.messageId || m._key, m); }
   return [...byId.values()];
 }
@@ -9660,6 +9662,8 @@ const MAIL_ICO = {
   note: mIco('<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>'),   // a lined page
   transform: mIco('<path d="M4 8h11l-3-3M20 16H9l3 3"/>'),   // convert / turn into…
   caret: mIco('<path d="M7 10l5 5 5-5"/>'),
+  folder: mIco('<path d="M3.5 7.5a1.5 1.5 0 0 1 1.5-1.5h3.6l1.6 2h7.3a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/>'),   // file into a bucket
+  more: mIco('<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'),   // overflow
   vip: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>'),        // person outline
   vipOn: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>', true), // filled = this sender is a VIP
 };
@@ -9763,8 +9767,8 @@ function mailQuadCardsHtml() {
   // An email lives in exactly one of six pots, laid out left→right as it flows:
   // Inbox (to sort) → the four priority buckets → Archive (done). Counts are
   // durable: how many emails each bucket holds (snapshots + loaded).
-  const counts = { urgent: 0, important: 0, chilled: 0, others: 0 };
-  for (const q of ['urgent', 'important', 'chilled', 'others']) counts[q] = mailQuadMsgs(q).length;
+  const counts = { urgent: 0, important: 0, chilled: 0 };
+  for (const q of ['urgent', 'important', 'chilled']) counts[q] = mailQuadMsgs(q).length;
   const qf = m.quadFilter || new Set();
   const untriaged = buildThreads(m.messages || []).filter((th) => mailQuadOf(th.latest) === 'inbox').length;
   const inboxOn = (m.folder || 'inbox') === 'inbox' && qf.size === 0;
@@ -9782,14 +9786,6 @@ function mailQuadMenuHtml() {
     ${MAIL_QUADS.map((q) => `<button class="mail-move-item mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-pick="${q.quad}"><span class="mail-quad-dot"></span><span class="mail-quadmenu-l">${esc(q.label)}</span><span class="mail-quadmenu-h">${esc(q.hint)}</span></button>`).join('')}
     ${cur !== 'inbox' ? '<button class="mail-move-item mail-quad-inbox" data-mail-quad-pick="inbox"><span class="mail-quad-dot"></span><span class="mail-quadmenu-l">Inbox</span><span class="mail-quadmenu-h">Back to the queue</span></button>' : ''}
   </div></div>`;
-}
-// The priority picker in the reader: tap to file the open email into a bucket
-// (or send it back to the inbox queue).
-function mailQuadPickerHtml(o) {
-  const cur = mailQuadOf(o);
-  // The bucket picker, plus an explicit Archive button so you can file it away the
-  // moment you're done with it, right from the open email. (Robin.)
-  return `<div class="mail-quadpick"><span class="mail-quadpick-l">File into</span>${MAIL_QUADS.map((q) => `<button class="mail-quadpick-b mail-quad-${q.key} ${cur === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span>${esc(q.label)}</button>`).join('')}${cur !== 'inbox' ? '<button class="mail-quadpick-b mail-quad-inbox" data-mail-quad-file="inbox" title="Back to the inbox queue"><span class="mail-quad-dot"></span>Inbox</button>' : ''}<span class="mail-quadpick-sep" aria-hidden="true"></span><button class="mail-quadpick-b mail-quadpick-archive" data-mail-archive="${esc(o._key)}" title="Done with it - move to your Archive"><span class="mail-quad-dot"></span>Archive</button></div>`;
 }
 // The inner HTML of the .mail-list container (rows / loading / empty state).
 // Kept separate so a live search can refresh just the list without rebuilding
@@ -9916,7 +9912,16 @@ function renderMail(loading) {
     // note. Both are native <details> so they need no extra state.
     const replyDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Reply">${MAIL_ICO.replyAll}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-reply-all>${MAIL_ICO.replyAll}<span>Reply to all</span></button><button class="mail-dd-item" data-mail-reply>${MAIL_ICO.reply}<span>Reply to sender</span></button><button class="mail-dd-item" data-mail-forward>${MAIL_ICO.forward}<span>Forward</span></button></div></details>`;
     const xformDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Turn this email into…">${MAIL_ICO.transform}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-task>${MAIL_ICO.task}<span>Make a task</span></button><button class="mail-dd-item" data-mail-note>${MAIL_ICO.note}<span>Make a note</span></button></div></details>`;
-    const msgActs = `${replyDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - remove from inbox, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic mail-vip-btn ${o.from && isVipAddr(o.from.address) ? 'on' : ''}" data-mail-vip="${esc(o.from ? o.from.address : '')}" title="${o.from && isVipAddr(o.from.address) ? 'Important sender - tap to remove' : 'Mark as an important sender'}">${o.from && isVipAddr(o.from.address) ? MAIL_ICO.vipOn : MAIL_ICO.vip}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-spam="${esc(o._key)}" title="Mark as spam (move to Junk)">${MAIL_ICO.spam}</button><button class="ghost mail-act-ic" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}" title="Block this sender - their mail goes straight to Junk">${MAIL_ICO.block}</button><button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>`;
+    // File into a priority bucket - the old second row, now one dropdown. Shows a
+    // tick on the current bucket, and "Back to Inbox" once it's been filed.
+    const curQuad = mailQuadOf(o);
+    const fileDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum${curQuad !== 'inbox' ? ' on' : ''}" title="File into a bucket">${MAIL_ICO.folder}${MAIL_ICO.caret}</summary><div class="mail-dd-menu">${MAIL_QUADS.map((q) => `<button class="mail-dd-item mail-dd-quad mail-quad-${q.key} ${curQuad === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span><span>${esc(q.label)}${curQuad === q.quad ? ' ✓' : ''}</span></button>`).join('')}${curQuad !== 'inbox' ? `<button class="mail-dd-item" data-mail-quad-file="inbox" title="Back to the inbox queue">${MAIL_ICO.reply}<span>Back to Inbox</span></button>` : ''}</div></details>`;
+    // The rare, sender-level actions live under a More menu so the main bar is one
+    // clean row. "Mark important sender" groups that sender's mail at the top of
+    // the inbox (the ⭐ box). (Robin, 2026-09-28.)
+    const isVip = o.from && isVipAddr(o.from.address);
+    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button><button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button><button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
+    const msgActs = `${replyDD}${fileDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - done with it, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>${moreDD}`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -9932,7 +9937,6 @@ function renderMail(loading) {
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
         ${o.from && o.from.address ? (haveContact(o.from.address) ? '<span class="mail-contact-have" title="In your contacts">👤 Contact</span>' : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`) : ''}
         ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
-      ${mailQuadPickerHtml(o)}
       ${mailFiledHtml(o)}
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<a class="mail-att-chip mail-att-dl" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open attachment in your browser">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↗</a>`).join('')}</div>` : ''}
       ${o.invite ? inviteCardHtml(o.invite) : ''}
