@@ -179,14 +179,22 @@ async function imapOpen(env, acct) {
       const r = await cmd(`FETCH ${lo}:${hi} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID REFERENCES IN-REPLY-TO)] BODY.PEEK[1]<0.512>)`);
       return parseFetch(r.lines).sort((a, b) => (a.uid < b.uid ? 1 : -1));
     },
-    // Full-text search (headers + body). CHARSET UTF-8 first for accented terms,
-    // falling back to a plain search if the server rejects the charset.
+    // Full-text search over SUBJECT + FROM + BODY. Each WORD must appear (in any of
+    // those), rather than one contiguous TEXT substring - so "kinesis account
+    // verification" matches a subject like "Kinesis - Account Verification" where
+    // the words aren't adjacent. CHARSET UTF-8 first for accented terms, falling
+    // back to a plain search if the server rejects the charset.
     async search(q, limit) {
-      // 45s, not the usual 20: searching Gmail's All Mail is the one command here
-      // that legitimately takes half a minute, and timing it out returns an empty
-      // folder rather than an error - which reads as "nothing found".
-      let s = await cmd(`UID SEARCH CHARSET UTF-8 TEXT ${imapStr(q)}`, 45000);
-      if (!s.ok) s = await cmd(`UID SEARCH TEXT ${imapStr(q)}`, 45000);
+      // 45s, not the usual 20: a body SEARCH over a big folder legitimately takes
+      // half a minute, and timing it out returns an empty folder rather than an
+      // error - which reads as "nothing found".
+      const words = String(q || '').trim().split(/\s+/).filter(Boolean);
+      // Each word: subject OR from OR body. Concatenated words are ANDed by IMAP.
+      const crit = words.length
+        ? words.map((w) => `OR SUBJECT ${imapStr(w)} OR FROM ${imapStr(w)} BODY ${imapStr(w)}`).join(' ')
+        : `TEXT ${imapStr(q)}`;
+      let s = await cmd(`UID SEARCH CHARSET UTF-8 ${crit}`, 45000);
+      if (!s.ok) s = await cmd(`UID SEARCH ${crit}`, 45000);
       const raw = (s.lines.find((l) => /^\* SEARCH/i.test(l)) || '').replace(/^\* SEARCH/i, '').trim();
       const ids = raw ? raw.split(/\s+/).filter(Boolean) : [];
       if (!ids.length) return [];
@@ -937,7 +945,9 @@ export async function handleMail(request, env, url, json, err) {
         // "All Mail" overlap with Inbox/Sent collapses to one hit.
         if (q) {
           const boxes = await im.listMailboxes();
-          const skip = (b) => /\\Junk/i.test(b.flags || '') || /(^|[/.\\])(spam|junk|bulk\s*mail)$/i.test(b.path || '');
+          // Search covers EVERY folder, Spam and Trash included - when you're hunting
+          // for a specific email (a verification code, say) it may well be in there.
+          const skip = () => false;
           const cap = Math.max(limit, 60);
           // Gmail: one X-GM-RAW query over All Mail (its own fast index) instead of
           // crawling every folder. All Mail already holds every message except Spam
@@ -948,7 +958,15 @@ export async function handleMail(request, env, url, json, err) {
             if (allBox && await im.select(allBox.path)) {
               const found = await im.searchGmailRaw(q, cap);
               if (found) {   // null => X-GM-RAW rejected; fall through to the generic sweep
-                const out = found.map((m) => ({ ...m, mailbox: allBox.path }));
+                const seen = new Set(); const out = [];
+                const add = (list, box) => { for (const m of list) { const k = m.messageId || `${box}:${m.uid}`; if (!seen.has(k)) { seen.add(k); out.push({ ...m, mailbox: box }); } } };
+                add(found, allBox.path);
+                // All Mail excludes Spam and Trash, so search those too - a verification
+                // email can land in Spam. Each is another quick X-GM-RAW index lookup.
+                for (const re of [/\\Junk/i, /\\Trash/i]) {
+                  const box = boxes.find((b) => re.test(b.flags || ''));
+                  if (box && await im.select(box.path)) add((await im.searchGmailRaw(q, cap)) || [], box.path);
+                }
                 out.sort((a, c) => new Date(c.date || 0) - new Date(a.date || 0));
                 return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll: true, failed: [] }, request);
               }
