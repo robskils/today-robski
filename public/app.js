@@ -8894,18 +8894,17 @@ async function loadMessages(quiet, force) {
     } catch (e) { acctErrors.push({ name: a.name || a.email, msg: e.message }); if (bucket[a.id] === undefined) bucket[a.id] = []; }
     if (state.mail._gen === gen) rebuild();   // render as each mailbox lands
   };
-  // Browsing fans out: every account at once, each painting as it lands. SEARCHING
-  // goes one at a time. A search is many SELECTs and a UID SEARCH per folder, and
-  // firing that at several providers simultaneously is how Gmail decides you are
-  // being a nuisance and drops the connection - which came back as "No matches"
-  // for an account that had never actually been searched. Slower, and right.
+  // Both browsing AND searching now fan out: every account at once, each painting
+  // as it lands. Search used to go one account at a time because the old Gmail
+  // search crawled every folder with a text SEARCH, and hammering several providers
+  // together made Gmail drop the connection. Now a Gmail search is a single
+  // X-GM-RAW query (its own index) and each account is a separate provider/socket,
+  // so parallel is safe - and as fast as the slowest account, not the sum. (Robin.)
   if (q) {
-    for (const a of accts) {
-      state.mail.searching = a.name || a.email;
-      renderMailList(false);
-      await loadOne(a);
-      if (state.mail._gen !== gen) return;
-    }
+    state.mail.searching = accts.length > 1 ? `${accts.length} accounts` : (accts[0] ? (accts[0].name || accts[0].email) : '');
+    renderMailList(false);
+    await Promise.all(accts.map(loadOne));
+    if (state.mail._gen !== gen) return;
     state.mail.searching = null;
     renderMailList(false);
   } else await Promise.all(accts.map(loadOne));
