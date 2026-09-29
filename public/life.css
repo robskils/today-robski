@@ -1847,6 +1847,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .crumb.cur { color:var(--ink-2); }
 .crumb-sep { color:var(--ink-3); opacity:.5; }
 .note-del { margin-left:auto; font-size:14px; padding:6px 12px; }
+/* Delete-as-bin: a compact icon button (matches the star/lock icons beside it)
+   so it fits on the same line as the area chips instead of wrapping. */
+.note-del-ic { display:inline-flex; align-items:center; justify-content:center; padding:6px 8px; color:var(--ink-3); }
+.note-del-ic:hover { color:var(--danger,#d9534f); border-color:color-mix(in srgb,var(--danger,#d9534f) 45%,var(--line)); }
+.note-del-ic svg { width:19px; height:19px; display:block; }
 
 .note-title { display:block; width:100%; font-family:'Cormorant Garamond',serif; font-size:clamp(30px,5vw,44px); font-weight:500; line-height:1.08; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; resize:none; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; }
 .note-title:focus-visible { outline:none; }
@@ -5601,6 +5606,8 @@ table.ttable tr:last-child td { border-bottom:0; }
   .crumb-tools, .tbl-head { flex-wrap:wrap; }
   .crumb-tools { margin-left:0; max-width:100%; min-width:0; gap:6px; }
   .crumb-tools .area-sel, .tbl-head .area-sel { max-width:100%; }
+  /* Keep the add-area select compact so the star + bin sit on the same line. */
+  .crumb-tools .note-areas .area-sel { max-width:150px; }
   /* Keep the note tools to one tidy row on mobile: Share, Life area and the
      private lock are desktop-only here (the area chip covers filing). */
   .note-hide-mobile { display:none !important; }

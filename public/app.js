@@ -15033,7 +15033,7 @@ function renderNote() {
       <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
       ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-tidy ghost note-hide-mobile" data-note-tidy data-tip="Tidy the spacing - even out blank lines" aria-label="Tidy the spacing">Tidy</button>`}
       ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-      <button class="note-del ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">Delete</button>`}</span></div>
+      <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
         ${sharedBanner(n)}
