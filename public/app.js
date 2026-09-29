@@ -825,6 +825,7 @@ function renderGuideIndex() {
         <div class="guide-ethos-mark">${MARK}</div>
         <div class="guide-ethos-tag">For a life well lived</div>
         <p class="guide-ethos-p">Daybook holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
+        <p class="guide-ethos-p guide-ethos-people">And the people in it matter most of all. Friendships and family, the relationships that give a life its meaning, need tending too: a birthday remembered, a message returned, a catch-up before too long slips by. Daybook keeps the people you care about close - who they are, what matters to them, when you last spoke - and gives you a gentle nudge when it's time to reach out. Meaningful bonds rarely fade on purpose; they slip when life gets busy. Daybook helps you keep them alive, because a life well lived is, above all, a life shared.</p>
       </div>
       <p class="help-lede">Here's how it all works. Start with the welcome guide, or pick a tool.</p>
       <div class="guide-start">

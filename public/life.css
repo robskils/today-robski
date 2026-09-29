@@ -3681,6 +3681,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Two classes so this beats `.help-doc p { margin:0 0 14px }` (0,0,1,1),
    which was silently winning the cascade and flattening the gap. */
 .guide-ethos .guide-ethos-p { max-width:560px; margin:40px auto 0; font-size:16.5px; line-height:1.65; color:var(--ink-2); }
+/* The people paragraph reads as its own movement: a short gold hairline above it
+   and a little extra air, so relationships get their own quiet moment. */
+.guide-ethos .guide-ethos-people { margin-top:36px; padding-top:32px; position:relative; }
+.guide-ethos .guide-ethos-people::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:54px; height:2px; border-radius:2px; background:color-mix(in srgb,var(--accent) 55%,transparent); }
 /* The discreet footer whisper on individual guides and the index bottom. */
 .guide-tagline { text-align:center; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:17px; color:var(--ink-3); margin:26px 0 2px; letter-spacing:.01em; }
 /* The sign-off: the tagline with the Daybook mark beneath it, the mark a quiet
