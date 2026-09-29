@@ -2965,7 +2965,7 @@ async function quickAdd(kind) {
     else if (kind === 'journal') { await openJournal(); await startJournalEntry(); }
     else if (kind === 'dream') { await openJournal(); await newJournalEntry('dreams', 'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.'); }
     else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus({ preventScroll: true }); }, 0); }
-    else if (kind === 'contact') { await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus({ preventScroll: true }); }, 0); }
+    else if (kind === 'contact') { state.contactsQuery = ''; await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'goal') { await openGoals('goals'); await newGoal(null); }
   } catch (e) { toast(e.message); }
   keepKeyboardUntilFocus(primer);
