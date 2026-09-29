@@ -10012,7 +10012,7 @@ function renderMail(loading) {
       ${convStrip}
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
-        ${o.from && o.from.address ? (haveContact(o.from.address) ? '<span class="mail-contact-have" title="In your contacts">👤 Contact</span>' : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`) : ''}
+        ${o.from && o.from.address ? (() => { const _c = contactByEmail(o.from.address); return _c ? `<button class="mail-contact-have" data-open-contact="${_c.id}" title="Open ${esc(_c.title || 'this contact')}'s card">👤 ${esc(_c.title || 'Contact')}</button>` : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`; })() : ''}
         ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
       ${mailFiledHtml(o)}
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<a class="mail-att-chip mail-att-dl" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open attachment in your browser">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↗</a>`).join('')}</div>` : ''}
@@ -10634,6 +10634,9 @@ async function loadContacts(force) {
 }
 const contactEmail = (c) => ((c.props && c.props.email) || '').toLowerCase();
 const haveContact = (email) => !!email && (state.contacts || []).some((c) => contactEmail(c) === email.toLowerCase());
+// The contact whose (any) email matches - so an email's sender links straight to
+// their card. Checks every address on the contact, not just the primary.
+const contactByEmail = (email) => { if (!email) return null; const e = String(email).toLowerCase(); return (state.contacts || []).find((c) => contactEmails((c && c.props) || {}).some((x) => String(x).toLowerCase() === e)) || null; };
 function sortContacts(list) { return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')); }
 // Star a contact: a contacts-only flag (props.starred), separate from props.fav
 // so it never spills into the sidebar Favourites. Feeds the Starred section.
