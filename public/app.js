@@ -4491,7 +4491,7 @@ function renderHome() {
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
     <div class="home">
-      <div class="home-scroll">
+      <div class="home-top">
       ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="crumbbar home-crumbbar">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button>' : ''}<div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
@@ -4514,6 +4514,8 @@ function renderHome() {
         })()}</div>
       </div>
       ${alertsHtml()}
+      </div>
+      <div class="home-scroll">
       ${homeQuoteHtml()}
       ${modOn('reflect') ? spiritPinnedHtml() + reflectPinsHtml() : ''}
       <div id="qt-wrap"></div>

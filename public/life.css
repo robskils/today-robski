@@ -4010,9 +4010,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    and the right rail each scroll INDEPENDENTLY, so the rail's top is always
    reachable no matter where the main column is scrolled. Mirrors the same
    `.pane:has(.today-frame)` full-height pattern the Today planner uses. */
-.pane:has(.home) { height:calc(100vh - 44px); display:flex; flex-direction:column; padding-bottom:0; }
-.home { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:26px; }
-.home-scroll { overflow-y:auto; min-height:0; padding-right:8px; padding-bottom:52px; }
+.pane:has(.home) { height:calc(100vh - 44px); box-sizing:border-box; display:flex; flex-direction:column; padding-bottom:0; }
+.home { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 340px; grid-template-rows:auto minmax(0,1fr); grid-template-areas:"top top" "main side"; column-gap:26px; row-gap:6px; }
+.home-top { grid-area:top; min-width:0; }
+.home-scroll { grid-area:main; overflow-y:auto; min-height:0; padding-right:8px; padding-bottom:52px; }
+.home-side { grid-area:side; }
 .home-scroll::-webkit-scrollbar, .home-side::-webkit-scrollbar { width:8px; }
 .home-scroll::-webkit-scrollbar-thumb, .home-side::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
 .home-main > .home-sec:first-child { margin-top:0; }
@@ -4162,7 +4164,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      direct flex child of `.home` that `order` can arrange. */
   .pane:has(.home) { height:auto; display:block; padding-bottom:90px; }
   .home { display:flex; flex-direction:column; gap:26px; }
-  .home-scroll, .home-main, .home-side { display:contents; overflow:visible; }
+  .home-top, .home-scroll, .home-main, .home-side { display:contents; overflow:visible; }
   .home .home-sec { margin:0; }
   /* Tap the whole header to collapse - a generous target, and no drag grip, so
      every section title lines up flush left whichever column it came from. The
