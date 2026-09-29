@@ -17271,7 +17271,11 @@ document.addEventListener('pointermove', (e) => {
   for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
   d.before = beforeEl ? beforeEl.dataset.hsec : null;
   if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
-  const vh = window.innerHeight; if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
+  // Autoscroll the COLUMN, not the window: Home is viewport-locked, so each
+  // column (.home-side for the rail, .home-scroll for the main lead) is its own
+  // scroller. Scrolling the window would do nothing now.
+  const scroller = d.side ? d.col : (d.col.closest('.home-scroll') || document.scrollingElement);
+  if (scroller) { const sr = scroller.getBoundingClientRect ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight }; if (e.clientY < sr.top + 60) scroller.scrollBy(0, -14); else if (e.clientY > sr.bottom - 60) scroller.scrollBy(0, 14); }
 });
 function deskSecDragEnd(e) {
   const d = deskSecDrag; if (!d || (e && e.pointerId !== d.id)) return;

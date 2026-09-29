@@ -2927,7 +2927,7 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .favarea { display:inline-flex; align-items:center; gap:9px; padding:9px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:15px; box-shadow:var(--shadow-sm); transition:border-color .12s, transform .12s; }
 .favarea:hover { border-color:var(--line-2); transform:translateY(-1px); }
 .fa-dot { width:9px; height:9px; border-radius:50%; background:hsl(var(--h,4) 55% 55%); flex:none; }
-.home-grip { color:var(--ink-3); font-size:14px; opacity:.32; cursor:grab; margin-right:2px; padding:2px 3px; border-radius:5px; touch-action:none; -webkit-user-select:none; user-select:none; line-height:1; }
+.home-grip { color:var(--ink-3); font-size:14px; opacity:.5; cursor:grab; margin-right:2px; padding:2px 3px; border-radius:5px; touch-action:none; -webkit-user-select:none; user-select:none; line-height:1; }
 .home-drag-h:hover .home-grip { opacity:.75; }
 .home-grip:hover { background:var(--paper-2); color:var(--ink-2); }
 .home-grip:active { cursor:grabbing; color:var(--accent); }
@@ -4216,6 +4216,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   .lead-block.lead-collapsed, .home-sec-card.home-sec-shut { height:56px; min-height:56px; padding-top:0; padding-bottom:0; display:flex; align-items:center; }
   .lead-block.lead-collapsed .lead-h, .home-sec-card.home-sec-shut > .home-sec-h { width:100%; min-height:0; margin:0; }
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
+  /* The discover strip, keyboard-shortcuts link and the mark button are chrome
+     that belongs at the very bottom - they now live inside .home-scroll, so
+     without an explicit order they'd float up among the sections. */
+  .home-discover { order:90; } .home-foot { order:100; } .home-mark { order:101; }
   /* Sections switched off for mobile in Settings → Mobile. */
   .home .mob-hide { display:none; }
   /* Everything stacks on mobile - never a sideways scroll. Goal cards go one per
