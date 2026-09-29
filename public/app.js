@@ -11497,18 +11497,37 @@ async function mergeSelectedContacts() {
   list.sort((a, b) => score(b) - score(a));
   const primary = list[0]; const others = list.slice(1);
   const names = others.map((c) => c.title || 'Unnamed').join(', ');
-  if (!(await uiConfirm(`Merge ${others.length} contact${others.length > 1 ? 's' : ''} (${names}) into “${esc(primary.title || 'Unnamed')}”? Their details fill any gaps, anything clashing is kept in the notes, and the merged-in cards are removed.`, { title: 'Merge contacts', okLabel: 'Merge' }))) return;
+  if (!(await uiConfirm(`Merge ${others.length} contact${others.length > 1 ? 's' : ''} (${names}) into “${esc(primary.title || 'Unnamed')}”? Everything from both is kept - every email, phone, address, life area and note - with only exact duplicates removed. The merged-in cards are then removed.`, { title: 'Merge contacts', okLabel: 'Merge' }))) return;
   const pp = { ...(primary.props || {}) };
+  const all = [primary, ...others];
   const groups = new Set(groupsOf(primary));
   const bodyParts = [(primary.body || '').trim()].filter(Boolean);
+  // Multi-value fields are UNIONED across every card, primary's first, dropping
+  // only exact duplicates - a second distinct email / phone / address / life area
+  // is always kept (Robin: merging only removes repetition, never data).
+  const uniq = (arr, keyFn) => { const seen = new Set(); const out = []; for (const v of arr) { const k = keyFn(v); if (k && !seen.has(k)) { seen.add(k); out.push(v); } } return out; };
+  const emails = uniq(all.flatMap((c) => contactEmails(c.props || {}).map((e) => e.trim())), (e) => e.toLowerCase());
+  const phones = uniq(all.flatMap((c) => contactPhones(c.props || {})), (ph) => (String(ph.cc || '') + String(ph.number || '')).replace(/\D/g, ''));
+  const addresses = uniq(all.flatMap((c) => contactAddresses(c.props || {})), (a) => `${a.label}|${formatAddress(a)}`.toLowerCase().replace(/\s+/g, ' ').trim());
+  const areas = uniq(all.flatMap((c) => blockAreas(c)), (a) => a);
+  if (emails.length) { pp.emails = emails; pp.email = emails[0]; }
+  if (phones.length) { pp.phones = phones; pp.phone = joinPhone(phones[0]); }
+  if (addresses.length) { pp.addresses = addresses; pp.address = addresses[0]; }
+  if (areas.length) { pp.areas = areas; pp.area = areas[0]; }
+  // Everything else: fill any gap the primary has from the others (never
+  // overwrite), so single-value details survive too. Where two cards genuinely
+  // disagree on a human field, keep the alternate in the notes rather than lose it.
+  const MULTI = new Set(['emails', 'email', 'phones', 'phone', 'addresses', 'address', 'areas', 'area', 'groups']);
+  const NOTE_ON_CLASH = { birthday: '🎂 Birthday', tagline: 'Tagline' };
+  const blank = (v) => v == null || v === '' || v === false;
   for (const c of others) {
     const p = c.props || {};
-    for (const k of ['email', 'phone', 'birthday', 'address', 'area', 'kitEvery']) { if (!pp[k] && p[k]) pp[k] = p[k]; }
+    for (const k of Object.keys(p)) {
+      if (MULTI.has(k) || blank(p[k])) continue;
+      if (blank(pp[k])) pp[k] = p[k];
+      else if (NOTE_ON_CLASH[k] && JSON.stringify(pp[k]) !== JSON.stringify(p[k])) bodyParts.push(`${NOTE_ON_CLASH[k]} (from ${c.title || 'merged contact'}): ${typeof p[k] === 'string' ? p[k] : JSON.stringify(p[k])}`);
+    }
     groupsOf(c).forEach((gid) => groups.add(gid));
-    const extra = [];
-    if (p.email && p.email !== pp.email) extra.push(`✉ ${p.email}`);
-    if (p.phone && p.phone !== pp.phone) extra.push(`☎ ${p.phone}`);
-    if (extra.length) bodyParts.push(`${c.title || 'Contact'}: ${extra.join(' · ')}`);
     const b = (c.body || '').trim(); if (b) bodyParts.push(b);
   }
   pp.groups = [...groups];
