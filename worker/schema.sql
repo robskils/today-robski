@@ -84,13 +84,38 @@ INSERT OR IGNORE INTO quotes (text, author) VALUES
   ('To be a lamp unto yourself is to light the way for others.', 'Sōtō teaching'),
   ('Just this. Just this moment, nothing more.', 'Zen teaching'),
   ('The way out is through.', 'Zen proverb'),
-  ('Zazen is good for nothing.', 'Kōdō Sawaki'),
   ('Do not be too hard, lest you break. Do not be too soft, lest you be squeezed.', 'Zen proverb'),
   ('Gaining is delusion, losing is enlightenment.', 'Kōdō Sawaki'),
   ('You cannot exchange even a single fart with the next person.', 'Kōdō Sawaki'),
   ('Practice is the whole of the Way, not a means to it.', 'Sōtō teaching'),
-  ('Sit without expectation. That is shikantaza.', 'Sōtō teaching'),
-  ('When walking, just walk. Above all, do not wobble.', 'Yunmen');
+  ('When walking, just walk. Above all, do not wobble.', 'Yunmen'),
+  -- Broadened beyond Sōtō Zen for a wider audience: inspiring, hopeful lines from
+  -- across the world's contemplative traditions - Sufi, Buddhist, Taoist,
+  -- Christian, Vedantic (2026-09-30).
+  ('The wound is the place where the Light enters you.', 'Rumi'),
+  ('Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself.', 'Rumi'),
+  ('You are not a drop in the ocean. You are the entire ocean in a drop.', 'Rumi'),
+  ('Let yourself be silently drawn by the strange pull of what you love.', 'Rumi'),
+  ('Grief can be the garden of compassion.', 'Rumi'),
+  ('Thousands of candles can be lit from a single candle, and its life will not be shortened. Happiness never decreases by being shared.', 'The Buddha'),
+  ('Peace comes from within. Do not seek it without.', 'The Buddha'),
+  ('Drop by drop is the water pot filled.', 'The Buddha'),
+  ('Walk as if you are kissing the Earth with your feet.', 'Thich Nhat Hanh'),
+  ('The present moment is filled with joy and happiness. If you are attentive, you will see it.', 'Thich Nhat Hanh'),
+  ('Nature does not hurry, yet everything is accomplished.', 'Lao Tzu'),
+  ('When I let go of what I am, I become what I might be.', 'Lao Tzu'),
+  ('The journey of a thousand miles begins with a single step.', 'Lao Tzu'),
+  ('Flow with whatever may happen, and let your mind be free.', 'Zhuangzi'),
+  ('Let nothing disturb you, let nothing frighten you. All is passing; patience obtains all.', 'Teresa of Ávila'),
+  ('Start by doing what is necessary, then what is possible, and suddenly you are doing the impossible.', 'Francis of Assisi'),
+  ('For it is in giving that we receive.', 'Francis of Assisi'),
+  ('If the only prayer you ever say in your whole life is thank you, it will be enough.', 'Meister Eckhart'),
+  ('Arise, awake, and stop not till the goal is reached.', 'Swami Vivekananda'),
+  ('Happiness is your true nature. Seek it within.', 'Ramana Maharshi'),
+  ('The river that flows in you also flows in me.', 'Kabir'),
+  ('Faith is the bird that feels the light and sings when the dawn is still dark.', 'Rabindranath Tagore'),
+  ('The butterfly counts not months but moments, and has time enough.', 'Rabindranath Tagore'),
+  ('It does not matter how slowly you go, as long as you do not stop.', 'Confucius');
 
 -- Email sign-in codes. One outstanding code per address; deleted on use.
 -- attempts caps brute force, sent_at throttles resends.
