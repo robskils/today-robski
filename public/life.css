@@ -2024,7 +2024,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .home-mark:active { transform:translateY(0); }
 .nav-brand .brand-mark { margin:0 .16em 0 .2em; }
 .nav-msearch, .nav-msearch-row { display:none; }   /* mobile-only sticky search (see media query) */
-.home-crumbbar { display:none; }   /* the "Home" breadcrumb row is mobile-only */
+.home-crumbbar { display:flex; }   /* carries the +New add menu, like every other page's breadcrumb */
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
   padding:10px 12px; margin-bottom:8px; border-radius:10px; border:1px solid var(--line-2);
@@ -4016,17 +4016,15 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 }
 .home-sec { margin:26px 0; }
 /* Home splits into main content + a sticky notepad column; stacks on mobile. */
-/* Home is a viewport-locked two-column dashboard: the left column (everything)
-   and the right rail each scroll INDEPENDENTLY, so the rail's top is always
-   reachable no matter where the main column is scrolled. Mirrors the same
-   `.pane:has(.today-frame)` full-height pattern the Today planner uses. */
-.pane:has(.home) { height:calc(100vh - 44px); box-sizing:border-box; display:flex; flex-direction:column; padding-bottom:0; }
-.home { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 340px; grid-template-rows:auto minmax(0,1fr); grid-template-areas:"top top" "main side"; column-gap:26px; row-gap:6px; }
+/* Home is PAGE-scrolled: the full-width top bar (greeting, date, actions,
+   alerts) scrolls up and away under the tab strip as you scroll, while the
+   right rail pins just below the strip and scrolls on its own - so its top
+   stays reachable however far the main column has scrolled. */
+.home { display:grid; grid-template-columns:minmax(0,1fr) 340px; grid-template-areas:"top top" "main side"; column-gap:26px; row-gap:6px; align-items:start; }
 .home-top { grid-area:top; min-width:0; }
-.home-scroll { grid-area:main; overflow-y:auto; min-height:0; padding-right:8px; padding-bottom:52px; }
-.home-side { grid-area:side; }
-.home-scroll::-webkit-scrollbar, .home-side::-webkit-scrollbar { width:8px; }
-.home-scroll::-webkit-scrollbar-thumb, .home-side::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
+.home-scroll { grid-area:main; min-width:0; }
+.home-side::-webkit-scrollbar { width:8px; }
+.home-side::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:8px; }
 .home-main > .home-sec:first-child { margin-top:0; }
 /* Home main sections as equal icon tiles + one expanding panel (like the Toolbox). */
 .home-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(94px, 1fr)); gap:10px; margin-bottom:16px; }
@@ -4142,7 +4140,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    never riding the page or sliding under the header. (Both attempts that put sticky
    on the item itself failed: definite-height-no-stretch wouldn't pin, and
    stretch+max-height rode the page.) (Robin, 2026-09-29.) */
-.home-side { min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:16px; padding:0 2px 52px 0; }
+.home-side { grid-area:side; position:sticky; top:44px; align-self:start; max-height:calc(100vh - 44px); min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:16px; padding:0 2px 8px 0; }
 .home-side .home-sec { margin-top:0; }
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
 .home-notepad::placeholder { color:var(--ink-3); }

@@ -2959,7 +2959,11 @@ function closeShortcuts() { const el = document.getElementById('sc-overlay'); if
 async function quickAdd(kind) {
   const primer = primeMobileKeyboard();   // keep the phone keyboard up across the async open+render
   try {
-    if (kind === 'task') { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
+    // On the Today planner, +Task / +Event add inline to the day being viewed
+    // (the old on-page buttons were removed; the breadcrumb +New now covers them).
+    if (state.view && state.view.type === 'today' && kind === 'task') { showQuickTask(); }
+    else if (state.view && state.view.type === 'today' && kind === 'event') { showQuickEvent(); }
+    else if (kind === 'task') { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
     else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
@@ -4418,10 +4422,11 @@ function setHomeMainOrder(arr) { try { localStorage.setItem('life.home.mainOrder
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
-  // Home's columns each scroll independently, so a rebuild (e.g. collapsing a
-  // section) would otherwise snap them back to the top. Remember where each was
-  // and put it back after the repaint, so a header tap stays put.
-  const _prevMainScroll = document.querySelector('.home-scroll')?.scrollTop || 0;
+  // A rebuild (e.g. collapsing a section) would otherwise jump the page and the
+  // rail back to the top. Only when Home is already on screen, remember the page
+  // scroll and the rail's own scroll and put them back after the repaint.
+  const _homeShown = !!document.querySelector('.home');
+  const _prevWinScroll = _homeShown ? window.scrollY : 0;
   const _prevSideScroll = document.querySelector('.home-side')?.scrollTop || 0;
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
@@ -4630,9 +4635,9 @@ function renderHome() {
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
   startHomeClock();         // keep the time beside the date ticking
-  // Restore each column's scroll (see the capture at the top): a header tap that
+  // Restore the scroll (see the capture at the top): a header tap that
   // collapses/expands a section should leave you exactly where you were.
-  if (_prevMainScroll) { const el = document.querySelector('.home-scroll'); if (el) el.scrollTop = _prevMainScroll; }
+  if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
   if (_prevSideScroll) { const el = document.querySelector('.home-side'); if (el) el.scrollTop = _prevSideScroll; }
 }
 function openTablesList() {
@@ -7547,6 +7552,11 @@ function renderToday() {
   const T = state.today; const data = T.data;
   if (!T.tab) T.tab = 'today';
   const isToday = T.day === todayISO();
+  // Adding a task/practice re-renders the day; remember each column's scroll (and
+  // the page scroll on mobile) so it stays exactly where you added, not jumping
+  // to the top. Restored in the rAF below once the grid has its height back.
+  const _t2Scroll = { practices: document.querySelector('.t2-practices')?.scrollTop || 0, day: document.querySelector('.t2-day')?.scrollTop || 0, tasks: document.querySelector('.t2-tasks')?.scrollTop || 0 };
+  const _t2Win = document.querySelector('.t2-grid') ? window.scrollY : 0;
   const d = new Date(T.day + 'T00:00');
   const dateLabel = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -7562,9 +7572,8 @@ function renderToday() {
   $('#pane').innerHTML = `
     ${pageCrumb('Today')}
     <div class="pane-head t2-head"><h1>${h1}</h1>${nav}</div>
-    <p class="t2-sub">Plan your day</p>
     ${dueBanner}
-    <div class="t2-quickadd"><button class="t2-qa-btn" data-quick-event><span class="t2-qa-ic">＋</span> Event</button><button class="t2-qa-btn" data-quick-task><span class="t2-qa-ic">＋</span> Task</button></div><div id="qt-wrap"></div>
+    <div id="qt-wrap"></div>
     ${!data ? '<div class="home-empty" style="padding:24px">Loading your day…</div>'
       : `
     <div class="t2-grid" style="--t2h:${t2Height}px">
@@ -7580,6 +7589,11 @@ function renderToday() {
     // Tabs height too, so the column headers can pin just below the sticky tabs.
     const tb = document.querySelector('#pane .t2-tabs'); root.style.setProperty('--t2-tabsh', (tb ? tb.offsetHeight : 0) + 'px');
     sizeTodayGrid();
+    // Put each column (and the page) back where it was, now the grid is sized.
+    if (_t2Win) window.scrollTo(0, _t2Win);
+    const rp = document.querySelector('.t2-practices'); if (rp && _t2Scroll.practices) rp.scrollTop = _t2Scroll.practices;
+    const rd = document.querySelector('.t2-day'); if (rd && _t2Scroll.day) rd.scrollTop = _t2Scroll.day;
+    const rt = document.querySelector('.t2-tasks'); if (rt && _t2Scroll.tasks) rt.scrollTop = _t2Scroll.tasks;
   });
 }
 // On the wide layout the three columns each scroll on their own, so the grid is
@@ -15503,6 +15517,21 @@ const ACTIONS = [
   { kind: 'action', title: 'Money · Portfolio', run: () => openFinancial('portfolio') },
   { kind: 'action', title: 'New goal', run: () => quickAdd('goal') },
   { kind: 'action', title: 'Bucket list', run: () => openGoals('bucket') },
+  // Every tool is reachable by name from search, so typing "Journal" jumps
+  // straight there. (Ranked to the top by the actRank sort in buildPalette.)
+  { kind: 'action', title: 'Go to Home', run: () => openHome() },
+  { kind: 'action', title: 'Go to Notes', run: () => openNotesList() },
+  { kind: 'action', title: 'Go to Journal', run: () => openJournal() },
+  { kind: 'action', title: 'Go to Well-being', run: () => openJournal() },
+  { kind: 'action', title: 'Go to Coaching', run: () => openJournal() },
+  { kind: 'action', title: 'Go to Practices', run: () => openTracker() },
+  { kind: 'action', title: 'Go to Tracker', run: () => openTracker() },
+  { kind: 'action', title: 'Go to Meditation', run: () => openMeditationTool() },
+  { kind: 'action', title: 'Go to Spirit cards', run: () => openSpiritCards() },
+  { kind: 'action', title: 'Go to I Ching', run: () => openIChing() },
+  { kind: 'action', title: 'Go to Horoscope', run: () => openHoroscope() },
+  { kind: 'action', title: 'Go to Toolbox', run: () => openToolbox() },
+  { kind: 'action', title: 'Money · Spending', run: () => openFinancial('spending') },
 ];
 // Search-result ordering by kind: life areas first, then goals, contacts and
 // the pages you actually keep; table rows last. Anything unlisted lands mid-pack.
@@ -15517,7 +15546,15 @@ function buildPalette() {
       ...state.areas.slice(0, 6).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }))];
     state.pal.sel = 0; renderPalItems(); return;
   }
-  const acts = ACTIONS.filter((a) => a.title.toLowerCase().includes(q.toLowerCase()));
+  const _ql = q.toLowerCase();
+  // A tool typed by name should lead: rank by how well the query matches the
+  // tool's own name (ignoring a leading "Go to"/"New"/"Open"), so "journal"
+  // surfaces the Journal tool ahead of "New journal entry" and the rest.
+  const _actKw = (a) => a.title.toLowerCase().replace(/^(go to|open|new|create)\s+/, '');
+  const _actRank = (a) => { const kw = _actKw(a); return kw === _ql ? 0 : kw.startsWith(_ql) ? 1 : a.title.toLowerCase().startsWith(_ql) ? 2 : 3; };
+  const acts = ACTIONS.filter((a) => a.title.toLowerCase().includes(_ql)).sort((a, b) => _actRank(a) - _actRank(b));
+  // Show the matching tools at once (content hits fill in after the search).
+  state.pal.items = acts; state.pal.sel = 0; renderPalItems();
   clearTimeout(palT);
   palT = setTimeout(async () => {
     try {
@@ -17300,11 +17337,10 @@ document.addEventListener('pointermove', (e) => {
   for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
   d.before = beforeEl ? beforeEl.dataset.hsec : null;
   if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
-  // Autoscroll the COLUMN, not the window: Home is viewport-locked, so each
-  // column (.home-side for the rail, .home-scroll for the main lead) is its own
-  // scroller. Scrolling the window would do nothing now.
-  const scroller = d.side ? d.col : (d.col.closest('.home-scroll') || document.scrollingElement);
-  if (scroller) { const sr = scroller.getBoundingClientRect ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight }; if (e.clientY < sr.top + 60) scroller.scrollBy(0, -14); else if (e.clientY > sr.bottom - 60) scroller.scrollBy(0, 14); }
+  // Autoscroll while dragging near an edge: the rail scrolls itself (it's its own
+  // overflow container), the main lead rides the page scroll.
+  const scroller = d.side ? d.col : document.scrollingElement;
+  if (scroller) { const sr = d.side ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight }; if (e.clientY < sr.top + 60) scroller.scrollBy(0, -14); else if (e.clientY > sr.bottom - 60) scroller.scrollBy(0, 14); }
 });
 function deskSecDragEnd(e) {
   const d = deskSecDrag; if (!d || (e && e.pointerId !== d.id)) return;
