@@ -7734,7 +7734,7 @@ function renderTracker() {
   const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.practices'))}
-    <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1></div>
+    <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1><button class="add-btn wide trk-newtop" data-prc-new>＋ New practice</button></div>
     ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your practices…</div>'}`;
 }
 function renderToday() {
@@ -7858,7 +7858,7 @@ function t2TrackerHtml(manage) {
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
   }).join('');
-  return `<div class="trk-dash">${body}</div>${manage ? '<div class="trk-foot"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button></div>' : ''}`;
+  return `<div class="trk-dash">${body}</div>`;
 }
 // Does a calendar event name a practice? Accents off, case off, whole words only
 // ("Work" must not swallow "Workshop"; \b is ASCII-only so it breaks on "Forró").
