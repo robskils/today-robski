@@ -50,7 +50,7 @@ const T_EN = {
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
-  'goals.title': 'Vision and Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
+  'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Life area', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
@@ -72,7 +72,7 @@ const T_PT = {
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
-  'goals.title': 'Visão e Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
+  'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Área da vida', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
@@ -2715,7 +2715,9 @@ function navItems(v) {
     // room you enter: a whole row that writes a journal entry or logs a dream in
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
-    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
+    // The Well-being hub itself - the landing page with every tool as a tile.
+    wellbeing: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' ? 'on' : ''}" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
+    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journalentry' ? 'on' : ''}" data-journal-start><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
     // The Well-being tools, each its own button (the single "Well-being" button is
     // gone). They fire the same actions as the hub tiles, so they work from anywhere.
     coaching: modOn('reflect') ? `<button class="nav-item" data-journal-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
@@ -2741,7 +2743,7 @@ function navItems(v) {
 // A flat, importance-ordered single column of clear tool buttons - the mobile
 // drawer. No group boxes, no 2-up grid: just tap what you want. (The desktop
 // sidebar keeps the grouped grid.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'today', 'practices', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'today', 'practices', 'wellbeing', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -2770,7 +2772,7 @@ function navGridHtml(v) {
     ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.saved])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews])}
-    ${grp(t('nav.grp.wellbeing'), [NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
+    ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.finSpending, NI.finPortfolio, NI.finAdvice])}
   </div>`;
@@ -5508,7 +5510,6 @@ function renderJournalList() {
     ${pageCrumb(t('nav.reflect'))}
     <div class="pane-head home-head"><h1>${t('nav.reflect')}</h1></div>
     ${j.picking ? '' : `<div class="wb-tiles">
-      <button class="wb-tile" data-journal-dailyreview title="Close the day, bullet-journal style: wins, what moved, what to carry over"><span class="wb-tile-ic">☀</span><span class="wb-tile-t">${t('wb.dailyreview')}</span></button>
       <button class="wb-tile" data-journal-start title="Write freely, or from a prompt"><span class="wb-tile-ic">📓</span><span class="wb-tile-t">${t('wb.journal')}</span></button>
       <button class="wb-tile" data-journal-coaching title="A running coaching conversation"><span class="wb-tile-ic">🧭</span><span class="wb-tile-t">${t('wb.coaching')}</span></button>
       <button class="wb-tile" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="wb-tile-ic">💭</span><span class="wb-tile-t">${t('wb.dreams')}</span></button>
@@ -12549,11 +12550,17 @@ async function openReviews() {
   pruneDuplicateReviews();   // collapse any (type, period) duplicates to one canonical block
   renderNav(); renderReviews();
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
+  // Daily reviews now live here (bullet-journal daily log). Load past ones so the
+  // Reviews page lists them, newest first.
+  if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview').sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
 }
 function renderReviews() {
   $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
     <p class="t2-sub" style="font-style:normal">Daily, weekly, monthly, quarterly and yearly check-ins.</p>
-    ${modOn('reflect') ? `<button class="rv-daily-card" data-journal-dailyreview title="Close today, bullet-journal style"><span class="rv-daily-ic">☀</span><span class="rv-daily-body"><span class="rv-daily-t">Daily review</span><span class="rv-daily-s">Wins, what moved, and what to carry over - write it or speak it. (Also lives in Well-being.)</span></span><span class="rv-daily-go">→</span></button>` : ''}
+    ${modOn('reflect') ? `<div class="rv-daily-sec">
+      <button class="rv-daily-card" data-journal-dailyreview title="Close today, bullet-journal style"><span class="rv-daily-ic">☀</span><span class="rv-daily-body"><span class="rv-daily-t">Today's review</span><span class="rv-daily-s">Wins, what moved, and what to carry over - write it or speak it.</span></span><span class="rv-daily-go">→</span></button>
+      ${(state.dailyReviews && state.dailyReviews.length) ? `<div class="rv-daily-list">${state.dailyReviews.slice(0, 10).map((n) => `<button class="rv-daily-item" data-open-jentry="${n.id}"><span class="rv-di-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span><span class="rv-di-snip">${esc(journalSnippet(n))}</span></button>`).join('')}</div>` : ''}
+    </div>` : ''}
     ${reviewsBody()}`;
 }
 // Focus-list order (per device) and helpers, so you can drag the cards around.

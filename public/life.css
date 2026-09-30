@@ -825,6 +825,14 @@ button { cursor:pointer; background:none; border:0; }
 .rv-daily-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); }
 .rv-daily-s { font-size:14px; color:var(--ink-2); line-height:1.4; }
 .rv-daily-go { font-size:20px; color:var(--accent); flex:none; }
+.rv-daily-sec { margin:0 0 26px; }
+.rv-daily-card { margin-bottom:0; }
+.rv-daily-list { display:flex; flex-direction:column; margin-top:10px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card); box-shadow:var(--shadow); }
+.rv-daily-item { display:flex; align-items:baseline; gap:14px; width:100%; text-align:left; padding:12px 16px; border:0; border-bottom:1px solid var(--line); background:none; cursor:pointer; transition:background .12s; }
+.rv-daily-item:last-child { border-bottom:0; }
+.rv-daily-item:hover { background:var(--paper-2); }
+.rv-di-date { flex:none; width:112px; font-size:14px; font-weight:600; color:var(--accent); }
+.rv-di-snip { flex:1; min-width:0; font-size:14.5px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rv-remcards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start; }
 @media (max-width:560px) { .rv-remcards { grid-template-columns:1fr; } }
 .rv-remcard { background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
