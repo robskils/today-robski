@@ -4418,6 +4418,11 @@ function setHomeMainOrder(arr) { try { localStorage.setItem('life.home.mainOrder
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
+  // Home's columns each scroll independently, so a rebuild (e.g. collapsing a
+  // section) would otherwise snap them back to the top. Remember where each was
+  // and put it back after the repaint, so a header tap stays put.
+  const _prevMainScroll = document.querySelector('.home-scroll')?.scrollTop || 0;
+  const _prevSideScroll = document.querySelector('.home-side')?.scrollTop || 0;
   const favs = state.favs || [];
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
   const todayItems = homeTodayItems();
@@ -4625,6 +4630,10 @@ function renderHome() {
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
   startHomeClock();         // keep the time beside the date ticking
+  // Restore each column's scroll (see the capture at the top): a header tap that
+  // collapses/expands a section should leave you exactly where you were.
+  if (_prevMainScroll) { const el = document.querySelector('.home-scroll'); if (el) el.scrollTop = _prevMainScroll; }
+  if (_prevSideScroll) { const el = document.querySelector('.home-side'); if (el) el.scrollTop = _prevSideScroll; }
 }
 function openTablesList() {
   state.view = { type: 'tables' };
