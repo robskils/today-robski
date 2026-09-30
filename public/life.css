@@ -3199,7 +3199,7 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .trk-week { display:inline-flex; gap:2px; flex:none; }
 /* Fixed-width day columns so every row lines up, and 'Today' can be labelled and
    highlighted as a whole column (header + each row's cell share the tint). */
-.trk-daycell { display:inline-flex; align-items:center; justify-content:center; width:32px; padding:4px 0; border-radius:8px; }
+.trk-daycell { display:inline-flex; align-items:center; justify-content:center; width:38px; padding:4px 0; border-radius:8px; }
 .trk-daycell.today-col { background:color-mix(in srgb,var(--accent) 13%,transparent); }
 .trk-daycell.yest-col { background:color-mix(in srgb,var(--accent) 6%,transparent); }
 .trk-dayhdr { display:flex; justify-content:flex-end; margin:0 0 7px; padding-right:2px; }
