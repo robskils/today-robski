@@ -148,6 +148,18 @@ nav {
 .nav-cta { display: flex; align-items: center; gap: 14px; }
 .nav-cta .btn { padding: 10px 18px; font-size: 15px; border-radius: 11px; }
 @media (max-width: 760px) { .nav-links { display: none; } }
+/* Phone header: the wordmark plus both CTAs overflowed and wrapped to two lines.
+   Tighten the gutter, shrink the wordmark, compact the buttons (never wrapping),
+   and let Sign in fall back to a borderless link so both sit on one clean row. */
+@media (max-width: 560px) {
+  .wrap { padding: 0 20px; }
+  .nav-in { height: 62px; }
+  .brand { font-size: 19px; gap: 8px; }
+  .brand-mark { width: 22px; height: 22px; }
+  .nav-cta { gap: 6px; }
+  .nav-cta .btn { padding: 9px 14px; font-size: 13.5px; border-radius: 10px; white-space: nowrap; }
+  .nav-cta .btn-ghost { padding: 9px 8px; border-color: transparent; }
+}
 
 /* ── hero ── */
 .hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
