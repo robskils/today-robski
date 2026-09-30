@@ -12552,7 +12552,9 @@ async function openReviews() {
 }
 function renderReviews() {
   $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
-    <p class="t2-sub" style="font-style:normal">Weekly, monthly, quarterly and yearly check-ins.</p>${reviewsBody()}`;
+    <p class="t2-sub" style="font-style:normal">Daily, weekly, monthly, quarterly and yearly check-ins.</p>
+    ${modOn('reflect') ? `<button class="rv-daily-card" data-journal-dailyreview title="Close today, bullet-journal style"><span class="rv-daily-ic">☀</span><span class="rv-daily-body"><span class="rv-daily-t">Daily review</span><span class="rv-daily-s">Wins, what moved, and what to carry over - write it or speak it. (Also lives in Well-being.)</span></span><span class="rv-daily-go">→</span></button>` : ''}
+    ${reviewsBody()}`;
 }
 // Focus-list order (per device) and helpers, so you can drag the cards around.
 function focusOrderIds() { try { const o = JSON.parse(localStorage.getItem('life.home.focusOrder')); return Array.isArray(o) ? o : []; } catch { return []; } }
