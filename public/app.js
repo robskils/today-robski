@@ -2752,6 +2752,11 @@ function navItems(v) {
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
     reviews: modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
+    rvDaily: modOn('reflect') ? `<button class="nav-item" data-journal-dailyreview><span class="nav-ic">☀</span><span class="nav-lbl">Daily</span></button>` : '',
+    rvWeekly: modOn('goals') ? `<button class="nav-item" data-start-review="weekly"><span class="nav-ic">↻</span><span class="nav-lbl">Weekly</span></button>` : '',
+    rvMonthly: modOn('goals') ? `<button class="nav-item" data-start-review="monthly"><span class="nav-ic">↻</span><span class="nav-lbl">Monthly</span></button>` : '',
+    rvQuarterly: modOn('goals') ? `<button class="nav-item" data-start-review="quarterly"><span class="nav-ic">↻</span><span class="nav-lbl">Quarterly</span></button>` : '',
+    rvYearly: modOn('goals') ? `<button class="nav-item" data-start-review="yearly"><span class="nav-ic">↻</span><span class="nav-lbl">Yearly</span></button>` : '',
     financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
     // The Money section's four buttons, each opening the Money tool on its tab.
     finSpending: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'spending' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.money.spending')}</span></button>` : '',
@@ -2792,7 +2797,8 @@ function navGridHtml(v) {
   return `<div class="nav-grid">
     ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.saved])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
-    ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews])}
+    ${grp('Goals', [NI.goals])}
+    ${grp('Reviews', [NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
     ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.finSpending, NI.finPortfolio, NI.finAdvice])}
