@@ -5569,6 +5569,7 @@ function renderJournalEntry() {
              <button class="add-btn j-empathy-btn" data-journal-empathy title="A warm, understanding reflection - the sort of thing a good therapist might say. No advice, no judgement.">♡ Empathy</button>
              <span class="j-deeper-hint">Dig deeper asks one question to take it further. Empathy gives a warm, understanding reflection. Use either as often as you like.</span>`}
       </div>
+      ${(n.props && n.props.mode) === 'dailyreview' ? reconcilePanelHtml(n) : ''}
     </div>`;
   // Land the cursor ready to write: focus the editor and drop the caret at the end
   // of whatever's there (an empty entry, or continuing after a prompt/last line).
@@ -5631,6 +5632,63 @@ function stopDictation() {
   d.active = false; try { d.rec.stop(); } catch {}
   if (d.btn) { d.btn.classList.remove('rec-on'); const l = d.btn.querySelector('.j-rec-lbl'); if (l) l.textContent = 'Record'; }
   dictation = null;
+}
+// ── Daily review · reconcile with tasks ─────────────────────────────────────
+// Reads the review, matches it against your open tasks, and offers a Done? list
+// (tick to close them off) plus an Add? list (turn "still needed" into tasks). We
+// prefilter locally to a shortlist so the AI never sees the whole backlog.
+function reconcilePanelHtml(n) {
+  const j = state.journal || {};
+  const rc = (j.reconcile && j.reconcile.entryId === n.id) ? j.reconcile : null;
+  const btnLabel = rc ? '↻ Check again' : '✦ Reconcile with my tasks';
+  const bar = `<button class="add-btn rc-btn" data-review-reconcile ${j.reconcileLoading ? 'disabled' : ''}>${j.reconcileLoading ? 'Reading your review…' : btnLabel}</button><span class="j-deeper-hint">Finds tasks your review says you finished (tick them off) and anything worth adding.</span>`;
+  if (!rc) return `<div class="rc-panel"><div class="rc-bar">${bar}</div></div>`;
+  const doneRows = rc.done.filter((t) => !rc.ticked.has(t.id)).map((t) => `<button class="rc-row rc-done-row" data-rc-tick="${t.id}" title="Tick this off"><span class="rc-check">✓</span><span class="rc-row-t">${esc(t.title || 'Task')}</span></button>`).join('');
+  const addRows = rc.add.map((title, i) => rc.added.has(i) ? '' : `<div class="rc-row rc-add-row"><span class="rc-row-t">${esc(title)}</span><button class="ghost rc-add-btn" data-rc-add="${i}">＋ Add task</button></div>`).join('');
+  const doneLeft = rc.done.filter((t) => !rc.ticked.has(t.id)).length;
+  const addLeft = rc.add.filter((_, i) => !rc.added.has(i)).length;
+  return `<div class="rc-panel rc-open">
+    <div class="rc-h">Reconcile with your tasks</div>
+    ${rc.done.length ? `<div class="rc-group"><div class="rc-group-h">Looks done - tick to close off</div>${doneLeft ? doneRows : '<div class="rc-empty">All ticked ✓</div>'}</div>` : ''}
+    ${rc.add.length ? `<div class="rc-group"><div class="rc-group-h">Worth adding</div>${addLeft ? addRows : '<div class="rc-empty">All added ✓</div>'}</div>` : ''}
+    ${(!rc.done.length && !rc.add.length) ? '<div class="rc-empty">No task matches this time - nothing to tick or add.</div>' : ''}
+    <div class="rc-bar">${bar}</div>
+  </div>`;
+}
+async function reviewReconcileRun() {
+  const n = state.journal && state.journal.current; if (!n) return;
+  const ed = document.querySelector('.prose[data-prose="journal"]');
+  const text = ed ? (ed.innerText || '').replace(/\s+/g, ' ').trim() : '';
+  if (text.length < 15) { toast('Write a little about your day first, then I can find related tasks.'); return; }
+  state.journal.reconcileLoading = true; renderJournalEntry();
+  try {
+    let tasks = [];
+    try { tasks = (await api('/api/tasks')).tasks || []; } catch {}
+    const open = tasks.filter((tk) => tk && !(tk.props && tk.props.done) && !(tk.props && tk.props.kit));
+    const words = new Set((text.toLowerCase().match(/[a-zÀ-ſ]{4,}/g) || []));
+    const scored = open.map((tk) => { const ti = (tk.title || '').toLowerCase(); let s = 0; words.forEach((w) => { if (ti.includes(w)) s += 1; }); if ((tk.props && tk.props.priority) === 'P1') s += 0.5; return { tk, s }; });
+    const cands = scored.filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 28).map((x) => x.tk);
+    for (const tk of open) { if ((tk.props && tk.props.priority) === 'P1' && !cands.includes(tk) && cands.length < 34) cands.push(tk); }
+    const areaTitle = (id) => { const a = areaById(id); return a ? (a.title || '') : ''; };
+    const payload = cands.map((tk) => ({ id: tk.id, title: tk.title || '', area: areaTitle(tk.props && tk.props.area) }));
+    const r = await api('/api/review/reconcile', { method: 'POST', body: JSON.stringify({ text, tasks: payload }) });
+    const doneTasks = (r.done || []).map((id) => cands.find((tk) => tk.id === id)).filter(Boolean);
+    state.journal.reconcile = { entryId: n.id, done: doneTasks, add: r.add || [], ticked: new Set(), added: new Set() };
+  } catch (e) { toast(e.message || 'Could not reconcile.'); }
+  state.journal.reconcileLoading = false; renderJournalEntry();
+}
+async function reconcileTick(id) {
+  const rc = state.journal && state.journal.reconcile; if (!rc) return;
+  rc.ticked.add(id); renderJournalEntry();
+  try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast('Ticked off ✓'); }
+  catch (e) { rc.ticked.delete(id); renderJournalEntry(); toast(e.message || 'Could not tick that off.'); }
+}
+async function reconcileAdd(i) {
+  const rc = state.journal && state.journal.reconcile; if (!rc) return;
+  const title = rc.add[i]; if (!title) return;
+  rc.added.add(i); renderJournalEntry();
+  try { await homeAddTask({ title }); }
+  catch (e) { rc.added.delete(i); renderJournalEntry(); toast(e.message || 'Could not add that.'); }
 }
 async function journalDeepen() {
   const n = state.journal && state.journal.current; if (!n) return;
@@ -7739,7 +7797,7 @@ function t2TrackerHtml(manage) {
         <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
-        <span class="trk-hist"><span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : d === yesterday ? 'yesterday' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span><span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span></span>
+        <span class="trk-hist">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : d === yesterday ? 'yesterday' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span><span class="trk-runend">${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span></span>
       </div>`;
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
@@ -16223,6 +16281,9 @@ document.addEventListener('click', (e) => {
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   { const rb = t.closest('[data-journal-dictate]'); if (rb) { toggleDictation(rb); return; } }
+  if (t.closest('[data-review-reconcile]')) { reviewReconcileRun(); return; }
+  { const rt = t.closest('[data-rc-tick]'); if (rt) { reconcileTick(rt.dataset.rcTick); return; } }
+  { const ra = t.closest('[data-rc-add]'); if (ra) { reconcileAdd(Number(ra.dataset.rcAdd)); return; } }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
   if (t.closest('[data-journal-empathy]')) { journalEmpathise(); return; }
   if (t.closest('[data-journal-coach]')) { journalCoach(); return; }

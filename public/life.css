@@ -3205,9 +3205,17 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 /* Today is the right-most dot and the anchor: a solid accent ring, a hair larger,
    its label in bold accent. Yesterday (second from the right) gets a lighter ring
    so the run of days plainly reads right-to-left: today, yesterday, then earlier. */
-.trk-dot.today { box-shadow:0 0 0 2px var(--accent); border-color:var(--accent); transform:scale(1.08); }
+.trk-dot.today { box-shadow:0 0 0 2.5px var(--accent); border-color:var(--accent); transform:scale(1.14); background:color-mix(in srgb,var(--accent) 15%,transparent); }
 .trk-dot.today i { color:var(--accent); font-weight:700; }
+/* Ticked today -> the circle fills in solid, so "done today" is unmistakable. */
+.trk-dot.today.on { background:var(--accent); border-color:var(--accent); }
+.trk-dot.today.on i { color:#fff; }
+.trk-dot.today.slip { background:#c4412e; box-shadow:0 0 0 2.5px #c4412e; }
+.trk-dot.today.slip i { color:#fff; }
 .trk-dot.yesterday { border-color:color-mix(in srgb,var(--accent) 55%,var(--line-2)); }
+/* Streak flame now sits to the LEFT of the day dots; reserve a little space so the
+   dot columns still line up whether or not a row has a streak. */
+.trk-streak { min-width:30px; text-align:right; }
 .trk-streak { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .trk-del { flex:none; color:var(--ink-3); font-size:18px; padding:0 4px; } .trk-del:hover { color:var(--danger,#c0392b); }
 .trk-add { display:flex; gap:8px; margin-top:10px; }
@@ -6109,6 +6117,23 @@ table.ttable tr:last-child td { border-bottom:0; }
 .j-rec-btn.rec-on .j-rec-dot { background:var(--danger,#c0392b); animation:recpulse 1.3s ease-in-out infinite; }
 @keyframes recpulse { 0%,100% { opacity:1; box-shadow:0 0 0 0 color-mix(in srgb,var(--danger,#c0392b) 55%,transparent); } 55% { opacity:.6; box-shadow:0 0 0 6px transparent; } }
 .j-voice-hint { font-size:13.5px; color:var(--ink-3); line-height:1.4; max-width:440px; }
+/* Daily review · reconcile-with-tasks panel. */
+.rc-panel { margin-top:20px; }
+.rc-open { padding:16px 18px; border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+.rc-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:12px; }
+.rc-group { margin-bottom:16px; }
+.rc-group-h { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; margin-bottom:9px; }
+.rc-row { display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:11px 13px; margin-bottom:8px; border:1px solid var(--line); border-radius:11px; background:var(--card); font-size:15px; color:var(--ink); }
+.rc-done-row { cursor:pointer; transition:border-color .12s, background .12s; }
+.rc-done-row:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
+.rc-check { flex:none; width:23px; height:23px; border-radius:7px; border:1.5px solid var(--line-2); display:inline-flex; align-items:center; justify-content:center; color:transparent; font-size:13px; font-weight:700; }
+.rc-done-row:hover .rc-check { border-color:var(--accent); color:var(--accent); }
+.rc-row-t { flex:1; min-width:0; }
+.rc-add-row { justify-content:space-between; }
+.rc-add-btn { flex:none; white-space:nowrap; }
+.rc-empty { font-size:14px; color:var(--ink-3); font-style:italic; padding:4px 0; }
+.rc-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; }
+.rc-btn { width:auto; white-space:nowrap; }
 .j-entry-date { font-size:clamp(22px,2.6vw,30px); margin:0; }
 .j-entry .prose blockquote { border-left:3px solid var(--accent); background:color-mix(in srgb,var(--accent) 6%,transparent); margin:14px 0; padding:10px 16px; border-radius:0 10px 10px 0; color:var(--ink); font-weight:500; font-style:normal; }
 .j-deeper-bar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
