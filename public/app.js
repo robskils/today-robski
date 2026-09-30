@@ -1100,7 +1100,12 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
       if (!res.ok) return;
       const html = await res.text();
       const m = html.match(/app\.js\?v=([0-9]+)/);
-      if (m && m[1] && m[1] !== BOOT_VER) { updating = true; location.reload(); }
+      if (m && m[1] && m[1] !== BOOT_VER) {
+        // Never yank the page out from under someone mid-entry: defer the reload
+        // while an add form is open (task, contact, quick-add). Re-check next return.
+        if (document.querySelector('.add-task, #task-form, #qt-form, #contact-form')) { lastCheck = 0; return; }
+        updating = true; location.reload();
+      }
     } catch { /* offline - keep running what we have */ }
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
@@ -10715,10 +10720,25 @@ function renderTasks() {
   // and keep it there. openTasks re-renders again when assigned tasks load, which
   // would otherwise steal the focus; the short arming window re-focuses on every
   // render until you start typing.
-  if (state.taskAdding && state.taskFocusArm && Date.now() - state.taskFocusArm < 4000) {
-    const focusIt = () => { const i = $('#task-title'); if (i && document.activeElement !== i && !i.value) i.focus(); };
-    focusIt(); requestAnimationFrame(focusIt);
+  if (state.taskAdding) {
+    // Restore anything half-typed (survives a re-render or a quick switch away and
+    // back), and keep it saved on every keystroke so the entry is never lost.
+    const dr = state.taskDraft || {};
+    const setV = (id, v) => { const el = $('#' + id); if (el && v != null && v !== '') el.value = v; };
+    setV('task-title', dr.title); setV('task-area', dr.area); setV('task-prio', dr.prio); setV('task-dur', dr.dur); setV('task-snooze', dr.snooze); setV('task-repeat', dr.repeat); setV('task-repeatfrom', dr.repeatFrom); setV('task-notes', dr.notes);
+    const rp = $('#task-repeat'); if (rp && dr.repeat) rp.dispatchEvent(new Event('change', { bubbles: true }));
+    const tf = $('#task-form'); if (tf) tf.addEventListener('input', () => { state.taskDraft = readTaskForm(); });
+    if (state.taskFocusArm && Date.now() - state.taskFocusArm < 4000) {
+      const focusIt = () => { const i = $('#task-title'); if (i && document.activeElement !== i && !i.value) i.focus(); };
+      focusIt(); requestAnimationFrame(focusIt);
+    }
   }
+}
+// Read the whole add-task form into a plain draft, so a re-render or a tab switch
+// can put every field back exactly as it was.
+function readTaskForm() {
+  const v = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+  return { title: v('task-title'), area: v('task-area'), prio: v('task-prio'), dur: v('task-dur'), snooze: v('task-snooze'), repeat: v('task-repeat'), repeatFrom: v('task-repeatfrom'), notes: v('task-notes') };
 }
 
 // ── contacts ─────────────────────────────────────────
@@ -16644,7 +16664,7 @@ document.addEventListener('click', (e) => {
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
   if (t.closest('[data-task-add]')) { const p = primeMobileKeyboard(); state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); keepKeyboardUntilFocus(p); return; }
-  if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; renderTasks(); return; }
+  if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; state.taskDraft = null; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-qt-close]')) { const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
@@ -17152,7 +17172,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
-  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '' }); }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '' }); state.taskDraft = null; } }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
   if (e.target.id === 'qt-form') {
     const i = $('#qt-title'); const v = i.value.trim();
