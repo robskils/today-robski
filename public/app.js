@@ -10783,6 +10783,7 @@ function renderTasks() {
         <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
         <label class="atf" id="task-repeatfrom-wrap" hidden><span>${t('task.nextdue')}</span><select id="task-repeatfrom" class="sel"><option value="due">${t('task.onschedule')}</option><option value="done">${t('task.aftertick')}</option></select></label>
       </div>
+      <label class="atf-hide"><input type="checkbox" id="task-hideuntil"><span>Hide it from my lists until it surfaces<small>Set a "Surface on" date above, and it stays out of the way until then.</small></span></label>
       <label class="atf atf-full"><span>${t('field.notes')}</span><textarea id="task-notes" class="sel" rows="3" placeholder="${t('task.notesph')}" autocomplete="off"></textarea></label>
       <div class="atf-actions">
         <button class="add-btn wide" type="submit">${t('task.addtask')}</button>
@@ -10806,6 +10807,7 @@ function renderTasks() {
     const dr = state.taskDraft || {};
     const setV = (id, v) => { const el = $('#' + id); if (el && v != null && v !== '') el.value = v; };
     setV('task-title', dr.title); setV('task-area', dr.area); setV('task-prio', dr.prio); setV('task-dur', dr.dur); setV('task-snooze', dr.snooze); setV('task-repeat', dr.repeat); setV('task-repeatfrom', dr.repeatFrom); setV('task-notes', dr.notes);
+    { const hu = $('#task-hideuntil'); if (hu && dr.hideUntil) hu.checked = true; }
     const rp = $('#task-repeat'); if (rp && dr.repeat) rp.dispatchEvent(new Event('change', { bubbles: true }));
     const tf = $('#task-form'); if (tf) tf.addEventListener('input', () => { state.taskDraft = readTaskForm(); });
     if (state.taskFocusArm && Date.now() - state.taskFocusArm < 4000) {
@@ -10818,7 +10820,8 @@ function renderTasks() {
 // can put every field back exactly as it was.
 function readTaskForm() {
   const v = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
-  return { title: v('task-title'), area: v('task-area'), prio: v('task-prio'), dur: v('task-dur'), snooze: v('task-snooze'), repeat: v('task-repeat'), repeatFrom: v('task-repeatfrom'), notes: v('task-notes') };
+  const hu = document.getElementById('task-hideuntil');
+  return { title: v('task-title'), area: v('task-area'), prio: v('task-prio'), dur: v('task-dur'), snooze: v('task-snooze'), hideUntil: !!(hu && hu.checked), repeat: v('task-repeat'), repeatFrom: v('task-repeatfrom'), notes: v('task-notes') };
 }
 
 // ── contacts ─────────────────────────────────────────
@@ -17271,7 +17274,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
-  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '' }); state.taskDraft = null; } }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, hideUntil: !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '' }); state.taskDraft = null; } }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
   if (e.target.id === 'qt-form') {
     const i = $('#qt-title'); const v = i.value.trim();
@@ -18062,6 +18065,7 @@ async function addTask(o) {
   const props = { area: o.area || null, priority: o.priority || null, done: false };
   if (o.duration) props.duration = Number(o.duration);
   if (o.snooze) props.snooze = o.snooze;
+  if (o.snooze && o.hideUntil) props.hideUntil = true;   // hide from lists until it surfaces
   if (o.repeat) props.repeat = o.repeat;
   if (o.repeat && o.repeatFrom === 'done') props.repeatFrom = 'done';
   // Free-form notes typed on the add form become the task's prose body, so they
