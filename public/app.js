@@ -3794,10 +3794,14 @@ if (medState.running) medEnsureTicker();
 // (your life-area categories), so editing it here shows in the Today tool and
 // vice-versa. The daily ticks are ours, kept per-user in a kv setting.
 const dayKey = (d) => d.toISOString().slice(0, 10);
-function trackerLast7() { const out = []; const d = new Date(); for (let i = 6; i >= 0; i--) { const x = new Date(d); x.setDate(d.getDate() - i); out.push(dayKey(x)); } return out; }
+// dayKey() is UTC (toISOString), so the day arithmetic here MUST be UTC too, or in
+// a +HH timezone the whole 7-day window slips back a day and today drops off the
+// end (which is exactly what made the Tracker show yesterday on the right and never
+// fill "today"). setUTCDate keeps every key consistent with dayKey.
+function trackerLast7() { const out = []; const d = new Date(); for (let i = 6; i >= 0; i--) { const x = new Date(d); x.setUTCDate(d.getUTCDate() - i); out.push(dayKey(x)); } return out; }
 // A 7-day window ENDING on endISO (inclusive), so the Tracker can step back and
 // forward through past weeks rather than being pinned to the last seven days.
-function trackerWindow(endISO) { const out = []; const e = new Date(endISO + 'T00:00'); for (let i = 6; i >= 0; i--) { const x = new Date(e); x.setDate(e.getDate() - i); out.push(dayKey(x)); } return out; }
+function trackerWindow(endISO) { const out = []; const e = new Date(endISO + 'T00:00:00Z'); for (let i = 6; i >= 0; i--) { const x = new Date(e); x.setUTCDate(e.getUTCDate() - i); out.push(dayKey(x)); } return out; }
 let practicesLoaded = false;
 async function loadPractices(force) {
   if (practicesLoaded && !force && state.practices) return state.practices;
