@@ -6200,8 +6200,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 .rwc-row .sel { flex:1; min-width:0; }
 .rwc-status { padding:8px 16px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:14px; }
 .rwc-status.done { border-color:var(--done); color:var(--done); font-weight:600; }
+/* Per-type status: a small segmented pill row (Want to read / Reading / Read). */
+.rwc-status-seg { display:inline-flex; flex-wrap:wrap; gap:6px; }
+.rwc-seg { padding:7px 13px; font-size:14px; font-weight:600; border:1px solid var(--line-2); border-radius:999px; background:var(--card); color:var(--ink-2); cursor:pointer; transition:background .12s, border-color .12s, color .12s; }
+.rwc-seg:hover { border-color:var(--accent); color:var(--ink); }
+.rwc-seg.on { background:var(--accent); border-color:var(--accent); color:#fff; }
 .rwc-notes-l { display:flex; flex-direction:column; gap:6px; }
-.rwc-notes { min-height:96px; resize:vertical; }
+.rwc-notes { min-height:96px; resize:vertical; width:100%; box-sizing:border-box; }
 .rwc-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:6px; border-top:1px solid var(--line); }
 .rwc-added { font-size:12.5px; color:var(--ink-3); }
 .rwc-del { color:var(--danger,#c4412e); }

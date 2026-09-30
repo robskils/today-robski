@@ -5761,6 +5761,17 @@ const RW_SORTS = [['added-desc', 'Newest'], ['added-asc', 'Oldest'], ['title', '
 // alongside the readable/watchable types so a useful site can just be bookmarked.
 const RW_MEDIA = { link: { ic: '🔗', label: 'Website' }, article: { ic: '📰', label: 'Article' }, video: { ic: '▶', label: 'Video' }, book: { ic: '📖', label: 'Book' }, film: { ic: '🎬', label: 'Film' } };
 const RW_MEDIA_ORDER = ['link', 'article', 'video', 'book', 'film'];
+// Status is per-type: a book has a middle "Reading" stage, the rest are a simple
+// want-to / done. Value 'reading' counts as still-active (not done).
+const RW_STATUS = {
+  book: [['todo', 'Want to read'], ['reading', 'Reading'], ['done', 'Read']],
+  film: [['todo', 'Want to watch'], ['done', 'Watched']],
+  video: [['todo', 'Want to watch'], ['done', 'Watched']],
+  article: [['todo', 'To read'], ['done', 'Read']],
+  link: [['todo', 'To visit'], ['done', 'Visited']],
+};
+const rwStatusOpts = (mk) => RW_STATUS[mk] || RW_STATUS.article;
+const rwStatusVal = (p) => ((p || {}).status === 'done' ? 'done' : (p || {}).status === 'reading' ? 'reading' : 'todo');
 const rwMediaKey = (p) => (RW_MEDIA[(p || {}).media] ? p.media : 'article');
 function rwSortList(list, sort) {
   const added = (b) => String((b.props && b.props.added) || b.created_at || '');
@@ -5916,6 +5927,14 @@ async function rwSetDone(id, done) {
   rwRerender();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { status: b.props.status } }) }); } catch (e) { toast(e.message); }
 }
+// Set an explicit status ('todo' | 'reading' | 'done') from the per-type segmented
+// control on the card. 'reading' is a book-only middle stage; it counts as active.
+async function rwSetStatus(id, value) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  b.props = b.props || {}; b.props.status = value;
+  rwRerender();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { status: value } }) }); } catch (e) { toast(e.message); }
+}
 // Your own rating out of 5, shown on every saved item. Five stars fill up to the
 // rating; tapping the current score again clears it (mis-tap escape hatch). Old
 // out-of-10 scores are shown at their nearest star so nothing looks broken.
@@ -6002,7 +6021,7 @@ function renderBookmarkCard() {
         <div class="rwc-media">${media.ic} ${esc(media.label)}${p.site ? ` · ${esc(p.site)}` : ''}</div>
         ${href && href !== '#' ? `<a class="add-btn wide rwc-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${openLbl}</a>` : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
-        <div class="rwc-row"><span class="rwc-lbl">Status</span><button class="rwc-status ${done ? 'done' : ''}" data-rw-done="${b.id}">${done ? `✓ ${DONE[mk] || 'Done'}` : `Mark ${TODO[mk] || 'done'}`}</button></div>
+        <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
         <label class="rwc-row"><span class="rwc-lbl">Life area</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="4">${esc(p.note || '')}</textarea></label>
@@ -16292,6 +16311,7 @@ document.addEventListener('click', (e) => {
   { const ob = t.closest('[data-open-bookmark]'); if (ob) { openBookmarkCard(ob.dataset.openBookmark); return; } }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
   const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { const typed = ($('#rw-url') || {}).value || ''; state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) { i.value = typed; i.focus(); try { i.setSelectionRange(typed.length, typed.length); } catch {} } } return; }
+  { const rss = t.closest('[data-rw-setstatus]'); if (rss) { const i = rss.dataset.rwSetstatus.indexOf(':'); rwSetStatus(rss.dataset.rwSetstatus.slice(0, i), rss.dataset.rwSetstatus.slice(i + 1)); return; } }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
   const rwr = t.closest('[data-rw-rate]'); if (rwr) { rwSetRating(rwr.dataset.rwRate, Number(rwr.dataset.rwRateN)); return; }
   const xla = t.closest('[data-xlink-add]'); if (xla) { addBlockLink(xla.dataset.xlinkKind, xla.dataset.xlinkId); return; }
