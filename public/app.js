@@ -2736,7 +2736,7 @@ function navItems(v) {
 // A flat, importance-ordered single column of clear tool buttons - the mobile
 // drawer. No group boxes, no 2-up grid: just tap what you want. (The desktop
 // sidebar keeps the grouped grid.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'today', 'practices', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved', 'timer'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'today', 'practices', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -2762,9 +2762,8 @@ function navGridHtml(v) {
   // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
   // Home quick buttons; Today drops into the Daily group below.
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks])}
+    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.saved])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
-    ${grp(t('nav.grp.tools'), [NI.areas, NI.saved, NI.timer])}
     ${grp(t('nav.grp.meaningful'), [NI.goals, NI.reviews])}
     ${grp(t('nav.grp.wellbeing'), [NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${peopleBox(v)}
@@ -15530,7 +15529,8 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Spirit cards', run: () => openSpiritCards() },
   { kind: 'action', title: 'Go to I Ching', run: () => openIChing() },
   { kind: 'action', title: 'Go to Horoscope', run: () => openHoroscope() },
-  { kind: 'action', title: 'Go to Toolbox', run: () => openToolbox() },
+  { kind: 'action', title: 'Go to Life areas', run: () => openAreasList() },
+  { kind: 'action', title: 'Go to Saved', run: () => openReadwatch() },
   { kind: 'action', title: 'Money · Spending', run: () => openFinancial('spending') },
 ];
 // Search-result ordering by kind: life areas first, then goals, contacts and
