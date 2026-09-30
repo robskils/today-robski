@@ -3194,7 +3194,11 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .trk-dot.slip { background:#c4412e; border-color:#c4412e; } .trk-dot.slip i { color:#fff; }
 .t2-tick-slip.on { background:#c4412e; border-color:#c4412e; color:#fff; }
 .t2-avoidtag { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:#c4412e; background:color-mix(in srgb,#c4412e 13%,transparent); padding:1px 7px; border-radius:999px; margin-left:6px; vertical-align:middle; }
-.trk-dot.today { box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
+/* Today is the right-most dot and the anchor: a solid accent ring, a hair larger,
+   its label in bold accent, so it clearly reads as "now" with past days to its left. */
+.trk-dot.today { box-shadow:0 0 0 2px var(--accent); border-color:var(--accent); transform:scale(1.08); }
+.trk-dot.today i { color:var(--accent); font-weight:700; }
+.trk-dot:not(.today):not(.on):not(.slip) i { opacity:.7; }
 .trk-streak { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .trk-del { flex:none; color:var(--ink-3); font-size:18px; padding:0 4px; } .trk-del:hover { color:var(--danger,#c0392b); }
 .trk-add { display:flex; gap:8px; margin-top:10px; }
@@ -3469,7 +3473,7 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .pm-row.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
 /* Columns, not a stretch-grid, so each area card is only as tall as its own
    practices - a one-line area doesn't sit in a big empty square. */
-.trk-dash { column-width:360px; column-gap:14px; }
+.trk-dash { max-width:660px; }
 .trk-runend { display:inline-flex; align-items:center; gap:8px; flex:none; }
 /* The area's plain-English status: on track, and when to do something next. */
 .trk-area-status { display:flex; align-items:center; gap:8px; margin:0 0 10px; font-size:14.5px; }
@@ -3480,7 +3484,7 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .trk-s-none b { color:var(--ink-3); }
 .trk-prow .trk-week { flex:none; }
 .trk-prow .trk-dot { width:17px; height:17px; }
-.trk-area { background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); border-radius:14px; padding:13px 15px 8px; box-shadow:var(--shadow); display:inline-block; width:100%; margin:0 0 14px; break-inside:avoid; -webkit-column-break-inside:avoid; page-break-inside:avoid; }
+.trk-area { background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) 55% 55%); border-radius:14px; padding:13px 15px 8px; box-shadow:var(--shadow); display:block; width:100%; margin:0 0 14px; }
 .trk-area-h { display:flex; align-items:center; gap:9px; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid var(--line); flex-wrap:wrap; cursor:pointer; }
 .trk-area-h .acw-chev { font-size:12px; color:var(--ink-3); flex:none; }
 .trk-area-h .cd { width:11px; height:11px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }

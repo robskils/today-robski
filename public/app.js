@@ -7626,7 +7626,7 @@ function renderTracker() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.practices'))}
     <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1></div>
-    <p class="t2-sub">Tick a practice, rename it inline, drag to reorder, ✎ for the details</p>
+    <p class="t2-sub">Tick a practice, rename it inline, drag to reorder, ✎ for the details. The dots are your last 7 days - today is the ringed dot on the right.</p>
     ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your practices…</div>'}`;
 }
 function renderToday() {
