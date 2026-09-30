@@ -1110,6 +1110,27 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 })();
+// The +New add menu belongs on EVERY breadcrumb bar. crumbNav() bakes it in, but
+// the inline .note-crumbs bars (mail reader, notes, goals, tasks, contacts…) don't
+// - so top them up after each paint. One place, everywhere.
+(function crumbAddEverywhere() {
+  const fill = () => {
+    const pane = document.getElementById('pane'); if (!pane) return;
+    pane.querySelectorAll('.note-crumbs:not(:has(.addnew))').forEach((el) => {
+      const html = addNewMenuHtml(); if (!html) return;
+      const tools = el.querySelector('.crumb-tools');
+      el.insertAdjacentHTML('beforeend', html);
+      const menu = el.querySelector(':scope > .addnew');
+      if (tools && menu) el.insertBefore(menu, tools);
+    });
+  };
+  const start = () => {
+    const pane = document.getElementById('pane'); if (!pane) return void setTimeout(start, 200);
+    try { new MutationObserver(fill).observe(pane, { childList: true }); } catch {}
+    fill();
+  };
+  start();
+})();
 // A tab must own an INDEPENDENT copy of its view. A Tasks view carries mutable
 // filters/sort; a shallow copy leaves every Tasks tab pointing at one shared
 // array, so they all show identical content (the "two tabs, same content" bug).
@@ -7814,14 +7835,14 @@ function t2TrackerHtml(manage) {
         <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
-        <span class="trk-hist">${streak > 1 ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : d === yesterday ? 'yesterday' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
+        <span class="trk-hist">${streak > 1 ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
       </div>`;
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
     const open = trkOpen(key);
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
-      ${open ? `<div class="trk-dayhdr"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : ''}"><span class="trk-dh${d === today ? ' is-today' : d === yesterday ? ' is-yest' : ''}">${d === today ? 'Today' : d === yesterday ? 'Yst' : dow[new Date(d + 'T00:00').getDay()]}</span></span>`).join('')}</span></div>
+      ${open ? `<div class="trk-dayhdr"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : ''}"><span class="trk-dh${d === today ? ' is-today' : ''}">${d === today ? 'Today' : dow[new Date(d + 'T00:00').getDay()]}</span></span>`).join('')}</span></div>
       ${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       <div class="pm-rows">${rows}</div>
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
