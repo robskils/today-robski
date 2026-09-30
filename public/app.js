@@ -46,7 +46,7 @@ const T_EN = {
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
   'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
-  'wb.journal': 'Journal', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
+  'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
@@ -68,7 +68,7 @@ const T_PT = {
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
-  'wb.journal': 'Diário', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
+  'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
@@ -4853,6 +4853,9 @@ const JOURNAL_MODES = [
   ] },
 ];
 const journalModeOf = (key) => JOURNAL_MODES.find((m) => m.key === key) || null;
+// Modes that aren't in the prompt picker but still label their entries.
+const JMODE_EXTRA = { coaching: { icon: '🧭', label: 'Coaching session' }, dailyreview: { icon: '☀', label: 'Daily review' } };
+const journalModeMeta = (key) => journalModeOf(key) || JMODE_EXTRA[key] || null;
 function journalDateLabel(iso) {
   const d = iso ? new Date(iso) : new Date();
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
@@ -5381,6 +5384,29 @@ async function newCoachingSession() {
     journalCoach();   // the coach opens the session with a warm greeting
   } catch (e) { toast(e.message); }
 }
+// The daily review: a bullet-journal close of the day. One per day - clicking the
+// tile again reopens today's rather than starting a second. Seeded with three soft
+// sections to write (or, later, dictate) under; wins/what-moved, what went well,
+// and what to carry over (BuJo migration). Voice + AI task reconciliation are the
+// next two phases.
+async function newDailyReview() {
+  if (!state.journal) await openJournal();
+  state.journal.entries = state.journal.entries || [];
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const existing = state.journal.entries.find((e) => e.props && e.props.mode === 'dailyreview' && String(e.props.date || '').slice(0, 10) === todayKey);
+  if (existing) { await openJournalEntry(existing.id); return; }
+  const date = new Date().toISOString();
+  const body = [
+    '<h3>Wins - what moved today</h3><p><br></p>',
+    '<h3>What else went well</h3><p><br></p>',
+    '<h3>Carried over - still needed</h3><p><br></p>',
+  ].join('');
+  try {
+    const entry = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title: `Daily review · ${journalDateLabel(date)}`, body, props: { date, mode: 'dailyreview' } }) });
+    state.journal.entries.unshift(entry);
+    await openJournalEntry(entry.id);
+  } catch (e) { toast(e.message); }
+}
 async function journalInsights() {
   if (!state.journal) return;
   state.journal.insightsOpen = true; state.journal.insightsLoading = true; renderJournalList();
@@ -5415,8 +5441,8 @@ function renderJournalList() {
     <button class="ghost j-picker-cancel" data-journal-pick-cancel>Cancel</button>
   </div>` : '';
   const cards = entries.map((n) => {
-    const mode = journalModeOf(n.props && n.props.mode);
-    const modeLabel = mode ? `${mode.icon} ${esc(mode.label)}` : ((n.props && n.props.mode) === 'coaching' ? '🧭 Coaching session' : '');
+    const mode = journalModeMeta(n.props && n.props.mode);
+    const modeLabel = mode ? `${mode.icon} ${esc(mode.label)}` : '';
     return `<button class="j-card" data-open-jentry="${n.id}">
       <span class="j-card-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span>
       <span class="j-card-snip">${esc(journalSnippet(n))}</span>
@@ -5477,6 +5503,7 @@ function renderJournalList() {
     ${pageCrumb(t('nav.reflect'))}
     <div class="pane-head home-head"><h1>${t('nav.reflect')}</h1></div>
     ${j.picking ? '' : `<div class="wb-tiles">
+      <button class="wb-tile" data-journal-dailyreview title="Close the day, bullet-journal style: wins, what moved, what to carry over"><span class="wb-tile-ic">☀</span><span class="wb-tile-t">${t('wb.dailyreview')}</span></button>
       <button class="wb-tile" data-journal-start title="Write freely, or from a prompt"><span class="wb-tile-ic">📓</span><span class="wb-tile-t">${t('wb.journal')}</span></button>
       <button class="wb-tile" data-journal-coaching title="A running coaching conversation"><span class="wb-tile-ic">🧭</span><span class="wb-tile-t">${t('wb.coaching')}</span></button>
       <button class="wb-tile" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="wb-tile-ic">💭</span><span class="wb-tile-t">${t('wb.dreams')}</span></button>
@@ -5516,7 +5543,7 @@ async function openJournalEntry(id) {
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
 function renderJournalEntry() {
   const n = state.journal.current;
-  const mode = journalModeOf(n.props && n.props.mode);
+  const mode = journalModeMeta(n.props && n.props.mode);
   const isDream = (n.props && n.props.mode) === 'dreams';
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
@@ -5524,7 +5551,7 @@ function renderJournalEntry() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>Well-being</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
-      <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ((n.props && n.props.mode) === 'coaching' ? '<span class="j-card-mode">🧭 Coaching session</span>' : '')}</div>
+      <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
       <div class="note-body">${proseEditor(n.body, 'journal', n.id)}</div>
       <div class="j-deeper-bar">
         ${(n.props && n.props.mode) === 'coaching'
@@ -16102,6 +16129,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
   const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }
+  if (t.closest('[data-journal-dailyreview]')) { newDailyReview(); return; }
   if (t.closest('[data-journal-coaching]')) { newCoachingSession(); return; }
   if (t.closest('[data-journal-dream]')) { newJournalEntry('dreams', 'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.'); return; }
   const delIns = t.closest('[data-del-insight]'); if (delIns) { delInsight(delIns.dataset.delInsight); return; }
