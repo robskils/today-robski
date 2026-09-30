@@ -3195,18 +3195,19 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .trk-tick.on { border-color:var(--accent); background:var(--accent); color:var(--accent-ink); }
 .trk-hname { flex:1; min-width:0; font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .trk-week { display:inline-flex; gap:4px; flex:none; }
-.trk-dot { width:19px; height:19px; border-radius:50%; border:1px solid var(--line-2); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
-.trk-dot i { font-size:9px; font-style:normal; color:var(--ink-3); }
+.trk-dot { width:19px; height:19px; border-radius:50%; border:1.5px solid color-mix(in srgb,var(--ink) 26%,transparent); background:color-mix(in srgb,var(--ink) 6%,transparent); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.trk-dot i { font-size:9px; font-style:normal; color:var(--ink-2); }
 .trk-dot.on { background:color-mix(in srgb,var(--accent) 78%,#fff); border-color:var(--accent); } .trk-dot.on i { color:var(--accent-ink); }
 /* Avoid habits: a slip is a lapse, shown in red; the flame counts clean days. */
 .trk-dot.slip { background:#c4412e; border-color:#c4412e; } .trk-dot.slip i { color:#fff; }
 .t2-tick-slip.on { background:#c4412e; border-color:#c4412e; color:#fff; }
 .t2-avoidtag { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:#c4412e; background:color-mix(in srgb,#c4412e 13%,transparent); padding:1px 7px; border-radius:999px; margin-left:6px; vertical-align:middle; }
 /* Today is the right-most dot and the anchor: a solid accent ring, a hair larger,
-   its label in bold accent, so it clearly reads as "now" with past days to its left. */
+   its label in bold accent. Yesterday (second from the right) gets a lighter ring
+   so the run of days plainly reads right-to-left: today, yesterday, then earlier. */
 .trk-dot.today { box-shadow:0 0 0 2px var(--accent); border-color:var(--accent); transform:scale(1.08); }
 .trk-dot.today i { color:var(--accent); font-weight:700; }
-.trk-dot:not(.today):not(.on):not(.slip) i { opacity:.7; }
+.trk-dot.yesterday { border-color:color-mix(in srgb,var(--accent) 55%,var(--line-2)); }
 .trk-streak { flex:none; font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .trk-del { flex:none; color:var(--ink-3); font-size:18px; padding:0 4px; } .trk-del:hover { color:var(--danger,#c0392b); }
 .trk-add { display:flex; gap:8px; margin-top:10px; }
@@ -3482,6 +3483,13 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 /* Columns, not a stretch-grid, so each area card is only as tall as its own
    practices - a one-line area doesn't sit in a big empty square. */
 .trk-dash { max-width:660px; }
+/* A one-off legend so the dot run is self-explanatory: sample dots (yesterday +
+   today marked) beside a plain-language key. */
+.trk-legend { display:flex; align-items:center; gap:13px; flex-wrap:wrap; max-width:660px; margin:0 0 18px; padding:11px 15px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-size:14px; color:var(--ink-2); line-height:1.45; }
+.trk-legend-run { display:inline-flex; gap:5px; flex:none; }
+.trk-legend-run .trk-dot { cursor:default; }
+.trk-legend-txt { flex:1; min-width:200px; }
+.trk-legend-txt b { color:var(--ink); font-weight:600; }
 .trk-runend { display:inline-flex; align-items:center; gap:8px; flex:none; }
 /* The area's plain-English status: on track, and when to do something next. */
 .trk-area-status { display:flex; align-items:center; gap:8px; margin:0 0 10px; font-size:14.5px; }

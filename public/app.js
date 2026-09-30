@@ -7627,7 +7627,8 @@ function renderTracker() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.practices'))}
     <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1></div>
-    <p class="t2-sub">Tick a practice, rename it inline, drag to reorder, ✎ for the details. The dots are your last 7 days - today is the ringed dot on the right.</p>
+    <p class="t2-sub">Tick a practice, rename it inline, drag to reorder, ✎ for the details.</p>
+    <div class="trk-legend"><span class="trk-legend-run" aria-hidden="true"><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot yesterday"></span><span class="trk-dot today"></span></span><span class="trk-legend-txt">Each row is your last 7 days: oldest on the left, then the lighter ring is <b>yesterday</b>, and the bold ring on the right is <b>today</b>.</span></div>
     ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your practices…</div>'}`;
 }
 function renderToday() {
@@ -7703,6 +7704,7 @@ function t2TrackerHtml(manage) {
   const tracked = (P.activities || []).filter((a) => a.tracked);
   if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">No practices yet. Add one and its run of days appears here.<br><div class="trk-foot" style="margin-top:14px;justify-content:center"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button></div></div>';
   const today = dayKey(new Date());
+  const yesterday = dayKey(new Date(Date.now() - 86400000));
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
   tracked.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, area: ar, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
@@ -7737,7 +7739,7 @@ function t2TrackerHtml(manage) {
         <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
-        <span class="trk-hist"><span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span><span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span></span>
+        <span class="trk-hist"><span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : d === yesterday ? 'yesterday' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span><span class="trk-runend">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span></span>
       </div>`;
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
