@@ -12636,10 +12636,17 @@ async function openReviews() {
 function renderReviews() {
   $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
     <p class="t2-sub" style="font-style:normal">Daily, weekly, monthly, quarterly and yearly check-ins.</p>
-    ${modOn('reflect') ? `<div class="rv-daily-sec">
-      <button class="rv-daily-card" data-journal-dailyreview title="Close today, bullet-journal style"><span class="rv-daily-ic">☀</span><span class="rv-daily-body"><span class="rv-daily-t">Today's review</span><span class="rv-daily-s">Wins, what moved, and what to carry over - write it or speak it.</span></span><span class="rv-daily-go">→</span></button>
-      ${(state.dailyReviews && state.dailyReviews.length) ? `<div class="rv-daily-list">${state.dailyReviews.slice(0, 10).map((n) => `<button class="rv-daily-item" data-open-jentry="${n.id}"><span class="rv-di-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span><span class="rv-di-snip">${esc(journalSnippet(n))}</span></button>`).join('')}</div>` : ''}
-    </div>` : ''}
+    ${modOn('reflect') ? (() => {
+      const list = state.dailyReviews || [];
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const todays = list.find((n) => String((n.props && n.props.date) || '').slice(0, 10) === todayKey);
+      const past = list.filter((n) => n !== todays);
+      const row = (n, label) => `<button class="rv-daily-item" data-open-jentry="${n.id}"><span class="rv-di-date">${label || esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span><span class="rv-di-snip">${esc(journalSnippet(n))}</span><span class="rv-di-go">→</span></button>`;
+      const todayRow = todays ? row(todays, 'Today')
+        : `<button class="rv-daily-item rv-daily-new" data-journal-dailyreview><span class="rv-di-date">Today</span><span class="rv-di-snip">Close today - wins, what moved, what to carry over</span><span class="rv-di-go">＋</span></button>`;
+      return `<section class="home-sec rv-daily-sec"><div class="home-sec-h rv-sec-h">Daily review</div>
+        <div class="rv-daily-list">${todayRow}${past.map((n) => row(n)).join('')}</div></section>`;
+    })() : ''}
     ${reviewsBody()}`;
 }
 // Focus-list order (per device) and helpers, so you can drag the cards around.
