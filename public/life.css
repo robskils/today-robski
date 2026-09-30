@@ -3201,10 +3201,12 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
    highlighted as a whole column (header + each row's cell share the tint). */
 .trk-daycell { display:inline-flex; align-items:center; justify-content:center; width:32px; padding:4px 0; border-radius:8px; }
 .trk-daycell.today-col { background:color-mix(in srgb,var(--accent) 13%,transparent); }
+.trk-daycell.yest-col { background:color-mix(in srgb,var(--accent) 6%,transparent); }
 .trk-dayhdr { display:flex; justify-content:flex-end; margin:0 0 7px; padding-right:2px; }
 .trk-dayhdr .trk-week { padding:0; }
 .trk-dh { font-size:10px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:color-mix(in srgb,var(--accent) 78%,var(--ink-3)); line-height:1; }
 .trk-dh.is-today { color:var(--accent); font-weight:800; }
+.trk-dh.is-yest { color:var(--accent); font-weight:700; }
 .trk-dot { width:19px; height:19px; border-radius:50%; border:1.5px solid color-mix(in srgb,var(--ink) 26%,transparent); background:color-mix(in srgb,var(--ink) 6%,transparent); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
 .trk-dot i { font-size:9.5px; font-weight:600; font-style:normal; color:var(--accent); }
 .trk-dot.on { background:color-mix(in srgb,var(--accent) 82%,#fff); border-color:var(--accent); } .trk-dot.on i { color:#fff; }
@@ -3215,9 +3217,11 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 /* Today is the right-most dot and the anchor: a solid accent ring, a hair larger,
    its label in bold accent. Yesterday (second from the right) gets a lighter ring
    so the run of days plainly reads right-to-left: today, yesterday, then earlier. */
-.trk-dot.today { box-shadow:0 0 0 2.5px var(--accent); border-color:var(--accent); transform:scale(1.14); background:color-mix(in srgb,var(--accent) 15%,transparent); }
+/* Un-ticked today: a plain EMPTY circle, just outlined in the accent so it reads
+   as today (the column band + Today header do the rest). It fills solid only when
+   ticked. */
+.trk-dot.today { border-color:var(--accent); background:none; }
 .trk-dot.today i { color:var(--accent); font-weight:700; }
-/* Ticked today -> the circle fills in solid, so "done today" is unmistakable. */
 .trk-dot.today.on { background:var(--accent); border-color:var(--accent); }
 .trk-dot.today.on i { color:#fff; }
 .trk-dot.today.slip { background:#c4412e; box-shadow:0 0 0 2.5px #c4412e; }
