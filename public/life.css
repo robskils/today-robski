@@ -5772,10 +5772,17 @@ table.ttable tr:last-child td { border-bottom:0; }
   .nav-msearch:active { transform:scale(.99); }
   /* Mail has its own inbox search; the reader is full-screen (nav hidden). */
   body[data-view="mail"] .nav-msearch-row { display:none; }
-  /* The back arrow rides in the breadcrumb row (kept visible on mobile). */
-  .home-back { display:none; }   /* home's back is in the breadcrumb row on mobile */
-  /* Home's back + "Home" breadcrumb + New row (mobile only; desktop uses sidebar). */
-  .home-crumbbar { display:flex; }
+  /* On mobile, show the clear labelled "← Back" (easier to spot than a bare
+     arrow, and kinder on the eyes) and drop the tiny arrow from the breadcrumb
+     row so there's exactly one back control. align-self keeps it compact rather
+     than stretching to the full column width. */
+  .home-back { display:inline-flex; align-self:flex-start; width:auto; }
+  .home-crumbbar .crumb-back { display:none; }
+  /* Home's "Home" breadcrumb + New row. width:calc(100% + 36px) restores the
+     right-edge bleed the plain width:100% (above) kills: as a display:contents
+     flex item the crumbbar honours the left negative margin but not the right,
+     so +New floated ~36px short of the gutter instead of flush to it. */
+  .home-crumbbar { display:flex; width:calc(100% + 36px); }
   /* The home launcher stands in for the hidden sidebar: a tap-grid to every
      section, Today included (the planner is now responsive). Big targets and
      big labels, comfortable for thumbs and eyes. */
