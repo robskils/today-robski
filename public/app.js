@@ -4046,7 +4046,7 @@ function practicesGroups(withWeek) {
       return `<div class="prc-row prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="prc-name prc-name-link">${esc(a.title)}${badges}${withWeek ? '' : len}</span>
-        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s ? `<span class="trk-streak">🔥 ${s}${a.avoid ? ' clean' : ''}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
+        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s > 1 ? `<span class="trk-streak">🔥 ${s}${a.avoid ? ' clean' : ''}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
     }).join('');
@@ -7704,8 +7704,6 @@ function renderTracker() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.practices'))}
     <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1></div>
-    <p class="t2-sub">Tick a practice, rename it inline, drag to reorder, ✎ for the details.</p>
-    <div class="trk-legend"><span class="trk-legend-run" aria-hidden="true"><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot"></span><span class="trk-dot yesterday"></span><span class="trk-dot today"></span></span><span class="trk-legend-txt">Each row is your last 7 days: oldest on the left, then the lighter ring is <b>yesterday</b>, and the bold ring on the right is <b>today</b>.</span></div>
     ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your practices…</div>'}`;
 }
 function renderToday() {
@@ -7816,14 +7814,15 @@ function t2TrackerHtml(manage) {
         <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
-        <span class="trk-hist">${streak ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : d === yesterday ? 'yesterday' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span><span class="trk-runend">${a.avoid ? '' : `<span class="trk-dot2 trk-${s.status}" title="${esc(s.label)}"></span>`}</span></span>
+        <span class="trk-hist">${streak > 1 ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : d === yesterday ? 'yesterday' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
       </div>`;
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
     const open = trkOpen(key);
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
-      ${open ? `${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
+      ${open ? `<div class="trk-dayhdr"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : ''}"><span class="trk-dh${d === today ? ' is-today' : d === yesterday ? ' is-yest' : ''}">${d === today ? 'Today' : d === yesterday ? 'Yst' : dow[new Date(d + 'T00:00').getDay()]}</span></span>`).join('')}</span></div>
+      ${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       <div class="pm-rows">${rows}</div>
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
@@ -12637,19 +12636,20 @@ async function openReviews() {
   if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview').sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
 }
 function renderReviews() {
+  const daily = modOn('reflect') ? (() => {
+    const list = state.dailyReviews || [];
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const todays = list.find((n) => String((n.props && n.props.date) || '').slice(0, 10) === todayKey);
+    const past = list.filter((n) => n !== todays);
+    const row = (n, label) => `<button class="rv-daily-item" data-open-jentry="${n.id}"><span class="rv-di-date">${label || esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span><span class="rv-di-snip">${esc(journalSnippet(n))}</span><span class="rv-di-go">→</span></button>`;
+    const todayRow = todays ? row(todays, 'Today')
+      : `<button class="rv-daily-item rv-daily-new" data-journal-dailyreview><span class="rv-di-date">Today</span><span class="rv-di-snip">Close today - wins, what moved, what to carry over</span><span class="rv-di-go">＋</span></button>`;
+    return `<section class="home-sec rv-daily-sec"><div class="home-sec-h rv-sec-h">Daily review</div>
+      <div class="rv-daily-list">${todayRow}${past.map((n) => row(n)).join('')}</div></section>`;
+  })() : '';
   $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
-    <p class="t2-sub" style="font-style:normal">Daily, weekly, monthly, quarterly and yearly check-ins.</p>
-    ${modOn('reflect') ? (() => {
-      const list = state.dailyReviews || [];
-      const todayKey = new Date().toISOString().slice(0, 10);
-      const todays = list.find((n) => String((n.props && n.props.date) || '').slice(0, 10) === todayKey);
-      const past = list.filter((n) => n !== todays);
-      const row = (n, label) => `<button class="rv-daily-item" data-open-jentry="${n.id}"><span class="rv-di-date">${label || esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span><span class="rv-di-snip">${esc(journalSnippet(n))}</span><span class="rv-di-go">→</span></button>`;
-      const todayRow = todays ? row(todays, 'Today')
-        : `<button class="rv-daily-item rv-daily-new" data-journal-dailyreview><span class="rv-di-date">Today</span><span class="rv-di-snip">Close today - wins, what moved, what to carry over</span><span class="rv-di-go">＋</span></button>`;
-      return `<section class="home-sec rv-daily-sec"><div class="home-sec-h rv-sec-h">Daily review</div>
-        <div class="rv-daily-list">${todayRow}${past.map((n) => row(n)).join('')}</div></section>`;
-    })() : ''}
+    ${daily}
+    <p class="t2-sub" style="font-style:normal">And the weekly, monthly, quarterly and yearly check-ins.</p>
     ${reviewsBody()}`;
 }
 // Focus-list order (per device) and helpers, so you can drag the cards around.
