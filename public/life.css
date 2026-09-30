@@ -1770,6 +1770,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* the row, opened as a card */
 .card { max-width:660px; }
 .card [data-back] { margin-bottom:22px; }
+.card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.card-head .card-title { flex:1; min-width:0; }
+.card-head .note-del-ic { flex:none; margin-top:8px; }
 .card-title { font-size:clamp(28px,4vw,38px); margin:4px 0 26px; text-wrap:balance; }
 .card-fields { display:flex; flex-direction:column; }
 .crow { display:grid; grid-template-columns:190px minmax(0,1fr); gap:18px; align-items:center; padding:13px 0; border-bottom:1px solid var(--line); }
@@ -4140,7 +4143,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    never riding the page or sliding under the header. (Both attempts that put sticky
    on the item itself failed: definite-height-no-stretch wouldn't pin, and
    stretch+max-height rode the page.) (Robin, 2026-09-29.) */
-.home-side { grid-area:side; position:sticky; top:44px; align-self:start; max-height:calc(100vh - 44px); min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:16px; padding:0 2px 8px 0; }
+/* No inner scroll: the rail rides the PAGE scroll (so scrolling over it moves the
+   whole page, top bar and all). A short rail still pins under the tab strip; a
+   tall one scrolls with the page so all of it stays reachable. */
+.home-side { grid-area:side; position:sticky; top:44px; align-self:start; display:flex; flex-direction:column; gap:16px; padding:0 2px 8px 0; }
 .home-side .home-sec { margin-top:0; }
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
 .home-notepad::placeholder { color:var(--ink-3); }
@@ -6067,6 +6073,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Entry view */
 .j-entry { max-width:760px; }
 .j-entry-head { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:8px; }
+/* Voice dictation: a record toggle above the editor. Pulses red while listening. */
+.j-voice { display:flex; align-items:center; gap:12px; margin:6px 0 16px; flex-wrap:wrap; }
+.j-rec-btn { display:inline-flex; align-items:center; gap:9px; white-space:nowrap; }
+.j-rec-dot { width:11px; height:11px; border-radius:50%; background:var(--ink-3); flex:none; transition:background .15s; }
+.j-rec-btn.rec-on { border-color:color-mix(in srgb,var(--danger,#c0392b) 55%,var(--line)); color:var(--danger,#c0392b); }
+.j-rec-btn.rec-on .j-rec-dot { background:var(--danger,#c0392b); animation:recpulse 1.3s ease-in-out infinite; }
+@keyframes recpulse { 0%,100% { opacity:1; box-shadow:0 0 0 0 color-mix(in srgb,var(--danger,#c0392b) 55%,transparent); } 55% { opacity:.6; box-shadow:0 0 0 6px transparent; } }
+.j-voice-hint { font-size:13.5px; color:var(--ink-3); line-height:1.4; max-width:440px; }
 .j-entry-date { font-size:clamp(22px,2.6vw,30px); margin:0; }
 .j-entry .prose blockquote { border-left:3px solid var(--accent); background:color-mix(in srgb,var(--accent) 6%,transparent); margin:14px 0; padding:10px 16px; border-radius:0 10px 10px 0; color:var(--ink); font-weight:500; font-style:normal; }
 .j-deeper-bar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }

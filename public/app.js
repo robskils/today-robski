@@ -5543,6 +5543,7 @@ async function openJournalEntry(id) {
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
 function renderJournalEntry() {
   const n = state.journal.current;
+  if (dictation) stopDictation();   // never leave the mic running across a re-render
   const mode = journalModeMeta(n.props && n.props.mode);
   const isDream = (n.props && n.props.mode) === 'dreams';
   const sep = '<span class="crumb-sep">›</span>';
@@ -5552,6 +5553,7 @@ function renderJournalEntry() {
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
+      ${(n.sharedBy && !n.canEdit) ? '' : `<div class="j-voice"><button type="button" class="ghost j-rec-btn" data-journal-dictate title="Dictate - speak and it types into your entry"><span class="j-rec-dot"></span><span class="j-rec-lbl">Record</span></button><span class="j-voice-hint">Prefer to talk it out? Tap and speak - it types for you. Tap again to stop.</span></div>`}
       <div class="note-body">${proseEditor(n.body, 'journal', n.id)}</div>
       <div class="j-deeper-bar">
         ${(n.props && n.props.mode) === 'coaching'
@@ -5575,6 +5577,54 @@ function renderJournalEntry() {
       const last = ed.lastElementChild; if (last && last.scrollIntoView) last.scrollIntoView({ block: 'center' });
     } catch {}
   }, 0);
+}
+// Voice dictation for a journal/daily-review entry, using the browser's built-in
+// SpeechRecognition (works in Chrome/Brave, incl. the PWA). Speak and it types
+// final phrases into the prose editor at the caret; tap again to stop. A
+// server-side Whisper path (on the user's AI key) for other browsers is the next
+// step - this one needs no worker and no key.
+let dictation = null;
+function toggleDictation(btn) {
+  if (dictation) { stopDictation(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('Voice input needs Chrome or Brave. Type your entry, or try from there.'); return; }
+  const ed = document.querySelector('.prose[data-prose="journal"]');
+  if (!ed || ed.getAttribute('contenteditable') === 'false') return;
+  let rec; try { rec = new SR(); } catch { toast('Could not start voice input.'); return; }
+  rec.lang = locale() === 'pt' ? 'pt-PT' : 'en-GB';
+  rec.continuous = true; rec.interimResults = false;
+  rec.onresult = (e) => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) insertDictated(ed, e.results[i][0].transcript);
+    }
+  };
+  rec.onerror = (e) => { if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) toast('Microphone blocked. Allow mic access to dictate.'); stopDictation(); };
+  // Chrome ends recognition after a pause; restart it so a long reflection keeps
+  // going until the user taps stop - but only while the entry (and its button)
+  // is still on screen, so navigating away releases the mic instead of looping.
+  rec.onend = () => { if (dictation && dictation.active && document.contains(dictation.btn)) { try { rec.start(); } catch {} } else { stopDictation(); } };
+  dictation = { rec, active: true, btn };
+  try { ed.focus(); } catch {}
+  try { rec.start(); } catch {}
+  if (btn) { btn.classList.add('rec-on'); const l = btn.querySelector('.j-rec-lbl'); if (l) l.textContent = 'Recording… tap to stop'; }
+}
+function insertDictated(ed, text) {
+  const t = (text || '').replace(/\s+/g, ' ').trim(); if (!t) return;
+  const sel = window.getSelection();
+  const focused = sel && sel.rangeCount && ed.contains(sel.anchorNode);
+  if (focused) {
+    // execCommand fires a native input event, so the prose autosave picks it up.
+    document.execCommand('insertText', false, t + ' ');
+  } else {
+    const last = ed.lastElementChild || ed; last.appendChild(document.createTextNode(t + ' '));
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+function stopDictation() {
+  const d = dictation; if (!d) return;
+  d.active = false; try { d.rec.stop(); } catch {}
+  if (d.btn) { d.btn.classList.remove('rec-on'); const l = d.btn.querySelector('.j-rec-lbl'); if (l) l.textContent = 'Record'; }
+  dictation = null;
 }
 async function journalDeepen() {
   const n = state.journal && state.journal.current; if (!n) return;
@@ -15393,7 +15443,7 @@ function renderTable() {
       const title = ((r.props && r.props.values) || {})[c[0] && c[0].id] || 'Untitled';
       $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
         <div class="card">
-        <h1 class="card-title">${esc(title)}</h1><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
+        <div class="card-head"><h1 class="card-title">${esc(title)}</h1>${(t.sharedBy && !t.canEdit) ? '' : `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>`}</div><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
         ${attachSection(r)}</div>`;
       loadThumbs(); hydrateEmbeds(); setupFolds();
@@ -16141,6 +16191,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-insights]')) { if (state.journal) { state.journal.insightsOpen = true; renderJournalList(); const el = document.querySelector('.j-insights'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
+  { const rb = t.closest('[data-journal-dictate]'); if (rb) { toggleDictation(rb); return; } }
   if (t.closest('[data-journal-deeper]')) { journalDeepen(); return; }
   if (t.closest('[data-journal-empathy]')) { journalEmpathise(); return; }
   if (t.closest('[data-journal-coach]')) { journalCoach(); return; }
@@ -16791,6 +16842,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-add-col]')) { state.tables_view.addingCol = true; renderTable(); return; }
   const dcol = t.closest('[data-del-col]'); if (dcol) { const dcId = dcol.dataset.delCol; uiConfirm('Delete this column?', { title: 'Delete column', okLabel: 'Delete', danger: true }).then((ok) => { if (ok) saveTableColumns(tcols().filter((c) => c.id !== dcId)).then(renderTable).catch((x) => toast(x.message)); }); return; }
   const drow = t.closest('[data-del-row]'); if (drow) { const id = drow.dataset.delRow; state.tables_rows = state.tables_rows.filter((r) => r.id !== id); renderTable(); api(`/api/blocks/${id}`, { method: 'DELETE' }).catch((x) => toast(x.message)); return; }
+  // Delete from the opened row card. Confirm first - a row card holds a whole
+  // record and the delete isn't undoable - then drop it and return to the table.
+  { const drc = t.closest('[data-del-row-card]'); if (drc) { const id = drc.dataset.delRowCard; uiConfirm('Delete this row? This cannot be undone.', { title: 'Delete row', okLabel: 'Delete' }).then((ok) => { if (!ok) return; state.tables_rows = (state.tables_rows || []).filter((r) => r.id !== id); if (state.tables_view) state.tables_view.openRow = null; renderTable(); api(`/api/blocks/${id}`, { method: 'DELETE' }).catch((x) => toast(x.message)); }); return; } }
   if (t.closest('[data-add-row]')) { addRow(); return; }
   if (t.closest('[data-del-cur]')) { delTable(); return; }
 });
