@@ -4222,9 +4222,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      viewport lock, and dissolve BOTH column wrappers so every section becomes a
      direct flex child of `.home` that `order` can arrange. */
   .pane:has(.home) { height:auto; display:block; padding-bottom:90px; }
-  .home { display:flex; flex-direction:column; gap:26px; }
+  .home { display:flex; flex-direction:column; gap:26px; align-items:stretch; }
   .home-top, .home-scroll, .home-main, .home-side { display:contents; overflow:visible; }
   .home .home-sec { margin:0; }
+  /* Everything spans full width on mobile - they're flex items via display:contents. */
+  .home-crumbbar, .home-actionbar, .home-sec-card, .home-notepad { width:100%; box-sizing:border-box; }
   /* Tap the whole header to collapse - a generous target, and no drag grip, so
      every section title lines up flush left whichever column it came from. The
      bigger vertical padding (a ~44px touch target) is what makes the tap land
@@ -6126,9 +6128,9 @@ table.ttable tr:last-child td { border-bottom:0; }
 .j-rec-btn.rec-on .j-rec-dot { background:var(--danger,#c0392b); animation:recpulse 1.3s ease-in-out infinite; }
 @keyframes recpulse { 0%,100% { opacity:1; box-shadow:0 0 0 0 color-mix(in srgb,var(--danger,#c0392b) 55%,transparent); } 55% { opacity:.6; box-shadow:0 0 0 6px transparent; } }
 .j-voice-hint { font-size:13.5px; color:var(--ink-3); line-height:1.4; max-width:440px; }
-/* Daily review · reconcile-with-tasks panel. */
-.rc-panel { margin-top:20px; }
-.rc-open { padding:16px 18px; border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+/* Daily review · reconcile-with-tasks panel. Always a soft, padded accent card. */
+.rc-panel { margin-top:24px; padding:18px 20px; border:1px solid color-mix(in srgb,var(--accent) 24%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+.rc-open { }
 .rc-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); margin-bottom:12px; }
 .rc-group { margin-bottom:16px; }
 .rc-group-h { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; margin-bottom:9px; }
@@ -6141,8 +6143,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .rc-add-row { justify-content:space-between; }
 .rc-add-btn { flex:none; white-space:nowrap; }
 .rc-empty { font-size:14px; color:var(--ink-3); font-style:italic; padding:4px 0; }
-.rc-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; }
-.rc-btn { width:auto; white-space:nowrap; }
+.rc-bar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.rc-open .rc-bar { margin-top:14px; padding-top:14px; border-top:1px solid color-mix(in srgb,var(--accent) 18%,var(--line)); }
+.rc-btn { width:auto; white-space:nowrap; padding:12px 22px; font-size:15px; font-weight:600; border-radius:12px; background:var(--accent); color:#fff; border:1px solid var(--accent); box-shadow:var(--shadow-sm,0 6px 16px -8px rgba(0,0,0,.3)); }
+.rc-btn:hover:not(:disabled) { background:color-mix(in srgb,var(--accent) 88%,#000); }
+.rc-btn:disabled { opacity:.65; cursor:default; }
+.rc-panel .j-deeper-hint { flex:1; min-width:200px; }
 .j-entry-date { font-size:clamp(22px,2.6vw,30px); margin:0; }
 .j-entry .prose blockquote { border-left:3px solid var(--accent); background:color-mix(in srgb,var(--accent) 6%,transparent); margin:14px 0; padding:10px 16px; border-radius:0 10px 10px 0; color:var(--ink); font-weight:500; font-style:normal; }
 .j-deeper-bar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }

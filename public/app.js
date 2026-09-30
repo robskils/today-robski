@@ -5591,14 +5591,14 @@ function renderJournalEntry() {
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
       ${(n.sharedBy && !n.canEdit) ? '' : `<div class="j-voice"><button type="button" class="ghost j-rec-btn" data-journal-dictate title="Dictate - speak and it types into your entry"><span class="j-rec-dot"></span><span class="j-rec-lbl">Record</span></button><span class="j-voice-hint">Prefer to talk it out? Tap and speak - it types for you. Tap again to stop.</span></div>`}
       <div class="note-body">${proseEditor(n.body, 'journal', n.id)}</div>
-      <div class="j-deeper-bar">
+      ${(n.props && n.props.mode) === 'dailyreview' ? '' : `<div class="j-deeper-bar">
         ${(n.props && n.props.mode) === 'coaching'
           ? `<button class="add-btn j-coach-btn" data-journal-coach>🧭 Continue session</button>
              <span class="j-deeper-hint">Write your reply above, then continue - the coach reads the whole session and responds. Keep going as long as you like.</span>`
           : `<button class="add-btn j-deeper" data-journal-deeper>${journalDeeperLabel(n.props && n.props.mode)}</button>
              <button class="add-btn j-empathy-btn" data-journal-empathy title="A warm, understanding reflection - the sort of thing a good therapist might say. No advice, no judgement.">♡ Empathy</button>
              <span class="j-deeper-hint">Dig deeper asks one question to take it further. Empathy gives a warm, understanding reflection. Use either as often as you like.</span>`}
-      </div>
+      </div>`}
       ${(n.props && n.props.mode) === 'dailyreview' ? reconcilePanelHtml(n) : ''}
     </div>`;
   // Land the cursor ready to write: focus the editor and drop the caret at the end
