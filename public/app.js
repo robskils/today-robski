@@ -8903,6 +8903,12 @@ function startMailUnreadPoll() {
   refreshMailUnread();
   window.__mailUnreadT = setInterval(() => { if (!document.hidden) refreshMailUnread(); }, 90000);
 }
+// "Land where you left off" in Mail is only wanted on a quick return. After a
+// while away, reopening an old message reads as being stuck on it - so we stamp
+// the last time Mail was actually used and, past the hour, open on the inbox list
+// instead. (Same spirit as reopening Home at the top after a while.)
+function mailStamp() { try { localStorage.setItem('life.mail.lastActive', String(Date.now())); } catch {} }
+function mailReopenStale() { try { const t = Number(localStorage.getItem('life.mail.lastActive') || 0); return !t || (Date.now() - t) > REOPEN_FRESH_MS; } catch { return false; } }
 async function openMail(openKey) {
   startMailUnreadPoll();
   // Which tab asked for this. Fetching accounts and a message list takes real
@@ -8916,10 +8922,13 @@ async function openMail(openKey) {
     let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {}
     state.mail = { account: seed.account || null, mailbox: 'INBOX', folder: 'inbox', messages: [], open: null, composing: false, query: '', limit: 40, unseen: {}, hasMore: false, sel: null, shortcuts: false, threaded: localStorage.getItem('life.mail.threaded') !== '0', expanded: {}, selected: new Set(), pending: new Set(), gone: new Set(), mailboxes: [], moveMenu: null, accounts: Array.isArray(seed.accounts) && seed.accounts.length ? seed.accounts : undefined, listCache: seed.listCache || {} };
   }
-  // Come back to Mail and land where you left off: reopen the message that was
-  // open (from the tab's remembered view, or the still-open one in memory).
+  // Come back to Mail and land where you left off on a quick return: reopen the
+  // message that was open (from the tab's remembered view, or the still-open one in
+  // memory). But after a while away, drop the reopen and land on the inbox list.
+  if (mailReopenStale() && !state.mail.composing) { state.mail.open = null; openKey = null; }
   if (!openKey && state.mail.open && !state.mail.composing) openKey = state.mail.open._key;
   state.view = openKey ? { type: 'mail', open: openKey } : { type: 'mail' };
+  mailStamp();
   // Always open on the whole Inbox - that's the triage base for the quadrants. (We
   // used to auto-land on Unread, but with the Unread tab folded away that read as
   // "my mail disappeared" whenever the unread list was short.)
@@ -9205,6 +9214,7 @@ function mailForgetKeys(keys) {
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key) || (state.mail.snapMsgs && state.mail.snapMsgs[key]); if (!row) return;
   state.mail.sel = key; state.mail.hoverThread = null; state.mail.plain = false;   // each email opens formatted; toggle to plain if it's cramped
+  mailStamp();   // reading counts as using Mail - keeps a quick return landing back here
   // Record the open message on the view so this tab reopens it after a switch.
   state.view = { type: 'mail', open: key }; syncActiveTab();
   const cached = state.mail.msgCache && state.mail.msgCache[key];
