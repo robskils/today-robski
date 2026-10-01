@@ -3070,7 +3070,9 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
   /* .home-prefixed so these beat the base .home-head / .home-actionbar rules that
      sit lower in the file (equal specificity would otherwise lose on source order). */
   .home .home-head { margin-bottom:0; }
-  .home .home-actionbar { margin-top:-14px; margin-bottom:10px; }
+  /* row-gap sets the space under the date / temp / time before the four cards wrap
+     to their own row - a touch more than the inherited 14px. */
+  .home .home-actionbar { margin-top:-14px; margin-bottom:10px; row-gap:20px; }
 }
 .wb-pin-x { position:absolute; bottom:10px; right:12px; width:26px; height:26px; border:none; background:none; color:var(--ink-3); font-size:18px; line-height:1; border-radius:8px; cursor:pointer; z-index:2; }
 .wb-pin-x:hover { background:var(--surface-2); color:var(--ink); }
