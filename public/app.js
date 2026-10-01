@@ -4545,7 +4545,7 @@ function renderHome() {
         <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1></div>
       </div>
       <div class="home-actionbar">
-        <div class="home-ab-left"><span class="home-date">${homeDate()}</span>${weatherChipHtml()}<span class="home-time">${homeTimeStr()}</span></div>
+        <div class="home-ab-left"><span class="home-date">${homeDate()}</span><span class="home-time">${homeTimeStr()}</span>${weatherChipHtml()}</div>
         <div class="home-actions">${(() => {
           const mailN = state.mailUnreadTotal || 0;
           return [
