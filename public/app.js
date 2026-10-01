@@ -6542,7 +6542,7 @@ function renderArea() {
   // Wheel of Life is a tab only for areas you actually track in the wheel; untracked
   // ones drop it (toggle tracking from the Wheel of Life page). (Robin, 2026-09-27.)
   const wheelTracked = !(area.props && area.props.reviewOff);
-  const TABS = ['Vision', 'Goals', 'Bucket list', ...(wheelTracked ? ['Wheel of Life'] : [])];
+  const TABS = ['Vision', 'Goals', ...(wheelTracked ? ['Wheel of Life'] : []), 'Bucket list'];
   let openTile = state.area_open.tileOpen || 'Vision';
   if (!TABS.includes(openTile)) openTile = 'Vision';
   const tabBar = `<div class="area-tiles area-tabs" style="--cols:${TABS.length}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>`;
