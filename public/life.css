@@ -4975,14 +4975,21 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Each result kind gets its own colour chip, so the list scans at a glance.
    Tinted background + the hue as text, readable on warm paper and in dark. */
 .pal-kind.kmark { --pk:var(--ink-2); background:color-mix(in srgb,var(--pk) 17%,var(--card)); color:color-mix(in srgb,var(--pk) 82%,var(--ink)); }
-.pal-k-area { --pk:#3e9b6c; }
-.pal-k-contact { --pk:#3a72c4; }
-.pal-k-note { --pk:#c98a1e; }
-.pal-k-table { --pk:#8a5cc4; }
-.pal-k-task { --pk:#d9483b; }
-.pal-k-goal { --pk:#2c9c9c; }
-.pal-k-bucket { --pk:#c4568f; }
-.pal-k-row { --pk:#7a8a94; }
+/* Each kind's hue. These need the .pal-kind prefix to match the .pal-kind.kmark
+   specificity above - a bare .pal-k-* loses the --pk cascade and every chip falls
+   back to grey. */
+.pal-kind.pal-k-area { --pk:#3e9b6c; }
+.pal-kind.pal-k-contact { --pk:#3a72c4; }
+.pal-kind.pal-k-note { --pk:#c98a1e; }
+.pal-kind.pal-k-table { --pk:#8a5cc4; }
+.pal-kind.pal-k-task { --pk:#d9483b; }
+.pal-kind.pal-k-goal { --pk:#2c9c9c; }
+.pal-kind.pal-k-bucket { --pk:#c4568f; }
+.pal-kind.pal-k-journal { --pk:#b5835a; }
+.pal-kind.pal-k-bookmark { --pk:#2f9e7a; }
+.pal-kind.pal-k-event { --pk:#c56a4d; }
+.pal-kind.pal-k-dream { --pk:#7b6bc4; }
+.pal-kind.pal-k-row { --pk:#7a8a94; }
 .pal-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:16.5px; }
 .pal-hint { font-size:12.5px; color:var(--ink-3); flex:none; }
 /* The link picker's hint is a full row under the input, not the inline "open"
