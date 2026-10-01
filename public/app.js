@@ -656,8 +656,7 @@ const HELP = {
       <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent</b> · <b>Important</b> · <b>Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the Inbox queue. When the Inbox count hits zero, you're done.</p>
       <p><b>Filing an email.</b> Open it and use <b>File into ▾</b> to drop it in a bucket, tap the colour dot on any row, or drag a row onto a pot. The moment you file it, it's <b>archived off your inbox</b> - out of your face - while the bucket keeps hold of it, on any account (Gmail or IMAP alike). Change your mind? <b>File into ▾ → Back to Inbox</b> puts it back in the queue.</p>
       <p><b>Working a bucket.</b> Open a pot like Urgent, deal with each email, then <b>Archive</b> it (the archive button in the open email, or on the row) - it's already out of the inbox, so that just clears it from the bucket; it stays safe in your Archive folder. Trashing or moving an email clears its bucket too, so nothing lingers once you've actioned it.</p>
-      <p><b>Important senders.</b> In an open email, <b>More ▾ → Mark important sender</b> lifts every email from that person into a <b>⭐ Important senders</b> section pinned at the top of your inbox, so they never get lost in the stream. The ⭐ by the search box turns that grouping on or off.</p>
-      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life area</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (mark important sender, spam, block).</p>
+      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life area</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block).</p>
       <h4>Which email accounts can I add?</h4>
       <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
       <h4>How to add one</h4>
@@ -8528,6 +8527,11 @@ async function mailStar(key) {
 // --- Important senders (VIPs) ---------------------------------------------
 // A small list of addresses whose mail gets lifted to its own box at the top of
 // the inbox. `on` switches the whole grouping off without losing the list.
+// SHELVED (Robin, 2026-10): the whole feature is hidden for now - the box, the
+// re-enable link and the "Mark important sender" menu item all gate on this flag.
+// The stored list (kv_mail_vips) is untouched, so flipping this back to true
+// brings it all back exactly as it was. Revisit later.
+const MAIL_VIP_ON = false;
 function mailVips() { return state.mailVips || (state.mailVips = { on: true, addrs: new Set() }); }
 function isVipAddr(addr) { const v = mailVips(); return !!addr && v.addrs.has(String(addr).toLowerCase()); }
 function isVipMsg(m) { return !!(m && m.from && isVipAddr(m.from.address)); }
@@ -10165,9 +10169,9 @@ function mailListInner(loading) {
   const inInboxQueue = (m.folder || 'inbox') === 'inbox' && !m.query;
   // Turned the grouping off but you still have important senders? A quiet one-line
   // link brings it back - the old cryptic star in the toolbar is gone.
-  const vipReenable = (!v.on && v.addrs.size && inInboxQueue)
+  const vipReenable = (MAIL_VIP_ON && !v.on && v.addrs.size && inInboxQueue)
     ? `<button class="mail-vip-reenable" data-mail-vip-tog title="Group important senders at the top again">⭐ Group important senders</button>` : '';
-  const vipActive = v.on && v.addrs.size && (m.folder || 'inbox') === 'inbox' && !m.query;
+  const vipActive = MAIL_VIP_ON && v.on && v.addrs.size && (m.folder || 'inbox') === 'inbox' && !m.query;
   if (vipActive) {
     const vipThreads = threads.filter((th) => isVipMsg(th.latest));
     if (vipThreads.length) {
@@ -10281,7 +10285,8 @@ function renderMail(loading) {
     // the inbox (the ⭐ box). (Robin, 2026-09-28.)
     const isVip = o.from && isVipAddr(o.from.address);
     const plainItem = o.html ? `<button class="mail-dd-item" data-mail-plain>${MAIL_ICO.note}<span>${state.mail.plain ? 'Formatted view' : 'Plain-text view (easier to read)'}</span></button>` : '';
-    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu">${plainItem}<button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button><button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button><button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
+    const vipItem = MAIL_VIP_ON ? `<button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button>` : '';
+    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu">${plainItem}${vipItem}<button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button><button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
     const msgActs = `${replyDD}${fileDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - done with it, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>${moreDD}`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
