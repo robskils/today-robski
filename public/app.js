@@ -8558,6 +8558,10 @@ async function mailMoveTo(key, target, label) {
   const keys = threadKeysFor(key);
   const rows = keys.map((k) => mailRow(k)).filter(Boolean);
   if (!rows.length) return;
+  // The on-screen order as it stands BEFORE this triage, so "open the next one"
+  // can stay inside the current list/bucket (not jump to some other loaded mail).
+  const visKeys0 = mailVisibleKeys();
+  const openKey0 = state.mail.open && state.mail.open._key;
   // These sets can be absent if the mail state was seeded from a partial cache;
   // guard so an archive/move never throws "reading 'add'" after the server move.
   if (!state.mail.gone) state.mail.gone = new Set();
@@ -8572,9 +8576,8 @@ async function mailMoveTo(key, target, label) {
     if (changed) persistMailQuads(qDel);
     state.mail.messages = (state.mail.messages || []).filter((m) => !keys.includes(m._key));
     mailForgetKeys(keys);
-    const ok0 = state.mail.open && state.mail.open._key;
-    if (ok0 && keys.includes(ok0)) state.mail.open = null;
     toast('Done - cleared from the box');
+    if (openKey0 && keys.includes(openKey0)) { mailAfterTriageOpen(openKey0, visKeys0, new Set(keys)); return; }
     renderMail();
     return;
   }
@@ -8619,17 +8622,16 @@ async function mailMoveTo(key, target, label) {
     toast(rows.length > 1 ? `${label} · ${rows.length} messages` : label, undo);
     state.mail.messages = msgs.filter((m) => !gone.has(m._key));
     mailForgetKeys(keys);
-    // Keep keyboard triage flowing: move the highlight to the next row.
-    if (gone.has(state.mail.sel)) { const n = state.mail.messages[idx] || state.mail.messages[idx - 1]; state.mail.sel = n ? n._key : null; }
-    // Reading a message we just triaged? Advance to the next one (Spark-style)
-    // rather than dropping back to the list.
-    if (openKey && gone.has(openKey)) {
-      let next = null;
-      for (let i = openIdx + 1; i < msgs.length && !next; i++) if (!gone.has(msgs[i]._key)) next = msgs[i];
-      for (let i = openIdx - 1; i >= 0 && !next; i--) if (!gone.has(msgs[i]._key)) next = msgs[i];
-      state.mail.open = null;
-      if (next) { renderMail(); openMessage(next._key); return; }
+    // Keep keyboard triage flowing on the LIST: move the highlight to the next row
+    // in the same on-screen order.
+    if (gone.has(state.mail.sel)) {
+      let nsel = null; const si = visKeys0.indexOf(state.mail.sel);
+      if (si >= 0) { for (let j = si + 1; j < visKeys0.length && !nsel; j++) if (!gone.has(visKeys0[j])) nsel = visKeys0[j]; for (let j = si - 1; j >= 0 && !nsel; j--) if (!gone.has(visKeys0[j])) nsel = visKeys0[j]; }
+      state.mail.sel = nsel;
     }
+    // Reading a message we just triaged? Either drop back to the list or open the
+    // next one in the same list, per the user's "after dealing with an email" choice.
+    if (openKey && gone.has(openKey)) { mailAfterTriageOpen(openKey, visKeys0, gone); return; }
     renderMail();
   } catch (e) { toast(e.message); }
 }
@@ -9017,6 +9019,12 @@ async function openMail(openKey) {
   if (!state.mailQuads) {
     state.mailQuads = {};
     api('/api/kv/mail_quadrants').then((r) => { try { state.mailQuads = JSON.parse(r.value || '{}') || {}; } catch {} if (state.view.type === 'mail') renderMail(); }).catch(() => {});
+  }
+  // After dealing with an open email: 'next' opens the next one in the same list,
+  // 'list' drops back to the folder. Loaded once, cached on state.
+  if (state.mailAfterTriage === undefined) {
+    state.mailAfterTriage = 'next';
+    api('/api/kv/mail_after_triage').then((r) => { if (r && (r.value === 'next' || r.value === 'list')) state.mailAfterTriage = r.value; }).catch(() => {});
   }
   if (!state.mail.quadFilter) state.mail.quadFilter = new Set();
   // Important senders (VIPs): mail from anyone on this list is lifted into its own
@@ -9750,6 +9758,9 @@ function renderMailAccounts(note) {
       <div class="gpw-help">${GMAIL_APP_PW}<p class="gpw-expiry">App Passwords don't expire on a timer, but Google revokes them if you change your account password, toggle 2-Step Verification, or after a security review - then create a fresh one and paste it into that mailbox's <b>Edit → Password</b>.</p></div>
     </details>
     ${pushSectionHtml()}
+    <section class="push-sec"><div class="home-sec-h">After you deal with an email</div>
+      <label class="set-mod"><span>Open the next email<small>When you archive or file the email you're reading, jump straight to the next one in the same list (Inbox, or whichever bucket you're in). Turn off to go back to the list instead.</small></span><input type="checkbox" data-mail-aftertriage ${state.mailAfterTriage !== 'list' ? 'checked' : ''}></label>
+    </section>
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
       <p class="scope" style="margin:0 0 10px">Make Daybook open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
       <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open Daybook in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Safari / iOS can't do this.</p>
@@ -10158,6 +10169,22 @@ function mailVisibleThreads() {
 }
 // The row keys on screen, in order - what j/k walk through.
 function mailVisibleKeys() { return mailVisibleThreads().map((th) => th.latest && th.latest._key).filter(Boolean); }
+// After dealing with the open message: do we drop back to the list, or open the
+// next one in the SAME list? A per-user choice; default is to keep moving.
+function mailAfterTriageMode() { return state.mailAfterTriage === 'list' ? 'list' : 'next'; }
+// Act on that choice. `visKeys` is the on-screen order captured BEFORE the triage;
+// `gone` is the set of keys just removed.
+function mailAfterTriageOpen(openKey, visKeys, gone) {
+  state.mail.open = null;
+  if (mailAfterTriageMode() === 'list') { renderMail(); return; }
+  let next = null; const i = visKeys.indexOf(openKey);
+  if (i >= 0) {
+    for (let j = i + 1; j < visKeys.length && !next; j++) if (!gone.has(visKeys[j])) next = visKeys[j];
+    for (let j = i - 1; j >= 0 && !next; j--) if (!gone.has(visKeys[j])) next = visKeys[j];
+  }
+  renderMail();
+  if (next) openMessage(next);
+}
 // The inner HTML of the .mail-list container (rows / loading / empty state).
 // Kept separate so a live search can refresh just the list without rebuilding
 // the header - which would destroy the search box and steal focus mid-type.
@@ -10302,7 +10329,7 @@ function renderMail(loading) {
       ? `<div class="mail-conv-strip">${oThread.messages.map((mm) => `<button class="mail-conv-item ${mm._key === o._key ? 'on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mc-from">${esc(mailFrom(mm) || '?')}</span><span class="mc-date">${mailDate(mm.date)}</span>${mm.flagged ? '<span class="mc-star">★</span>' : ''}</button>`).join('')}</div>`
       : '';
     reader = `<div class="mail-msg">
-      <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back>← Inbox</button>
+      <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back title="Back" aria-label="Back">←</button>
         <span class="mail-msg-act">${msgActs}</span></div>
       <h1 class="mail-subj">${esc(o.subject)}</h1>
       ${convStrip}
@@ -10321,7 +10348,7 @@ function renderMail(loading) {
   }
   // Reading a message: the crumb's back arrow returns to the inbox, not Home.
   const mailCrumb = (m.open || m.composing)
-    ? `<div class="note-crumbs"><button class="crumb-back" data-mail-back title="Back to inbox">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-mail-back>Mail</button><span class="crumb-sep">›</span><span class="crumb cur">${m.composing ? 'Compose' : 'Message'}</span></div>`
+    ? `<div class="note-crumbs"><button class="crumb-back" data-mail-back title="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-mail-back>Mail</button><span class="crumb-sep">›</span><span class="crumb cur">${m.composing ? 'Compose' : 'Message'}</span></div>`
     : pageCrumb(t('nav.mail'));
   $('#pane').innerHTML = `
     ${mailCrumb}
@@ -16249,6 +16276,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
   if (e.target.matches('[data-account-mailpush]')) { saveAccount({ mailPush: e.target.checked }); toast(e.target.checked ? 'New-mail alerts on' : 'New-mail alerts off'); }
+  if (e.target.matches('[data-mail-aftertriage]')) { const mode = e.target.checked ? 'next' : 'list'; state.mailAfterTriage = mode; api('/api/kv/mail_after_triage', { method: 'PUT', body: JSON.stringify({ value: mode }) }).catch(() => {}); toast(mode === 'next' ? 'Will open the next email' : 'Will go back to the list'); }
   if (e.target.matches('[data-set-locale]')) { setLocale(e.target.value); return; }
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
