@@ -2606,6 +2606,7 @@ function renderSettings() {
         <div class="set-notif-group"><div class="set-notif-h">By text</div>
           <label class="set-mod"><span>Reminders you set on your day<small>A text 5 minutes before an item you've asked about - turn the bell on for any task or practice in the Today planner${state.account.phone ? '' : '. Add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
           <label class="set-mod"><span>When something surfaces<small>A text the morning a "surface on" task comes back${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-surface-sms ${state.account.surfaceSms ? 'checked' : ''}></label>
+          ${state.account.phone ? '<div class="set-notif-act"><button class="ghost" data-sms-test>💬 Send me a test text</button><span class="set-notif-hint">Fires one text to your number now, to check they reach you.</span></div>' : ''}
         </div>
         <div class="set-notif-group"><div class="set-notif-h">On your phone</div>
           <label class="set-mod"><span>New-mail alerts<small>A push when new mail arrives - at most one every 30 minutes, never a buzz per email. Turn off for quiet.</small></span><input type="checkbox" data-account-mailpush ${state.account.mailPush !== false ? 'checked' : ''}></label>
@@ -9212,7 +9213,11 @@ function mailForgetKeys(keys) {
   for (const k in lc) lc[k] = (lc[k] || []).filter((m) => !set.has(m._key));
 }
 async function openMessage(key) {
-  const row = (state.mail.messages || []).find((x) => x._key === key) || (state.mail.snapMsgs && state.mail.snapMsgs[key]); if (!row) return;
+  const row = (state.mail.messages || []).find((x) => x._key === key) || (state.mail.snapMsgs && state.mail.snapMsgs[key]);
+  // A visible row whose key no longer resolves (list filtered, cache not loaded,
+  // snapshot missing) used to make the tap do nothing at all. Say so and refetch
+  // rather than dying silently.
+  if (!row) { toast('Reloading this mailbox…'); loadMessages().catch(() => {}); return; }
   state.mail.sel = key; state.mail.hoverThread = null; state.mail.plain = false;   // each email opens formatted; toggle to plain if it's cramped
   mailStamp();   // reading counts as using Mail - keeps a quick return landing back here
   // Record the open message on the view so this tab reopens it after a switch.
@@ -16761,6 +16766,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-push-enable]')) { enablePush(); return; }
   if (t.closest('[data-push-test]')) { pushTest(); return; }
   { const bt = t.closest('[data-brief-test]'); if (bt) { bt.disabled = true; toast('Sending your brief…'); api('/api/brief/test', { method: 'POST' }).then(() => toast('Sent - check your inbox ✉')).catch((x) => toast(x.message || 'Could not send')).finally(() => { bt.disabled = false; }); return; } }
+  { const st = t.closest('[data-sms-test]'); if (st) { st.disabled = true; toast('Texting your phone…'); api('/api/sms/test', { method: 'POST' }).then((r) => toast(r && r.result && r.result.ok ? 'Text sent - check your phone 💬' : `Could not send${r && r.result && r.result.status ? ` (${r.result.status})` : ''}`)).catch((x) => toast(x.message || 'Could not send')).finally(() => { st.disabled = false; }); return; } }
   if (t.closest('[data-mail-handler]')) { if (navigator.registerProtocolHandler) { registerMailHandler(); toast('Allow it in the prompt, then set Daybook as your default in the browser’s handler settings.'); } else toast('This browser doesn’t support setting a mail handler (Safari/iOS don’t).'); return; }
   const dpo = t.closest('[data-dp-open]'); if (dpo) { openDatePicker(dpo.dataset.dpOpen); return; }
   const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick); return; }
@@ -17650,6 +17656,7 @@ document.addEventListener('pointerdown', (e) => {
   if (!document.querySelector('[data-mail-quad-drop]')) return;   // only where the quadrant cards are the drop targets
   const key = row.dataset.mailOpen, pid = e.pointerId, sx = e.clientX, sy = e.clientY;
   const begin = () => {
+    if (mailDragPress && mailDragPress.timer) clearTimeout(mailDragPress.timer);
     mailDragPress = null;
     mailDrag = { key, row, pid, over: null, ghost: null };
     row.classList.add('mail-dragging');
@@ -17659,14 +17666,22 @@ document.addEventListener('pointerdown', (e) => {
     const q = document.querySelector('.mail-quads'); if (q) q.classList.add('mail-quads-armed');
     try { row.setPointerCapture(pid); } catch {}
   };
-  if (matchMedia('(pointer:coarse)').matches) mailDragPress = { pid, sx, sy, timer: setTimeout(begin, 280) };
-  else mailDragPress = { pid, sx, sy, timer: null, begin };
+  // Touch: wait out a long-press, then arm the drag only once the finger actually
+  // MOVES. A stationary tap - even one held past the long-press - must never begin a
+  // drag (that captured the pointer and swallowed the tap, so the message wouldn't
+  // open). Mouse: arm on move straight away. In both cases a plain tap falls through
+  // to the row's click handler, which opens the message.
+  const coarse = matchMedia('(pointer:coarse)').matches;
+  mailDragPress = { pid, sx, sy, begin, longOk: !coarse, timer: null };
+  if (coarse) mailDragPress.timer = setTimeout(() => { if (mailDragPress && mailDragPress.pid === pid) mailDragPress.longOk = true; }, 280);
 });
 document.addEventListener('pointermove', (e) => {
   if (mailDragPress && e.pointerId === mailDragPress.pid && !mailDrag) {
     const dx = Math.abs(e.clientX - mailDragPress.sx), dy = Math.abs(e.clientY - mailDragPress.sy);
-    if (mailDragPress.timer) { if (dx > 8 || dy > 8) { clearTimeout(mailDragPress.timer); mailDragPress = null; } return; }
-    if (mailDragPress.begin && (dx > 6 || dy > 6)) mailDragPress.begin();
+    // Still within the long-press wait: a real move is a scroll, so stand down.
+    if (!mailDragPress.longOk) { if (dx > 8 || dy > 8) { clearTimeout(mailDragPress.timer); mailDragPress = null; } return; }
+    // Long-press satisfied (or mouse): the first genuine move arms the drag.
+    if (dx > 6 || dy > 6) mailDragPress.begin();
     return;
   }
   const d = mailDrag; if (!d || e.pointerId !== d.pid) return;

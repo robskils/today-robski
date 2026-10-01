@@ -4158,6 +4158,20 @@ export default {
           return err(String(e.message || e), request, 502);
         }
       }
+      // Diagnostic: fire one test SMS to the user's own saved number and return
+      // GatewayAPI's full response (status, ids, or error detail), so a silent
+      // "accepted but not delivered" can be told apart from a real send failure.
+      if (path === '/api/sms/test' && request.method === 'POST') {
+        try {
+          const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(env.uid).first().catch(() => null);
+          const phone = (phRow && phRow.value) || (env.uid === 1 ? env.ALERT_PHONE : '');
+          if (!phone) return json({ ok: false, error: 'No phone on file' }, request);
+          const r = await sendSms(env, `Daybook test text - if you can read this, alerts are reaching your phone. (${new Date().toISOString().slice(11, 16)})`, phone);
+          return json({ phoneMasked: String(phone).replace(/\d(?=\d{4})/g, '•'), sender: env.ALERT_SENDER || 'Daybook', host: env.GATEWAYAPI_HOST || 'gatewayapi.eu', result: r }, request);
+        } catch (e) {
+          return err(String(e.message || e), request, 502);
+        }
+      }
       if (path === '/api/contacts/import' && request.method === 'POST') return importContacts(request, env);
       if (path === '/api/review-mirror' && request.method === 'GET') {
         const from = url.searchParams.get('from'), to = url.searchParams.get('to');
