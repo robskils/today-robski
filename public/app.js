@@ -7004,7 +7004,7 @@ async function openCalendar(dateStr) {
   // Modes are now Day (a scrollable list) and Month. Old saved 'week' maps to Day.
   const savedMode = localStorage.getItem('life.calMode');
   const startMode = savedMode === 'month' ? 'month' : 'agenda';
-  state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: startMode, agendaDays: 30, events: [], error: null, editing: null, adding: false };
+  state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: startMode, agendaDays: 30, agendaBack: 0, events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
   // Contacts power the event form's "With" picker; load them quietly so the
@@ -7020,7 +7020,7 @@ async function openCalendar(dateStr) {
 }
 async function loadCalendar() {
   let from, to;
-  if (state.cal.mode === 'agenda') { from = todayISO(); to = addDayISO(todayISO(), state.cal.agendaDays || 30); }
+  if (state.cal.mode === 'agenda') { from = addDayISO(todayISO(), -(state.cal.agendaBack || 0)); to = addDayISO(todayISO(), state.cal.agendaDays || 30); }
   else if (state.cal.mode === 'week') { const wk = weekDays(state.cal.weekAnchor || todayISO()); from = wk[0].iso; to = wk[6].iso; }
   else { const weeks = monthWeeks(state.cal.y, state.cal.m); from = weeks[0][0].iso; to = weeks[5][6].iso; }
   try {
@@ -7116,11 +7116,12 @@ function renderCalendar() {
   const isAgenda = c.mode === 'agenda' && !cq;
   let rollHtml = '';
   if (isAgenda) {
-    const agN = c.agendaDays || 30; const t0 = todayISO();
-    const days = []; for (let i = 0; i <= agN; i++) days.push(addDayISO(t0, i));
+    const agN = c.agendaDays || 30; const back = c.agendaBack || 0; const t0 = todayISO();
+    const days = []; for (let i = -back; i <= agN; i++) days.push(addDayISO(t0, i));
     rollHtml = days.map((iso) => {
       const evs = byDay[iso] || [];
-      return `<section class="roll-day${evs.length ? '' : ' roll-empty-day'}">
+      const rel = iso < t0 ? ' roll-past' : iso === t0 ? ' roll-today' : '';
+      return `<section class="roll-day${evs.length ? '' : ' roll-empty-day'}${rel}" data-roll-iso="${iso}">
         <div class="roll-day-h" data-cal-add-day="${iso}" role="button" tabindex="0"><span class="roll-day-date">${esc(prettyDate(iso))}</span><span class="roll-day-yr">${iso.slice(0, 4)}</span><span class="roll-add" aria-hidden="true">＋</span></div>
         ${evs.length ? `<div class="roll-evs">${evs.map(agRow).join('')}</div>` : ''}
       </section>`;
@@ -7150,6 +7151,7 @@ function renderCalendar() {
     ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
     ${cq ? searchBlock : (isAgenda ? `<section class="cal-agenda cal-agenda-top">
       <div id="cal-form"></div>
+      <button class="cal-loadmore cal-loadmore-up" data-cal-agenda-earlier>← Show earlier days</button>
       <div class="cal-roll">${rollHtml}</div>
       <button class="cal-loadmore" data-cal-agenda-more>Show more days →</button>
     </section>` : `<section class="cal-agenda cal-agenda-top">
@@ -16864,7 +16866,25 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
   if (t.closest('[data-cal-agenda-more]')) { state.cal.agendaDays = (state.cal.agendaDays || 30) + 30; loadCalendar(); return; }
-  if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar(); return; }
+  if (t.closest('[data-cal-agenda-earlier]')) {
+    // Load more past days, then keep today's section pinned where it was so the
+    // list doesn't jump - the newly added earlier days appear above, ready to
+    // scroll up into.
+    const anchor = document.querySelector('.roll-day.roll-today') || document.querySelector('.cal-roll .roll-day');
+    const beforeTop = anchor ? anchor.getBoundingClientRect().top : 0;
+    state.cal.agendaBack = (state.cal.agendaBack || 0) + 14;
+    loadCalendar().then(() => requestAnimationFrame(() => {
+      const a2 = document.querySelector('.roll-day.roll-today') || document.querySelector('.cal-roll .roll-day');
+      if (!a2) return;
+      const delta = a2.getBoundingClientRect().top - beforeTop;
+      if (Math.abs(delta) < 1) return;
+      const se = document.scrollingElement || document.documentElement; const was = se.scrollTop;
+      se.scrollTop = was + delta;
+      if (se.scrollTop === was) { const p = document.getElementById('pane'); if (p) p.scrollTop += delta; }
+    }));
+    return;
+  }
+  if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); state.cal.agendaBack = 0; const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar().then(() => requestAnimationFrame(() => { const el = document.querySelector('.roll-day.roll-today'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); })); return; }
   if (t.closest('[data-cal-prev]')) { stepCal(-1); return; }
   if (t.closest('[data-cal-next]')) { stepCal(1); return; }
   // Event quick-chip: jump to that field, focus it, and open the picker if it's a

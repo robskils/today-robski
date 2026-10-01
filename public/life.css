@@ -6623,6 +6623,15 @@ body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
 .roll-evs { display:flex; flex-direction:column; gap:8px; padding:0 0 8px; }
 .cal-loadmore { margin:18px auto 6px; display:block; padding:11px 20px; border-radius:11px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font-size:15px; box-shadow:var(--shadow); }
 .cal-loadmore:hover { border-color:var(--accent); color:var(--accent); }
+.cal-loadmore-up { margin:2px auto 14px; }
+/* Today stands out in the rolling day list; past days sit a touch quieter so the
+   eye lands on now, while still being perfectly readable when you scroll back. */
+.roll-day.roll-today { border-top:0; }
+.roll-day.roll-today .roll-day-date { color:var(--accent); }
+.roll-day.roll-today .roll-day-h { position:relative; }
+.roll-day.roll-today .roll-day-h::before { content:""; position:absolute; left:-10px; top:50%; transform:translateY(-50%); width:4px; height:20px; border-radius:2px; background:var(--accent); }
+.roll-day.roll-past .roll-day-date { color:var(--ink-2); }
+.roll-day.roll-past .roll-evs { opacity:.9; }
 .cal-planbtn { border-color:color-mix(in srgb,var(--accent) 42%,var(--line-2)); color:var(--accent); font-weight:600; }
 .cal-planbtn:hover { background:color-mix(in srgb,var(--accent) 8%,var(--card)); border-color:var(--accent); }
 .cal-btn:hover { border-color:var(--accent); color:var(--accent); }
