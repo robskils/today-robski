@@ -8750,12 +8750,28 @@ async function mailToArea(areaId) {
 }
 // The stable key for an email: its Message-ID if present, else account:uid.
 function mailFileKey(o) { return (o && (o.messageId || o._key)) || ''; }
-// "Filed in <area>" chips for the open email, each opening that life area.
+// "Filed in <area>" chips for the open email: each opens that life area, and its ×
+// removes the email from that area.
 function mailFiledHtml(o) {
   const list = (o && state.mailAreas && state.mailAreas[mailFileKey(o)]) || [];
   if (!list.length) return '';
-  const chips = list.map((e) => { const a = areaById(e.a); return a ? `<button class="mail-filed-chip" data-open-area="${e.a}" title="Open ${esc(a.title)}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title)}</button>` : ''; }).filter(Boolean).join('');
+  const chips = list.map((e) => { const a = areaById(e.a); return a ? `<span class="mail-filed-chip"><button class="mail-filed-open" data-open-area="${e.a}" title="Open ${esc(a.title)}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title)}</button><button class="mail-filed-x" data-mail-unfile-area="${esc(e.a)}" title="Remove from ${esc(a.title)}" aria-label="Remove from ${esc(a.title)}">×</button></span>` : ''; }).filter(Boolean).join('');
   return chips ? `<div class="mail-filed"><span class="mail-filed-l">📂 Filed in</span>${chips}</div>` : '';
+}
+// Remove the open email from a life area: drop the chip and delete the note the
+// filing created. Undo re-files it (recreating the note + chip).
+async function mailUnfileArea(areaId) {
+  const o = state.mail && state.mail.open; if (!o) return;
+  const key = mailFileKey(o);
+  const list = (state.mailAreas && state.mailAreas[key]) || [];
+  const entry = list.find((e) => e.a === areaId); if (!entry) return;
+  state.mailAreas[key] = list.filter((e) => e.a !== areaId);
+  if (!state.mailAreas[key].length) delete state.mailAreas[key];
+  api('/api/kv/mail_areas', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailAreas) }) }).catch(() => {});
+  if (entry.n) api(`/api/blocks/${entry.n}`, { method: 'DELETE' }).catch(() => {});
+  const a = areaById(areaId);
+  renderMail();
+  toast(`Removed from ${a ? a.title : 'life area'}`, () => mailToArea(areaId));
 }
 async function mailMoveTargets(keys, target) {
   const list = [...keys]; state.mail.moveMenu = null;
@@ -16474,6 +16490,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   { const ar = t.closest('[data-area-remove]'); if (ar) { const p = ar.dataset.areaRemove.split(':'); removeBlockArea(p[0], p[1], p[2]); return; } }
+  { const ua = t.closest('[data-mail-unfile-area]'); if (ua) { e.preventDefault(); e.stopPropagation(); mailUnfileArea(ua.dataset.mailUnfileArea); return; } }
   const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
