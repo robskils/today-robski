@@ -4539,7 +4539,6 @@ function renderHome() {
   $('#pane').innerHTML = `
     <div class="home">
       <div class="home-top">
-      ${navHist.length ? '<button class="crumb-back home-back" data-nav-back title="Back to where you were">← Back</button>' : ''}
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="crumbbar home-crumbbar"><button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
       <div class="home-head">

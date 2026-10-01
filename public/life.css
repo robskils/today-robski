@@ -4637,6 +4637,14 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 @media (max-width:560px){ .area-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 /* The tab-controlled top card sits a touch prouder than the cards below it. */
 .area-top-card { border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); }
+/* The tab panel is a centered flex row (inherited from .area-card), so the goals
+   wrapper would otherwise shrink to a single grid track and stack the cards in one
+   tall column. Let it fill the panel, and on desktop lay the goal cards out three
+   to a row. */
+.area-top-card > .area-vg { flex:1 1 auto; min-width:0; }
+@media (min-width:821px) {
+  .area-vg .goal-grid { grid-template-columns:repeat(3, minmax(0,1fr)); }
+}
 .atp-back { margin-left:auto; font-size:13px; }
 /* Each part of a life area is its own card now (not one big panel). The panel is a
    plain column; the cards inside carry the frame. */
