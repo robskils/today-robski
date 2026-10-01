@@ -8645,11 +8645,13 @@ async function mailEmptyFolder() {
 }
 // Move the keyboard highlight through the list; while reading, open as we go.
 function mailSelMove(delta) {
-  const rows = state.mail.messages || []; if (!rows.length) return;
-  let i = rows.findIndex((x) => x._key === state.mail.sel);
+  // Walk the rows actually on screen (so inside a bucket like Important, j/k step
+  // through that bucket's mail, not every loaded message).
+  const keys = mailVisibleKeys(); if (!keys.length) return;
+  let i = keys.indexOf(state.mail.sel);
   if (i < 0) i = delta > 0 ? -1 : 0;
-  i = Math.max(0, Math.min(rows.length - 1, i + delta));
-  state.mail.sel = rows[i]._key;
+  i = Math.max(0, Math.min(keys.length - 1, i + delta));
+  state.mail.sel = keys[i];
   if (state.mail.open) { openMessage(state.mail.sel); return; }
   renderMail();
   const el = document.querySelector('.mail-row.ksel'); if (el) el.scrollIntoView({ block: 'nearest' });
@@ -10130,6 +10132,32 @@ function mailQuadMenuHtml() {
     ${cur !== 'inbox' ? '<button class="mail-move-item mail-quad-inbox" data-mail-quad-pick="inbox"><span class="mail-quad-dot"></span><span class="mail-quadmenu-l">Inbox</span><span class="mail-quadmenu-h">Back to the queue</span></button>' : ''}
   </div></div>`;
 }
+// The ordered list of conversation threads currently ON SCREEN, after the same
+// inbox-triage / bucket filtering the list applies. The single source of truth for
+// "what's showing", so the rendered rows and the j/k keyboard walk can never drift
+// apart (j/k used to step through every loaded message, ignoring the open bucket).
+function mailVisibleThreads() {
+  const m = state.mail;
+  if (!m || m.folder === 'drafts') return [];
+  let threads = buildThreads(m.messages || []);
+  const qf = m.quadFilter;
+  // When SEARCHING, show every match - never apply the inbox-triage/bucket filter.
+  const inboxCtx = !m.query && ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox');
+  if (inboxCtx) {
+    if (qf && qf.size) {
+      // A bucket view (Urgent / Important / …): its remembered snapshots + any loaded
+      // inbox mail in that bucket, deduped.
+      const seen = new Set(); const msgs = [];
+      for (const q of qf) for (const mm of mailQuadMsgs(q)) { const id = mm.messageId || mm._key; if (!seen.has(id)) { seen.add(id); msgs.push(mm); } }
+      threads = buildThreads(msgs);
+    } else {
+      threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
+    }
+  }
+  return threads;
+}
+// The row keys on screen, in order - what j/k walk through.
+function mailVisibleKeys() { return mailVisibleThreads().map((th) => th.latest && th.latest._key).filter(Boolean); }
 // The inner HTML of the .mail-list container (rows / loading / empty state).
 // Kept separate so a live search can refresh just the list without rebuilding
 // the header - which would destroy the search box and steal focus mid-type.
@@ -10138,30 +10166,9 @@ function mailListInner(loading) {
   if (m.folder === 'drafts') return draftsListHtml();
   const showAcct = m.account === 'all';
   // Always threaded, Spark-style: one clean row per conversation (the latest
-  // message), with a quiet count when there's more than one. Opening it shows
-  // the whole conversation. No toggle, no chevrons, no big-deal badges.
-  let threads = buildThreads(m.messages || []);
-  // Inbox-zero triage: the Inbox shows only UNTRIAGED mail (the queue); tapping a
-  // quadrant card filters to that bucket's filed mail (multi-select - Urgent, or
-  // Urgent + Important, etc.). Only over the inbox itself, not Sent/Archive/etc.
+  // message). Opening it shows the whole conversation.
   const qf = m.quadFilter;
-  // When SEARCHING, show every match - never apply the inbox-triage filter (which
-  // keeps only untriaged mail) or the bucket filter, or a result that's been filed,
-  // flagged or archived would be hidden. That was why a searched-for email "wasn't
-  // found" even though the server returned it. (Robin, 2026-09-28.)
-  const inboxCtx = !m.query && ['inbox', 'unread', 'starred'].includes(m.folder || 'inbox');
-  if (inboxCtx) {
-    if (qf && qf.size) {
-      // A bucket view is durable: the remembered snapshots + any loaded inbox mail
-      // in the selected bucket (deduped), so filed mail stays even once it's left
-      // the inbox. Selection is single: one pot at a time (the Set holds one key).
-      const seen = new Set(); const msgs = [];
-      for (const q of qf) for (const mm of mailQuadMsgs(q)) { const id = mm.messageId || mm._key; if (!seen.has(id)) { seen.add(id); msgs.push(mm); } }
-      threads = buildThreads(msgs);
-    } else {
-      threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
-    }
-  }
+  let threads = mailVisibleThreads();
   // Important senders: in the inbox (not searching), lift threads from VIPs into
   // their own section at the top so they don't get lost in the stream. (Robin
   // prefers this dedicated box to auto-filing them into the Important bucket.)
