@@ -8354,9 +8354,17 @@ const snapToMsg = (m) => ({ _key: m._key, messageId: m.messageId || '', _acct: m
 // snapshot messages so the reader can open one that has left the inbox.
 function mailQuadMsgs(quad) {
   const byId = new Map(); state.mail.snapMsgs = state.mail.snapMsgs || {};
-  for (const k in (state.mailQuads || {})) { const e = mailQuadEntry(k); if (e && normQuad(e.q) === quad && e.m) { const m = snapToMsg(e.m); state.mail.snapMsgs[m._key] = m; byId.set(m.messageId || m._key, m); } }
-  for (const m of (state.mail.messages || [])) { if (mailQuadOf(m) === quad) byId.set(m.messageId || m._key, m); }
-  return [...byId.values()];
+  // Respect the account dropdown: when a single mailbox is selected, a bucket
+  // (Important / Urgent / Read Later) shows only that account's mail - not all
+  // accounts. 'all' or unset means every account, as before.
+  const acct = state.mail.account;
+  const acctOk = (m) => !acct || acct === 'all' || m._acct === acct;
+  for (const k in (state.mailQuads || {})) { const e = mailQuadEntry(k); if (e && normQuad(e.q) === quad && e.m) { const m = snapToMsg(e.m); state.mail.snapMsgs[m._key] = m; if (acctOk(m)) byId.set(m.messageId || m._key, m); } }
+  for (const m of (state.mail.messages || [])) { if (mailQuadOf(m) === quad && acctOk(m)) byId.set(m.messageId || m._key, m); }
+  // Snapshot messages carry a frozen `seen` from when they were filed, so a mail
+  // you've since opened kept re-lighting as new. Overlay the sticky read-set (keyed
+  // by Message-ID) so an opened mail stays read in its bucket too.
+  return applyMailReads([...byId.values()]);
 }
 // Persist quadrant labels WITHOUT clobbering a change made on another device: read
 // the server copy, layer this device's labels on top, drop the keys this action
@@ -10369,7 +10377,7 @@ function renderMail(loading) {
       <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
         <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
         ${o.from && o.from.address ? (() => { const _c = contactByEmail(o.from.address); return _c ? `<button class="mail-contact-have" data-open-contact="${_c.id}" title="Open ${esc(_c.title || 'this contact')}'s card">👤 ${esc(_c.title || 'Contact')}</button>` : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`; })() : ''}
-        ${showAcct && o._acctName ? `<span class="mail-acct-chip">${esc(o._acctName)}</span>` : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
+        ${((state.mail.accounts || []).length > 1) ? (() => { const a = (state.mail.accounts || []).find((x) => x.id === o._acct); const lbl = a ? (a.email || a.name) : (o._acctName || ''); return lbl ? `<span class="mail-acct-chip" title="Received at this mailbox">📥 ${esc(lbl)}</span>` : ''; })() : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
       ${mailFiledHtml(o)}
       ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<a class="mail-att-chip mail-att-dl" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open attachment in your browser">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↗</a>`).join('')}</div>` : ''}
       ${o.invite ? inviteCardHtml(o.invite) : ''}
