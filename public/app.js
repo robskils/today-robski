@@ -9746,7 +9746,7 @@ function renderMailAccounts(note) {
     ${pushSectionHtml()}
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
       <p class="scope" style="margin:0 0 10px">Make Daybook open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
-      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app. Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open Daybook in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below and <b>Allow</b> when Brave asks. Confirm it in Brave under <b>Settings → Site and Shields settings → Handlers</b> (or the ⛓ icon in the address bar). Safari / iOS can't do this.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open Daybook in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Safari / iOS can't do this.</p>
       <button class="add-btn wide" data-mail-handler>Set Daybook as my email app</button></section>`;
 }
 async function saveSignature(id) {
@@ -16832,7 +16832,20 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-push-test]')) { pushTest(); return; }
   { const bt = t.closest('[data-brief-test]'); if (bt) { bt.disabled = true; toast('Sending your brief…'); api('/api/brief/test', { method: 'POST' }).then(() => toast('Sent - check your inbox ✉')).catch((x) => toast(x.message || 'Could not send')).finally(() => { bt.disabled = false; }); return; } }
   { const st = t.closest('[data-sms-test]'); if (st) { st.disabled = true; toast('Texting your phone…'); api('/api/sms/test', { method: 'POST' }).then((r) => toast(r && r.result && r.result.ok ? 'Text sent - check your phone 💬' : `Could not send${r && r.result && r.result.status ? ` (${r.result.status})` : ''}`)).catch((x) => toast(x.message || 'Could not send')).finally(() => { st.disabled = false; }); return; } }
-  if (t.closest('[data-mail-handler]')) { if (navigator.registerProtocolHandler) { registerMailHandler(); toast('Allow it in the prompt, then set Daybook as your default in the browser’s handler settings.'); } else toast('This browser doesn’t support setting a mail handler (Safari/iOS don’t).'); return; }
+  if (t.closest('[data-mail-handler]')) {
+    if (!navigator.registerProtocolHandler) { toast('This browser can’t set a mail handler (Safari / iOS don’t support it).'); return; }
+    // In the installed app there's no address bar, so Brave's "allow handler" icon
+    // has nowhere to appear - it must be done in a normal Brave tab.
+    if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+      toast('Do this in a normal Brave tab, not the installed app - open robski.daybook.fyi/mail in Brave and tap this there.');
+      return;
+    }
+    const r = registerMailHandler();
+    if (r.ok) toast('Registered. Brave won’t pop a dialog - tap the handlers icon at the right of the address bar to Allow, or turn it on under Settings → Site and Shields settings → Handlers.');
+    else if (r.reason === 'blocked') toast('Brave blocked it. Turn on Settings → Site and Shields settings → Handlers, then tap this again.');
+    else toast('Could not register the mail handler' + (r.reason && r.reason !== 'error' && r.reason !== 'unsupported' ? ` (${r.reason})` : '') + '.');
+    return;
+  }
   const dpo = t.closest('[data-dp-open]'); if (dpo) { openDatePicker(dpo.dataset.dpOpen); return; }
   const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick); return; }
   const dpst = t.closest('[data-dp-step]'); if (dpst) { dpStep(+dpst.dataset.dpStep); return; }
@@ -19726,7 +19739,11 @@ async function openMailCompose(c) {
 }
 // Offer Daybook as the browser's mailto handler (Chromium/Firefox). The
 // browser then asks the user to allow it, and to make it the default.
-function registerMailHandler() { try { if (navigator.registerProtocolHandler) navigator.registerProtocolHandler('mailto', location.origin + '/?mailto=%s'); } catch {} }
+function registerMailHandler() {
+  if (!navigator.registerProtocolHandler) return { ok: false, reason: 'unsupported' };
+  try { navigator.registerProtocolHandler('mailto', location.origin + '/?mailto=%s'); return { ok: true }; }
+  catch (e) { return { ok: false, reason: (e && e.name === 'SecurityError') ? 'blocked' : ((e && e.message) || 'error') }; }
+}
 
 // ── First-run onboarding ──────────────────────────────────────────────
 // A gentle, skippable guide shown once when a new account first opens: orient
@@ -20015,7 +20032,9 @@ async function onbConnectGmail() {
     api('/api/kv/home_people').then((r) => { if (r && (r.value === '0' || r.value === '1')) { try { localStorage.setItem('life.home.people', r.value); } catch {} if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
     registerSW();            // offline / instant-open caching (works even where push isn't supported)
     initPush();              // register the SW; refresh the push subscription if already granted
-    registerMailHandler();   // offer Daybook as the browser's mailto: handler
+    // NB: no auto registerProtocolHandler here - Chromium ignores it without a user
+    // gesture and a silent pending registration can stop the manual button's
+    // address-bar icon from appearing. It's wired to the button in Accounts instead.
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
     loadAccount();           // name, handle & contact details for the Daybook card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
