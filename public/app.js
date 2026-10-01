@@ -8357,7 +8357,49 @@ function mailQuadMsgs(quad) {
   for (const m of (state.mail.messages || [])) { if (mailQuadOf(m) === quad) byId.set(m.messageId || m._key, m); }
   return [...byId.values()];
 }
-function persistMailQuads() { api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {}); }
+// Persist quadrant labels WITHOUT clobbering a change made on another device: read
+// the server copy, layer this device's labels on top, drop the keys this action
+// just removed, and write the merge back. A blind whole-blob PUT used to lose a
+// label filed on the other device. `del` is the keys removed in the triggering
+// action, so the server copy can't resurrect them. Fire-and-forget at the call
+// sites; it re-renders if the merge pulled in anything new.
+let mailQuadPending = 0;
+let mailQuadChain = Promise.resolve();
+// Serialised so two quick actions can't both read the server copy before either
+// writes (which could resurrect a just-removed key). Each save runs after the
+// previous one's PUT has landed. `mailQuadPending` counts queued+running writes so
+// the background pull never overwrites a local change that hasn't landed yet.
+function persistMailQuads(del) {
+  mailQuadPending++;
+  mailQuadChain = mailQuadChain.then(() => doPersistMailQuads(del)).catch(() => {}).finally(() => { mailQuadPending--; });
+  return mailQuadChain;
+}
+async function doPersistMailQuads(del) {
+  const before = JSON.stringify(state.mailQuads || {});
+  let srv = {};
+  try { const r = await api('/api/kv/mail_quadrants'); srv = JSON.parse((r && r.value) || '{}') || {}; } catch {}
+  const merged = { ...srv, ...(state.mailQuads || {}) };
+  if (del && del.length) for (const k of del) delete merged[k];
+  state.mailQuads = merged;
+  const out = JSON.stringify(merged);
+  await api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: out }) });
+  if (out !== before && state.view && state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) renderMail();
+}
+// Pull quadrant labels the other device may have changed, on the background poll,
+// so an open session doesn't sit on a stale set until Mail is re-entered. Skipped
+// while any local write is queued or in flight, so it can't clobber a pending one.
+async function pullMailQuads() {
+  if (mailQuadPending || !state.mailQuads) return;
+  try {
+    const r = await api('/api/kv/mail_quadrants');
+    let srv = {}; try { srv = JSON.parse((r && r.value) || '{}') || {}; } catch {}
+    if (mailQuadPending) return;   // a local write started while we were fetching
+    if (JSON.stringify(srv) !== JSON.stringify(state.mailQuads)) {
+      state.mailQuads = srv;
+      if (state.view && state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) renderMail();
+    }
+  } catch {}
+}
 // One-time backfill: everything you'd previously STARRED belongs in the Important
 // box. A star is the \Flagged flag, and the server's flagged view sweeps EVERY
 // folder per account (Inbox, Archive / Gmail All Mail, custom labels) - so this
@@ -8413,13 +8455,13 @@ async function mailToQuad(msgs, quad) {
   const msgsArr = state.mail.messages || [];
   const openKey = state.mail.open && state.mail.open._key;
   const openIdx = openKey ? msgsArr.findIndex((m) => m._key === openKey) : -1;
-  const undoRows = []; const removedKeys = []; let archived = 0;
+  const undoRows = []; const removedKeys = []; const quadDel = []; let archived = 0;
   for (const o of list) {
     const k = mailFileKey(o);
     const inInbox = /^inbox$/i.test(o._mailbox || '') && !o._snap;
     const wasArchivedFile = (o._snap || /^archive$/i.test(o._mailbox || '')) && o.messageId;
     if (toInbox) {
-      delete state.mailQuads[k];
+      delete state.mailQuads[k]; quadDel.push(k);
       if (wasArchivedFile) { try { await mailApi('/move-by-msgid', { method: 'POST', body: JSON.stringify({ account: o._acct, from: 'Archive', messageId: o.messageId, to: 'INBOX' }) }); } catch {} }
       state.mail.gone.delete(o._key);
       if (state.mail.snapMsgs) delete state.mail.snapMsgs[o._key];
@@ -8437,14 +8479,15 @@ async function mailToQuad(msgs, quad) {
       state.mailQuads[k] = { q: quad, m: mailSnap(o) };
     }
   }
-  persistMailQuads();
+  persistMailQuads(quadDel);
   state.mail.quadMenu = null;
   if (removedKeys.length) { state.mail.messages = msgsArr.filter((m) => !removedKeys.includes(m._key)); mailForgetKeys(removedKeys); }
   const undo = undoRows.length ? async () => {
     toast('Restoring…'); let ok = 0;
     for (const u of undoRows) { try { await mailApi('/move-by-msgid', { method: 'POST', body: JSON.stringify(u) }); ok++; } catch {} }
+    const undel = list.map((o) => mailFileKey(o));
     for (const o of list) { delete state.mailQuads[mailFileKey(o)]; state.mail.gone.delete(o._key); }
-    persistMailQuads(); toast(ok ? 'Restored to inbox' : 'Could not undo'); loadMessages();
+    persistMailQuads(undel); toast(ok ? 'Restored to inbox' : 'Could not undo'); loadMessages();
   } : null;
   toast(toInbox ? 'Back in the inbox' : (archived ? `Filed in ${q ? q.label : quad} - archived from inbox` : `Filed in ${q ? q.label : quad}`), undo);
   // Reading one we just filed+archived? Advance to the next message, triage-style.
@@ -8518,9 +8561,9 @@ async function mailMoveTo(key, target, label) {
   // "Archive - done with it" from within a bucket just clears it out of the box;
   // no IMAP move (a MOVE Archive→Archive would fail) - it stays in the Archive.
   if (/^archive$/i.test(target) && rows.length && rows.every((r) => r._snap || /^archive$/i.test(r._mailbox || ''))) {
-    let changed = false;
-    for (const r of rows) { const fk = mailFileKey(r); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; changed = true; } state.mail.gone.add(r._key); if (state.mail.snapMsgs) delete state.mail.snapMsgs[r._key]; }
-    if (changed) persistMailQuads();
+    let changed = false; const qDel = [];
+    for (const r of rows) { const fk = mailFileKey(r); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; changed = true; qDel.push(fk); } state.mail.gone.add(r._key); if (state.mail.snapMsgs) delete state.mail.snapMsgs[r._key]; }
+    if (changed) persistMailQuads(qDel);
     state.mail.messages = (state.mail.messages || []).filter((m) => !keys.includes(m._key));
     mailForgetKeys(keys);
     const ok0 = state.mail.open && state.mail.open._key;
@@ -8531,20 +8574,30 @@ async function mailMoveTo(key, target, label) {
   }
   const msgs = state.mail.messages || []; const idx = msgs.findIndex((m) => m._key === key);
   try {
+    // One IMAP session per account+mailbox (a thread is almost always a single
+    // group) rather than a login/select/move PER MESSAGE - the slow path that made
+    // archiving or deleting a conversation crawl against Gmail. Mirrors the
+    // multi-select bulk move.
+    const groups = new Map();
     for (const row of rows) {
-      await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, target }) });
-      // Archiving/trashing an unread message clears its badge count right away.
-      if (!row.seen && /^inbox$/i.test(row._mailbox || '')) bumpUnread(row._acct, -1);
+      const gid = `${row._acct} ${row._mailbox}`;
+      if (!groups.has(gid)) groups.set(gid, { account: row._acct, mailbox: row._mailbox, uids: [] });
+      groups.get(gid).uids.push(row.uid);
     }
+    for (const g of groups.values()) {
+      await mailApi('/move-bulk', { method: 'POST', body: JSON.stringify({ account: g.account, mailbox: g.mailbox, uids: g.uids, target }) });
+    }
+    // Archiving/trashing unread messages clears their badge count right away.
+    for (const row of rows) { if (!row.seen && /^inbox$/i.test(row._mailbox || '')) bumpUnread(row._acct, -1); }
     const gone = new Set(keys);
     // Remember them as gone so a lagging Gmail refetch can't list them again for a
     // moment. Undo clears the flag so a restored message can come back.
     keys.forEach((k) => state.mail.gone.add(k));
     // Leaving the inbox (archive/trash/spam/move) also clears the email's quadrant
     // filing, so an actioned email doesn't linger in Urgent / Important / etc.
-    let quadChanged = false;
-    for (const row of rows) { const fk = mailFileKey(row); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; quadChanged = true; } }
-    if (quadChanged) api('/api/kv/mail_quadrants', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailQuads) }) }).catch(() => {});
+    let quadChanged = false; const qDel = [];
+    for (const row of rows) { const fk = mailFileKey(row); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; quadChanged = true; qDel.push(fk); } }
+    if (quadChanged) persistMailQuads(qDel);
     const openKey = state.mail.open && state.mail.open._key;
     const openIdx = openKey ? msgs.findIndex((m) => m._key === openKey) : -1;
     // Undo: move each message back from `target` to where it came from, found by
@@ -8789,6 +8842,7 @@ async function refreshMailUnread() {
     renderNav();
     if (state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) renderMail();
   } catch {}
+  if (state.mail) pullMailQuads();   // also pick up labels filed on another device
 }
 // ── Web Push: a number on the installed app icon when mail arrives ─────────
 const VAPID_PUBLIC = 'BADBCS2EyxvWXx85la0chNU2CKNDhp_dW_3A8doQFEcViPaCe4TzIi0f1O0JW9mzZ-fiZP7tKKnPu7k6wKFF4Zk';
@@ -16662,10 +16716,19 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-tracker]')) { openTracker().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
   if (t.closest('[data-open-mail]')) {
-    const onList = state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing;
+    const m = state.mail;
+    const inMail = state.view.type === 'mail';
+    // "On the inbox" = the Mail tool, showing the inbox queue itself: no open
+    // message, not composing, not searching, Inbox folder, no bucket filter.
+    const onInbox = inMail && m && !m.open && !m.composing && !m.query
+      && (m.folder || 'inbox') === 'inbox' && !(m.quadFilter && m.quadFilter.size);
     const top = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; };
-    if (onList) top();                                   // already on the inbox -> jump to the top
-    else openMail().then(top).catch((x) => toast(x.message));  // from a message/elsewhere -> back to the list, at the top
+    if (onInbox) { top(); return; }                      // already on the inbox -> just jump to the top
+    if (inMail && m) {                                   // in Mail but reading / filtered / another folder -> go to the inbox
+      m.open = null; m.composing = false; m.query = ''; m.quadFilter = new Set();
+      setMailFolder('inbox'); top(); return;
+    }
+    openMail().then(top).catch((x) => toast(x.message));  // not in Mail yet -> open the tool (restores where you were)
     return;
   }
   // attachments (delete wins over open since the × sits inside the tile)

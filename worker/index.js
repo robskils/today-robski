@@ -2191,7 +2191,10 @@ async function runEventRemindersForUser(env, user) {
       const r = await sendSms(env, body, phone).catch(() => ({ ok: false }));
       ok = ok || !!(r && r.ok);
     }
-    if ((f.ch === 'email' || f.ch === 'both') && email) {
+    // Email is sent for 'email'/'both' and ALSO as a backup for 'sms': a text can be
+    // silently dropped at the carrier (we only ever learn the gateway accepted it),
+    // so a text-only reminder still lands as an email if the SMS never arrives.
+    if ((f.ch === 'email' || f.ch === 'both' || f.ch === 'sms') && email) {
       await sendEventReminderMail(env, { to: email, title: e.title || 'Event', when: hh, whenPhrase, location: e.location, home }).catch(() => {});
       ok = true;
     }
