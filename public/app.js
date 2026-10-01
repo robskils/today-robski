@@ -9270,6 +9270,24 @@ function prefetchMsg(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key);
   if (row && !(state.mail.msgCache && state.mail.msgCache[key])) mailFetchMsg(row).catch(() => {});
 }
+// While reading, warm the bodies of the NEXT few messages in the on-screen list
+// (and the one before), so pressing j/k to move along opens them instantly instead
+// of waiting on a cold IMAP fetch each time. Works for bucket snapshots too.
+function prefetchAround(key, ahead = 3) {
+  try {
+    const keys = mailVisibleKeys();
+    const i = keys.indexOf(key); if (i < 0) return;
+    state.mail.msgCache = state.mail.msgCache || {};
+    const want = [];
+    for (let j = i + 1; j <= i + ahead && j < keys.length; j++) want.push(keys[j]);
+    if (i - 1 >= 0) want.push(keys[i - 1]);
+    for (const k of want) {
+      if (state.mail.msgCache[k]) continue;
+      const row = mailMsgByKey(k);
+      if (row && row.uid != null) mailFetchMsg(row).catch(() => {});
+    }
+  } catch {}
+}
 // Warm the bodies of the top few messages so opening one (a tap, no hover to
 // prefetch on) is instant - especially on mobile. Gentle: only a handful, two
 // at a time, and it bails the moment you open/leave so it never competes.
@@ -9313,9 +9331,10 @@ async function openMessage(key) {
   if (cached) apply(cached); else renderMail(true);   // cached opens instantly, no loading flash
   mailMarkReadLocal(mailReadKey(row));   // remember it read (by Message-ID or a stable fallback), so it never shows as new again
   if (!row.seen) { row.seen = true; bumpUnread(row._acct, -1); mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
-  if (cached) { renderMail(); return; }
+  if (cached) { renderMail(); prefetchAround(key); return; }
   try { apply(await mailFetchMsg(row)); } catch (e) { toast(e.message); }
   renderMail();
+  prefetchAround(key);   // warm the next few so j/k keeps flowing
 }
 async function mailDelete(key) {
   const row = mailRow(key); if (!row) return;
