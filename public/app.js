@@ -19117,6 +19117,14 @@ async function addRow() {
   // instant it's added. Clear them so the row you just asked for is visible.
   state.tables_view.query = ''; state.tables_view.filters = []; state.tables_view.filtering = false;
   renderTable();
+  // Drop the cursor straight into the first editable cell of the new row (pinned to
+  // the top), so you can start typing without reaching for the mouse.
+  requestAnimationFrame(() => {
+    const tr = document.querySelector('#tbl-body tr');
+    if (!tr) return;
+    const el = tr.querySelector('input.cell, textarea.cell, select.cell') || tr.querySelector('[data-cell]');
+    if (el) { try { el.focus(); if (el.select) el.select(); } catch {} }
+  });
 }
 // The extra fields a column of a given type needs: a default currency symbol, or
 // a Select's options seeded from the values already in that column. Shared by
