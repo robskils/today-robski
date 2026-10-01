@@ -8454,8 +8454,10 @@ async function mailToQuad(msgs, quad) {
   if (!state.mail.gone) state.mail.gone = new Set();
   const q = MAIL_QUADS.find((x) => x.quad === quad);
   const msgsArr = state.mail.messages || [];
+  // The on-screen order as it stands BEFORE this re-file, so "open the next one"
+  // stays in the list/bucket you're triaging (e.g. the next Important email).
+  const visKeys0 = mailVisibleKeys();
   const openKey = state.mail.open && state.mail.open._key;
-  const openIdx = openKey ? msgsArr.findIndex((m) => m._key === openKey) : -1;
   const undoRows = []; const removedKeys = []; const quadDel = []; let archived = 0;
   for (const o of list) {
     const k = mailFileKey(o);
@@ -8491,14 +8493,11 @@ async function mailToQuad(msgs, quad) {
     persistMailQuads(undel); toast(ok ? 'Restored to inbox' : 'Could not undo'); loadMessages();
   } : null;
   toast(toInbox ? 'Back in the inbox' : (archived ? `Filed in ${q ? q.label : quad} - archived from inbox` : `Filed in ${q ? q.label : quad}`), undo);
-  // Reading one we just filed+archived? Advance to the next message, triage-style.
-  if (openKey && removedKeys.includes(openKey)) {
-    let next = null;
-    for (let i = openIdx + 1; i < msgsArr.length && !next; i++) if (!removedKeys.includes(msgsArr[i]._key)) next = msgsArr[i];
-    for (let i = openIdx - 1; i >= 0 && !next; i--) if (!removedKeys.includes(msgsArr[i]._key)) next = msgsArr[i];
-    state.mail.open = null;
-    if (next) { renderMail(); openMessage(next._key); return; }
-  }
+  // Reading an email we just moved OUT of the list we're triaging (filed to another
+  // bucket, sent back to the inbox, or archived-on-file)? Keep going in the SAME
+  // list: open the next one in it (or drop back to it), per the after-triage choice.
+  const actedKeys = new Set(list.map((o) => o._key));
+  if (openKey && actedKeys.has(openKey)) { mailAfterTriageOpen(openKey, visKeys0, actedKeys); return; }
   renderMail();
 }
 // Every message row is tagged with the account it came from (_acct / _mailbox /
@@ -8581,7 +8580,7 @@ async function mailMoveTo(key, target, label) {
     renderMail();
     return;
   }
-  const msgs = state.mail.messages || []; const idx = msgs.findIndex((m) => m._key === key);
+  const msgs = state.mail.messages || [];
   try {
     // One IMAP session per account+mailbox (a thread is almost always a single
     // group) rather than a login/select/move PER MESSAGE - the slow path that made
@@ -8608,7 +8607,6 @@ async function mailMoveTo(key, target, label) {
     for (const row of rows) { const fk = mailFileKey(row); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; quadChanged = true; qDel.push(fk); } }
     if (quadChanged) persistMailQuads(qDel);
     const openKey = state.mail.open && state.mail.open._key;
-    const openIdx = openKey ? msgs.findIndex((m) => m._key === openKey) : -1;
     // Undo: move each message back from `target` to where it came from, found by
     // its Message-ID (its UID changed in the move).
     const undoRows = rows.filter((r) => r.messageId).map((r) => ({ account: r._acct, from: target, messageId: r.messageId, to: r._mailbox || 'INBOX' }));
