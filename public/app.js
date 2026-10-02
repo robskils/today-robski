@@ -3870,18 +3870,20 @@ function areaCheckin(daysDesc, cadence) {
   const cad = parseCadence(cadence);
   if (!cad) return null;
   const lastDone = daysDesc[0] || null;
+  // Only the overdue (slipping) state carries a message now - the day-by-day
+  // countdown ("2 days to do something") was noise. The render shows the line
+  // only when status is 'slipping'; the other labels are kept for completeness.
   if (cad.unit === 'd') {
-    if (!lastDone) return { status: 'due', label: 'do something to start' };
+    if (!lastDone) return { status: 'ontrack', label: '' };
     const remaining = cad.n - daysBetweenStr(lastDone, today);
-    if (remaining >= 2) return { status: 'ontrack', label: `${remaining} days to do something` };
-    if (remaining === 1) return { status: 'ontrack', label: '1 day to do something' };
-    if (remaining === 0) return { status: 'due', label: 'do something today' };
-    return { status: 'slipping', label: 'do something soon' };
+    if (remaining >= 0) return { status: 'ontrack', label: '' };
+    const over = -remaining;
+    return { status: 'slipping', label: over === 1 ? 'a day overdue' : `${over} days overdue` };
   }
-  // A "N times a week" area: count this week's, say how many are left.
+  // A "N times a week" area: only nag when the week's gone by with none done.
   const weekCount = daysDesc.filter((d) => daysBetweenStr(d, today) < 7).length;
-  if (weekCount >= cad.n) return { status: 'ontrack', label: `done ${weekCount}× this week` };
-  return { status: weekCount ? 'building' : 'slipping', label: `${cad.n - weekCount} more this week` };
+  if (weekCount > 0) return { status: 'ontrack', label: '' };
+  return { status: 'slipping', label: 'overdue this week' };
 }
 // A cadence said as a plain phrase, for any value (presets or a custom one).
 function areaCadLabel(v) {
@@ -7853,7 +7855,7 @@ function t2TrackerHtml(manage) {
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
       ${open ? `<div class="trk-dayhdr"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dh${d === today ? ' is-today' : d === yesterday ? ' is-yest' : ''}">${d === today ? 'Today' : d === yesterday ? 'Yest' : dow[new Date(d + 'T00:00').getDay()]}</span></span>`).join('')}</span></div>
-      ${areaStat ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
+      ${areaStat && areaStat.status === 'slipping' && areaStat.label ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       <div class="pm-rows">${rows}</div>
       ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
     </div>`;
