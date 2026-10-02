@@ -289,7 +289,32 @@ function bodyToHtml(body) {
   // Links (<a>) are left untouched.
   const src = isHtml ? s : body.replace(/&nbsp;/gi, ' ').replace(/<\/?(?:strong|em|b|i|u|span|font)(?:\s[^>]*)?>/gi, '');
   const html = isHtml ? s : mdToHtml(src);
-  return linkifyHtml(html);
+  return normalizeProseHtml(linkifyHtml(html));
+}
+// Wrap stray top-level text / inline runs in a <p> so every line is a real block
+// with the paragraph gap. The editor leaves the FIRST line unwrapped (a bare text
+// node before the first <p>), which had no margin and sat jammed against the next
+// line, so spacing looked random. Existing <p>/<div>/heading/list blocks pass
+// through untouched, and a <br> inside a paragraph (an intentional tight line)
+// stays as it is. Editing the note then saves the tidied-up version.
+const PROSE_BLOCK = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'DETAILS', 'TABLE', 'FIGURE', 'HR']);
+function normalizeProseHtml(html) {
+  try {
+    if (!html || !/\S/.test(html)) return html;
+    const box = document.createElement('div'); box.innerHTML = html;
+    const out = document.createElement('div');
+    let run = null;
+    const flush = () => { if (run) { out.appendChild(run); run = null; } };
+    for (const node of [...box.childNodes]) {
+      const isBlock = node.nodeType === 1 && PROSE_BLOCK.has(node.tagName);
+      if (isBlock) { flush(); out.appendChild(node); continue; }
+      if (node.nodeType === 3 && !node.textContent.trim() && !run) continue;   // inter-block whitespace
+      if (!run) run = document.createElement('p');
+      run.appendChild(node);
+    }
+    flush();
+    return out.innerHTML;
+  } catch { return html; }
 }
 // YouTube links in a body → embedded players (rendered below the editor, not
 // inside the editable prose, so paste/typing stays clean).
