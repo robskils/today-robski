@@ -2799,8 +2799,8 @@ function navGridHtml(v) {
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${peopleBox(v)}
-    ${grp('Reviews', [NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
     ${grp(t('nav.grp.money'), [NI.finSpending, NI.finPortfolio, NI.finAdvice])}
+    ${grp('Reviews', [NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
