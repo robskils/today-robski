@@ -15741,9 +15741,21 @@ function renderTable() {
     if (r) {
       migrateCards(r);
       const title = ((r.props && r.props.values) || {})[c[0] && c[0].id] || 'Untitled';
+      // The title is the first column's value - make it editable right here (the big
+      // heading was read-only, so clicking it to edit did nothing). Text/URL first
+      // columns become an inline title input bound to that column; then it's dropped
+      // from the fields below so it isn't shown twice. Other types keep a plain
+      // heading and stay editable via their field.
+      const canEditCard = !(t.sharedBy && !t.canEdit);
+      const titleCol = c[0];
+      const titleEditable = canEditCard && titleCol && !['checkbox', 'number', 'currency', 'date', 'select', 'area', 'attach'].includes(titleCol.type);
+      const titleHtml = titleEditable
+        ? `<input class="card-title card-title-ed" data-cell="${r.id}:${titleCol.id}" value="${esc(title)}" placeholder="Untitled" aria-label="${esc(titleCol.name || 'Title')}">`
+        : `<h1 class="card-title">${esc(title)}</h1>`;
+      const fieldCols = titleEditable ? c.slice(1) : c;
       $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
         <div class="card">
-        <div class="card-head"><h1 class="card-title">${esc(title)}</h1>${(t.sharedBy && !t.canEdit) ? '' : `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>`}</div><div class="card-fields">${c.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
+        <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
         ${attachSection(r)}</div>`;
       loadThumbs(); hydrateEmbeds(); setupFolds();

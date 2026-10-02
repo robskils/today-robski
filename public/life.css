@@ -1792,6 +1792,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .card-head .card-title { flex:1; min-width:0; }
 .card-head .note-del-ic { flex:none; margin-top:8px; }
 .card-title { font-size:clamp(28px,4vw,38px); margin:4px 0 26px; text-wrap:balance; }
+/* The editable title (an input styled as the heading): borderless until you hover
+   or focus it, so it reads as the title but is clearly tap-to-edit. */
+.card-title-ed { width:100%; box-sizing:border-box; border:0; background:none; font-family:inherit; font-weight:inherit; color:var(--ink); padding:2px 6px; margin:4px -6px 24px; border-radius:9px; transition:background .12s, box-shadow .12s; }
+.card-title-ed::placeholder { color:var(--ink-3); }
+.card-title-ed:hover { background:color-mix(in srgb,var(--ink) 5%,transparent); }
+.card-title-ed:focus { outline:none; background:color-mix(in srgb,var(--accent) 7%,transparent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
 .card-fields { display:flex; flex-direction:column; }
 .crow { display:grid; grid-template-columns:190px minmax(0,1fr); gap:18px; align-items:center; padding:13px 0; border-bottom:1px solid var(--line); }
 .crow:last-child { border-bottom:0; }
@@ -6055,7 +6061,11 @@ table.ttable tr:last-child td { border-bottom:0; }
    heading no longer indents the whole note. (Robin.) */
 .prose:empty::before, .prose[data-empty]::before { content:attr(data-ph); color:var(--ink-3); font-style:italic; pointer-events:none; }
 .prose > *:first-child { margin-top:0; }
-.prose p { margin:0 0 14px; }
+/* Every Enter press gets the SAME gap. contenteditable makes a new line as either
+   a <p> or (Chromium's default) a <div>, so without this the spacing looked random
+   - some lines tight, some with a gap, for no reason the writer could see. Both now
+   carry the paragraph gap; Shift+Enter still makes a tight <br> line within one. */
+.prose p, .prose > div { margin:0 0 14px; }
 /* Collapsible headings: a subtle chevron before each heading folds its content.
    The chevron and drag grip are absolute and hang just left of the heading, into
    the pane's own left padding - so the note TEXT stays flush-left and a heading
