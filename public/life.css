@@ -1726,6 +1726,11 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .cellwrap.has-link .cell { padding-right:30px; }
 .cell-link { position:absolute; right:8px; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; color:var(--accent); font-size:14px; text-decoration:none; opacity:.7; }
 .cell-link:hover { opacity:1; background:color-mix(in srgb,var(--accent) 14%,transparent); }
+/* A URL column cell in the grid: the whole URL is a clickable link (edit it from
+   the row's card). Truncates with an ellipsis so a long link never stretches the
+   table. */
+table.recs td a.cell-urllink { display:inline-block; max-width:100%; box-sizing:border-box; color:var(--accent); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+table.recs td a.cell-urllink:hover { text-decoration:underline; }
 /* Column header right-click menu. */
 .colmenu { position:fixed; z-index:60; min-width:212px; max-width:240px; background:var(--card); border:1px solid var(--line-2); border-radius:12px; box-shadow:0 14px 34px -10px rgba(0,0,0,.35); padding:6px; display:flex; flex-direction:column; gap:1px; overflow-y:auto; overscroll-behavior:contain; }
 .colmenu .cm-item { text-align:left; padding:8px 10px; border-radius:8px; font-size:15px; color:var(--ink); }

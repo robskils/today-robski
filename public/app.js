@@ -15584,7 +15584,7 @@ const CURRENCIES = [['€', '€ Euro'], ['$', '$ Dollar'], ['£', '£ Pound'], 
 const curSym = (col) => (col && typeof col.currency === 'string') ? col.currency : '';
 const fmtMoney = (v) => (v === '' || v == null || isNaN(Number(v))) ? '' : Number(v).toFixed(2);
 const tcols = () => (state.tables_open.props.columns || []);
-function cellInput(r, col) {
+function cellInput(r, col, forCard) {
   const v = ((r.props && r.props.values) || {})[col.id]; const k = `${r.id}:${col.id}`;
   if (col.type === 'attach') {
     const list = Array.isArray(v) ? v : [];
@@ -15604,6 +15604,12 @@ function cellInput(r, col) {
   if (col.type === 'url') {
     const raw = String(v ?? '').trim();
     const href = raw ? (/^[a-z][\w+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`) : null;
+    // In the grid, a filled URL is a plain clickable link (open on tap) - the whole
+    // point of a URL column. Editing happens in the row's card (⤢), which always
+    // gets the input. An empty grid cell still shows the input so you can type one.
+    if (!forCard && href) {
+      return `<a class="cell cell-urllink" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Open ${esc(href)}">${esc(raw.replace(/^https?:\/\//i, ''))}</a>`;
+    }
     return `<span class="cellwrap${href ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}" placeholder="https://…" inputmode="url" autocomplete="off">${href ? `<a class="cell-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
   }
   // A text cell holding a URL gets a small open-link button (still editable).
@@ -15780,7 +15786,7 @@ function renderTable() {
       const fieldCols = titleEditable ? c.slice(1) : c;
       $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
         <div class="card">
-        <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col)}</span></label>`).join('')}</div>
+        <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col, true)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
         ${attachSection(r)}</div>`;
       loadThumbs(); hydrateEmbeds(); setupFolds();
