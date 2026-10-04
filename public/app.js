@@ -1054,8 +1054,12 @@ function areaLinkHtml(areaId) {
 }
 // A consistent breadcrumb bar: Back + Home › … › current, plus a link to the
 // connected life area when there is one.
-function crumbNav(trail, areaId) {
-  const back = navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : '';
+function crumbNav(trail, areaId, backAttr) {
+  // backAttr lets a caller pin the back arrow to a specific action (e.g. closing a
+  // row card back to its table) rather than the generic view-history back, and
+  // always shows it. Otherwise the arrow only appears when there's history to pop.
+  const back = backAttr ? `<button class="crumb-back" ${backAttr} title="Back">←</button>`
+    : (navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : '');
   const sep = '<span class="crumb-sep">›</span>';
   const t = trail.map((c, i) => (i === trail.length - 1
     ? `<span class="crumb cur">${esc(c.label)}</span>`
@@ -15784,7 +15788,7 @@ function renderTable() {
         ? `<input class="card-title card-title-ed" data-cell="${r.id}:${titleCol.id}" value="${esc(title)}" placeholder="Untitled" aria-label="${esc(titleCol.name || 'Title')}">`
         : `<h1 class="card-title">${esc(title)}</h1>`;
       const fieldCols = titleEditable ? c.slice(1) : c;
-      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area))}
+      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table')}
         <div class="card">
         <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col, true)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
