@@ -6112,6 +6112,8 @@ function renderBookmarkCard() {
   const TODO = { film: 'want to see', book: 'want to read', article: 'to read', video: 'to watch', link: 'to visit' };
   const DONE = { film: 'Seen', book: 'Read', article: 'Read', video: 'Watched', link: 'Visited' };
   const openLbl = mk === 'book' ? '📖 Find the book' : mk === 'film' ? '🎬 Watch / find it' : mk === 'video' ? '▶ Watch it' : 'Open ↗';
+  const openBtn = (href && href !== '#') ? `<a class="rwc-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${openLbl}</a>` : '';
+  const openTop = mk === 'video'; // YouTube etc. keep the watch button up top
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('saved.title'), attr: 'data-open-readwatch' }, { label: p.title || 'Saved' }])}
     <div class="rwc${ar ? ' has-area' : ''}"${ar ? ` style="--h:${ahue}"` : ''}>
@@ -6119,12 +6121,13 @@ function renderBookmarkCard() {
       <div class="rwc-main">
         <input class="rwc-title" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off">
         <div class="rwc-media">${media.ic} ${esc(media.label)}${p.site ? ` · ${esc(p.site)}` : ''}</div>
-        ${href && href !== '#' ? `<a class="add-btn wide rwc-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${openLbl}</a>` : ''}
+        ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
         <label class="rwc-row"><span class="rwc-lbl">Life area</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-        <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="4">${esc(p.note || '')}</textarea></label>
+        <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
+        ${openTop ? '' : openBtn}
         <div class="rwc-foot"><span class="rwc-added">Added ${fmtDate(p.added || b.created_at)}</span><button class="ghost rwc-del" data-rw-del="${b.id}">Delete</button></div>
       </div>
     </div>`;
@@ -6383,6 +6386,15 @@ function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('lif
 // Jump from the area header's count line to that section: open it if collapsed,
 // then scroll it into view. (Robin: the counts should be clickable.)
 function areaGoto(key) {
+  // Vision / Goals / Wheel / Bucket list live in the top tab strip, not as flow
+  // sections - selecting the tab is how you "go" to them.
+  const TABKEYS = ['Vision', 'Goals', 'Wheel of Life', 'Bucket list'];
+  if (TABKEYS.includes(key)) {
+    if (state.area_open) state.area_open.tileOpen = key;
+    renderArea();
+    requestAnimationFrame(() => { try { const el = document.querySelector('#pane .area-tabs'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} });
+    return;
+  }
   if (!areaSecOpen(key)) areaSecToggle(key);
   requestAnimationFrame(() => { try { const el = document.querySelector(`#pane [data-aflow="${key}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} });
 }
@@ -6508,10 +6520,12 @@ function renderArea() {
   const contacts = blocks.filter((b) => b.kind === 'contact');
   const bookmarks = blocks.filter((b) => b.kind === 'bookmark');
   const journals = blocks.filter((b) => b.kind === 'journal');
-  const activeGoals = goals.filter((g) => (gp(g).status || 'active') === 'active');
+  // A goal is marked done with status 'done' (see the goal card's Mark-as-achieved
+  // button), so active = anything not yet done.
+  const activeGoals = goals.filter((g) => (gp(g).status || 'active') !== 'done');
   // Achieved goals aren't gone - they fold into a "Completed" section you can
   // reopen to look back on what you've done in this area.
-  const doneGoals = goals.filter((g) => (gp(g).status || 'active') === 'achieved');
+  const doneGoals = goals.filter((g) => (gp(g).status || 'active') === 'done');
   const h = hueOf(area);
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
   const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
@@ -6632,8 +6646,10 @@ function renderArea() {
   const areaTilesHtml = `${tabBar}<div class="area-tilepanel">${topCard}${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
+  // Each stat is a shortcut: clicking it opens (and scrolls to) that part of the area.
+  const STAT_GOTO = { 'notes & tables': 'Notes and tables', 'open tasks': 'Tasks', goals: 'Goals', saved: 'Saved links', reflections: 'Reflections' };
   const dashStats = [[notes.length + tables.length, 'notes & tables'], [openTs.length, 'open tasks'], [activeGoals.length, 'goals'], [bookmarks.length, 'saved'], [journals.length, 'reflections']]
-    .filter(([n]) => n).map(([n, l]) => `<div class="area-stat"><b>${n}</b><span>${esc(l)}</span></div>`).join('');
+    .filter(([n]) => n).map(([n, l]) => { const g = STAT_GOTO[l]; const inner = `<b>${n}</b><span>${esc(l)}</span>`; return (g && !secHidden(g)) ? `<button class="area-stat area-stat-btn" data-area-goto="${esc(g)}">${inner}</button>` : `<div class="area-stat">${inner}</div>`; }).join('');
   const rvArea = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const RV_IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const rvAreaHtml = rvArea.map((x) => `<button class="area-rv-item" data-fav-open="${x.kind}:${x.id}"><span class="area-rv-ic">${RV_IC[x.kind] || '•'}</span><span class="area-rv-t">${esc(x.title || 'Untitled')}</span></button>`).join('');
