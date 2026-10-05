@@ -3624,7 +3624,7 @@ export default {
         return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
       if (path === '/sitemap.xml' && isApex) {
-        const body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>https://daybook.fyi/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>\n';
+        const body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>https://daybook.fyi/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n<url><loc>https://daybook.fyi/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n<url><loc>https://daybook.fyi/blog/welcome</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n</urlset>\n';
         return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
       if (isApex && path === '/') {
@@ -3640,6 +3640,15 @@ export default {
       // Support page (App Store / Play require a support URL).
       if (isApex && (path === '/support' || path === '/support/')) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/support.html', url.origin), request)));
+      }
+      // The Daybook Journal (public blog). /blog is the index; /blog/<slug> is an
+      // article, served from public/blog/<slug>.html so clean URLs stay clean.
+      if (isApex && (path === '/blog' || path === '/blog/')) {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/blog.html', url.origin), request)));
+      }
+      {
+        const m = isApex && path.match(/^\/blog\/([a-z0-9][a-z0-9-]{0,59})\/?$/);
+        if (m) return withHsts(await env.ASSETS.fetch(new Request(new URL('/blog/' + m[1] + '.html', url.origin), request)));
       }
       // <subdomain>.daybook.fyi/today opens Today INSIDE the app now: the day
       // planner is a native SPA view (openToday on the /today boot route), not
