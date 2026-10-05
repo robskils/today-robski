@@ -18779,7 +18779,7 @@ function taskSurfaceHtml(t) {
       <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
       ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${email ? 'on' : ''}" data-surface-ch="email:${id}"><span class="tfs-chip-ic">✉</span> Email</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
       <p class="tfs-note">${esc(chanHint)}</p>` : ''}
-      <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my lists until then</span></label>
+      <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my Tasks until then</span></label>
     </div>` : ''}
     <label class="tfs-row"><span class="tfs-l">Repeat</span><span class="tfs-ctrl"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(p.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></label>
     ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">Next one is due<small class="tf-hint">keep to the calendar, or space it from when you do it</small></span><span class="tfs-ctrl"><select class="sel" data-repeatfrom-task="${id}"><option value="due" ${(p.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${p.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(p.repeat)}</option></select></span></label>
@@ -18815,10 +18815,10 @@ function renderTaskCard() {
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     <div class="task-boxes">
+      ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
       ${taskGoalsHtml(t)}
       ${connectedContactsSection('task', t)}
       ${externalLinksHtml('task', t)}
-      ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
     </div>
     ${taskEmailHtml(t)}
     ${attachSection(t)}`;
