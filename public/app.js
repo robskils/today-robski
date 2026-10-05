@@ -939,7 +939,7 @@ function labelForView(v) {
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Daybook';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
-    case 'reviews': return t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
+    case 'reviews': return v.rtype ? `${(REVIEWS[v.rtype] || {}).label || ''} reviews` : t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
     case 'wheel': return 'Wheel of Life';
     case 'toolbox': return t('nav.timer');
     case 'practices': return t('nav.practices'); case 'practicecard': { const a = (state.practices && state.practices.activities || []).find((x) => String(x.id) === String(state.view && state.view.id)); return (a && a.title) || t('nav.practices'); }
@@ -986,7 +986,7 @@ function openView(v) {
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'connect': return openConnect(); case 'daybookpeople': return openDaybookPeople();
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
-    case 'reviews': return openReviews(); case 'reviewcard': return openReviewCard(v.id);
+    case 'reviews': return openReviews(v.rtype); case 'reviewcard': return openReviewCard(v.id);
     case 'wheel': return openWheel();
     case 'toolbox': return openToolbox();
     case 'visioncard': return openVisionCard(v.id); case 'visionwall': return openVisionWall();
@@ -2797,10 +2797,11 @@ function navItems(v) {
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
     reviews: modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
     rvDaily: modOn('reflect') ? `<button class="nav-item" data-journal-dailyreview><span class="nav-ic">☀</span><span class="nav-lbl">Daily</span></button>` : '',
-    rvWeekly: modOn('goals') ? `<button class="nav-item" data-start-review="weekly"><span class="nav-ic">↻</span><span class="nav-lbl">Weekly</span></button>` : '',
-    rvMonthly: modOn('goals') ? `<button class="nav-item" data-start-review="monthly"><span class="nav-ic">↻</span><span class="nav-lbl">Monthly</span></button>` : '',
-    rvQuarterly: modOn('goals') ? `<button class="nav-item" data-start-review="quarterly"><span class="nav-ic">↻</span><span class="nav-lbl">Quarterly</span></button>` : '',
-    rvYearly: modOn('goals') ? `<button class="nav-item" data-start-review="yearly"><span class="nav-ic">↻</span><span class="nav-lbl">Yearly</span></button>` : '',
+    rvAll: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && !v.rtype ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
+    rvWeekly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'weekly' ? 'on' : ''}" data-open-reviewtype="weekly"><span class="nav-ic">↻</span><span class="nav-lbl">Weekly</span></button>` : '',
+    rvMonthly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'monthly' ? 'on' : ''}" data-open-reviewtype="monthly"><span class="nav-ic">↻</span><span class="nav-lbl">Monthly</span></button>` : '',
+    rvQuarterly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'quarterly' ? 'on' : ''}" data-open-reviewtype="quarterly"><span class="nav-ic">↻</span><span class="nav-lbl">Quarterly</span></button>` : '',
+    rvYearly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'yearly' ? 'on' : ''}" data-open-reviewtype="yearly"><span class="nav-ic">↻</span><span class="nav-lbl">Yearly</span></button>` : '',
     financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
     // The Money section's four buttons, each opening the Money tool on its tab.
     finSpending: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'spending' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.money.spending')}</span></button>` : '',
@@ -2852,7 +2853,7 @@ function navGridHtml(v) {
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
     ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching, NI.insights])}
-    ${grp('Reviews', [NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
+    ${grp('Reviews', [NI.rvAll, NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
@@ -13149,8 +13150,8 @@ async function openGoals(tab) {
   api('/api/review-reminders').then((r) => { if (state.view.type === 'goals') { state.reviewRem = r.reminders || {}; if (state.goalsTab === 'reviews') renderGoals(); } }).catch(() => {});
 }
 // Reviews are their own tool now (own sidebar button), split out of Goals.
-async function openReviews() {
-  state.view = { type: 'reviews' };
+async function openReviews(rtype) {
+  state.view = { type: 'reviews', rtype: (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null };
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
   pruneDuplicateReviews();   // collapse any (type, period) duplicates to one canonical block
@@ -13172,10 +13173,68 @@ function renderReviews() {
     return `<section class="home-sec rv-daily-sec"><div class="home-sec-h rv-sec-h">Daily review</div>
       <div class="rv-daily-list">${todayRow}${past.map((n) => row(n)).join('')}</div></section>`;
   })() : '';
+  const rtype = state.view && state.view.rtype;
+  if (rtype) {
+    const label = (REVIEWS[rtype] || {}).label || 'Review';
+    $('#pane').innerHTML = `
+      ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: `${label} reviews` }])}
+      <div class="pane-head"><h1>${esc(label)} reviews</h1></div>
+      ${reviewsTypeBody(rtype)}`;
+    return;
+  }
   $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
     ${daily}
     <p class="t2-sub" style="font-style:normal">And the weekly, monthly, quarterly and yearly check-ins.</p>
     ${reviewsBody()}`;
+}
+// A focused page for one cadence (Weekly / Monthly / …): whether this period's
+// review is done, when the next is due (or how overdue it is), and cards for
+// every past review of that cadence.
+function reviewArchiveCardHtml(r) {
+  const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5);
+  const lbl = (REVIEWS[p.rtype] || {}).label || 'Review';
+  const prog = p.status === 'inprogress';
+  const pt = periodTitle(p.rtype, p.from, p.to);
+  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${sd(p.from)} – ${sd(p.to)}` : pt.main) : pt.main;
+  const sentiment = wv ? (AREA_SENTIMENT[Math.max(1, Math.round(wv))] || '') : '';
+  return `<button class="rv-card rv-card-tall ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
+    <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(sd(p.doneAt))}` : ''}`}</span></div>
+    <div class="rv-card-period">${esc(periodMain)}</div>
+    ${sentiment ? `<div class="rv-card-sentiment">${esc(sentiment)}<span class="rv-card-score">${wv}/5</span></div>` : '<div class="rv-card-sentiment rv-card-sentiment-none">Not scored</div>'}
+    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}</div>
+    <div class="rv-card-open">${prog ? 'Continue →' : 'Open report →'}</div>
+  </button>`;
+}
+function reviewsTypeBody(k) {
+  const todayI = localISO(new Date());
+  const label = (REVIEWS[k] || {}).label || 'Review';
+  const low = label.toLowerCase();
+  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const fullD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }) : '';
+  const all = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === k).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const cur = activeReviewWindow(k, todayI);
+  const curRev = all.find((r) => (r.props || {}).to === cur.to);
+  const curDone = curRev && (curRev.props || {}).status === 'done';
+  const curProg = curRev && (curRev.props || {}).status === 'inprogress';
+  const dueDate = new Date(cur.to + 'T00:00');
+  const diff = Math.round((dueDate - new Date(todayI + 'T00:00')) / 86400000);
+  let dueLine, dueClass = '';
+  if (curDone) {
+    const nextDue = reviewCadNext(k, localISO(new Date(Date.parse(cur.to + 'T00:00') + 86400000)));
+    dueLine = nextDue ? `📅 Next ${low} review lands <b>${esc(fullD(nextDue))}</b>` : '✓ Up to date';
+    dueClass = 'is-done';
+  } else if (diff > 0) dueLine = `📅 Due <b>${esc(fullD(cur.to))}</b> · in ${diff} day${diff === 1 ? '' : 's'}`;
+  else if (diff === 0) { dueLine = '📅 <b>Due today</b>'; dueClass = 'is-due'; }
+  else { dueLine = `📅 <b>Overdue</b> · ${-diff} day${diff === -1 ? '' : 's'}`; dueClass = 'is-over'; }
+  const pt = periodTitle(k, cur.from, cur.to);
+  const curPeriodLbl = (k === 'weekly') ? `${sd(cur.from)} – ${sd(cur.to)}` : pt.main;
+  const ctaAttr = curRev ? `data-open-review="${curRev.id}"` : `data-start-review="${k}"`;
+  const cta = `<button class="rv-start-weekly ${curDone ? 'rv-hero-done' : ''}" ${ctaAttr}><span class="rvw-ic">${curDone ? '✓' : '🔄'}</span><span class="rvw-body"><b>${esc(label)} · ${esc(curPeriodLbl)}</b><small>${curDone ? 'Filed - tap to look back over it.' : curProg ? 'Started - pick up where you left off.' : 'A few minutes to see where you stand.'}</small></span><span class="rvw-go">→</span></button>`;
+  const past = all.filter((r) => r !== curRev);
+  return `<div class="rv-type-due ${dueClass}">${dueLine}</div>
+    ${cta}
+    ${past.length ? `<div class="rv-sec-h2">Previous ${low} reviews · ${past.length}</div><div class="rv-cards rv-cards-tall">${past.map(reviewArchiveCardHtml).join('')}</div>` : '<div class="home-empty" style="padding:18px 0">No previous ' + esc(low) + ' reviews yet.</div>'}`;
 }
 // Focus-list order (per device) and helpers, so you can drag the cards around.
 function focusOrderIds() { try { const o = JSON.parse(localStorage.getItem('life.home.focusOrder')); return Array.isArray(o) ? o : []; } catch { return []; } }
@@ -17056,6 +17115,7 @@ document.addEventListener('click', (e) => {
   { const won = t.closest('[data-area-wheel-on]'); if (won) { setAreaWheelTracking(won.dataset.areaWheelOn, true); return; } }
   if (t.closest('[data-open-wheel]')) { openWheel().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews-tool]') || t.closest('[data-open-reviews]')) { openReviews().catch((x) => toast(x.message)); return; }
+  { const ort = t.closest('[data-open-reviewtype]'); if (ort) { openReviews(ort.dataset.openReviewtype).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }

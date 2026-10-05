@@ -1391,6 +1391,14 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .wheeltrend-spark .rv-spark { display:flex; align-items:flex-end; gap:3px; height:34px; }
 .wheeltrend-flat { color:var(--ink-3); font-size:13px; }
 .wheeltrend-now { flex:none; font-size:14px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:6px; min-width:66px; justify-content:flex-end; }
+/* Per-cadence review page: due banner + section header */
+.rv-type-due { font-size:15.5px; color:var(--ink-2); padding:12px 16px; border:1px solid var(--line); border-left:3px solid var(--ink-3); border-radius:12px; background:var(--card); margin-bottom:16px; }
+.rv-type-due b { color:var(--ink); }
+.rv-type-due.is-done { border-left-color:#6f9f4a; }
+.rv-type-due.is-due { border-left-color:var(--accent); }
+.rv-type-due.is-over { border-left-color:var(--danger,#c4412e); color:var(--danger,#c4412e); }
+.rv-type-due.is-over b { color:var(--danger,#c4412e); }
+.rv-sec-h2 { font-size:13px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-3); margin:24px 0 12px; }
 .rv-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
 @media (max-width:640px) { .rv-cards { grid-template-columns:1fr; } }
 .rv-card { text-align:left; padding:16px 18px; border:1px solid var(--line); border-left:4px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; display:flex; flex-direction:column; gap:9px; transition:border-color .12s, transform .08s; }
