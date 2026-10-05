@@ -6581,7 +6581,10 @@ function renderArea() {
   // other parts as its own collapsible card - notes & tables, tasks, contacts,
   // wheel, saved links, reflections, emails. (Robin, 2026-09-26: the tabs change
   // only the top bit; the rest of the cards always show.)
-  const tasksBody = openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks.</div>';
+  const areaBoardList = tasks.filter((tk) => !(tk.props.hideUntil && isSnoozed(tk) && !tk.props.done));
+  const tasksBody = `${tasksViewToggle('area')}${areaBoardOn()
+    ? taskKanbanHtml(areaBoardList)
+    : (openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks.</div>')}`;
   const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>';
   // [key, present?, count, body] - shown in your saved drag order; Tasks last.
   const restDefs = [
@@ -10908,6 +10911,7 @@ function nextRepeat(repeat, anchorISO) {
 }
 function taskBadges(t) {
   const out = [];
+  if (!t.props.done && t.props.kstatus === 'doing') out.push('<span class="tbadge doing" title="In the Doing column on the board">Doing</span>');
   if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz" title="Surfaces on your Home that day">☀ ${esc(dpLabel(t.props.snooze))}</span>`);
   if (t.props.repeat) out.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(t.props.repeat))}</span>`);
   return out.length ? `<span class="tbadges">${out.join('')}</span>` : '';
@@ -10930,6 +10934,41 @@ function taskTableHtml(list, emptyMsg) {
       <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
       <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">${emptyMsg || t('task.empty.here')}</td></tr>`}</tbody>
     </table></div>`;
+}
+// ── Kanban board view for tasks ──────────────────────────────────────────
+// Three fixed columns. "Done" is the task's done flag; "Doing" a light
+// props.kstatus; everything else is "Not started", where all tasks begin.
+// Dragging a card between columns just sets that status. (Robin, requested.)
+const KANBAN_COLS = [['todo', 'Not started'], ['doing', 'Doing'], ['done', 'Done']];
+const kanbanColOf = (t) => (t.props.done ? 'done' : (t.props.kstatus === 'doing' ? 'doing' : 'todo'));
+function setTaskKanban(id, col) {
+  if (col === 'done') { patchTaskProps(id, { done: true }); return; }
+  patchTaskProps(id, { done: false, kstatus: col === 'doing' ? 'doing' : '' });
+}
+function tasksBoardOn() { try { return localStorage.getItem('life.tasks.board') === '1'; } catch { return false; } }
+function setTasksBoard(on) { try { localStorage.setItem('life.tasks.board', on ? '1' : '0'); } catch {} }
+function areaBoardOn() { try { return localStorage.getItem('life.area.board') === '1'; } catch { return false; } }
+function setAreaBoard(on) { try { localStorage.setItem('life.area.board', on ? '1' : '0'); } catch {} }
+function tasksViewToggle(scope) {   // scope: 'tasks' | 'area'
+  const board = scope === 'area' ? areaBoardOn() : tasksBoardOn();
+  return `<div class="view-switch" role="group" aria-label="View">
+    <button class="vs-btn ${board ? '' : 'on'}" data-${scope}-view="list" aria-pressed="${!board}">☰ List</button>
+    <button class="vs-btn ${board ? 'on' : ''}" data-${scope}-view="board" aria-pressed="${board}">▦ Board</button>
+  </div>`;
+}
+// A kanban board for a set of tasks (open AND done, so the Done column fills).
+function taskKanbanHtml(list) {
+  const sorted = sortTasks(list.slice());
+  const card = (t) => { const a = areaById(t.props.area); const p = t.props.priority; return `<div class="ktask ${t.props.done ? 'done' : ''}" draggable="true" data-ktask="${t.id}" style="--h:${hueOf(a)}"><span class="kt-grip" aria-hidden="true">⠿</span><button class="kt-open" data-open-task="${t.id}"><span class="kt-t">${taskTitleHtml(t.title)}</span>${(p || a) ? `<span class="kt-meta">${p ? `<span class="prio ${p}">${p}</span>` : ''}${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</span>` : ''}</button></div>`; };
+  const cols = KANBAN_COLS.map(([k, label]) => {
+    const items = sorted.filter((t) => kanbanColOf(t) === k);
+    const shown = k === 'done' ? items.slice(0, 60) : items;   // cap a long Done pile
+    return `<div class="kcol" data-kcol="${k}">
+      <div class="kcol-h"><span class="kcol-l">${esc(label)}</span><span class="kcol-c">${items.length}</span></div>
+      <div class="kcol-body">${shown.map(card).join('') || '<div class="kcol-empty">Drop a task here</div>'}</div>
+    </div>`;
+  }).join('');
+  return `<div class="kanban">${cols}</div>`;
 }
 // ── Tasks: a build-your-own filter (by priority, area, date, duration…) ──
 // Each filter is { field, op, value }; they AND together. Definitions are
@@ -11064,6 +11103,7 @@ function renderTasks() {
     <div class="pane-head"><h1>${t('nav.tasks')}</h1></div>
     <div class="list-head">
       <input class="list-search sel" data-task-q placeholder="${t('task.search')}" value="${esc(state.taskQuery || '')}" autocomplete="off">
+      ${tasksViewToggle('tasks')}
       ${state.taskAdding ? '' : `<button class="add-btn wide" data-task-add>${t('task.add')}</button>`}
     </div>
     ${state.taskAdding
@@ -11088,9 +11128,11 @@ function renderTasks() {
     ${assignedSectionHtml()}
     ${quickBar}
     ${filterBar}
-    ${taskTableHtml(open, (conds.length || tq || qp.size || qa) ? t('task.empty.filters') : t('task.empty.open'))}
+    ${tasksBoardOn()
+      ? taskKanbanHtml(state.tasks.filter((tk) => inFilter(tk) && matchesQ(tk) && !(tk.props.hideUntil && isSnoozed(tk) && !tk.props.done)))
+      : `${taskTableHtml(open, (conds.length || tq || qp.size || qa) ? t('task.empty.filters') : t('task.empty.open'))}
     ${snoozedSection}
-    ${completedSection}`;
+    ${completedSection}`}`;
   // Put the cursor in the new-task title whenever the add form is freshly opened -
   // and keep it there. openTasks re-renders again when assigned tasks load, which
   // would otherwise steal the focus; the short arming window re-focuses on every
@@ -17132,6 +17174,8 @@ document.addEventListener('click', (e) => {
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
+  { const tv = t.closest('[data-tasks-view]'); if (tv) { setTasksBoard(tv.dataset.tasksView === 'board'); renderTasks(); return; } }
+  { const av = t.closest('[data-area-view]'); if (av) { setAreaBoard(av.dataset.areaView === 'board'); renderArea(); return; } }
   if (t.closest('[data-task-add]')) { const p = primeMobileKeyboard(); state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; state.taskDraft = null; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
@@ -17686,7 +17730,7 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null, dragArea = null, dragNoteOrd = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null, dragArea = null, dragNoteOrd = null, dragKtask = null;
 // Reorder the note/table cards in a life area's panel; the order lives on the area
 // (props.noteOrder) so it sticks. Mirrors areaDropTarget.
 function noteordDropTarget(container, x, y, draggedId) {
@@ -18277,12 +18321,14 @@ document.addEventListener('dragstart', (e) => {
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const ar = e.target.closest('[data-area-drag]'); if (ar) { dragArea = ar.dataset.areaDrag; ar.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const nd = e.target.closest('[data-noteord]'); if (nd) { dragNoteOrd = nd.dataset.noteord; nd.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
+  const kt = e.target.closest('[data-ktask]'); if (kt) { dragKtask = kt.dataset.ktask; kt.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const cc = e.target.closest('[data-contact-drag]'); if (cc) { dragContact = cc.dataset.contactDrag; cc.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', cc.dataset.contactDrag); } catch {} }
 });
 document.addEventListener('dragover', (e) => {
   if (dragFav) { const c = e.target.closest('#favs') || e.target.closest('.home-sec-favs'); if (c) { e.preventDefault(); favDrop(c, e.clientX, e.clientY, dragFav); } return; }
   if (dragArea) { const c = e.target.closest('.area-cards'); if (c) { e.preventDefault(); areaDropTarget(c, e.clientX, e.clientY, dragArea); } return; }
   if (dragNoteOrd) { const c = e.target.closest('.noteord-cards'); if (c) { e.preventDefault(); noteordDropTarget(c, e.clientX, e.clientY, dragNoteOrd); } return; }
+  if (dragKtask) { const c = e.target.closest('[data-kcol]'); document.querySelectorAll('.kcol.kcol-over').forEach((el) => el.classList.remove('kcol-over')); if (c) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; c.classList.add('kcol-over'); } return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
   if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'h'); return; }
   if (dragHomeSec && (e.target.closest('.home-main') || e.target.closest('.home-side'))) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
@@ -18317,6 +18363,14 @@ document.addEventListener('drop', (e) => {
     const c = e.target.closest('.noteord-cards');
     if (c) { const target = noteordDropTarget(c, e.clientX, e.clientY, dragNoteOrd); reorderAreaNotes(dragNoteOrd, target); }
     clearDropMarks(); dragNoteOrd = null; return;
+  }
+  if (dragKtask) {
+    e.preventDefault();
+    const c = e.target.closest('[data-kcol]');
+    document.querySelectorAll('.kcol.kcol-over').forEach((el) => el.classList.remove('kcol-over'));
+    const id = dragKtask; dragKtask = null;
+    if (c) setTaskKanban(id, c.dataset.kcol);
+    return;
   }
   if (dragFocus) {
     e.preventDefault(); const over = e.target.closest('[data-focus-id]');
@@ -18361,7 +18415,7 @@ document.addEventListener('drop', (e) => {
     dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; dragArea = null; dragNoteOrd = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over, .kcol.kcol-over').forEach((el) => el.classList.remove('cg-over', 'kcol-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; dragArea = null; dragNoteOrd = null; dragKtask = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
