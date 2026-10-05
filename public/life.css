@@ -6190,6 +6190,25 @@ table.ttable tr:last-child td { border-bottom:0; }
 .wb-tile:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 12px 26px -16px rgba(0,0,0,.45); }
 .wb-tile-ic { font-size:27px; line-height:1; }
 .wb-tile-t { font-size:14.5px; font-weight:600; letter-spacing:.01em; }
+.wb-tile { position:relative; }
+.wb-tile.on { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, var(--card)); box-shadow:inset 0 0 0 1px var(--accent); }
+.wb-tile.on .wb-tile-t { color:var(--accent); }
+/* A live reading waiting on this tool - a small pulsing dot, tap reopens it. */
+.wb-tile-live { position:absolute; top:10px; right:10px; width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); animation:wbPulse 2s ease-out infinite; }
+@keyframes wbPulse { 0% { box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 70% { box-shadow:0 0 0 7px transparent; } 100% { box-shadow:0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce){ .wb-tile-live { animation:none; } }
+/* Well-being hub */
+.wb-hub-head { flex-direction:column; align-items:flex-start; gap:4px; }
+.wb-hub-sub { margin:0; color:var(--ink-3); font-size:15px; }
+.wb-stats { display:flex; flex-wrap:wrap; gap:11px; margin:2px 0 20px; }
+.wb-stat { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 18px; border:1px solid var(--line); border-radius:15px; background:var(--card); box-shadow:var(--shadow); min-width:88px; }
+.wb-stat b { font-family:'Cormorant Garamond',Georgia,serif; font-size:25px; font-weight:600; color:var(--ink); line-height:1; }
+.wb-stat span { font-size:12.5px; color:var(--ink-3); }
+.wb-recent { margin-top:26px; }
+.wb-recent-h { display:flex; align-items:center; justify-content:space-between; }
+.wb-seeall { border:0; background:none; color:var(--accent); font:inherit; font-size:14px; font-weight:600; cursor:pointer; padding:4px 2px; }
+.wb-seeall:hover { text-decoration:underline; }
+.j-list-head { margin:2px 0 16px; }
 @media (max-width:640px){ .wb-tiles { grid-template-columns:repeat(2,1fr); gap:10px; } .wb-tile { min-height:84px; padding:14px 8px; } }
 
 /* ── Journal ─────────────────────────────────────────── */

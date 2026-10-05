@@ -792,7 +792,7 @@ function helpKey(v) {
   if (v && v.type === 'help') return v.tool || 'home';
   const t = (v && v.type) || 'home';
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
-    journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
+    wellbeing: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
     area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
     toolbox: 'timer', readwatch: 'saved' })[t] || t;
 }
@@ -925,7 +925,8 @@ function labelForView(v) {
     case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today'); case 'tracker': return t('today.tracker');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
-    case 'journal': return t('wb.journal'); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
+    case 'wellbeing': return t('nav.reflect');
+    case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
@@ -968,7 +969,8 @@ function openView(v) {
     case 'calendar': return openCalendar(); case 'mail': return openMail(v.open); case 'today': return openToday(); case 'tracker': return openTracker();
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
-    case 'journal': return openJournal(); case 'journalentry': return openJournalEntry(v.id);
+    case 'wellbeing': return openWellbeing();
+    case 'journal': return openJournal(v.mode || null); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
     case 'bookmarkcard': return openBookmarkCard(v.id);
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
@@ -2777,8 +2779,8 @@ function navItems(v) {
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
     // The Well-being hub itself - the landing page with every tool as a tile.
-    wellbeing: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' ? 'on' : ''}" data-open-journal><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
-    reflect: modOn('reflect') ? `<button class="nav-item ${v.type === 'journalentry' ? 'on' : ''}" data-journal-start><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
+    wellbeing: modOn('reflect') ? `<button class="nav-item ${v.type === 'wellbeing' ? 'on' : ''}" data-open-wellbeing><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
+    reflect: modOn('reflect') ? `<button class="nav-item ${(v.type === 'journal' && !v.mode) || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
     // The Well-being tools, each its own button (the single "Well-being" button is
     // gone). They fire the same actions as the hub tiles, so they work from anywhere.
     coaching: modOn('reflect') ? `<button class="nav-item" data-journal-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
@@ -4473,7 +4475,7 @@ function homeDiscoverHtml() {
     modOn('goals') ? ['🎯', 'Wheel of Life', 'Rate your areas, watch the trend', 'data-open-reviews-tool'] : null,
     modOn('goals') ? ['🖼', 'Vision board', "Picture where you're headed", 'data-open-vision-tab'] : null,
     modOn('saved') ? ['🔖', 'Read & Watch', 'Park a link, come back later', 'data-open-readwatch'] : null,
-    modOn('reflect') ? ['✎', 'Well-being', 'Journal, meditate, cast the I Ching, and more', 'data-open-journal'] : null,
+    modOn('reflect') ? ['✎', 'Well-being', 'Journal, meditate, cast the I Ching, and more', 'data-open-wellbeing'] : null,
   ].filter(Boolean);
   if (!feats.length) return '';
   let hidden = false, open = true;
@@ -5079,7 +5081,7 @@ function dismissSpirit() {
   try { localStorage.removeItem('life.spiritCard'); } catch {}
   api('/api/kv/spirit_card', { method: 'PUT', body: JSON.stringify({ value: '' }) }).catch(() => {});
   const v = state.view && state.view.type;
-  if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList();
+  if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList(); else if (v === 'wellbeing') renderWellbeing();
 }
 // Opening from Reflect or a pinned tile shows the current card (with "Draw
 // another"); the very first time there's nothing yet, so a blank back to tap.
@@ -5108,7 +5110,7 @@ function closeSpirit() {
   const el = document.getElementById('spirit'); if (el) el.remove(); state.spirit = null;
   // Refresh the page beneath so a card just drawn shows up pinned right away.
   const v = state.view && state.view.type;
-  if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList();
+  if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList(); else if (v === 'wellbeing') renderWellbeing();
 }
 
 // ── I Ching ──────────────────────────────────────────────────────────────
@@ -5443,7 +5445,7 @@ function horoPinnedHtml() {
 // Both reflective pins together, shown on Well-being and Home under the spirit
 // card. Refreshes the current page after a pin changes.
 function reflectPinsHtml() { return `${ichingPinnedHtml()}${horoPinnedHtml()}`; }
-function refreshReflectPins() { const v = state.view && state.view.type; if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList(); }
+function refreshReflectPins() { const v = state.view && state.view.type; if (v === 'home') renderHome(); else if (v === 'journal') renderJournalList(); else if (v === 'wellbeing') renderWellbeing(); }
 function horoFallback(z) {
   const lines = [
     'A steady day to tend what matters most - progress hides in the small, ordinary acts.',
@@ -5463,23 +5465,90 @@ function closeHoro() { const el = document.getElementById('horo'); if (el) el.re
 // Well-being button just opens it there rather than duplicating the tool.
 function openMeditationTool() { try { localStorage.setItem('life.toolbox.active', 'med'); } catch {} openToolbox(); }
 
-async function openJournal() {
-  state.view = { type: 'journal' };
+async function openJournal(mode) {
+  // mode: null = the general Journal, 'coaching' / 'dreams' = that tool's own page.
+  // All three share one list renderer; each shows only its own entries.
+  state.view = { type: 'journal', mode: mode || null };
   renderNav();
   try {
     const entries = await api('/api/blocks?kind=journal&parent_id=');
     entries.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
-    state.journal = { entries, picking: false };
-  } catch (e) { state.journal = { entries: [], picking: false }; toast(e.message); }
+    state.journal = Object.assign({}, state.journal, { entries, picking: false });
+  } catch (e) { state.journal = Object.assign({}, state.journal, { entries: (state.journal && state.journal.entries) || [], picking: false }); toast(e.message); }
   renderJournalList();
   try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}   // always land at the top
-  // Load the history of generated insights (each is a dated 'insight' block).
-  api('/api/blocks?kind=insight').then((list) => {
-    if (state.journal && state.view.type === 'journal') {
+  // Load the history of generated insights (each is a dated 'insight' block) -
+  // only the general Journal shows them.
+  if (!mode) api('/api/blocks?kind=insight').then((list) => {
+    if (state.journal && state.view.type === 'journal' && !state.view.mode) {
       state.journal.insightsList = (list || []).sort((a, b) => String((b.props && b.props.ts) || b.created_at || '').localeCompare(String((a.props && a.props.ts) || a.created_at || '')));
       renderJournalList();
     }
   }).catch(() => {});
+}
+async function openWellbeing() {
+  state.view = { type: 'wellbeing' };
+  renderNav();
+  try {
+    const entries = await api('/api/blocks?kind=journal&parent_id=');
+    entries.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
+    state.journal = Object.assign({}, state.journal, { entries, picking: false });
+  } catch (e) { state.journal = Object.assign({}, state.journal, { entries: (state.journal && state.journal.entries) || [], picking: false }); }
+  renderWellbeing();
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+}
+// Which well-being tool, if any, a journal page is showing - drives the tile's
+// selected state.
+const WB_TOOL = {
+  coaching: { label: () => t('wb.coaching'), icon: '🧭', match: (m) => m === 'coaching', empty: 'No coaching sessions yet. Start one and it is saved here to read back.', newBtn: 'New coaching session', newAttr: 'data-journal-coaching' },
+  dreams: { label: () => t('wb.dreams'), icon: '💭', match: (m) => m === 'dreams', empty: 'No dreams recorded yet.', newBtn: 'Record a dream', newAttr: 'data-journal-dream' },
+};
+// The shared well-being tool tiles. `sel` is the tool whose page we're on (so its
+// tile shows selected); live readings (I Ching / Horoscope / Spirit) show a dot
+// and, where it makes sense, reopen the saved reading on click.
+function wbToolTilesHtml(opts) {
+  opts = opts || {};
+  const sel = opts.sel || null;
+  const liveIch = !!currentIching(), liveHoro = !!currentHoro(), liveSpirit = !!currentSpirit();
+  const dot = '<span class="wb-tile-live" title="You have a live reading"></span>';
+  const tile = (attr, ic, key, title, o) => {
+    o = o || {};
+    const cls = `wb-tile${o.on ? ' on' : ''}${o.live ? ' has-live' : ''}`;
+    return `<button class="${cls}" ${attr} title="${esc(title)}"${o.on ? ' aria-current="page"' : ''}><span class="wb-tile-ic">${ic}</span><span class="wb-tile-t">${t(key)}</span>${o.live ? dot : ''}</button>`;
+  };
+  return `<div class="wb-tiles">
+      ${tile('data-open-journal', '📓', 'wb.journal', 'Write freely, or from a prompt', { on: sel === 'journal' })}
+      ${tile('data-open-coaching', '🧭', 'wb.coaching', 'A running coaching conversation', { on: sel === 'coaching' })}
+      ${tile('data-open-dreams', '💭', 'wb.dreams', 'Write a dream and get a gentle interpretation', { on: sel === 'dreams' })}
+      ${tile('data-open-medi', '🧘', 'wb.meditation', 'A calm sit, with real bells', { on: sel === 'meditation' })}
+      ${tile('data-spirit-open', '🃏', 'wb.spirit', liveSpirit ? 'Reopen your spirit card' : 'Draw a card for a moment of reflection', { live: liveSpirit, on: sel === 'spirit' })}
+      ${tile(liveIch ? 'data-iching-reopen' : 'data-open-iching', '☯', 'wb.iching', liveIch ? 'Reopen your live reading' : 'Cast an I Ching reading', { live: liveIch, on: sel === 'iching' })}
+      ${tile('data-open-horo', '✶', 'wb.horoscope', liveHoro ? 'Reopen today’s horoscope' : 'Your daily horoscope', { live: liveHoro, on: sel === 'horo' })}
+      ${tile('data-open-insights', '✨', 'wb.insights', 'What your entries reveal - themes, lifts and drains', { on: sel === 'insights' })}
+    </div>`;
+}
+function renderWellbeing() {
+  const entries = (state.journal && state.journal.entries) || [];
+  const now = Date.now();
+  const whenOf = (n) => Date.parse((n.props && n.props.date) || n.created_at || '') || 0;
+  const weekN = entries.filter((n) => now - whenOf(n) < 7 * 86400000).length;
+  const last = entries.length ? whenOf(entries[0]) : 0;
+  const daysSince = last ? Math.floor((now - last) / 86400000) : null;
+  const lastLbl = last ? (daysSince <= 0 ? 'today' : daysSince === 1 ? 'yesterday' : `${daysSince}d ago`) : '—';
+  const stat = (n, l) => `<div class="wb-stat"><b>${n}</b><span>${esc(l)}</span></div>`;
+  const statsHtml = entries.length ? `<div class="wb-stats">${stat(entries.length, entries.length === 1 ? 'entry' : 'entries')}${stat(weekN, 'this week')}${stat(lastLbl, 'last entry')}</div>` : '';
+  const recent = entries.slice(0, 3).map((n) => {
+    const mode = journalModeMeta(n.props && n.props.mode);
+    return `<button class="j-card" data-open-jentry="${n.id}"><span class="j-card-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span><span class="j-card-snip">${esc(journalSnippet(n))}</span>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</button>`;
+  }).join('');
+  const recentHtml = entries.length ? `<section class="wb-recent"><div class="home-sec-h wb-recent-h"><span>Recent journal</span><button class="wb-seeall" data-open-journal>Open journal →</button></div><div class="j-list">${recent}</div></section>` : '';
+  $('#pane').innerHTML = `
+    ${pageCrumb(t('nav.reflect'))}
+    <div class="pane-head home-head wb-hub-head"><h1>${t('nav.reflect')}</h1><p class="wb-hub-sub">A quiet corner to reflect, sit, and check in with yourself.</p></div>
+    ${wbToolTilesHtml({})}
+    ${statsHtml}
+    ${spiritPinnedHtml() + reflectPinsHtml()}
+    ${recentHtml}`;
 }
 async function newCoachingSession() {
   if (!state.journal) await openJournal();
@@ -5538,8 +5607,17 @@ async function delInsight(id) {
 }
 function renderJournalList() {
   const j = state.journal || { entries: [] };
-  const entries = j.entries || [];
-  const picker = j.picking ? `<div class="j-picker">
+  const mode = (state.view && state.view.mode) || null;   // null | 'coaching' | 'dreams'
+  const cfg = mode ? WB_TOOL[mode] : null;
+  const selKey = mode || 'journal';
+  const all = j.entries || [];
+  // The general Journal shows everything that isn't a coaching session or a
+  // dream (those have their own tools); each tool page shows only its own.
+  const entries = cfg ? all.filter((n) => cfg.match((n.props && n.props.mode) || ''))
+    : all.filter((n) => { const m = (n.props && n.props.mode) || ''; return m !== 'coaching' && m !== 'dreams'; });
+  const title = cfg ? cfg.label() : t('wb.journal');
+  const picking = j.picking && !mode;
+  const picker = picking ? `<div class="j-picker">
     <div class="j-picker-h">How do you want to start?</div>
     ${JOURNAL_MODES.map((m) => `<div class="j-mode">
       <div class="j-mode-h"><span class="j-mode-ic">${m.icon}</span>${esc(m.label)}</div>
@@ -5606,23 +5684,19 @@ function renderJournalList() {
           : '<div class="home-empty" style="padding:8px 0 4px">No insights yet. Create one and it reads back your recent entries - the themes, what lifts you, what drains you.</div>'}
       </div>
     </div>`;
+  const startBtn = cfg
+    ? `<button class="add-btn wide j-new-btn" ${cfg.newAttr}>＋ ${esc(cfg.newBtn)}</button>`
+    : `<button class="add-btn wide j-new-btn" data-journal-start>＋ New entry</button>`;
+  const emptyMsg = cfg ? cfg.empty : 'No entries yet. Start your first one above.';
   $('#pane').innerHTML = `
-    ${pageCrumb(t('wb.journal'))}
-    <div class="pane-head home-head"><h1>${t('wb.journal')}</h1></div>
-    ${j.picking ? '' : `<div class="wb-tiles">
-      <button class="wb-tile" data-journal-start title="Write freely, or from a prompt"><span class="wb-tile-ic">📓</span><span class="wb-tile-t">${t('wb.journal')}</span></button>
-      <button class="wb-tile" data-journal-coaching title="A running coaching conversation"><span class="wb-tile-ic">🧭</span><span class="wb-tile-t">${t('wb.coaching')}</span></button>
-      <button class="wb-tile" data-journal-dream title="Write a dream and get a gentle interpretation"><span class="wb-tile-ic">💭</span><span class="wb-tile-t">${t('wb.dreams')}</span></button>
-      <button class="wb-tile" data-open-medi title="A calm sit, with real bells"><span class="wb-tile-ic">🧘</span><span class="wb-tile-t">${t('wb.meditation')}</span></button>
-      <button class="wb-tile" data-spirit-open title="Draw a card for a moment's reflection"><span class="wb-tile-ic">🃏</span><span class="wb-tile-t">${t('wb.spirit')}</span></button>
-      <button class="wb-tile" data-open-iching title="Cast an I Ching reading"><span class="wb-tile-ic">☯</span><span class="wb-tile-t">${t('wb.iching')}</span></button>
-      <button class="wb-tile" data-open-horo title="Your daily horoscope"><span class="wb-tile-ic">✶</span><span class="wb-tile-t">${t('wb.horoscope')}</span></button>
-      <button class="wb-tile" data-open-insights title="What your entries reveal - themes, lifts and drains"><span class="wb-tile-ic">✨</span><span class="wb-tile-t">${t('wb.insights')}</span></button>
-    </div>`}
-    ${j.picking ? '' : spiritPinnedHtml() + reflectPinsHtml()}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: title }])}
+    <div class="pane-head home-head"><h1>${esc(title)}</h1></div>
+    ${picking ? '' : wbToolTilesHtml({ sel: selKey })}
+    ${(!mode && !picking) ? spiritPinnedHtml() + reflectPinsHtml() : ''}
     ${picker}
-    ${insightsCard}
-    <div class="j-list">${cards || (j.picking ? '' : '<div class="empty">No entries yet. Start your first one above.</div>')}</div>`;
+    ${!mode ? insightsCard : ''}
+    ${picking ? '' : `<div class="j-list-head">${startBtn}</div>`}
+    <div class="j-list">${cards || (picking ? '' : `<div class="empty">${esc(emptyMsg)}</div>`)}</div>`;
 }
 async function startJournalEntry() {
   if (!state.journal) await openJournal();
@@ -5651,11 +5725,15 @@ function renderJournalEntry() {
   const n = state.journal.current;
   if (dictation) stopDictation();   // never leave the mic running across a re-render
   const mode = journalModeMeta(n.props && n.props.mode);
-  const isDream = (n.props && n.props.mode) === 'dreams';
+  const rawMode = (n.props && n.props.mode) || '';
+  const isDream = rawMode === 'dreams';
+  // The back-crumb returns to the tool this entry belongs to.
+  const crumbAttr = rawMode === 'coaching' ? 'data-open-coaching' : rawMode === 'dreams' ? 'data-open-dreams' : 'data-open-journal';
+  const crumbLbl = rawMode === 'coaching' ? t('wb.coaching') : rawMode === 'dreams' ? t('wb.dreams') : t('wb.journal');
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-journal>${t('wb.journal')}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-wellbeing>${t('nav.reflect')}</button>${sep}<button class="crumb" ${crumbAttr}>${crumbLbl}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
@@ -16716,7 +16794,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
   const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} renderNotesList(); return; }
   const snt = t.closest('[data-set-note-type]'); if (snt) { const [id, type] = snt.dataset.setNoteType.split(':'); setNoteType(id, type); return; }
+  if (t.closest('[data-open-wellbeing]')) { openWellbeing().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-coaching]')) { openJournal('coaching').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-dreams]')) { openJournal('dreams').catch((x) => toast(x.message)); return; }
   const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }
   if (t.closest('[data-journal-dailyreview]')) { newDailyReview(); return; }
@@ -16728,7 +16809,15 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-insights-close]')) { if (state.journal) { state.journal.readingInsight = null; renderJournalList(); } return; }
   if (t.closest('[data-journal-insights]')) { journalInsights(); return; }
   if (t.closest('[data-journal-insights-toggle]')) { if (state.journal) { state.journal.insightsOpen = !state.journal.insightsOpen; renderJournalList(); } return; }
-  if (t.closest('[data-open-insights]')) { if (state.journal) { state.journal.insightsOpen = true; renderJournalList(); const el = document.querySelector('.j-insights'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
+  if (t.closest('[data-open-insights]')) {
+    // Insights belong to the general Journal. Open it (if we're elsewhere, e.g.
+    // the hub), then reveal the Insights section, stopping just above it rather
+    // than scrolling it under the sticky header.
+    const reveal = () => { if (!state.journal) return; state.journal.insightsOpen = true; renderJournalList(); requestAnimationFrame(() => { const el = document.querySelector('.j-insights'); if (el) { const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56; el.style.scrollMarginTop = (navh + 12) + 'px'; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }); };
+    if (state.view && state.view.type === 'journal' && !state.view.mode) reveal();
+    else openJournal().then(reveal).catch((x) => toast(x.message));
+    return;
+  }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   { const rb = t.closest('[data-journal-dictate]'); if (rb) { toggleDictation(rb); return; } }
