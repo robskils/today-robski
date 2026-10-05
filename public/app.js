@@ -5728,7 +5728,6 @@ function renderJournalList() {
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: title }])}
     <div class="pane-head home-head"><h1>${esc(title)}</h1></div>
     ${picking ? '' : wbToolTilesHtml({ sel: selKey })}
-    ${(!mode && !picking) ? spiritPinnedHtml() + reflectPinsHtml() : ''}
     ${picker}
     ${picking ? '' : `<div class="j-list-head">${startBtn}</div>`}
     <div class="j-list">${cards || (picking ? '' : `<div class="empty">${esc(emptyMsg)}</div>`)}</div>`;
