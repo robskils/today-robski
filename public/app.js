@@ -6380,6 +6380,12 @@ const areaSecOpen = (k) => {
 const trkOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}')[k]); } catch { return true; } };
 function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} rerenderCurrent(); }
 function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); c[k] = areaSecOpen(k) ? 1 : 0; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
+// Jump from the area header's count line to that section: open it if collapsed,
+// then scroll it into view. (Robin: the counts should be clickable.)
+function areaGoto(key) {
+  if (!areaSecOpen(key)) areaSecToggle(key);
+  requestAnimationFrame(() => { try { const el = document.querySelector(`#pane [data-aflow="${key}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} });
+}
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like
 // Home's), so your arrangement is the same on every area page.
 function areaFlowOrder() { try { const a = JSON.parse(localStorage.getItem('life.area.secorder')); return Array.isArray(a) ? a : []; } catch { return []; } }
@@ -6654,7 +6660,7 @@ function renderArea() {
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Life areas', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-hero" style="--h:${h}">
       <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
-      <p class="area-meta">${notes.length + tables.length} note${(notes.length + tables.length) === 1 ? '' : 's'} &amp; table${(notes.length + tables.length) === 1 ? '' : 's'} · ${openTs.length} open task${openTs.length === 1 ? '' : 's'}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
+      <p class="area-meta">${(() => { const nt = notes.length + tables.length; const txt = `${nt} note${nt === 1 ? '' : 's'} &amp; table${nt === 1 ? '' : 's'}`; return (nt && !secHidden('Notes and tables')) ? `<button class="area-meta-link" data-area-goto="Notes and tables">${txt}</button>` : txt; })()} · ${(() => { const txt = `${openTs.length} open task${openTs.length === 1 ? '' : 's'}`; return secHidden('Tasks') ? txt : `<button class="area-meta-link" data-area-goto="Tasks">${txt}</button>`; })()}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -17193,6 +17199,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-members-more]')) { if (state.area_open) state.area_open.membersExpanded = true; renderArea(); return; }
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-note-wall-toggle]')) { try { localStorage.setItem('life.note.wall', noteWallOpen() ? '0' : '1'); } catch {} renderNote(); return; }
+  { const ag = t.closest('[data-area-goto]'); if (ag) { areaGoto(ag.dataset.areaGoto); return; } }
   { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
   { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
