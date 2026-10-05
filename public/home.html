@@ -239,8 +239,32 @@ section { position: relative; }
 @media (max-width: 880px) { .tools-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .tools-grid { grid-template-columns: 1fr; } }
 
-/* Tinted so it doesn't sit flush against the (same-colour) ethos band above. */
+/* Tinted so the tool grid reads as its own band. */
 #tools { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+/* Life Areas - the "special sauce" band */
+.areas-band { position: relative; background-image: radial-gradient(80% 60% at 100% 0%, var(--dawn-1), transparent 58%); }
+.areas-grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 60px; align-items: center; }
+.areas-lead { font-family: 'Fraunces', serif; font-size: clamp(22px, 2.8vw, 30px); line-height: 1.32; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 18px; }
+.areas-band em { color: var(--rust); font-style: italic; }
+.areas-band p { color: var(--ink-2); font-size: 19px; line-height: 1.58; }
+.areas-band .areas-lead { color: var(--ink); }
+.areas-band p + p { margin-top: 16px; }
+@media (max-width: 820px) { .areas-grid { grid-template-columns: 1fr; gap: 32px; } }
+/* the little "it all flows into one area" diagram */
+.areas-flow { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 36px 26px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+.af-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; max-width: 320px; }
+.af-chip { font-size: 14px; font-weight: 600; color: var(--ink-2); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; box-shadow: var(--shadow-sm); }
+.af-arrow { color: var(--rust); font-size: 26px; line-height: 1; opacity: .75; }
+.af-area { display: inline-flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--rust-ink); background: var(--rust); border-radius: 14px; padding: 12px 22px; box-shadow: 0 16px 32px -16px rgba(196, 65, 46, 0.6); }
+.af-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; opacity: .9; }
+
+/* Well-being - a secondary story, set apart with a soft pine tint */
+.wellbeing-band { background: var(--pine-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.wellbeing-band .eyebrow { color: var(--pine); }
+
+/* A touch of bling: the hero's emphasised phrase warms from rust through dawn. */
+.hero h1 em { font-style: italic; background: linear-gradient(100deg, var(--rust), #d98a5b 52%, var(--rust-deep)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* privacy band (pine) */
 .privacy { background: var(--pine); color: #f3efe6; overflow: hidden; position: relative; }
@@ -389,13 +413,13 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap hero-in">
     <div class="hero-copy">
       <div class="hero-badge reveal"><span class="pulse"></span>Invite-only, in early access</div>
-      <h1 class="reveal">Your whole life,<br>in one <em>calm</em> place.</h1>
-      <p class="hero-sub reveal">Email, calendar, tasks, notes, reflections, money - the whole lot, in one calm place. Put it down, and trust it to come back.</p>
+      <h1 class="reveal">Email, calendar, notes<br>and tasks - that <em>join the dots.</em></h1>
+      <p class="hero-sub reveal">The four tools you live in, in one place at last - and connected through the areas of your life, so information flows to where it's needed instead of piling up. Calm, not cluttered.</p>
       <div class="hero-actions reveal">
         <a class="btn btn-primary" href="#invite">Request an invite →</a>
         <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
       </div>
-      <p class="hero-note reveal">Your data stays yours. No adverts, no selling, no noise.</p>
+      <p class="hero-note reveal">Private by design. No adverts, no selling, no noise.</p>
     </div>
     <div class="cluster reveal">
       <div class="dcard c1">
@@ -417,10 +441,55 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </header>
 
+<section class="band" id="tools">
+  <div class="wrap">
+    <div class="band-head center reveal">
+      <div class="eyebrow">Email · Calendar · Notes · Tasks</div>
+      <h2>The four you live in, in one place</h2>
+      <p>Start with the bread and butter - your mail, your calendar, your notes and your tasks, finally under one roof. Then the tools that round it out: tables, money, and a quiet set of well-being tools for the inner life.</p>
+    </div>
+    <div class="tools-grid">
+      <div class="tool reveal"><span class="tool-ic">✉</span><h3>Mail</h3><p>All your inboxes in one calm room - read, reply and search across every account, without breaking focus.</p></div>
+      <div class="tool reveal"><span class="tool-ic">◑</span><h3>Calendar</h3><p>Month, week and agenda in one view. It reads and writes your Google calendar, and events can count as practice.</p></div>
+      <div class="tool reveal"><span class="tool-ic">▤</span><h3>Notes</h3><p>Write freely - a scribbled idea, a longer thought, anything worth keeping. Link it up and nothing gets lost.</p></div>
+      <div class="tool reveal"><span class="tool-ic">✓</span><h3>Tasks</h3><p>Your day as calm streams, not a nagging list. Work with the flow when you're in it; nothing turns red.</p></div>
+      <div class="tool reveal"><span class="tool-ic">☀</span><h3>Today</h3><p>A calm read on your day - what's on, what you're carrying, what matters now. The still point you start from.</p></div>
+      <div class="tool reveal"><span class="tool-ic">▦</span><h3>Tables</h3><p>Turn notes into structure when you're ready - a proper table for whatever is worth tracking, right where you wrote it.</p></div>
+      <div class="tool reveal"><span class="tool-ic">◈</span><h3>Life Areas</h3><p>The heart of Daybook. Your mail, tasks, notes and spending all organise around what matters most.</p></div>
+      <div class="tool reveal"><span class="tool-ic">💰</span><h3>Money</h3><p>See where the money goes, sorted by the areas of life you care about. Clear, quiet, no spreadsheets.</p></div>
+      <div class="tool reveal"><span class="tool-ic">✎</span><h3>Well-being</h3><p>A home for the inner life - journalling, insights, dreams, meditation and gentle coaching when you want it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band areas-band" id="connect">
+  <div class="wrap areas-grid">
+    <div class="reveal">
+      <div class="eyebrow">The special sauce</div>
+      <h2>Life Areas join the dots</h2>
+      <p class="areas-lead">The tools don't sit in separate boxes. Tag anything to a <em>life area</em> - a project, Family, your health, the business - and the mail, events, tasks, notes and spending for that part of life all gather in one place.</p>
+      <p>An email becomes a task. A note becomes a table. A payment files itself against the right area. Information stops piling up in silos and starts <em>flowing</em> to where it's needed - so you can hold the whole of your life lightly, and sidestep the digital overwhelm.</p>
+    </div>
+    <div class="areas-flow reveal" aria-hidden="true">
+      <div class="af-tools"><span class="af-chip">✉ Mail</span><span class="af-chip">◑ Event</span><span class="af-chip">✓ Task</span><span class="af-chip">▤ Note</span><span class="af-chip">💰 Spend</span></div>
+      <div class="af-arrow">↓</div>
+      <div class="af-area"><span class="af-dot"></span>Portugal Portfolio</div>
+    </div>
+  </div>
+</section>
+
+<section class="band wellbeing-band" id="wellbeing">
+  <div class="wrap band-head center reveal">
+    <div class="eyebrow">For the inner life</div>
+    <h2>Well-being, woven in</h2>
+    <p>Alongside the practical runs a gentler story: journalling and daily reviews, insights and dreams, meditation, spirit cards and the I Ching, and coaching when you'd like a prompt. There when you need them, quiet when you don't.</p>
+  </div>
+</section>
+
 <section class="band concept" id="idea">
   <div class="wrap concept-grid">
     <div class="reveal">
-      <div class="eyebrow">Your Daybook</div>
+      <div class="eyebrow">The bigger idea</div>
       <p class="concept-lead">A daybook is somewhere you <em>set things down</em> - so you can stop holding them in your head, and still trust them to come back.</p>
       <ul class="holds">
         <li><b>Your day</b><span>Schedule, tasks and appointments</span></li>
@@ -441,29 +510,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap reveal">
     <div class="eyebrow" style="text-align:center">The Daybook ethos</div>
     <p class="ethos-line">The right thing, surfaced in the right place, at the <em>right time.</em></p>
-    <p class="ethos-sub">Everything in Daybook bends towards that one idea - nothing shouts for attention, and nothing worth remembering slips away.</p>
-  </div>
-</section>
-
-<section class="band" id="tools">
-  <div class="wrap">
-    <div class="band-head center reveal">
-      <div class="eyebrow">Nine tools, one place</div>
-      <h2>One place for a whole life</h2>
-      <p>Nine tools in one calm place. They work together, so nothing lives in a silo and nothing falls between them - all of it in service of a conscious and beautiful life.</p>
-    </div>
-    <div class="tools-grid">
-      <div class="tool reveal"><span class="tool-ic">☀</span><h3>Today</h3><p>A calm read on your day - what's on, what you're carrying, what matters now. The still point you start from.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✓</span><h3>Tasks</h3><p>Your day as calm streams, not a nagging list. Work with the flow when you're in it; nothing turns red.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◑</span><h3>Calendar</h3><p>Month, week and agenda in one view. It reads and writes your Google calendar, and events can count as practice.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▤</span><h3>Notes</h3><p>Write freely - a scribbled idea, a longer thought, anything worth keeping. Link it up and nothing gets lost.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▦</span><h3>Tables</h3><p>Turn notes into structure when you're ready - a proper table for whatever is worth tracking, right where you wrote it.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◈</span><h3>Life Areas</h3><p>The heart of Daybook. Your streams, goals and spending all organise around what matters most.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✎</span><h3>Reflection</h3><p>A home for the inner stuff - journalling, insights, dreams, and gentle coaching when you want it.</p></div>
-      <div class="tool reveal"><span class="tool-ic">💰</span><h3>Money</h3><p>See where the money goes, sorted by the areas of life you care about. Clear, quiet, no spreadsheets.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✉</span><h3>Mail</h3><p>All your inboxes in one calm room - read, reply and search across every account, without breaking focus.</p></div>
-    </div>
-    <p class="tools-foot reveal">And the best part - <span>the tools talk to each other.</span></p>
+    <p class="ethos-sub">In tune with the rhythms of your life - nothing shouts for attention, and nothing worth remembering slips away.</p>
   </div>
 </section>
 
