@@ -174,8 +174,14 @@ button { cursor:pointer; background:none; border:0; }
 .ktask.done .kt-t { text-decoration:line-through; }
 .kt-grip { color:var(--ink-3); opacity:.5; font-size:13px; line-height:1.4; flex:none; }
 .kt-open { flex:1 1 auto; min-width:0; text-align:left; background:none; border:0; padding:0; cursor:pointer; display:flex; flex-direction:column; gap:6px; color:var(--ink); }
-.kt-t { font-size:15px; line-height:1.35; overflow-wrap:break-word; }
-.kt-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.kt-t { font-size:15px; font-weight:600; line-height:1.35; overflow-wrap:break-word; }
+/* The card's meta line sits quietly under the title - always smaller than it.
+   Priority is a tiny tag (filled for P1); the life area is a soft hue-dot + name. */
+.kt-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:1px; }
+.kt-meta .prio { font-size:10px; font-weight:700; letter-spacing:.05em; color:var(--ink-3); background:color-mix(in srgb,var(--ink) 8%,transparent); border-radius:5px; padding:1px 5px; line-height:1.6; }
+.kt-meta .prio.P1 { color:var(--accent-ink); background:var(--accent); }
+.kt-meta .tag { display:inline-flex; align-items:center; gap:5px; max-width:100%; min-width:0; font-size:11px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.kt-meta .tag::before { content:''; width:7px; height:7px; border-radius:50%; background:hsl(var(--h) var(--lane-s) var(--lane-l)); flex:none; }
 @media (max-width:640px){ .kanban { grid-template-columns:1fr; } }
 .tf-clear { border:none; background:none; color:var(--accent); font-size:11.5px; text-transform:none; letter-spacing:0; cursor:pointer; padding:0 2px; font-weight:600; }
 .tf-hint { display:block; margin-top:3px; font-size:11.5px; text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-3); }
