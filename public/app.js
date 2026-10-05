@@ -578,7 +578,7 @@ document.addEventListener('dragend', () => { if (headDrag) cleanupHeadDrag(); })
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
 // tidiness (stray pasted styles) more than security.
-const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1, DETAILS: 1, SUMMARY: 1, TABLE: 1, THEAD: 1, TBODY: 1, TFOOT: 1, TR: 1, TH: 1, TD: 1, CAPTION: 1 };
+const PROSE_OK = { P: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, EM: 1, A: 1, BLOCKQUOTE: 1, BR: 1, CODE: 1, UL: 1, OL: 1, LI: 1, DETAILS: 1, SUMMARY: 1, TABLE: 1, THEAD: 1, TBODY: 1, TFOOT: 1, TR: 1, TH: 1, TD: 1, CAPTION: 1, IMG: 1 };
 function sanitizeProse(html) {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   // Fold chevrons are live-DOM only (injected on render): remove them so their
@@ -615,6 +615,8 @@ function sanitizeProse(html) {
       if (!PROSE_OK[tag]) { const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }
       const el = c.tagName === tag ? c : (() => { const n = doc.createElement(tag); while (c.firstChild) n.appendChild(c.firstChild); c.replaceWith(n); return n; })();
       const href = el.tagName === 'A' ? el.getAttribute('href') : null;
+      const imgSrc = el.tagName === 'IMG' ? (el.getAttribute('src') || '') : null;
+      const imgAlt = el.tagName === 'IMG' ? (el.getAttribute('alt') || '') : null;
       const keepOpen = el.tagName === 'DETAILS' && el.hasAttribute('open');   // remember collapse state
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
@@ -628,6 +630,12 @@ function sanitizeProse(html) {
       if (rlm) { el.setAttribute('href', rlm[0]); el.setAttribute('class', 'rl-link'); }
       else if (href && /^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
       if (keepOpen) el.setAttribute('open', '');
+      // Images (e.g. kept when an email becomes a note) hold only a safe src + alt.
+      // cid: / unknown sources can't be displayed, so drop those.
+      if (el.tagName === 'IMG') {
+        if (imgSrc && /^(https?:|data:image\/)/i.test(imgSrc)) { el.setAttribute('src', imgSrc); el.setAttribute('loading', 'lazy'); if (imgAlt) el.setAttribute('alt', imgAlt); }
+        else { const p = el.parentNode; if (p) p.removeChild(el); return; }
+      }
     });
   };
   walk(doc.body);
@@ -8788,8 +8796,7 @@ async function mailToArea(areaId) {
   const when = o.date ? new Date(o.date).toLocaleString() : '';
   const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
   const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
-  const src = (o.text || '').replace(/\r\n/g, '\n').trim();
-  const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+  const content = sanitizeProse(emailSourceHtml(o)) || '<p></p>';
   try {
     const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, props: { area: areaId, areas: [areaId], fromEmail: true } }) });
     // Remember that this email is filed here, so the reader can show it later.
@@ -10531,8 +10538,7 @@ async function openMailTaskMenu(anchor) {
   const when = o.date ? new Date(o.date).toLocaleString() : '';
   const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
   const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
-  const src = (o.text || '').replace(/\r\n/g, '\n').trim();
-  const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+  const content = sanitizeProse(emailSourceHtml(o));
   const r = anchor ? anchor.getBoundingClientRect() : { left: 240, bottom: 200 };
   const w = 300;
   // The email travels with the task as its own thing (props.email), so the card
@@ -10560,6 +10566,14 @@ async function mailTaskCreate() {
 // Turn the open email into a Note: its contents become the note body (as HTML, so
 // bodyToHtml renders it), titled with the subject, flagged fromEmail. Opens the new
 // note so you can add your own words straight away. (Robin.)
+// The richest body we can carry when an email becomes a note or task: the real
+// HTML (so images and formatting survive) when the message has it, else the
+// plain text wrapped into paragraphs. Callers sanitize it for their surface.
+function emailSourceHtml(o) {
+  if (o && o.html && String(o.html).trim()) return String(o.html);
+  const src = ((o && o.text) || '').replace(/\r\n/g, '\n').trim();
+  return src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+}
 async function mailToNote() {
   const o = state.mail && state.mail.open; if (!o) return;
   const title = ((o.subject || '').trim()) || '(no subject)';
@@ -10568,8 +10582,7 @@ async function mailToNote() {
   const when = o.date ? new Date(o.date).toLocaleString() : '';
   const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
   const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
-  const src = (o.text || '').replace(/\r\n/g, '\n').trim();
-  const content = src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '<p></p>';
+  const content = sanitizeProse(emailSourceHtml(o)) || '<p></p>';
   try {
     const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, parent_id: null, props: { fromEmail: true } }) });
     if (Array.isArray(state.noteTops)) state.noteTops.push(note);
