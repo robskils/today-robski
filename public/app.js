@@ -6722,11 +6722,11 @@ function areaOverviewHtml(area, c, blocks) {
   return `<section class="area-ov">
     ${lead}
     ${sectionsBlock}
+    ${reviewsBlock}
     <div class="ov-cols">
       <div class="ov-block"><div class="ov-h"><span>Who has access</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite</button>'}</div><div class="ov-people">${people}</div></div>
       <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
     </div>
-    ${reviewsBlock}
   </section>`;
 }
 // Members of a life area: the people it's shared with, as a horizontal row of
