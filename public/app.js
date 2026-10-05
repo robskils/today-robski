@@ -9102,7 +9102,10 @@ async function openMail(openKey) {
   // Come back to Mail and land where you left off on a quick return: reopen the
   // message that was open (from the tab's remembered view, or the still-open one in
   // memory). But after a while away, drop the reopen and land on the inbox list.
-  if (mailReopenStale() && !state.mail.composing) { state.mail.open = null; openKey = null; }
+  // Away a while (over an hour): drop the reopened message AND reset the scope to
+  // all accounts, so a fresh visit shows everything, not whichever single mailbox
+  // you last narrowed to. (Robin.)
+  if (mailReopenStale() && !state.mail.composing) { state.mail.open = null; openKey = null; state.mail.account = 'all'; }
   if (!openKey && state.mail.open && !state.mail.composing) openKey = state.mail.open._key;
   state.view = openKey ? { type: 'mail', open: openKey } : { type: 'mail' };
   // Fresh entry into Mail: no box history yet, so the first Back leaves Mail.
