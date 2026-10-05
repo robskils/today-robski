@@ -4239,10 +4239,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    never riding the page or sliding under the header. (Both attempts that put sticky
    on the item itself failed: definite-height-no-stretch wouldn't pin, and
    stretch+max-height rode the page.) (Robin, 2026-09-29.) */
-/* No inner scroll: the rail rides the PAGE scroll (so scrolling over it moves the
-   whole page, top bar and all). A short rail still pins under the tab strip; a
-   tall one scrolls with the page so all of it stays reachable. */
-.home-side { grid-area:side; position:sticky; top:44px; align-self:start; display:flex; flex-direction:column; gap:16px; padding:0 2px 8px 0; }
+/* Independent scroll: the rail pins under the tab strip and, when its sections run
+   past the viewport, scrolls WITHIN itself (capped to the viewport height) rather
+   than being stuck to how far the main column has scrolled. overscroll-behavior
+   keeps that inner scroll from chaining out to the page. A short rail just pins.
+   (Robin, 2026: the "rides the page" version left the rail's bottom unreachable.) */
+.home-side { grid-area:side; position:sticky; top:44px; align-self:start; max-height:calc(100vh - 56px); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; display:flex; flex-direction:column; gap:16px; padding:0 4px 8px 0; }
 .home-side .home-sec { margin-top:0; }
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
 .home-notepad::placeholder { color:var(--ink-3); }
