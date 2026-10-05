@@ -3049,6 +3049,9 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .lead-h:hover .lead-grip { opacity:.75; }
 .lead-grip:hover { background:var(--paper-2); color:var(--ink-2); }
 .lead-grip:active { cursor:grabbing; color:var(--accent); }
+/* Recently viewed isn't draggable, but reserves the grip's space so its icon and
+   label line up with the other section headers. */
+.lead-grip-ghost { visibility:hidden; cursor:default; pointer-events:none; }
 .lead-block.mdragging { position:relative; z-index:20; }
 .lead-block.mdragging .lead-h { border-radius:10px; background:var(--card); box-shadow:0 14px 34px -12px rgba(0,0,0,.45); }
 .lead-block.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }

@@ -4708,7 +4708,7 @@ function renderHome() {
           if (recents.length) {
             const rop = homeMainOpen('recent');
             const recentBlock = `<section class="lead-block lead-recent${rop ? '' : ' lead-collapsed'}" data-lead-key="recent">
-              <div class="lead-h" data-home-main-toggle="recent" role="button" tabindex="0"><span class="lead-chev">${rop ? '▾' : '▸'}</span><span class="lead-ic">↺</span><span class="lead-name">${esc(t('home.sec.recent'))}</span> <span class="lead-c">${recents.length}</span></div>
+              <div class="lead-h" data-home-main-toggle="recent" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${rop ? '▾' : '▸'}</span><span class="lead-ic">↺</span><span class="lead-name">${esc(t('home.sec.recent'))}</span><span class="lead-c">${recents.length}</span></div>
               ${rop ? recentHtml : ''}
             </section>`;
             const ti = blockEls.findIndex((b) => b.k === 'today');
