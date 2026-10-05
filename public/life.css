@@ -4693,7 +4693,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 }
 /* Files & photos and Links share a row, half each; one alone fills the width; both
    stack on a narrow screen. */
-.area-dash-fl { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:20px; align-items:start; }
+.area-dash-fl { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:20px; align-items:stretch; }
 .area-dash-fl > .area-dash-files, .area-dash-fl > .area-dash-links { margin-top:0; }
 /* One consistent heading style across the area's Wall / Files / Links / Shared
    panels, in the area's feature colour. (Links was a serif odd-one-out.) */
