@@ -2594,7 +2594,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .spirit-again[hidden] { display:none; }
 /* Save this card / Go again, and the history of cards taken. */
 .spirit-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
-.spirit-save { padding:11px 24px; border-radius:12px; background:#fff; color:var(--ink); border:0; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 10px 26px -12px rgba(0,0,0,.5); }
+.spirit-save { padding:11px 24px; border-radius:12px; background:#fff; color:#211c17; border:0; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 10px 26px -12px rgba(0,0,0,.5); }
 .spirit-save:hover { filter:brightness(0.97); }
 .spirit-actions .spirit-again { background:transparent; color:#fff; box-shadow:none; border:1px solid rgba(255,255,255,.5); }
 .spirit-saved { color:#fff; font-weight:700; font-size:15px; }
