@@ -5069,7 +5069,7 @@ const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', {
 function spiritHistoryHtml() {
   const h = state.spiritHistory || [];
   if (!h.length) return '';
-  const rows = h.slice(0, 40).map((x) => `<div class="spirit-hrow"><span class="sh-sym">${esc(x.symbol || '✦')}</span><span class="sh-body"><span class="sh-name">${esc(x.name)}</span>${x.message ? `<span class="sh-msg">${esc(x.message)}</span>` : ''}</span><span class="sh-when">${esc(spiritWhen(x.at))}</span></div>`).join('');
+  const rows = h.slice(0, 40).map((x, i) => `<button class="spirit-hrow spirit-hrow-btn" data-spirit-open-hist="${i}" title="Open this card"><span class="sh-sym">${esc(x.symbol || '✦')}</span><span class="sh-body"><span class="sh-name">${esc(x.name)}</span>${x.message ? `<span class="sh-msg">${esc(x.message)}</span>` : ''}</span><span class="sh-when">${esc(spiritWhen(x.at))}</span></button>`).join('');
   return `<details class="spirit-hist"><summary>Cards you've taken · ${h.length}</summary><div class="spirit-hlist">${rows}</div></details>`;
 }
 function saveDrawnSpirit() {
@@ -5125,6 +5125,13 @@ async function openSpiritCards() {
     catch { state.spiritHistory = []; }
     if (state.view && state.view.type === 'spirit') renderSpirit();
   }
+}
+// Reopen a card from the "Cards you've taken" history - show it face-up again.
+function openSpiritHist(i) {
+  const x = (state.spiritHistory || [])[i]; if (!x) return;
+  state.spirit = { card: [x.name, x.symbol, x.message], saved: true };
+  if (state.view && state.view.type === 'spirit') renderSpirit();
+  else openSpiritCards().then(() => { state.spirit = { card: [x.name, x.symbol, x.message], saved: true }; renderSpirit(); });
 }
 function drawSpiritCard() {
   const prev = state.spirit && state.spirit.card;
@@ -5282,7 +5289,12 @@ function icHistoryHtml() {
   return `<details class="ic-hist"><summary>Past readings · ${h.length}</summary><div class="ic-hlist">${icHistRows(h)}</div></details>`;
 }
 function icHistRows(h) {
-  return h.slice(0, 40).map((x) => `<div class="ic-hrow"><span class="ic-hcn">${esc(x.cn || '')}</span><span class="ic-hbody"><span class="ic-hname">${esc(x.name)}${x.toName ? ` → ${esc(x.toName)}` : ''}</span>${x.q ? `<span class="ic-hq">"${esc(x.q)}"</span>` : ''}</span><span class="ic-hwhen">${esc(spiritWhen(x.at))}</span></div>`).join('');
+  // Readings cast since we started storing the lines can be reopened in full;
+  // older rows (no lines saved) stay as a plain record.
+  return h.slice(0, 40).map((x, i) => {
+    const inner = `<span class="ic-hcn">${esc(x.cn || '')}</span><span class="ic-hbody"><span class="ic-hname">${esc(x.name)}${x.toName ? ` → ${esc(x.toName)}` : ''}</span>${x.q ? `<span class="ic-hq">"${esc(x.q)}"</span>` : ''}</span><span class="ic-hwhen">${esc(spiritWhen(x.at))}</span>`;
+    return (x.lines && x.lines.length) ? `<button class="ic-hrow ic-hrow-btn" data-iching-open-hist="${i}" title="Open this reading">${inner}</button>` : `<div class="ic-hrow">${inner}</div>`;
+  }).join('');
 }
 async function openIChing(reading) {
   // Reopen a pinned reading (from the Well-being / Home tile), or a fresh cast.
@@ -5334,7 +5346,9 @@ function saveIChing() {
   const s = state.iching; if (!s || !s.lines) return;
   const transformed = s.lines.some((l) => l.changing) ? icHexFor(s.lines, true) : null;
   state.ichingHistory = state.ichingHistory || [];
-  state.ichingHistory.unshift({ n: s.hex.n, name: s.hex.name, cn: s.hex.cn, toName: transformed ? transformed.name : '', q: s.q || '', at: Date.now() });
+  // Keep the cast lines (and any reflection) so a past reading can be reopened in
+  // full, not just listed.
+  state.ichingHistory.unshift({ n: s.hex.n, name: s.hex.name, cn: s.hex.cn, toName: transformed ? transformed.name : '', q: s.q || '', lines: s.lines, reflection: s.reflection || '', at: Date.now() });
   state.ichingHistory = state.ichingHistory.slice(0, 200);
   api('/api/kv/iching_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.ichingHistory) }) }).catch(() => {});
   s.saved = true; renderIChing(); toast('Reading saved');
@@ -17500,12 +17514,14 @@ document.addEventListener('click', (e) => {
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
   { const as = t.closest('[data-admin-status]'); if (as) { setUserStatus(as.dataset.adminStatus, as.dataset.status); return; } }
   if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
+  { const sh = t.closest('[data-spirit-open-hist]'); if (sh) { openSpiritHist(Number(sh.dataset.spiritOpenHist)); return; } }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
   if (t.closest('[data-spirit-save]')) { saveDrawnSpirit(); return; }
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
   if (t.closest('[data-open-iching]')) { openIChing(); return; }
   if (t.closest('[data-iching-reopen]')) { openIChing(currentIching()); return; }
+  { const ih = t.closest('[data-iching-open-hist]'); if (ih) { const r = (state.ichingHistory || [])[Number(ih.dataset.ichingOpenHist)]; if (r && r.lines) openIChing(r); return; } }
   if (t.closest('[data-iching-dismiss]')) { dismissIching(); return; }
   if (t.closest('[data-iching-cast]')) { castIChing(); return; }
   if (t.closest('[data-iching-save]')) { saveIChing(); return; }
