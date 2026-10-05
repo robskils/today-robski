@@ -2811,7 +2811,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'reflect', 'coaching', 'dreams', 'meditation', 'spirit', 'iching', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
