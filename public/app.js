@@ -4975,21 +4975,26 @@ function journalSnippet(n) {
   const p = [...d.querySelectorAll('p')].map((x) => x.textContent.trim()).find(Boolean);
   return (p || d.textContent.trim() || 'Empty entry').slice(0, 120);
 }
-// A daily review is created with three seeded headings and empty paragraphs. If
-// nothing was written under them it's a blank you opened and left - it should
-// not clutter the Journal or the Reviews dashboard, so we treat it as discardable.
-function dailyReviewBlank(n) {
-  if (!(n && n.props && n.props.mode === 'dailyreview')) return false;
-  const bodyNoHeads = String(n.body || '').replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ');
-  const text = bodyNoHeads.replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').replace(/\s+/g, ' ').trim();
+// Opening a tool seeds an entry right away: a prompt or a daily-review's headings,
+// or the coach's opening greeting. All of those are blockquotes / headings - the
+// person's own writing lives in the paragraphs. So if there's no paragraph text,
+// nothing was actually written: it's an entry you opened and closed, and it should
+// not leave an empty card behind. We treat such entries as discardable.
+function journalBlank(n) {
+  if (!(n && (n.kind === 'journal' || (n.props && n.props.mode)))) return false;
+  const stripped = String(n.body || '')
+    .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, ' ')
+    .replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ');
+  const text = stripped.replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').replace(/\s+/g, ' ').trim();
   return text === '';
 }
-// Fetch top-level journal entries, discarding (and deleting) blank daily reviews
-// so they never reach the Journal list, the hub preview or the Reviews dashboard.
+// Fetch top-level journal entries, discarding (and deleting) any blank ones so an
+// opened-then-closed tool never leaves an empty card on the Journal, the hub
+// preview, the Insights source or the Reviews dashboard.
 async function fetchJournalEntries() {
   const entries = await api('/api/blocks?kind=journal&parent_id=');
-  (entries || []).filter(dailyReviewBlank).forEach((b) => api(`/api/blocks/${b.id}`, { method: 'DELETE' }).catch(() => {}));
-  const kept = (entries || []).filter((n) => !dailyReviewBlank(n));
+  (entries || []).filter(journalBlank).forEach((b) => api(`/api/blocks/${b.id}`, { method: 'DELETE' }).catch(() => {}));
+  const kept = (entries || []).filter((n) => !journalBlank(n));
   kept.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
   return kept;
 }
@@ -13137,7 +13142,7 @@ async function openReviews() {
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
   // Daily reviews now live here (bullet-journal daily log). Load past ones so the
   // Reviews page lists them, newest first.
-  if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview' && !dailyReviewBlank(e)).sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
+  if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview' && !journalBlank(e)).sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
 }
 function renderReviews() {
   const daily = modOn('reflect') ? (() => {
