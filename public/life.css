@@ -2956,8 +2956,8 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 /* Task "Surface & reminders" section: a tidy grouped card. */
 .tf-surface { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
 /* Surface + Who-can-see-this sit side by side on a wide card, stack when narrow. */
-.tf-cardrow { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
-.tf-cardrow > .tf-surface { flex:1 1 340px; min-width:0; }
+.tf-cardrow { display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; }
+.tf-cardrow > * { flex:1 1 300px; min-width:0; }
 .tfs-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 6px; }
 /* Foldable card headers (Surface / Who can see this / Notes): click to collapse. */
 .tfs-fold { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:none; border:0; cursor:pointer; text-align:left; }
