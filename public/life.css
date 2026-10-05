@@ -5160,7 +5160,9 @@ table.ttable tr:last-child td { border-bottom:0; }
    banner over a 2x2 of the buckets. (Robin - "as beautiful as possible".) */
 .mail-quads { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin:0 0 18px; }
 .mail-quad { position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:3px; text-align:left; min-height:110px; padding:16px; border-radius:18px; color:var(--ink); border:1px solid var(--line); background:linear-gradient(158deg, color-mix(in srgb,var(--q) 9%,var(--card)), var(--card) 60%); box-shadow:var(--shadow); transition:transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s, border-color .16s; min-width:0; -webkit-tap-highlight-color:transparent; }
-.mail-quad:hover { transform:translateY(-3px); border-color:color-mix(in srgb,var(--q) 45%,var(--line)); box-shadow:0 16px 32px -18px color-mix(in srgb,var(--q) 60%,rgba(0,0,0,.45)); }
+/* Hover lift/ring only on real pointers - on touch it stuck after a tap, so a
+   pot (usually Urgent) looked selected when Mail just opened. (Robin.) */
+@media (hover: hover) { .mail-quad:hover { transform:translateY(-3px); border-color:color-mix(in srgb,var(--q) 45%,var(--line)); box-shadow:0 16px 32px -18px color-mix(in srgb,var(--q) 60%,rgba(0,0,0,.45)); } }
 .mail-quad:active { transform:translateY(-1px); }
 .mail-quad.on { border-color:var(--q); background:linear-gradient(158deg, color-mix(in srgb,var(--q) 17%,var(--card)), var(--card) 68%); box-shadow:0 0 0 2px color-mix(in srgb,var(--q) 55%,transparent) inset, 0 14px 30px -20px color-mix(in srgb,var(--q) 70%,rgba(0,0,0,.45)); }
 .mail-quad-dot { flex:none; width:11px; height:11px; border-radius:50%; background:var(--q); }
