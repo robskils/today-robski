@@ -6612,11 +6612,14 @@ function renderArea() {
   // Wheel of Life is a tab only for areas you actually track in the wheel; untracked
   // ones drop it (toggle tracking from the Wheel of Life page). (Robin, 2026-09-27.)
   const wheelTracked = !(area.props && area.props.reviewOff);
-  const TABS = ['Vision', 'Goals', ...(wheelTracked ? ['Wheel of Life'] : []), 'Bucket list'];
-  let openTile = state.area_open.tileOpen || 'Vision';
-  if (!TABS.includes(openTile)) openTile = 'Vision';
-  const tabBar = `<div class="area-tiles area-tabs" style="--cols:${TABS.length}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>`;
-  const areaTilesHtml = `${tabBar}<div class="area-tilepanel"><div class="area-card area-top-card">${tops[openTile]}</div>${restHtml}</div>`;
+  // Respect the section-visibility setting: a tab you've hidden (Vision / Goals /
+  // Bucket list) drops out entirely - no tab button and no panel. (Robin.)
+  const TABS = ['Vision', 'Goals', ...(wheelTracked ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
+  let openTile = state.area_open.tileOpen;
+  if (!openTile || !TABS.includes(openTile)) openTile = TABS[0] || null;
+  const tabBar = TABS.length ? `<div class="area-tiles area-tabs" style="--cols:${TABS.length}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>` : '';
+  const topCard = (openTile && tops[openTile]) ? `<div class="area-card area-top-card">${tops[openTile]}</div>` : '';
+  const areaTilesHtml = `${tabBar}<div class="area-tilepanel">${topCard}${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   const dashStats = [[notes.length + tables.length, 'notes & tables'], [openTs.length, 'open tasks'], [activeGoals.length, 'goals'], [bookmarks.length, 'saved'], [journals.length, 'reflections']]
@@ -6631,8 +6634,8 @@ function renderArea() {
           <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
           <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Note</button>
           <button class="addnew-item" data-area-add-event><span class="addnew-ic">◑</span>Event</button>
-          <button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>
-          <button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>
+          ${secHidden('Goals') ? '' : '<button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>'}
+          ${secHidden('Bucket list') ? '' : '<button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>'}
           <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
         </div>
       </div>`;
