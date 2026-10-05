@@ -1017,6 +1017,9 @@ function recordHistory() {
   try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {}
 }
 function navBack() {
+  // Within Mail, Back first steps back through the boxes you opened (Inbox ->
+  // Important -> Back = Inbox), leaving Mail only once you're back at the start.
+  if (mailBoxCanBack()) { mailBoxBack(); return; }
   if (!navHist.length) return;
   const prev = navHist.pop();
   // Stepping back through the Home tiles you were looking at: switch the tile in
@@ -1044,6 +1047,7 @@ function appHandleBack() {
   const mv = document.getElementById('move-overlay'); if (mv && mv.innerHTML) { closeMove(); return true; }
   if (document.getElementById('prac-editor-host')) { closePracticeEditor(); return true; }
   if (state.cal && (state.cal.adding || state.cal.editing || state.cal.viewing)) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; state.cal.viewing = null; renderCalendar(); return true; }
+  if (mailBoxCanBack()) { mailBoxBack(); return true; }
   if (navHist.length) { navBack(); return true; }
   return false;
 }
@@ -8507,6 +8511,26 @@ function setMailFolder(key) {
   if (f.local) { renderMail(); return; }   // Drafts is client-side, no fetch
   state.mail.mailbox = f.mailbox; loadMessages();
 }
+// Box history within Mail, so Back retraces the boxes you opened (Inbox ->
+// Important -> Back = Inbox) and only leaves Mail once you're back at the box
+// you entered on. (Robin.)
+function mailBoxSnap() { return { folder: state.mail.folder || 'inbox', quad: [...(state.mail.quadFilter || [])] }; }
+function mailBoxPush() {
+  if (!state.mail) return;
+  const snap = mailBoxSnap();
+  state.mail.boxStack = state.mail.boxStack || [];
+  const top = state.mail.boxStack[state.mail.boxStack.length - 1];
+  if (!top || JSON.stringify(top) !== JSON.stringify(snap)) state.mail.boxStack.push(snap);
+  if (state.mail.boxStack.length > 30) state.mail.boxStack.shift();
+}
+function mailBoxCanBack() { return !!(state.view && state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing && state.mail.boxStack && state.mail.boxStack.length); }
+function mailBoxBack() {
+  const b = (state.mail.boxStack || []).pop(); if (!b) return;
+  state.mail.quadFilter = new Set(b.quad || []);
+  state.mail.open = null;
+  setMailFolder(b.folder || 'inbox');
+  scrollToMailList();
+}
 // File one or more messages into a bucket. Inbox-zero: filing an email that's
 // sitting in the real Inbox ARCHIVES it off the server inbox (out of your face)
 // while the bucket keeps it - stored as a snapshot pointing at the Archive,
@@ -9073,6 +9097,8 @@ async function openMail(openKey) {
   if (mailReopenStale() && !state.mail.composing) { state.mail.open = null; openKey = null; }
   if (!openKey && state.mail.open && !state.mail.composing) openKey = state.mail.open._key;
   state.view = openKey ? { type: 'mail', open: openKey } : { type: 'mail' };
+  // Fresh entry into Mail: no box history yet, so the first Back leaves Mail.
+  if (!openKey) state.mail.boxStack = [];
   mailStamp();
   // Always open on the whole Inbox - that's the triage base for the quadrants. (We
   // used to auto-land on Unread, but with the Unread tab folded away that read as
@@ -16929,10 +16955,10 @@ document.addEventListener('click', (e) => {
   const macc = t.closest('[data-mail-acct]'); if (macc) { state.mail.account = macc.dataset.mailAcct; state.mail.limit = 40; loadMessages(); return; }
   const ddel = t.closest('[data-del-draft]'); if (ddel) { e.preventDefault(); e.stopPropagation(); delDraft(ddel.dataset.delDraft); return; }
   const dres = t.closest('[data-resume-draft]'); if (dres) { resumeDraft(dres.dataset.resumeDraft); return; }
-  const mfld = t.closest('[data-mail-folder]'); if (mfld) { state.mail.quadFilter = new Set(); setMailFolder(mfld.dataset.mailFolder); scrollToMailList(); return; }
-  if (t.closest('[data-mail-quad-inbox]')) { state.mail.quadFilter = new Set(); setMailFolder('inbox'); scrollToMailList(); return; }
-  if (t.closest('[data-mail-quad-archive]')) { state.mail.quadFilter = new Set(); setMailFolder('archive'); scrollToMailList(); return; }
-  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { const k = qv.dataset.mailQuadView; const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const onlyThis = qf.size === 1 && qf.has(k); state.mail.quadFilter = onlyThis ? new Set() : new Set([k]); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); scrollToMailList(); return; } }
+  const mfld = t.closest('[data-mail-folder]'); if (mfld) { mailBoxPush(); state.mail.quadFilter = new Set(); setMailFolder(mfld.dataset.mailFolder); scrollToMailList(); return; }
+  if (t.closest('[data-mail-quad-inbox]')) { mailBoxPush(); state.mail.quadFilter = new Set(); setMailFolder('inbox'); scrollToMailList(); return; }
+  if (t.closest('[data-mail-quad-archive]')) { mailBoxPush(); state.mail.quadFilter = new Set(); setMailFolder('archive'); scrollToMailList(); return; }
+  { const qv = t.closest('[data-mail-quad-view]'); if (qv) { mailBoxPush(); const k = qv.dataset.mailQuadView; const qf = state.mail.quadFilter || (state.mail.quadFilter = new Set()); const onlyThis = qf.size === 1 && qf.has(k); state.mail.quadFilter = onlyThis ? new Set() : new Set([k]); if (!['inbox', 'unread', 'starred'].includes(state.mail.folder || 'inbox')) setMailFolder('inbox'); else renderMail(); scrollToMailList(); return; } }
   { const qf = t.closest('[data-mail-quad-file]'); if (qf) { const o = state.mail.open; if (o) mailToQuad(o, qf.dataset.mailQuadFile); return; } }
   // Quick-file straight from an inbox row: a small button opens a 4-way menu.
   { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
