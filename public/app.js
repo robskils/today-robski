@@ -6720,7 +6720,6 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-lead-s">${esc(leadBits)}</div>
     </div>`;
   return `<section class="area-ov">
-    ${lead}
     ${sectionsBlock}
     ${reviewsBlock}
     <div class="ov-cols">
