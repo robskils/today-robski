@@ -3984,7 +3984,10 @@ async function openPracticeCard(id) {
 function renderPracticeCard() {
   const id = state.view.id;
   const a = (state.practices && state.practices.activities || []).find((x) => String(x.id) === String(id));
-  const crumb = `<div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
+  // Back goes UP one level - to Practices, the folder this practice lives in -
+  // not wherever you happened to start (Robin: a sub-page's Back is its parent,
+  // not Home). Always shown, since a practice always has Practices above it.
+  const crumb = `<div class="note-crumbs"><button class="crumb-back" data-open-practices title="Back to Practices" aria-label="Back to Practices">←</button><button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
   if (!a) { $('#pane').innerHTML = `${crumb}<div class="home-empty" style="padding:24px">This practice was not found.</div>`; return; }
   const ar = practiceArea(a); const hue = ar ? hueOf(ar) : 220;
   const meta = parsePracticeMeta(a);
