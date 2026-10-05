@@ -5306,6 +5306,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-task-pop { position:absolute; width:300px; max-width:calc(100vw - 24px); box-sizing:border-box; background:var(--card); border:1px solid var(--line-2); border-radius:14px; box-shadow:0 18px 44px -16px rgba(0,0,0,.45); padding:14px; display:flex; flex-direction:column; gap:11px; }
 .mail-task-pop .mail-move-h { padding:0; }
 .mail-task-pop .mtask-title { width:100%; box-sizing:border-box; font-size:15px; margin:0; }
+/* On a phone the anchor is near the bottom, so the tap-positioned popover ran
+   off-screen. Centre it near the top (clear of the keyboard the title field
+   raises) and let it scroll. !important overrides the inline top/left. (Robin.) */
+@media (max-width:640px){
+  .mail-task-pop { position:fixed !important; left:50% !important; right:auto !important; top:14% !important; bottom:auto !important; transform:translateX(-50%); width:calc(100vw - 28px); max-width:460px; max-height:74vh; overflow:auto; }
+}
 .mtask-field { display:flex; flex-direction:column; gap:5px; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); font-weight:600; }
 .mtask-field .sel { width:100%; box-sizing:border-box; text-transform:none; letter-spacing:normal; font-weight:400; }
 .mtask-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:2px; }
