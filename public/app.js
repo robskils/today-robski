@@ -10333,7 +10333,19 @@ function renderMailList(loading) {
 // tall on a phone, so the list would otherwise be below the fold. (Robin.)
 function scrollToMailList() {
   if (!window.matchMedia('(max-width:820px)').matches) return;
-  requestAnimationFrame(() => { const el = document.querySelector('.mail-layout') || document.querySelector('.mail-list'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.mail-layout') || document.querySelector('.mail-list');
+    if (!el) return;
+    // Land the FIRST email just below the sticky stack (the fixed brand header,
+    // --navh tall, plus the breadcrumb that pins directly under it), not behind
+    // it - otherwise the first card hides and you appear to overshoot to the
+    // second. scrollIntoView honours scroll-margin-top, so set it to that stack.
+    const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56;
+    const crumb = document.querySelector('#pane .crumbbar, #pane .note-crumbs');
+    const crumbH = crumb ? Math.round(crumb.getBoundingClientRect().height) : 0;
+    el.style.scrollMarginTop = (navh + crumbH + 8) + 'px';
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 function renderMail(loading) {
   // Mail's loads are the slowest in the app (IMAP, over the network, sometimes
