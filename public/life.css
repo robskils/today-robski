@@ -1844,6 +1844,15 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   }
 }
 .crumbbar .crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
+/* Note header split into two rows, both inside the sticky bar: crumbs + "New"
+   on top, then the note actions (star left, bin/ellipsis right). (Robin.) */
+.note-crumbs-split { flex-direction:column; align-items:stretch; gap:10px; }
+.note-crumbs-split .nc-top { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
+.note-crumbs-split .nc-top .addnew { margin-left:auto; }
+.note-crumbs-split .nc-actions { display:flex; align-items:center; gap:8px; }
+.note-crumbs-split .nc-actions .nab-right { margin-left:auto; display:flex; align-items:center; gap:6px; }
+.note-areas-row { margin:2px 0 14px; }
+.note-areas-row:empty { display:none; }
 .crumb-back { flex:none; width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-2); font-size:18px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
 .crumb-back:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
 .note-crumbs .crumb-back, .area-hero-top .crumb-back { margin-right:2px; }

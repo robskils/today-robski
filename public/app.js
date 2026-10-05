@@ -15557,16 +15557,22 @@ function renderNote() {
   const connected = state.note.connected || [];
   const kids = connected.map(connItem).join('');
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}
-      <span class="crumb-tools">${noteAreasControl(n)}
-      <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
-      <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
-      ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-tidy ghost note-hide-mobile" data-note-tidy data-tip="Tidy the spacing - even out blank lines" aria-label="Tidy the spacing">Tidy</button>`}
-      ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-      <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}</span></div>
+    <div class="note-crumbs note-crumbs-split">
+      <div class="nc-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}${addNewMenuHtml()}</div>
+      <div class="nc-actions">
+        <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
+        <span class="nab-right">
+          <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
+          ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-tidy ghost note-hide-mobile" data-note-tidy data-tip="Tidy the spacing - even out blank lines" aria-label="Tidy the spacing">Tidy</button>`}
+          ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
+          <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
+        </span>
+      </div>
+    </div>
     <div class="note-layout">
       <div class="note-main">
         ${sharedBanner(n)}
+        <div class="note-areas-row">${noteAreasControl(n)}</div>
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
         <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}</div>
         ${noteMembersHtml(n)}
