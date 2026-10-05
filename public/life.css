@@ -1922,6 +1922,12 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    way, not in the toolbar. */
 .note-totable { display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:6px 10px; background:none; border:0; color:var(--ink-3); font-size:13px; cursor:pointer; border-radius:8px; }
 .note-totable:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent); }
+/* The note "⋯ more" overflow: tucks away less-used actions (e.g. Turn into a
+   table) so they don't crowd the note - especially on mobile. */
+.note-more { position:relative; display:inline-block; }
+.note-more > summary.note-more-sum { list-style:none; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border-radius:8px; color:var(--ink-3); font-size:21px; line-height:1; cursor:pointer; }
+.note-more > summary.note-more-sum::-webkit-details-marker { display:none; }
+.note-more[open] > summary.note-more-sum, .note-more > summary.note-more-sum:hover { color:var(--accent); background:var(--paper-2); }
 .note-side .subpages { margin-top:0; border-top:0; padding:16px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; }
 @media (max-width:900px){
   /* Single column. `display:contents` on the side rail lets its sections (Notes

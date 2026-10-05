@@ -2433,7 +2433,6 @@ const MOBILE_SECTIONS = [
   ['notepad', 'home-sec-notepad', 'Notepad'],
   ['favs', 'home-sec-favs', 'Starred Notes'],
   ['favareas', 'home-sec-favareas', 'Life areas'],
-  ['recent', 'home-sec-recent', 'Recently viewed'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
   ['people', 'home-sec-people', 'People online'],
   ['toolbox', 'home-toolbox', 'Toolbox'],
@@ -4667,14 +4666,27 @@ function renderHome() {
           const enabledSet = new Set(homeMainEnabled().filter((k) => availKeys.includes(k)));
           const order = homeMainOrder().filter((k) => availKeys.includes(k));   // full section order (on + off)
           const enabled = order.filter((k) => enabledSet.has(k));
-          const blocks = enabled.map((k) => {
+          const blockEls = enabled.map((k) => {
             const s = avail.find((x) => x.k === k); const op = homeMainOpen(k);
             const cnt = (s.count != null && s.count) ? ` <span class="lead-c">${s.count}</span>` : '';
-            return `<section class="lead-block lead-${s.k} ${s.k === 'today' ? 'lead-day' : ''}${op ? '' : ' lead-collapsed'}" data-lead-key="${s.k}">
+            return { k, html: `<section class="lead-block lead-${s.k} ${s.k === 'today' ? 'lead-day' : ''}${op ? '' : ' lead-collapsed'}" data-lead-key="${s.k}">
               <div class="lead-h" data-home-main-toggle="${s.k}" role="button" tabindex="0"><span class="lead-grip" data-lead-pgrip="${s.k}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span><span class="lead-chev">${op ? '▾' : '▸'}</span><span class="lead-ic">${s.ic}</span><span class="lead-name">${esc(s.label)}</span>${cnt}<span class="lead-h-r">${op ? (s.extra || '') : ''}<button class="lead-x" data-home-main-x="${s.k}" title="Remove from Home" aria-label="Remove ${esc(s.label)} from Home">×</button></span></div>
               ${op ? bodies[s.k] : ''}
+            </section>` };
+          });
+          // Recently viewed is a fixed strip in the main column, right after Today -
+          // one tap back to what you were in. Not a removable/configurable tile; it
+          // folds like the others. (Moved here from the right rail.)
+          if (recents.length) {
+            const rop = homeMainOpen('recent');
+            const recentBlock = `<section class="lead-block lead-recent${rop ? '' : ' lead-collapsed'}" data-lead-key="recent">
+              <div class="lead-h" data-home-main-toggle="recent" role="button" tabindex="0"><span class="lead-chev">${rop ? '▾' : '▸'}</span><span class="lead-ic">↺</span><span class="lead-name">${esc(t('home.sec.recent'))}</span> <span class="lead-c">${recents.length}</span></div>
+              ${rop ? recentHtml : ''}
             </section>`;
-          }).join('');
+            const ti = blockEls.findIndex((b) => b.k === 'today');
+            blockEls.splice(ti >= 0 ? ti + 1 : 0, 0, { k: 'recent', html: recentBlock });
+          }
+          const blocks = blockEls.map((b) => b.html).join('');
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
           // drag to reorder how the sections stack on Home.
           const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
@@ -4689,12 +4701,11 @@ function renderHome() {
           // section carrying data-hsec so the drop logic can read the order.
           const secCount = (n) => (n ? `<span class="sec-c">${n}</span>` : '');
           const sideSec = {
-            recent: `<section class="home-sec home-sec-card home-sec-recent${secOpen('recent') ? '' : ' home-sec-shut'}" data-hsec="recent">${secH('recent', t('home.sec.recent'), secCount(recents.length), true, '↺')}${secOpen('recent') ? recentHtml : ''}</section>`,
             notepad: modOn('notepad') ? `<section class="home-sec home-sec-card home-sec-notepad${secOpen('notepad') ? '' : ' home-sec-shut'}" data-hsec="notepad">${secH('notepad', t('home.sec.notepad'), '', true, '✎')}${secOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '',
             people: (modOn('contacts') && peopleOn()) ? `<section class="home-sec home-sec-card home-sec-people${secOpen('people') ? '' : ' home-sec-shut'}" data-hsec="people">${secH('people', t('home.sec.people'), '', true, '☺')}${secOpen('people') ? peopleHtml() : ''}</section>` : '',
             favs: (state.favs && state.favs.length) ? `<section class="home-sec home-sec-card home-sec-starred home-sec-favs${secOpen('favs') ? '' : ' home-sec-shut'}" data-hsec="favs">${secH('favs', t('home.sec.favs'), secCount(state.favs.length), true, '★')}${secOpen('favs') ? favListHtml() : ''}</section>` : '',
           };
-          const sdef = ['recent', 'favs', 'notepad', 'people'];
+          const sdef = ['favs', 'notepad', 'people'];
           let sorder = sdef; try { const o = JSON.parse(localStorage.getItem('life.home.sideOrder')); if (Array.isArray(o)) sorder = [...o.filter((k) => sdef.includes(k)), ...sdef.filter((k) => !o.includes(k))]; } catch {}
           return sorder.map((k) => sideSec[k] || '').join('');
         })()}</aside>
@@ -15484,7 +15495,7 @@ function renderNote() {
       <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
       ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-tidy ghost note-hide-mobile" data-note-tidy data-tip="Tidy the spacing - even out blank lines" aria-label="Tidy the spacing">Tidy</button>`}
       ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-      <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}</span></div>
+      <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}</span></div>
     <div class="note-layout">
       <div class="note-main">
         ${sharedBanner(n)}
@@ -15508,7 +15519,6 @@ function renderNote() {
           return secs.map((s, i) => ({ ...s, i })).sort((a, b) => (b.has - a.has) || (a.i - b.i)).map((s) => s.html).join('');
         })()}
         ${relatedNotesHtml(n)}
-        ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-totable" data-note-to-table title="Make a table from this note's lines - each line becomes a row">▦ Turn into a table</button>`}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
     </div>`;
