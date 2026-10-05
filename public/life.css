@@ -420,6 +420,42 @@ button { cursor:pointer; background:none; border:0; }
 /* ── Financial ──────────────────────────────────────── */
 .fin-load, .fin-err { padding:40px 4px; color:var(--ink-2); font-size:16px; }
 .fin-err-d { color:var(--ink-3); font-size:14px; margin:6px 0 16px; overflow-wrap:anywhere; }
+/* Money dashboard */
+.mny-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:4px 0 20px; align-items:stretch; }
+@media (max-width:640px){ .mny-metrics { grid-template-columns:1fr; } }
+.mny-card { display:flex; flex-direction:column; gap:14px; padding:20px 22px; border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); }
+.mny-metric { display:flex; flex-direction:column; gap:3px; }
+.mny-k { font-size:12.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); }
+.mny-v { font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:clamp(34px,7vw,46px); line-height:1.02; letter-spacing:-.02em; color:var(--ink); font-variant-numeric:tabular-nums; }
+.mny-v.mny-dim { color:var(--ink-3); }
+.mny-sub { font-size:13.5px; color:var(--ink-2); }
+.mny-sub.mny-dim { color:var(--ink-3); }
+.mny-sub.up { color:#6f9f4a; } .mny-sub.down { color:var(--danger,#c4412e); }
+.mny-alloc { display:flex; flex-direction:column; gap:8px; }
+.mny-bar { display:flex; height:9px; border-radius:999px; overflow:hidden; background:var(--paper-2); }
+.mny-bar span { display:block; height:100%; }
+.mny-legend { display:flex; flex-wrap:wrap; gap:10px; font-size:12px; color:var(--ink-3); }
+.mny-legend span { display:inline-flex; align-items:center; gap:5px; }
+.mny-legend i { width:9px; height:9px; border-radius:3px; flex:none; }
+.mny-cats { display:flex; flex-direction:column; gap:7px; }
+.mny-catrow { display:flex; align-items:center; gap:10px; font-size:13px; }
+.mny-catn { flex:none; width:34%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-2); }
+.mny-cattrack { flex:1; height:7px; border-radius:999px; background:var(--paper-2); overflow:hidden; }
+.mny-cattrack i { display:block; height:100%; background:var(--accent); border-radius:999px; }
+.mny-catv { flex:none; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+.mny-advice { margin:0 0 20px; }
+.mny-advice-t { font-size:16px; line-height:1.6; color:var(--ink-2); margin:4px 0 10px; }
+.mny-advice-go { border:0; background:none; color:var(--accent); font:inherit; font-size:14px; font-weight:600; cursor:pointer; padding:0; }
+.mny-advice-go:hover { text-decoration:underline; }
+.mny-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+@media (max-width:640px){ .mny-links { grid-template-columns:1fr; } }
+.mny-link { display:flex; align-items:center; gap:13px; text-align:left; padding:16px 18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; color:var(--ink); transition:border-color .12s, transform .08s, box-shadow .12s; }
+.mny-link:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 14px 30px -18px rgba(0,0,0,.45); }
+.mny-link-ic { font-size:22px; color:var(--accent); flex:none; width:26px; text-align:center; }
+.mny-link-body { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.mny-link-t { font-weight:600; font-size:16px; }
+.mny-link-s { font-size:12.5px; color:var(--ink-3); }
+.mny-link-go { margin-left:auto; color:var(--ink-3); flex:none; }
 .fin-port { display:flex; flex-direction:column; gap:22px; }
 .fin-head { margin-top:2px; }
 .fin-total-lab { font-size:12.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); }

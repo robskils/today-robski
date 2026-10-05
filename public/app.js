@@ -794,7 +794,7 @@ function helpKey(v) {
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
     wellbeing: 'reflect', insights: 'reflect', meditation: 'reflect', iching: 'reflect', spirit: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
     area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
-    toolbox: 'timer', readwatch: 'saved' })[t] || t;
+    toolbox: 'timer', readwatch: 'saved', money: 'financial' })[t] || t;
 }
 // The i beside the tabs, keyed to the tool you're on. Hover = the tip; click = pin
 // the full guide in its own tab.
@@ -935,7 +935,7 @@ function labelForView(v) {
     case 'friends': return 'Contacts on Daybook';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return t('nav.areas');
-    case 'financial': return t('nav.financial');
+    case 'financial': return t('nav.financial'); case 'money': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Daybook';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
@@ -976,7 +976,7 @@ function openView(v) {
     case 'bookmarkcard': return openBookmarkCard(v.id);
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
-    case 'financial': return openFinancial(v.tab);
+    case 'financial': return openFinancial(v.tab); case 'money': return openMoney();
     case 'settings': return openSettings(v.tab);
     case 'card': return openCard();
     case 'admin': return openAdmin();
@@ -2802,7 +2802,7 @@ function navItems(v) {
     rvMonthly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'monthly' ? 'on' : ''}" data-open-reviewtype="monthly"><span class="nav-ic">↻</span><span class="nav-lbl">Monthly</span></button>` : '',
     rvQuarterly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'quarterly' ? 'on' : ''}" data-open-reviewtype="quarterly"><span class="nav-ic">↻</span><span class="nav-lbl">Quarterly</span></button>` : '',
     rvYearly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'yearly' ? 'on' : ''}" data-open-reviewtype="yearly"><span class="nav-ic">↻</span><span class="nav-lbl">Yearly</span></button>` : '',
-    financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
+    financial: modOn('financial') ? `<button class="nav-item ${v.type === 'money' ? 'on' : ''}" data-open-money><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
     // The Money section's four buttons, each opening the Money tool on its tab.
     finSpending: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'spending' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.money.spending')}</span></button>` : '',
     finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
@@ -12550,7 +12550,7 @@ async function loadTracker(force) {
 }
 async function loadSpending() {
   const f = state.financial;
-  renderFinancial();
+  reFin();
   try {
     const [txns, catsRes, incRes, expRes, areas] = await Promise.all([
       api('/api/blocks?kind=txn'),
@@ -12566,7 +12566,7 @@ async function loadSpending() {
     f.spendAlsoIncome = parseArr(incRes);   // non-income categories the user also counts as income
     f.spendAlsoExpense = parseArr(expRes);  // income categories the user also counts as an expense
   } catch (e) { toast(e.message); f.txns = f.txns || []; }
-  renderFinancial();
+  reFin();
 }
 // Only the EXTRAS are user-editable here; the Life Areas come from the Life Areas
 // section, so renaming/removing one of those happens there, not on this page.
@@ -12618,12 +12618,12 @@ async function loadPortfolio(force) {
   const f = state.financial;
   if (f.loading) return;
   f.loading = true; if (force) { f.data = null; f.error = null; }
-  renderFinancial();
+  reFin();
   try {
     const d = await api('/api/portfolio');
     f.data = d; f.error = null;
   } catch (e) { f.error = e.message; }
-  f.loading = false; renderFinancial();
+  f.loading = false; reFin();
 }
 // The default currency the money tools show in. It's a display choice (symbol +
 // number grouping), not a conversion - you enter amounts in your own currency
@@ -12652,6 +12652,64 @@ function renderFinancial() {
     : f.tab === 'tracker' ? trackerBody()
     : portfolioBody();
   $('#pane').innerHTML = `${pageCrumb(t('nav.financial'))}<div class="pane-head"><h1>${t('nav.financial')}</h1></div>${seg}${body}`;
+}
+// Re-render whichever money surface is live, so a background data load (portfolio
+// prices, spending import) repaints the Money dashboard as well as the tool.
+function reFin() { const v = state.view && state.view.type; if (v === 'financial') renderFinancial(); else if (v === 'money') renderMoney(); }
+// The Money dashboard: a calm overview pulling the headline numbers from all three
+// money sections, with a way through to each.
+async function openMoney() {
+  state.view = { type: 'money' };
+  renderNav();
+  renderMoney();
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  const f = state.financial;
+  if (!f.data && !f.loading) loadPortfolio();
+  if (f.txns == null) loadSpending();
+  if (f.trends == null) { api('/api/fin/trends').then((tr) => { f.trends = tr || { text: null }; if (state.view.type === 'money') renderMoney(); }).catch(() => { f.trends = { text: null }; }); }
+}
+function renderMoney() {
+  const f = state.financial;
+  const d = f.data;
+  const metric = (k, v, sub, dim) => `<div class="mny-metric"><span class="mny-k">${esc(k)}</span><span class="mny-v${dim ? ' mny-dim' : ''}">${v}</span>${sub || ''}</div>`;
+  // Portfolio
+  const portMetric = d
+    ? metric('Portfolio value', eur0(d.total || 0), d.unrealisedTotal != null ? `<span class="mny-sub ${d.unrealisedTotal >= 0 ? 'up' : 'down'}">${d.unrealisedTotal >= 0 ? '▲' : '▼'} ${eurSigned(d.unrealisedTotal)} unrealised</span>` : '')
+    : metric('Portfolio value', f.loading ? '…' : '—', f.loading ? '' : '<span class="mny-sub mny-dim">Live prices</span>', true);
+  const alloc = (d && d.holdings && d.holdings.length && d.total)
+    ? `<div class="mny-alloc"><div class="mny-bar">${d.holdings.map((h) => `<span style="width:${(h.value / d.total * 100).toFixed(1)}%;background:${h.swatch}"></span>`).join('')}</div><div class="mny-legend">${d.holdings.slice(0, 6).map((h) => `<span><i style="background:${h.swatch}"></i>${esc(h.code)}</span>`).join('')}</div></div>`
+    : '';
+  // Spending this month
+  let spendMetric, spendExtra = '';
+  if (f.txns == null) spendMetric = metric('This month', '…', '', true);
+  else if (!(f.txns || []).length) spendMetric = metric('Spending', '—', '<span class="mny-sub mny-dim">Import a statement to begin</span>', true);
+  else {
+    const m = spendMonths()[0];
+    const rows = txnList().filter((t) => t.date.slice(0, 7) === m);
+    const income = rows.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    const outg = rows.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    const net = income - outg;
+    spendMetric = metric(`Spent · ${monthLabel(m)}`, eur0(outg), `<span class="mny-sub ${net >= 0 ? 'up' : 'down'}">${net >= 0 ? '▲' : '▼'} ${eurSigned(net)} net · ${eur0(income)} in</span>`);
+    const byCat = {}; rows.filter((t) => t.amount < 0).forEach((t) => { const c = t.category || 'Uncategorised'; byCat[c] = (byCat[c] || 0) + Math.abs(t.amount); });
+    const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 4); const mx = cats.length ? cats[0][1] : 1;
+    if (cats.length) spendExtra = `<div class="mny-cats">${cats.map(([c, v]) => `<div class="mny-catrow"><span class="mny-catn">${esc(c)}</span><div class="mny-cattrack"><i style="width:${Math.round(v / mx * 100)}%"></i></div><span class="mny-catv">${eur0(v)}</span></div>`).join('')}</div>`;
+  }
+  const tr = (f.trends && f.trends.text) ? String(f.trends.text).replace(/\s+/g, ' ').trim() : '';
+  const adviceTeaser = tr ? `<p class="mny-advice-t">${esc(tr.slice(0, 240))}${tr.length > 240 ? '…' : ''}</p>` : `<p class="mny-advice-t mny-dim">${(state.account && state.account.aiOff) ? 'Turn on AI in Settings for a read on market trends and your watchlist.' : 'Market trends and your watchlist, read by Claude.'}</p>`;
+  const linkCard = (tab, ic, title, sub) => `<button class="mny-link" data-fin-tab="${tab}"><span class="mny-link-ic">${ic}</span><span class="mny-link-body"><span class="mny-link-t">${esc(title)}</span><span class="mny-link-s">${esc(sub)}</span></span><span class="mny-link-go">→</span></button>`;
+  $('#pane').innerHTML = `
+    ${pageCrumb(t('nav.financial'))}
+    <div class="pane-head home-head"><h1>${t('nav.financial')}</h1></div>
+    <div class="mny-metrics">
+      <div class="mny-card">${portMetric}${alloc}</div>
+      <div class="mny-card">${spendMetric}${spendExtra}</div>
+    </div>
+    <section class="mny-advice"><div class="home-sec-h">The read</div>${adviceTeaser}<button class="mny-advice-go" data-fin-tab="advice">Open advice →</button></section>
+    <div class="mny-links">
+      ${linkCard('spending', '£', t('nav.money.spending'), 'Income, outgoings, by category')}
+      ${linkCard('portfolio', '↗', t('nav.money.portfolio'), 'Live value and holdings')}
+      ${linkCard('advice', '✧', t('nav.money.advice'), 'Trends and your watchlist')}
+    </div>`;
 }
 const finSoon = (ic, title, body, note) => `<div class="fin-soon"><div class="fin-soon-ic">${ic}</div><h2>${esc(title)}</h2><p>${esc(body)}</p><p class="fin-soon-note">${esc(note)}</p></div>`;
 function portfolioBody() {
@@ -16971,6 +17029,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
   if (t.closest('[data-open-daybook]')) { openDaybookPeople().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-open-feeds]')) { openSettings('feeds'); return; }
