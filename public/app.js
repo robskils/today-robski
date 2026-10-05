@@ -15056,14 +15056,12 @@ function renderReviewCard() {
             : `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`}` : ''}
     </section>
 
-    ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
-
     ${(() => {
       const answered = cfg.prompts.filter((q, i) => String((p.answers || {})[i] || '').trim()).length;
       const wheelScored = Object.values(p.wheel || {}).filter((v) => v > 0).length;
       const bal = wheelAvg(p.wheel) ? Math.min(wheelAvg(p.wheel), 5) : 0;
       return `<section class="rv-input">
-      <div class="home-sec-h">Your bit</div>
+      <div class="home-sec-h">Your reflection</div>
       <p class="rv-input-lead">Two ways in - reflect in words, or score how each area of life feels. Do one, or both; it all saves as you go.</p>
       <div class="rv-optrow" role="tablist">
         <button class="rv-opt ${inputTab === 'questions' ? 'on' : ''}" role="tab" aria-selected="${inputTab === 'questions'}" data-rv-inputtab="questions">
@@ -15091,6 +15089,8 @@ function renderReviewCard() {
            <div class="rv-freewrite"><div class="rv-freewrite-h">✎ Anything else on your mind</div>${notesSection(r.body, 'review', r.id)}</div>`}</div>
     </section>`;
     })()}
+
+    ${p.rtype === 'weekly' ? weeklyGoalsGlance() : goalReviewSection(r)}
 
     <div class="rv-finish">${st === 'done'
       ? `<span class="rv-done-badge">✓ Submitted${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="add-btn wide" data-review-report>View report</button>`
