@@ -19112,10 +19112,10 @@ function renderTaskCard() {
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Priority</span>
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-      <div class="tf-field"><span class="tf-label">Life areas</span>
-        ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <div class="tf-field"><span class="tf-label">Life areas</span>
+        ${blockAreasControl('task', t)}</div>
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     <div class="task-boxes">
