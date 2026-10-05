@@ -1006,7 +1006,7 @@ const bumpNav = () => ++navGen;
 // switching Financial tabs, say - is its own history entry. Without this, those
 // shared one key, weren't recorded, and Back leaped clean out of the tool instead
 // of stepping back one screen inside it. (Robin.)
-const viewKey = (v) => `${v.type}:${v.id || v.tile || v.tab || ''}`;
+const viewKey = (v) => `${v.type}:${v.id || v.tile || v.tab || v.mode || ''}`;
 // Called from renderNav on every render; pushes the previous view when the view
 // actually changes, so Back returns to where you were.
 function recordHistory() {
