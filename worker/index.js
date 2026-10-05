@@ -3366,9 +3366,15 @@ async function maybePushMail(env, res) {
       "SELECT COALESCE(SUM(m.unseen),0) AS n FROM mail_cache_meta m JOIN mail_accounts a ON a.id = m.account WHERE m.mailbox='INBOX' AND a.user_id = ?",
     ).bind(uid).first().catch(() => null);
     const total = row ? Number(row.n) || 0 : 0;
+    // Name the sender for a single arrival so the notification reads "New email
+    // from <sender>" - it's the person who wrote it, not Daybook. (Robin.)
+    const sender = res.fromByUser && res.fromByUser[uid];
+    const subj = (res.subjByUser && res.subjByUser[uid]) || '';
+    const single = newUnread === 1 && sender;
     await pushAll(env, {
-      type: 'mail', unread: total, title: 'New mail',
-      body: newUnread === 1 ? 'You have a new email' : `${newUnread} new emails`,
+      type: 'mail', unread: total,
+      title: single ? `New email from ${sender}` : 'New mail',
+      body: single ? (subj || 'Tap to read it in your inbox') : `${newUnread} new emails in your inbox`,
     }, Number(uid)).catch((e) => console.error('maybePushMail', uid, e.message));
   }
 }

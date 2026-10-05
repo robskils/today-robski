@@ -734,14 +734,17 @@ export async function syncMailCache(env, { force = false } = {}) {
   // something in the same window), and group them by the account's owner so the
   // cron can push each member about their own mail rather than everyone's.
   const acctUser = {}; for (const a of accts) acctUser[a.id] = a.user_id;
-  let newUnread = 0; const byUser = {};
+  let newUnread = 0; const byUser = {}; const fromByUser = {}; const subjByUser = {};
   for (const r of results) {
     if (r.status !== 'fulfilled' || !r.value) continue;
     const nu = r.value.newUnread || 0; newUnread += nu;
     const uid = acctUser[r.value.account];
-    if (uid != null && nu) byUser[uid] = (byUser[uid] || 0) + nu;
+    if (uid != null && nu) {
+      byUser[uid] = (byUser[uid] || 0) + nu;
+      if (r.value.newFrom) { fromByUser[uid] = r.value.newFrom; subjByUser[uid] = r.value.newSubject || ''; }
+    }
   }
-  return { newUnread, byUser };
+  return { newUnread, byUser, fromByUser, subjByUser };
 }
 async function syncOneInbox(env, acct) {
   const im = await imapOpen(env, acct);
@@ -781,7 +784,15 @@ async function syncOneInbox(env, acct) {
     }
     stmts.push(env.DB.prepare('INSERT INTO mail_cache_meta (account,mailbox,unseen,synced_at) VALUES (?,?,?,?) ON CONFLICT(account,mailbox) DO UPDATE SET unseen=excluded.unseen, synced_at=excluded.synced_at').bind(acct.id, 'INBOX', effUnseen, nowIso));
     await env.DB.batch(stmts);
-    return { account: acct.id, newUnread, unseen: effUnseen };
+    // Who the newest genuinely-new email is from, so the push can say "New email
+    // from <sender>" rather than something that reads like it came from Daybook.
+    let newFrom = '', newSubject = '';
+    if (newUnread) {
+      const fresh = msgs.filter((m) => !m.seen && m.messageId && !known.has(m.messageId))
+        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
+      if (fresh) { newFrom = String((fresh.from && (fresh.from.name || fresh.from.address)) || '').replace(/\s+/g, ' ').trim().slice(0, 80); newSubject = String(fresh.subject || '').replace(/\s+/g, ' ').trim().slice(0, 120); }
+    }
+    return { account: acct.id, newUnread, unseen: effUnseen, newFrom, newSubject };
   } finally { try { await im.logout(); } catch {} }
 }
 async function readCachedInbox(env, accountIds) {
