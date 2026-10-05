@@ -1232,6 +1232,10 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
     box-shadow:0 8px 20px -10px rgba(0,0,0,.55); transition:opacity .1s ease, transform .1s ease; transition-delay:.12s;
   }
   [data-tip]:hover::after, [data-tip]:focus-visible::after { opacity:1; transform:translateX(-50%) translateY(0); }
+  /* In the top tab strip the tip must drop BELOW (above would clip off-screen),
+     and anchor to the button's right edge so it never runs past the window. */
+  .tabstrip [data-tip]::after { top:calc(100% + 7px); bottom:auto; left:auto; right:0; transform:translateY(-3px); }
+  .tabstrip [data-tip]:hover::after, .tabstrip [data-tip]:focus-visible::after { transform:translateY(0); }
 }
 .wheel-a { font-size:15.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wheel-pips { display:flex; gap:4px; }

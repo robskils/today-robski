@@ -1213,8 +1213,8 @@ function renderTabs() {
     + `<button class="tab-new" data-tab-new title="New tab  ${PK('⌥⌘T')}">+</button>`
     + helpIconHtml()   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
     // Settings + Sign out, small round icons in keeping with the i, right of it.
-    + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings title="Settings" aria-label="Settings">⚙</button>`
-    + (state.me ? `<button class="tab-util" data-account-signout title="Sign out" aria-label="Sign out">↪</button>` : '');
+    + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings data-tip="Settings" aria-label="Settings">⚙</button>`
+    + (state.me ? `<button class="tab-util" data-account-signout data-tip="Sign out" aria-label="Sign out">↪</button>` : '');
 }
 function newTab() {
   const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome();
