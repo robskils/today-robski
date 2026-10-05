@@ -15550,9 +15550,10 @@ function renderNote() {
   const n = state.note.current;
   migrateCards(n);
   const sep = '<span class="crumb-sep">›</span>';
-  const crumbs = state.note.path.map((a, i) => i === state.note.path.length - 1
-    ? `<span class="crumb cur">${esc(a.title || 'Untitled')}</span>`
-    : `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
+  // Only the ANCESTOR notes appear in the breadcrumb - not the current note's own
+  // title. The title is the editable heading below, which scrolls; keeping it out
+  // of the sticky trail avoids a fixed duplicate of it. (Robin.)
+  const crumbs = state.note.path.slice(0, -1).map((a) => `<button class="crumb" data-open-note="${a.id}">${esc(a.title || 'Untitled')}</button>`).join(sep);
   // All connections are equal - no parent, no child. Each is a peer note you can
   // open or disconnect; the × unlinks it (peer link removed, or a legacy parent
   // relationship cleared). (Robin: notes are a flat set, all equal.)
@@ -15561,7 +15562,7 @@ function renderNote() {
   const kids = connected.map(connItem).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split">
-      <div class="nc-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${sep}${crumbs}${addNewMenuHtml()}</div>
+      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
       <div class="nc-actions">
         <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">
@@ -16575,6 +16576,9 @@ document.addEventListener('click', (e) => {
   // Click a Home section header (not a button/link inside it) to fold/unfold it.
   { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day], [data-lead-pgrip]')) { if (Date.now() - suppressLeadClick < 400) return; toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
+  // The note breadcrumb's back is always shown: retrace history if there is any,
+  // else step up to the Notes list (its parent). (Robin.)
+  if (t.closest('[data-note-back]')) { if (navHist.length) navBack(); else openNotesList().catch(() => openHome()); return; }
   if (t.closest('[data-linkpick-bg]') && !t.closest('.pal')) { closeLinkPicker(); return; }
   const lpt = t.closest('[data-linkpick-to]'); if (lpt) { linkPickPick(lpt.dataset.linkpickTo); return; }
   const mbg = t.closest('[data-move-bg]'); if (mbg && !t.closest('.pal')) { closeMove(); return; }
