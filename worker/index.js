@@ -3601,19 +3601,19 @@ export default {
       const isLife = host.endsWith('.daybook.fyi') && !isApex;
       // Public marketing pages in English, and their localised counterparts
       // (PT/FR/ES) which carry their own slugs. Clean URL -> asset file.
-      const EN_PAGES = ['/', '/blog', '/blog/welcome', '/blog/rhythms', '/blog/awareness', '/blog/inviting-friends', '/blog/connect-your-accounts', '/privacy', '/terms', '/support'];
+      const EN_PAGES = ['/', '/blog', '/blog/welcome', '/blog/rhythms', '/blog/awareness', '/blog/inviting-friends', '/blog/connect-your-accounts', '/blog/install-as-app', '/privacy', '/terms', '/support'];
       const LOCALE_PAGES = {
         '/pt': '/pt/index.html', '/pt/jornal': '/pt/jornal.html',
         '/pt/jornal/bem-vindo': '/pt/jornal/bem-vindo.html', '/pt/jornal/ritmos': '/pt/jornal/ritmos.html', '/pt/jornal/consciencia': '/pt/jornal/consciencia.html',
-        '/pt/jornal/convidar-amigos': '/pt/jornal/convidar-amigos.html', '/pt/jornal/ligar-contas': '/pt/jornal/ligar-contas.html',
+        '/pt/jornal/convidar-amigos': '/pt/jornal/convidar-amigos.html', '/pt/jornal/ligar-contas': '/pt/jornal/ligar-contas.html', '/pt/jornal/instalar-como-app': '/pt/jornal/instalar-como-app.html',
         '/pt/privacidade': '/pt/privacidade.html', '/pt/termos': '/pt/termos.html', '/pt/apoio': '/pt/apoio.html',
         '/fr': '/fr/index.html', '/fr/journal': '/fr/journal.html',
         '/fr/journal/bienvenue': '/fr/journal/bienvenue.html', '/fr/journal/rythmes': '/fr/journal/rythmes.html', '/fr/journal/conscience': '/fr/journal/conscience.html',
-        '/fr/journal/inviter-des-amis': '/fr/journal/inviter-des-amis.html', '/fr/journal/connecter-vos-comptes': '/fr/journal/connecter-vos-comptes.html',
+        '/fr/journal/inviter-des-amis': '/fr/journal/inviter-des-amis.html', '/fr/journal/connecter-vos-comptes': '/fr/journal/connecter-vos-comptes.html', '/fr/journal/installer-comme-app': '/fr/journal/installer-comme-app.html',
         '/fr/confidentialite': '/fr/confidentialite.html', '/fr/conditions': '/fr/conditions.html', '/fr/aide': '/fr/aide.html',
         '/es': '/es/index.html', '/es/diario': '/es/diario.html',
         '/es/diario/bienvenido': '/es/diario/bienvenido.html', '/es/diario/ritmos': '/es/diario/ritmos.html', '/es/diario/conciencia': '/es/diario/conciencia.html',
-        '/es/diario/invitar-amigos': '/es/diario/invitar-amigos.html', '/es/diario/conectar-cuentas': '/es/diario/conectar-cuentas.html',
+        '/es/diario/invitar-amigos': '/es/diario/invitar-amigos.html', '/es/diario/conectar-cuentas': '/es/diario/conectar-cuentas.html', '/es/diario/instalar-como-app': '/es/diario/instalar-como-app.html',
         '/es/privacidad': '/es/privacidad.html', '/es/terminos': '/es/terminos.html', '/es/soporte': '/es/soporte.html',
       };
       // Invite links: /join/<CODE> boots the app (on any host) so the signup form
