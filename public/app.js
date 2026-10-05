@@ -792,7 +792,7 @@ function helpKey(v) {
   if (v && v.type === 'help') return v.tool || 'home';
   const t = (v && v.type) || 'home';
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
-    wellbeing: 'reflect', insights: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
+    wellbeing: 'reflect', insights: 'reflect', meditation: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
     area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
     toolbox: 'timer', readwatch: 'saved' })[t] || t;
 }
@@ -925,7 +925,7 @@ function labelForView(v) {
     case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today'); case 'tracker': return t('today.tracker');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
-    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights');
+    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
@@ -969,7 +969,7 @@ function openView(v) {
     case 'calendar': return openCalendar(); case 'mail': return openMail(v.open); case 'today': return openToday(); case 'tracker': return openTracker();
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
-    case 'wellbeing': return openWellbeing(); case 'insights': return openInsights();
+    case 'wellbeing': return openWellbeing(); case 'insights': return openInsights(); case 'meditation': return openMeditation();
     case 'journal': return openJournal(v.mode || null); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
     case 'bookmarkcard': return openBookmarkCard(v.id);
@@ -2785,7 +2785,7 @@ function navItems(v) {
     // gone). They fire the same actions as the hub tiles, so they work from anywhere.
     coaching: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'coaching' ? 'on' : ''}" data-open-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
     dreams: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'dreams' ? 'on' : ''}" data-open-dreams><span class="nav-ic">☾</span><span class="nav-lbl">${t('wb.dreams')}</span></button>` : '',
-    meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'toolbox' ? '' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
+    meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'meditation' ? 'on' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
     spirit: modOn('reflect') ? `<button class="nav-item" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
     iching: modOn('reflect') ? `<button class="nav-item" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
     insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✨</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
@@ -3609,7 +3609,6 @@ function pomoPanel() {
 const TBX_TOOLS = [
   { k: 'focus', ic: '⏱', label: 'Focus', desc: 'Pomodoro sessions for deep work', panel: () => pomoPanel() },
   { k: 'timer', ic: '⏲', label: 'Timer', desc: 'A simple countdown for anything', panel: () => timerPanel() },
-  { k: 'med', ic: '🧘', label: 'Meditation', desc: 'A calm sit, with real bells', panel: () => medPanel() },
   { k: 'tracker', ic: '✓', label: 'Practices', desc: 'Your practices, streaks and history', panel: () => trackerPanel() },
 ];
 function tbxToolBadge(k) {
@@ -3774,10 +3773,11 @@ function medEnsureTicker() {
       logMedSession(Math.max(1, Math.round(medState.dur / 60)));
       medEndGongs(); toast('🧘 Sit complete'); try { navigator.vibrate && navigator.vibrate([120, 80, 120]); } catch {}
       if (state.view && state.view.type === 'toolbox') renderToolbox();
+      else if (state.view && state.view.type === 'meditation') renderMeditation();
     }
   }, 250);
 }
-const reMed = () => { if (state.view && state.view.type === 'toolbox') renderToolbox(); };
+const reMed = () => { const v = state.view && state.view.type; if (v === 'toolbox') renderToolbox(); else if (v === 'meditation') renderMeditation(); };
 // Keep the screen awake through a sit, so it doesn't sleep (and mute the bells)
 // mid-meditation. The lock drops when the tab is hidden, so re-take it on return.
 let medWakeLock = null;
@@ -5487,7 +5487,15 @@ function closeHoro() { const el = document.getElementById('horo'); if (el) el.re
 
 // Meditation lives in the Toolbox already (real bells, breathing orb); the
 // Well-being button just opens it there rather than duplicating the tool.
-function openMeditationTool() { try { localStorage.setItem('life.toolbox.active', 'med'); } catch {} openToolbox(); }
+// Meditation is now its own Well-being page (the timer, free of the Toolbox).
+function openMeditation() { state.view = { type: 'meditation' }; renderNav(); renderMeditation(); try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {} }
+function renderMeditation() {
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.meditation') }])}
+    <div class="pane-head home-head"><h1>${t('wb.meditation')}</h1></div>
+    ${wbToolTilesHtml({ sel: 'meditation' })}
+    ${medPanel()}`;
+}
 
 async function openJournal(mode) {
   // mode: null = the general Journal, 'coaching' / 'dreams' = that tool's own page.
@@ -16255,7 +16263,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Coaching', run: () => openJournal() },
   { kind: 'action', title: 'Go to Practices', run: () => openTracker() },
   { kind: 'action', title: 'Go to Tracker', run: () => openTracker() },
-  { kind: 'action', title: 'Go to Meditation', run: () => openMeditationTool() },
+  { kind: 'action', title: 'Go to Meditation', run: () => openMeditation() },
   { kind: 'action', title: 'Go to Spirit cards', run: () => openSpiritCards() },
   { kind: 'action', title: 'Go to I Ching', run: () => openIChing() },
   { kind: 'action', title: 'Go to Horoscope', run: () => openHoroscope() },
@@ -17443,7 +17451,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-horo-edit]')) { state.horoEdit = true; renderHoro(); return; }
   if (t.closest('[data-horo-canceledit]')) { state.horoEdit = false; renderHoro(); return; }
   if (t.closest('[data-horo-close]') || t.closest('[data-horo-bgclose]') === t) { closeHoro(); return; }
-  if (t.closest('[data-open-medi]')) { openMeditationTool(); return; }
+  if (t.closest('[data-open-medi]')) { openMeditation(); return; }
   if (t.closest('[data-open-card]')) { openCard(); return; }
   { const oc = t.closest('[data-open-personcard]'); if (oc) { openPublicCard(oc.dataset.openPersoncard); return; } }
   { const cc = t.closest('[data-card-connect]'); if (cc) { connectFromCard(cc.dataset.cardConnect); return; } }
