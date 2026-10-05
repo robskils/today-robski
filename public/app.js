@@ -15922,7 +15922,9 @@ async function newArea() {
   const hue = Math.round((state.areas.length * 137.5) % 360);
   const a = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'area', title: name, props: { hue } }) });
   state.areas.push(a); state.areas.sort((x, y) => (x.title || '').localeCompare(y.title || ''));
-  openAreasList();
+  // Drop straight onto the new area's page (like + New table opens its table),
+  // ready to fill it, rather than bouncing back to the list. (Robin.)
+  await openArea(a.id);
 }
 async function newTable() {
   const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: 'Untitled table', props: { columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
