@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/icon-192.v3.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.v3.png">
+<title>Términos del servicio · Daybook</title>
+<meta name="robots" content="index">
+<link rel="canonical" href="https://daybook.fyi/es/terminos">
+<link rel="alternate" hreflang="en" href="https://daybook.fyi/terms">
+<link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt/termos">
+<link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr/conditions">
+<link rel="alternate" hreflang="es" href="https://daybook.fyi/es/terminos">
+<link rel="alternate" hreflang="x-default" href="https://daybook.fyi/terms">
+<style>
+  :root { --paper:#efeae0; --paper-2:#e7e0d2; --card:#fbf9f4; --ink:#211c17; --ink-2:#574e44; --ink-3:#8b7f72; --line:#e4ddcf; --rust:#c4412e; }
+  .lang-switch { display:inline-flex; align-items:center; gap:1px; }
+  .lang-switch a { display:inline-block; padding:4px 7px; border-radius:8px; font-size:12.5px; font-weight:600; letter-spacing:.04em; color:var(--ink-3); text-decoration:none; }
+  .lang-switch a:hover { color:var(--ink); }
+  .lang-switch a.on { color:var(--rust); }
+  .foot-lang-label { font-size:13px; color:var(--ink-3); margin-right:6px; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:17px; line-height:1.65; }
+  .wrap { max-width:720px; margin:0 auto; padding:48px 22px 90px; }
+  .brand { display:flex; align-items:center; gap:10px; margin-bottom:34px; }
+  .brand svg { width:30px; height:30px; color:var(--rust); flex:none; }
+  .brand b { font-family:Georgia,'Times New Roman',serif; font-size:26px; font-weight:700; letter-spacing:-0.01em; }
+  h1 { font-family:Georgia,'Times New Roman',serif; font-size:clamp(30px,5vw,40px); font-weight:700; letter-spacing:-0.01em; margin:0 0 6px; }
+  .updated { color:var(--ink-3); font-size:14.5px; margin:0 0 30px; }
+  h2 { font-size:20px; margin:38px 0 10px; }
+  p, li { color:var(--ink-2); }
+  a { color:var(--rust); }
+  ul { padding-left:22px; }
+  li { margin:5px 0; }
+  footer { margin-top:46px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-3); font-size:14px; }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper:#1a1712; --paper-2:#221e18; --card:#232019; --ink:#f0e9dd; --ink-2:#c9bfae; --ink-3:#95897a; --line:#332d24; --rust:#e0715c; }
+  }
+</style>
+<!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
+<style>
+.dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card); border-top:1px solid var(--line); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink); }
+.dbk-consent p { margin:0; max-width:620px; font-size:15.5px; line-height:1.5; }
+.dbk-consent a { color:var(--rust); font-weight:600; text-decoration:none; }
+.dbk-consent .dbk-btns { display:flex; gap:10px; flex:none; }
+.dbk-consent button { font:inherit; font-size:15px; font-weight:600; padding:10px 22px; border-radius:10px; cursor:pointer; border:1px solid var(--line-2); }
+.dbk-consent .dbk-accept { background:var(--rust); color:var(--rust-ink); border-color:var(--rust); }
+.dbk-consent .dbk-decline { background:transparent; color:var(--ink-2); }
+@media (max-width:560px){ .dbk-consent .dbk-btns { flex:1 1 100%; } .dbk-consent button { flex:1; } }
+</style>
+<script>
+(function () {
+  var KEY = 'daybook.consent';
+  function loadTrackers() {
+    try {
+      window.init_tracer = function () { try { new Tracer({ websiteId: "68808b2d-ab7c-4b73-a3ef-05d92fd19b46", async: true, debug: false }); } catch (e) {} };
+      var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', 'G-2QJM3NGDX7');
+      var ga = document.createElement('script'); ga.async = true; ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-2QJM3NGDX7'; document.head.appendChild(ga);
+    } catch (e) {}
+  }
+  function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function banner() {
+    if (document.querySelector('.dbk-consent')) return;
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Opciones de cookies');
+    b.innerHTML = '<p>Daybook usa cookies de analítica para entender cómo se utiliza el sitio: nada personal y nunca nada de tu contenido de Daybook. ¿Nos das permiso? <a href="/es/privacidad">Privacidad</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Rechazar</button><button class="dbk-accept" type="button">Aceptar</button></div>';
+    b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
+    b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
+    document.body.appendChild(b);
+  }
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-cookie-settings]'); if (t) { e.preventDefault(); banner(); } });
+  var d = get();
+  if (d === 'granted') { loadTrackers(); }
+  else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg><b>Daybook</b></div>
+  <h1>Términos del servicio</h1>
+  <p class="updated">Última actualización: 2 de septiembre de 2026</p>
+
+  <p>Estos términos son el acuerdo entre tú y Daybook (<a href="https://daybook.fyi">daybook.fyi</a>), un hogar sereno y privado para tu día, gestionado por Robin Lumley-Savile. Al crear una cuenta o usar Daybook, aceptas estos términos. Si no estás de acuerdo, por favor no uses el servicio.</p>
+
+  <h2>1. Tu cuenta</h2>
+  <p>Inicias sesión con tu correo electrónico. Eres responsable de mantener seguro el acceso a esa bandeja de entrada y de lo que ocurra con tu cuenta. Escríbenos a <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> si crees que otra persona ha conseguido acceder.</p>
+
+  <h2>2. Tu contenido es tuyo</h2>
+  <p>Todo lo que introduces en Daybook - tus tareas, notas, tablas, eventos, entradas de diario y el resto - sigue siendo tuyo. Concedes a Daybook únicamente el permiso necesario para almacenar, procesar y mostrarte ese contenido, y mostrárselo a quien tú decidas expresamente compartirlo, para que el servicio pueda funcionar. No reclamamos su propiedad, no lo vendemos y no lo usamos para entrenar modelos de IA ni de aprendizaje automático.</p>
+  <p>Daybook en sí - su software, su código fuente, su diseño, su aspecto y su manera de funcionar, y el nombre y el logotipo de «Daybook» - nos pertenece y está protegido por derechos de autor, marcas registradas y otras leyes. Usar Daybook no te transfiere ninguno de esos derechos más allá del permiso para utilizar el servicio conforme a estos términos.</p>
+
+  <h2>3. Cuentas conectadas</h2>
+  <p>Si conectas otro servicio - como tu Google Calendar o un buzón de correo - autorizas a Daybook a acceder a él en tu nombre para ofrecer las funciones correspondientes, y tu uso de ese servicio sigue sujeto también a los términos de su propio proveedor. Puedes desconectarlo en cualquier momento. La forma en que tratamos los datos de los servicios conectados se describe en nuestra <a href="https://daybook.fyi/es/privacidad">Política de privacidad</a>.</p>
+
+  <h2>4. Uso aceptable</h2>
+  <p>Por favor, usa Daybook de forma lícita y razonable. Te comprometes a no hacer lo siguiente, ni a permitir que lo haga nadie más:</p>
+  <ul>
+    <li>rastrear, recopilar o extraer de forma sistemática cualquier contenido, dato o código de Daybook, ya sea por medios automatizados (bots, rastreadores, navegadores sin interfaz, scripts) o de forma manual, salvo mediante las funciones que ofrecemos expresamente para exportar tus propios datos;</li>
+    <li>copiar, reproducir, volver a publicar, revender, sublicenciar, alquilar o redistribuir cualquier parte del servicio o de su contenido, total o parcialmente;</li>
+    <li>aplicar ingeniería inversa, descompilar, desensamblar o intentar de cualquier otro modo obtener el código fuente, las ideas subyacentes, los algoritmos, la estructura o la organización del servicio, salvo en la medida limitada en que la ley aplicable prohíba esta restricción;</li>
+    <li>acceder al servicio para construir, entrenar o mejorar un producto o servicio de la competencia, o para copiar sus funciones, su diseño o su funcionalidad;</li>
+    <li>eludir, desactivar o interferir con cualquier función de seguridad, de limitación de frecuencia o de control de acceso, o acceder al servicio por cualquier interfaz distinta de la que ofrecemos;</li>
+    <li>infringir la ley, almacenar o enviar contenido abusivo, dañino o que vulnere derechos, intentar obtener acceso no autorizado al servicio o a las cuentas de otras personas, o imponer una carga excesiva a nuestros sistemas.</li>
+  </ul>
+  <p>Podemos suspender o cerrar una cuenta de inmediato por cualquier incumplimiento de esta sección y ejercer cualquier recurso que la ley nos reconozca, incluidas las medidas cautelares.</p>
+
+  <h2>5. Disponibilidad y cambios</h2>
+  <p>Daybook se ofrece «tal cual» y «según disponibilidad». Es un servicio pequeño y de gestión independiente: trabajamos para mantenerlo fiable, pero no podemos garantizar que esté siempre disponible, ni que funcione sin interrupciones o sin errores, y las funciones pueden cambiar o retirarse. Avisaremos con antelación razonable de los cambios importantes siempre que podamos.</p>
+
+  <h2>6. Planes y pago</h2>
+  <p>Algunas funciones se ofrecen en planes de pago. Cuando un plan es de pago, el precio y lo que incluye se muestran en el momento en que lo eliges. Los periodos gratuitos y las pruebas, cuando se ofrecen, se describen al concederse.</p>
+
+  <h2>7. Poner fin al uso</h2>
+  <p>Puedes dejar de usar Daybook y cerrar tu cuenta en cualquier momento desde Ajustes, lo que elimina tus datos. Podemos suspender o poner fin al acceso si se incumplen estos términos o si dejamos de prestar el servicio.</p>
+
+  <h2>8. Sin garantía; limitación de responsabilidad</h2>
+  <p>En la máxima medida permitida por la ley, Daybook se ofrece sin garantías de ningún tipo, y no somos responsables de pérdidas indirectas, accidentales o consecuentes, ni de la pérdida de datos, derivadas de tu uso del servicio. Conserva tus propias copias de todo lo importante (puedes exportar tus datos desde Ajustes). Nada de lo dispuesto en estos términos limita ninguna responsabilidad que no pueda limitarse por ley.</p>
+
+  <h2>9. Cambios en estos términos</h2>
+  <p>Podemos actualizar estos términos de vez en cuando. Cuando lo hagamos, cambiaremos la fecha de arriba y, si los cambios son importantes, te avisaremos. Seguir usando Daybook después de un cambio supone que aceptas los términos actualizados.</p>
+
+  <h2>10. Contacto</h2>
+  <p>¿Dudas sobre estos términos? Escribe a <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.</p>
+
+  <footer>
+    © 2026 Daybook · <a href="https://daybook.fyi">daybook.fyi</a> · <a href="https://daybook.fyi/es/privacidad">Privacidad</a> · <a href="#" data-cookie-settings>Configuración de cookies</a>
+    <p style="margin:12px 0 0"><span class="foot-lang-label">Idioma</span><span class="lang-switch"></span></p>
+  </footer>
+</div>
+<script>window.__lang='es';window.__alts={en:'/terms',pt:'/pt/termos',fr:'/fr/conditions',es:'/es/terminos'};</script>
+<script src="/i18n.js" defer></script>
+</body></html>

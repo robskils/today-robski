@@ -6,6 +6,11 @@
 <title>Welcome to Daybook</title>
 <meta name="description" content="A quick tour of Daybook - your email, calendar, notes and tasks in one calm, private place, joined up through the areas of your life. Built by hand in Lisboa.">
 <link rel="canonical" href="https://daybook.fyi/blog/welcome">
+<link rel="alternate" hreflang="en" href="https://daybook.fyi/blog/welcome">
+<link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt/jornal/bem-vindo">
+<link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr/journal/bienvenue">
+<link rel="alternate" hreflang="es" href="https://daybook.fyi/es/diario/bienvenido">
+<link rel="alternate" hreflang="x-default" href="https://daybook.fyi/blog/welcome">
 <meta property="og:title" content="Welcome to Daybook">
 <meta property="og:description" content="Your email, calendar, notes and tasks in one calm, private place, joined up through the areas of your life. Built by hand in Lisboa.">
 <meta property="og:type" content="article">
@@ -28,6 +33,7 @@
       <li><a href="/blog" class="on">Journal</a></li>
     </ul>
     <div class="nav-cta">
+      <div class="lang-switch nav-lang"></div>
       <a class="btn btn-ghost" href="/signin">Sign in</a>
       <a class="btn btn-primary" href="/#invite">Request an invite</a>
     </div>
@@ -99,10 +105,13 @@
       <li><a href="/terms">Terms</a></li>
       <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
     </ul>
+    <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
     <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
   </div>
 </footer>
 
+<script>window.__lang='en';window.__alts={en:'/blog/welcome',pt:'/pt/jornal/bem-vindo',fr:'/fr/journal/bienvenue',es:'/es/diario/bienvenido'};</script>
+<script src="/i18n.js" defer></script>
 <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
 </body>
 </html>

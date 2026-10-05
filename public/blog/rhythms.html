@@ -6,6 +6,11 @@
 <title>Rhythms, not to-do lists</title>
 <meta name="description" content="Most productivity tools pile on more lists. Daybook works with your rhythms instead - and lets a little quiet machinery run in the background, so you stay on top without the nagging.">
 <link rel="canonical" href="https://daybook.fyi/blog/rhythms">
+<link rel="alternate" hreflang="en" href="https://daybook.fyi/blog/rhythms">
+<link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt/jornal/ritmos">
+<link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr/journal/rythmes">
+<link rel="alternate" hreflang="es" href="https://daybook.fyi/es/diario/ritmos">
+<link rel="alternate" hreflang="x-default" href="https://daybook.fyi/blog/rhythms">
 <meta property="og:title" content="Rhythms, not to-do lists">
 <meta property="og:description" content="Work with your rhythms, and let a little quiet machinery keep the plates spinning - so you stay on top without the nagging.">
 <meta property="og:type" content="article">
@@ -28,6 +33,7 @@
       <li><a href="/blog" class="on">Journal</a></li>
     </ul>
     <div class="nav-cta">
+      <div class="lang-switch nav-lang"></div>
       <a class="btn btn-ghost" href="/signin">Sign in</a>
       <a class="btn btn-primary" href="/#invite">Request an invite</a>
     </div>
@@ -95,10 +101,13 @@
       <li><a href="/terms">Terms</a></li>
       <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
     </ul>
+    <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
     <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
   </div>
 </footer>
 
+<script>window.__lang='en';window.__alts={en:'/blog/rhythms',pt:'/pt/jornal/ritmos',fr:'/fr/journal/rythmes',es:'/es/diario/ritmos'};</script>
+<script src="/i18n.js" defer></script>
 <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
 </body>
 </html>

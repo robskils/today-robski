@@ -164,3 +164,13 @@ footer { border-top: 1px solid var(--line); background: var(--paper-2); padding:
 .foot-meta { flex-basis: 100%; color: var(--ink-3); font-size: 13.5px; padding-top: 12px; border-top: 1px solid var(--line); margin-top: 8px; }
 .foot-lisboa { color: var(--pine); font-weight: 600; }
 .foot-meta a { color: var(--ink-2); }
+
+/* language switcher (shared with inline-styled pages) */
+.lang-switch { display: inline-flex; align-items: center; gap: 1px; }
+.lang-switch a { display: inline-block; padding: 4px 7px; border-radius: 8px; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; color: var(--ink-3); text-decoration: none; transition: color .16s, background .16s; }
+.lang-switch a:hover { color: var(--ink); background: var(--rust-soft); }
+.lang-switch a.on { color: var(--rust); }
+.nav-lang { margin-right: 4px; }
+@media (max-width: 760px) { .nav-lang { display: none; } }
+.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 12px; }
+.foot-lang-label { font-size: 13px; color: var(--ink-3); }

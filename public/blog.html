@@ -6,6 +6,11 @@
 <title>The Daybook Journal</title>
 <meta name="description" content="Notes from the making of Daybook - a calm, private, all-in-one life OS, built by a tiny team in Lisboa.">
 <link rel="canonical" href="https://daybook.fyi/blog">
+<link rel="alternate" hreflang="en" href="https://daybook.fyi/blog">
+<link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt/jornal">
+<link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr/journal">
+<link rel="alternate" hreflang="es" href="https://daybook.fyi/es/diario">
+<link rel="alternate" hreflang="x-default" href="https://daybook.fyi/blog">
 <meta property="og:title" content="The Daybook Journal">
 <meta property="og:description" content="Notes from the making of Daybook - a calm, private, all-in-one life OS, built in Lisboa.">
 <meta property="og:type" content="website">
@@ -28,6 +33,7 @@
       <li><a href="/blog" class="on">Journal</a></li>
     </ul>
     <div class="nav-cta">
+      <div class="lang-switch nav-lang"></div>
       <a class="btn btn-ghost" href="/signin">Sign in</a>
       <a class="btn btn-primary" href="/#invite">Request an invite</a>
     </div>
@@ -87,10 +93,13 @@
       <li><a href="/terms">Terms</a></li>
       <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
     </ul>
+    <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
     <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
   </div>
 </footer>
 
+<script>window.__lang='en';window.__alts={en:'/blog',pt:'/pt/jornal',fr:'/fr/journal',es:'/es/diario'};</script>
+<script src="/i18n.js" defer></script>
 <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
 </body>
 </html>

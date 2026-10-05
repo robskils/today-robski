@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="pt-PT">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Daybook - for a life well lived</title>
-<meta name="description" content="Daybook keeps email, calendar, tasks, notes, reflections and money in one calm, private place. Put it down, and trust it to come back. You own all your data; it's yours.">
-<link rel="canonical" href="https://daybook.fyi/">
+<title>Daybook - para uma vida bem vivida</title>
+<meta name="description" content="O Daybook reúne email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus; pertencem-lhe.">
+<link rel="canonical" href="https://daybook.fyi/pt">
 <link rel="alternate" hreflang="en" href="https://daybook.fyi/">
 <link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt">
 <link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr">
@@ -18,18 +18,18 @@
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Daybook">
-<meta property="og:title" content="Daybook - for a life well lived">
-<meta property="og:description" content="Email, calendar, tasks, notes, reflections and money in one calm, private place. Put it down, and trust it to come back. You own all your data.">
-<meta property="og:url" content="https://daybook.fyi/">
+<meta property="og:title" content="Daybook - para uma vida bem vivida">
+<meta property="og:description" content="Email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus.">
+<meta property="og:url" content="https://daybook.fyi/pt">
 <meta property="og:image" content="https://daybook.fyi/og-image.v2.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Daybook - for a life well lived.">
-<meta property="og:locale" content="en_GB">
+<meta property="og:image:alt" content="Daybook - para uma vida bem vivida.">
+<meta property="og:locale" content="pt_PT">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Daybook - for a life well lived">
-<meta name="twitter:description" content="Put it down, trust it to come back. A calm, private home for everything you carry, resurfaced when you need it.">
+<meta name="twitter:title" content="Daybook - para uma vida bem vivida">
+<meta name="twitter:description" content="Pouse, e confie que volta. Um lar calmo e privado para tudo o que carrega, trazido de volta quando precisa.">
 <meta name="twitter:image" content="https://daybook.fyi/og-image.v2.png">
 <!-- Structured data -->
 <script type="application/ld+json">
@@ -39,20 +39,20 @@
     {
       "@type": "WebSite",
       "@id": "https://daybook.fyi/#website",
-      "url": "https://daybook.fyi/",
+      "url": "https://daybook.fyi/pt",
       "name": "Daybook",
-      "slogan": "For a life well lived",
-      "description": "A calm, private home for your life - tasks, notes, reflections and money in one place.",
-      "inLanguage": "en-GB"
+      "slogan": "Para uma vida bem vivida",
+      "description": "Um lar calmo e privado para a sua vida - tarefas, notas, reflexões e finanças num só lugar.",
+      "inLanguage": "pt-PT"
     },
     {
       "@type": "SoftwareApplication",
       "name": "Daybook",
-      "slogan": "For a life well lived",
-      "url": "https://daybook.fyi/",
+      "slogan": "Para uma vida bem vivida",
+      "url": "https://daybook.fyi/pt",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "Daybook is a calm, private home for everything you carry - tasks, notes, reflections and money - captured in two taps and resurfaced when you need it. Your data is private to you, and AI is opt-in with your own key.",
+      "description": "O Daybook é um lar calmo e privado para tudo o que carrega - tarefas, notas, reflexões e finanças - capturado em dois toques e trazido de volta quando precisa. Os seus dados são privados, só seus, e a IA é opcional, com a sua própria chave.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -392,8 +392,8 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
-    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Daybook uses analytics cookies to understand how the site is used - nothing personal, and never any of your Daybook content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Escolhas de cookies');
+    b.innerHTML = '<p>O Daybook usa cookies de análise para perceber como o site é utilizado - nada pessoal, e nunca qualquer conteúdo do seu Daybook. Permite? <a href="/pt/privacidade">Privacidade</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Recusar</button><button class="dbk-accept" type="button">Aceitar</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -409,17 +409,17 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a>
+    <a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a>
     <ul class="nav-links">
-      <li><a href="#idea">Your Daybook</a></li>
-      <li><a href="#tools">Tools</a></li>
-      <li><a href="#private">Private by design</a></li>
-      <li><a href="/blog">Journal</a></li>
+      <li><a href="#idea">O seu Daybook</a></li>
+      <li><a href="#tools">Ferramentas</a></li>
+      <li><a href="#private">Privado por princípio</a></li>
+      <li><a href="/pt/jornal">Jornal</a></li>
     </ul>
     <div class="nav-cta">
       <div class="lang-switch nav-lang"></div>
-      <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
-      <a class="btn btn-primary" href="#invite">Request an invite</a>
+      <a class="btn btn-ghost" href="#" data-signin>Entrar</a>
+      <a class="btn btn-primary" href="#invite">Pedir um convite</a>
     </div>
   </div>
 </nav>
@@ -428,30 +428,30 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="hero-glow"></div>
   <div class="wrap hero-in">
     <div class="hero-copy">
-      <div class="hero-badge reveal"><span class="pulse"></span>Invite-only, in early access</div>
-      <h1 class="reveal">Email, calendar, notes<br>and tasks - that <em>join the dots.</em></h1>
-      <p class="hero-sub reveal">The four tools you live in, in one place at last - and connected through the areas of your life, so information flows to where it's needed instead of piling up. Calm, not cluttered.</p>
+      <div class="hero-badge reveal"><span class="pulse"></span>Apenas por convite, em acesso antecipado</div>
+      <h1 class="reveal">Email, calendário, notas<br>e tarefas - que <em>ligam os pontos.</em></h1>
+      <p class="hero-sub reveal">As quatro ferramentas onde vive, finalmente num só lugar - e ligadas através das áreas da sua vida, para que a informação flua até onde é precisa em vez de se acumular. Calmo, não confuso.</p>
       <div class="hero-actions reveal">
-        <a class="btn btn-primary" href="#invite">Request an invite →</a>
-        <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
+        <a class="btn btn-primary" href="#invite">Pedir um convite →</a>
+        <a class="btn btn-ghost" href="#" data-signin>Entrar</a>
       </div>
-      <p class="hero-note reveal">Private by design. No adverts, no selling, no noise.</p>
+      <p class="hero-note reveal">Privado por princípio. Sem anúncios, sem vendas, sem ruído.</p>
     </div>
     <div class="cluster reveal">
       <div class="dcard c1">
-        <div class="dcard-label"><span class="ic">☀</span>Today</div>
-        <div class="d-row done"><span class="d-check on"></span>Morning sit, 20 min</div>
-        <div class="d-row"><span class="d-check"></span>Draft the Sintra proposal</div>
-        <div class="d-row"><span class="d-check"></span>Walk before the light goes</div>
+        <div class="dcard-label"><span class="ic">☀</span>Hoje</div>
+        <div class="d-row done"><span class="d-check on"></span>Sentar matinal, 20 min</div>
+        <div class="d-row"><span class="d-check"></span>Rascunhar a proposta de Sintra</div>
+        <div class="d-row"><span class="d-check"></span>Caminhar antes de a luz partir</div>
       </div>
       <div class="dcard c2">
-        <div class="dcard-label"><span class="ic">✎</span>Reflection</div>
-        <p class="d-quote">"What did today ask of me, and what did I give it?"</p>
-        <span class="d-pill">Journal · Insights · Dreams</span>
+        <div class="dcard-label"><span class="ic">✎</span>Reflexão</div>
+        <p class="d-quote">"O que me pediu o dia de hoje, e o que lhe dei eu?"</p>
+        <span class="d-pill">Diário · Perceções · Sonhos</span>
       </div>
       <div class="dcard c3">
-        <div class="dcard-label"><span class="ic">▤</span>Note</div>
-        <p class="d-note">Spain trip - book the coast road, find the place with the blue door, no rush.</p>
+        <div class="dcard-label"><span class="ic">▤</span>Nota</div>
+        <p class="d-note">Viagem a Espanha - reservar a estrada da costa, encontrar o sítio da porta azul, sem pressas.</p>
       </div>
     </div>
   </div>
@@ -460,20 +460,20 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 <section class="band" id="tools">
   <div class="wrap">
     <div class="band-head center reveal">
-      <div class="eyebrow">Email · Calendar · Notes · Tasks</div>
-      <h2>The tools you live in, joined up</h2>
-      <p>Start with the bread and butter - your mail, your calendar, your notes and your tasks, finally under one roof. Then the tools that round it out: tables, money, and a quiet set of well-being tools for the inner life.</p>
+      <div class="eyebrow">Email · Calendário · Notas · Tarefas</div>
+      <h2>As ferramentas onde vive, ligadas entre si</h2>
+      <p>Comece pelo essencial - o seu correio, o seu calendário, as suas notas e as suas tarefas, finalmente debaixo do mesmo teto. Depois as ferramentas que completam o conjunto: tabelas, finanças, e um conjunto discreto de ferramentas de bem-estar para a vida interior.</p>
     </div>
     <div class="tools-grid">
-      <div class="tool reveal"><span class="tool-ic">✉</span><h3>Mail</h3><p>All your inboxes in one calm room - read, reply and search across every account, without breaking focus.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◑</span><h3>Calendar</h3><p>Month, week and agenda in one view. It reads and writes your Google calendar, and events can count as practice.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▤</span><h3>Notes</h3><p>Write freely - a scribbled idea, a longer thought, anything worth keeping. Link it up and nothing gets lost.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✓</span><h3>Tasks</h3><p>Your day as calm streams, not a nagging list. Work with the flow when you're in it; nothing turns red.</p></div>
-      <div class="tool reveal"><span class="tool-ic">☺</span><h3>Contacts</h3><p>The people in your life, with gentle keep-in-touch nudges - so you reach out when it matters, and nobody slips through the cracks.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▦</span><h3>Tables</h3><p>Turn notes into structure when you're ready - a proper table for whatever is worth tracking, right where you wrote it.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◈</span><h3>Life Areas</h3><p>The heart of Daybook. Your mail, tasks, notes and spending all organise around what matters most.</p></div>
-      <div class="tool reveal"><span class="tool-ic">💰</span><h3>Money</h3><p>See where the money goes, sorted by the areas of life you care about. Clear, quiet, no spreadsheets.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✎</span><h3>Well-being</h3><p>A home for the inner life - journalling, insights, dreams, meditation and gentle coaching when you want it.</p></div>
+      <div class="tool reveal"><span class="tool-ic">✉</span><h3>Correio</h3><p>Todas as suas caixas de entrada numa sala calma - leia, responda e pesquise em todas as contas, sem perder a concentração.</p></div>
+      <div class="tool reveal"><span class="tool-ic">◑</span><h3>Calendário</h3><p>Mês, semana e agenda numa só vista. Lê e escreve no seu calendário Google, e os eventos podem contar como prática.</p></div>
+      <div class="tool reveal"><span class="tool-ic">▤</span><h3>Notas</h3><p>Escreva livremente - uma ideia rabiscada, um pensamento mais longo, tudo o que vale a pena guardar. Ligue tudo e nada se perde.</p></div>
+      <div class="tool reveal"><span class="tool-ic">✓</span><h3>Tarefas</h3><p>O seu dia como fluxos calmos, não uma lista a importunar. Siga a corrente quando estiver nela; nada fica vermelho.</p></div>
+      <div class="tool reveal"><span class="tool-ic">☺</span><h3>Contactos</h3><p>As pessoas da sua vida, com lembretes suaves para manter o contacto - para que fale com elas quando importa, e ninguém se perca pelo caminho.</p></div>
+      <div class="tool reveal"><span class="tool-ic">▦</span><h3>Tabelas</h3><p>Transforme notas em estrutura quando estiver pronto - uma tabela como deve ser para tudo o que vale a pena acompanhar, mesmo onde o escreveu.</p></div>
+      <div class="tool reveal"><span class="tool-ic">◈</span><h3>Áreas da Vida</h3><p>O coração do Daybook. O seu correio, tarefas, notas e despesas organizam-se todos em torno do que mais importa.</p></div>
+      <div class="tool reveal"><span class="tool-ic">💰</span><h3>Finanças</h3><p>Veja para onde vai o dinheiro, organizado pelas áreas da vida que lhe são caras. Claro, tranquilo, sem folhas de cálculo.</p></div>
+      <div class="tool reveal"><span class="tool-ic">✎</span><h3>Bem-estar</h3><p>Um lar para a vida interior - diário, perceções, sonhos, meditação e um acompanhamento suave quando lhe apetecer.</p></div>
     </div>
   </div>
 </section>
@@ -481,68 +481,68 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 <section class="band areas-band" id="connect">
   <div class="wrap areas-grid">
     <div class="reveal">
-      <div class="eyebrow">The special sauce</div>
-      <h2>Life Areas join the dots</h2>
-      <p class="areas-lead">The tools don't sit in separate boxes. Tag anything to a <em>life area</em> - a project, Family, your health, the business - and the mail, events, tasks, notes and spending for that part of life all gather in one place.</p>
-      <p>An email becomes a task. A note becomes a table. A payment files itself against the right area. Information stops piling up in silos and starts <em>flowing</em> to where it's needed - so you can hold the whole of your life lightly, and sidestep the digital overwhelm.</p>
+      <div class="eyebrow">O toque especial</div>
+      <h2>As Áreas da Vida ligam os pontos</h2>
+      <p class="areas-lead">As ferramentas não ficam em caixas separadas. Associe o que quiser a uma <em>área da vida</em> - um projeto, a Família, a sua saúde, o negócio - e o correio, os eventos, as tarefas, as notas e as despesas dessa parte da vida reúnem-se todos num só lugar.</p>
+      <p>Um email torna-se uma tarefa. Uma nota torna-se uma tabela. Um pagamento arquiva-se sozinho na área certa. A informação deixa de se acumular em silos e começa a <em>fluir</em> até onde é precisa - para que possa sustentar toda a sua vida com leveza, e contornar a sobrecarga digital.</p>
     </div>
     <div class="areas-flow reveal" aria-hidden="true">
-      <div class="af-tools"><span class="af-chip">✉ Mail</span><span class="af-chip">◑ Event</span><span class="af-chip">✓ Task</span><span class="af-chip">▤ Note</span><span class="af-chip">💰 Spend</span></div>
+      <div class="af-tools"><span class="af-chip">✉ Correio</span><span class="af-chip">◑ Evento</span><span class="af-chip">✓ Tarefa</span><span class="af-chip">▤ Nota</span><span class="af-chip">💰 Despesa</span></div>
       <div class="af-arrow">↓</div>
-      <div class="af-area"><span class="af-dot"></span>Family</div>
+      <div class="af-area"><span class="af-dot"></span>Família</div>
     </div>
   </div>
 </section>
 
 <section class="band wellbeing-band" id="wellbeing">
   <div class="wrap band-head center reveal">
-    <div class="eyebrow">For the inner life</div>
-    <h2>Well-being, woven in</h2>
-    <p>Alongside the practical runs a gentler story: journalling and daily reviews, insights and dreams, meditation, spirit cards and the I Ching, and coaching when you'd like a prompt. There when you need them, quiet when you don't.</p>
+    <div class="eyebrow">Para a vida interior</div>
+    <h2>Bem-estar, entretecido</h2>
+    <p>A par do prático corre uma história mais suave: diário e revisões diárias, perceções e sonhos, meditação, cartas do espírito e o I Ching, e acompanhamento quando quiser um estímulo. Presentes quando precisa, discretos quando não.</p>
   </div>
 </section>
 
 <section class="band concept" id="idea">
   <div class="wrap concept-grid">
     <div class="reveal">
-      <div class="eyebrow">The bigger idea</div>
-      <p class="concept-lead">A daybook is somewhere you <em>set things down</em> - so you can stop holding them in your head, and still trust them to come back.</p>
+      <div class="eyebrow">A ideia maior</div>
+      <p class="concept-lead">Um daybook é um sítio onde <em>pousa as coisas</em> - para que possa deixar de as carregar na cabeça, e ainda assim confiar que voltam.</p>
       <ul class="holds">
-        <li><b>Your day</b><span>Schedule, tasks and appointments</span></li>
-        <li><b>Your habits</b><span>The routines you're keeping up</span></li>
-        <li><b>Your reflections</b><span>Thoughts, feelings, lessons</span></li>
-        <li><b>Your to-dos</b><span>Urgent now, and the long game</span></li>
+        <li><b>O seu dia</b><span>Agenda, tarefas e compromissos</span></li>
+        <li><b>Os seus hábitos</b><span>As rotinas que vai mantendo</span></li>
+        <li><b>As suas reflexões</b><span>Pensamentos, sentimentos, lições</span></li>
+        <li><b>As suas tarefas</b><span>O urgente agora, e o jogo longo</span></li>
       </ul>
     </div>
     <div class="concept-body reveal">
-      <p>We carry too much at once. Tasks half-remembered, ideas we meant to keep, money we meant to watch, feelings we never sat with. So it leaks - onto sticky notes, into ten different apps, or just quietly lost.</p>
-      <p>Daybook is one place to put all of it. You capture quickly and let go, and Daybook brings the right piece back at the right moment - the task when the day needs it, the note when you're planning, the reflection when you pause.</p>
-      <p>Offload with confidence. Resurface with trust. That's the whole idea.</p>
+      <p>Carregamos demasiado de uma só vez. Tarefas meio lembradas, ideias que quisemos guardar, dinheiro que quisemos vigiar, sentimentos com que nunca nos sentámos. Por isso escapa - para post-its, para dez aplicações diferentes, ou simplesmente perde-se em silêncio.</p>
+      <p>O Daybook é um único lugar para pousar tudo isso. Captura depressa e larga, e o Daybook traz de volta a peça certa no momento certo - a tarefa quando o dia dela precisa, a nota quando está a planear, a reflexão quando faz uma pausa.</p>
+      <p>Pouse com confiança. Reencontre com tranquilidade. É essa a ideia toda.</p>
     </div>
   </div>
 </section>
 
 <section class="ethos">
   <div class="wrap reveal">
-    <div class="eyebrow" style="text-align:center">The Daybook ethos</div>
-    <p class="ethos-line">The right thing, surfaced in the right place, at the <em>right time.</em></p>
-    <p class="ethos-sub">In tune with the rhythms of your life - nothing shouts for attention, and nothing worth remembering slips away.</p>
+    <div class="eyebrow" style="text-align:center">O espírito do Daybook</div>
+    <p class="ethos-line">Aquilo de que precisa, trazido ao lugar certo, no <em>momento certo.</em></p>
+    <p class="ethos-sub">Em sintonia com os ritmos da sua vida - nada grita por atenção, e nada que valha a pena recordar se perde.</p>
   </div>
 </section>
 
 <section class="band privacy" id="private">
   <div class="wrap privacy-grid">
     <div class="reveal">
-      <div class="eyebrow">Private by design</div>
-      <h2>Yours. Genuinely.</h2>
-      <p class="privacy-lead">Daybook holds the most personal parts of your life, so it treats them that way. Your data is <b>private to you</b> - not mined, not sold, not fed to anyone's model. Selling your data isn't a side line we'd rather avoid; it simply <b>isn't our business model</b>.</p>
-      <p class="privacy-lead">And it's yours to take, always. <b>Export everything in one tap</b> and keep it wherever you like - your own drive, your own backups, entirely off our servers. Want to run it all on your own storage and do it yourself? We're genuinely happy for you to - it's your data, we'll never lock you in, and we'll point you the right way if you ask. Bring your <b>own</b> AI too; the connection runs straight between you and your provider, and your relationship with them is yours.</p>
+      <div class="eyebrow">Privado por princípio</div>
+      <h2>Seu. Verdadeiramente.</h2>
+      <p class="privacy-lead">O Daybook guarda as partes mais pessoais da sua vida, por isso trata-as como tal. Os seus dados são <b>privados, só seus</b> - não são explorados, não são vendidos, não são entregues ao modelo de ninguém. Vender os seus dados não é um negócio secundário que preferíamos evitar; simplesmente <b>não é o nosso modelo de negócio</b>.</p>
+      <p class="privacy-lead">E é seu para levar, sempre. <b>Exporte tudo com um só toque</b> e guarde-o onde quiser - no seu próprio disco, nas suas próprias cópias de segurança, inteiramente fora dos nossos servidores. Quer ter tudo no seu próprio armazenamento e fazê-lo por si mesmo? Teremos todo o gosto - os dados são seus, nunca o prenderemos, e indicar-lhe-emos o caminho certo se pedir. Traga também a <b>sua própria</b> IA; a ligação faz-se diretamente entre si e o seu fornecedor, e a sua relação com ele é sua.</p>
     </div>
     <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Your Daybook is yours - export the lot, any time, in one tap.</div></li>
-      <li><span class="tick">✓</span><div>Keep it on your own storage if you'd rather - do it all yourself, off our servers. We're happy to help, not hinder.</div></li>
-      <li><span class="tick">✓</span><div>No adverts, no tracking, no selling your data. It isn't our business model.</div></li>
-      <li><span class="tick">✓</span><div>AI is opt-in and bring-your-own-key - a secure link between you and your AI provider.</div></li>
+      <li><span class="tick">✓</span><div>O seu Daybook é seu - exporte tudo, a qualquer momento, com um só toque.</div></li>
+      <li><span class="tick">✓</span><div>Guarde-o no seu próprio armazenamento, se preferir - faça tudo por si, fora dos nossos servidores. Temos gosto em ajudar, não em atrapalhar.</div></li>
+      <li><span class="tick">✓</span><div>Sem anúncios, sem rastreio, sem vender os seus dados. Não é o nosso modelo de negócio.</div></li>
+      <li><span class="tick">✓</span><div>A IA é opcional e com a sua própria chave - uma ligação segura entre si e o seu fornecedor de IA.</div></li>
     </ul>
   </div>
 </section>
@@ -550,33 +550,33 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 <section class="band">
   <div class="wrap capture-grid">
     <div class="reveal">
-      <div class="eyebrow">Made to be quick</div>
-      <h2>Two taps and it's safe</h2>
-      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Capture is meant to be effortless, especially on your phone. Get it out of your head in seconds, sort it later - or let Daybook sort it for you.</p></div>
+      <div class="eyebrow">Feito para ser rápido</div>
+      <h2>Dois toques e está guardado</h2>
+      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">A captura foi pensada para não exigir esforço, sobretudo no telemóvel. Tire-o da cabeça em segundos, organize depois - ou deixe o Daybook organizar por si.</p></div>
     </div>
     <div class="steps reveal">
-      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Open and jot</b><span>A task, a note, a number, a feeling - whatever you're holding.</span></div></div>
-      <div class="step"><span class="step-n">2</span><div class="step-t"><b>Let it go</b><span>It lands in the right place, tagged to the life area it belongs to.</span></div></div>
-      <div class="step"><span class="step-n">3</span><div class="step-t"><b>It comes back</b><span>At the right moment - in your day, your plans, or your review.</span></div></div>
+      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Abra e aponte</b><span>Uma tarefa, uma nota, um número, um sentimento - o que quer que esteja a carregar.</span></div></div>
+      <div class="step"><span class="step-n">2</span><div class="step-t"><b>Largue-o</b><span>Vai parar ao lugar certo, associado à área da vida a que pertence.</span></div></div>
+      <div class="step"><span class="step-n">3</span><div class="step-t"><b>Volta</b><span>No momento certo - no seu dia, nos seus planos, ou na sua revisão.</span></div></div>
     </div>
   </div>
 </section>
 
 <section class="closing" id="invite">
   <div class="wrap reveal">
-    <div class="eyebrow" style="text-align:center">Early access</div>
-    <h2>Make some space in your head.</h2>
-    <p>Daybook is invite-only while it's young, growing gently by word of mouth so it stays calm and well cared for. Tell us a little about you and we'll set you up.</p>
+    <div class="eyebrow" style="text-align:center">Acesso antecipado</div>
+    <h2>Abra algum espaço na sua cabeça.</h2>
+    <p>O Daybook é apenas por convite enquanto é jovem, crescendo devagar e de boca em boca para se manter calmo e bem cuidado. Conte-nos um pouco sobre si e tratamos de tudo.</p>
     <form class="invite-form reveal" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="if-grid">
-        <input id="if-name" placeholder="Your name" autocomplete="name" required>
-        <input id="if-email" type="email" placeholder="Your email" autocomplete="email" required>
+        <input id="if-name" placeholder="O seu nome" autocomplete="name" required>
+        <input id="if-email" type="email" placeholder="O seu email" autocomplete="email" required>
       </div>
-      <textarea id="if-why" placeholder="What would you use Daybook for? A line is plenty." rows="2"></textarea>
+      <textarea id="if-why" placeholder="Para que usaria o Daybook? Uma linha chega." rows="2"></textarea>
       <div class="if-actions">
-        <button class="btn btn-primary" type="submit" id="if-submit">Request an invite →</button>
-        <a class="btn btn-ghost" href="#" data-signin>I have an account</a>
+        <button class="btn btn-primary" type="submit" id="if-submit">Pedir um convite →</button>
+        <a class="btn btn-ghost" href="#" data-signin>Já tenho conta</a>
       </div>
       <p class="if-note" id="if-note" hidden></p>
     </form>
@@ -585,42 +585,42 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <footer id="signin">
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a><span class="foot-tag">For a life well lived</span></div>
+    <div class="foot-brand"><a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a><span class="foot-tag">Para uma vida bem vivida</span></div>
     <ul class="foot-links">
-      <li><a href="#idea">Your Daybook</a></li>
-      <li><a href="#tools">Tools</a></li>
-      <li><a href="#private">Private by design</a></li>
-      <li><a href="/blog">Journal</a></li>
-      <li><a href="#invite">Request an invite</a></li>
-      <li><a href="/privacy">Privacy</a></li>
-      <li><a href="/terms">Terms</a></li>
-      <li><a href="#" data-cookie-settings>Cookie settings</a></li>
-      <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
+      <li><a href="#idea">O seu Daybook</a></li>
+      <li><a href="#tools">Ferramentas</a></li>
+      <li><a href="#private">Privado por princípio</a></li>
+      <li><a href="/pt/jornal">Jornal</a></li>
+      <li><a href="#invite">Pedir um convite</a></li>
+      <li><a href="/pt/privacidade">Privacidade</a></li>
+      <li><a href="/pt/termos">Termos</a></li>
+      <li><a href="#" data-cookie-settings>Definições de cookies</a></li>
+      <li><a href="mailto:contact@daybook.fyi">Contacto</a></li>
     </ul>
-    <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
+    <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
+    <div class="foot-meta">Dúvidas? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
   </div>
 </footer>
 
 <div class="signin-overlay" id="signin-modal" hidden>
-  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Sign in to your Daybook">
-    <button class="signin-close" data-signin-close aria-label="Close">&times;</button>
-    <div class="eyebrow">Welcome back</div>
-    <h3 class="signin-h">Sign in to your Daybook</h3>
-    <p class="signin-p">Enter your email and we'll send you a code. We'll take you to your own Daybook from there.</p>
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Entre no seu Daybook">
+    <button class="signin-close" data-signin-close aria-label="Fechar">&times;</button>
+    <div class="eyebrow">Bem-vindo de volta</div>
+    <h3 class="signin-h">Entre no seu Daybook</h3>
+    <p class="signin-p">Introduza o seu email e enviamos-lhe um código. A partir daí, levamo-lo ao seu próprio Daybook.</p>
     <form id="signin-form">
-      <label class="signin-label" for="signin-email">Your email</label>
+      <label class="signin-label" for="signin-email">O seu email</label>
       <div class="signin-field">
-        <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com">
+        <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="voce@exemplo.com">
       </div>
-      <button class="btn btn-primary signin-go" type="submit">Continue →</button>
+      <button class="btn btn-primary signin-go" type="submit">Continuar →</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
-    <p class="signin-foot">Don't have a Daybook yet? <a href="#invite" data-signin-close>Request an invite</a></p>
+    <p class="signin-foot">Ainda não tem um Daybook? <a href="#invite" data-signin-close>Pedir um convite</a></p>
   </div>
 </div>
 
-<script>window.__lang='en';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es'};</script>
+<script>window.__lang='pt';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es'};</script>
 <script src="/i18n.js" defer></script>
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
@@ -652,7 +652,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     e.preventDefault();
     const email = document.getElementById('signin-email').value.trim();
     const err = document.getElementById('signin-err');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter your email address.'; err.hidden = false; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Introduza o seu endereço de email.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
   });
   // Request-an-invite form: posts to the worker, which stores it and emails us.
@@ -665,14 +665,14 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     const hp = document.getElementById('if-hp').value;
     const note = document.getElementById('if-note');
     const btn = document.getElementById('if-submit');
-    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Request an invite →'; };
-    if (!name) return fail('A name, please.');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('A valid email, please.');
-    note.hidden = true; btn.disabled = true; btn.textContent = 'Sending…';
+    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Pedir um convite →'; };
+    if (!name) return fail('Um nome, por favor.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Um email válido, por favor.');
+    note.hidden = true; btn.disabled = true; btn.textContent = 'A enviar…';
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you 🌱</h3><p>We\'ll be in touch soon. Daybook grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
-      .catch(() => fail('Something went wrong - email contact@daybook.fyi and we\'ll sort you out.'));
+      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Obrigado 🌱</h3><p>Entraremos em contacto em breve. O Daybook cresce de boca em boca - se conhece alguém que o adorasse, mande-o ter connosco.</p></div>'; })
+      .catch(() => fail('Algo correu mal - escreva para contact@daybook.fyi e tratamos disso.'));
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {

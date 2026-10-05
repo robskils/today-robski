@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-PT"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/icon-192.v3.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.v3.png">
+<title>Política de Privacidade · Daybook</title>
+<meta name="robots" content="index">
+<link rel="canonical" href="https://daybook.fyi/pt/privacidade">
+<link rel="alternate" hreflang="en" href="https://daybook.fyi/privacy">
+<link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt/privacidade">
+<link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr/confidentialite">
+<link rel="alternate" hreflang="es" href="https://daybook.fyi/es/privacidad">
+<link rel="alternate" hreflang="x-default" href="https://daybook.fyi/privacy">
+<style>
+  :root { --paper:#efeae0; --paper-2:#e7e0d2; --card:#fbf9f4; --ink:#211c17; --ink-2:#574e44; --ink-3:#8b7f72; --line:#e4ddcf; --rust:#c4412e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:17px; line-height:1.65; }
+  .wrap { max-width:720px; margin:0 auto; padding:48px 22px 90px; }
+  .brand { display:flex; align-items:center; gap:9px; margin-bottom:34px; }
+  .brand svg { width:30px; height:30px; color:var(--rust); flex:none; }
+  .brand b { font-family:Georgia,'Times New Roman',serif; font-size:26px; font-weight:700; letter-spacing:-0.01em; }
+  h1 { font-family:Georgia,'Times New Roman',serif; font-size:clamp(30px,5vw,40px); font-weight:700; letter-spacing:-0.01em; margin:0 0 6px; }
+  .updated { color:var(--ink-3); font-size:14.5px; margin:0 0 30px; }
+  h2 { font-size:20px; margin:38px 0 10px; }
+  p, li { color:var(--ink-2); }
+  a { color:var(--rust); }
+  ul { padding-left:22px; }
+  li { margin:5px 0; }
+  .callout { background:var(--card); border:1px solid var(--line); border-left:3px solid var(--rust); border-radius:12px; padding:16px 18px; margin:20px 0; }
+  footer { margin-top:46px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-3); font-size:14px; }
+  .lang-switch { display:inline-flex; align-items:center; gap:1px; }
+  .lang-switch a { display:inline-block; padding:4px 7px; border-radius:8px; font-size:12.5px; font-weight:600; letter-spacing:.04em; color:var(--ink-3); text-decoration:none; }
+  .lang-switch a:hover { color:var(--ink); }
+  .lang-switch a.on { color:var(--rust); }
+  .foot-lang-label { font-size:13px; color:var(--ink-3); margin-right:6px; }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper:#1a1712; --paper-2:#221e18; --card:#232019; --ink:#f0e9dd; --ink-2:#c9bfae; --ink-3:#95897a; --line:#332d24; --rust:#e0715c; }
+  }
+</style>
+<!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
+<style>
+.dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card); border-top:1px solid var(--line); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink); }
+.dbk-consent p { margin:0; max-width:620px; font-size:15.5px; line-height:1.5; }
+.dbk-consent a { color:var(--rust); font-weight:600; text-decoration:none; }
+.dbk-consent .dbk-btns { display:flex; gap:10px; flex:none; }
+.dbk-consent button { font:inherit; font-size:15px; font-weight:600; padding:10px 22px; border-radius:10px; cursor:pointer; border:1px solid var(--line-2); }
+.dbk-consent .dbk-accept { background:var(--rust); color:var(--rust-ink); border-color:var(--rust); }
+.dbk-consent .dbk-decline { background:transparent; color:var(--ink-2); }
+@media (max-width:560px){ .dbk-consent .dbk-btns { flex:1 1 100%; } .dbk-consent button { flex:1; } }
+</style>
+<script>
+(function () {
+  var KEY = 'daybook.consent';
+  function loadTrackers() {
+    try {
+      window.init_tracer = function () { try { new Tracer({ websiteId: "68808b2d-ab7c-4b73-a3ef-05d92fd19b46", async: true, debug: false }); } catch (e) {} };
+      var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', 'G-2QJM3NGDX7');
+      var ga = document.createElement('script'); ga.async = true; ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-2QJM3NGDX7'; document.head.appendChild(ga);
+    } catch (e) {}
+  }
+  function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function banner() {
+    if (document.querySelector('.dbk-consent')) return;
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Escolhas de cookies');
+    b.innerHTML = '<p>O Daybook usa cookies de análise para perceber como o site é utilizado - nada pessoal, e nunca qualquer conteúdo do seu Daybook. Permite? <a href="/pt/privacidade">Privacidade</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Recusar</button><button class="dbk-accept" type="button">Aceitar</button></div>';
+    b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
+    b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
+    document.body.appendChild(b);
+  }
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-cookie-settings]'); if (t) { e.preventDefault(); banner(); } });
+  var d = get();
+  if (d === 'granted') { loadTrackers(); }
+  else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg><b>Daybook</b></div>
+  <h1>Política de Privacidade</h1>
+  <p class="updated">Última atualização a 8 de setembro de 2026</p>
+
+  <p>O Daybook (<a href="https://daybook.fyi">daybook.fyi</a>) é um lar privado e calmo para o seu dia - o seu calendário, tarefas, notas, correio e mais, num só lugar. Esta política explica o que recolhemos, como o usamos, e o controlo que tem. O Daybook é operado por Robin Lumley-Savile. Dúvidas? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.</p>
+
+  <div class="callout">
+    <p style="margin:0 0 8px"><b>Os seus dados pertencem-lhe. Ajudamo-lo a mantê-los em ordem - não lucramos com eles.</b></p>
+    <p style="margin:0">O Daybook é pago pelos seus subscritores, nunca por anunciantes e nunca pela venda do que coloca nele. Não lemos as suas notas, não passamos a sua informação a ninguém, e nunca a usamos para treinar IA. O seu Daybook é privado, só seu - nenhum outro membro o pode ver, e nós também não espreitamos lá dentro. E porque é seu, nunca fica preso: leve tudo consigo quando quiser, ou apague-o para sempre com um só clique.</p>
+  </div>
+
+  <h2>O que recolhemos</h2>
+  <ul>
+    <li><b>A sua conta</b> - o endereço de email com que entra e o nome que escolhe.</li>
+    <li><b>O que cria</b> - as tarefas, notas, tabelas, eventos, entradas de diário e demais conteúdo que acrescenta ao Daybook, para que o possamos guardar e mostrar-lho de volta.</li>
+    <li><b>Contas ligadas</b> - se optar por ligar um serviço (como o Google Calendar ou uma caixa de correio), as credenciais necessárias para lhe aceder em seu nome, guardadas encriptadas.</li>
+  </ul>
+
+  <h2>Dados de utilizador do Google</h2>
+  <p>Se ligar o seu Google Calendar, o Daybook solicita acesso de leitura e escrita aos eventos do seu calendário (o âmbito <code>calendar.events</code>) e ao endereço de email da sua conta Google, apenas para que:</p>
+  <ul>
+    <li>os seus próprios eventos de calendário possam ser mostrados dentro do Daybook a par dos seus outros itens, e</li>
+    <li>possamos identificar a ligação com a conta Google que ligou.</li>
+  </ul>
+  <div class="callout">
+    <p style="margin:0"><b>Utilização Limitada.</b> A utilização pelo Daybook da informação recebida das APIs do Google cumpre a <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de Dados de Utilizador dos Serviços de API do Google</a>, incluindo os requisitos de Utilização Limitada. Os dados do seu Google Calendar são usados apenas para fornecer e melhorar as funcionalidades de calendário que vê no Daybook. <b>Nunca</b> são vendidos, nunca são usados para publicidade, e nunca são partilhados com terceiros nem usados para treinar qualquer modelo de IA ou de aprendizagem automática.</p>
+  </div>
+
+  <h2>Como os seus dados são usados</h2>
+  <p>Usamos os seus dados exclusivamente para gerir o Daybook por si - guardar o seu conteúdo, dar-lhe entrada, mostrar o seu calendário e correio, e entregar funcionalidades que ative (como o resumo matinal). Não vendemos os seus dados, e não os usamos para publicidade.</p>
+
+  <h2>Cookies e análise</h2>
+  <p>As páginas públicas deste site (início, privacidade e termos) podem usar dois serviços de análise - Google Analytics e VisitorTracking - para perceber como o site é utilizado, de modo a podermos melhorá-lo. Estes definem cookies e recolhem dados de utilização, como as páginas vistas e a localização aproximada. Só são carregados <b>se aceitar</b> no aviso de cookies mostrado na sua primeira visita; escolha Recusar e nenhum deles corre. A sua escolha é recordada no seu dispositivo, e pode alterá-la a qualquer momento limpando os cookies deste site. Esta análise corre apenas nas páginas de divulgação - <b>nunca dentro do seu Daybook com sessão iniciada</b> - e nunca vê o conteúdo do seu Daybook.</p>
+
+  <h2>Armazenamento e segurança</h2>
+  <p>Os seus dados são guardados na infraestrutura da Cloudflare. O acesso está restrito à sua conta apenas - iniciar sessão requer um código de uso único enviado para o seu email (e, se o ativar, um segundo fator da sua aplicação de autenticação), de modo que a palavra-passe do seu email, por si só, não chega para entrar.</p>
+  <p>As coisas mais sensíveis que confia ao Daybook - os tokens das suas contas ligadas e as palavras-passe das caixas de correio - são <b>encriptadas em repouso (AES-256-GCM)</b>, de modo que nem nós as conseguimos ler. Não lemos o seu conteúdo, e nunca o vendemos nem o usamos para treinar qualquer modelo de IA ou de aprendizagem automática. Quando apaga algo, está apagado.</p>
+
+  <h2>Partilha dos seus dados</h2>
+  <p>Não partilhamos os seus dados pessoais com terceiros, exceto a infraestrutura e os fornecedores de serviços estritamente necessários para gerir o Daybook (por exemplo, a Cloudflare para alojamento, e as próprias APIs do Google quando liga o Google Calendar). O conteúdo que escolhe explicitamente partilhar com outro membro do Daybook é partilhado apenas conforme o indica. Nunca vendemos os seus dados, e nunca os entregamos a anunciantes.</p>
+
+  <h2>O seu controlo - leve-os, ou apague-os</h2>
+  <p>Porque os seus dados são seus, nunca fica preso:</p>
+  <ul>
+    <li><b>Descarregue tudo</b> - exporte o seu Daybook completo a partir de Definições › Conta, a qualquer momento, num formato portátil.</li>
+    <li><b>Apague a sua conta</b> - feche-a a partir de Definições › Conta e os seus dados são removidos. Sem perguntas, sem jogos de retenção.</li>
+    <li><b>Aloje-o você mesmo</b> - os seus dados são portáteis e seus para levar para outro lado. Correr o Daybook no seu próprio armazenamento está no nosso roteiro; até lá, a sua exportação dá-lhe tudo.</li>
+    <li><b>Desligue qualquer serviço</b> - a qualquer momento (para o Google Calendar, use o botão Desligar na vista de calendário); revogamos o token e apagamo-lo.</li>
+  </ul>
+
+  <h2>Alterações</h2>
+  <p>Se esta política mudar, atualizaremos esta página e a data acima.</p>
+
+  <footer>
+    Daybook · <a href="https://daybook.fyi">daybook.fyi</a> · <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <a href="#" data-cookie-settings>Definições de cookies</a>
+    <p style="margin:12px 0 0"><span class="foot-lang-label">Idioma</span><span class="lang-switch"></span></p>
+  </footer>
+</div>
+<script>window.__lang='pt';window.__alts={en:'/privacy',pt:'/pt/privacidade',fr:'/fr/confidentialite',es:'/es/privacidad'};</script>
+<script src="/i18n.js" defer></script>
+</body></html>

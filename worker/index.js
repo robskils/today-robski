@@ -3599,6 +3599,20 @@ export default {
       // subdomain like tara.daybook.fyi is the app itself.
       const isApex = host === 'daybook.fyi' || host === 'www.daybook.fyi';
       const isLife = host.endsWith('.daybook.fyi') && !isApex;
+      // Public marketing pages in English, and their localised counterparts
+      // (PT/FR/ES) which carry their own slugs. Clean URL -> asset file.
+      const EN_PAGES = ['/', '/blog', '/blog/welcome', '/blog/rhythms', '/blog/awareness', '/privacy', '/terms', '/support'];
+      const LOCALE_PAGES = {
+        '/pt': '/pt/index.html', '/pt/jornal': '/pt/jornal.html',
+        '/pt/jornal/bem-vindo': '/pt/jornal/bem-vindo.html', '/pt/jornal/ritmos': '/pt/jornal/ritmos.html', '/pt/jornal/consciencia': '/pt/jornal/consciencia.html',
+        '/pt/privacidade': '/pt/privacidade.html', '/pt/termos': '/pt/termos.html', '/pt/apoio': '/pt/apoio.html',
+        '/fr': '/fr/index.html', '/fr/journal': '/fr/journal.html',
+        '/fr/journal/bienvenue': '/fr/journal/bienvenue.html', '/fr/journal/rythmes': '/fr/journal/rythmes.html', '/fr/journal/conscience': '/fr/journal/conscience.html',
+        '/fr/confidentialite': '/fr/confidentialite.html', '/fr/conditions': '/fr/conditions.html', '/fr/aide': '/fr/aide.html',
+        '/es': '/es/index.html', '/es/diario': '/es/diario.html',
+        '/es/diario/bienvenido': '/es/diario/bienvenido.html', '/es/diario/ritmos': '/es/diario/ritmos.html', '/es/diario/conciencia': '/es/diario/conciencia.html',
+        '/es/privacidad': '/es/privacidad.html', '/es/terminos': '/es/terminos.html', '/es/soporte': '/es/soporte.html',
+      };
       // Invite links: /join/<CODE> boots the app (on any host) so the signup form
       // can pick the code out of the URL and prefill it. Bare /join is the same
       // shell: the app tidies the code out of the URL once it has stashed it, and
@@ -3624,10 +3638,34 @@ export default {
         return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
       if (path === '/sitemap.xml' && isApex) {
-        const body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>https://daybook.fyi/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n<url><loc>https://daybook.fyi/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n<url><loc>https://daybook.fyi/blog/welcome</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n<url><loc>https://daybook.fyi/blog/rhythms</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n<url><loc>https://daybook.fyi/blog/awareness</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n</urlset>\n';
+        const all = EN_PAGES.concat(Object.keys(LOCALE_PAGES));
+        const urls = all.map((p) => `<url><loc>https://daybook.fyi${p === '/' ? '/' : p}</loc></url>`).join('\n');
+        const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
         return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
+      // Localised public pages (PT/FR/ES) served from their own slugged files.
+      if (isApex) {
+        const clean = path !== '/' && path.endsWith('/') ? path.slice(0, -1) : path;
+        if (LOCALE_PAGES[clean]) {
+          return withHsts(await env.ASSETS.fetch(new Request(new URL(LOCALE_PAGES[clean], url.origin), request)));
+        }
+      }
       if (isApex && path === '/') {
+        // Language: honour a saved choice (set by the switcher), otherwise sniff
+        // Accept-Language once and redirect a non-English visitor to their locale.
+        // English stays canonical at '/', so crawlers and en visitors never move.
+        const cookie = request.headers.get('Cookie') || '';
+        const cm = cookie.match(/(?:^|;\s*)db_lang=(en|pt|fr|es)/);
+        let lang = cm ? cm[1] : '';
+        if (!lang) {
+          const first = (request.headers.get('Accept-Language') || '').toLowerCase().split(',')[0] || '';
+          if (first.startsWith('pt')) lang = 'pt';
+          else if (first.startsWith('fr')) lang = 'fr';
+          else if (first.startsWith('es')) lang = 'es';
+        }
+        if (lang && lang !== 'en') {
+          return withHsts(new Response(null, { status: 302, headers: { location: '/' + lang, vary: 'Cookie, Accept-Language', 'cache-control': 'no-store' } }));
+        }
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request)));
       }
       // Public legal pages (privacy required by Google's OAuth consent screen).
