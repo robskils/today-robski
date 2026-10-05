@@ -2797,7 +2797,7 @@ function navItems(v) {
     rvMonthly: modOn('goals') ? `<button class="nav-item" data-start-review="monthly"><span class="nav-ic">↻</span><span class="nav-lbl">Monthly</span></button>` : '',
     rvQuarterly: modOn('goals') ? `<button class="nav-item" data-start-review="quarterly"><span class="nav-ic">↻</span><span class="nav-lbl">Quarterly</span></button>` : '',
     rvYearly: modOn('goals') ? `<button class="nav-item" data-start-review="yearly"><span class="nav-ic">↻</span><span class="nav-lbl">Yearly</span></button>` : '',
-    financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
+    financial: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.financial')}</span></button>` : '',
     // The Money section's four buttons, each opening the Money tool on its tab.
     finSpending: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'spending' ? 'on' : ''}" data-open-financial data-fin-tab="spending"><span class="nav-ic">£</span><span class="nav-lbl">${t('nav.money.spending')}</span></button>` : '',
     finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
@@ -2811,7 +2811,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -2846,7 +2846,7 @@ function navGridHtml(v) {
     ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.saved])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
-    ${grp(t('nav.grp.money'), [NI.finSpending, NI.finPortfolio, NI.finAdvice])}
+    ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
     ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
     ${grp('Reviews', [NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
