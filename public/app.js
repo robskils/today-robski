@@ -6474,6 +6474,7 @@ async function setBlockNoSearch(kind, id, on) {
 // given in a review (area.props.wheelScore/wheelAt, denormalised by setWheel).
 const AREA_SENTIMENT = ['', 'Struggling', 'Finding its feet', 'Okay', 'Good', 'Thriving'];
 function areaSentimentHtml(area) {
+  if (area.props && area.props.reviewOff) return '';   // not tracked in the Wheel - no rating row
   const sc = Math.min(Number((area.props || {}).wheelScore) || 0, 5);
   if (!sc) return '';
   const when = (area.props || {}).wheelAt;
