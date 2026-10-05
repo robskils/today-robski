@@ -11297,6 +11297,33 @@ function contactPhoneFields(p) {
   const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" placeholder="211 234 400" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
   return `<div class="tf-field"><span class="tf-label">Phone</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-phone>+ Add phone</button></div>${ccDatalist()}</div>`;
 }
+// Messaging / social handles that open in the respective app. Stored on the
+// contact as props.telegram / props.instagram / props.signal - a handle, phone
+// or a full link; socialUrl normalises each into an openable link. (Robin.)
+function socialUrl(kind, v) {
+  v = String(v || '').trim(); if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  if (kind === 'signal') { const num = v.replace(/[^\d+]/g, ''); return num ? `https://signal.me/#p/${num[0] === '+' ? num : '+' + num}` : ''; }
+  const handle = v.replace(/^@/, '').replace(/^.*\//, '');
+  if (!handle) return '';
+  if (kind === 'telegram') return `https://t.me/${encodeURIComponent(handle)}`;
+  if (kind === 'instagram') return `https://instagram.com/${encodeURIComponent(handle)}`;
+  return '';
+}
+function contactSocialFields(p) {
+  const f = (id, label, val, ph) => `<label class="tf-field"><span class="tf-label">${label}</span><input class="sel" id="${id}" value="${esc(val || '')}" placeholder="${esc(ph)}" autocomplete="off" autocapitalize="none" spellcheck="false"></label>`;
+  return f('contactcard-telegram', 'Telegram', p.telegram, '@username or t.me link')
+    + f('contactcard-instagram', 'Instagram', p.instagram, '@username')
+    + f('contactcard-signal', 'Signal', p.signal, 'Phone number');
+}
+function readCardSocial() {
+  const out = {};
+  const g = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : undefined; };
+  const tg = g('contactcard-telegram'); if (tg !== undefined) out.telegram = tg || null;
+  const ig = g('contactcard-instagram'); if (ig !== undefined) out.instagram = ig || null;
+  const sg = g('contactcard-signal'); if (sg !== undefined) out.signal = sg || null;
+  return out;
+}
 // A contact can hold several addresses, each with an optional nickname (Work,
 // Yorkshire, Combloux…). props.addresses is the canonical array; props.address
 // mirrors the first (fields only, no label) so every older reader - the contact
@@ -11956,6 +11983,9 @@ function renderContactCard() {
         num ? `<a class="cc-qbtn" href="tel:${esc(num)}" title="Call"><span class="cc-qic">☎</span>Call</a>` : '',
         num ? `<a class="cc-qbtn" href="sms:${esc(num)}" title="Message"><span class="cc-qic">💬</span>Message</a>` : '',
         (() => { const wa = num.replace(/[^\d]/g, ''); return wa.length >= 8 ? `<a class="cc-qbtn cc-qbtn-wa" href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" title="Message on WhatsApp"><span class="cc-qic">🟢</span>WhatsApp</a>` : ''; })(),
+        p.telegram ? `<a class="cc-qbtn cc-qbtn-tg" href="${esc(socialUrl('telegram', p.telegram))}" target="_blank" rel="noopener noreferrer" title="Telegram"><span class="cc-qic">✈️</span>Telegram</a>` : '',
+        p.instagram ? `<a class="cc-qbtn cc-qbtn-ig" href="${esc(socialUrl('instagram', p.instagram))}" target="_blank" rel="noopener noreferrer" title="Instagram"><span class="cc-qic">📷</span>Instagram</a>` : '',
+        p.signal ? `<a class="cc-qbtn cc-qbtn-sig" href="${esc(socialUrl('signal', p.signal))}" target="_blank" rel="noopener noreferrer" title="Signal"><span class="cc-qic">🔵</span>Signal</a>` : '',
         addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"><span class="cc-qic">📍</span>Map</a>` : '',
         addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="Directions to ${esc(addr)}"><span class="cc-qic">🧭</span>Directions</a>` : '',
         `<button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(firstEmail || '')}" title="Invite to Daybook"><span class="cc-qic">✦</span>Invite</button>`,
@@ -11975,6 +12005,7 @@ function renderContactCard() {
         ? `<div class="tf-meta">
         ${contactEmailFields(p)}
         ${contactPhoneFields(p)}
+        ${contactSocialFields(p)}
         <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
         ${contactAddressFields(p)}
         <div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div>
@@ -16958,7 +16989,7 @@ document.addEventListener('click', (e) => {
   const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   if (t.closest('[data-cc-edit-details]') && state.contact_open) { state.contact_open.editDetails = true; renderContactCard(); return; }
-  if (t.closest('[data-cc-details-done]') && state.contact_open) { const cid = state.contact_open.contact.id; patchContact(cid, readCardContacts(), true); patchContact(cid, readCardAddresses(), true); state.contact_open.editDetails = false; renderContactCard(); return; }
+  if (t.closest('[data-cc-details-done]') && state.contact_open) { const cid = state.contact_open.contact.id; patchContact(cid, readCardContacts(), true); patchContact(cid, readCardAddresses(), true); patchContact(cid, readCardSocial(), true); state.contact_open.editDetails = false; renderContactCard(); return; }
   if (t.closest('[data-cc-add-addr]')) { const btn = t.closest('[data-cc-add-addr]'); btn.insertAdjacentHTML('beforebegin', contactAddrRowHtml({}, 'n' + Date.now().toString(36), true)); btn.previousElementSibling.querySelector('.cc-adr-label')?.focus(); return; }
   { const dca = t.closest('[data-cc-del-addr]'); if (dca && state.contact_open) { dca.closest('[data-adr-row]').remove(); patchContact(state.contact_open.contact.id, readCardAddresses(), true); return; } }
   const cac = t.closest('[data-contact-area]'); if (cac) { state.contactsArea = cac.dataset.contactArea || null; renderContacts(); return; }
