@@ -4975,6 +4975,24 @@ function journalSnippet(n) {
   const p = [...d.querySelectorAll('p')].map((x) => x.textContent.trim()).find(Boolean);
   return (p || d.textContent.trim() || 'Empty entry').slice(0, 120);
 }
+// A daily review is created with three seeded headings and empty paragraphs. If
+// nothing was written under them it's a blank you opened and left - it should
+// not clutter the Journal or the Reviews dashboard, so we treat it as discardable.
+function dailyReviewBlank(n) {
+  if (!(n && n.props && n.props.mode === 'dailyreview')) return false;
+  const bodyNoHeads = String(n.body || '').replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ');
+  const text = bodyNoHeads.replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').replace(/\s+/g, ' ').trim();
+  return text === '';
+}
+// Fetch top-level journal entries, discarding (and deleting) blank daily reviews
+// so they never reach the Journal list, the hub preview or the Reviews dashboard.
+async function fetchJournalEntries() {
+  const entries = await api('/api/blocks?kind=journal&parent_id=');
+  (entries || []).filter(dailyReviewBlank).forEach((b) => api(`/api/blocks/${b.id}`, { method: 'DELETE' }).catch(() => {}));
+  const kept = (entries || []).filter((n) => !dailyReviewBlank(n));
+  kept.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
+  return kept;
+}
 // ── Spirit Cards ──────────────────────────────────────────────────────
 // A gentle oracle deck inside Reflect: draw a card for a moment's reflection.
 // Built-in deck for now; publisher decks + payouts come later.
@@ -5472,8 +5490,7 @@ async function openJournal(mode) {
   state.view = { type: 'journal', mode: mode || null };
   renderNav();
   try {
-    const entries = await api('/api/blocks?kind=journal&parent_id=');
-    entries.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
+    const entries = await fetchJournalEntries();
     state.journal = Object.assign({}, state.journal, { entries, picking: false });
   } catch (e) { state.journal = Object.assign({}, state.journal, { entries: (state.journal && state.journal.entries) || [], picking: false }); toast(e.message); }
   renderJournalList();
@@ -5491,8 +5508,7 @@ async function openWellbeing() {
   state.view = { type: 'wellbeing' };
   renderNav();
   try {
-    const entries = await api('/api/blocks?kind=journal&parent_id=');
-    entries.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
+    const entries = await fetchJournalEntries();
     state.journal = Object.assign({}, state.journal, { entries, picking: false });
   } catch (e) { state.journal = Object.assign({}, state.journal, { entries: (state.journal && state.journal.entries) || [], picking: false }); }
   renderWellbeing();
@@ -5587,8 +5603,7 @@ async function openInsights() {
   renderNav();
   if (!(state.journal && state.journal.entries)) {
     try {
-      const entries = await api('/api/blocks?kind=journal&parent_id=');
-      entries.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
+      const entries = await fetchJournalEntries();
       state.journal = Object.assign({}, state.journal, { entries });
     } catch {}
   }
@@ -13123,7 +13138,7 @@ async function openReviews() {
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
   // Daily reviews now live here (bullet-journal daily log). Load past ones so the
   // Reviews page lists them, newest first.
-  if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview').sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
+  if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview' && !dailyReviewBlank(e)).sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
 }
 function renderReviews() {
   const daily = modOn('reflect') ? (() => {
