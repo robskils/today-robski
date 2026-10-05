@@ -792,7 +792,7 @@ function helpKey(v) {
   if (v && v.type === 'help') return v.tool || 'home';
   const t = (v && v.type) || 'home';
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
-    wellbeing: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
+    wellbeing: 'reflect', insights: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
     area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
     toolbox: 'timer', readwatch: 'saved' })[t] || t;
 }
@@ -925,7 +925,7 @@ function labelForView(v) {
     case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today'); case 'tracker': return t('today.tracker');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
-    case 'wellbeing': return t('nav.reflect');
+    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
@@ -969,7 +969,7 @@ function openView(v) {
     case 'calendar': return openCalendar(); case 'mail': return openMail(v.open); case 'today': return openToday(); case 'tracker': return openTracker();
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
-    case 'wellbeing': return openWellbeing();
+    case 'wellbeing': return openWellbeing(); case 'insights': return openInsights();
     case 'journal': return openJournal(v.mode || null); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
     case 'bookmarkcard': return openBookmarkCard(v.id);
@@ -2783,11 +2783,12 @@ function navItems(v) {
     reflect: modOn('reflect') ? `<button class="nav-item ${(v.type === 'journal' && !v.mode) || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
     // The Well-being tools, each its own button (the single "Well-being" button is
     // gone). They fire the same actions as the hub tiles, so they work from anywhere.
-    coaching: modOn('reflect') ? `<button class="nav-item" data-journal-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
-    dreams: modOn('reflect') ? `<button class="nav-item" data-journal-dream><span class="nav-ic">☾</span><span class="nav-lbl">${t('wb.dreams')}</span></button>` : '',
+    coaching: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'coaching' ? 'on' : ''}" data-open-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
+    dreams: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'dreams' ? 'on' : ''}" data-open-dreams><span class="nav-ic">☾</span><span class="nav-lbl">${t('wb.dreams')}</span></button>` : '',
     meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'toolbox' ? '' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
     spirit: modOn('reflect') ? `<button class="nav-item" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
     iching: modOn('reflect') ? `<button class="nav-item" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
+    insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✨</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? '<span class="nav-dot" title="New mail" aria-label="New mail"></span>' : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
@@ -2813,7 +2814,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -2849,7 +2850,7 @@ function navGridHtml(v) {
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
-    ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching])}
+    ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching, NI.insights])}
     ${grp('Reviews', [NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
 }
@@ -5550,6 +5551,77 @@ function renderWellbeing() {
     ${spiritPinnedHtml() + reflectPinsHtml()}
     ${recentHtml}`;
 }
+// ── Insights (its own Well-being tool page) ──────────────────────────────
+// Insights read back across your Journal entries. They live on their own page
+// now (reached from the sidebar and the Insights tile), not inline in Journal.
+// Older insights sometimes stored the raw JSON as their text; parse it back out.
+function insParsed(props) {
+  let text = (props && props.text) || '', points = (props && props.points) || [];
+  const s = String(text).trim();
+  if (s.startsWith('{') && /"text"\s*:/.test(s)) {
+    try { const o = JSON.parse(s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)); if (o && o.text != null) { text = String(o.text); if (Array.isArray(o.points) && !points.length) points = o.points; return { text, points }; } } catch {}
+    text = String(s)
+      .replace(/^\{\s*"text"\s*:\s*"/, '')
+      .replace(/"\s*,\s*"points"\s*:\s*\[\s*"?/, '\n\n')
+      .replace(/"?\s*\]\s*\}\s*$/, '')
+      .replace(/"\s*\}\s*$/, '')
+      .replace(/"\s*,\s*"/g, '\n\n')
+      .replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\t/g, ' ')
+      .replace(/^["']+|["']+$/g, '')
+      .trim();
+    points = [];
+  }
+  return { text, points };
+}
+function insParas(text) {
+  let s = String(text || '').trim(); if (!s) return '';
+  let paras;
+  if (/\n\s*\n/.test(s)) paras = s.split(/\n\s*\n/);
+  else if (/\n/.test(s)) paras = s.split(/\n/);
+  else { const sents = s.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [s]; paras = []; for (let i = 0; i < sents.length; i += 3) paras.push(sents.slice(i, i + 3).join('').trim()); }
+  return paras.map((p) => p.trim()).filter(Boolean).map((p) => `<p class="j-insights-t">${esc(p)}</p>`).join('');
+}
+function insDate(b) { try { return new Date((b.props && b.props.ts) || b.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } }
+async function openInsights() {
+  state.view = { type: 'insights' };
+  renderNav();
+  if (!(state.journal && state.journal.entries)) {
+    try {
+      const entries = await api('/api/blocks?kind=journal&parent_id=');
+      entries.sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || '')));
+      state.journal = Object.assign({}, state.journal, { entries });
+    } catch {}
+  }
+  renderInsights();
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  api('/api/blocks?kind=insight').then((list) => {
+    if (state.journal && state.view.type === 'insights') {
+      state.journal.insightsList = (list || []).sort((a, b) => String((b.props && b.props.ts) || b.created_at || '').localeCompare(String((a.props && a.props.ts) || a.created_at || '')));
+      renderInsights();
+    }
+  }).catch(() => {});
+}
+function renderInsights() {
+  const j = state.journal || { entries: [] };
+  const list = j.insightsList || [];
+  const reading = list.find((x) => x.id === j.readingInsight);
+  const body = `<div class="j-insights j-insights-page">
+      <div class="j-ins-actions">
+        <button class="add-btn wide" data-journal-insights-read ${list.length ? '' : 'disabled'}>📖 Read insights</button>
+        <button class="add-btn wide" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading your entries…' : '✨ Create insights'}</button>
+      </div>
+      ${reading ? `<div class="j-ins-read">
+        <div class="j-ins-read-h"><span>${esc(insDate(reading))}${reading.props && reading.props.from ? ` · from your last ${reading.props.from} entries` : ''}</span><button class="ghost j-ins-close" data-journal-insights-close title="Close">×</button></div>
+        ${(() => { const p = insParsed(reading.props); return `${insParas(p.text)}${p.points.length ? `<ul class="j-insights-pts">${p.points.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`; })()}</div>` : ''}
+      ${list.length ? `<div class="j-ins-list"><div class="j-ins-list-h">Previous insights</div>${list.map((b) => `<button class="j-ins-item ${b.id === j.readingInsight ? 'on' : ''}" data-read-insight="${b.id}"><span class="j-ins-item-date">${esc(insDate(b))}</span><span class="j-ins-item-snip">${esc(insParsed(b.props).text.slice(0, 90))}</span><span class="j-ins-del" data-del-insight="${b.id}" title="Delete this insight">×</span></button>`).join('')}</div>`
+        : '<div class="home-empty" style="padding:10px 0 4px">No insights yet. Create one and it reads back your recent journal entries - the themes, what lifts you, what drains you.</div>'}
+    </div>`;
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.insights') }])}
+    <div class="pane-head home-head"><h1>${t('wb.insights')}</h1></div>
+    ${wbToolTilesHtml({ sel: 'insights' })}
+    ${body}`;
+}
 async function newCoachingSession() {
   if (!state.journal) await openJournal();
   const date = new Date().toISOString();
@@ -5585,7 +5657,7 @@ async function newDailyReview() {
 }
 async function journalInsights() {
   if (!state.journal) return;
-  state.journal.insightsOpen = true; state.journal.insightsLoading = true; renderJournalList();
+  state.journal.insightsLoading = true; renderInsights();
   try {
     const r = await api('/api/journal/insights', { method: 'POST' });
     if (r && r.text) {
@@ -5597,13 +5669,13 @@ async function journalInsights() {
       toast('Write a few entries first, then Insights has something to read.');
     }
   } catch (e) { toast(e.message); }
-  state.journal.insightsLoading = false; renderJournalList();
+  state.journal.insightsLoading = false; renderInsights();
 }
 async function delInsight(id) {
   try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); } catch (e) { return toast(e.message); }
   state.journal.insightsList = (state.journal.insightsList || []).filter((x) => x.id !== id);
   if (state.journal.readingInsight === id) state.journal.readingInsight = null;
-  renderJournalList();
+  renderInsights();
 }
 function renderJournalList() {
   const j = state.journal || { entries: [] };
@@ -5633,57 +5705,6 @@ function renderJournalList() {
       <span class="j-card-snip">${esc(journalSnippet(n))}</span>
       ${modeLabel ? `<span class="j-card-mode">${modeLabel}</span>` : ''}</button>`;
   }).join('');
-  const list = j.insightsList || [];
-  const open = !!j.insightsOpen;   // collapsed by default each visit
-  // Rescue older insights that stored the raw JSON as their text, and always
-  // read text + points back cleanly.
-  const insParsed = (props) => {
-    let text = (props && props.text) || '', points = (props && props.points) || [];
-    const s = String(text).trim();
-    if (s.startsWith('{') && /"text"\s*:/.test(s)) {
-      try { const o = JSON.parse(s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)); if (o && o.text != null) { text = String(o.text); if (Array.isArray(o.points) && !points.length) points = o.points; return { text, points }; } } catch {}
-      // The stored text is a JSON blob the model mis-formatted so it wouldn't
-      // parse. Strip the scaffolding by hand so it reads as plain prose - no
-      // {"text": ..., "points": [...]} showing through.
-      text = String(s)
-        .replace(/^\{\s*"text"\s*:\s*"/, '')
-        .replace(/"\s*,\s*"points"\s*:\s*\[\s*"?/, '\n\n')
-        .replace(/"?\s*\]\s*\}\s*$/, '')
-        .replace(/"\s*\}\s*$/, '')
-        .replace(/"\s*,\s*"/g, '\n\n')
-        .replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\t/g, ' ')
-        .replace(/^["']+|["']+$/g, '')
-        .trim();
-      points = [];
-    }
-    return { text, points };
-  };
-  // Render the overview as paragraphs: split on blank lines / newlines, else
-  // group the sentences a few at a time so it isn't one wall of text.
-  const insParas = (text) => {
-    let t = String(text || '').trim(); if (!t) return '';
-    let paras;
-    if (/\n\s*\n/.test(t)) paras = t.split(/\n\s*\n/);
-    else if (/\n/.test(t)) paras = t.split(/\n/);
-    else { const sents = t.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [t]; paras = []; for (let i = 0; i < sents.length; i += 3) paras.push(sents.slice(i, i + 3).join('').trim()); }
-    return paras.map((p) => p.trim()).filter(Boolean).map((p) => `<p class="j-insights-t">${esc(p)}</p>`).join('');
-  };
-  const insDate = (b) => { try { return new Date((b.props && b.props.ts) || b.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } };
-  const reading = list.find((x) => x.id === j.readingInsight);
-  const insightsCard = `<div class="j-insights ${open ? '' : 'collapsed'}">
-      <div class="j-insights-h" data-journal-insights-toggle><span class="acw-chev">${open ? '▾' : '▸'}</span>✨ Insights${list.length ? `<span class="j-insights-ts">${list.length} generated</span>` : ''}</div>
-      <div class="j-insights-body">
-        <div class="j-ins-actions">
-          <button class="add-btn wide" data-journal-insights-read ${list.length ? '' : 'disabled'}>📖 Read insights</button>
-          <button class="add-btn wide" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading your entries…' : '✨ Create insights'}</button>
-        </div>
-        ${reading ? `<div class="j-ins-read">
-          <div class="j-ins-read-h"><span>${esc(insDate(reading))}${reading.props && reading.props.from ? ` · from your last ${reading.props.from} entries` : ''}</span><button class="ghost j-ins-close" data-journal-insights-close title="Close">×</button></div>
-          ${(() => { const p = insParsed(reading.props); return `${insParas(p.text)}${p.points.length ? `<ul class="j-insights-pts">${p.points.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`; })()}</div>` : ''}
-        ${list.length ? `<div class="j-ins-list"><div class="j-ins-list-h">Previous insights</div>${list.map((b) => `<button class="j-ins-item ${b.id === j.readingInsight ? 'on' : ''}" data-read-insight="${b.id}"><span class="j-ins-item-date">${esc(insDate(b))}</span><span class="j-ins-item-snip">${esc(insParsed(b.props).text.slice(0, 90))}</span><span class="j-ins-del" data-del-insight="${b.id}" title="Delete this insight">×</span></button>`).join('')}</div>`
-          : '<div class="home-empty" style="padding:8px 0 4px">No insights yet. Create one and it reads back your recent entries - the themes, what lifts you, what drains you.</div>'}
-      </div>
-    </div>`;
   const startBtn = cfg
     ? `<button class="add-btn wide j-new-btn" ${cfg.newAttr}>＋ ${esc(cfg.newBtn)}</button>`
     : `<button class="add-btn wide j-new-btn" data-journal-start>＋ New entry</button>`;
@@ -5694,7 +5715,6 @@ function renderJournalList() {
     ${picking ? '' : wbToolTilesHtml({ sel: selKey })}
     ${(!mode && !picking) ? spiritPinnedHtml() + reflectPinsHtml() : ''}
     ${picker}
-    ${!mode ? insightsCard : ''}
     ${picking ? '' : `<div class="j-list-head">${startBtn}</div>`}
     <div class="j-list">${cards || (picking ? '' : `<div class="empty">${esc(emptyMsg)}</div>`)}</div>`;
 }
@@ -16804,20 +16824,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-coaching]')) { newCoachingSession(); return; }
   if (t.closest('[data-journal-dream]')) { newJournalEntry('dreams', 'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.'); return; }
   const delIns = t.closest('[data-del-insight]'); if (delIns) { delInsight(delIns.dataset.delInsight); return; }
-  const readIns = t.closest('[data-read-insight]'); if (readIns) { if (state.journal) { state.journal.readingInsight = readIns.dataset.readInsight; renderJournalList(); } return; }
-  if (t.closest('[data-journal-insights-read]')) { if (state.journal) { const l = state.journal.insightsList || []; if (l.length) { state.journal.readingInsight = l[0].id; renderJournalList(); } } return; }
-  if (t.closest('[data-journal-insights-close]')) { if (state.journal) { state.journal.readingInsight = null; renderJournalList(); } return; }
+  const readIns = t.closest('[data-read-insight]'); if (readIns) { if (state.journal) { state.journal.readingInsight = readIns.dataset.readInsight; renderInsights(); } return; }
+  if (t.closest('[data-journal-insights-read]')) { if (state.journal) { const l = state.journal.insightsList || []; if (l.length) { state.journal.readingInsight = l[0].id; renderInsights(); } } return; }
+  if (t.closest('[data-journal-insights-close]')) { if (state.journal) { state.journal.readingInsight = null; renderInsights(); } return; }
   if (t.closest('[data-journal-insights]')) { journalInsights(); return; }
-  if (t.closest('[data-journal-insights-toggle]')) { if (state.journal) { state.journal.insightsOpen = !state.journal.insightsOpen; renderJournalList(); } return; }
-  if (t.closest('[data-open-insights]')) {
-    // Insights belong to the general Journal. Open it (if we're elsewhere, e.g.
-    // the hub), then reveal the Insights section, stopping just above it rather
-    // than scrolling it under the sticky header.
-    const reveal = () => { if (!state.journal) return; state.journal.insightsOpen = true; renderJournalList(); requestAnimationFrame(() => { const el = document.querySelector('.j-insights'); if (el) { const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56; el.style.scrollMarginTop = (navh + 12) + 'px'; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }); };
-    if (state.view && state.view.type === 'journal' && !state.view.mode) reveal();
-    else openJournal().then(reveal).catch((x) => toast(x.message));
-    return;
-  }
+  if (t.closest('[data-open-insights]')) { openInsights().catch((x) => toast(x.message)); return; }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
   { const rb = t.closest('[data-journal-dictate]'); if (rb) { toggleDictation(rb); return; } }
@@ -20431,11 +20442,14 @@ async function onbConnectGmail() {
     if (mailtoParam) { history.replaceState(null, '', location.pathname); await openMailCompose(parseMailto(mailtoParam)).catch(() => openHome()); }
     else if (route === '/calendar') await openCalendar();
     else if (route === '/mail') await openMail();
+    else if (route === '/wellbeing') await openWellbeing();
     else if (route === '/journal') await openJournal();
-    // The morning email links here. /dreams opens Reflection with the prompt
-    // picker up, where the dream prompts are waiting - it deliberately does NOT
+    else if (route === '/insights') await openInsights();
+    // The morning email links here. /dreams opens the Dreams tool page, where
+    // past dreams and a "Record a dream" button wait - it deliberately does NOT
     // create an entry, because a link in an email must not write anything.
-    else if (route === '/dreams') { await openJournal(); if (state.journal) { state.journal.picking = true; renderJournalList(); } }
+    else if (route === '/dreams') await openJournal('dreams');
+    else if (route === '/coaching') await openJournal('coaching');
     else if (route === '/goals') await openGoals();
     else if (route === '/today') await openToday();
     else if (/^\/u\/[A-Za-z0-9-]{1,30}$/.test(route)) { const sub = route.slice(3); history.replaceState(null, '', '/'); await openHome().catch(() => {}); openConnectBySub(sub); }
