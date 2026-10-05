@@ -3740,11 +3740,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    the copy in the sidebar footer is hidden on desktop to avoid two of them. */
 .help-btn { flex:none; width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-family:Georgia,'Times New Roman',serif; font-style:italic; font-weight:700; font-size:17px; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .help-btn:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
-.tabstrip .help-btn { margin-left:auto; width:38px; height:38px; font-size:19px; }
+.tabstrip .help-btn { margin-left:auto; width:34px; height:34px; font-size:17px; }
 .nav-bottom-row .help-btn { display:none; }   /* desktop: the tab-strip one is used instead */
 /* Settings + Sign out in the tab strip, styled to match the round i. Sized up so
    the glyphs are legible (Robin's eyesight). */
-.tabstrip .tab-util { flex:none; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
+.tabstrip .tab-util { flex:none; width:34px; height:34px; margin-left:5px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:16px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .tabstrip .tab-util:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
 .tabstrip .tab-util.on { color:var(--accent); border-color:var(--accent); }
 /* The top-right cluster (i, settings, sign out) reads in Daybook's accent so it's
@@ -5058,7 +5058,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 
 /* Tabs: a strip above the pane; each tab is a saved view. */
 .main { min-width:0; display:flex; flex-direction:column; }
-.tabstrip { position:sticky; top:0; z-index:25; display:flex; align-items:center; gap:4px; height:44px; box-sizing:border-box; padding:6px 10px; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+.tabstrip { position:sticky; top:0; z-index:25; display:flex; align-items:center; gap:4px; height:44px; box-sizing:border-box; padding:6px 14px; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
 .tabstrip::-webkit-scrollbar { display:none; }
 .tabstrip .tab { display:inline-flex; align-items:center; gap:7px; max-width:190px; padding:6px 11px 6px 12px; border-radius:10px; border:1px solid var(--line); background:color-mix(in srgb,var(--card) 45%,transparent); color:var(--ink-3); font-size:14px; white-space:nowrap; flex:none; transition:background .12s,color .12s,border-color .12s,box-shadow .12s; }
 .tabstrip .tab:hover { border-color:var(--line-2); background:var(--card); color:var(--ink-2); }
