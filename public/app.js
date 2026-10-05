@@ -792,7 +792,7 @@ function helpKey(v) {
   if (v && v.type === 'help') return v.tool || 'home';
   const t = (v && v.type) || 'home';
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
-    wellbeing: 'reflect', insights: 'reflect', meditation: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
+    wellbeing: 'reflect', insights: 'reflect', meditation: 'reflect', iching: 'reflect', spirit: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
     area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
     toolbox: 'timer', readwatch: 'saved' })[t] || t;
 }
@@ -925,7 +925,7 @@ function labelForView(v) {
     case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today'); case 'tracker': return t('today.tracker');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
-    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation');
+    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'spirit': return t('wb.spirit');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
@@ -970,6 +970,7 @@ function openView(v) {
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'wellbeing': return openWellbeing(); case 'insights': return openInsights(); case 'meditation': return openMeditation();
+    case 'iching': return openIChing(); case 'spirit': return openSpiritCards();
     case 'journal': return openJournal(v.mode || null); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
     case 'bookmarkcard': return openBookmarkCard(v.id);
@@ -2786,8 +2787,8 @@ function navItems(v) {
     coaching: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'coaching' ? 'on' : ''}" data-open-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
     dreams: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'dreams' ? 'on' : ''}" data-open-dreams><span class="nav-ic">☾</span><span class="nav-lbl">${t('wb.dreams')}</span></button>` : '',
     meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'meditation' ? 'on' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
-    spirit: modOn('reflect') ? `<button class="nav-item" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
-    iching: modOn('reflect') ? `<button class="nav-item" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
+    spirit: modOn('reflect') ? `<button class="nav-item ${v.type === 'spirit' ? 'on' : ''}" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
+    iching: modOn('reflect') ? `<button class="nav-item ${v.type === 'iching' ? 'on' : ''}" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
     insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✨</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? '<span class="nav-dot" title="New mail" aria-label="New mail"></span>' : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
@@ -5041,25 +5042,27 @@ const SPIRIT_CARDS = [
 ];
 const scFront = (c) => `<span class="sc-sym">${c[1]}</span><h3 class="sc-name">${esc(c[0])}</h3><p class="sc-msg">${esc(c[2])}</p>`;
 function renderSpirit() {
-  let el = document.getElementById('spirit'); if (!el) { el = document.createElement('div'); el.id = 'spirit'; document.body.appendChild(el); }
   const c = state.spirit && state.spirit.card;
-  el.innerHTML = `<div class="spirit-bg">
-    <button class="spirit-x" data-spirit-close title="Close">×</button>
-    <div class="spirit-card ${c ? 'drawn' : ''}" data-spirit-draw>
-      <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-hint">Tap to draw</span></div>
-      <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
-    </div>
-    <div class="spirit-actions" id="spirit-actions">${spiritActionsHtml()}</div>
-    ${spiritHistoryHtml()}
-  </div>`;
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.spirit') }])}
+    <div class="pane-head home-head"><h1>${t('wb.spirit')}</h1></div>
+    ${wbToolTilesHtml({ sel: 'spirit' })}
+    <div class="spirit-page">
+      <div class="spirit-card ${c ? 'drawn' : ''}" data-spirit-draw>
+        <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-hint">Tap to draw</span></div>
+        <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
+      </div>
+      <div class="spirit-actions" id="spirit-actions">${spiritActionsHtml()}</div>
+      ${spiritHistoryHtml()}
+    </div>`;
 }
 // After a draw you choose: keep it (Save - pins it and records it in your
 // history) or draw again. Nothing is saved until you say so.
 function spiritActionsHtml() {
   const c = state.spirit && state.spirit.card;
   if (!c) return '';
-  if (state.spirit.saved) return `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button><button class="spirit-again spirit-close" data-spirit-close>✕ Close</button>`;
-  return `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button><button class="spirit-again spirit-close" data-spirit-close>✕ Close</button>`;
+  if (state.spirit.saved) return `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>`;
+  return `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
 }
 const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
 function spiritHistoryHtml() {
@@ -5112,11 +5115,14 @@ function dismissSpirit() {
 async function openSpiritCards() {
   const s = currentSpirit();
   state.spirit = { card: s ? [s.name, s.symbol, s.message] : null, saved: !!s };
+  state.view = { type: 'spirit' };
+  renderNav();
   renderSpirit();
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
   if (state.spiritHistory === undefined) {
     try { const r = await api('/api/kv/spirit_history'); state.spiritHistory = (r && r.value) ? JSON.parse(r.value) : []; }
     catch { state.spiritHistory = []; }
-    if (document.getElementById('spirit')) renderSpirit();
+    if (state.view && state.view.type === 'spirit') renderSpirit();
   }
 }
 function drawSpiritCard() {
@@ -5227,7 +5233,6 @@ function icLineHtml(l, transformed) {
 // Lines cast from the ground up, so draw them top line first (reverse).
 function icHexGlyph(lines, transformed) { return `<div class="ic-hex">${lines.slice().reverse().map((l) => icLineHtml(l, transformed)).join('')}</div>`; }
 function renderIChing() {
-  let el = document.getElementById('iching'); if (!el) { el = document.createElement('div'); el.id = 'iching'; document.body.appendChild(el); }
   const s = state.iching || {};
   let body;
   if (!s.lines) {
@@ -5261,14 +5266,14 @@ function renderIChing() {
         ${(s.q && aiClientOn()) ? `<button class="ic-btn" data-iching-reflect ${s.reflecting ? 'disabled' : ''}>${s.reflecting ? '✦ Reflecting…' : (s.reflection ? '✦ Reflect again' : '✦ Reflect on my question')}</button>` : ''}
         ${s.saved ? '<span class="ic-saved">✓ Saved to your readings</span>' : '<button class="ic-btn ic-btn-primary" data-iching-save>✓ Save this reading</button>'}
         <button class="ic-btn" data-iching-cast>↻ Cast again</button>
-        <button class="ic-btn ic-btn-close" data-iching-close>✕ Close</button>
       </div>
     </div>`;
   }
-  el.innerHTML = `<div class="ic-bg" data-iching-bgclose>
-    <button class="ic-x" data-iching-close title="Close">×</button>
-    <div class="ic-sheet">${body}${icHistoryHtml()}</div>
-  </div>`;
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.iching') }])}
+    <div class="pane-head home-head"><h1>${t('wb.iching')}</h1></div>
+    ${wbToolTilesHtml({ sel: 'iching' })}
+    <div class="ic-sheet ic-page">${body}${icHistoryHtml()}</div>`;
 }
 function icHistoryHtml() {
   const h = state.ichingHistory || [];
@@ -5282,11 +5287,14 @@ async function openIChing(reading) {
   // Reopen a pinned reading (from the Well-being / Home tile), or a fresh cast.
   if (reading && reading.lines) { const hex = icHexFor(reading.lines, false); state.iching = { q: reading.q || '', lines: reading.lines, hex, saved: true, reflection: reading.reflection || '' }; }
   else state.iching = state.iching || { q: '' };
+  state.view = { type: 'iching' };
+  renderNav();
   renderIChing();
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
   if (state.ichingHistory === undefined) {
     try { const r = await api('/api/kv/iching_history'); state.ichingHistory = (r && r.value) ? JSON.parse(r.value) : []; }
     catch { state.ichingHistory = []; }
-    if (document.getElementById('iching')) renderIChing();
+    if (state.view && state.view.type === 'iching') renderIChing();
   }
 }
 function castIChing() {

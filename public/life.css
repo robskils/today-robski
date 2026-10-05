@@ -2681,6 +2681,16 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .ic-hname { font-size:14px; color:var(--ink); font-weight:600; }
 .ic-hq { font-size:12.5px; color:var(--ink-3); font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ic-hwhen { flex:none; font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+/* Spirit cards & I Ching, now as regular Well-being pages (not overlays). The
+   action and history text was white for the old dark backdrop; on the page it
+   reads against the normal ground, so recolour to the ink tokens. */
+.spirit-page { display:flex; flex-direction:column; align-items:center; gap:22px; padding:10px 0 6px; }
+.spirit-page .spirit-again { color:var(--ink); border-color:var(--line-2); }
+.spirit-page .spirit-saved { color:var(--done); }
+.spirit-page .spirit-hist { color:var(--ink-2); }
+.spirit-page .spirit-hist > summary { opacity:1; color:var(--ink-3); }
+.spirit-page .spirit-hrow:hover { background:color-mix(in srgb,var(--ink) 6%,transparent); }
+.ic-page { margin:6px auto 0; }
 /* Horoscope */
 .ho-l { display:flex; flex-direction:column; gap:6px; width:100%; text-align:left; font-size:13px; font-weight:600; color:var(--ink-2); }
 .ho-opt { font-weight:400; color:var(--ink-3); font-size:12px; }
