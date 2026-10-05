@@ -4773,7 +4773,10 @@ function notesControlsHtml(full) {
   const areaSel = `<select class="sel notes-area" data-notes-area title="Filter by life area"><option value="">${t('filter.allareas')}</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
   const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   const makeBtns = full ? `<button class="add-btn wide notes-new" data-new-note>${t('notes.newnote')}</button><button class="add-btn wide notes-new-table" data-new-table>${t('btn.newtable')}</button>` : '';
-  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${makeBtns}</div>`;
+  // The make buttons ride inline on desktop (right of the search bar), but on
+  // mobile they live in a separate row OUTSIDE the sticky toolbar so they scroll
+  // away with the page instead of staying pinned. (Robin.)
+  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${makeBtns ? `<span class="notes-make-inline">${makeBtns}</span>` : ''}</div>${makeBtns ? `<div class="notes-makebar">${makeBtns}</div>` : ''}`;
 }
 function noteCard(n) {
   const t = isTableNote(n);
