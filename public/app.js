@@ -2823,7 +2823,13 @@ function saveMobileNavOrder(arr) { try { localStorage.setItem('life.nav.morder',
 function navMobileListHtml(v) {
   const NI = navItems(v);
   // Each button rides in a row with a drag grip so the drawer can be reordered.
-  return `<nav class="nav-mlist">${mobileNavOrder().map((k) => NI[k] ? `<div class="mnav-row" data-mnav-id="${k}"><span class="mnav-grip" data-mnav-grip aria-hidden="true">⠿</span>${NI[k]}</div>` : '').filter(Boolean).join('')}</nav>`;
+  const list = mobileNavOrder().map((k) => NI[k] ? `<div class="mnav-row" data-mnav-id="${k}"><span class="mnav-grip" data-mnav-grip aria-hidden="true">⠿</span>${NI[k]}</div>` : '').filter(Boolean).join('');
+  // Force monochrome ("text") presentation on every icon glyph by appending the
+  // VS15 selector - some glyphs (✉ ☯ ☀ ☺ …) otherwise render as full-colour
+  // emoji that ignore our accent colour, and font-variant-emoji isn't honoured in
+  // the Brave app's engine. VS15 is ignored on plain-text glyphs, so it's safe
+  // for all of them. (Robin.)
+  return `<nav class="nav-mlist">${list.replace(/(<span class="nav-ic">)([^<]+)(<\/span>)/g, (_, a, g, z) => a + g + '︎' + z)}</nav>`;
 }
 function navGridHtml(v) {
   const NI = navItems(v);
