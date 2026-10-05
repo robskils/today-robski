@@ -3624,7 +3624,7 @@ export default {
         return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
       if (path === '/sitemap.xml' && isApex) {
-        const body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>https://daybook.fyi/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n<url><loc>https://daybook.fyi/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n<url><loc>https://daybook.fyi/blog/welcome</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n</urlset>\n';
+        const body = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>https://daybook.fyi/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n<url><loc>https://daybook.fyi/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n<url><loc>https://daybook.fyi/blog/welcome</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n<url><loc>https://daybook.fyi/blog/rhythms</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n<url><loc>https://daybook.fyi/blog/awareness</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n</urlset>\n';
         return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
       if (isApex && path === '/') {
