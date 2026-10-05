@@ -3200,7 +3200,7 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .sess-empty { color:var(--ink-3); font-size:13px; line-height:1.5; padding:4px 0 2px; }
 /* Meditation: a plain place to jot a few words about today's sit. */
 .med-notes-box { border:1px solid var(--line); border-radius:14px; background:color-mix(in srgb,var(--card) 60%,transparent); padding:13px 15px 15px; }
-.med-notes-ta { width:100%; min-height:88px; resize:vertical; margin-top:2px; font-size:14px; line-height:1.55; }
+.med-notes-ta { width:100%; max-width:none; min-height:88px; resize:vertical; margin-top:2px; font-size:14px; line-height:1.55; }
 /* Timer life-area picker. */
 .tmr-area-l { display:flex; flex-direction:column; gap:5px; margin:12px 0 2px; width:100%; max-width:280px; }
 .tmr-area-l > span { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
