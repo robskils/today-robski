@@ -2118,7 +2118,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
   color:var(--ink-2); font-size:14.5px; transition:background .12s,border-color .12s,color .12s; overflow:hidden; white-space:nowrap;
 }
 /* A glyph in the app's own icon language leads; label next; the "+" at the right. */
-.nav-ic { flex:none; width:18px; text-align:center; font-size:14px; color:var(--ink-3); line-height:1; }
+/* Force text (monochrome) presentation so glyphs like ✉ ☯ ☀ render in the icon
+   colour, not as full-colour emoji that ignore CSS colour - keeps every nav icon
+   in one style, especially in dark mode. (Robin.) */
+.nav-ic { flex:none; width:18px; text-align:center; font-size:14px; color:var(--ink-3); line-height:1; font-variant-emoji:text; }
 .nav-lbl { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .nav-item:hover { background:var(--paper); color:var(--ink); }
 .nav-item:hover .nav-ic { color:var(--ink-2); }
