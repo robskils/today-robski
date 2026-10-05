@@ -147,12 +147,12 @@ nav {
 .nav-in { display: flex; align-items: center; justify-content: space-between; height: 70px; }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-family: 'Fraunces', serif; font-size: 23px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); }
 .brand-mark { width: 26px; height: 26px; color: var(--rust); flex: none; }
-.nav-links { display: flex; align-items: center; gap: 30px; list-style: none; }
-.nav-links a { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; transition: color .18s; }
+.nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
+.nav-links a { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; transition: color .18s; }
 .nav-links a:hover { color: var(--ink); }
 .nav-cta { display: flex; align-items: center; gap: 14px; }
 .nav-cta .btn { padding: 10px 18px; font-size: 15px; border-radius: 11px; }
-@media (max-width: 760px) { .nav-links { display: none; } }
+@media (max-width: 1024px) { .nav-links { display: none; } }
 /* Phone header: the wordmark plus both CTAs overflowed and wrapped to two lines.
    Tighten the gutter, shrink the wordmark, compact the buttons (never wrapping),
    and let Sign in fall back to a borderless link so both sit on one clean row. */
@@ -170,10 +170,18 @@ nav {
 .lang-switch a { display: inline-block; padding: 4px 7px; border-radius: 8px; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; color: var(--ink-3); text-decoration: none; transition: color .16s, background .16s; }
 .lang-switch a:hover { color: var(--ink); background: var(--rust-soft); }
 .lang-switch a.on { color: var(--rust); }
-.nav-lang { margin-right: 4px; }
-@media (max-width: 760px) { .nav-lang { display: none; } }
+.nav-lang { margin-right: 2px; }
 .foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 12px; }
 .foot-lang-label { font-size: 13px; color: var(--ink-3); }
+.lang-switch.lang-dd { position: relative; gap: 0; }
+.lang-btn { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--ink-2); background: transparent; border: 1px solid var(--line-2); border-radius: 10px; padding: 7px 10px; cursor: pointer; line-height: 1; transition: border-color .16s, color .16s; }
+.lang-btn:hover { color: var(--ink); border-color: var(--ink); }
+.lang-caret { font-size: 10px; opacity: .7; }
+.lang-menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 160px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; display: none; z-index: 60; }
+.lang-switch.lang-dd.open .lang-menu { display: block; }
+.lang-menu a { display: block; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; }
+.lang-menu a:hover { background: var(--rust-soft); color: var(--ink); }
+.lang-menu a.on { color: var(--rust); font-weight: 600; }
 
 /* ── hero ── */
 .hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
@@ -413,7 +421,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <ul class="nav-links">
       <li><a href="#idea">Votre Daybook</a></li>
       <li><a href="#tools">Outils</a></li>
-      <li><a href="#private">Confidentialité par conception</a></li>
+      <li><a href="#private">Confidentialité</a></li>
       <li><a href="/fr/journal">Journal</a></li>
     </ul>
     <div class="nav-cta">
@@ -589,7 +597,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <ul class="foot-links">
       <li><a href="#idea">Votre Daybook</a></li>
       <li><a href="#tools">Outils</a></li>
-      <li><a href="#private">Confidentialité par conception</a></li>
+      <li><a href="#private">Confidentialité</a></li>
       <li><a href="/fr/journal">Journal</a></li>
       <li><a href="#invite">Demander une invitation</a></li>
       <li><a href="/fr/confidentialite">Confidentialité</a></li>
