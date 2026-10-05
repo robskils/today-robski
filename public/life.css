@@ -4289,11 +4289,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
      order them with the notepad at position 1. !important beats the inline order
      the mobile-arrangement writes onto each section. */
   .home-lead { display:contents; }
-  .home .lead-block { order:4; }
+  .home .lead-block { order:5; }
   .home .lead-day { order:0; }
-  .home .home-sec-notepad { order:1 !important; }
-  .home .lead-priority { order:2; }
-  .home .lead-tracker { order:3; }
+  .home .lead-recent { order:1; }   /* Recently viewed sits right under Today, above Do next (Robin) */
+  .home .home-sec-notepad { order:2 !important; }
+  .home .lead-priority { order:3; }
+  .home .lead-tracker { order:4; }
   .home .home-features { order:25; }   /* the show/hide panel sits below the sections */
   .home .home-sec-card { margin:0; }   /* flex gap handles spacing on mobile */
   /* Uniform cards: Today drops its accent-hero treatment so every card is the
@@ -4832,11 +4833,20 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Desktop: the make buttons sit inline, right of the search bar. */
 .notes-make-inline { display:inline-flex; gap:10px; margin-left:auto; align-items:stretch; }
 .notes-makebar { display:none; }
-/* Mobile: the buttons drop out of the sticky toolbar into their own row that
-   scrolls with the page (left-aligned), so they aren't pinned. (Robin.) */
+.notes-filters-sticky { display:none; }
+/* Mobile: search, chips and the make buttons scroll; only the area + sort
+   dropdowns stay pinned, in their own sticky bar just under the breadcrumb.
+   (Robin.) */
 @media (max-width:820px){
   .notes-make-inline { display:none; }
   .notes-makebar { display:flex; gap:10px; margin:0 0 16px; }
+  .notes-toolbar-sticky > .notes-area, .notes-toolbar-sticky > .notes-sort { display:none; }
+  .notes-filters-sticky {
+    display:flex; gap:10px; align-items:center;
+    position:sticky; top:calc(var(--navh,56px) + var(--notes-crumbh,44px)); z-index:8;
+    background:var(--paper); margin:0 -18px 14px; padding:10px 18px; border-bottom:1px solid var(--line);
+  }
+  .notes-filters-sticky .notes-area, .notes-filters-sticky .notes-sort { flex:1 1 0; min-width:0; max-width:none; }
 }
 .note-type-chips { display:inline-flex; flex:none; gap:2px; padding:3px; background:var(--paper-2); border:1px solid var(--line-2); border-radius:12px; }
 .note-type-chips .ntype { padding:8px 14px; border-radius:9px; font-size:14.5px; color:var(--ink-2); white-space:nowrap; }

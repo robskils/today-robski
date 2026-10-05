@@ -4776,7 +4776,10 @@ function notesControlsHtml(full) {
   // The make buttons ride inline on desktop (right of the search bar), but on
   // mobile they live in a separate row OUTSIDE the sticky toolbar so they scroll
   // away with the page instead of staying pinned. (Robin.)
-  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${makeBtns ? `<span class="notes-make-inline">${makeBtns}</span>` : ''}</div>${makeBtns ? `<div class="notes-makebar">${makeBtns}</div>` : ''}`;
+  // On mobile the area + sort dropdowns ride in their own sticky bar (they stay
+  // handy while the list scrolls); search, the type chips and the make buttons
+  // all scroll. On desktop it's one row and the sticky bar / makebar are hidden.
+  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${makeBtns ? `<span class="notes-make-inline">${makeBtns}</span>` : ''}</div>${full ? `<div class="notes-filters-sticky">${areaSel}${sortSel}</div>` : ''}${makeBtns ? `<div class="notes-makebar">${makeBtns}</div>` : ''}`;
 }
 function noteCard(n) {
   const t = isTableNote(n);
