@@ -2795,7 +2795,7 @@ function navItems(v) {
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
-    reviews: modOn('goals') ? `<button class="nav-item ${['reviews', 'reviewcard'].includes(v.type) ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
+    reviews: modOn('goals') ? `<button class="nav-item ${(v.type === 'reviews' && !v.rtype) || v.type === 'reviewcard' ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
     rvDaily: modOn('reflect') ? `<button class="nav-item" data-journal-dailyreview><span class="nav-ic">☀</span><span class="nav-lbl">Daily</span></button>` : '',
     rvAll: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && !v.rtype ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
     rvWeekly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'weekly' ? 'on' : ''}" data-open-reviewtype="weekly"><span class="nav-ic">↻</span><span class="nav-lbl">Weekly</span></button>` : '',
@@ -2848,7 +2848,7 @@ function navGridHtml(v) {
   // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
   // Home quick buttons; Today drops into the Daily group below.
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.saved])}
+    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.reviews, NI.saved])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
