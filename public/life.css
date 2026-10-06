@@ -1984,7 +1984,11 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .crumb-tools .crumb-area { margin-left:0; }
 .crumb { color:var(--ink-3); background:none; border:0; font:inherit; font-size:15px; padding:2px 4px; border-radius:6px; }
 .crumb:hover { color:var(--accent); }
-.crumb.cur { color:var(--ink-2); }
+.crumb.cur { color:var(--ink-2); min-width:0; max-width:46ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Keep the injected +New grouped with the crumb tools on the right, not floating
+   in the middle when the title is long. */
+.note-crumbs .addnew { margin-left:auto; }
+.note-crumbs .addnew ~ .crumb-tools { margin-left:8px; }
 .crumb-sep { color:var(--ink-3); opacity:.5; }
 .note-del { margin-left:auto; font-size:14px; padding:6px 12px; }
 /* Delete-as-bin: a compact icon button (matches the star/lock icons beside it)
