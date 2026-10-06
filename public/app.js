@@ -26,7 +26,7 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><pa
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -35,7 +35,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
@@ -57,7 +57,7 @@ const T_EN = {
   'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All areas', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life area', 'palette.search': 'Search notes, tables, tasks — or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
   'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
@@ -949,6 +949,7 @@ function labelForView(v) {
     case 'tasks': return taskTabLabel(v);
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
     case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.planner'); case 'tracker': return t('today.tracker');
+    case 'discover': return t('nav.discover');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
     case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'spirit': return t('wb.spirit');
@@ -993,6 +994,7 @@ function openView(v) {
   switch (v.type) {
     case 'tasks': return openTasks(); case 'taskcard': return openTaskCard(v.id);
     case 'calendar': return openCalendar(); case 'mail': return openMail(v.open); case 'today': return openToday(); case 'tracker': return openTracker();
+    case 'discover': return openDiscover();
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'wellbeing': return openWellbeing(); case 'insights': return openInsights(); case 'meditation': return openMeditation();
@@ -3009,6 +3011,89 @@ function flyerConfetti() {
   for (let i = 0; i < 28; i++) { const d = document.createElement('i'); d.style.left = (6 + Math.random() * 88) + '%'; d.style.background = colors[i % colors.length]; d.style.animationDelay = (Math.random() * 0.2).toFixed(2) + 's'; d.style.setProperty('--r', (Math.random() * 360) + 'deg'); d.style.setProperty('--x', (Math.random() * 60 - 30) + 'px'); layer.appendChild(d); }
   card.appendChild(layer); setTimeout(() => layer.remove(), 2000);
 }
+
+// ── Discover: what's on near you (Ticketmaster, no AI) ─────────────────────
+function discoverState() { if (!state.discover) state.discover = { cat: '', when: 'month', q: '', events: [], loading: false, err: '', available: true, city: '', page: 0, more: false, added: {} }; return state.discover; }
+function openDiscover() {
+  state.view = { type: 'discover' };
+  if (!cachedLoc()) { try { ensureLoc(); } catch {} }   // nudge for location; city input is the fallback
+  renderNav(); renderDiscover(); discoverFetch();
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+}
+// ISO window (UTC, no ms) for the chosen span - Ticketmaster wants startDateTime/
+// endDateTime like 2026-10-06T12:00:00Z.
+function discoverWindow(when) {
+  const now = new Date(); const iso = (dt) => dt.toISOString().slice(0, 19) + 'Z'; const start = iso(now);
+  if (when === 'week') return { start, end: iso(new Date(now.getTime() + 7 * 86400000)) };
+  if (when === 'weekend') { const day = now.getDay(); const fri = new Date(now); fri.setDate(now.getDate() + ((5 - day + 7) % 7)); fri.setHours(17, 0, 0, 0); const sun = new Date(fri); sun.setDate(fri.getDate() + 2); sun.setHours(23, 59, 0, 0); return { start: iso(now > fri ? now : fri), end: iso(sun) }; }
+  return { start, end: iso(new Date(now.getTime() + 31 * 86400000)) };
+}
+async function discoverFetch(append) {
+  const d = discoverState(); const loc = cachedLoc();
+  if (!loc && !d.city) { d.loading = false; renderDiscover(); return; }
+  d.loading = true; d.err = ''; if (!append) { d.page = 0; } renderDiscover();
+  const p = new URLSearchParams();
+  if (loc) { p.set('lat', loc.lat); p.set('lng', loc.lng); p.set('radius', '40'); } else { p.set('city', d.city); }
+  if (d.cat) p.set('cat', d.cat);
+  if (d.q) p.set('q', d.q);
+  const w = discoverWindow(d.when); if (w.start) p.set('start', w.start); if (w.end) p.set('end', w.end);
+  p.set('page', String(d.page || 0));
+  try {
+    const r = await api('/api/discover?' + p.toString());
+    d.available = r.available !== false;
+    const incoming = r.events || [];
+    d.events = append ? d.events.concat(incoming) : incoming;
+    d.more = !!r.more;
+  } catch (e) { d.err = (e && e.message) || 'Could not load events.'; }
+  d.loading = false; renderDiscover();
+}
+function discoverCardHtml(e) {
+  const added = discoverState().added[e.id];
+  const when = (e.allDay || !e.start) ? dpLabel(e.date) : `${dpLabel(e.date)} · ${e.start}`;
+  return `<div class="dz-card">
+    ${e.image ? `<div class="dz-img" style="background-image:url('${esc(e.image)}')"></div>` : '<div class="dz-img dz-img-none">🎫</div>'}
+    <div class="dz-cbody">
+      <div class="dz-when">${esc(when)}${e.category ? ` · ${esc(e.category)}` : ''}</div>
+      <div class="dz-title">${esc(e.title)}</div>
+      ${e.location ? `<div class="dz-venue">📍 ${esc(e.location)}</div>` : ''}
+      ${e.price ? `<div class="dz-price">${esc(e.price)}</div>` : ''}
+      <div class="dz-acts">
+        <button class="dz-add ${added ? 'done' : ''}" data-dz-add="${esc(e.id)}" ${added ? 'disabled' : ''}>${added ? '✓ Added' : '+ Add to calendar'}</button>
+        ${e.url ? `<a class="dz-link" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">Details ↗</a>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+function renderDiscover() {
+  const d = discoverState(); const loc = cachedLoc();
+  const where = loc ? 'near you' : (d.city ? `in ${esc(d.city)}` : '');
+  const cats = [['', 'Everything'], ['Music', 'Music'], ['Arts & Theatre', 'Arts'], ['Sports', 'Sports'], ['Film', 'Film'], ['Miscellaneous', 'More']];
+  const whens = [['week', 'This week'], ['weekend', 'This weekend'], ['month', 'This month']];
+  const catChips = cats.map(([v, l]) => `<button class="dz-chip ${d.cat === v ? 'on' : ''}" data-dz-cat="${esc(v)}">${esc(l)}</button>`).join('');
+  const whenChips = whens.map(([v, l]) => `<button class="dz-chip ${d.when === v ? 'on' : ''}" data-dz-when="${v}">${esc(l)}</button>`).join('');
+  const owner = state.me && state.me.id === 1;
+  let body;
+  if (d.available === false) body = `<div class="dz-empty"><div class="dz-empty-ic">🎟️</div><p>Discover isn't switched on yet.${owner ? ' Add a free Ticketmaster key and local events show up here.' : ''}</p>${owner ? '<button class="add-btn" data-open-ai>Set it up</button>' : ''}</div>`;
+  else if (!loc && !d.city) body = `<div class="dz-empty"><div class="dz-empty-ic">📍</div><p>Where shall I look? Allow location, or type a city above.</p><button class="add-btn" data-dz-useloc>Use my location</button></div>`;
+  else if (d.loading && !d.events.length) body = `<div class="dz-loading"><span class="dz-spin"></span>Finding what's on${where ? ' ' + where : ''}…</div>`;
+  else if (d.err) body = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn" data-dz-retry>Try again</button></div>`;
+  else if (!d.events.length) body = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing found for this filter. Try a wider window or another category${loc ? '' : ', or check the city spelling'}.</p></div>`;
+  else body = `<div class="dz-grid">${d.events.map(discoverCardHtml).join('')}</div>${d.more ? `<button class="dz-more" data-dz-more ${d.loading ? 'disabled' : ''}>${d.loading ? 'Loading…' : 'Show more'}</button>` : ''}`;
+  $('#pane').innerHTML = `${pageCrumb(t('nav.discover'))}
+    <div class="pane-head home-head"><h1>${t('nav.discover')}</h1></div>
+    <p class="dz-lead">What's on${where ? ' ' + where : ' near you'} - tap any that take your fancy straight onto your calendar.${state.me && state.me.id === 1 ? '' : ''}</p>
+    <div class="dz-loc"><span class="dz-loc-pin">${loc ? '📍' : '🔎'}</span><input class="sel dz-city" id="dz-city" placeholder="${loc ? 'Using your location — or type a city' : 'Type a city (Lisbon, London, Berlin…)'}" value="${esc(d.city || '')}" data-dz-city autocomplete="off"></div>
+    <div class="dz-filters"><div class="dz-chips">${catChips}</div><div class="dz-chips dz-chips-when">${whenChips}</div></div>
+    ${body}`;
+}
+async function discoverAdd(id) {
+  const d = discoverState(); const e = (d.events || []).find((x) => x.id === id); if (!e || d.added[id]) return;
+  const allDay = e.allDay || !e.start;
+  const notes = [e.category, e.price ? `From ${e.price}` : '', e.url].filter(Boolean).join(' · ');
+  const body = buildEventBody({ title: e.title, startDate: e.date, startTime: e.start || '', endDate: e.date, endTime: '', location: e.location || '', allDay, notes, url: e.url || '', isNew: true });
+  try { await api('/api/events', { method: 'POST', body: JSON.stringify(body) }); d.added[id] = true; if (state.cal) state.cal.events = null; toast('Added to your calendar ✓'); renderDiscover(); }
+  catch (err) { toast((err && err.message) || 'Could not add that one'); }
+}
 // Ask the worker to pull structured events out of the pasted text and/or image.
 async function importFindEvents() {
   const imp = importState();
@@ -3124,6 +3209,7 @@ function navItems(v) {
     practices: modOn('today') ? `<button class="nav-item ${v.type === 'practices' || v.type === 'tracker' ? 'on' : ''}" data-open-practices><span class="nav-ic">☯</span><span class="nav-lbl">${t('nav.practices')}</span></button>` : '',
     tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
+    discover: modOn('discover') ? `<button class="nav-item ${v.type === 'discover' ? 'on' : ''}" data-open-discover><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.discover')}</span></button>` : '',
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
     saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
     // Capture is a verb, so its Well-being tools appear as actions you DO, not a
@@ -3209,7 +3295,7 @@ function navGridHtml(v) {
   // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
   // Home quick buttons; Today drops into the Daily group below.
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.reviews, NI.saved])}
+    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.discover, NI.tasks, NI.areas, NI.goals, NI.reviews, NI.saved])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
@@ -7922,7 +8008,8 @@ function renderCalendar() {
     <div class="cal-head">
       <h1>${title}</h1>
       <div class="cal-nav">
-        ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Today tool">☀ Plan day</button>' : ''}
+        ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Flow tool">☀ Plan day</button>' : ''}
+        ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
         <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
@@ -17787,6 +17874,14 @@ document.addEventListener('click', (e) => {
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-open-feeds]')) { openSettings('feeds'); return; }
+  if (t.closest('[data-open-ai]')) { openSettings('ai'); return; }
+  if (t.closest('[data-open-discover]')) { openDiscover(); return; }
+  { const dc = t.closest('[data-dz-cat]'); if (dc) { const d = discoverState(); d.cat = dc.dataset.dzCat; discoverFetch(); return; } }
+  { const dw = t.closest('[data-dz-when]'); if (dw) { const d = discoverState(); d.when = dw.dataset.dzWhen; discoverFetch(); return; } }
+  { const da = t.closest('[data-dz-add]'); if (da) { discoverAdd(da.dataset.dzAdd); return; } }
+  if (t.closest('[data-dz-more]')) { const d = discoverState(); d.page = (d.page || 0) + 1; discoverFetch(true); return; }
+  if (t.closest('[data-dz-retry]')) { discoverFetch(); return; }
+  if (t.closest('[data-dz-useloc]')) { try { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })); } catch {} discoverFetch(); }, () => { toast('Location unavailable - type a city instead'); }, { timeout: 8000 }); } catch {} return; }
   if (t.closest('[data-open-flyer]')) { openFlyerImport(); return; }
   if (t.closest('[data-flyer-close]')) { closeFlyer(); return; }
   if (t.closest('[data-flyer-find]')) { flyerFind(); return; }
@@ -18540,6 +18635,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('#fly-file')) { const file = e.target.files && e.target.files[0]; if (file) flyerSetImage(file); return; }
   if (e.target.matches('[data-flyer-area]')) { const f = flyerState(); const ta = document.getElementById('fly-text'); if (ta) f.text = ta.value; f.area = e.target.value || ''; return; }
   if (e.target.matches('[data-flyer-pick]')) { const f = flyerState(); const i = +e.target.dataset.flyerPick; if (f.events && f.events[i]) { f.events[i].pick = e.target.checked; renderFlyerImport(); } return; }
+  if (e.target.matches('[data-dz-city]')) { const d = discoverState(); d.city = (e.target.value || '').trim(); discoverFetch(); return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }

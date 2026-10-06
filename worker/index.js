@@ -594,8 +594,8 @@ function isPublicHttpUrl(u) {
   if (h === '::1' || h.startsWith('fe80') || h.startsWith('fc') || h.startsWith('fd')) return false;
   return true;
 }
-// Fetch an event page and reduce it to what the model needs: its JSON-LD
-// structured data (schema.org Event, when present) plus the visible text.
+// Fetch an event page and pull it apart: its JSON-LD blocks (schema.org Event,
+// when present - the reliable bit), its <title>, and the visible text.
 async function fetchEventPage(url) {
   const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 9000);
   try {
@@ -604,29 +604,74 @@ async function fetchEventPage(url) {
     const ct = res.headers.get('content-type') || '';
     if (!/html|xml|json|text/.test(ct)) throw new Error('not a page');
     const html = (await res.text()).slice(0, 1_500_000);
-    const ld = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim()).join('\n').slice(0, 20000);
+    const ldBlocks = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim());
     const title = ((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '').replace(/\s+/g, ' ').trim();
     const text = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, 12000);
-    return `PAGE TITLE: ${title}\n\nSTRUCTURED DATA (JSON-LD):\n${ld || '(none)'}\n\nPAGE TEXT:\n${text}`;
+    return { title, ldBlocks, text };
   } finally { clearTimeout(timer); }
 }
+// Pull the local date + HH:MM out of an ISO datetime WITHOUT shifting timezone -
+// an event's wall-clock time is what we want to show, not a UTC conversion.
+function splitIsoLocal(s) {
+  const dm = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); if (!dm) return null;
+  const tm = String(s).match(/T(\d{2}):(\d{2})/);
+  return { date: `${dm[1]}-${dm[2]}-${dm[3]}`, start: tm ? `${tm[1]}:${tm[2]}` : null };
+}
+// Normalise one event (from the AI or from JSON-LD) to our shape, or null if it
+// has no valid date.
+function normImportEvent(e) {
+  if (!e || typeof e !== 'object') return null;
+  const date = String(e.date || ''); if (!isValidDay(date)) return null;
+  const hhmm = (v) => (/^([01]?\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? (String(v).length === 4 ? '0' + v : String(v)) : null);
+  const allDay = !!e.allDay || !hhmm(e.start);
+  return { title: String(e.title || 'Untitled event').slice(0, 200).trim(), date, allDay, start: allDay ? null : hhmm(e.start), end: allDay ? null : hhmm(e.end), location: String(e.location || '').slice(0, 300).trim(), notes: String(e.notes || '').slice(0, 1500).trim() };
+}
+// Extract schema.org Events from a page's JSON-LD blocks - the no-AI fast path
+// for a tidy listing (Eventbrite, Meetup, most venue pages publish this).
+function jsonLdEvents(ldBlocks) {
+  const out = [];
+  const visit = (node, depth) => {
+    if (!node || typeof node !== 'object' || depth > 6) return;
+    if (Array.isArray(node)) { node.forEach((n) => visit(n, depth + 1)); return; }
+    if (node['@graph']) visit(node['@graph'], depth + 1);
+    const types = Array.isArray(node['@type']) ? node['@type'] : [node['@type']];
+    if (types.some((t) => typeof t === 'string' && /Event$/i.test(t)) && node.startDate) {
+      const s = splitIsoLocal(node.startDate);
+      if (s) {
+        const e = splitIsoLocal(node.endDate || '');
+        let loc = ''; const L = node.location;
+        if (typeof L === 'string') loc = L;
+        else if (L && typeof L === 'object') { const a = L.address; const addr = typeof a === 'string' ? a : (a ? [a.streetAddress, a.addressLocality].filter(Boolean).join(', ') : ''); loc = [L.name, addr].filter(Boolean).join(' · '); }
+        out.push({ title: node.name || 'Event', date: s.date, start: s.start, end: (e && e.date === s.date) ? e.start : null, allDay: !s.start, location: loc, notes: typeof node.description === 'string' ? node.description.replace(/\s+/g, ' ').slice(0, 400) : '' });
+      }
+    }
+    if (node.subEvent) visit(node.subEvent, depth + 1);
+  };
+  for (const raw of ldBlocks || []) { try { visit(JSON.parse(raw), 0); } catch {} }
+  return out;
+}
 async function importEvents(request, env, jsonR, errR) {
-  const key = await aiKey(env, 'anthropic', 'import');
-  if (!key) return errR(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const text = String(b.text || '').slice(0, 20000).trim();
   const image = b.image ? String(b.image) : '';   // base64, no data: prefix
   const mime = /^image\/(png|jpeg|jpg|webp|gif)$/.test(String(b.mime || '')) ? (b.mime === 'image/jpg' ? 'image/jpeg' : b.mime) : 'image/png';
   if (!text && !image) return errR('Paste some text, a link, or add an image first.', request, 400);
   if (image && image.length > 7_000_000) return errR('That image is too large - try a smaller photo.', request, 413);
-  // A pasted event link (Eventbrite, Meetup, a venue page…): fetch it server-side
-  // and feed the AI the page's structured data + text instead of the bare URL.
+  // A pasted event link (Eventbrite, Meetup, a venue page…): fetch it server-side.
+  // Try its structured data FIRST - that needs no AI, so link-paste works for
+  // everyone. Only a messy page with no JSON-LD falls through to Claude.
   let sourceText = text; let fromUrl = false;
   if (!image && /^https?:\/\/\S+$/i.test(text)) {
     if (!isPublicHttpUrl(text)) return errR("That link can't be opened.", request, 400);
-    try { sourceText = await fetchEventPage(text); fromUrl = true; }
+    let page; try { page = await fetchEventPage(text); fromUrl = true; }
     catch { return errR("Couldn't open that link - try pasting the event's text instead.", request, 502); }
+    const ld = jsonLdEvents(page.ldBlocks).map(normImportEvent).filter(Boolean).slice(0, 60);
+    if (ld.length) return jsonR({ events: ld, source: 'structured' }, request);   // no AI needed
+    sourceText = `PAGE TITLE: ${page.title}\n\nPAGE TEXT:\n${page.text}`;
   }
+  // Everything past here needs the AI (reading an image, or loose text).
+  const key = await aiKey(env, 'anthropic', 'import');
+  if (!key) return errR(fromUrl ? "That link had no structured event data, so reading it needs AI - turn it on in Settings › Plan, or paste the event's text." : aiNeedsKey('anthropic'), request, 503);
   const today = todayStr(TZ);
   const system = [
     `You extract calendar events from a flyer, poster, listing or pasted text. The material may be in any language (often European Portuguese).`,
@@ -655,14 +700,67 @@ async function importEvents(request, env, jsonR, errR) {
     let events = [];
     try { events = JSON.parse(raw); } catch { return errR('Could not read the events from that - try clearer text or a sharper photo.', request, 502); }
     if (!Array.isArray(events)) events = [];
-    // Normalise + guard: valid date, sane time, trimmed strings, capped count.
-    const clean = events.filter((e) => e && typeof e === 'object' && isValidDay(String(e.date || ''))).slice(0, 60).map((e) => {
-      const hhmm = (v) => (/^([01]?\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? (String(v).length === 4 ? '0' + v : String(v)) : null);
-      const allDay = !!e.allDay;
-      return { title: String(e.title || 'Untitled event').slice(0, 200).trim(), date: String(e.date), allDay, start: allDay ? null : hhmm(e.start), end: allDay ? null : hhmm(e.end), location: String(e.location || '').slice(0, 300).trim(), notes: String(e.notes || '').slice(0, 1500).trim() };
-    });
-    return jsonR({ events: clean }, request);
+    const clean = events.map(normImportEvent).filter(Boolean).slice(0, 60);
+    return jsonR({ events: clean, source: 'ai' }, request);
   } catch (e) { console.error('importEvents:', e.message); return errR('Could not reach Claude.', request, 502); }
+}
+// ── Discover: local events from Ticketmaster (no AI needed) ────────────────
+// Structured data straight from the API - title, date, venue, category - so
+// everyone gets it, free tier and all. Inert until TICKETMASTER_KEY is set.
+function encodeGeohash(lat, lng, precision = 9) {
+  const base32 = '0123456789bcdefghjkmnpqrstuvwxyz';
+  let idx = 0, bit = 0, evenBit = true, hash = '';
+  let latMin = -90, latMax = 90, lngMin = -180, lngMax = 180;
+  while (hash.length < precision) {
+    if (evenBit) { const mid = (lngMin + lngMax) / 2; if (lng >= mid) { idx = idx * 2 + 1; lngMin = mid; } else { idx = idx * 2; lngMax = mid; } }
+    else { const mid = (latMin + latMax) / 2; if (lat >= mid) { idx = idx * 2 + 1; latMin = mid; } else { idx = idx * 2; latMax = mid; } }
+    evenBit = !evenBit;
+    if (++bit === 5) { hash += base32[idx]; bit = 0; idx = 0; }
+  }
+  return hash;
+}
+function normTmEvent(e) {
+  try {
+    const d = e.dates && e.dates.start; if (!d || !isValidDay(String(d.localDate || ''))) return null;
+    const start = (d.localTime && /^\d{2}:\d{2}/.test(d.localTime)) ? d.localTime.slice(0, 5) : null;
+    const ven = (e._embedded && e._embedded.venues && e._embedded.venues[0]) || null;
+    const location = ven ? [ven.name, ven.city && ven.city.name].filter(Boolean).join(', ') : '';
+    const cls = (e.classifications || [])[0] || null;
+    const cat = (cls && ((cls.genre && cls.genre.name !== 'Undefined' && cls.genre.name) || (cls.segment && cls.segment.name))) || '';
+    const img = (e.images || []).filter((i) => i.url).sort((a, b) => (b.width || 0) - (a.width || 0))[0];
+    const priceR = (e.priceRanges || [])[0];
+    const price = priceR ? `${priceR.currency || ''} ${priceR.min === priceR.max ? priceR.min : `${priceR.min}–${priceR.max}`}`.trim() : '';
+    return { id: 'tm_' + e.id, title: String(e.name || 'Event').slice(0, 200), date: d.localDate, start, allDay: !start, end: null, location, category: cat, price, url: e.url || '', image: img ? img.url : '', notes: '' };
+  } catch { return null; }
+}
+async function discoverEvents(request, env, jsonR, errR) {
+  if (!env.TICKETMASTER_KEY) return jsonR({ available: false }, request);
+  const q = new URL(request.url).searchParams;
+  const tm = new URL('https://app.ticketmaster.com/discovery/v2/events.json');
+  tm.searchParams.set('apikey', env.TICKETMASTER_KEY);
+  tm.searchParams.set('size', '40');
+  tm.searchParams.set('sort', 'date,asc');
+  const lat = parseFloat(q.get('lat')), lng = parseFloat(q.get('lng'));
+  const city = (q.get('city') || '').slice(0, 80).trim();
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    tm.searchParams.set('geoPoint', encodeGeohash(lat, lng));
+    tm.searchParams.set('radius', String(Math.min(500, Math.max(1, parseInt(q.get('radius'), 10) || 40))));
+    tm.searchParams.set('unit', 'km');
+  } else if (city) { tm.searchParams.set('city', city); }
+  else return errR('Where are you? Allow location or type a city.', request, 400);
+  const cat = (q.get('cat') || '').trim(); if (cat) tm.searchParams.set('classificationName', cat);
+  const kw = (q.get('q') || '').slice(0, 80).trim(); if (kw) tm.searchParams.set('keyword', kw);
+  if (q.get('start')) tm.searchParams.set('startDateTime', q.get('start'));
+  if (q.get('end')) tm.searchParams.set('endDateTime', q.get('end'));
+  const page = Math.min(4, Math.max(0, parseInt(q.get('page'), 10) || 0)); tm.searchParams.set('page', String(page));
+  try {
+    const res = await fetch(tm, { headers: { accept: 'application/json' } });
+    if (!res.ok) { const t = await res.text().catch(() => ''); console.error('discover', res.status, t.slice(0, 160)); return errR(res.status === 401 ? 'The events key looks wrong - check Settings.' : 'Could not reach the events service.', request, 502); }
+    const data = await res.json();
+    const events = ((data._embedded && data._embedded.events) || []).map(normTmEvent).filter(Boolean);
+    const pg = data.page || {};
+    return jsonR({ available: true, events, page, more: (pg.number != null && pg.totalPages != null) ? (pg.number + 1 < pg.totalPages) : false, total: pg.totalElements || events.length }, request);
+  } catch (e) { console.error('discover:', e.message); return errR('Could not reach the events service.', request, 502); }
 }
 
 // Daily review -> tasks. Given the reflection and a shortlist of the person's open
@@ -4330,6 +4428,7 @@ export default {
       if (path === '/api/wellbeing/horoscope' && request.method === 'POST') return horoscopeReading(request, env, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
       if (path === '/api/import/events' && request.method === 'POST') return importEvents(request, env, json, err);
+      if (path === '/api/discover' && request.method === 'GET') return discoverEvents(request, env, json, err);
       if (path === '/api/review/reconcile' && request.method === 'POST') return reviewReconcile(request, env, json, err);
       if (path === '/api/journal/coach' && request.method === 'POST') return journalCoach(request, env, json, err);
       if (path === '/api/journal/insights') return journalInsights(request, env, json, err);
