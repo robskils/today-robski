@@ -6564,14 +6564,17 @@ function areaGoto(key) {
   // Vision / Goals / Wheel / Bucket list live in the top tab strip, not as flow
   // sections - selecting the tab is how you "go" to them.
   const TABKEYS = ['Vision', 'Goals', 'Wheel of Life', 'Bucket list'];
+  // Scroll a section to the TOP of the viewport, clearing the sticky header/crumb
+  // so it lands at the start of the section rather than partway down it.
+  const scrollToEl = (sel) => { try { const el = document.querySelector(sel); if (!el) return; const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56; el.style.scrollMarginTop = (navh + 12) + 'px'; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} };
   if (TABKEYS.includes(key)) {
     if (state.area_open) state.area_open.tileOpen = key;
     renderArea();
-    requestAnimationFrame(() => { try { const el = document.querySelector('#pane .area-tabs'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} });
+    requestAnimationFrame(() => requestAnimationFrame(() => scrollToEl('#pane .area-tabs')));
     return;
   }
   if (!areaSecOpen(key)) areaSecToggle(key);
-  requestAnimationFrame(() => { try { const el = document.querySelector(`#pane [data-aflow="${key}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} });
+  requestAnimationFrame(() => requestAnimationFrame(() => scrollToEl(`#pane [data-aflow="${key}"]`)));
 }
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like
 // Home's), so your arrangement is the same on every area page.
