@@ -6587,14 +6587,17 @@ function areaGoto(key) {
       window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
     }
   } catch {} };
+  // Scroll now, then again after late content (thumbnails, async sections) lands
+  // and shifts the layout - otherwise the first scroll ends up mid-page.
+  const settle = (sel) => { requestAnimationFrame(() => requestAnimationFrame(() => { scrollToEl(sel); setTimeout(() => scrollToEl(sel), 220); setTimeout(() => scrollToEl(sel), 600); })); };
   if (TABKEYS.includes(key)) {
     if (state.area_open) state.area_open.tileOpen = key;
     renderArea();
-    requestAnimationFrame(() => requestAnimationFrame(() => scrollToEl('#pane .area-tabs')));
+    settle('#pane .area-tabs');
     return;
   }
   if (!areaSecOpen(key)) areaSecToggle(key);
-  requestAnimationFrame(() => requestAnimationFrame(() => scrollToEl(`#pane [data-aflow="${key}"]`)));
+  settle(`#pane [data-aflow="${key}"]`);
 }
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like
 // Home's), so your arrangement is the same on every area page.
