@@ -4475,8 +4475,9 @@ async function loadHomeMail(force) {
     const msgs = (r && Array.isArray(r.messages)) ? r.messages.slice() : [];
     msgs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     h.mailPreview = msgs;
+    h.mailProblems = (r && Array.isArray(r.mailProblems)) ? r.mailProblems : [];
     h._mailAt = Date.now();
-  } catch { h.mailPreview = h.mailPreview || []; }
+  } catch { h.mailPreview = h.mailPreview || []; h.mailProblems = h.mailProblems || []; }
   h._mailLoading = false;
   if (state.view && state.view.type === 'home') renderHome();
 }
@@ -4687,7 +4688,7 @@ function renderHome() {
           const bdayRows = bdays.map((b) => `<div class="kit-hrow"><button class="kit-hopen" data-open-contact="${b.id}"><span class="contact-av kit-hav">🎂</span><span class="kit-hnm">${esc(b.name)}</span><span class="kit-hsub">Birthday today</span></button></div>`).join('');
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
-            today: `${off === 0 ? homeReviewDueBanner() + homeDeadlinesHtml() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
+            today: `${off === 0 ? homeMailAlertHtml() + homeReviewDueBanner() + homeDeadlinesHtml() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
@@ -8171,6 +8172,16 @@ function homeDeadlinesHtml() {
   }).join('');
   return `<div class="home-deadlines"><div class="home-dl-h">⏳ Deadlines</div>${rows}</div>`;
 }
+// A mail account that's stopped connecting should never pass silently - surface
+// it in the Home "today" lead with a one-tap jump to fix it.
+function homeMailAlertHtml() {
+  if (!modOn('mail')) return '';
+  const h = state.home || {};
+  if (h.mailProblems === undefined) { loadHomeMail(); return ''; }
+  const probs = h.mailProblems || [];
+  if (!probs.length) return '';
+  return `<div class="home-mailalert">${probs.map((p) => `<button class="home-mailalert-row" data-open-mailaccounts title="Fix in Mail accounts"><span class="hma-ic">⚠</span><span class="hma-t"><b>${esc(p.name)}</b> isn’t connecting${p.msg ? ` - ${esc(p.msg)}` : ''}</span><span class="hma-go">Fix →</span></button>`).join('')}</div>`;
+}
 // The Tracker is its own tool now (its own view), not a tab of the planner.
 // Same t2TrackerHtml render, standalone with its own crumb.
 async function openTracker() {
@@ -9945,7 +9956,13 @@ function draftsListHtml() {
 async function openMailAccounts() {
   state.view = { type: 'mailaccounts' }; renderNav();
   try { state.mail = state.mail || { account: null, mailbox: 'INBOX' }; state.mail.accounts = await mailApi('/accounts'); renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); }
-  catch (e) { toast(e.message); }
+  catch (e) { toast(e.message); return; }
+  // Kick a fresh sync so the connection status is current, then refresh the pills.
+  mailApi('/sync', { method: 'POST' }).catch(() => {});
+  setTimeout(async () => {
+    if (!(state.view && state.view.type === 'mailaccounts')) return;
+    try { state.mail.accounts = await mailApi('/accounts'); renderMailAccounts(state.mail.accounts.length ? null : 'Add a mailbox to get started.'); } catch {}
+  }, 4000);
 }
 async function addMailAccount(fields) {
   try { const a = await mailApi('/accounts', { method: 'POST', body: JSON.stringify(fields) }); toast(a.warning || 'Mailbox added'); state.mail.accounts = state.mail.accounts || []; state.mail.accounts.push(a); state.mail.account = a.id; await openMail(); }
@@ -10244,8 +10261,14 @@ function refreshAcctCrumb() {
   bar.replaceWith(tmp.firstElementChild);
 }
 function renderMailAccounts(note) {
-  const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct-card">
-    <div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span>
+  const statusPill = (a) => {
+    const h = a.health;
+    if (!h) return '<span class="ma-status ma-status-unknown" title="Not checked yet - opens and the hourly sync will update this">● Not checked yet</span>';
+    if (h.ok) return `<span class="ma-status ma-status-ok" title="Last checked ${h.at ? esc(new Date(h.at).toLocaleString()) : ''}">✓ Connected</span>`;
+    return `<span class="ma-status ma-status-err" title="${esc(h.msg || '')}">⚠ Not connecting${h.msg ? ` - ${esc(h.msg)}` : ''}</span>`;
+  };
+  const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct-card${a.health && a.health.ok === false ? ' has-issue' : ''}">
+    <div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span>${statusPill(a)}
       <button class="ghost sig-btn" data-acct-edit-toggle="${a.id}">Edit</button>
       <button class="ghost sig-btn" data-sig-toggle="${a.id}">Signature</button>
       <button class="x" data-mail-del-acct="${a.id}" title="Remove">×</button></div>

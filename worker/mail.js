@@ -66,6 +66,21 @@ async function listAccounts(env, uid = null) {
 async function getAcct(env, id, uid = env.uid) {
   return env.DB.prepare('SELECT * FROM mail_accounts WHERE id = ? AND user_id = ?').bind(id, uid).first();
 }
+// Per-account connection health, so an account never silently stops working: the
+// background sync records whether each account's last fetch succeeded. Stored as a
+// per-user settings blob {accountId: {ok, msg, at}}.
+async function getMailHealth(env, uid) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='mail_health'").bind(uid).first().catch(() => null);
+  try { return (row && row.value) ? JSON.parse(row.value) : {}; } catch { return {}; }
+}
+async function recordMailHealth(env, entries) {
+  const byUser = {};
+  for (const e of entries) { if (e.uid == null) continue; (byUser[e.uid] = byUser[e.uid] || {})[e.id] = { ok: !!e.ok, msg: e.ok ? '' : String(e.msg || 'Could not connect').slice(0, 160), at: e.at }; }
+  for (const uid of Object.keys(byUser)) {
+    const merged = { ...(await getMailHealth(env, uid)), ...byUser[uid] };
+    await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (?,'mail_health',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(Number(uid), JSON.stringify(merged)).run().catch(() => {});
+  }
+}
 
 // ── a byte-buffered line/literal reader over a socket ─────────────────
 class Reader {
@@ -734,6 +749,10 @@ export async function syncMailCache(env, { force = false } = {}) {
   // something in the same window), and group them by the account's owner so the
   // cron can push each member about their own mail rather than everyone's.
   const acctUser = {}; for (const a of accts) acctUser[a.id] = a.user_id;
+  // Record each account's connection health from this tick (fulfilled = working,
+  // rejected = a real failure), so Mail accounts and Home can flag a bad account.
+  const nowIso = new Date().toISOString();
+  await recordMailHealth(env, accts.map((a, k) => { const r = results[k]; const ok = r && r.status === 'fulfilled'; return { uid: a.user_id, id: a.id, ok, msg: ok ? '' : ((r && r.reason && (r.reason.message || String(r.reason))) || 'Could not connect'), at: nowIso }; })).catch(() => {});
   let newUnread = 0; const byUser = {}; const fromByUser = {}; const subjByUser = {};
   for (const r of results) {
     if (r.status !== 'fulfilled' || !r.value) continue;
@@ -819,7 +838,7 @@ export async function handleMail(request, env, url, json, err) {
   const sub = seg[0] || '';
 
   try {
-    if (sub === 'accounts' && method === 'GET') return json((await listAccounts(env, env.uid)).map(publicAccount), request);
+    if (sub === 'accounts' && method === 'GET') { const health = await getMailHealth(env, env.uid); return json((await listAccounts(env, env.uid)).map((a) => ({ ...publicAccount(a), health: health[a.id] || null })), request); }
 
     if (sub === 'accounts' && method === 'POST') {
       const b = await request.json();
@@ -901,7 +920,9 @@ export async function handleMail(request, env, url, json, err) {
       // Opening Mail marks these accounts active, so the cron keeps them warm.
       await stampMailActive(env, ids, Date.now()).catch(() => {});
       const { messages, unseen, syncedAt } = await readCachedInbox(env, ids);
-      return json({ messages, unseen, syncedAt, cached: true }, request);
+      const health = await getMailHealth(env, env.uid);
+      const problems = accts.filter((a) => health[a.id] && health[a.id].ok === false).map((a) => ({ id: a.id, name: a.name || a.email, msg: health[a.id].msg || '' }));
+      return json({ messages, unseen, syncedAt, cached: true, mailProblems: problems }, request);
     }
 
     // On-demand background warm: refresh the D1 inbox cache now (globally

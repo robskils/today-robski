@@ -5761,7 +5761,19 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-acct-list { display:flex; flex-direction:column; gap:8px; max-width:520px; }
 .mail-acct { display:flex; align-items:center; gap:11px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
 .ma-dot { width:10px; height:10px; border-radius:50%; flex:none; }
-.ma-e { flex:1; color:var(--ink); font-size:16px; }
+.ma-e { flex:1; color:var(--ink); font-size:16px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ma-status { flex:none; font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.ma-status-ok { color:#2f7d46; background:color-mix(in srgb,#2f7d46 12%,transparent); }
+.ma-status-err { color:#b02020; background:color-mix(in srgb,#b02020 12%,transparent); }
+.ma-status-unknown { color:var(--ink-3); background:var(--paper-2); }
+.mail-acct-card.has-issue .mail-acct { border-color:#e2a0a0; }
+/* Home: a mail-account connection problem, surfaced in the today lead */
+.home-mailalert { display:flex; flex-direction:column; gap:6px; margin:0 0 12px; }
+.home-mailalert-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font:inherit; cursor:pointer; padding:11px 13px; border:1px solid #f0c4c4; border-left:3px solid var(--danger,#c4412e); border-radius:12px; background:color-mix(in srgb,var(--danger,#c4412e) 7%,var(--card)); color:var(--ink); }
+.home-mailalert-row:hover { background:color-mix(in srgb,var(--danger,#c4412e) 12%,var(--card)); }
+.hma-ic { flex:none; }
+.hma-t { flex:1; min-width:0; font-size:14px; }
+.hma-go { flex:none; font-size:13px; font-weight:600; color:var(--danger,#c4412e); }
 .mail-acct .x { color:var(--ink-3); font-size:18px; } .mail-acct .x:hover { color:var(--accent); }
 .mail-acct-card { max-width:560px; }
 .mail-blocked { padding:12px 4px 4px; }
