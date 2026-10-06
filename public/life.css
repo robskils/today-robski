@@ -7340,9 +7340,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
    closed by a hairline. No box, no glow. */
 .area-hero {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
-  position:relative; margin:0 0 26px; padding:4px 0 20px;
+  position:relative; margin:0 0 26px; padding:10px 0 24px;
   border-bottom:1px solid var(--line);
-  background:linear-gradient(180deg, color-mix(in srgb,var(--c) 6%,transparent), transparent 64%);
+  background:radial-gradient(90% 120% at 6% -30%, color-mix(in srgb,var(--c) 14%,transparent), transparent 58%);
 }
 .area-hero h1 { font-size:clamp(34px,5vw,52px); font-weight:500; letter-spacing:-.015em; }
 .area-hero h1 .ac-dot, .area-hero h1 .ac-dot-btn { width:13px; height:13px; box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 12%,transparent); }
@@ -7370,18 +7370,27 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   .area-stat b { font-size:28px; }
 }
 
-/* The page as a WHOLE, not a stack of boxes: the structural sections shed their
-   card chrome and are separated only by air + a hairline, so the content flows
-   down one considered sheet. Only the real items inside keep a light card. */
-.area-flow { gap:0; }
+/* The parts of an area as soft, generously-padded panels laid two-up - like a
+   considered dashboard, filling the width, never a single-column stack of empty
+   full-width boxes. Neutral panels (raised off the paper), hue only as accents. */
+.area-flow { display:flex; flex-direction:column; gap:20px; }
+@media (min-width:980px){
+  .area-flow { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+  /* Wide, list-like sections take the full row; the rest pair up. */
+  .area-flow .area-sec[data-aflow="Tasks"],
+  .area-flow .area-sec[data-aflow="Emails"],
+  .area-flow .area-sec[data-aflow="Wall"] { grid-column:1 / -1; }
+}
 .area-flow .area-sec,
 .area-dash-wall, .area-dash-shared, .area-dash-files, .area-dash-links {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
-  background:none; border:0; border-radius:0; box-shadow:none; padding:26px 0;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:22px 24px;
+  box-shadow:0 1px 2px rgba(0,0,0,.03), 0 16px 36px -28px rgba(0,0,0,.16);
 }
-.area-flow .area-sec:first-child { padding-top:6px; }
-.area-flow .area-sec:not(:first-child) { border-top:1px solid var(--line); }
-.area-flow .area-sec.area-sec-collapsed { padding:18px 0; }
+.area-flow .area-sec.area-sec-collapsed { padding:18px 24px; }
 /* Vision reads as a pull-quote, not a panel: a quiet hue keyline, generous air. */
 .area-card.area-top-card {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
