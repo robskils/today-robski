@@ -58,7 +58,8 @@ button { cursor:pointer; background:none; border:0; }
   padding:8px 14px; border-radius:999px; font-size:15px; color:var(--ink-2);
   border:1px solid var(--line); text-decoration:none; white-space:nowrap; transition:background .15s,color .15s;
 }
-.ghost:hover { background:var(--paper-2); color:var(--ink); }
+/* Only on real-hover devices - on touch, :hover sticks to the last-tapped button. */
+@media (hover:hover){ .ghost:hover { background:var(--paper-2); color:var(--ink); } }
 .ghost.icon { width:40px; padding:8px 0; text-align:center; font-size:18px; }
 
 /* ── layout ──────────────────────────────────────── */
@@ -5761,7 +5762,10 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Compact, consistent icon buttons for the reader toolbar. */
 .mail-act-ic { display:inline-flex; align-items:center; justify-content:center; padding:8px; min-width:38px; height:38px; color:var(--ink-2); }
 .mail-act-ic svg { width:20px; height:20px; display:block; }
-.mail-act-ic:hover { color:var(--accent); }
+/* Hover highlight only where hover is real - on touch, :hover (and the .ghost
+   hover background) stick to the last-tapped icon and make it look selected. */
+@media (hover:hover){ .mail-act-ic:hover { color:var(--accent); } }
+@media (hover:none){ .mail-act-ic:not(.on):hover, .ghost.mail-act-ic:not(.on):hover { color:var(--ink-2); background:transparent; } }
 .mail-act-ic.mail-star-btn.on { color:var(--gold); }
 /* Reply / Transform dropdowns in the reader action row (native <details>). */
 .mail-dd { position:relative; display:inline-block; }
