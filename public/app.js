@@ -9477,7 +9477,7 @@ async function mailToQuad(msgs, quad) {
   }
   persistMailQuads(quadDel);
   state.mail.quadMenu = null;
-  if (removedKeys.length) { state.mail.messages = msgsArr.filter((m) => !removedKeys.includes(m._key)); mailForgetKeys(removedKeys); }
+  if (removedKeys.length) { state.mail.messages = msgsArr.filter((m) => !removedKeys.includes(m._key)); mailForgetKeys(removedKeys); mailSyncSoon(); }
   const undo = undoRows.length ? async () => {
     toast('Restoring…'); let ok = 0;
     for (const u of undoRows) { try { await mailApi('/move-by-msgid', { method: 'POST', body: JSON.stringify(u) }); ok++; } catch {} }
@@ -9588,6 +9588,7 @@ async function mailMoveTo(key, target, label) {
     for (const g of groups.values()) {
       await mailApi('/move-bulk', { method: 'POST', body: JSON.stringify({ account: g.account, mailbox: g.mailbox, uids: g.uids, target }) });
     }
+    mailSyncSoon();   // re-warm the shared cache so other devices drop it quickly too
     // Archiving/trashing unread messages clears their badge count right away.
     for (const row of rows) { if (!row.seen && /^inbox$/i.test(row._mailbox || '')) bumpUnread(row._acct, -1); }
     const gone = new Set(keys);
@@ -9793,6 +9794,7 @@ async function mailMoveTargets(keys, target) {
     } catch (e) { failed += g.keys.length; lastErr = e.message; }
   }
   done.forEach((k) => { state.mail.pending.delete(k); state.mail.gone.add(k); });
+  if (done.length) mailSyncSoon();   // propagate to your other devices quickly
   // Failures stay in the list (un-pending) so they can be retried, with the real error.
   groups.forEach((g) => g.keys.forEach((k) => { if (!done.includes(k)) state.mail.pending.delete(k); }));
   state.mail.messages = (state.mail.messages || []).filter((m) => !state.mail.gone.has(m._key));
@@ -9852,6 +9854,11 @@ async function mailReconcileUnread() {
   loadMessages();
 }
 // Keep the unread badges fresh on their own, from the cheap D1 cache count.
+// After a move/archive/delete/file, nudge the server to re-warm its inbox cache
+// (debounced) so this change reaches your OTHER devices within seconds, rather
+// than waiting for the ~1-minute cron. Keeps the devices in step. (Robin.)
+let _mailSyncT = null;
+function mailSyncSoon() { clearTimeout(_mailSyncT); _mailSyncT = setTimeout(() => { mailApi('/sync', { method: 'POST' }).catch(() => {}); }, 400); }
 async function refreshMailUnread() {
   try {
     const r = await mailApi('/unread');
@@ -9976,6 +9983,16 @@ function startMailUnreadPoll() {
   if (window.__mailUnreadT) return;
   refreshMailUnread();
   window.__mailUnreadT = setInterval(() => { if (!document.hidden) refreshMailUnread(); }, 90000);
+  // Returning to a device (tab focus / app foregrounded) is exactly when its inbox
+  // is most likely stale - someone just triaged on the other device. Re-pull the
+  // list then, so you don't see mail you've already dealt with. Skipped while
+  // reading or composing so it never yanks you off what you're doing.
+  if (!window.__mailVisBound) {
+    window.__mailVisBound = true;
+    const onReturn = () => { if (document.hidden) return; if (state.view && state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) { refreshMailUnread(); loadMessages(true); } };
+    document.addEventListener('visibilitychange', onReturn);
+    window.addEventListener('focus', onReturn);
+  }
 }
 // "Land where you left off" in Mail is only wanted on a quick return. After a
 // while away, reopening an old message reads as being stuck on it - so we stamp
