@@ -2295,7 +2295,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       // it for anyone else would put Robin's diary in their brief, so only the
       // owner's brief carries a calendar; others get tasks + the day's quote.
       owner ? calendarEvents(env, now.date, uid) : Promise.resolve({ events: [] }),
-      quoteForDay(env, now.date, uid),
+      quoteForDay(env, now.date, uid, { ignoreDismiss: true }),
       // Every open P1's life area, so a task can be labelled with the part of life
       // it belongs to rather than the practice lane it happens to map onto.
       env.DB.prepare("SELECT id, title FROM blocks WHERE user_id = ? AND kind = 'area' AND archived = 0").bind(uid).all(),
@@ -2417,11 +2417,14 @@ function dayHash(s) {
 // every surface - home, Today, the morning email - via dayHash). Per user it can
 // be switched off (`quote_off`) or dismissed for the day (`quote_dismissed` = the
 // date), and once dismissed anywhere it's gone everywhere until tomorrow's quote.
-async function quoteForDay(env, day, uid = env.uid) {
+async function quoteForDay(env, day, uid = env.uid, { ignoreDismiss = false } = {}) {
   if (await getSetting(env, 'quote_off', uid) === '1') return null;
   // Dismiss is written from the client via /api/kv/quote_dismissed, which the kv
   // route stores under the kv_ prefix - so read it back with that same key.
-  if (await getSetting(env, 'kv_quote_dismissed', uid) === day) return null;
+  // It clears the on-screen quote card for the day only; the daily brief email
+  // always carries the day's quote (ignoreDismiss), which is the whole point of
+  // the "inspiring quote of the day" - dismissing it on Home mustn't mute it.
+  if (!ignoreDismiss && await getSetting(env, 'kv_quote_dismissed', uid) === day) return null;
   const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM quotes').first();
   if (!row?.n) return null;
   return env.DB.prepare('SELECT text, author FROM quotes ORDER BY id LIMIT 1 OFFSET ?')
