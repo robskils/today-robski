@@ -14600,6 +14600,8 @@ async function openReviewCard(id) {
   const p = r.props || {};
   state.review_open = { review: r, mode: p.status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview(); reviewScrollTop();
+  // Load goals (for the 'Deadlines approaching' block) if we don't have them yet.
+  if (state.goals === undefined) { state.goals = []; api('/api/blocks?kind=goal').then((gs) => { state.goals = gs || []; if (state.view.type === 'reviewcard') renderReviewCard(); }).catch(() => {}); }
   // Load tasks so the wins strip can enrich each done task (age, goal, priority,
   // day) and the deeper reviews can map tasks onto goals.
   api('/api/blocks?kind=task').then((tasks) => { if (state.review_open && state.review_open.review.id === id) { state.review_open.tasks = tasks; if (state.view.type === 'reviewcard') renderReviewCard(); } }).catch(() => {});
@@ -15060,6 +15062,31 @@ function renderReviewReport() {
     </article>`;
   loadThumbs();
 }
+// A goal's finish-by date: the explicit one, or the quarter/year horizon default.
+function goalDueISO(g) { const p = gp(g); return p.targetDate || ((p.horizon === 'quarter' || p.horizon === 'year') ? horizonTargetDate(p.horizon) : null); }
+// Deadlines approaching, shown in a review: active goals whose finish-by date
+// falls within the look-ahead for this cadence (wider for longer reviews), plus
+// anything already overdue. Weekly only shows it when something is actually near.
+function reviewDeadlinesHtml(p) {
+  const rtype = p.rtype || 'weekly';
+  const todayI = localISO(new Date());
+  const win = { weekly: 21, monthly: 62, quarterly: 124, yearly: 366 }[rtype] || 62;
+  const horizonI = localISO(new Date(Date.now() + win * 86400000));
+  const items = (state.goals || [])
+    .filter((g) => (gp(g).status || 'active') === 'active')
+    .map((g) => ({ g, due: goalDueISO(g) }))
+    .filter((x) => x.due && x.due <= horizonI)
+    .sort((a, b) => a.due.localeCompare(b.due));
+  if (!items.length) return '';
+  const rows = items.map(({ g, due }) => {
+    const a = goalArea(g);
+    const diff = Math.round((Date.parse(due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
+    const when = diff < 0 ? `${-diff}d overdue` : diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : `in ${diff}d`;
+    const cls = diff < 0 ? 'over' : diff <= 7 ? 'soon' : '';
+    return `<button class="rv-dl-row ${cls}" data-open-goal="${g.id}"${a ? ` style="--h:${hueOf(a)}"` : ''}><span class="rv-dl-dot"></span><span class="rv-dl-t">${esc(g.title || 'Goal')}</span><span class="rv-dl-when">${esc(when)}</span></button>`;
+  }).join('');
+  return `<section class="rv-deadlines">${rvSecH('deadlines', `⏳ Deadlines approaching · ${items.length}`)}${rvSecOpen('deadlines') ? `<div class="rv-dl-list">${rows}</div>` : ''}</section>`;
+}
 function renderReviewCard() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
   // The mode set at open decides it: a submitted OR past-period review reads as a
@@ -15136,6 +15163,8 @@ function renderReviewCard() {
             ? `<div class="rv-analyse-cta"><button class="add-btn wide rv-analyse-btn" data-rv-analyse>✦ Get the deeper read</button><span class="rv-finish-hint">Where your effort actually went, the momentum, and one steer for the ${periodWord} ahead.</span></div>`
             : `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`}` : ''}
     </section>
+
+    ${reviewDeadlinesHtml(p)}
 
     ${(() => {
       const answered = cfg.prompts.filter((q, i) => String((p.answers || {})[i] || '').trim()).length;

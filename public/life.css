@@ -1445,6 +1445,17 @@ button.rvw-metric:hover { border-color:hsl(var(--h) var(--lane-s) var(--lane-l))
 .rv-type-due.is-over { border-left-color:var(--danger,#c4412e); color:var(--danger,#c4412e); }
 .rv-type-due.is-over b { color:var(--danger,#c4412e); }
 .rv-sec-h2 { font-size:13px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-3); margin:24px 0 12px; }
+/* Deadlines approaching, in a review */
+.rv-deadlines { margin:8px 0 4px; }
+.rv-dl-list { display:flex; flex-direction:column; gap:7px; }
+.rv-dl-row { display:flex; align-items:center; gap:11px; width:100%; text-align:left; font:inherit; cursor:pointer; padding:11px 14px; border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) var(--lane-s) var(--lane-l)); border-radius:12px; background:var(--card); color:var(--ink); transition:border-color .12s, transform .08s; }
+.rv-dl-row:hover { transform:translateY(-1px); border-color:var(--line-2); }
+.rv-dl-dot { flex:none; width:8px; height:8px; border-radius:50%; background:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.rv-dl-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+.rv-dl-when { flex:none; font-size:13px; font-weight:600; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+.rv-dl-row.soon .rv-dl-when { color:var(--accent); }
+.rv-dl-row.over { border-left-color:var(--danger,#c4412e); }
+.rv-dl-row.over .rv-dl-when { color:var(--danger,#c4412e); }
 .rv-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
 @media (max-width:640px) { .rv-cards { grid-template-columns:1fr; } }
 .rv-card { text-align:left; padding:16px 18px; border:1px solid var(--line); border-left:4px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; display:flex; flex-direction:column; gap:9px; transition:border-color .12s, transform .08s; }
