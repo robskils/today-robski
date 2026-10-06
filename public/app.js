@@ -4257,7 +4257,7 @@ async function peNewNote() {
   catch (e) { toast(e.message); }
 }
 async function peAddLink() {
-  let url = await uiPrompt('Add a link', { placeholder: 'https://…' }); if (url == null) return;
+  let url = await uiPrompt('Add a web link', { placeholder: 'https://…' }); if (url == null) return;
   url = (url || '').trim(); if (!url) return; if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   let title = await uiPrompt('Name it (optional)', { placeholder: prettyLinkLabel(url) }); title = (title || '').trim();
   peMeta().links.push(title ? { url, title } : { url }); renderPeAttach();
@@ -19254,14 +19254,14 @@ function externalLinksHtml(kind, b) {
   const links = blockLinks(b);
   const chips = links.map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<span class="xl-chip"><a class="xl-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}"><span class="xl-ic">🔗</span><span class="xl-t">${esc(label)}</span></a><button class="xl-x" data-xlink-del data-xlink-kind="${kind}" data-xlink-id="${b.id}" data-xlink-idx="${i}" title="Remove link">×</button></span>`; }).join('');
   return `<section class="xlinks">
-    <div class="xlinks-h">Links${links.length ? ` · ${links.length}` : ''}</div>
+    <div class="xlinks-h">Web links${links.length ? ` · ${links.length}` : ''}</div>
     ${links.length ? `<div class="xl-chips">${chips}</div>` : ''}
-    <button class="xl-add" data-xlink-add data-xlink-kind="${kind}" data-xlink-id="${b.id}">＋ Add link</button>
+    <button class="xl-add" data-xlink-add data-xlink-kind="${kind}" data-xlink-id="${b.id}">＋ Add a web link</button>
   </section>`;
 }
 async function addBlockLink(kind, id) {
   const b = linkableBlock(kind, id); if (!b) return;
-  let url = await uiPrompt('Add a link', { placeholder: 'https://…' }); if (url == null) return;
+  let url = await uiPrompt('Add a web link', { placeholder: 'https://…' }); if (url == null) return;
   url = (url || '').trim(); if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   let title = await uiPrompt('Name it (optional)', { placeholder: prettyLinkLabel(url) });
