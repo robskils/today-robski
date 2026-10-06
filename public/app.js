@@ -7391,9 +7391,9 @@ function renderArea() {
   const TABS = ['Vision', 'Goals', ...(wheelTracked ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
   let openTile = state.area_open.tileOpen;
   if (!openTile || !TABS.includes(openTile)) openTile = TABS[0] || null;
-  const tabBar = TABS.length ? `<div class="area-tiles area-tabs" style="--cols:${TABS.length}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>` : '';
+  const tabBar = TABS.length ? `<div class="area-tiles area-tabs" style="--cols:${TABS.length};--h:${h}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>` : '';
   const topCard = (openTile && tops[openTile]) ? `<div class="area-card area-top-card">${tops[openTile]}</div>` : '';
-  const areaTilesHtml = `${tabBar}<div class="area-tilepanel">${topCard}${restHtml}</div>`;
+  const areaTilesHtml = `${tabBar}<div class="area-tilepanel" style="--h:${h}">${topCard}${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // Each stat is a shortcut: clicking it opens (and scrolls to) that part of the area.
@@ -7415,7 +7415,7 @@ function renderArea() {
           <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
         </div>
       </div>`;
-  const areaDash = (areaAddBtn || dashStats || rvAreaHtml) ? `<div class="area-dash">
+  const areaDash = (areaAddBtn || dashStats || rvAreaHtml) ? `<div class="area-dash" style="--h:${h}">
       <div class="area-dash-top">
         <div class="area-stats">${dashStats}</div>
         ${areaAddBtn}

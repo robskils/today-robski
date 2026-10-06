@@ -7327,3 +7327,71 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .dz-spin { width:26px; height:26px; border:3px solid color-mix(in srgb,var(--accent) 30%,transparent); border-top-color:var(--accent); border-radius:50%; animation:dz-spin .7s linear infinite; }
 @keyframes dz-spin { to { transform:rotate(360deg); } }
 @media (prefers-reduced-motion:reduce){ .dz-spin { animation:none; } .dz-card:hover { transform:none; } }
+
+/* ── Life area: depth + warmth, built on the area's own colour ──────────── */
+/* Each area gets a soft wash of its hue so it feels like its own place, with
+   layered shadows and lifts instead of flat rectangles. --c resolves per element
+   from --h (now threaded through the whole page). (Robin: make it beautiful.) */
+.area-hero {
+  --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
+  position:relative; margin:-6px -6px 18px; padding:28px 26px 22px; border-radius:24px;
+  background:
+    radial-gradient(130% 150% at 0% -10%, color-mix(in srgb,var(--c) 20%,transparent), transparent 62%),
+    linear-gradient(162deg, color-mix(in srgb,var(--c) 13%,var(--card)), var(--card) 74%);
+  border:1px solid color-mix(in srgb,var(--c) 24%,var(--line));
+  box-shadow:0 1px 0 color-mix(in srgb,var(--c) 32%,transparent) inset, 0 22px 50px -34px color-mix(in srgb,var(--c) 75%,transparent);
+}
+.area-hero h1 { font-size:clamp(33px,5vw,50px); font-weight:500; letter-spacing:-.01em; }
+.area-hero h1 .ac-dot, .area-hero h1 .ac-dot-btn { box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 16%,transparent); }
+.area-meta { font-size:15.5px; }
+
+/* Stat jewels */
+.area-stat {
+  --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
+  background:linear-gradient(165deg, color-mix(in srgb,var(--c) 11%,var(--card)), var(--card));
+  border-color:color-mix(in srgb,var(--c) 22%,var(--line));
+  border-top:3px solid color-mix(in srgb,var(--c) 52%,var(--line));
+  box-shadow:0 12px 28px -22px color-mix(in srgb,var(--c) 85%,transparent), 0 2px 5px -4px rgba(0,0,0,.14);
+  border-radius:16px;
+}
+.area-stat b { color:color-mix(in srgb,var(--c) 70%,var(--ink)); font-size:30px; }
+.area-stat-btn:hover { border-color:var(--c); transform:translateY(-2px); box-shadow:0 18px 36px -20px color-mix(in srgb,var(--c) 90%,transparent); }
+
+/* Section & content cards: a breath of colour and a real, soft shadow */
+.area-card,
+.area-flow .area-sec,
+.area-dash-files, .area-dash-links, .area-dash-shared, .area-dash-wall {
+  --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
+  background:linear-gradient(168deg, color-mix(in srgb,var(--c) 6%,var(--card)), var(--card) 68%);
+  border-color:color-mix(in srgb,var(--c) 16%,var(--line));
+  border-radius:18px;
+  box-shadow:0 16px 38px -28px color-mix(in srgb,var(--c) 80%,transparent), 0 2px 6px -4px rgba(0,0,0,.1);
+  transition:box-shadow .16s, transform .12s, border-color .12s;
+}
+.area-flow .area-sec:hover { box-shadow:0 22px 46px -26px color-mix(in srgb,var(--c) 85%,transparent), 0 3px 8px -4px rgba(0,0,0,.12); }
+/* Section heading: the glyph in a tinted chip, so each section reads at a glance */
+.area-sec-h .ash-ic {
+  width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;
+  border-radius:9px; background:color-mix(in srgb,var(--c) 15%,transparent);
+  color:color-mix(in srgb,var(--c) 80%,var(--ink)); font-size:15px;
+}
+
+/* Tiles: gentle gradient, a lift on hover, and the icon in a soft hue chip */
+.area-tiles .area-tile {
+  background:linear-gradient(168deg, color-mix(in srgb,var(--c) 8%,var(--card)), var(--card));
+  box-shadow:0 12px 28px -24px color-mix(in srgb,var(--c) 75%,transparent), 0 1px 4px -3px rgba(0,0,0,.12);
+  border-radius:16px;
+}
+.area-tiles .area-tile:hover { transform:translateY(-2px); border-color:color-mix(in srgb,var(--c) 42%,var(--line)); box-shadow:0 18px 34px -20px color-mix(in srgb,var(--c) 75%,transparent); }
+.area-tiles:not(.area-tabs) .area-tile .at-ic {
+  width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+  border-radius:14px; background:color-mix(in srgb,var(--c) 14%,transparent);
+  color:color-mix(in srgb,var(--c) 82%,var(--ink));
+}
+.area-tiles:not(.area-tabs) .area-tile.on .at-ic { background:color-mix(in srgb,var(--c) 22%,transparent); }
+.area-tile.on { box-shadow:0 16px 32px -18px color-mix(in srgb,var(--c) 70%,transparent); }
+
+/* Recently-viewed rows pick up the hue on hover instead of a generic accent */
+.area-rv-item { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.area-rv-item:hover { border-color:color-mix(in srgb,var(--c) 45%,var(--line)); color:color-mix(in srgb,var(--c) 75%,var(--ink)); }
+.area-rv-item:hover .area-rv-ic { color:var(--c); }
