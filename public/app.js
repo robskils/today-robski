@@ -40,8 +40,8 @@ const T_EN = {
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
-  'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in',
+  'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
@@ -62,8 +62,8 @@ const T_PT = {
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
-  'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão',
+  'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Áreas da vida, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
@@ -803,6 +803,8 @@ const HELP = {
     body: `<p>Put in someone's email and a note, and Daybook emails them the invitation. They click one link, sign in and their own Daybook is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
   'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories and reminders.',
     body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
+  'settings-import': { title: 'Import', tip: 'Bring your notes in from another app.',
+    body: `<p>Export your notes from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files here. Each file becomes its own Daybook note - the first <code># heading</code> (or the filename) becomes the title and the rest keeps its formatting. Pick a life area to file them all under, check the preview, then import. More importers (tasks, calendar, bookmarks) are on the way.</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -2536,6 +2538,7 @@ function renderSettings() {
     ['notifications', t('set.tab.notifications')],
     ['sections', t('set.tab.sections')],
     ['invites', t('set.tab.invites')],
+    ['import', t('set.tab.import')],
     ['manage', t('set.tab.manage')],
   ];
   // Sub-pages reachable from a tab (not shown in the segmented control): the
@@ -2705,8 +2708,8 @@ function renderSettings() {
         </div>
       </div>`;
 
-  const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, manage: managePane };
-  const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), manage: t('set.sub.manage') };
+  const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, import: importPane(), manage: managePane };
+  const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), import: t('set.sub.import'), manage: t('set.sub.manage') };
 
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
@@ -2718,6 +2721,105 @@ function renderSettings() {
     </section>
     ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(planLabel(state.me.plan))} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
 }
+
+// ── Import ────────────────────────────────────────────────────────────────
+// Bring notes in from other apps (Obsidian, Bear, Apple Notes, Notion, …) that
+// export Markdown or plain text. Each file becomes a kind='note' block, its
+// Markdown rendered through the same mdToHtml the native editor uses, so an
+// imported note is indistinguishable from one typed here. First of a planned
+// family of importers (tasks CSV, calendar .ics, bookmarks next).
+function importState() { if (!state.import) state.import = { area: '', parsed: [], running: false, done: 0, err: '' }; return state.import; }
+function importPane() {
+  const imp = importState();
+  const areaOpts = `<option value="">${imp.area ? 'No life area' : 'No life area (filed loose)'}</option>`
+    + (state.areas || []).map((a) => `<option value="${a.id}" ${imp.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  const parsed = imp.parsed || [];
+  const preview = parsed.length ? `
+    <div class="imp-preview">
+      <div class="imp-preview-h">${parsed.length} note${parsed.length === 1 ? '' : 's'} ready to import${imp.area ? ` into <b>${esc((areaById(imp.area) || {}).title || '')}</b>` : ''}</div>
+      <div class="imp-rows">
+        ${parsed.slice(0, 25).map((n) => `<div class="imp-row"><span class="imp-row-t">${esc(n.title)}</span><span class="imp-row-s">${esc(n.snippet)}</span></div>`).join('')}
+        ${parsed.length > 25 ? `<div class="imp-row-more">+ ${parsed.length - 25} more</div>` : ''}
+      </div>
+      <div class="imp-act">
+        <button class="add-btn wide" data-import-run ${imp.running ? 'disabled' : ''}>${imp.running ? `Importing… ${imp.done}/${parsed.length}` : `Import ${parsed.length} note${parsed.length === 1 ? '' : 's'}`}</button>
+        ${imp.running ? '' : '<button class="linkish imp-clear" data-import-clear>Clear</button>'}
+      </div>
+    </div>` : '';
+  return `
+    <div class="imp-card">
+      <p class="imp-lead">Moving in from Obsidian, Bear, Apple Notes, Notion or anywhere else? Export your notes as <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>) and bring them straight in. Each file becomes its own note, headings and formatting kept.</p>
+      <div class="imp-field">
+        <label class="imp-label" for="imp-area">File them into a life area</label>
+        <select class="sel imp-area" id="imp-area" data-import-area>${areaOpts}</select>
+      </div>
+      <div class="imp-field">
+        <label class="imp-label">Choose your files</label>
+        <label class="add-btn wide imp-pick">📄 Choose Markdown or text files<input type="file" id="imp-files" accept=".md,.markdown,.mdown,.txt,.text,text/markdown,text/plain" multiple hidden></label>
+        <p class="imp-hint">You can pick many at once. Nothing is imported until you confirm below.</p>
+      </div>
+      ${imp.err ? `<p class="imp-err">${esc(imp.err)}</p>` : ''}
+      ${preview}
+    </div>`;
+}
+// Turn selected files into previewable notes: first H1 (or filename) → title,
+// the rest → mdToHtml body. Kept synchronous-friendly via async file.text().
+async function importReadFiles(fileList) {
+  const imp = importState();
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  imp.err = '';
+  const MAX = 2 * 1024 * 1024; // 2MB a file - a note, not a database dump
+  const out = [];
+  let skipped = 0;
+  for (const f of files) {
+    if (f.size > MAX) { skipped++; continue; }
+    let text = '';
+    try { text = await f.text(); } catch { skipped++; continue; }
+    const lines = text.replace(/\r\n?/g, '\n').split('\n');
+    const firstNonEmpty = lines.findIndex((l) => l.trim());
+    const h1 = lines.findIndex((l) => /^\s*#\s+\S/.test(l));
+    let title, bodyLines;
+    if (h1 >= 0 && h1 === firstNonEmpty) {
+      title = lines[h1].replace(/^\s*#\s+/, '').trim();
+      bodyLines = lines.slice(0, h1).concat(lines.slice(h1 + 1));
+    } else {
+      title = f.name.replace(/\.(md|markdown|mdown|txt|text)$/i, '').replace(/[._-]+/g, ' ').trim();
+      bodyLines = lines;
+    }
+    const bodyMd = bodyLines.join('\n').trim();
+    const snippet = bodyMd.replace(/[#>*`_~\-]+/g, ' ').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 110);
+    out.push({ title: title || 'Untitled note', body: bodyMd ? mdToHtml(bodyMd) : '', snippet: snippet || '(empty)' });
+  }
+  imp.parsed = out;
+  if (!out.length && skipped) imp.err = 'Those files were too large or could not be read. Markdown and text files under 2MB each, please.';
+  else if (skipped) imp.err = `${skipped} file${skipped === 1 ? '' : 's'} skipped (too large or unreadable).`;
+  if (state.view && state.view.type === 'settings') renderSettings();
+}
+// Create a note block per parsed file. Sequential so the progress count is
+// honest and we never fire 200 POSTs at once; area rides in props.areas.
+async function importRun() {
+  const imp = importState();
+  if (!imp.parsed || !imp.parsed.length || imp.running) return;
+  imp.running = true; imp.done = 0; imp.err = '';
+  if (state.view && state.view.type === 'settings') renderSettings();
+  const areas = imp.area ? [imp.area] : [];
+  let ok = 0;
+  for (const n of imp.parsed) {
+    try {
+      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: n.title, body: n.body, props: { areas } }) });
+      ok++;
+    } catch { /* keep going; report the shortfall at the end */ }
+    imp.done = ok;
+    if (state.view && state.view.type === 'settings') renderSettings();
+  }
+  const total = imp.parsed.length;
+  imp.running = false; imp.parsed = []; imp.done = 0;
+  if (ok < total) imp.err = `Imported ${ok} of ${total}. ${total - ok} failed - try those again.`;
+  toast(ok === total ? `Imported ${ok} note${ok === 1 ? '' : 's'} 🎉` : `Imported ${ok} of ${total} notes`);
+  if (state.view && state.view.type === 'settings') renderSettings();
+}
+
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
 function ensureLoc() {
   if (cachedLoc() || !navigator.geolocation) return;
@@ -17451,6 +17553,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-recent-more]')) { state.home = state.home || {}; state.home.recentAll = !state.home.recentAll; renderHome(); return; }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); return; } }
+  if (t.closest('[data-import-run]')) { importRun(); return; }
+  if (t.closest('[data-import-clear]')) { const imp = importState(); imp.parsed = []; imp.err = ''; const f = $('#imp-files'); if (f) f.value = ''; renderSettings(); return; }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
@@ -18093,6 +18197,8 @@ document.addEventListener('change', (e) => {
   if (e.target.matches && e.target.matches('[data-wheel-track]')) { setWheelTrack(e.target.dataset.wheelTrack, e.target.checked); return; }
   // Event reminder: reveal the number+unit inputs when "Custom…" is chosen.
   if (e.target.id === 'ce-alarm') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) { const on = e.target.value === 'custom'; cc.hidden = !on; if (on) { const n = document.getElementById('ce-alarm-n'); if (n) { n.focus(); n.select(); } } } const chw = document.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = (e.target.value === ''); return; }
+  if (e.target.matches('[data-import-area]')) { importState().area = e.target.value || ''; renderSettings(); return; }
+  if (e.target.matches('#imp-files')) { const fl = e.target.files; if (fl && fl.length) importReadFiles(fl); return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }

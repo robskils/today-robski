@@ -2963,6 +2963,27 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .alias-verify-row input { width:110px; flex:none; letter-spacing:.18em; text-align:center; font-variant-numeric:tabular-nums; }
 .acct-plan { display:flex; align-items:center; gap:12px; } .acct-plan b { text-transform:capitalize; }
 .acct-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; }
+
+/* ── Import tab ──────────────────────────────────────────────────────────── */
+.imp-card { display:flex; flex-direction:column; gap:18px; }
+.imp-lead { font-size:15px; line-height:1.55; color:var(--muted); margin:0; max-width:60ch; }
+.imp-lead code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:0.92em; background:var(--chip,rgba(0,0,0,.05)); padding:1px 5px; border-radius:5px; }
+.imp-field { display:flex; flex-direction:column; gap:7px; }
+.imp-label { font-size:14px; font-weight:600; color:var(--ink); }
+.imp-area { max-width:360px; }
+.imp-pick { cursor:pointer; text-align:center; max-width:360px; }
+.imp-hint { font-size:13px; color:var(--muted); margin:0; }
+.imp-err { font-size:14px; color:var(--bad,#c0392b); margin:0; }
+.imp-preview { border:1px solid var(--line); border-radius:14px; padding:16px; background:var(--card2,var(--card)); display:flex; flex-direction:column; gap:12px; }
+.imp-preview-h { font-size:15px; font-weight:600; }
+.imp-rows { display:flex; flex-direction:column; gap:2px; max-height:360px; overflow-y:auto; }
+.imp-row { display:flex; flex-direction:column; gap:2px; padding:9px 11px; border-radius:9px; }
+.imp-row:nth-child(odd) { background:var(--chip,rgba(0,0,0,.035)); }
+.imp-row-t { font-size:15px; font-weight:600; color:var(--ink); }
+.imp-row-s { font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.imp-row-more { font-size:13px; color:var(--muted); padding:6px 11px; }
+.imp-act { display:flex; align-items:center; gap:14px; }
+.imp-act .add-btn.wide { flex:0 1 auto; }
 /* Account tab order: your details first, then the Daybook card + Security side by
    side, then Your data. */
 .set-account, .set-acct-cols { margin-bottom:16px; }
