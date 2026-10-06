@@ -2839,7 +2839,17 @@ function mobileNavOrder() {
   let saved = [];
   try { saved = JSON.parse(localStorage.getItem('life.nav.morder') || '[]'); } catch {}
   saved = Array.isArray(saved) ? saved.filter((k) => MNAV_DEFAULT.includes(k)) : [];
-  return [...saved, ...MNAV_DEFAULT.filter((k) => !saved.includes(k))];
+  // Slot any default item missing from a saved order into its NATURAL place (just
+  // after the previous default item that's present), rather than dumping newer
+  // tools at the very bottom - so e.g. Contacts sits right under Life areas.
+  const order = [...saved];
+  MNAV_DEFAULT.forEach((k, i) => {
+    if (order.includes(k)) return;
+    let at = order.length;
+    for (let j = i - 1; j >= 0; j--) { const idx = order.indexOf(MNAV_DEFAULT[j]); if (idx >= 0) { at = idx + 1; break; } }
+    order.splice(at, 0, k);
+  });
+  return order;
 }
 function saveMobileNavOrder(arr) { try { localStorage.setItem('life.nav.morder', JSON.stringify(arr)); } catch {} }
 function navMobileListHtml(v) {
