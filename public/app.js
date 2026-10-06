@@ -9669,6 +9669,9 @@ function mailMoveMenuHtml() {
   const folders = [...std, ...found].filter((p) => p && p.toLowerCase() !== cur && !seen.has(p.toLowerCase()) && seen.add(p.toLowerCase()));
   return `<div class="mail-movebg" data-mail-move-close><div class="mail-move" style="top:${mm.y}px;left:${mm.x}px" role="menu">
     <div class="mail-move-h">Move ${mm.keys.length} to…</div>
+    <div class="mail-move-sect">Priority</div>
+    ${MAIL_QUADS.map((q) => `<button class="mail-move-item mail-quad-${q.key}" data-mail-move-quad="${q.quad}"><span class="mail-quad-dot"></span><span class="mm-main"><span class="mm-l">${esc(q.label)}</span><span class="mm-sub">${esc(q.hint)}</span></span></button>`).join('')}
+    <div class="mail-move-sect">Folders</div>
     ${folders.map((p) => `<button class="mail-move-item" data-mail-move-to="${esc(p)}">${esc(p === 'INBOX' ? 'Inbox' : p)}</button>`).join('')}
   </div></div>`;
 }
@@ -11018,7 +11021,8 @@ const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' 
     <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
     <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Read Later / Others)"><span class="mail-quad-dot"></span></span>
-    <span class="mail-rowarch" data-mail-archive="${esc(x._key)}" title="Archive - done with it, take it out">${MAIL_ICO.archive}</span></button>`;
+    <span class="mail-rowact mail-rowarch" data-mail-archive="${esc(x._key)}" title="Archive - done with it, take it out">${MAIL_ICO.archive}</span>
+    <span class="mail-rowact mail-rowtrash" data-mail-rowdel="${esc(x._key)}" title="Delete - move to Trash">${MAIL_ICO.trash}</span></button>`;
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
 // it reads as one set rather than a jumble of emoji.
 const mIco = (p, fill) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -18231,10 +18235,12 @@ document.addEventListener('click', (e) => {
   const mchk = t.closest('[data-mail-check]'); if (mchk) { e.preventDefault(); e.stopPropagation(); mailToggleSelect(mchk.dataset.mailCheck); return; }   // select box sits inside the row button
   const mbulk = t.closest('[data-mail-bulk]'); if (mbulk) { mailBulk(mbulk.dataset.mailBulk); return; }
   const mmto = t.closest('[data-mail-move-to]'); if (mmto) { const mm = state.mail.moveMenu; if (mm) mailMoveTargets(mm.keys, mmto.dataset.mailMoveTo); return; }
+  const mmquad = t.closest('[data-mail-move-quad]'); if (mmquad) { const mm = state.mail.moveMenu; if (mm) { const keys = [...mm.keys]; state.mail.moveMenu = null; renderMail(); mailToQuad(keys, mmquad.dataset.mailMoveQuad); } return; }
   const mmone = t.closest('[data-mail-move-one]'); if (mmone) { openMoveMenu([mmone.dataset.mailMoveOne], mmone); return; }
   if (t.closest('[data-mail-move-close]') && !t.closest('.mail-move')) { state.mail.moveMenu = null; renderMail(); return; }
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
-  const march = t.closest('[data-mail-archive]'); if (march) { mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
+  const march = t.closest('[data-mail-archive]'); if (march) { e.preventDefault(); e.stopPropagation(); mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
+  const mrowdel = t.closest('[data-mail-rowdel]'); if (mrowdel) { e.preventDefault(); e.stopPropagation(); mailDelete(mrowdel.dataset.mailRowdel); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
   const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(mblk.dataset.mailBlock, mblk.dataset.mailFrom || ''); return; }
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }

@@ -5458,11 +5458,12 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-quadbtn .mail-quad-dot { width:11px; height:11px; }
 @media (hover:none){ .mail-quadbtn { opacity:.85; } }
 /* Quick archive on a row: done with it, take it out of the box. */
-.mail-rowarch { flex:none; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; color:var(--ink-3); opacity:0; transition:opacity .12s, background .12s, color .12s; }
-.mail-rowarch svg { width:18px; height:18px; }
-.mail-row:hover .mail-rowarch { opacity:.7; }
+.mail-rowact { flex:none; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; color:var(--ink-3); opacity:0; transition:opacity .12s, background .12s, color .12s; }
+.mail-rowact svg { width:18px; height:18px; }
+.mail-row:hover .mail-rowact { opacity:.7; }
 .mail-rowarch:hover { opacity:1; background:var(--paper-2); color:var(--accent); }
-@media (hover:none){ .mail-rowarch { opacity:.6; } }
+.mail-rowtrash:hover { opacity:1; background:color-mix(in srgb,var(--bad,#c0392b) 12%,var(--paper-2)); color:var(--bad,#c0392b); }
+@media (hover:none){ .mail-rowact { opacity:.6; } }
 /* The row's 4-way priority menu. */
 .mail-quadmenu { min-width:210px; padding:6px; }
 .mail-quadmenu .mail-move-item { display:flex; align-items:center; gap:10px; width:100%; padding:10px 11px; border-radius:9px; text-align:left; }
@@ -5565,6 +5566,15 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-move-item { display:block; width:100%; text-align:left; padding:9px 12px; border-radius:8px; color:var(--ink); font-size:15px; }
 .mail-move-item:hover { background:var(--paper-2); color:var(--accent); }
 .mail-move-item .mm-dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:9px; vertical-align:middle; flex:none; }
+/* Section divider + priority rows inside the Move menu. */
+.mail-move-sect { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); padding:9px 12px 3px; }
+.mail-move-sect:first-of-type { padding-top:4px; }
+.mail-move [data-mail-move-quad] { display:flex; align-items:center; gap:10px; }
+.mail-move [data-mail-move-quad] .mail-quad-dot { width:11px; height:11px; flex:none; }
+.mail-move .mm-main { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.mail-move .mm-l { font-size:15px; line-height:1.2; }
+.mail-move .mm-sub { font-size:12px; color:var(--ink-3); }
+.mail-move [data-mail-move-quad]:hover .mm-sub { color:inherit; }
 .mail-move-empty { padding:9px 12px; color:var(--ink-3); font-size:14px; }
 /* The "new task from this email" popover: a small form of title + area + priority. */
 .mail-task-pop { position:absolute; width:300px; max-width:calc(100vw - 24px); box-sizing:border-box; background:var(--card); border:1px solid var(--line-2); border-radius:14px; box-shadow:0 18px 44px -16px rgba(0,0,0,.45); padding:14px; display:flex; flex-direction:column; gap:11px; }
