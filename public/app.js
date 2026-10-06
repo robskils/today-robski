@@ -154,6 +154,13 @@ document.addEventListener('keydown', (ev) => {
   if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;  // native text undo wins in a field
   ev.preventDefault(); doUndo();
 });
+// Esc closes the flyer overlay; paste an image straight into it.
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
+document.addEventListener('paste', (ev) => {
+  if (!document.getElementById('flyer')) return;
+  const items = (ev.clipboardData && ev.clipboardData.items) || [];
+  for (const it of items) { if (it.type && it.type.indexOf('image') === 0) { const file = it.getAsFile(); if (file) { ev.preventDefault(); flyerSetImage(file); } return; } }
+});
 // On a review card, ← / → flip to the older / newer review of the same type.
 document.addEventListener('keydown', (ev) => {
   if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
@@ -1109,6 +1116,7 @@ function addNewMenuHtml() {
     modOn('notes') ? item('note', '▤', 'Note') : '',
     modOn('tasks') ? item('task', '✓', 'Task') : '',
     modOn('calendar') ? item('event', '▦', 'Event') : '',
+    modOn('calendar') ? `<button class="addnew-item" data-open-flyer><span class="addnew-ic">✨</span>From a flyer</button>` : '',
     modOn('goals') ? item('goal', '◎', 'Goal') : '',
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
@@ -2785,36 +2793,16 @@ function importEvRowHtml(e, i) {
   const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
   return `<label class="imp-evrow ${e.pick ? 'on' : ''}"><input type="checkbox" data-import-evpick="${i}" ${e.pick ? 'checked' : ''}><span class="imp-evmain"><span class="imp-evt">${esc(e.title)}</span><span class="imp-evmeta">${esc(when)}${e.location ? ` · ${esc(e.location)}` : ''}</span>${e.notes ? `<span class="imp-evnotes">${esc(e.notes)}</span>` : ''}</span></label>`;
 }
-function importEventsPaneHtml(imp) {
-  const evs = imp.evEvents || [];
-  const nPick = evs.filter((e) => e.pick).length;
-  const preview = evs.length ? `
-    <div class="imp-preview">
-      <div class="imp-preview-h">${nPick} of ${evs.length} event${evs.length === 1 ? '' : 's'} selected${imp.area ? ` · into <b>${esc((areaById(imp.area) || {}).title || '')}</b>` : ''}</div>
-      <div class="imp-evrows">${evs.map((e, i) => importEvRowHtml(e, i)).join('')}</div>
-      <div class="imp-act">
-        <button class="add-btn wide" data-import-evadd ${(imp.evAdding || !nPick) ? 'disabled' : ''}>${imp.evAdding ? `Adding… ${imp.evDone || 0}/${nPick}` : `Add ${nPick} to calendar`}</button>
-        ${imp.evAdding ? '' : '<button class="linkish imp-clear" data-import-evclear>Clear</button>'}
-      </div>
-    </div>` : '';
+function importEventsPaneHtml() {
+  // The events importer lives as its own delightful overlay ("Add from a flyer"),
+  // reachable from the Calendar and the + New menu - this is just the signpost.
   return `
-      <p class="imp-lead">Got a flyer, a poster, an email or a schedule? Paste the text or add a photo, and Daybook reads the events out for you to check and drop onto your calendar - you choose which ones.</p>
-      <div class="imp-field">
-        <label class="imp-label" for="imp-evtext">Paste text</label>
-        <textarea id="imp-evtext" class="sel imp-evtext" rows="4" placeholder="Paste a flyer's text, an email, a schedule…" data-import-evtext>${esc(imp.evText || '')}</textarea>
-      </div>
-      <div class="imp-field">
-        <label class="imp-label">…or add a photo of a flyer</label>
-        <label class="add-btn wide imp-pick">📷 Choose an image<input type="file" id="imp-evimg" accept="image/*" hidden></label>
-        ${imp.evImgName ? `<p class="imp-hint">📎 ${esc(imp.evImgName)} · <button class="linkish" data-import-evimg-clear>remove</button></p>` : '<p class="imp-hint">A clear photo or screenshot works best. Nothing is added until you pick and confirm.</p>'}
-      </div>
-      <div class="imp-field">
-        <label class="imp-label" for="imp-evarea">File events into a life area</label>
-        <select class="sel imp-area" id="imp-evarea" data-import-area>${importAreaOpts(imp)}</select>
-      </div>
-      <button class="add-btn wide imp-find" data-import-evfind ${imp.evFinding ? 'disabled' : ''}>${imp.evFinding ? 'Reading the events…' : '✨ Find events'}</button>
-      ${imp.err ? `<p class="imp-err">${esc(imp.err)}</p>` : ''}
-      ${preview}`;
+      <div class="imp-flyer-teaser">
+        <div class="imp-flyer-art">✨📸</div>
+        <p class="imp-lead">Got a flyer, a poster, an email or a schedule? Snap a photo or paste the text and Daybook reads the events straight out of it - you tick which ones land on your calendar.</p>
+        <button class="add-btn wide" data-open-flyer>✨ Add from a flyer</button>
+        <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
+      </div>`;
 }
 // Turn selected files into previewable notes: first H1 (or filename) → title,
 // the rest → mdToHtml body. Kept synchronous-friendly via async file.text().
@@ -2876,32 +2864,150 @@ async function importRun() {
 // ── Events import ──────────────────────────────────────────────────────────
 // Read an image of a flyer into base64 for the vision call. Kept small (≤~7MB)
 // so the worker's AI request stays well within limits.
+// Read an image file to a downscaled base64 JPEG (≤1600px) so the vision request
+// stays small and well within API limits - a flyer is legible at that size and
+// phone photos are often 5MB+. Falls back to the raw bytes if it can't decode.
+async function imageFileToScaledB64(f, maxDim = 1600) {
+  const dataUrl = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(f); });
+  if (!dataUrl) return null;
+  const img = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = dataUrl; });
+  if (img && img.width && img.height) {
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale)); const h = Math.max(1, Math.round(img.height * scale));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    const out = c.toDataURL('image/jpeg', 0.85); const comma = out.indexOf(',');
+    return { image: out.slice(comma + 1), mime: 'image/jpeg' };
+  }
+  if (f.size > 6 * 1024 * 1024) return null;   // undecodable (e.g. HEIC) and too big to send raw
+  const comma = String(dataUrl).indexOf(',');
+  return { image: String(dataUrl).slice(comma + 1), mime: (String(dataUrl).slice(5, comma).split(';')[0]) || 'image/png' };
+}
 async function importReadImage(f) {
   const imp = importState();
   const ta = document.getElementById('imp-evtext'); if (ta) imp.evText = ta.value;   // keep any pasted text across the re-render
   imp.err = '';
-  try {
-    const dataUrl = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(f); });
-    if (!dataUrl) throw 0;
-    const img = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = dataUrl; });
-    // Downscale so the vision request stays small and well within size limits - a
-    // flyer is perfectly legible at 1600px, and phone photos are often 5MB+.
-    if (img && img.width && img.height) {
-      const maxDim = 1600; const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      const w = Math.max(1, Math.round(img.width * scale)); const h = Math.max(1, Math.round(img.height * scale));
-      const c = document.createElement('canvas'); c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      const out = c.toDataURL('image/jpeg', 0.85); const comma = out.indexOf(',');
-      imp.evImage = out.slice(comma + 1); imp.evMime = 'image/jpeg';
-    } else {
-      // Couldn't decode (e.g. HEIC on an unsupported browser) - send as-is, capped.
-      if (f.size > 6 * 1024 * 1024) { imp.err = 'That image is too large - try a smaller photo or a screenshot.'; renderSettings(); return; }
-      const comma = String(dataUrl).indexOf(',');
-      imp.evImage = String(dataUrl).slice(comma + 1); imp.evMime = (String(dataUrl).slice(5, comma).split(';')[0]) || 'image/png';
-    }
-    imp.evImgName = f.name;
-  } catch { imp.err = 'Could not read that image.'; }
+  const r = await imageFileToScaledB64(f);
+  if (!r) { imp.err = 'Could not read that image - try a smaller photo or a screenshot.'; renderSettings(); return; }
+  imp.evImage = r.image; imp.evMime = r.mime; imp.evImgName = f.name;
   renderSettings();
+}
+
+// ── "Add from a flyer" — the delightful one ────────────────────────────────
+// A proper little moment, not a buried setting: drop or paste a photo of a
+// flyer, watch it scan, tick the events, and they land on your calendar with a
+// small celebration. Reuses /api/import/events + buildEventBody. (Robin: make
+// this a feature, cheer the app up.)
+function flyerState() { if (!state.flyer) state.flyer = { phase: 'input', text: '', image: null, mime: null, imgName: '', area: '', finding: false, events: [], adding: false, done: 0, err: '' }; return state.flyer; }
+function openFlyerImport() {
+  document.querySelectorAll('.addnew-menu:not([hidden])').forEach((m) => m.setAttribute('hidden', ''));   // close the + New menu if we came from it
+  state.flyer = { phase: 'input', text: '', image: null, mime: null, imgName: '', area: (state.import && state.import.area) || '', finding: false, events: [], adding: false, done: 0, err: '' };
+  let el = document.getElementById('flyer');
+  if (!el) { el = document.createElement('div'); el.id = 'flyer'; document.body.appendChild(el); }
+  renderFlyerImport();
+}
+function closeFlyer() { const el = document.getElementById('flyer'); if (el) el.remove(); }
+function flyerAreaOpts(f) {
+  return `<option value="">No life area</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+}
+function flyerEvRowHtml(e, i) {
+  const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
+  return `<label class="fly-evrow ${e.pick ? 'on' : ''}"><input type="checkbox" data-flyer-pick="${i}" ${e.pick ? 'checked' : ''}><span class="fly-evmain"><span class="fly-evt">${esc(e.title)}</span><span class="fly-evmeta">${esc(when)}${e.location ? ` · ${esc(e.location)}` : ''}</span>${e.notes ? `<span class="fly-evnotes">${esc(e.notes)}</span>` : ''}</span><span class="fly-evtick">✓</span></label>`;
+}
+function renderFlyerImport() {
+  const el = document.getElementById('flyer'); if (!el) return;
+  const f = flyerState();
+  let inner;
+  if (f.phase === 'done') {
+    inner = `<div class="fly-done">
+      <div class="fly-done-emoji">🎉</div>
+      <h3>${f.done} event${f.done === 1 ? '' : 's'} on your calendar</h3>
+      <p>Lovely. Go take a look, or feed it another.</p>
+      <div class="fly-done-acts"><button class="fly-find" data-flyer-view>View calendar</button><button class="linkish" data-flyer-again>✨ Add another</button></div>
+    </div>`;
+  } else {
+    const dropInner = f.image
+      ? `<img class="fly-prev" src="data:${f.mime};base64,${f.image}" alt="flyer preview">${f.finding ? '<span class="fly-scan" aria-hidden="true"></span>' : ''}<button class="fly-img-x" data-flyer-img-clear title="Remove photo" aria-label="Remove photo">×</button>`
+      : `<span class="fly-drop-ic">📸</span><span class="fly-drop-t">Drop a flyer photo here</span><span class="fly-drop-s">tap to choose · or press ${/Mac/i.test(navigator.platform) ? '⌘V' : 'Ctrl+V'} to paste one</span>`;
+    const results = f.events.length ? (() => {
+      const picks = f.events.filter((e) => e.pick).length;
+      return `<div class="fly-results">
+        <div class="fly-results-h">Found ${f.events.length} event${f.events.length === 1 ? '' : 's'} — tick the keepers</div>
+        <div class="fly-evrows">${f.events.map((e, i) => flyerEvRowHtml(e, i)).join('')}</div>
+        <button class="fly-find fly-add" data-flyer-add ${(f.adding || !picks) ? 'disabled' : ''}>${f.adding ? `Adding… ${f.done}/${picks}` : `Add ${picks} to my calendar`}</button>
+      </div>`;
+    })() : '';
+    inner = `
+      <label class="fly-drop ${f.image ? 'has-img' : ''} ${f.finding ? 'scanning' : ''}" data-flyer-drop>${dropInner}<input type="file" id="fly-file" accept="image/*" hidden></label>
+      <div class="fly-or">or paste it</div>
+      <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste a flyer's text, an email, a schedule…" data-flyer-text>${esc(f.text || '')}</textarea>
+      <label class="fly-field"><span>File events into</span><select class="sel" data-flyer-area>${flyerAreaOpts(f)}</select></label>
+      ${f.err ? `<p class="fly-err">${esc(f.err)}</p>` : ''}
+      ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading the flyer…' : '✨ Find the events'}</button>`}`;
+  }
+  el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
+    <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a flyer">
+      <button class="fly-x" data-flyer-close aria-label="Close">×</button>
+      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a flyer</h2><p class="fly-sub">Snap it, paste it, drop it — Daybook reads the events out and you choose what lands on your calendar.</p></div>
+      ${inner}
+    </div>`;
+  // Drag-and-drop onto the dropzone.
+  const drop = el.querySelector('[data-flyer-drop]');
+  if (drop) {
+    drop.addEventListener('dragover', (ev) => { ev.preventDefault(); drop.classList.add('dragover'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+    drop.addEventListener('drop', (ev) => { ev.preventDefault(); drop.classList.remove('dragover'); const file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if (file && /^image\//.test(file.type)) flyerSetImage(file); });
+  }
+}
+async function flyerSetImage(file) {
+  const f = flyerState(); f.err = '';
+  const ta = document.getElementById('fly-text'); if (ta) f.text = ta.value;
+  const r = await imageFileToScaledB64(file);
+  if (!r) { f.err = 'Could not read that image - try a smaller photo or a screenshot.'; renderFlyerImport(); return; }
+  f.image = r.image; f.mime = r.mime; f.imgName = file.name || 'flyer'; renderFlyerImport();
+}
+async function flyerFind() {
+  const f = flyerState();
+  const ta = document.getElementById('fly-text'); if (ta) f.text = ta.value;
+  if (!f.text.trim() && !f.image) { f.err = 'Add a photo or paste some text first.'; renderFlyerImport(); return; }
+  f.finding = true; f.err = ''; renderFlyerImport();
+  try {
+    const body = { text: f.text.trim() };
+    if (f.image) { body.image = f.image; body.mime = f.mime; }
+    const r = await api('/api/import/events', { method: 'POST', body: JSON.stringify(body) });
+    const evs = (r && r.events) || [];
+    f.events = evs.map((e) => ({ ...e, pick: true }));
+    if (!evs.length) f.err = 'Couldn\'t spot any events - try a clearer photo or paste the text.';
+  } catch (e) { f.err = (e && e.message) || 'Could not read the events.'; }
+  f.finding = false; renderFlyerImport();
+}
+async function flyerAdd() {
+  const f = flyerState();
+  const picks = f.events.filter((e) => e.pick);
+  if (!picks.length || f.adding) return;
+  f.adding = true; f.done = 0; f.err = ''; renderFlyerImport();
+  const area = f.area || '';
+  let ok = 0;
+  for (const e of picks) {
+    try {
+      const allDay = !!e.allDay || !e.start;
+      const body = buildEventBody({ title: e.title, startDate: e.date, startTime: e.start || '', endDate: e.date, endTime: e.end || '', location: e.location || '', allDay, notes: e.notes || '', area: area || '', isNew: true });
+      await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
+      ok++;
+    } catch { /* keep going */ }
+    f.done = ok; renderFlyerImport();
+  }
+  if (state.cal) state.cal.events = null;   // calendar refetches next open
+  f.adding = false; f.done = ok; f.phase = 'done';
+  renderFlyerImport(); flyerConfetti();
+}
+// A short, cheerful burst - 28 little confetti bits that fall and fade.
+function flyerConfetti() {
+  const card = document.querySelector('#flyer .fly-card'); if (!card) return;
+  const colors = ['#e8b84b', '#4aa3a3', '#d9774a', '#7a6ff0', '#52c17a', '#e46a8b'];
+  const layer = document.createElement('div'); layer.className = 'fly-confetti'; layer.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 28; i++) { const d = document.createElement('i'); d.style.left = (6 + Math.random() * 88) + '%'; d.style.background = colors[i % colors.length]; d.style.animationDelay = (Math.random() * 0.2).toFixed(2) + 's'; d.style.setProperty('--r', (Math.random() * 360) + 'deg'); d.style.setProperty('--x', (Math.random() * 60 - 30) + 'px'); layer.appendChild(d); }
+  card.appendChild(layer); setTimeout(() => layer.remove(), 2000);
 }
 // Ask the worker to pull structured events out of the pasted text and/or image.
 async function importFindEvents() {
@@ -7821,6 +7927,7 @@ function renderCalendar() {
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
+        <button class="cal-btn cal-flyerbtn" data-open-flyer title="Snap a flyer or paste a listing - we read the events out for you">✨ Add from a flyer</button>
         <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
       </div>
     </div>
@@ -17680,6 +17787,13 @@ document.addEventListener('click', (e) => {
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
   if (t.closest('[data-open-feeds]')) { openSettings('feeds'); return; }
+  if (t.closest('[data-open-flyer]')) { openFlyerImport(); return; }
+  if (t.closest('[data-flyer-close]')) { closeFlyer(); return; }
+  if (t.closest('[data-flyer-find]')) { flyerFind(); return; }
+  if (t.closest('[data-flyer-add]')) { flyerAdd(); return; }
+  if (t.closest('[data-flyer-img-clear]')) { e.preventDefault(); const f = flyerState(); const ta = $('#fly-text'); if (ta) f.text = ta.value; f.image = null; f.mime = null; f.imgName = ''; f.err = ''; renderFlyerImport(); return; }
+  if (t.closest('[data-flyer-view]')) { closeFlyer(); openCalendar(); return; }
+  if (t.closest('[data-flyer-again]')) { const f = flyerState(); f.phase = 'input'; f.events = []; f.text = ''; f.image = null; f.mime = null; f.imgName = ''; f.err = ''; f.done = 0; renderFlyerImport(); return; }
   { const fa = t.closest('[data-feed-add]'); if (fa) { addTeam({ id: fa.dataset.teamId, name: fa.dataset.teamName }); return; } }
   { const fr = t.closest('[data-feed-team-rm]'); if (fr) { removeTeam(fr.dataset.feedTeamRm); return; } }
   { const ca = t.closest('[data-feed-country-add]'); if (ca) { addCountry({ code: ca.dataset.cc, name: ca.dataset.cn }); return; } }
@@ -18423,6 +18537,9 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('#imp-files')) { const fl = e.target.files; if (fl && fl.length) importReadFiles(fl); return; }
   if (e.target.matches('#imp-evimg')) { const f = e.target.files && e.target.files[0]; if (f) importReadImage(f); return; }
   if (e.target.matches('[data-import-evpick]')) { const imp = importState(); const i = +e.target.dataset.importEvpick; if (imp.evEvents && imp.evEvents[i]) { imp.evEvents[i].pick = e.target.checked; renderSettings(); } return; }
+  if (e.target.matches('#fly-file')) { const file = e.target.files && e.target.files[0]; if (file) flyerSetImage(file); return; }
+  if (e.target.matches('[data-flyer-area]')) { const f = flyerState(); const ta = document.getElementById('fly-text'); if (ta) f.text = ta.value; f.area = e.target.value || ''; return; }
+  if (e.target.matches('[data-flyer-pick]')) { const f = flyerState(); const i = +e.target.dataset.flyerPick; if (f.events && f.events[i]) { f.events[i].pick = e.target.checked; renderFlyerImport(); } return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }
