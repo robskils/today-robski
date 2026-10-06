@@ -582,6 +582,34 @@ async function journalDeepen(request, env, json, err) {
 // Pull calendar events out of a pasted block of text or a photographed flyer, as
 // structured JSON the client previews and lets you pick from before adding. Vision
 // is why the image path exists - a flyer is usually a picture, not text. (Robin.)
+// Guard against SSRF: only plain http(s) to a non-private host. DNS isn't resolved
+// here, so we block obvious private/loopback literals and local suffixes.
+function isPublicHttpUrl(u) {
+  let url; try { url = new URL(u); } catch { return false; }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+  const h = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (!h || h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal') || h.endsWith('.localhost')) return false;
+  if (/^(127\.|10\.|0\.|169\.254\.|192\.168\.)/.test(h)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false;
+  if (h === '::1' || h.startsWith('fe80') || h.startsWith('fc') || h.startsWith('fd')) return false;
+  return true;
+}
+// Fetch an event page and reduce it to what the model needs: its JSON-LD
+// structured data (schema.org Event, when present) plus the visible text.
+async function fetchEventPage(url) {
+  const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 9000);
+  try {
+    const res = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; DaybookBot/1.0; +https://daybook.fyi)', accept: 'text/html,application/xhtml+xml' } });
+    if (!res.ok) throw new Error(`fetch ${res.status}`);
+    const ct = res.headers.get('content-type') || '';
+    if (!/html|xml|json|text/.test(ct)) throw new Error('not a page');
+    const html = (await res.text()).slice(0, 1_500_000);
+    const ld = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim()).join('\n').slice(0, 20000);
+    const title = ((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '').replace(/\s+/g, ' ').trim();
+    const text = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, 12000);
+    return `PAGE TITLE: ${title}\n\nSTRUCTURED DATA (JSON-LD):\n${ld || '(none)'}\n\nPAGE TEXT:\n${text}`;
+  } finally { clearTimeout(timer); }
+}
 async function importEvents(request, env, jsonR, errR) {
   const key = await aiKey(env, 'anthropic', 'import');
   if (!key) return errR(aiNeedsKey('anthropic'), request, 503);
@@ -589,8 +617,16 @@ async function importEvents(request, env, jsonR, errR) {
   const text = String(b.text || '').slice(0, 20000).trim();
   const image = b.image ? String(b.image) : '';   // base64, no data: prefix
   const mime = /^image\/(png|jpeg|jpg|webp|gif)$/.test(String(b.mime || '')) ? (b.mime === 'image/jpg' ? 'image/jpeg' : b.mime) : 'image/png';
-  if (!text && !image) return errR('Paste some text or add an image first.', request, 400);
+  if (!text && !image) return errR('Paste some text, a link, or add an image first.', request, 400);
   if (image && image.length > 7_000_000) return errR('That image is too large - try a smaller photo.', request, 413);
+  // A pasted event link (Eventbrite, Meetup, a venue page…): fetch it server-side
+  // and feed the AI the page's structured data + text instead of the bare URL.
+  let sourceText = text; let fromUrl = false;
+  if (!image && /^https?:\/\/\S+$/i.test(text)) {
+    if (!isPublicHttpUrl(text)) return errR("That link can't be opened.", request, 400);
+    try { sourceText = await fetchEventPage(text); fromUrl = true; }
+    catch { return errR("Couldn't open that link - try pasting the event's text instead.", request, 502); }
+  }
   const today = todayStr(TZ);
   const system = [
     `You extract calendar events from a flyer, poster, listing or pasted text. The material may be in any language (often European Portuguese).`,
@@ -598,10 +634,11 @@ async function importEvents(request, env, jsonR, errR) {
     `"title" (concise, in the material's own language), "date" ("YYYY-MM-DD"), "allDay" (boolean), "start" ("HH:MM" 24h, or null if all-day/unknown), "end" ("HH:MM" or null), "location" (string, "" if none), "notes" (string, "" if none - put performers, ticket info, descriptions here).`,
     `One event per distinct listed item that has its own time or clear slot; keep concurrent items as separate events. If something spans a whole day with no single time, set allDay true. If an end time is given use it, else null.`,
     `Resolve dates to real calendar dates using any year shown on the material; if no year is given, pick the next future occurrence relative to today (${today}, Europe/Lisbon). Omit anything with no determinable date. If you find no events, return [].`,
-  ].join(' ');
+    fromUrl ? `The text below is a web page (likely a single event listing - its JSON-LD structured data is the most reliable source). Extract the event(s) it describes.` : '',
+  ].filter(Boolean).join(' ');
   const content = [];
   if (image) content.push({ type: 'image', source: { type: 'base64', media_type: mime, data: image } });
-  content.push({ type: 'text', text: text ? `Extract the events from this text:\n\n${text}` : 'Extract the events from this flyer image.' });
+  content.push({ type: 'text', text: (image && !sourceText) ? 'Extract the events from this flyer image.' : `Extract the events from this ${fromUrl ? 'web page' : 'text'}:\n\n${sourceText}` });
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

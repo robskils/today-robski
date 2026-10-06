@@ -811,7 +811,7 @@ const HELP = {
   'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories and reminders.',
     body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
   'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
-    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> paste the text of a flyer, poster or email - or add a <b>photo</b> of one - and Daybook reads the events out of it. Check the ones you want, pick a life area, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
+    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>✨ Add from a flyer</b> button (on your Calendar and the + New menu) reads events from a <b>photo</b> or screenshot, pasted <b>text</b>, or an <b>event link</b> (Eventbrite, Meetup…). Check the ones you want, pick a life area, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -2799,7 +2799,7 @@ function importEventsPaneHtml() {
   return `
       <div class="imp-flyer-teaser">
         <div class="imp-flyer-art">✨📸</div>
-        <p class="imp-lead">Got a flyer, a poster, an email or a schedule? Snap a photo or paste the text and Daybook reads the events straight out of it - you tick which ones land on your calendar.</p>
+        <p class="imp-lead">Got a flyer, a poster, an email - or an event link (Eventbrite, Meetup…)? Snap a photo, paste the text, or drop the link and Daybook reads the events straight out of it - you tick which ones land on your calendar.</p>
         <button class="add-btn wide" data-open-flyer>✨ Add from a flyer</button>
         <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
       </div>`;
@@ -2939,8 +2939,8 @@ function renderFlyerImport() {
     })() : '';
     inner = `
       <label class="fly-drop ${f.image ? 'has-img' : ''} ${f.finding ? 'scanning' : ''}" data-flyer-drop>${dropInner}<input type="file" id="fly-file" accept="image/*" hidden></label>
-      <div class="fly-or">or paste it</div>
-      <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste a flyer's text, an email, a schedule…" data-flyer-text>${esc(f.text || '')}</textarea>
+      <div class="fly-or">or paste text or a link</div>
+      <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste a flyer's text, an email — or an event link (Eventbrite, Meetup…)" data-flyer-text>${esc(f.text || '')}</textarea>
       <label class="fly-field"><span>File events into</span><select class="sel" data-flyer-area>${flyerAreaOpts(f)}</select></label>
       ${f.err ? `<p class="fly-err">${esc(f.err)}</p>` : ''}
       ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading the flyer…' : '✨ Find the events'}</button>`}`;
@@ -2948,7 +2948,7 @@ function renderFlyerImport() {
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
     <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a flyer">
       <button class="fly-x" data-flyer-close aria-label="Close">×</button>
-      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a flyer</h2><p class="fly-sub">Snap it, paste it, drop it — Daybook reads the events out and you choose what lands on your calendar.</p></div>
+      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a flyer</h2><p class="fly-sub">A screenshot, a photo, or an event link — Daybook reads the details out and you choose what lands on your calendar.</p></div>
       ${inner}
     </div>`;
   // Drag-and-drop onto the dropzone.
