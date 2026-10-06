@@ -11846,7 +11846,14 @@ function contactAreaBarHtml() {
   return `<div class="cg-bar">
     ${chip(!state.contactsArea, '', 'All', (state.contacts || []).length)}
     ${areas.map((x) => chip(state.contactsArea === x.a.id, x.a.id, x.a.title, x.n, hueOf(x.a))).join('')}
-  </div>`;
+  </div>
+  ${contactAreaSelectHtml(areas)}`;
+}
+// Mobile: the same life-area filter as a single dropdown, so it isn't a long row
+// of chips. (CSS shows chips on desktop, this select on mobile.)
+function contactAreaSelectHtml(areas) {
+  if (!areas || !areas.length) return '';
+  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by life area"><option value="" ${!state.contactsArea ? 'selected' : ''}>All areas · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
 const areaHiddenForContacts = (a) => !!(a && a.props && a.props.contactsHide);
@@ -17574,6 +17581,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cc-add-addr]')) { const btn = t.closest('[data-cc-add-addr]'); btn.insertAdjacentHTML('beforebegin', contactAddrRowHtml({}, 'n' + Date.now().toString(36), true)); btn.previousElementSibling.querySelector('.cc-adr-label')?.focus(); return; }
   { const dca = t.closest('[data-cc-del-addr]'); if (dca && state.contact_open) { dca.closest('[data-adr-row]').remove(); patchContact(state.contact_open.contact.id, readCardAddresses(), true); return; } }
   const cac = t.closest('[data-contact-area]'); if (cac) { state.contactsArea = cac.dataset.contactArea || null; renderContacts(); return; }
+  if (t.closest('[data-contact-area-sel]')) return;   // handled on change
   if (t.closest('[data-new-contact-group]')) { newContactGroup(); return; }
   const rng = t.closest('[data-rename-contact-group]'); if (rng) { renameContactGroup(rng.dataset.renameContactGroup); return; }
   const dcg = t.closest('[data-del-contact-group]'); if (dcg) { delContactGroup(dcg.dataset.delContactGroup); return; }
@@ -18113,6 +18121,7 @@ document.addEventListener('change', (e) => {
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
   { const af = e.target.closest('[data-admin-free]'); if (af) { if (e.target.value !== '') setUserFree(af.dataset.adminFree, Number(e.target.value)); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
+  if (e.target.matches('[data-contact-area-sel]')) { state.contactsArea = e.target.value || null; renderContacts(); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
   const spc = e.target.closest('[data-sp-cat]'); if (spc) { spendSetCat(spc.dataset.spCat, e.target.value); return; }
   const tcc = e.target.closest('[data-trk-cat]'); if (tcc) { setTrackerCat(tcc.dataset.trkCat, e.target.value); return; }
