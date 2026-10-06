@@ -11774,16 +11774,33 @@ function openContactMenu(id, x, y) {
   state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: top, maxh };
   renderContacts();
 }
+// Automatically surfaced at the top of Contacts: Daybook scans every contact's
+// email against its accounts (worker getFriends), and this tells you, up front,
+// which of your people are already on Daybook - tap to connect.
+function contactsDaybookBannerHtml() {
+  const d = state.friends;
+  if (!d) return '<div class="cts-dbbanner cts-dbb-load">Checking which of your contacts are on Daybook…</div>';
+  const sug = d.suggestions || [];
+  if (sug.length) {
+    const rows = sug.slice(0, 12).map((f) => `<button class="cts-dbb-person" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Daybook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button>`).join('');
+    const more = sug.length > 12 ? `<div class="cts-dbb-more">+${sug.length - 12} more in Daybook friends below</div>` : '';
+    return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${sug.length} of your contacts ${sug.length === 1 ? 'is' : 'are'} on Daybook</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
+  }
+  if (d.scanned) return `<div class="cts-dbbanner cts-dbb-none"><span>Checked ${d.scanned} of your contacts - none are on Daybook yet.</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div>`;
+  return '';
+}
 // The Daybook-friends pane: suggestions, connect-by-email + Invite, incoming
 // requests, your friends, pending, and shared-with-you. Reused by the Contacts
 // page and the dedicated Daybook people page.
-function friendsPaneHtml() {
+function friendsPaneHtml(opts) {
+  opts = opts || {};
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
   const fr = (f, action) => friendRow(f, action);
+  const showSuggest = !opts.skipSuggest && d.suggestions && d.suggestions.length;
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       <p class="fr-intro">Invite your friends to Daybook so you can share with them - a whole Life Area, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
-      ${(d.suggestions && d.suggestions.length) ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
+      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
       <div id="friend-results" class="fr-results"></div>
       ${d.incoming.length ? `<div class="ppl-sub">Requests · ${d.incoming.length}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
@@ -11841,6 +11858,7 @@ function renderContacts() {
         ${contactAreaBarHtml()}
         <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">${t('ct.import')}</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
+      ${contactsDaybookBannerHtml()}
       ${contactSelBarHtml()}
       ${state.contactAdding ? contactAddForm() : ''}
       ${(() => {
@@ -11858,7 +11876,7 @@ function renderContacts() {
       })()}
     </section>
 
-    ${friendsPaneHtml()}`}
+    ${friendsPaneHtml({ skipSuggest: true })}`}
 
     ${contactMenuHtml()}`;
   alignConnectRow();
