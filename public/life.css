@@ -5466,13 +5466,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-rowtrash:hover { opacity:1; background:color-mix(in srgb,var(--bad,#c0392b) 12%,var(--paper-2)); color:var(--bad,#c0392b); }
 @media (hover:none){ .mail-rowact { opacity:.6; } }
 /* The row's 4-way priority menu. */
-.mail-quadmenu { min-width:210px; padding:6px; }
-.mail-quadmenu .mail-move-item { display:flex; align-items:center; gap:10px; width:100%; padding:10px 11px; border-radius:9px; text-align:left; }
+.mail-quadmenu { min-width:300px; padding:6px; }
+.mail-quadmenu .mail-move-item { display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border-radius:9px; text-align:left; }
 .mail-quadmenu .mail-move-item:hover { background:var(--paper-2); }
 .mail-quadmenu .mail-move-item.on { background:color-mix(in srgb,var(--q) 16%,transparent); }
-.mail-quadmenu .mail-quad-dot { width:12px; height:12px; flex:none; }
-.mail-quadmenu-l { font-weight:600; font-size:15px; }
-.mail-quadmenu-h { color:var(--ink-3); font-size:12.5px; margin-left:auto; }
+.mail-quadmenu .mail-quad-dot { width:11px; height:11px; flex:none; }
+/* Keep each row on one line: fixed label column so the hints line up after it. */
+.mail-quadmenu-l { font-weight:600; font-size:15px; white-space:nowrap; flex:none; min-width:104px; }
+.mail-quadmenu-h { color:var(--ink-3); font-size:12.5px; white-space:nowrap; }
 /* Drag a row onto a card to file it. */
 .mail-row.mail-dragging { opacity:.4; }
 .mail-drag-ghost { position:fixed; z-index:1000; transform:translate(-50%,-140%); pointer-events:none; max-width:220px; padding:8px 13px; border-radius:11px; background:var(--accent); color:var(--accent-ink); font-size:14px; font-weight:600; box-shadow:0 12px 30px -10px rgba(0,0,0,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -7437,3 +7438,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .area-rv-item:hover .area-rv-ic { color:color-mix(in srgb,var(--c) 70%,var(--ink)); }
 /* The dashboard stats + recents no longer need a divider from the hero. */
 .area-dash { margin:18px 0 8px; }
+/* "Add to this area" was a loud filled rectangle fighting the quiet page - make
+   it a slim, quiet outline pill that sits with the stats, not over them. */
+.area-addnew .addnew-btn {
+  --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
+  width:auto; min-height:0; padding:9px 16px; border-radius:999px;
+  background:none; color:var(--ink-2); border:1px solid var(--line-2); box-shadow:none;
+  font-weight:600; font-size:14px;
+}
+.area-addnew .addnew-btn:hover { background:color-mix(in srgb,var(--c) 7%,transparent); border-color:color-mix(in srgb,var(--c) 45%,var(--line-2)); color:color-mix(in srgb,var(--c) 70%,var(--ink)); }
+.area-addnew .addnew-btn .an-plus { font-weight:400; }
