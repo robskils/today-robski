@@ -5682,9 +5682,14 @@ table.ttable tr:last-child td { border-bottom:0; }
      breadcrumb are redundant - the toolbar's "← Inbox" is the way back - and left
      in they stack up and float over each other as you scroll. Hide them so the
      toolbar is the sole, clean sticky top. (Robin.) */
-  body.mail-reading .note-crumbs,
   body.mail-reading .pane-head { display:none; }
-  .mail-reader-head { position:sticky; top:0; z-index:31; gap:6px 4px; flex-wrap:wrap;
+  /* Keep the breadcrumb bar (with its back) when reading on mobile - pinned at the
+     top in place of the hidden nav - and let the reader toolbar scroll under it, so
+     Back lives in the breadcrumbs as it does everywhere else. (Robin, 2026-10-06.) */
+  body.mail-reading .note-crumbs { position:sticky; top:0; z-index:33; margin:0 -18px 12px; padding:9px 14px;
+    background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  body.mail-reading .mail-reader-head .mail-back { display:none; }
+  .mail-reader-head { gap:6px 4px; flex-wrap:wrap;
     margin:0 -18px; padding:9px 14px; background:var(--card); border-bottom:1px solid var(--line); }
   /* The action bar drops to its own full-width row and WRAPS, so every action
      (reply, delete, file-in-a-life-area, make-task…) is visible - it used to
