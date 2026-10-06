@@ -669,15 +669,19 @@ async function horoscopeReading(request, env, json, err) {
   const time = String(b.time || '').slice(0, 10);
   const place = String(b.place || '').slice(0, 120).trim();
   const sign = String(b.sign || '').slice(0, 30).trim();
+  const clean = (s) => String(s || '').replace(/[^A-Za-z]/g, '').slice(0, 20);
+  const moon = clean(b.moon);     // computed Moon sign (from birth time)
+  const rising = clean(b.rising); // computed Ascendant/rising sign (from time + place)
   const today = /^\d{4}-\d\d-\d\d$/.test(String(b.today || '')) ? b.today : new Date().toISOString().slice(0, 10);
   if (!/^\d{4}-\d\d-\d\d$/.test(date)) return err('A valid birth date is needed.', request, 400);
+  const chartLines = [sign && `Sun in ${sign}`, moon && `Moon in ${moon}`, rising && `${rising} rising (Ascendant)`].filter(Boolean).join(', ');
   const system = [
-    'You are a warm, articulate astrologer writing one person their horoscope for a specific day.',
-    'Use their birth details to make it personal: sun sign always; if a birth time and place are given, weave in what they imply (rising sign, the day\'s general planetary mood) at a light touch - do not fabricate precise chart positions you cannot know.',
-    'Write for TODAY specifically: 2 short paragraphs (about 4 to 6 sentences total) - the overall feel of the day, then something practical for love/work/self as fits. End with one small, encouraging suggestion.',
-    'Warm, vivid, a little poetic, but grounded and kind. Frame it as reflection and possibility, never fixed fate or medical/financial certainty. No lists, no headings, no disclaimers about being an AI, no restating their birth data back to them.',
+    'You are a warm, articulate astrologer writing one person their horoscope for a specific day, from their actual birth chart.',
+    'Their chart placements are given and were computed from their birth date, time and place - treat them as true. Weave the three together: the Sun (core self / where the day asks you to shine), the Moon (emotional weather, what you need to feel steady) and the rising sign (how the day meets you, first impressions, the body). If only the Sun is given, write from that alone and do not invent a Moon or rising.',
+    'Write for TODAY specifically: 2 short paragraphs (about 5 to 7 sentences total) - the overall feel of the day, then something practical for love/work/self as fits, naming how the Sun/Moon/rising each colour it. End with one small, encouraging suggestion.',
+    'Warm, vivid, a little poetic, but grounded and kind. Frame it as reflection and possibility, never fixed fate or medical/financial certainty. No lists, no headings, no disclaimers about being an AI, no restating their raw birth data (dates/times) back to them - you may name the signs.',
   ].join(' ');
-  const user = `Birth date: ${date}${time ? `\nBirth time: ${time}` : ''}${place ? `\nBirth place: ${place}` : ''}${sign ? `\nSun sign: ${sign}` : ''}\nToday's date: ${today}\n\nWrite their horoscope for today.`;
+  const user = `Their chart: ${chartLines || `Sun sign ${sign || 'unknown'}`}.\nToday's date: ${today}\n\nWrite their horoscope for today, grounded in these placements.`;
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -817,6 +821,23 @@ async function weatherNow(request, env, json, err) {
       unit: (d.current_units && d.current_units.temperature_2m) || '°C', at: Date.now(),
     }, request);
   } catch { return err('weather unavailable', request, 502); }
+}
+// Geocode a birthplace to lat/lon + IANA timezone, proxied for the app's CSP
+// (connect-src 'self'). Open-Meteo's geocoder is free and keyless; used to work
+// out the natal chart's rising sign and the exact-UTC birth moment.
+async function geocodePlace(request, env, json, err) {
+  const u = new URL(request.url);
+  const q = String(u.searchParams.get('q') || '').trim().slice(0, 120);
+  if (!q) return err('q required', request, 400);
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
+  try {
+    const res = await fetch(url, { cf: { cacheTtl: 86400, cacheEverything: true } });
+    if (!res.ok) return err('geocode unavailable', request, 502);
+    const d = await res.json();
+    const g = (d.results || [])[0];
+    if (!g) return json({ found: false }, request);
+    return json({ found: true, lat: g.latitude, lon: g.longitude, tz: g.timezone || 'UTC', label: [g.name, g.admin1, g.country].filter(Boolean).join(', ') }, request);
+  } catch { return err('geocode unavailable', request, 502); }
 }
 async function reviewSummary(request, env, json, err) {
   const key = await aiKey(env, 'anthropic');
@@ -3988,6 +4009,7 @@ export default {
 
       if (path === '/api/day' && request.method === 'GET') return handleDay(request, env, url);
       if (path === '/api/weather' && request.method === 'GET') return weatherNow(request, env, json, err);
+      if (path === '/api/geocode' && request.method === 'GET') return geocodePlace(request, env, json, err);
       if (path === '/api/areas/summary' && request.method === 'GET') return areasSummary(request, env);
       if (path === '/api/home/alerts' && request.method === 'GET') return homeAlerts(request, env, json);
       if (path === '/api/connect' && request.method === 'GET') return connectList(request, env, json);

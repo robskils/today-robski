@@ -5396,6 +5396,64 @@ function zodiacFor(iso) {
   for (const z of ZODIAC) { const [sm, sd] = z[2], [em, ed] = z[3]; if ((m === sm && d >= sd) || (m === em && d <= ed)) return z; }
   return ZODIAC[0];
 }
+// ── Natal chart (the big three: Sun, Moon, Rising) ───────────────────────
+// Low-precision astronomy, good to well within a sign (30°) for Sun and Moon;
+// the Ascendant also needs the birth time and place (lat/lon). Enough to write a
+// real, personal reading - not an ephemeris-grade chart.
+const ASTRO_SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+const _norm360 = (x) => ((x % 360) + 360) % 360;
+const _astroSign = (lon) => ASTRO_SIGNS[Math.floor(_norm360(lon) / 30)];
+// A local wall-clock time in an IANA zone -> the true UTC instant (ms), handling
+// historical DST via the platform's tz database.
+function zonedToUTCms(y, mo, d, h, mi, tz) {
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  try {
+    const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const o = {}; dtf.formatToParts(new Date(guess)).forEach((p) => { o[p.type] = p.value; });
+    const wall = Date.UTC(+o.year, +o.month - 1, +o.day, +o.hour, +o.minute);
+    return guess - (wall - guess);
+  } catch { return guess; }
+}
+function _sunLon(T) {
+  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
+  const M = (357.52911 + 35999.05029 * T - 0.0001537 * T * T) * DEG_;
+  const C = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M) + (0.019993 - 0.000101 * T) * Math.sin(2 * M) + 0.000289 * Math.sin(3 * M);
+  return _norm360(L0 + C);
+}
+function _moonLon(T) {
+  const s = (a) => Math.sin(a * DEG_);
+  return _norm360(218.32 + 481267.8813 * T
+    + 6.29 * s(134.9 + 477198.85 * T)
+    - 1.27 * s(259.2 - 413335.38 * T)
+    + 0.66 * s(235.7 + 890534.23 * T)
+    + 0.21 * s(269.9 + 954397.70 * T)
+    - 0.19 * s(357.5 + 35999.05 * T)
+    - 0.11 * s(186.6 + 966404.05 * T));
+}
+function _ascendantLon(jd, latDeg, lonEastDeg) {
+  const T = (jd - 2451545.0) / 36525;
+  const gmst = _norm360(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T - T * T * T / 38710000);
+  const lst = _norm360(gmst + lonEastDeg) * DEG_;
+  const eps = (23.4392911 - 0.0130042 * T) * DEG_;
+  const phi = latDeg * DEG_;
+  const asc = Math.atan2(Math.cos(lst), -(Math.sin(lst) * Math.cos(eps) + Math.tan(phi) * Math.sin(eps)));
+  return _norm360(asc / DEG_);
+}
+const DEG_ = Math.PI / 180;
+// Build the chart from a saved birth profile {date, time?, tz?, lat?, lon?}.
+function natalChart(b) {
+  if (!b || !/^\d{4}-\d\d-\d\d$/.test(b.date)) return null;
+  const [y, mo, d] = b.date.split('-').map(Number);
+  const hasTime = /^\d\d:\d\d/.test(b.time || '');
+  const [h, mi] = hasTime ? b.time.split(':').map(Number) : [12, 0];   // noon when time unknown
+  const ms = (hasTime && b.tz) ? zonedToUTCms(y, mo, d, h, mi, b.tz) : Date.UTC(y, mo - 1, d, h, mi);
+  const jd = ms / 86400000 + 2440587.5;
+  const T = (jd - 2451545.0) / 36525;
+  const chart = { sun: _astroSign(_sunLon(T)), moon: _astroSign(_moonLon(T)), hasTime, hasPlace: (b.lat != null && b.lon != null) };
+  if (hasTime && b.lat != null && b.lon != null) chart.rising = _astroSign(_ascendantLon(jd, b.lat, b.lon));
+  return chart;
+}
+const ASTRO_GLYPH = { Aries: '♈', Taurus: '♉', Gemini: '♊', Cancer: '♋', Leo: '♌', Virgo: '♍', Libra: '♎', Scorpio: '♏', Sagittarius: '♐', Capricorn: '♑', Aquarius: '♒', Pisces: '♓' };
 function loadBirth() { try { return JSON.parse(localStorage.getItem('life.birth')) || null; } catch { return null; } }
 function renderHoro() {
   let el = document.getElementById('horo'); if (!el) { el = document.createElement('div'); el.id = 'horo'; document.body.appendChild(el); }
@@ -5413,10 +5471,17 @@ function renderHoro() {
     </div>`;
   } else {
     const z = zodiacFor(b.date);
+    const chart = natalChart(b);
+    const sunSign = (chart && chart.sun) || (z ? z[0] : '');
+    const chip = (label, sign) => `<span class="ho-chip"><span class="ho-chip-g">${ASTRO_GLYPH[sign] || '✶'}</span><span class="ho-chip-txt"><span class="ho-chip-l">${label}</span><span class="ho-chip-s">${esc(sign)}</span></span></span>`;
+    const chips = [sunSign ? chip('Sun', sunSign) : '', (chart && chart.hasTime && chart.moon) ? chip('Moon', chart.moon) : '', (chart && chart.rising) ? chip('Rising', chart.rising) : ''].filter(Boolean).join('');
+    const chartHint = chart && !chart.hasTime ? 'Add your birth time to reveal your Moon and rising signs.'
+      : (chart && chart.hasTime && !chart.rising) ? 'Add your birth place to reveal your rising sign.' : '';
     const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     body = `<div class="ho-read">
-      <div class="ho-sign"><span class="ho-glyph">${z ? z[1] : '✶'}</span><span class="ho-signname">${z ? esc(z[0]) : ''}</span>${z ? `<span class="ho-el">${esc(z[3] ? z[4] : '')} sign</span>` : ''}</div>
-      ${z ? `<p class="ho-arch">You are ${esc(z[5])}.</p>` : ''}
+      <div class="ho-chart">${chips}</div>
+      ${z ? `<p class="ho-arch">Sun in ${esc(z[0])} - you are ${esc(z[5])}.</p>` : ''}
+      ${chartHint ? `<p class="ho-charthint"><button class="linkish" data-horo-edit>${esc(chartHint)}</button></p>` : ''}
       <div class="ho-date">${esc(today)}</div>
       <div class="ho-body">${state.horoText ? esc(state.horoText).replace(/\n+/g, '</p><p>').replace(/^/, '<p>').replace(/$/, '</p>') : (state.horoLoading ? '<div class="ho-loading">✶ Reading the sky for today…</div>' : '<div class="ho-loading">Tap below for today\'s reading.</div>')}</div>
       <div class="ic-actions">
@@ -5443,12 +5508,20 @@ async function openHoroscope() {
     } catch {}
   }
 }
-function saveBirth() {
+async function saveBirth() {
   const date = (document.getElementById('ho-date') || {}).value || '';
   if (!date) { toast('A date of birth is needed'); return; }
   const time = (document.getElementById('ho-time') || {}).value || '';
   const place = (document.getElementById('ho-place') || {}).value.trim() || '';
-  state.birth = { date, time, place };
+  const prev = state.birth || {};
+  state.birth = { date, time, place, lat: prev.lat, lon: prev.lon, tz: prev.tz, placeLabel: prev.placeLabel };
+  // Geocode the birthplace (via our proxy) to lat/lon + timezone, so we can work
+  // out the rising sign and the exact-UTC birth moment. Only when it changed.
+  if (place && (place !== prev.place || prev.lat == null)) {
+    toast('Looking up your birthplace…');
+    try { const g = await api(`/api/geocode?q=${encodeURIComponent(place)}`); if (g && g.found) { state.birth.lat = g.lat; state.birth.lon = g.lon; state.birth.tz = g.tz; state.birth.placeLabel = g.label; } else { state.birth.lat = null; state.birth.lon = null; state.birth.tz = null; toast('Could not place that - the reading will use your date (and time, if given).'); } }
+    catch { state.birth.lat = null; state.birth.lon = null; state.birth.tz = null; }
+  } else if (!place) { state.birth.lat = null; state.birth.lon = null; state.birth.tz = null; }
   try { localStorage.setItem('life.birth', JSON.stringify(state.birth)); } catch {}
   api('/api/kv/birth_profile', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.birth) }) }).catch(() => {});
   state.horoEdit = false; state.horoText = ''; renderHoro();
@@ -5457,8 +5530,9 @@ async function readHoroscope() {
   const b = state.birth; if (!b || !b.date || state.horoLoading) return;
   state.horoLoading = true; renderHoro();
   const z = zodiacFor(b.date);
+  const chart = natalChart(b) || {};
   try {
-    const r = await api('/api/wellbeing/horoscope', { method: 'POST', body: JSON.stringify({ date: b.date, time: b.time || '', place: b.place || '', sign: z ? z[0] : '', today: todayISO() }) });
+    const r = await api('/api/wellbeing/horoscope', { method: 'POST', body: JSON.stringify({ date: b.date, time: b.time || '', place: b.place || '', sign: (chart.sun || (z ? z[0] : '')), moon: chart.moon || '', rising: chart.rising || '', today: todayISO() }) });
     state.horoText = (r && r.text) || ''; state.horoLoading = false; renderHoro();
     saveHoroCard(z, state.horoText);   // pin today's reading
   } catch (e) {

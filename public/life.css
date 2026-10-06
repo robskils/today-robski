@@ -2797,6 +2797,15 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .ho-signname { font-family:'Cormorant Garamond',Georgia,serif; font-size:34px; font-weight:600; color:var(--ink); line-height:1; }
 .ho-el { font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); font-weight:700; }
 .ho-arch { font-size:15px; color:var(--ink-2); line-height:1.5; max-width:360px; margin:0; font-style:italic; }
+/* The natal "big three": Sun, Moon, Rising */
+.ho-chart { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:2px 0 2px; }
+.ho-chip { display:inline-flex; align-items:center; gap:9px; padding:9px 15px 9px 11px; border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line)); border-radius:14px; background:color-mix(in srgb,var(--accent) 6%,var(--card)); }
+.ho-chip-g { font-size:26px; line-height:1; color:var(--accent); }
+.ho-chip-txt { display:flex; flex-direction:column; align-items:flex-start; line-height:1.1; }
+.ho-chip-l { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); }
+.ho-chip-s { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); }
+.ho-charthint { margin:0; font-size:13px; }
+.ho-charthint .linkish { color:var(--accent); }
 .ho-date { font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); font-weight:600; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:9px 0; width:100%; }
 .ho-body { text-align:left; width:100%; }
 .ho-body p { font-size:16.5px; line-height:1.65; color:var(--ink); margin:0 0 12px; }
