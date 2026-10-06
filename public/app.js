@@ -13650,6 +13650,7 @@ function renderGoalCard() {
       </div>
       <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
       <div class="gc-areas"><span class="gc-areas-l">${t('nav.areas')}</span>${blockAreasControl('goal', g)}</div>
+      <label class="gc-deadline"><span class="gc-deadline-l">🎯 Deadline</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}${(!p.targetDate && (p.horizon === 'quarter' || p.horizon === 'year')) ? `<span class="gc-target-hint">defaults to ${esc(horizonDateLabel(p.horizon, horizonTargetDate(p.horizon)))}</span>` : ''}</label>
       ${progressBlock}
       <label class="gc-why"><span class="gc-why-l">${t('goal.why')}</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea></label>
       <label class="gc-why"><span class="gc-why-l">${t('goal.how')}</span><textarea class="sel" id="goalcard-how" rows="2" placeholder="${t('goal.howph')}">${esc(p.how || '')}</textarea></label>
@@ -13662,7 +13663,7 @@ function renderGoalCard() {
 
         <label class="tf-field"><span class="tf-label">${t('goal.horizon')}</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="tf-field"><span class="tf-label">${t('goal.status')}</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-        <label class="tf-field"><span class="tf-label">Finish by</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}${(!p.targetDate && (p.horizon === 'quarter' || p.horizon === 'year')) ? `<span class="gc-target-hint">Defaults to ${esc(horizonDateLabel(p.horizon, horizonTargetDate(p.horizon)))}</span>` : ''}</label>
+        <!-- Deadline now lives on the card face (under Life areas). -->
       </div>
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     </details>
