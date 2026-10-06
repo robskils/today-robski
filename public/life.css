@@ -7226,8 +7226,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 }
 
 /* ── "Add from a flyer" overlay — a little moment of magic ──────────────── */
-.cal-flyerbtn { background:linear-gradient(135deg, color-mix(in srgb,var(--accent) 16%,var(--card)), var(--card)); border-color:color-mix(in srgb,var(--accent) 45%,var(--line-2)); color:var(--accent); font-weight:600; }
-.cal-flyerbtn:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
+/* A quiet icon in the header - it's an occasional, edge tool (also in + New). */
+.cal-flyerbtn { color:var(--ink-3); }
+.cal-flyerbtn:hover { color:var(--accent); border-color:var(--accent); }
 .fly-bg { position:fixed; inset:0; z-index:240; background:color-mix(in srgb,var(--ink) 46%,transparent); backdrop-filter:blur(6px); animation:fly-fade .18s ease; }
 .fly-card { position:fixed; z-index:241; left:50%; top:50%; transform:translate(-50%,-50%); width:min(560px, calc(100vw - 32px)); max-height:min(92vh, 860px); overflow-y:auto; overflow-x:hidden; background:var(--paper); border:1px solid var(--line); border-radius:22px; box-shadow:0 40px 120px -30px rgba(0,0,0,.6); padding:26px 26px 30px; animation:fly-pop .24s cubic-bezier(.2,.9,.3,1.3); }
 .fly-x { position:absolute; top:14px; right:16px; border:0; background:none; font-size:26px; line-height:1; color:var(--ink-3); cursor:pointer; padding:4px; border-radius:8px; }
@@ -7346,53 +7347,93 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .area-hero h1 .ac-dot, .area-hero h1 .ac-dot-btn { width:13px; height:13px; box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 12%,transparent); }
 .area-meta { font-size:15px; color:var(--ink-3); margin-top:9px; }
 
-/* Stats: clean neutral cards, the figure in serif; hue only as a small marker. */
+/* Stats as ONE quiet unit: no separate boxes - plain figures on the page, divided
+   by hairlines, the number in serif. Reads as a summary line, not four cards. */
+.area-stats { gap:0; align-items:stretch; }
 .area-stat {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
-  background:var(--card); border:1px solid var(--line); border-radius:14px;
-  padding:14px 20px; min-width:98px;
-  box-shadow:0 1px 2px rgba(0,0,0,.04), 0 10px 26px -20px rgba(0,0,0,.14);
+  background:none; border:0; border-radius:0; box-shadow:none;
+  padding:2px 22px; min-width:0;
+  border-left:1px solid var(--line);
 }
-.area-stat b { font-size:32px; color:var(--ink); }
-.area-stat span { font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); }
-.area-stat-btn { transition:transform .12s, border-color .12s, box-shadow .12s; }
-.area-stat-btn:hover { transform:translateY(-1px); border-color:color-mix(in srgb,var(--c) 40%,var(--line-2)); box-shadow:0 2px 4px rgba(0,0,0,.05), 0 16px 34px -22px rgba(0,0,0,.2); }
+.area-stat:first-child { padding-left:2px; border-left:0; }
+.area-stat b { font-size:34px; color:var(--ink); }
+.area-stat span { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); }
+.area-stat-btn { transition:color .12s; border-radius:8px; }
+.area-stat-btn:hover { background:none; }
+.area-stat-btn:hover b { color:color-mix(in srgb,var(--c) 68%,var(--ink)); }
+.area-stat-btn:hover span { color:color-mix(in srgb,var(--c) 55%,var(--ink-2)); }
+@media (max-width:560px){
+  .area-stats { display:grid; grid-template-columns:1fr 1fr; gap:14px 10px; }
+  .area-stat { padding:2px 0; border-left:0; }
+  .area-stat b { font-size:28px; }
+}
 
-/* Section & content cards: plain card, hairline, soft neutral depth, more air. */
-.area-card,
+/* The page as a WHOLE, not a stack of boxes: the structural sections shed their
+   card chrome and are separated only by air + a hairline, so the content flows
+   down one considered sheet. Only the real items inside keep a light card. */
+.area-flow { gap:0; }
 .area-flow .area-sec,
-.area-dash-files, .area-dash-links, .area-dash-shared, .area-dash-wall {
+.area-dash-wall, .area-dash-shared, .area-dash-files, .area-dash-links {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:20px 22px;
-  box-shadow:0 1px 2px rgba(0,0,0,.035), 0 12px 30px -22px rgba(0,0,0,.14);
+  background:none; border:0; border-radius:0; box-shadow:none; padding:26px 0;
+}
+.area-flow .area-sec:first-child { padding-top:6px; }
+.area-flow .area-sec:not(:first-child) { border-top:1px solid var(--line); }
+.area-flow .area-sec.area-sec-collapsed { padding:18px 0; }
+/* Vision reads as a pull-quote, not a panel: a quiet hue keyline, generous air. */
+.area-card.area-top-card {
+  --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
+  background:none; border:0; box-shadow:none; border-radius:0;
+  border-left:2px solid color-mix(in srgb,var(--c) 42%,var(--line));
+  padding:4px 0 4px 20px; margin:2px 0 2px;
 }
 /* Section heading: glyph in a soft hue chip; label quiet and tinted, not loud. */
+.area-sec-h { margin-bottom:4px; }
 .area-sec-h .ash-ic {
-  width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;
+  width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;
   border-radius:8px; background:color-mix(in srgb,var(--c) 11%,transparent);
-  color:color-mix(in srgb,var(--c) 68%,var(--ink)); font-size:14px;
+  color:color-mix(in srgb,var(--c) 66%,var(--ink)); font-size:14px;
 }
 .area-sec-h .ash-l { color:color-mix(in srgb,var(--c) 45%,var(--ink-3)); letter-spacing:.1em; }
 
-/* Tiles: clean cards, a gentle lift, icon in a soft hue chip; colour on selected. */
-.area-tiles .area-tile {
-  background:var(--card); border-radius:15px;
-  box-shadow:0 1px 2px rgba(0,0,0,.035), 0 10px 24px -20px rgba(0,0,0,.13);
+/* Tabs become a light segmented control - one unit, not four pills. The track is
+   a faint inset that works on either theme; the active pill lifts off it with a
+   border + shadow (needed in dark, where --card and --paper-2 coincide). */
+.area-tiles.area-tabs {
+  gap:2px; background:color-mix(in srgb,var(--ink) 6%,transparent); border-radius:13px; padding:4px; margin:4px 0 20px;
+}
+.area-tabs .area-tile {
+  background:none; border:0; box-shadow:none; border-radius:10px; padding:10px 12px; transition:background .12s, color .12s;
+}
+.area-tabs .area-tile:hover { transform:none; border:0; background:color-mix(in srgb,var(--ink) 6%,transparent); }
+.area-tabs .area-tile.on { background:var(--card); border:1px solid var(--line); box-shadow:0 1px 3px rgba(0,0,0,.14); }
+.area-tabs .area-tile.on .at-l { color:var(--ink); }
+.area-tabs .at-c { background:color-mix(in srgb,var(--ink) 9%,transparent); }
+
+/* The icon-tile grid (if present) stays as tiles, but flatter and lighter. */
+.area-tiles:not(.area-tabs) .area-tile {
+  background:var(--card); border-radius:14px; box-shadow:0 1px 2px rgba(0,0,0,.03), 0 8px 20px -18px rgba(0,0,0,.12);
   transition:transform .12s, border-color .12s, box-shadow .12s;
 }
-.area-tiles .area-tile:hover { transform:translateY(-1px); border-color:var(--line-2); box-shadow:0 2px 4px rgba(0,0,0,.05), 0 16px 30px -20px rgba(0,0,0,.18); }
-.area-tiles .area-tile.on { border-color:color-mix(in srgb,var(--c) 45%,var(--line)); box-shadow:0 2px 4px rgba(0,0,0,.05), 0 16px 30px -20px rgba(0,0,0,.16); }
+.area-tiles:not(.area-tabs) .area-tile:hover { transform:translateY(-1px); border-color:var(--line-2); }
+.area-tiles:not(.area-tabs) .area-tile.on { border-color:color-mix(in srgb,var(--c) 45%,var(--line)); }
 .area-tiles:not(.area-tabs) .area-tile .at-ic {
-  width:42px; height:42px; display:flex; align-items:center; justify-content:center;
-  border-radius:13px; background:color-mix(in srgb,var(--c) 10%,transparent);
+  width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+  border-radius:12px; background:color-mix(in srgb,var(--c) 10%,transparent);
   color:color-mix(in srgb,var(--c) 70%,var(--ink));
 }
-.area-tiles:not(.area-tabs) .area-tile.on .at-ic { background:color-mix(in srgb,var(--c) 18%,transparent); }
 
-/* Recently-viewed rows: calm neutral lift. */
-.area-rv-item { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
-.area-rv-item:hover { border-color:var(--line-2); color:var(--ink); transform:translateY(-1px); box-shadow:0 10px 24px -18px rgba(0,0,0,.18); }
+/* Recently-viewed: light pills on the page, not heavy full-width boxes. */
+.area-recent-h { margin-bottom:9px; }
+.area-rv { flex-direction:row; flex-wrap:wrap; gap:8px; }
+.area-rv-item {
+  --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
+  width:auto; padding:7px 14px; border:1px solid var(--line); border-radius:999px;
+  background:none; box-shadow:none; font-size:14px; gap:8px;
+}
+.area-rv-item:hover { border-color:color-mix(in srgb,var(--c) 45%,var(--line)); color:var(--ink); transform:none; box-shadow:none; background:color-mix(in srgb,var(--c) 6%,transparent); }
+.area-rv-item .area-rv-t { max-width:220px; }
 .area-rv-item:hover .area-rv-ic { color:color-mix(in srgb,var(--c) 70%,var(--ink)); }
+/* The dashboard stats + recents no longer need a divider from the hero. */
+.area-dash { margin:18px 0 8px; }

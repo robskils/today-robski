@@ -8014,7 +8014,7 @@ function renderCalendar() {
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
-        <button class="cal-btn cal-flyerbtn" data-open-flyer title="Snap a flyer or paste a listing - we read the events out for you">✨ Add from a flyer</button>
+        <button class="cal-btn ic cal-flyerbtn" data-open-flyer title="Add from a flyer - snap a flyer or paste a listing" aria-label="Add from a flyer">✨</button>
         <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
       </div>
     </div>
