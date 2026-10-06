@@ -4933,6 +4933,9 @@ function noteToggleArea(areaId) {
 // answers are ordinary paragraphs. Nothing leaves the device unless Dig deeper
 // is pressed (see /api/journal/deepen).
 const JOURNAL_MODES = [
+  { key: 'morning', label: 'Morning Pages', icon: '🌅', prompts: [
+    'Three pages, stream of consciousness - whatever is in your head right now. Do not stop, do not edit, do not judge. Just keep the words coming until it is all out.',
+  ] },
   { key: 'free', label: 'Free write', icon: '✍️', prompts: [
     'Just start writing, and do not stop to edit. See where it goes.',
   ] },
