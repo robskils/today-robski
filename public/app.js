@@ -12471,12 +12471,21 @@ const GTYPES = [['done', 'Just mark it done'], ['number', 'A number to reach']];
 // gather against it. The count is read live from the open card's linked items and
 // denormalised onto props.current/target (see renderGoalCard) so every goals list
 // draws the right bar without having to load the links.
-const GMETRICS = [['manual', 'A number I set'], ['tasks', 'Linked tasks done'], ['notes', 'Notes connected']];
+const GMETRICS = [['manual', 'A number I set'], ['connected', 'Tasks, notes & events connected']];
+// Anything a metric other than 'manual' resolves to: count the connected items.
+// (Legacy 'tasks'/'notes' goals keep computing, and read as 'connected' in the UI.)
 function goalMetricLive(g) {
   const go = state.goal_open; if (!go || !go.goal || go.goal.id !== g.id) return null;
   const m = gp(g).metric;
   if (m === 'tasks') { const ts = go.tasks || []; return { current: ts.filter((t) => t.props && t.props.done).length, target: ts.length }; }
   if (m === 'notes') { const ns = go.notes || []; return { current: ns.length }; }   // target stays user-set: how many you're aiming to gather
+  if (m === 'connected') {
+    // Everything connected to the goal, counted together: tasks ticked off, notes,
+    // events and contacts linked to it. Target stays whatever you're aiming for.
+    const done = (go.tasks || []).filter((t) => t.props && t.props.done).length;
+    const n = (go.notes || []).length + (go.events || []).length + (go.contacts || []).length;
+    return { current: done + n };
+  }
   return null;
 }
 const GSTATUS = [['active', 'Active'], ['done', 'Done'], ['onhold', 'On hold'], ['dropped', 'Dropped']];
@@ -12518,7 +12527,7 @@ function goalProgress(g) {
 }
 function goalMeasure(g) {
   const p = gp(g);
-  if (p.gtype === 'number') { const u = p.metric === 'tasks' ? ' tasks' : p.metric === 'notes' ? ' notes' : (p.unit ? ' ' + p.unit : ''); return `${p.current || 0} / ${p.target || 0}${u}`; }
+  if (p.gtype === 'number') { const u = (p.metric && p.metric !== 'manual') ? ' connected' : (p.unit ? ' ' + p.unit : ''); return `${p.current || 0} / ${p.target || 0}${u}`; }
   return p.status === 'done' ? 'Achieved' : '';
 }
 // ── Financial (Portfolio · Advice · Spending) ────────────────────────────
@@ -13510,7 +13519,9 @@ function renderGoalCard() {
   const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
-  const metric = gtype === 'number' ? (p.metric || 'manual') : 'manual';
+  const metricRaw = gtype === 'number' ? (p.metric || 'manual') : 'manual';
+  // Only two choices now: a number you set, or everything connected to the goal.
+  const metric = metricRaw === 'manual' ? 'manual' : 'connected';
   // An auto metric keeps current (and, for tasks, target) in step with the linked
   // items every time the card re-renders - which covers ticking a task, linking or
   // unlinking one, and connecting or removing a note (each already re-renders). We
@@ -13527,12 +13538,10 @@ function renderGoalCard() {
   const doneN = gtasks.filter((t) => t.props && t.props.done).length;
   // Progress front and centre: a number goal shows its bar + an inline "update"
   // row; a simple goal shows the (liked) Mark-as-achieved button.
-  const unitLbl = metric === 'tasks' ? ' tasks' : metric === 'notes' ? ' notes' : (p.unit ? ` ${esc(p.unit)}` : '');
+  const unitLbl = metric === 'connected' ? ' connected' : (p.unit ? ` ${esc(p.unit)}` : '');
   const metricEditRow = metric === 'manual'
     ? `<div class="gc-prog-edit"><span class="gc-prog-l">${t('goal.update')}</span><input class="sel" id="gc-current" type="number" inputmode="decimal" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div>`
-    : metric === 'tasks'
-      ? `<div class="gc-metric-auto">✓ Counts the tasks you link below${(state.goal_open.tasks || []).length ? ' - tick them off and this fills itself.' : '. Add or link a task below to get going.'}</div>`
-      : `<div class="gc-metric-auto">▤ Counts the notes connected below.<span class="gc-metric-aim">Aiming for <input class="sel gc-mini-num" id="gc-target" type="number" min="1" value="${esc(p.target ?? '')}" placeholder="10"> notes.</span></div>`;
+    : `<div class="gc-metric-auto">✓ Counts the tasks ticked off, notes and events connected to this goal.<span class="gc-metric-aim">Aiming for <input class="sel gc-mini-num" id="gc-target" type="number" min="1" value="${esc(p.target ?? '')}" placeholder="10">.</span></div>`;
   // A "number I set" goal gets a draggable slider too: drag it and the number fills
   // in to match its position (round of pct x target), so you needn't type it. Tasks/
   // notes metrics stay a read-only bar - their number is counted, not chosen. (Robin.)
