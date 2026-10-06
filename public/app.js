@@ -20091,7 +20091,7 @@ function renderTaskCard() {
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
       <span class="crumb-tools">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
       ${shareBtn(t, 'task')}
-      ${t.sharedBy ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a friend">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
+      ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Daybook contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
       ${t.sharedBy ? '' : '<button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button>'}</span></div>
     ${sharedBanner(t)}
     <div class="task-focus">
