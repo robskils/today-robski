@@ -2110,6 +2110,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .prc-manage { display:flex; justify-content:flex-end; margin-bottom:8px; }
 .prc-edit-link { font-size:14px; }
 .sub-h { font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:10px; font-weight:600; }
+/* Collapsible note sidebar cards: the sub-h becomes a clickable summary. */
+.nside-card > summary.sub-h { list-style:none; cursor:pointer; display:flex; align-items:center; gap:7px; margin-bottom:0; user-select:none; }
+.nside-card[open] > summary.sub-h { margin-bottom:10px; }
+.nside-card > summary.sub-h::-webkit-details-marker { display:none; }
+.nside-card > summary.sub-h::before { content:"▸"; font-size:11px; letter-spacing:0; color:var(--ink-3); transition:transform .12s; }
+.nside-card[open] > summary.sub-h::before { transform:rotate(90deg); }
+.nside-card > summary.sub-h:hover { color:var(--ink-2); }
 /* Connected notes as little cards, each in its own life-area colour. */
 .subpages { display:flex; flex-direction:column; gap:8px; }
 .subpage { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; border-radius:10px; color:var(--ink); font-size:16.5px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:border-color .12s; }

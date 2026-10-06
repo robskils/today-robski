@@ -15819,6 +15819,25 @@ function loadNoteEvents() {
   const iso = (x) => x.toISOString().slice(0, 10);
   api(`/api/calendar?from=${iso(from)}&to=${iso(to)}`).then((r) => { const seen = new Set(); state.noteEvents = (r.events || []).filter((e) => { if (!e || !e.id || !e.title || e.feed) return false; const b = evBaseId(e); if (seen.has(b)) return false; seen.add(b); return true; }); if (state.view.type === 'note') renderNote(); }).catch(() => { state.noteEvents = []; });
 }
+// Note sidebar cards collapse/expand. Default: collapsed, unless the card has
+// something in it (then it's open - and the render already floats it to the top).
+// Once you toggle a card, that choice sticks for this note (survives re-renders).
+function noteCardOpen(key, has) {
+  if (!state.note) return !!has;
+  const o = state.note.sideOpen || (state.note.sideOpen = {});
+  return (key in o) ? !!o[key] : !!has;
+}
+// Remember a note sidebar card's open/closed state when you toggle it, so a
+// re-render (typing in a link search, adding an item) doesn't snap it shut.
+if (typeof document !== 'undefined') {
+  document.addEventListener('toggle', (e) => {
+    const d = e.target;
+    if (d && d.classList && d.classList.contains('nside-card') && d.dataset.nside && state.note) {
+      state.note.sideOpen = state.note.sideOpen || {};
+      state.note.sideOpen[d.dataset.nside] = d.open;
+    }
+  }, true);
+}
 function connectedEventsHtml(n) {
   if (n.sharedBy && !n.canEdit) return '';
   const links = noteEventLinks(n);
@@ -15833,11 +15852,11 @@ function connectedEventsHtml(n) {
   if (Array.isArray(pool) && q) results = pool.filter((ev) => !linkedIds.has(evBaseId(ev)) && (ev.title || '').toLowerCase().includes(q)).slice(0, 8);
   const evRow = (ev) => `<button class="nt-result" data-note-link-event="${esc(evBaseId(ev))}"><span class="ga-t">◑ ${esc(ev.title || 'Event')}${ev.date ? ` <span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</span><span class="nt-link-ic">＋ Link</span></button>`;
   const cards = links.map((ev) => `<div class="ce-card"><button class="ce-open" data-open-event-date="${esc(String(ev.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(ev.title || 'Event')}</span>${ev.date ? `<span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</button><button class="ce-x" data-note-unlink-event="${esc(evBaseId(ev))}" title="Disconnect">×</button></div>`).join('');
-  return `<div class="note-events"><div class="sub-h">Connected events${links.length ? ` · ${links.length}` : ''}</div>
+  return `<details class="note-events nside-card" data-nside="events" ${noteCardOpen('events', links.length > 0) ? 'open' : ''}><summary class="sub-h">Connected events${links.length ? ` · ${links.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No events linked yet.</div>'}</div>
     ${sugg.length ? `<div class="ce-sugg"><div class="ce-sugg-h">You might mean</div>${sugg.map(evRow).join('')}</div>` : ''}
     <input class="sel nt-search" data-note-event-q placeholder="Search an event to link…" value="${esc((state.note && state.note.eventQuery) || '')}" autocomplete="off">
-    ${results.length ? `<div class="nt-results">${results.map(evRow).join('')}</div>` : ''}</div>`;
+    ${results.length ? `<div class="nt-results">${results.map(evRow).join('')}</div>` : ''}</details>`;
 }
 function noteLinkEvent(baseId) {
   const n = state.note && state.note.current; if (!n) return;
@@ -15945,11 +15964,11 @@ function noteTasksHtml(noteId) {
   const linked = all.filter((t) => t.props && t.props.note === noteId && !t.props.done);
   const q = ((state.note && state.note.taskQuery) || '').trim().toLowerCase();
   const results = q ? all.filter((t) => t.props && t.props.note !== noteId && !t.props.done && (t.title || '').toLowerCase().includes(q)).slice(0, 6) : [];
-  return `<div class="note-tasks"><div class="sub-h">Tasks</div>
+  return `<details class="note-tasks nside-card" data-nside="tasks" ${noteCardOpen('tasks', linked.length > 0) ? 'open' : ''}><summary class="sub-h">Tasks${linked.length ? ` · ${linked.length}` : ''}</summary>
     <div class="nt-linked">${linked.map((t) => `<div class="nt-row"><span class="nt-dot"></span><span class="ga-t" data-open-task="${t.id}">${esc(t.title || 'Untitled')}</span><button class="ghost nt-unlink" data-note-task-unlink="${t.id}" title="Unlink">×</button></div>`).join('') || '<div class="home-empty" style="padding:6px 0 2px">No tasks linked yet.</div>'}</div>
     <input class="sel nt-search" data-note-task-q placeholder="Search a task to link…" value="${esc((state.note && state.note.taskQuery) || '')}">
     ${results.length ? `<div class="nt-results">${results.map((t) => `<button class="nt-result" data-note-task-link="${t.id}"><span class="ga-t">${esc(t.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join('')}</div>` : ''}
-    <button class="ghost nt-new" data-note-new-task>+ New task for this note</button></div>`;
+    <button class="ghost nt-new" data-note-new-task>+ New task for this note</button></details>`;
 }
 function renderNoteTasks() { const el = document.querySelector('.note-tasks'); if (el && state.note) el.outerHTML = noteTasksHtml(state.note.current.id); }
 async function linkTaskToNote(taskId, noteId) {
@@ -15985,10 +16004,10 @@ function noteContactsHtml(n) {
   const results = q ? (state.contacts || []).filter((c) => !linkedSet.has(String(c.id)) && (c.title || '').toLowerCase().includes(q)).slice(0, 8) : [];
   const cards = linked.map((c) => `<div class="ce-card"><button class="ce-open" data-open-contact="${c.id}"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span><span class="ce-t">${esc(c.title || 'Unnamed')}</span></button><button class="ce-x" data-note-unlink-contact="${c.id}" title="Disconnect">×</button></div>`).join('');
   const cRow = (c) => `<button class="nt-result" data-note-link-contact="${c.id}"><span class="ga-t"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span>${esc(c.title || 'Unnamed')}</span><span class="nt-link-ic">＋ Link</span></button>`;
-  return `<div class="note-contacts"><div class="sub-h">Contacts${ids.length ? ` · ${ids.length}` : ''}</div>
+  return `<details class="note-contacts nside-card" data-nside="contacts" ${noteCardOpen('contacts', ids.length > 0) ? 'open' : ''}><summary class="sub-h">Contacts${ids.length ? ` · ${ids.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No contacts linked yet.</div>'}</div>
     <input class="sel nt-search" data-note-contact-q placeholder="Search a contact to link…" value="${esc((state.note && state.note.contactQuery) || '')}" autocomplete="off">
-    ${results.length ? `<div class="nt-results">${results.map(cRow).join('')}</div>` : ''}</div>`;
+    ${results.length ? `<div class="nt-results">${results.map(cRow).join('')}</div>` : ''}</details>`;
 }
 function renderNoteContacts() { const el = document.querySelector('.note-contacts'); if (el && state.note && state.note.current) { const w = document.createElement('div'); w.innerHTML = noteContactsHtml(state.note.current); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
 function noteLinkContact(cid) {
@@ -16009,9 +16028,9 @@ function noteUnlinkContact(cid) {
 function noteExtLinksHtml(n) {
   const links = blockLinks(n);
   const cards = links.map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<div class="ce-card"><a class="ce-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}"><span class="ce-ic">🔗</span><span class="ce-t">${esc(label)}</span></a><button class="ce-x" data-xlink-del data-xlink-kind="note" data-xlink-id="${n.id}" data-xlink-idx="${i}" title="Remove link">×</button></div>`; }).join('');
-  return `<div class="note-links"><div class="sub-h">Links${links.length ? ` · ${links.length}` : ''}</div>
+  return `<details class="note-links nside-card" data-nside="links" ${noteCardOpen('links', links.length > 0) ? 'open' : ''}><summary class="sub-h">Web links${links.length ? ` · ${links.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No links yet.</div>'}</div>
-    <button class="ghost nt-new" data-xlink-add data-xlink-kind="note" data-xlink-id="${n.id}">+ Add a link</button></div>`;
+    <button class="ghost nt-new" data-xlink-add data-xlink-kind="note" data-xlink-id="${n.id}">+ Add a web link</button></details>`;
 }
 // Related notes: other notes that share any life area with the one you're
 // viewing. Collapsed by default; nothing at all if this note has no life area.
@@ -16172,8 +16191,8 @@ function renderNote() {
         ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
-        <div class="subpages" data-subpages>${(() => { const cn = connected.length; return `<div class="sub-h">Connected notes${cn ? ` · ${cn}` : ''}</div>`; })()}
-          ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></div>
+        <details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Connected notes${connected.length ? ` · ${connected.length}` : ''}</summary>
+          ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></details>
         ${(() => {
           // Sections that hold something float above the empty ones (which keep
           // their add controls, just lower down). Stable within each group. (Robin.)
