@@ -6453,9 +6453,9 @@ function removeContactFromArea(contactId) {
 // every review that rated it), a read of the trend, and a little gamification. The
 // story of how this one part of your life has moved.
 function areaWheelSeries(area) {
-  return (state.reviews || []).map((r) => r.props || {})
-    .filter((p) => p.wheel && p.wheel[area.id] != null && Math.min(p.wheel[area.id], 5) > 0)
-    .map((p) => ({ score: Math.min(p.wheel[area.id], 5), date: p.to || '', rtype: p.rtype || 'weekly' }))
+  return (state.reviews || [])
+    .filter((r) => { const p = r.props || {}; return p.wheel && p.wheel[area.id] != null && Math.min(p.wheel[area.id], 5) > 0; })
+    .map((r) => { const p = r.props || {}; return { id: r.id, score: Math.min(p.wheel[area.id], 5), date: p.to || '', rtype: p.rtype || 'weekly' }; })
     .sort((a, b) => String(a.date).localeCompare(String(b.date)));
 }
 function areaWheelCommentary(revs, cur, area) {
@@ -6534,6 +6534,12 @@ function areaWheelPanel(area) {
       </div>
     </div>
     ${revs.length >= 2 ? `<div class="awheel-timeline"><div class="awt-h">Over time</div><div class="awt-bars">${bars}</div><div class="awt-axis"><span>${esc(evShortDate(revs[0].date))}</span><span>now</span></div></div>` : ''}
+    ${revs.length ? `<div class="awheel-prev"><div class="awt-h">Previous ratings</div><div class="awheel-prev-list">${revs.slice().reverse().slice(0, 6).map((r, i, arr) => {
+      const lbl = (REVIEWS[r.rtype] || {}).label || 'Review';
+      const nxt = arr[i + 1]; const d = nxt ? r.score - nxt.score : 0;
+      const dd = d ? `<span class="awp-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)}</span>` : '';
+      return `<button class="awheel-prev-row" ${r.id ? `data-open-review="${r.id}"` : ''}><span class="awp-date">${esc(evShortDate(r.date))}</span><span class="awp-lbl">${esc(lbl)}</span><span class="awp-score" style="--h:${hue}">${r.score}/5</span>${dd}</button>`;
+    }).join('')}</div></div>` : ''}
     <p class="awheel-comm">${areaWheelCommentary(revs, curScore, area)}</p>
     <button class="wheel-more awheel-more" data-open-wheel>See the whole Wheel of Life →</button>
     ${trackTog(true)}
@@ -6564,9 +6570,23 @@ function areaGoto(key) {
   // Vision / Goals / Wheel / Bucket list live in the top tab strip, not as flow
   // sections - selecting the tab is how you "go" to them.
   const TABKEYS = ['Vision', 'Goals', 'Wheel of Life', 'Bucket list'];
-  // Scroll a section to the TOP of the viewport, clearing the sticky header/crumb
-  // so it lands at the start of the section rather than partway down it.
-  const scrollToEl = (sel) => { try { const el = document.querySelector(sel); if (!el) return; const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56; el.style.scrollMarginTop = (navh + 12) + 'px'; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} };
+  // Scroll an element to the TOP of its real scroll container, clearing the sticky
+  // header, computed deterministically (scrollIntoView picked the wrong scroller /
+  // overshot into the middle of the page).
+  const scrollToEl = (sel) => { try {
+    const el = document.querySelector(sel); if (!el) return;
+    const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56;
+    const pad = navh + 14;
+    let sc = el.parentElement;
+    while (sc && sc !== document.body && sc !== document.documentElement) { const o = getComputedStyle(sc).overflowY; if ((o === 'auto' || o === 'scroll') && sc.scrollHeight - sc.clientHeight > 4) break; sc = sc.parentElement; }
+    if (sc && sc !== document.body && sc !== document.documentElement) {
+      const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - pad;
+      sc.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } else {
+      const top = el.getBoundingClientRect().top + window.scrollY - pad;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }
+  } catch {} };
   if (TABKEYS.includes(key)) {
     if (state.area_open) state.area_open.tileOpen = key;
     renderArea();
