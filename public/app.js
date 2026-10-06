@@ -4687,7 +4687,7 @@ function renderHome() {
           const bdayRows = bdays.map((b) => `<div class="kit-hrow"><button class="kit-hopen" data-open-contact="${b.id}"><span class="contact-av kit-hav">🎂</span><span class="kit-hnm">${esc(b.name)}</span><span class="kit-hsub">Birthday today</span></button></div>`).join('');
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
-            today: `${off === 0 ? homeReviewDueBanner() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
+            today: `${off === 0 ? homeReviewDueBanner() + homeDeadlinesHtml() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
@@ -6982,6 +6982,7 @@ function renderArea() {
     <div class="area-hero" style="--h:${h}">
       <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
       <p class="area-meta">${(() => { const nt = notes.length + tables.length; const txt = `${nt} note${nt === 1 ? '' : 's'} &amp; table${nt === 1 ? '' : 's'}`; return (nt && !secHidden('Notes and tables')) ? `<button class="area-meta-link" data-area-goto="Notes and tables">${txt}</button>` : txt; })()} · ${(() => { const txt = `${openTs.length} open task${openTs.length === 1 ? '' : 's'}`; return secHidden('Tasks') ? txt : `<button class="area-meta-link" data-area-goto="Tasks">${txt}</button>`; })()}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
+      ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -7056,8 +7057,14 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="areacol-swatches ov-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === curHue ? ' on' : ''}" style="--h:${hu}" data-area-sethue="${hu}" aria-label="Colour ${hu}"></button>`).join('')}</div>
       <div class="ov-muted" style="margin-top:6px">This colour follows the area everywhere - tasks, notes, Home and more.</div>
     </div>`;
+  const deadlineBlock = area.sharedBy ? '' : `<div class="ov-block ov-deadline">
+      <div class="ov-h"><span>Deadline</span></div>
+      <label class="ov-deadline-l">${dateFieldHtml('area-due', (area.props && area.props.due) || '')}</label>
+      <div class="ov-muted" style="margin-top:6px">For an area that’s a project with an end date. It shows on Home and in your reviews as the date nears.</div>
+    </div>`;
   return `<section class="area-ov">
     ${colourBlock}
+    ${deadlineBlock}
     ${sectionsBlock}
     ${reviewsBlock}
     <div class="ov-cols">
@@ -8136,6 +8143,33 @@ function homeReviewDueBanner() {
   if (!state.reviewRem) { api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'home') renderHome(); }).catch(() => {}); return ''; }
   if (state.reviews === undefined) { state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'home') renderHome(); }).catch(() => {}); }
   return reviewDueBannerHtml();
+}
+// A relative deadline label from an ISO date: "due today / tomorrow / in N days /
+// N days overdue", with a class for colouring (over / due / soon).
+function deadlineRel(iso, todayI) {
+  const d = Math.round((Date.parse(iso + 'T00:00') - Date.parse((todayI || localISO(new Date())) + 'T00:00')) / 86400000);
+  if (d < 0) return { d, t: `${-d} day${d === -1 ? '' : 's'} overdue`, c: 'over' };
+  if (d === 0) return { d, t: 'due today', c: 'due' };
+  if (d === 1) return { d, t: 'due tomorrow', c: 'soon' };
+  return { d, t: `due in ${d} days`, c: d <= 3 ? 'soon' : '' };
+}
+// Deadlines landing within a week (or overdue) - goals with a finish-by date and
+// life areas with a deadline - surfaced in the Home "today" lead.
+function homeDeadlinesHtml() {
+  const todayI = localISO(new Date());
+  const horizon = localISO(new Date(Date.now() + 7 * 86400000));
+  const items = [];
+  (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').forEach((g) => { const due = goalDueISO(g); if (due && due <= horizon) items.push({ kind: 'goal', id: g.id, title: g.title || 'Goal', due, area: gp(g).area }); });
+  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Life area', due, area: a.id }); });
+  if (!items.length) return '';
+  items.sort((x, y) => x.due.localeCompare(y.due));
+  const rows = items.slice(0, 5).map((x) => {
+    const a = x.area ? areaById(x.area) : null;
+    const r = deadlineRel(x.due, todayI);
+    const attr = x.kind === 'goal' ? `data-open-goal="${x.id}"` : `data-open-area="${x.id}"`;
+    return `<button class="home-dl-row ${r.c}" ${attr}${a ? ` style="--h:${hueOf(a)}"` : ''}><span class="home-dl-ic">${x.kind === 'goal' ? '🎯' : '◈'}</span><span class="home-dl-t">${esc(x.title)}</span><span class="home-dl-when">${esc(r.t)}</span></button>`;
+  }).join('');
+  return `<div class="home-deadlines"><div class="home-dl-h">⏳ Deadlines</div>${rows}</div>`;
 }
 // The Tracker is its own tool now (its own view), not a tab of the planner.
 // Same t2TrackerHtml render, standalone with its own crumb.
@@ -13767,7 +13801,12 @@ function renderGoalCard() {
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
     <div class="gc-hero" style="--h:${hueOf(a)}">
       <div class="gc-hero-top">
-        <div class="gc-chips"><span class="gc-status s-${st}">${esc(stLabel)}</span>${dueLbl ? `<span class="gc-due">🎯 by ${esc(dueLbl)}</span>` : ''}</div>
+        <div class="gc-chips"><span class="gc-status s-${st}">${esc(stLabel)}</span>${(() => {
+          const di = (p.status || 'active') !== 'done' ? goalDueISO(g) : null;
+          if (!di) return dueLbl ? `<span class="gc-due">🎯 by ${esc(dueLbl)}</span>` : '';
+          const r = deadlineRel(di);
+          return `<span class="gc-due gc-due-${r.c || 'ok'}" title="Due ${esc(dpLabel(di))}">🎯 ${esc(r.t)}</span>`;
+        })()}</div>
         <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="${p.focus ? 'Starred - tap to unstar' : 'Star this goal'}">${p.focus ? '★' : '☆'}</button>
       </div>
       <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
@@ -15270,7 +15309,10 @@ function reviewDeadlinesHtml(p) {
   const taskItems = (state.tasks || [])
     .filter((t) => t.props && t.props.due && !t.props.done)
     .map((t) => ({ id: t.id, kind: 'task', title: t.title || 'Task', due: t.props.due, area: t.props.area }));
-  const items = [...goalItems, ...taskItems]
+  const areaItems = (state.areas || [])
+    .filter((a) => a.props && a.props.due)
+    .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Life area', due: a.props.due, area: a.id }));
+  const items = [...goalItems, ...taskItems, ...areaItems]
     .filter((x) => x.due && x.due <= horizonI)
     .sort((a, b) => a.due.localeCompare(b.due));
   if (!items.length) return '';
@@ -15279,8 +15321,8 @@ function reviewDeadlinesHtml(p) {
     const diff = Math.round((Date.parse(x.due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
     const when = diff < 0 ? `${-diff}d overdue` : diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : `in ${diff}d`;
     const cls = diff < 0 ? 'over' : diff <= 7 ? 'soon' : '';
-    const openAttr = x.kind === 'goal' ? `data-open-goal="${x.id}"` : `data-open-task="${x.id}"`;
-    const ic = x.kind === 'goal' ? '🎯' : '✓';
+    const openAttr = x.kind === 'goal' ? `data-open-goal="${x.id}"` : x.kind === 'area' ? `data-open-area="${x.id}"` : `data-open-task="${x.id}"`;
+    const ic = x.kind === 'goal' ? '🎯' : x.kind === 'area' ? '◈' : '✓';
     return `<button class="rv-dl-row ${cls}" ${openAttr}${a ? ` style="--h:${hueOf(a)}"` : ''}><span class="rv-dl-dot"></span><span class="rv-dl-ic">${ic}</span><span class="rv-dl-t">${esc(x.title)}</span><span class="rv-dl-when">${esc(when)}</span></button>`;
   }).join('');
   return `<section class="rv-deadlines">${rvSecH('deadlines', `⏳ Deadlines approaching · ${items.length}`)}${rvSecOpen('deadlines') ? `<div class="rv-dl-list">${rows}</div>` : ''}</section>`;
@@ -18218,6 +18260,7 @@ document.addEventListener('blur', (e) => {
   if (e.target.matches && e.target.matches('[data-rv-answer]')) saveReviewAnswer(e.target.dataset.rvAnswer, e.target.value, true);
   if (e.target.dataset && e.target.dataset.rename !== undefined) renameTable(e.target.value.trim());
   if (e.target.id === 'area-title') renameArea(e.target.value.trim());
+  if (e.target.id === 'area-due') { const a = state.area_open && state.area_open.area; if (a) { const due = e.target.value || null; a.props = a.props || {}; a.props.due = due; const al = (state.areas || []).find((x) => x.id === a.id); if (al) { al.props = al.props || {}; al.props.due = due; } api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { due } }) }).catch((err) => toast(err.message)); renderArea(); } return; }
   const cn = e.target.dataset && e.target.dataset.colname; if (cn !== undefined && cn) renameColumn(cn, e.target.value.trim());
 }, true);
 // Track the mail row under the mouse so Return opens it (no re-render: CSS :hover

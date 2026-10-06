@@ -765,7 +765,27 @@ button { cursor:pointer; background:none; border:0; }
 .gc-status.s-done { color:var(--done); background:color-mix(in srgb,var(--done) 14%,transparent); }
 .gc-status.s-onhold { color:var(--gold); background:color-mix(in srgb,var(--gold) 15%,transparent); }
 .gc-status.s-dropped { color:var(--ink-3); background:var(--paper-2); }
-.gc-due { font-size:13px; color:var(--ink-3); }
+.gc-due { font-size:13px; color:var(--ink-3); font-weight:600; }
+.gc-due-soon { color:var(--accent); }
+.gc-due-due { color:var(--accent); }
+.gc-due-over { color:var(--danger,#c4412e); }
+.gc-due-ok { color:var(--ink-3); font-weight:500; }
+/* Life area deadline chip on the hero */
+.area-deadline { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:600; color:var(--ink-2); margin:2px 0 2px; }
+.area-deadline.gc-due-over { color:var(--danger,#c4412e); }
+.area-deadline.gc-due-soon, .area-deadline.gc-due-due { color:var(--accent); }
+/* Home "today" lead: deadlines approaching */
+.home-deadlines { display:flex; flex-direction:column; gap:6px; margin:0 0 12px; }
+.home-dl-h { font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:1px; }
+.home-dl-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font:inherit; cursor:pointer; padding:9px 12px; border:1px solid var(--line); border-left:3px solid hsl(var(--h,220) var(--lane-s) var(--lane-l)); border-radius:11px; background:var(--card); color:var(--ink); transition:border-color .12s, transform .08s; }
+.home-dl-row:hover { transform:translateY(-1px); border-color:var(--line-2); }
+.home-dl-ic { flex:none; font-size:14px; }
+.home-dl-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+.home-dl-when { flex:none; font-size:12.5px; font-weight:600; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+.home-dl-row.soon .home-dl-when { color:var(--accent); }
+.home-dl-row.due .home-dl-when { color:var(--accent); }
+.home-dl-row.over { border-left-color:var(--danger,#c4412e); }
+.home-dl-row.over .home-dl-when { color:var(--danger,#c4412e); }
 .gc-title { width:100%; border:0; background:none; resize:none; font-family:'Cormorant Garamond',Georgia,serif; font-size:30px; font-weight:600; line-height:1.12; color:var(--ink); margin:10px 0 4px; padding:0; }
 .gc-title:focus { outline:none; }
 .gc-areas { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; margin:2px 0 4px; }
