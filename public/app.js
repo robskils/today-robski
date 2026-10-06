@@ -6920,7 +6920,14 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-lead-t">${visionSnip ? `Working toward <b>“${esc(visionSnip.slice(0, 110))}${visionSnip.length > 110 ? '…' : ''}”</b>` : 'Give this area a vision to steer by'}</div>
       <div class="ov-lead-s">${esc(leadBits)}</div>
     </div>`;
+  const curHue = hueOf(area);
+  const colourBlock = area.sharedBy ? '' : `<div class="ov-block ov-colour">
+      <div class="ov-h"><span>Colour</span></div>
+      <div class="areacol-swatches ov-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === curHue ? ' on' : ''}" style="--h:${hu}" data-area-sethue="${hu}" aria-label="Colour ${hu}"></button>`).join('')}</div>
+      <div class="ov-muted" style="margin-top:6px">This colour follows the area everywhere - tasks, notes, Home and more.</div>
+    </div>`;
   return `<section class="area-ov">
+    ${colourBlock}
     ${sectionsBlock}
     ${reviewsBlock}
     <div class="ov-cols">
@@ -7075,6 +7082,14 @@ async function areaAddNote() {
 // offers a spread of swatches plus a slider, previews live across the page, and
 // on Done saves props.hue - which the whole app then follows.
 const AREA_HUES = [0, 20, 40, 65, 90, 130, 160, 185, 210, 235, 265, 290, 320, 345];
+// Set an area's hue directly (from the settings swatches), persist and repaint.
+function setAreaHue(hue) {
+  const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
+  area.props = { ...(area.props || {}), hue };
+  const s = state.areas.find((x) => x.id === area.id); if (s) s.props = { ...(s.props || {}), hue };
+  api(`/api/blocks/${area.id}`, { method: 'PATCH', body: JSON.stringify({ props: { hue } }) }).catch((e) => toast(e.message));
+  renderNav(); renderArea();
+}
 function openAreaColor() {
   const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
   const start = hueOf(area);
@@ -17582,6 +17597,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-areas-shared]')) { state.areasSharedOnly = !state.areasSharedOnly; renderAreasList(); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
+  { const sh = t.closest('[data-area-sethue]'); if (sh) { setAreaHue(+sh.dataset.areaSethue); return; } }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
   if (t.closest('[data-area-members-more]')) { if (state.area_open) state.area_open.membersExpanded = true; renderArea(); return; }
