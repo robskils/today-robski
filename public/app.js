@@ -16306,10 +16306,11 @@ function relatedNotesHtml(note) {
   const list = (state.noteTops || []).filter((x) => x.id !== note.id && blockAreas(x).some((id) => areas.includes(id)));
   if (!list.length) return '';
   const a = areaById(areas[0]);
-  const open = localStorage.getItem('life.note.relatedOpen') === '1';
   const shown = list.slice(0, 12);
-  return `<div class="note-related"><div class="sub-h note-related-h" data-related-toggle><span class="hs-chev">${open ? '▾' : '▸'}</span>Related notes<span class="muted"> · ${list.length}</span></div>
-    ${open ? `<div class="star-grid">${shown.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">${NOTE_ICO}</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div>${list.length > 12 && a ? `<button class="rel-more" data-open-area="${a.id}">See all ${list.length} in ${esc(a.title)} →</button>` : ''}` : ''}</div>`;
+  // A nside-card like the others, so it floats to the top and opens by default
+  // when it has related notes (it only renders at all when the list is non-empty).
+  return `<details class="note-related nside-card" data-nside="related" ${noteCardOpen('related', true) ? 'open' : ''}><summary class="sub-h">Related notes · ${list.length}</summary>
+    <div class="star-grid">${shown.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">${NOTE_ICO}</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div>${list.length > 12 && a ? `<button class="rel-more" data-open-area="${a.id}">See all ${list.length} in ${esc(a.title)} →</button>` : ''}</details>`;
 }
 // A Share button for an owned note/task; the count shows when it's already out.
 function shareBtn(block, kind) {
@@ -16457,20 +16458,23 @@ function renderNote() {
         ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
-        <details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Connected notes${connected.length ? ` · ${connected.length}` : ''}</summary>
-          ${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></details>
         ${(() => {
-          // Sections that hold something float above the empty ones (which keep
-          // their add controls, just lower down). Stable within each group. (Robin.)
+          // Every sidebar card floats by whether it holds anything: a card with
+          // something connected rises to the top and opens; empty cards (keeping
+          // their add controls) sink below. Stable within each group so the order
+          // is predictable. (Robin: a connected card must be top + open, not left
+          // stranded at the bottom.)
+          const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Connected notes${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></details>`;
           const secs = [
+            { has: connected.length > 0, html: subHtml },
             { has: (state.allTasks || []).some((t) => t.props && t.props.note === n.id && !t.props.done), html: noteTasksHtml(n.id) },
             { has: noteEventLinks(n).length > 0, html: connectedEventsHtml(n) },
             { has: blockContactIds(n).length > 0, html: noteContactsHtml(n) },
             { has: blockLinks(n).length > 0, html: noteExtLinksHtml(n) },
-          ];
+            { has: true, html: relatedNotesHtml(n) },   // '' when no related notes, so it drops out
+          ].filter((s) => s.html);
           return secs.map((s, i) => ({ ...s, i })).sort((a, b) => (b.has - a.has) || (a.i - b.i)).map((s) => s.html).join('');
         })()}
-        ${relatedNotesHtml(n)}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
     </div>`;
@@ -18074,7 +18078,6 @@ document.addEventListener('click', (e) => {
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
-  if (t.closest('[data-related-toggle]')) { const o = localStorage.getItem('life.note.relatedOpen') === '1'; try { localStorage.setItem('life.note.relatedOpen', o ? '0' : '1'); } catch {} if (state.note) renderNote(); return; }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Daybook` : 'No contacts on Daybook yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }

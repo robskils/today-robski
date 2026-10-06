@@ -2102,7 +2102,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .note-side .note-contacts,
   .note-side .note-links,
   .note-side .note-related { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); margin-top:14px; border-top:1px solid var(--line); }
-  .note-side .subpages { margin-top:0; }
+  /* Any card can float to the top now, so the first one - whichever it is - loses
+     its top margin (not just .subpages, which used to always lead). */
+  .note-side .nside-card:first-child { margin-top:0; }
   /* Chips and sub-note cards become soft insets so they read on the white card. */
   .note-side .ce-card { background:var(--paper-2); }
   .note-side .subpage { background:var(--paper-2); box-shadow:none; }
