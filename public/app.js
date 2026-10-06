@@ -8545,6 +8545,18 @@ function openToday(tab) { state.view = { type: 'today' }; if (!state.today) stat
 const T2_START = 6, T2_END = 24, T2_PPM = 0.9;   // canvas spans 06:00 → midnight
 const t2Top = (m) => Math.max(0, Math.round((Math.max(T2_START * 60, Math.min(T2_END * 60, m)) - T2_START * 60) * T2_PPM));
 const t2Height = (T2_END - T2_START) * 60 * T2_PPM + 34;   // + a little foot room so the last block/label isn't clipped
+// Bring a given minute of the day into view after a re-render - so a just-added
+// or just-dropped block stays where you put it (ready to drag-resize), instead of
+// the day snapping back to its old scroll. Handles both the 3-column desktop
+// layout (the day column scrolls) and the stacked mobile layout (the page scrolls).
+function t2ScrollToMin(min) {
+  if (min == null) return;
+  const y = t2Top(min);
+  const day = document.querySelector('.t2-day'); const canvas = document.querySelector('.t2-canvas');
+  if (!day || !canvas) return;
+  if (day.scrollHeight - day.clientHeight > 8) { day.scrollTo({ top: Math.max(0, y - 90), behavior: 'smooth' }); }
+  else { const top = canvas.getBoundingClientRect().top + window.scrollY + y - 130; window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
+}
 async function loadToday(day) {
   const T = state.today; if (day) T.day = day;
   renderToday();   // paints the shell + a loading day while we fetch
@@ -9008,14 +9020,18 @@ async function t2PlacePractice(activityId, startMin) {
   const a = (state.practices.activities || []).find((x) => String(x.id) === String(activityId)); if (!a) return;
   try {
     await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: a.lane, title: a.title, start_min: startMin != null ? startMin : null, duration: a.duration || 30, activity_id: a.id, url: a.video || undefined }) });
-    toast(startMin != null ? 'Added to your day' : 'Added to today — in Anytime'); loadToday();
+    toast(startMin != null ? 'Added to your day' : 'Added to today — in Anytime');
+    await loadToday();
+    if (startMin != null) requestAnimationFrame(() => requestAnimationFrame(() => t2ScrollToMin(startMin)));
   } catch (e) { toast(e.message === 'That event is already counted.' ? 'Already on your day' : e.message); }
 }
 async function t2PlaceTask(taskId, startMin) {
   const t = (state.today.tasks || []).find((x) => String(x.tana_id) === String(taskId)); if (!t) return;
   try {
     await api('/api/slots', { method: 'POST', body: JSON.stringify({ day: state.today.day, lane: t.lane, title: t.title, start_min: startMin != null ? startMin : null, duration: t.duration || 30, tana_id: t.tana_id }) });
-    toast(startMin != null ? 'Added to your day' : 'Added to today — in Anytime'); loadToday();
+    toast(startMin != null ? 'Added to your day' : 'Added to today — in Anytime');
+    await loadToday();
+    if (startMin != null) requestAnimationFrame(() => requestAnimationFrame(() => t2ScrollToMin(startMin)));
   } catch (e) { toast(e.message); }
 }
 // ── Today drag: place a practice/task at a time, or reschedule a slot ──
@@ -9061,8 +9077,8 @@ function t2DragEnd(e) {
   if (!d.active || d.dropMin == null) return;
   if (d.type === 'prac') t2PlacePractice(d.id, d.dropMin);
   else if (d.type === 'task') t2PlaceTask(d.id, d.dropMin);
-  else if (d.type === 'slot') { api('/api/slots/' + d.id, { method: 'PATCH', body: JSON.stringify({ start_min: d.dropMin }) }).then(() => loadToday()).catch((err) => toast(err.message)); }
-  else if (d.type === 'event') { const dur = Number(d.src && d.src.dataset.evDur) || 60; api('/api/events/' + encodeURIComponent(d.id), { method: 'PATCH', body: JSON.stringify({ day: state.today.day, start_min: d.dropMin, duration: dur, allDay: false }) }).then(() => loadToday()).catch((err) => toast(err.message)); }
+  else if (d.type === 'slot') { const m = d.dropMin; api('/api/slots/' + d.id, { method: 'PATCH', body: JSON.stringify({ start_min: m }) }).then(() => loadToday()).then(() => requestAnimationFrame(() => requestAnimationFrame(() => t2ScrollToMin(m)))).catch((err) => toast(err.message)); }
+  else if (d.type === 'event') { const dur = Number(d.src && d.src.dataset.evDur) || 60; const m = d.dropMin; api('/api/events/' + encodeURIComponent(d.id), { method: 'PATCH', body: JSON.stringify({ day: state.today.day, start_min: m, duration: dur, allDay: false }) }).then(() => loadToday()).then(() => requestAnimationFrame(() => requestAnimationFrame(() => t2ScrollToMin(m)))).catch((err) => toast(err.message)); }
 }
 document.addEventListener('pointerup', t2DragEnd);
 document.addEventListener('pointercancel', t2DragEnd);
