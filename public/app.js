@@ -45,7 +45,7 @@ const T_EN = {
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': "This quarter's focus", 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
@@ -67,7 +67,7 @@ const T_PT = {
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'O foco deste trimestre', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Áreas da vida', 'home.sec.favs': 'Notas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
@@ -726,7 +726,7 @@ const HELP = {
       <ul>
       <li><b>How to track</b> each goal: a <b>number you set</b>, or <b>everything connected</b> to it - tasks ticked off, notes and events - against a target. A simpler goal gets a slider to set how far along it feels.</li>
       <li><b>Deadline</b> - give a goal a finish-by date right on its card. It feeds <b>Deadlines approaching</b> in your reviews, and you can sort goals by due date.</li>
-      <li><b>This quarter</b> - star (★) the goals you’re focusing on now; they gather on the “This quarter” tab and on Home.</li>
+      <li><b>Starred</b> - tap the ★ on the goals you want front and centre; they gather on the <b>Starred</b> tab and in <b>Starred Goals</b> on Home. (The star is just your focus flag - separate from a goal’s horizon or deadline.)</li>
       <li><b>Completed goals</b> fold into their own section on each area, so you can look back on what you’ve done.</li>
       <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
       </ul>
@@ -2461,7 +2461,7 @@ const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your norm
 // key -> [section class, display name]. Order here is the default arrangement.
 const MOBILE_SECTIONS = [
   ['priority', 'home-sec-p1', 'Priority Tasks'],
-  ['focus', 'home-sec-focus', "This quarter's focus"],
+  ['focus', 'home-sec-focus', 'Starred Goals'],
   ['notepad', 'home-sec-notepad', 'Notepad'],
   ['favs', 'home-sec-favs', 'Starred Notes'],
   ['favareas', 'home-sec-favareas', 'Life areas'],
@@ -13543,7 +13543,7 @@ function renderGoals() {
   const allN = state.goals.filter((g) => (gp(g).status || 'active') === 'active').length;
   const tabs = `<div class="goals-tabs">
     <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By area</button>
-    <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">This quarter${focusN ? ` · ${focusN}` : ''}</button>
+    <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">★ Starred${focusN ? ` · ${focusN}` : ''}</button>
     <button class="gtab ${view === 'list' ? 'on' : ''}" data-goals-view="list">Goals${allN ? ` · ${allN}` : ''}</button>
   </div>`;
   const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : goalsByAreaBody();
@@ -13558,8 +13558,8 @@ function renderGoals() {
 function goalsFocusBody() {
   const focus = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus);
   return focus.length
-    ? `<section class="home-sec"><div class="home-sec-h">★ This quarter's focus · ${focus.length}</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>`
-    : '<div class="empty" style="padding:28px">Nothing in focus yet. On any goal, tap ★ to bring it into focus for this quarter.</div>';
+    ? `<section class="home-sec"><div class="home-sec-h">★ Starred goals · ${focus.length}</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>`
+    : '<div class="empty" style="padding:28px">No starred goals yet. Tap the ★ on any goal to star it - the ones you want front and centre.</div>';
 }
 // "Goals" tab: every goal across all areas, one per row, sortable and filterable.
 function goalsListBody() {
@@ -13597,7 +13597,7 @@ function goalsListBody() {
     const canSlide = st === 'active' && p.gtype !== 'number';
     const slider = `<input type="range" class="gc-slider glist-slider${canSlide ? '' : ' ro'}" min="0" max="100" step="5" value="${pct}" ${canSlide ? `data-goal-progress="${g.id}"` : 'tabindex="-1"'} aria-label="Progress: ${pct}%" title="${canSlide ? 'Drag to set how far along this goal is' : `${pct}% complete`}">`;
     return `<div class="glist-row" data-open-goal="${g.id}" role="button" tabindex="0" style="--h:${a ? hueOf(a) : 220}">
-      <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'In focus this quarter' : ''}">${p.focus ? '★' : ''}</span>
+      <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'Starred' : ''}">${p.focus ? '★' : ''}</span>
       <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
       <span class="glist-bar-wrap"><span class="glist-bar"><i style="width:${pct}%"></i></span>${slider}</span>
       <span class="glist-pct">${st === 'done' ? '✓' : pct + '%'}</span>
@@ -13656,7 +13656,7 @@ function goalsBody() {
   others.forEach((g) => { const k = gp(g).area || '_'; (byArea[k] = byArea[k] || []).push(g); });
   const areaSection = Object.keys(byArea).map((k) => { const a = areaById(k); return `<div class="goal-group"><div class="goal-group-h">${a ? esc(a.title) : 'No area'}</div><div class="goal-grid">${byArea[k].map(goalCardMini).join('')}</div></div>`; }).join('');
   return `<div class="goals-actions"><button class="add-btn wide" data-new-goal>+ New goal</button></div>
-    ${focus.length ? `<section class="home-sec"><div class="home-sec-h">★ This quarter's focus</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>` : '<div class="empty" style="padding:28px">Add a goal, then ★ it to bring it into focus for this quarter.</div>'}
+    ${focus.length ? `<section class="home-sec"><div class="home-sec-h">★ Starred goals</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>` : '<div class="empty" style="padding:28px">Add a goal, then tap its ★ to star it - the ones you want front and centre.</div>'}
     ${areaSection ? `<section class="home-sec"><div class="home-sec-h">Active goals</div>${areaSection}</section>` : ''}
     ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
 }
@@ -13758,7 +13758,7 @@ function renderGoalCard() {
     <div class="gc-hero" style="--h:${hueOf(a)}">
       <div class="gc-hero-top">
         <div class="gc-chips"><span class="gc-status s-${st}">${esc(stLabel)}</span>${dueLbl ? `<span class="gc-due">🎯 by ${esc(dueLbl)}</span>` : ''}</div>
-        <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="Focus this quarter">${p.focus ? '★' : '☆'}</button>
+        <button class="gc-focus-btn ${p.focus ? 'on' : ''}" data-toggle-focus="${g.id}" title="${p.focus ? 'Starred - tap to unstar' : 'Star this goal'}">${p.focus ? '★' : '☆'}</button>
       </div>
       <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
       <div class="gc-areas"><span class="gc-areas-l">${t('nav.areas')}</span>${blockAreasControl('goal', g)}</div>
