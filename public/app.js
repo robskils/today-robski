@@ -5549,6 +5549,33 @@ async function openWellbeing() {
   } catch (e) { state.journal = Object.assign({}, state.journal, { entries: (state.journal && state.journal.entries) || [], picking: false }); }
   renderWellbeing();
   try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  // Pull the other tools' histories so the hub's "Recent" feed spans everything
+  // you've been doing (insights, I Ching casts, spirit cards) - journal entries,
+  // horoscope and meditation sits are already to hand.
+  const kvArr = (key) => api(`/api/kv/${key}`).then((r) => { try { return (r && r.value) ? JSON.parse(r.value) : []; } catch { return []; } }).catch(() => []);
+  Promise.all([
+    api('/api/blocks?kind=insight').catch(() => []),
+    state.ichingHistory === undefined ? kvArr('iching_history') : Promise.resolve(state.ichingHistory),
+    state.spiritHistory === undefined ? kvArr('spirit_history') : Promise.resolve(state.spiritHistory),
+  ]).then(([ins, ich, sp]) => {
+    state.insightsAll = ins || []; state.ichingHistory = ich || []; state.spiritHistory = sp || [];
+    if (state.view && state.view.type === 'wellbeing') renderWellbeing();
+  }).catch(() => {});
+}
+// Everything you've done across the well-being tools, newest first, for the hub.
+function wbRecentItems() {
+  const out = [];
+  const tm = (v) => { const n = Date.parse(v); return isNaN(n) ? 0 : n; };
+  (state.journal && state.journal.entries || []).forEach((n) => {
+    const mode = (n.props && n.props.mode) || ''; const meta = journalModeMeta(mode);
+    out.push({ ts: tm((n.props && n.props.date) || n.created_at), ic: meta ? meta.icon : '📓', label: meta ? meta.label : 'Journal', title: journalSnippet(n), attr: `data-open-jentry="${n.id}"` });
+  });
+  (state.insightsAll || []).forEach((b) => out.push({ ts: tm((b.props && b.props.ts) || b.created_at), ic: '✨', label: 'Insight', title: (insParsed(b.props).text || 'Insight').slice(0, 80), attr: 'data-open-insights' }));
+  (state.ichingHistory || []).forEach((x, i) => out.push({ ts: Number(x.at) || 0, ic: '☯', label: 'I Ching', title: `${x.name || 'Reading'}${x.q ? ` · "${x.q}"` : ''}`, attr: (x.lines && x.lines.length) ? `data-iching-open-hist="${i}"` : 'data-open-iching' }));
+  (state.spiritHistory || []).forEach((x, i) => out.push({ ts: Number(x.at) || 0, ic: '🃏', label: 'Spirit card', title: x.name || 'Card', attr: `data-spirit-open-hist="${i}"` }));
+  const ho = currentHoro(); if (ho) out.push({ ts: Number(ho.at) || tm(ho.date), ic: '✶', label: 'Horoscope', title: ho.sign || 'Today', attr: 'data-horo-reopen' });
+  (medSessions() || []).slice(-12).forEach((s) => out.push({ ts: Number(s.ts) || 0, ic: '🧘', label: 'Meditation', title: `${s.mins} min sit`, attr: 'data-open-medi' }));
+  return out.filter((x) => x.ts).sort((a, b) => b.ts - a.ts).slice(0, 10);
 }
 // Which well-being tool, if any, a journal page is showing - drives the tile's
 // selected state.
@@ -5590,11 +5617,11 @@ function renderWellbeing() {
   const lastLbl = last ? (daysSince <= 0 ? 'today' : daysSince === 1 ? 'yesterday' : `${daysSince}d ago`) : '—';
   const stat = (n, l) => `<div class="wb-stat"><b>${n}</b><span>${esc(l)}</span></div>`;
   const statsHtml = entries.length ? `<div class="wb-stats">${stat(entries.length, entries.length === 1 ? 'entry' : 'entries')}${stat(weekN, 'this week')}${stat(lastLbl, 'last entry')}</div>` : '';
-  const recent = entries.slice(0, 3).map((n) => {
-    const mode = journalModeMeta(n.props && n.props.mode);
-    return `<button class="j-card" data-open-jentry="${n.id}"><span class="j-card-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span><span class="j-card-snip">${esc(journalSnippet(n))}</span>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</button>`;
-  }).join('');
-  const recentHtml = entries.length ? `<section class="wb-recent"><div class="home-sec-h wb-recent-h"><span>Recent journal</span><button class="wb-seeall" data-open-journal>Open journal →</button></div><div class="j-list">${recent}</div></section>` : '';
+  // A single feed of everything recent across the tools, newest first.
+  const rel = (ts) => { const dd = Math.floor((now - ts) / 86400000); return dd <= 0 ? 'today' : dd === 1 ? 'yesterday' : dd < 7 ? `${dd}d ago` : new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
+  const items = wbRecentItems();
+  const recent = items.map((x) => `<button class="wb-recent-row" ${x.attr}><span class="wb-rr-ic">${x.ic}</span><span class="wb-rr-body"><span class="wb-rr-t">${esc(x.title || x.label)}</span><span class="wb-rr-k">${esc(x.label)}</span></span><span class="wb-rr-when">${esc(rel(x.ts))}</span></button>`).join('');
+  const recentHtml = items.length ? `<section class="wb-recent"><div class="home-sec-h wb-recent-h"><span>Recent</span></div><div class="wb-recent-list">${recent}</div></section>` : '';
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.reflect'))}
     <div class="pane-head home-head wb-hub-head"><h1>${t('nav.reflect')}</h1><p class="wb-hub-sub">A quiet corner to reflect, sit, and check in with yourself.</p></div>
