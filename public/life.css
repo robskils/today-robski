@@ -5688,8 +5688,14 @@ table.ttable tr:last-child td { border-bottom:0; }
   .mail-reader { max-height:none; border:0; border-radius:0; box-shadow:none; background:transparent; }
   .mail-layout:not(.reading) .mail-reader { display:none; }
   .mail-layout.reading .mail-list-col { display:none; }
-  .mail-msg, .mail-compose { padding:4px 2px; }
+  .mail-msg, .mail-compose { padding:4px 2px; overflow-x:clip; }
+  /* A wide email must never push the page wider than the screen - that makes the
+     mobile browser zoom the whole layout out, which looked like "the UI changed". */
+  .mail-msg { max-width:100%; }
+  .mail-subj { overflow-wrap:anywhere; word-break:break-word; }
   .mail-back { display:inline-flex; flex:none; }
+  /* Turning a note into a table is a desktop action - hide the ⋯ on mobile. */
+  .note-more { display:none; }
   /* Reader actions overflow 375px, so pin the bar to the top (stays above the
      message as you scroll) and let the action buttons scroll sideways within
      it — Back stays put on the left, every action stays reachable. */
