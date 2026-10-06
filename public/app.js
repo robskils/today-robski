@@ -6777,26 +6777,50 @@ function areaGoto(key) {
   // Vision / Goals / Wheel / Bucket list live in the top tab strip, not as flow
   // sections - selecting the tab is how you "go" to them.
   const TABKEYS = ['Vision', 'Goals', 'Wheel of Life', 'Bucket list'];
-  // Scroll an element to the TOP of its real scroll container, clearing the sticky
-  // header, computed deterministically (scrollIntoView picked the wrong scroller /
-  // overshot into the middle of the page).
-  const scrollToEl = (sel) => { try {
+  // Scroll an element to just below the sticky bars at the top of its real scroll
+  // container. Those bars differ by layout and ALL of them must be cleared or the
+  // section lands hidden behind them: on desktop the tab strip (sticky, 44px) AND
+  // the breadcrumb (sticky at top:44px); on mobile the brand header (--navh) AND
+  // the breadcrumb (sticky at top:--navh). We measure the breadcrumb so a tall
+  // wrapped one still clears. (Robin: clicking a stat landed behind the crumb bar.)
+  const scrollToEl = (sel, smooth) => { try {
     const el = document.querySelector(sel); if (!el) return;
+    const desktop = window.matchMedia('(min-width:821px)').matches;
     const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56;
-    const pad = navh + 14;
+    const crumb = document.querySelector('#pane .crumbbar, #pane .note-crumbs');
+    const crumbH = crumb ? Math.round(crumb.getBoundingClientRect().height) : 46;
+    const pad = (desktop ? 44 : navh) + crumbH + 12;
+    const behavior = smooth ? 'smooth' : 'auto';
     let sc = el.parentElement;
     while (sc && sc !== document.body && sc !== document.documentElement) { const o = getComputedStyle(sc).overflowY; if ((o === 'auto' || o === 'scroll') && sc.scrollHeight - sc.clientHeight > 4) break; sc = sc.parentElement; }
     if (sc && sc !== document.body && sc !== document.documentElement) {
       const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - pad;
-      sc.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      sc.scrollTo({ top: Math.max(0, top), behavior });
     } else {
       const top = el.getBoundingClientRect().top + window.scrollY - pad;
-      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      window.scrollTo({ top: Math.max(0, top), behavior });
     }
   } catch {} };
-  // Scroll now, then again after late content (thumbnails, async sections) lands
-  // and shifts the layout - otherwise the first scroll ends up mid-page.
-  const settle = (sel) => { requestAnimationFrame(() => requestAnimationFrame(() => { scrollToEl(sel); setTimeout(() => scrollToEl(sel), 220); setTimeout(() => scrollToEl(sel), 600); })); };
+  // Scroll now (smooth), then keep the section pinned as late content (goal cards,
+  // thumbnails, the vision textarea auto-growing) lands and changes the page
+  // height - the Tasks section sits at the very bottom, so content growing above
+  // it used to leave the one-shot scroll stranded above it. A ResizeObserver
+  // re-pins for ~1.7s; any real scroll gesture from you cancels it immediately.
+  const settle = (sel) => {
+    let stop = false;
+    const cancel = () => { stop = true; };
+    ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach((ev) => window.addEventListener(ev, cancel, { once: true, passive: true }));
+    requestAnimationFrame(() => requestAnimationFrame(() => scrollToEl(sel, true)));
+    [150, 350, 650, 1000, 1500].forEach((ms) => setTimeout(() => { if (!stop) scrollToEl(sel, false); }, ms));
+    try {
+      const pane = document.getElementById('pane');
+      if (pane && 'ResizeObserver' in window) {
+        const ro = new ResizeObserver(() => { if (!stop) scrollToEl(sel, false); });
+        ro.observe(pane);
+        setTimeout(() => { stop = true; ro.disconnect(); }, 1700);
+      }
+    } catch {}
+  };
   if (TABKEYS.includes(key)) {
     if (state.area_open) state.area_open.tileOpen = key;
     renderArea();
