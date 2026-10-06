@@ -803,8 +803,8 @@ const HELP = {
     body: `<p>Put in someone's email and a note, and Daybook emails them the invitation. They click one link, sign in and their own Daybook is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
   'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories and reminders.',
     body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
-  'settings-import': { title: 'Import', tip: 'Bring your notes in from another app.',
-    body: `<p>Export your notes from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files here. Each file becomes its own Daybook note - the first <code># heading</code> (or the filename) becomes the title and the rest keeps its formatting. Pick a life area to file them all under, check the preview, then import. More importers (tasks, calendar, bookmarks) are on the way.</p>` },
+  'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
+    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> paste the text of a flyer, poster or email - or add a <b>photo</b> of one - and Daybook reads the events out of it. Check the ones you want, pick a life area, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -2728,11 +2728,21 @@ function renderSettings() {
 // Markdown rendered through the same mdToHtml the native editor uses, so an
 // imported note is indistinguishable from one typed here. First of a planned
 // family of importers (tasks CSV, calendar .ics, bookmarks next).
-function importState() { if (!state.import) state.import = { area: '', parsed: [], running: false, done: 0, err: '' }; return state.import; }
+function importState() { if (!state.import) state.import = { kind: 'notes', area: '', parsed: [], running: false, done: 0, err: '' }; return state.import; }
+function importAreaOpts(imp) {
+  return `<option value="">${imp.area ? 'No life area' : 'No life area (filed loose)'}</option>`
+    + (state.areas || []).map((a) => `<option value="${a.id}" ${imp.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+}
 function importPane() {
   const imp = importState();
-  const areaOpts = `<option value="">${imp.area ? 'No life area' : 'No life area (filed loose)'}</option>`
-    + (state.areas || []).map((a) => `<option value="${a.id}" ${imp.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  const kind = imp.kind || 'notes';
+  const switcher = `<div class="imp-kinds">
+    <button class="imp-kind ${kind === 'notes' ? 'on' : ''}" data-import-kind="notes"><span class="imp-kind-ic">📄</span><span class="imp-kind-t">Notes</span><span class="imp-kind-s">Markdown &amp; text files</span></button>
+    <button class="imp-kind ${kind === 'events' ? 'on' : ''}" data-import-kind="events"><span class="imp-kind-ic">📅</span><span class="imp-kind-t">Events</span><span class="imp-kind-s">A flyer, photo or pasted text</span></button>
+  </div>`;
+  return `<div class="imp-card">${switcher}${kind === 'events' ? importEventsPaneHtml(imp) : importNotesPaneHtml(imp)}</div>`;
+}
+function importNotesPaneHtml(imp) {
   const parsed = imp.parsed || [];
   const preview = parsed.length ? `
     <div class="imp-preview">
@@ -2747,11 +2757,10 @@ function importPane() {
       </div>
     </div>` : '';
   return `
-    <div class="imp-card">
       <p class="imp-lead">Moving in from Obsidian, Bear, Apple Notes, Notion or anywhere else? Export your notes as <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>) and bring them straight in. Each file becomes its own note, headings and formatting kept.</p>
       <div class="imp-field">
         <label class="imp-label" for="imp-area">File them into a life area</label>
-        <select class="sel imp-area" id="imp-area" data-import-area>${areaOpts}</select>
+        <select class="sel imp-area" id="imp-area" data-import-area>${importAreaOpts(imp)}</select>
       </div>
       <div class="imp-field">
         <label class="imp-label">Choose your files</label>
@@ -2759,8 +2768,42 @@ function importPane() {
         <p class="imp-hint">You can pick many at once. Nothing is imported until you confirm below.</p>
       </div>
       ${imp.err ? `<p class="imp-err">${esc(imp.err)}</p>` : ''}
-      ${preview}
-    </div>`;
+      ${preview}`;
+}
+function importEvRowHtml(e, i) {
+  const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
+  return `<label class="imp-evrow ${e.pick ? 'on' : ''}"><input type="checkbox" data-import-evpick="${i}" ${e.pick ? 'checked' : ''}><span class="imp-evmain"><span class="imp-evt">${esc(e.title)}</span><span class="imp-evmeta">${esc(when)}${e.location ? ` · ${esc(e.location)}` : ''}</span>${e.notes ? `<span class="imp-evnotes">${esc(e.notes)}</span>` : ''}</span></label>`;
+}
+function importEventsPaneHtml(imp) {
+  const evs = imp.evEvents || [];
+  const nPick = evs.filter((e) => e.pick).length;
+  const preview = evs.length ? `
+    <div class="imp-preview">
+      <div class="imp-preview-h">${nPick} of ${evs.length} event${evs.length === 1 ? '' : 's'} selected${imp.area ? ` · into <b>${esc((areaById(imp.area) || {}).title || '')}</b>` : ''}</div>
+      <div class="imp-evrows">${evs.map((e, i) => importEvRowHtml(e, i)).join('')}</div>
+      <div class="imp-act">
+        <button class="add-btn wide" data-import-evadd ${(imp.evAdding || !nPick) ? 'disabled' : ''}>${imp.evAdding ? `Adding… ${imp.evDone || 0}/${nPick}` : `Add ${nPick} to calendar`}</button>
+        ${imp.evAdding ? '' : '<button class="linkish imp-clear" data-import-evclear>Clear</button>'}
+      </div>
+    </div>` : '';
+  return `
+      <p class="imp-lead">Got a flyer, a poster, an email or a schedule? Paste the text or add a photo, and Daybook reads the events out for you to check and drop onto your calendar - you choose which ones.</p>
+      <div class="imp-field">
+        <label class="imp-label" for="imp-evtext">Paste text</label>
+        <textarea id="imp-evtext" class="sel imp-evtext" rows="4" placeholder="Paste a flyer's text, an email, a schedule…" data-import-evtext>${esc(imp.evText || '')}</textarea>
+      </div>
+      <div class="imp-field">
+        <label class="imp-label">…or add a photo of a flyer</label>
+        <label class="add-btn wide imp-pick">📷 Choose an image<input type="file" id="imp-evimg" accept="image/*" hidden></label>
+        ${imp.evImgName ? `<p class="imp-hint">📎 ${esc(imp.evImgName)} · <button class="linkish" data-import-evimg-clear>remove</button></p>` : '<p class="imp-hint">A clear photo or screenshot works best. Nothing is added until you pick and confirm.</p>'}
+      </div>
+      <div class="imp-field">
+        <label class="imp-label" for="imp-evarea">File events into a life area</label>
+        <select class="sel imp-area" id="imp-evarea" data-import-area>${importAreaOpts(imp)}</select>
+      </div>
+      <button class="add-btn wide imp-find" data-import-evfind ${imp.evFinding ? 'disabled' : ''}>${imp.evFinding ? 'Reading the events…' : '✨ Find events'}</button>
+      ${imp.err ? `<p class="imp-err">${esc(imp.err)}</p>` : ''}
+      ${preview}`;
 }
 // Turn selected files into previewable notes: first H1 (or filename) → title,
 // the rest → mdToHtml body. Kept synchronous-friendly via async file.text().
@@ -2818,6 +2861,78 @@ async function importRun() {
   if (ok < total) imp.err = `Imported ${ok} of ${total}. ${total - ok} failed - try those again.`;
   toast(ok === total ? `Imported ${ok} note${ok === 1 ? '' : 's'} 🎉` : `Imported ${ok} of ${total} notes`);
   if (state.view && state.view.type === 'settings') renderSettings();
+}
+// ── Events import ──────────────────────────────────────────────────────────
+// Read an image of a flyer into base64 for the vision call. Kept small (≤~7MB)
+// so the worker's AI request stays well within limits.
+async function importReadImage(f) {
+  const imp = importState();
+  const ta = document.getElementById('imp-evtext'); if (ta) imp.evText = ta.value;   // keep any pasted text across the re-render
+  imp.err = '';
+  try {
+    const dataUrl = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(f); });
+    if (!dataUrl) throw 0;
+    const img = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = dataUrl; });
+    // Downscale so the vision request stays small and well within size limits - a
+    // flyer is perfectly legible at 1600px, and phone photos are often 5MB+.
+    if (img && img.width && img.height) {
+      const maxDim = 1600; const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale)); const h = Math.max(1, Math.round(img.height * scale));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const out = c.toDataURL('image/jpeg', 0.85); const comma = out.indexOf(',');
+      imp.evImage = out.slice(comma + 1); imp.evMime = 'image/jpeg';
+    } else {
+      // Couldn't decode (e.g. HEIC on an unsupported browser) - send as-is, capped.
+      if (f.size > 6 * 1024 * 1024) { imp.err = 'That image is too large - try a smaller photo or a screenshot.'; renderSettings(); return; }
+      const comma = String(dataUrl).indexOf(',');
+      imp.evImage = String(dataUrl).slice(comma + 1); imp.evMime = (String(dataUrl).slice(5, comma).split(';')[0]) || 'image/png';
+    }
+    imp.evImgName = f.name;
+  } catch { imp.err = 'Could not read that image.'; }
+  renderSettings();
+}
+// Ask the worker to pull structured events out of the pasted text and/or image.
+async function importFindEvents() {
+  const imp = importState();
+  const ta = document.getElementById('imp-evtext'); if (ta) imp.evText = ta.value;
+  const text = (imp.evText || '').trim();
+  if (!text && !imp.evImage) { imp.err = 'Paste some text or add a photo first.'; renderSettings(); return; }
+  imp.evFinding = true; imp.err = ''; renderSettings();
+  try {
+    const body = { text };
+    if (imp.evImage) { body.image = imp.evImage; body.mime = imp.evMime; }
+    const r = await api('/api/import/events', { method: 'POST', body: JSON.stringify(body) });
+    const evs = (r && r.events) || [];
+    imp.evEvents = evs.map((e) => ({ ...e, pick: true }));
+    if (!evs.length) imp.err = 'No events found - try clearer text or a sharper photo.';
+  } catch (e) { imp.err = (e && e.message) || 'Could not read the events.'; }
+  imp.evFinding = false; renderSettings();
+}
+// Create each picked event through the normal events API, so an owner's go to
+// Google and a member's to native storage - exactly as the event form does.
+async function importAddEvents() {
+  const imp = importState();
+  const picks = (imp.evEvents || []).filter((e) => e.pick);
+  if (!picks.length || imp.evAdding) return;
+  imp.evAdding = true; imp.evDone = 0; imp.err = ''; renderSettings();
+  const area = imp.area || '';
+  let ok = 0;
+  for (const e of picks) {
+    try {
+      const allDay = !!e.allDay || !e.start;
+      const body = buildEventBody({ title: e.title, startDate: e.date, startTime: e.start || '', endDate: e.date, endTime: e.end || '', location: e.location || '', allDay, notes: e.notes || '', area: area || '', isNew: true });
+      await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
+      ok++;
+    } catch { /* keep going */ }
+    imp.evDone = ok; renderSettings();
+  }
+  const total = picks.length;
+  imp.evAdding = false; imp.evEvents = []; imp.evText = ''; imp.evImage = null; imp.evImgName = ''; imp.evDone = 0;
+  if (state.cal) state.cal.events = null;   // next calendar open refetches so the new events show
+  if (ok < total) imp.err = `Added ${ok} of ${total}. ${total - ok} failed - try those again.`;
+  toast(ok === total ? `Added ${ok} event${ok === 1 ? '' : 's'} to your calendar 🎉` : `Added ${ok} of ${total} events`);
+  renderSettings();
 }
 
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
@@ -17643,6 +17758,11 @@ document.addEventListener('click', (e) => {
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); return; } }
   if (t.closest('[data-import-run]')) { importRun(); return; }
   if (t.closest('[data-import-clear]')) { const imp = importState(); imp.parsed = []; imp.err = ''; const f = $('#imp-files'); if (f) f.value = ''; renderSettings(); return; }
+  { const ik = t.closest('[data-import-kind]'); if (ik) { const imp = importState(); const ta = $('#imp-evtext'); if (ta) imp.evText = ta.value; imp.kind = ik.dataset.importKind; imp.err = ''; renderSettings(); return; } }
+  if (t.closest('[data-import-evfind]')) { importFindEvents(); return; }
+  if (t.closest('[data-import-evadd]')) { importAddEvents(); return; }
+  if (t.closest('[data-import-evclear]')) { const imp = importState(); imp.evEvents = []; imp.err = ''; renderSettings(); return; }
+  if (t.closest('[data-import-evimg-clear]')) { const imp = importState(); const ta = $('#imp-evtext'); if (ta) imp.evText = ta.value; imp.evImage = null; imp.evMime = null; imp.evImgName = ''; imp.err = ''; const f = $('#imp-evimg'); if (f) f.value = ''; renderSettings(); return; }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
@@ -18287,8 +18407,10 @@ function openLinkMenu(x, y, href, view) {
 document.addEventListener('change', (e) => {
   if (e.target.matches && e.target.matches('[data-wheel-track]')) { setWheelTrack(e.target.dataset.wheelTrack, e.target.checked); return; }
   // Event reminder: reveal the number+unit inputs when "Custom…" is chosen.
-  if (e.target.matches('[data-import-area]')) { importState().area = e.target.value || ''; renderSettings(); return; }
+  if (e.target.matches('[data-import-area]')) { const imp = importState(); const ta = document.getElementById('imp-evtext'); if (ta) imp.evText = ta.value; imp.area = e.target.value || ''; renderSettings(); return; }
   if (e.target.matches('#imp-files')) { const fl = e.target.files; if (fl && fl.length) importReadFiles(fl); return; }
+  if (e.target.matches('#imp-evimg')) { const f = e.target.files && e.target.files[0]; if (f) importReadImage(f); return; }
+  if (e.target.matches('[data-import-evpick]')) { const imp = importState(); const i = +e.target.dataset.importEvpick; if (imp.evEvents && imp.evEvents[i]) { imp.evEvents[i].pick = e.target.checked; renderSettings(); } return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }

@@ -3000,6 +3000,25 @@ a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .imp-row-more { font-size:13px; color:var(--muted); padding:6px 11px; }
 .imp-act { display:flex; align-items:center; gap:14px; }
 .imp-act .add-btn.wide { flex:0 1 auto; }
+/* Import type switcher (Notes / Events) */
+.imp-kinds { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.imp-kind { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:14px 16px; border:1px solid var(--line-2); border-radius:14px; background:var(--card); cursor:pointer; text-align:left; transition:border-color .12s, background .12s; }
+.imp-kind:hover { border-color:var(--accent); }
+.imp-kind.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); box-shadow:inset 0 0 0 1px var(--accent); }
+.imp-kind-ic { font-size:22px; line-height:1; }
+.imp-kind-t { font-size:16px; font-weight:600; color:var(--ink); }
+.imp-kind-s { font-size:12.5px; color:var(--muted); }
+@media (max-width:520px) { .imp-kinds { grid-template-columns:1fr; } }
+.imp-evtext { width:100%; max-width:none; resize:vertical; font:inherit; font-size:15px; line-height:1.5; }
+.imp-find { flex:0 1 auto; }
+.imp-evrows { display:flex; flex-direction:column; gap:6px; max-height:420px; overflow-y:auto; }
+.imp-evrow { display:flex; align-items:flex-start; gap:11px; padding:11px 13px; border:1px solid var(--line); border-radius:11px; background:var(--card2,var(--card)); cursor:pointer; transition:border-color .12s, background .12s; }
+.imp-evrow.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 6%,var(--card)); }
+.imp-evrow input[type=checkbox] { margin-top:3px; flex:none; width:17px; height:17px; accent-color:var(--accent); }
+.imp-evmain { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.imp-evt { font-size:15px; font-weight:600; color:var(--ink); }
+.imp-evmeta { font-size:13px; color:var(--accent); font-variant-numeric:tabular-nums; }
+.imp-evnotes { font-size:12.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 /* Account tab order: your details first, then the Daybook card + Security side by
    side, then Your data. */
 .set-account, .set-acct-cols { margin-bottom:16px; }

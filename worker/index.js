@@ -579,6 +579,54 @@ async function journalDeepen(request, env, json, err) {
     return json({ question: q }, request);
   } catch (e) { console.error('journalDeepen:', e.message); return err('Could not reach Claude.', request, 502); }
 }
+// Pull calendar events out of a pasted block of text or a photographed flyer, as
+// structured JSON the client previews and lets you pick from before adding. Vision
+// is why the image path exists - a flyer is usually a picture, not text. (Robin.)
+async function importEvents(request, env, jsonR, errR) {
+  const key = await aiKey(env, 'anthropic');
+  if (!key) return errR(aiNeedsKey('anthropic'), request, 503);
+  const b = await request.json().catch(() => ({}));
+  const text = String(b.text || '').slice(0, 20000).trim();
+  const image = b.image ? String(b.image) : '';   // base64, no data: prefix
+  const mime = /^image\/(png|jpeg|jpg|webp|gif)$/.test(String(b.mime || '')) ? (b.mime === 'image/jpg' ? 'image/jpeg' : b.mime) : 'image/png';
+  if (!text && !image) return errR('Paste some text or add an image first.', request, 400);
+  if (image && image.length > 7_000_000) return errR('That image is too large - try a smaller photo.', request, 413);
+  const today = todayStr(TZ);
+  const system = [
+    `You extract calendar events from a flyer, poster, listing or pasted text. The material may be in any language (often European Portuguese).`,
+    `Return ONLY a JSON array - no prose, no markdown fences. Each element is an event object with these fields:`,
+    `"title" (concise, in the material's own language), "date" ("YYYY-MM-DD"), "allDay" (boolean), "start" ("HH:MM" 24h, or null if all-day/unknown), "end" ("HH:MM" or null), "location" (string, "" if none), "notes" (string, "" if none - put performers, ticket info, descriptions here).`,
+    `One event per distinct listed item that has its own time or clear slot; keep concurrent items as separate events. If something spans a whole day with no single time, set allDay true. If an end time is given use it, else null.`,
+    `Resolve dates to real calendar dates using any year shown on the material; if no year is given, pick the next future occurrence relative to today (${today}, Europe/Lisbon). Omit anything with no determinable date. If you find no events, return [].`,
+  ].join(' ');
+  const content = [];
+  if (image) content.push({ type: 'image', source: { type: 'base64', media_type: mime, data: image } });
+  content.push({ type: 'text', text: text ? `Extract the events from this text:\n\n${text}` : 'Extract the events from this flyer image.' });
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: env.CLAUDIUS_MODEL || 'claude-opus-5', max_tokens: 2000, thinking: { type: 'disabled' }, system, messages: [{ role: 'user', content }] }),
+    });
+    if (!res.ok) { const t = await res.text().catch(() => ''); return errR(`Import error ${res.status}: ${t.slice(0, 200)}`, request, 502); }
+    const data = await res.json();
+    await logAiUsage(env, 'anthropic', 'import-events', data.model, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens);
+    if (data.stop_reason === 'refusal') return errR('Claude held back on this one.', request, 200);
+    let raw = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
+    const m = raw.match(/\[[\s\S]*\]/);   // tolerate stray prose or a ```json fence around the array
+    if (m) raw = m[0];
+    let events = [];
+    try { events = JSON.parse(raw); } catch { return errR('Could not read the events from that - try clearer text or a sharper photo.', request, 502); }
+    if (!Array.isArray(events)) events = [];
+    // Normalise + guard: valid date, sane time, trimmed strings, capped count.
+    const clean = events.filter((e) => e && typeof e === 'object' && isValidDay(String(e.date || ''))).slice(0, 60).map((e) => {
+      const hhmm = (v) => (/^([01]?\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? (String(v).length === 4 ? '0' + v : String(v)) : null);
+      const allDay = !!e.allDay;
+      return { title: String(e.title || 'Untitled event').slice(0, 200).trim(), date: String(e.date), allDay, start: allDay ? null : hhmm(e.start), end: allDay ? null : hhmm(e.end), location: String(e.location || '').slice(0, 300).trim(), notes: String(e.notes || '').slice(0, 1500).trim() };
+    });
+    return jsonR({ events: clean }, request);
+  } catch (e) { console.error('importEvents:', e.message); return errR('Could not reach Claude.', request, 502); }
+}
 
 // Daily review -> tasks. Given the reflection and a shortlist of the person's open
 // tasks (the client sends a prefiltered set), the AI says which look done and which
@@ -4244,6 +4292,7 @@ export default {
       if (path === '/api/wellbeing/iching' && request.method === 'POST') return ichingReflect(request, env, json, err);
       if (path === '/api/wellbeing/horoscope' && request.method === 'POST') return horoscopeReading(request, env, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
+      if (path === '/api/import/events' && request.method === 'POST') return importEvents(request, env, json, err);
       if (path === '/api/review/reconcile' && request.method === 'POST') return reviewReconcile(request, env, json, err);
       if (path === '/api/journal/coach' && request.method === 'POST') return journalCoach(request, env, json, err);
       if (path === '/api/journal/insights') return journalInsights(request, env, json, err);
