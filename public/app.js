@@ -13728,21 +13728,34 @@ function reorderFocus(dragged, before) {
 }
 function goalCardMini(g, drag) {
   const a = goalArea(g); const p = gp(g); const pct = Math.round(goalProgress(g) * 100);
-  // A "mark it done" goal (not a number goal, not already done) gets a grabbable
-  // slider right on its bar, so you can set how far along it feels without opening
-  // it. Number goals keep their computed bar; done goals are full.
-  const canSlide = (p.status || 'active') === 'active' && p.gtype !== 'number';
+  const active = (p.status || 'active') === 'active';
+  const isNumber = p.gtype === 'number';
+  // A number goal you set yourself (manual metric) is now grabbable too: drag the
+  // slider and the number fills in to match (round of pct × target). A number goal
+  // that COUNTS connected tasks/notes/events keeps a read-only bar - its figure is
+  // counted, not chosen. A "mark it done" (percent) goal slides as before.
+  const numManual = isNumber && (p.metric || 'manual') === 'manual';
+  const canSlide = active && !isNumber;
+  const barInner = (active && numManual)
+    ? `<div class="gc-bar"><i data-goalnum-fill="${g.id}" style="width:${pct}%"></i></div><input type="range" class="gc-slider" min="0" max="100" step="1" value="${pct}" data-goal-numslide="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set the number">`
+    : `<div class="gc-bar"><i style="width:${pct}%"></i></div>${canSlide ? `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set how far along this goal is">` : ''}`;
   const bar = `<div class="gc-progress">
-      <div class="gc-barwrap">
-        <div class="gc-bar"><i style="width:${pct}%"></i></div>
-        ${canSlide ? `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set how far along this goal is">` : ''}
-      </div>
-      <span class="gc-pct">${pct}%</span>
+      <div class="gc-barwrap">${barInner}</div>
+      <span class="gc-pct"${(active && numManual) ? ` data-goalnum-pct="${g.id}"` : ''}>${pct}%</span>
     </div>`;
   return `<div class="goal-card" data-open-goal="${g.id}" role="button" tabindex="0" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
     <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span>${p.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}<span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
     <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
     ${bar}</div>`;
+}
+// Find a goal block by id wherever it currently lives in memory - the global
+// goals list, the open area's blocks, or the open goal card.
+function findGoalById(id) {
+  id = String(id);
+  let g = (state.goals || []).find((x) => String(x.id) === id); if (g) return g;
+  if (state.area_open) { g = (state.area_open.blocks || []).find((x) => String(x.id) === id); if (g) return g; }
+  if (state.goal_open && state.goal_open.goal && String(state.goal_open.goal.id) === id) return state.goal_open.goal;
+  return null;
 }
 // Save a hand-set goal progress (0-100). Optimistic: update the in-memory goal
 // and any list it sits in, persist to the block's props.
@@ -13809,16 +13822,19 @@ function goalsListBody() {
     const measure = goalMeasure(g);
     const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
     // Every row shows a slider circle so they read as one set. A "mark it done"
-    // active goal is grabbable (set progress without opening it); number goals and
-    // finished ones show the same thumb at their computed spot as a read-only
-    // marker (disabled, so a drag can't fight the number that owns their bar).
+    // active goal is grabbable (set progress without opening it); a number goal you
+    // set yourself is grabbable too (drag fills the number in); a COUNTED number
+    // goal and finished ones show the thumb at their computed spot, read-only.
+    const numManual = p.gtype === 'number' && (p.metric || 'manual') === 'manual';
     const canSlide = st === 'active' && p.gtype !== 'number';
-    const slider = `<input type="range" class="gc-slider glist-slider${canSlide ? '' : ' ro'}" min="0" max="100" step="5" value="${pct}" ${canSlide ? `data-goal-progress="${g.id}"` : 'tabindex="-1"'} aria-label="Progress: ${pct}%" title="${canSlide ? 'Drag to set how far along this goal is' : `${pct}% complete`}">`;
+    const slider = (st === 'active' && numManual)
+      ? `<input type="range" class="gc-slider glist-slider" min="0" max="100" step="1" value="${pct}" data-goal-numslide="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set the number">`
+      : `<input type="range" class="gc-slider glist-slider${canSlide ? '' : ' ro'}" min="0" max="100" step="5" value="${pct}" ${canSlide ? `data-goal-progress="${g.id}"` : 'tabindex="-1"'} aria-label="Progress: ${pct}%" title="${canSlide ? 'Drag to set how far along this goal is' : `${pct}% complete`}">`;
     return `<div class="glist-row" data-open-goal="${g.id}" role="button" tabindex="0" style="--h:${a ? hueOf(a) : 220}">
       <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'Starred' : ''}">${p.focus ? '★' : ''}</span>
-      <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
-      <span class="glist-bar-wrap"><span class="glist-bar"><i style="width:${pct}%"></i></span>${slider}</span>
-      <span class="glist-pct">${st === 'done' ? '✓' : pct + '%'}</span>
+      <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure" data-goalnum-measure="${g.id}">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
+      <span class="glist-bar-wrap"><span class="glist-bar"><i${numManual ? ` data-goalnum-fill="${g.id}"` : ''} style="width:${pct}%"></i></span>${slider}</span>
+      <span class="glist-pct"${numManual ? ` data-goalnum-pct="${g.id}"` : ''}>${st === 'done' ? '✓' : pct + '%'}</span>
     </div>`;
   }).join('');
   return `${controls}<div class="glist">${rows}</div>`;
@@ -17191,14 +17207,19 @@ document.addEventListener('input', (e) => {
   // the % and the "Update" input; saves the computed current when you settle.
   if (e.target && e.target.matches && e.target.matches('[data-goal-numslide]')) {
     const gid = e.target.dataset.goalNumslide;
-    const g = state.goal_open && state.goal_open.goal; if (!g || String(g.id) !== String(gid)) return;
+    // Works wherever the goal lives now - the open card, a Home mini-card, an area
+    // page - not only state.goal_open. Live updates stay scoped to the card the
+    // thumb is in, so dragging one copy doesn't jump another copy of the same goal.
+    const g = findGoalById(gid); if (!g) return;
     const target = +((g.props || {}).target) || 0;
     const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     const current = Math.round(v / 100 * target);
-    const cur = document.querySelector(`[data-goalnum-cur="${gid}"]`); if (cur) cur.textContent = current;
+    const scope = e.target.closest('.goal-card, .glist-row, .gc-prog, .gc-progress') || document;
+    const cur = scope.querySelector(`[data-goalnum-cur="${gid}"]`); if (cur) cur.textContent = current;
     const ci = document.getElementById('gc-current'); if (ci) ci.value = current;
-    const fill = document.querySelector(`[data-goalnum-fill="${gid}"]`); if (fill) fill.style.width = v + '%';
-    const pctEl = document.querySelector(`[data-goalnum-pct="${gid}"]`); if (pctEl) pctEl.textContent = v + '%';
+    const fill = scope.querySelector(`[data-goalnum-fill="${gid}"]`); if (fill) fill.style.width = v + '%';
+    const pctEl = scope.querySelector(`[data-goalnum-pct="${gid}"]`); if (pctEl) pctEl.textContent = v + '%';
+    const measEl = scope.querySelector(`[data-goalnum-measure="${gid}"]`); if (measEl) { const u = (g.props && g.props.unit) ? ' ' + g.props.unit : ''; measEl.textContent = `${current} / ${target || 0}${u}`; }
     e.target.setAttribute('aria-label', `Progress: ${v}%`);
     clearTimeout(window.__goalNumT); window.__goalNumT = setTimeout(() => patchGoal(gid, { current }, true), 400);
   }
