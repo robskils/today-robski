@@ -88,7 +88,7 @@ export async function importTxns(env, rows) {
 // natively - text + table layout - and returns structured rows). Rows then go
 // through the normal importTxns path (dedupe + categorise).
 export async function parseStatementPdf(env, dataB64, name) {
-  const key = await aiKey(env, 'gemini');
+  const key = await aiKey(env, 'gemini', 'money');
   if (!key) throw new Error(aiNeedsKey('gemini'));
   if (!dataB64) throw new Error('No PDF data');
   const model = env.GEMINI_MODEL || 'gemini-3.6-flash';

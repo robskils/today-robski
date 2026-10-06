@@ -358,7 +358,10 @@ export async function getAccount(env) {
   const wkStart = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'week_start'").bind(env.uid).first().catch(() => null);
   const curr = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'currency'").bind(env.uid).first().catch(() => null);
   const mpush = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'mail_push'").bind(env.uid).first().catch(() => null);
+  const aiFeat = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'ai_features'").bind(env.uid).first().catch(() => null);
+  let aiFeatures = {}; try { aiFeatures = aiFeat && aiFeat.value ? (JSON.parse(aiFeat.value) || {}) : {}; } catch { aiFeatures = {}; }
   return {
+    aiFeatures,   // { featureKey: false } for any Claude use the user has switched off (absent = on)
     weekStart: (wkStart && /^[0-6]$/.test(wkStart.value)) ? Number(wkStart.value) : 1,   // 0=Sun..6=Sat; default Monday
     currency: (curr && /^[A-Z]{3}$/.test(curr.value)) ? curr.value : 'EUR',   // display currency for the money tools
     name: (u && u.name) || '', email: (u && u.email) || '', subdomain: (u && u.subdomain) || '',
@@ -391,6 +394,12 @@ export async function patchAccount(env, body) {
   if (body.dailyQuote !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'quote_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.dailyQuote ? '0' : '1').run();
   if (body.mailPush !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'mail_push', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.mailPush ? '1' : '0').run();
   if (body.aiOff !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'ai_off', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.aiOff ? '1' : '0').run();
+  if (body.aiFeatures !== undefined && body.aiFeatures && typeof body.aiFeatures === 'object') {
+    // Keep only known feature keys as booleans, so a client can't bloat the row.
+    const allow = ['wellbeing', 'divination', 'reviews', 'mail', 'money', 'import'];
+    const clean = {}; for (const k of allow) { if (body.aiFeatures[k] === false) clean[k] = false; }
+    await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'ai_features', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, JSON.stringify(clean)).run();
+  }
   if (body.surfaceEmail !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_email', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceEmail ? '1' : '0').run();
   if (body.surfaceSms !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'surface_sms', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, body.surfaceSms ? '1' : '0').run();
   if (body.weekStart !== undefined) { const w = Number(body.weekStart); if (Number.isInteger(w) && w >= 0 && w <= 6) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'week_start', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(w)).run(); }

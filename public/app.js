@@ -36,7 +36,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['tasks', 'Tasks'],
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
-  'nav.grp.daily': 'Today', 'nav.planner': 'Planner', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
+  'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -58,7 +58,7 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
-  'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
+  'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -764,8 +764,8 @@ const HELP = {
       <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
       <li><b>Assign</b> a task to one of them.</li>
       <li>Keep <b>shared meeting notes</b>, chat, and start a call.</li></ul>` },
-  today: { title: 'Today', tip: 'The hub for planning and tracking your day - drag practices and tasks onto a timed day, tick them off, keep your streaks.',
-    body: `<p><b>Today</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by life area and priority.</p>
+  today: { title: 'Flow', tip: 'The hub for planning and tracking your day - drag practices and tasks onto a timed day, tick them off, keep your streaks.',
+    body: `<p><b>Flow</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by life area and priority.</p>
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
       <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
       <li><b>Click a task</b> to open it and edit its name, priority, life area or length.</li>
@@ -941,7 +941,7 @@ function labelForView(v) {
     case 'help': return v.tool === 'index' ? 'Guide' : `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
     case 'tasks': return taskTabLabel(v);
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
-    case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.today'); case 'tracker': return t('today.tracker');
+    case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.planner'); case 'tracker': return t('today.tracker');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
     case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'spirit': return t('wb.spirit');
@@ -2440,14 +2440,24 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
 </div>`;
 // Where AI actually gets used across Daybook, and which model powers each - so
 // the AI settings and the onboarding guide can say plainly what a key is for.
+// [featureKey, name, what it does, which model]. The key gates the use server-side
+// (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
 const AI_USES = [
-  ['Well-being', 'gentle coaching and a "Dig deeper" question while you journal', 'Claude'],
-  ['Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
-  ['Money advice', 'sums up what the channels you follow are saying', 'Gemini'],
-  ['Statement import', 'turns a pasted bank statement into tidy transactions', 'Gemini'],
+  ['wellbeing', 'Well-being companion', 'gentle coaching, a "Dig deeper" question while you journal, and dream reflections', 'Claude'],
+  ['divination', 'I Ching & horoscope', 'reads your I Ching casting and writes your daily horoscope', 'Claude'],
+  ['reviews', 'Review help', 'matches your open tasks to a review and sums up the period', 'Claude'],
+  ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
+  ['money', 'Money', 'sums up the channels you follow, and turns a pasted or photographed statement into tidy transactions', 'Gemini'],
+  ['import', 'Event import', 'reads events off a flyer photo or pasted text so you can add them to your calendar', 'Claude'],
 ];
-const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([f, why, prov]) =>
+const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([, f, why, prov]) =>
   `<li><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span></li>`).join('')}</ul>`;
+// The same list in Settings, each a switch: leave AI on but turn off just the uses
+// you don't want. Off when master AI is off (shown, but inert). aiFeatures[key] ===
+// false means the user switched that one off; absent = on.
+const aiFeatureOn = (key) => { const f = (state.account && state.account.aiFeatures) || {}; return f[key] !== false; };
+const aiUsesTogglesHtml = () => { const off = !!(state.account && state.account.aiOff); return `<ul class="ai-uses ai-uses-toggle${off ? ' ai-disabled' : ''}">${AI_USES.map(([key, f, why, prov]) =>
+  `<li><label class="ai-use-row"><span class="ai-use-main"><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span></span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span><input type="checkbox" class="ai-use-sw" data-ai-feature="${key}" ${aiFeatureOn(key) ? 'checked' : ''} ${off ? 'disabled' : ''}></label></li>`).join('')}</ul>`; };
 // Reusable Gmail app-password guidance. A normal Google password won't work over
 // IMAP - this is the single biggest thing that trips people up, so spell it out
 // with the exact links.
@@ -2522,7 +2532,7 @@ function renderSettings() {
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
-    ['☀', 'Time streams', 'Your Today lanes &amp; targets', 'data-open-today=""'],
+    ['☀', 'Flow', 'Your day on a timeline - drag practices &amp; tasks onto it', 'data-open-today=""'],
   ];
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
@@ -2631,9 +2641,10 @@ function renderSettings() {
     const managed = a.isOwner || isManagedPlan(plan);
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
     return `<div class="set-card">
-        <label class="set-mod"><span>Use AI features<small>Turn every AI feature on or off across Daybook.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
-        <div class="set-row-t" style="margin-top:16px">What the AI powers</div>
-        ${aiUsesHtml()}
+        <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Daybook.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
+        <div class="set-row-t" style="margin-top:16px">Where Daybook uses AI</div>
+        <p class="set-row-s" style="margin:0 0 10px">Every place Daybook calls on Claude or Gemini. Switch off any you'd rather it didn't - the rest keep working.</p>
+        ${aiUsesTogglesHtml()}
       </div>
       <div class="set-row-t" style="margin:22px 0 4px">Two ways to run it</div>
       <div class="plan-cards ${a.aiOff ? 'ai-disabled' : ''}">
@@ -8494,7 +8505,7 @@ function renderToday() {
   const dateLabel = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   // Always show the day + date; when it's today, lead with "Today" and set the date beside it.
-  const h1 = isToday ? `${t('nav.today')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel);
+  const h1 = isToday ? `${t('nav.planner')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel);
   const nav = `<span class="t2-nav">${!isToday ? `<button class="t2-navbtn" data-t2-today>${t('nav.today')}</button>` : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
   // Load reviews once so the banner knows what's already submitted (it then shows
   // nothing for a filed review), then use the shared builder (Start + dismiss ×).
@@ -17457,6 +17468,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-mail-aftertriage]')) { const mode = e.target.checked ? 'next' : 'list'; state.mailAfterTriage = mode; api('/api/kv/mail_after_triage', { method: 'PUT', body: JSON.stringify({ value: mode }) }).catch(() => {}); toast(mode === 'next' ? 'Will open the next email' : 'Will go back to the list'); }
   if (e.target.matches('[data-set-locale]')) { setLocale(e.target.value); return; }
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
+  if (e.target.matches('[data-ai-feature]')) { const key = e.target.dataset.aiFeature; const on = e.target.checked; if (state.account) { state.account.aiFeatures = state.account.aiFeatures || {}; if (on) delete state.account.aiFeatures[key]; else state.account.aiFeatures[key] = false; saveAccount({ aiFeatures: state.account.aiFeatures }); } const lbl = (AI_USES.find((u) => u[0] === key) || [])[1] || 'That'; toast(on ? `${lbl} AI on` : `${lbl} AI off`); renderSettings(); return; }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
   if (e.target.matches('[data-msec-show]')) { const key = e.target.dataset.msecShow; const cfg = mobileHomeCfg(); const set = new Set(cfg.hidden); if (e.target.checked) set.delete(key); else set.add(key); cfg.hidden = [...set]; saveMobileHomeCfg(cfg); toast(e.target.checked ? 'Shown on mobile' : 'Hidden on mobile'); }
   if (e.target.matches('[data-people-toggle]')) { const on = e.target.checked; try { localStorage.setItem('life.home.people', on ? '1' : '0'); } catch {} api('/api/kv/home_people', { method: 'PUT', body: JSON.stringify({ value: on ? '1' : '0' }) }).catch(() => {}); toast(on ? 'People shown on Home' : 'People hidden from Home'); if (state.view && state.view.type === 'home') renderHome(); }

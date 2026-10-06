@@ -4177,6 +4177,16 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ai-use-prov { flex:none; font-size:11px; font-weight:600; letter-spacing:.03em; padding:2px 8px; border-radius:999px; }
 .ai-use-claude { color:#a5502f; background:color-mix(in srgb,#c4712e 16%,transparent); }
 .ai-use-gemini { color:#3367b8; background:color-mix(in srgb,#4285f4 15%,transparent); }
+/* Each AI use as its own switch (Settings > Plan). */
+.ai-uses-toggle { gap:4px; }
+.ai-uses-toggle li { display:block; }
+.ai-use-row { display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; }
+.ai-use-row:hover { border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); }
+.ai-use-main { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+.ai-use-row .ai-use-why { flex:none; min-width:0; font-size:12.5px; color:var(--muted); }
+.ai-use-row .ai-use-prov { align-self:center; }
+.ai-use-sw { flex:none; width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
+.ai-uses-toggle.ai-disabled { opacity:.5; pointer-events:none; }
 .ai-get { display:inline-block; font-size:12.5px; color:var(--accent); margin:-4px 0 14px; text-decoration:none; }
 .ai-get:hover { text-decoration:underline; }
 .ai-managed { margin-top:6px; padding:11px 13px; border:1px dashed var(--line-2); border-radius:11px; font-size:13px; color:var(--ink-2); line-height:1.5; }

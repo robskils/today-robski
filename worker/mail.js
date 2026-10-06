@@ -1413,7 +1413,7 @@ export async function handleMail(request, env, url, json, err) {
 // sent here. Thinking is disabled for a fast, predictable short reply (no tools in
 // play), with an explicit no-internal-tags rule to keep stray markup out.
 async function claudiusDraft(env, acct, msg) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'mail');
   if (!key) throw new Error(aiNeedsKey('anthropic'));
   const me = acct.name && acct.name !== acct.email ? acct.name : 'Robin Lumley-Savile';
   const from = String(msg.from || 'the sender').slice(0, 200);

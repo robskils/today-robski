@@ -122,7 +122,7 @@ function parseFeed(xml) {
 const GEMINI = (model, key) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
 
 async function geminiJSON(env, parts, schema, { temperature = 0.3 } = {}) {
-  const key = await aiKey(env, 'gemini');
+  const key = await aiKey(env, 'gemini', 'money');
   if (!key) throw new Error(aiNeedsKey('gemini'));
   const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
   const body = {

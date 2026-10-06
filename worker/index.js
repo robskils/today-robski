@@ -538,7 +538,7 @@ const JOURNAL_MODE_HINT = {
   intention: 'setting an intention for tomorrow', free: 'free-writing',
 };
 async function journalDeepen(request, env, json, err) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'wellbeing');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const text = String(b.text || '').slice(0, 8000).trim();
@@ -583,7 +583,7 @@ async function journalDeepen(request, env, json, err) {
 // structured JSON the client previews and lets you pick from before adding. Vision
 // is why the image path exists - a flyer is usually a picture, not text. (Robin.)
 async function importEvents(request, env, jsonR, errR) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'import');
   if (!key) return errR(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const text = String(b.text || '').slice(0, 20000).trim();
@@ -633,7 +633,7 @@ async function importEvents(request, env, jsonR, errR) {
 // new tasks the entry implies. Strict JSON; ids are validated against the list we
 // were handed, so it can never invent or touch a task id we didn't send.
 async function reviewReconcile(request, env, json, err) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'reviews');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const text = String(b.text || '').slice(0, 8000).trim();
@@ -674,7 +674,7 @@ async function reviewReconcile(request, env, json, err) {
 // we tie them to what they actually asked, warmly and without fortune-telling
 // certainty.
 async function ichingReflect(request, env, json, err) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'divination');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const question = String(b.question || '').slice(0, 400).trim();
@@ -710,7 +710,7 @@ async function ichingReflect(request, env, json, err) {
 // and today's date. Warm and specific to the day; astrology as a lens for
 // self-reflection, not literal prediction.
 async function horoscopeReading(request, env, json, err) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'divination');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const date = String(b.date || '').slice(0, 10);
@@ -751,7 +751,7 @@ async function horoscopeReading(request, env, json, err) {
 // the whole entry is the transcript, the person's coach turns are the lines
 // beginning 🧭, and each call returns the NEXT single coaching message.
 async function journalCoach(request, env, json, err) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'wellbeing');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const text = String(b.text || '').slice(0, 12000).trim();
@@ -795,7 +795,7 @@ async function journalInsights(request, env, json, err) {
     const v = await getSetting(env, 'kv_journal_insights');
     return json(v ? JSON.parse(v) : { text: null }, request);
   }
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'wellbeing');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const { results } = await env.DB.prepare("SELECT body, props, created_at FROM blocks WHERE user_id = ? AND kind = 'journal' AND archived = 0 ORDER BY created_at DESC LIMIT 30").bind(env.uid).all();
   const entries = (results || []).filter((r) => r.body && stripHtmlText(r.body).length > 20);
@@ -888,7 +888,7 @@ async function geocodePlace(request, env, json, err) {
   } catch { return err('geocode unavailable', request, 502); }
 }
 async function reviewSummary(request, env, json, err) {
-  const key = await aiKey(env, 'anthropic');
+  const key = await aiKey(env, 'anthropic', 'reviews');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
   const b = await request.json().catch(() => ({}));
   const period = ['week', 'month', 'quarter', 'year'].includes(b.period) ? b.period : 'period';

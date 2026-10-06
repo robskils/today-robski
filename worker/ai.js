@@ -31,12 +31,29 @@ export async function aiIsOff(env) {
   return !!(row && row.value === '1');
 }
 
+// Per-feature switches, under the master one: a user can leave AI on but turn off
+// a particular use of Claude (e.g. keep Email Scribe, switch off horoscopes). The
+// map is { featureKey: false } where false means off; absent means on. Settings →
+// Plan writes it; `aiKey` reads it, so one disabled feature routes through the same
+// "no AI available" path as the master switch with no per-endpoint wiring.
+export async function aiFeaturesMap(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'ai_features'").bind(env.uid).first().catch(() => null);
+  if (!row || !row.value) return {};
+  try { return JSON.parse(row.value) || {}; } catch { return {}; }
+}
+export async function aiFeatureOff(env, feature) {
+  if (!feature) return false;
+  const m = await aiFeaturesMap(env);
+  return m[feature] === false || m[feature] === 0;
+}
 // The key to use for this user + provider, or null if they must add their own
-// (or if they've switched AI off entirely). Returning null routes every caller
-// through its existing "no AI available" path, so the switch needs gating in
-// exactly one place.
-export async function aiKey(env, provider) {
+// (or if they've switched AI off entirely, or off for this feature). Returning
+// null routes every caller through its existing "no AI available" path, so the
+// switches need gating in exactly one place. `feature` is the capability group
+// (wellbeing / divination / reviews / mail / money / import).
+export async function aiKey(env, provider, feature) {
   if (await aiIsOff(env)) return null;
+  if (feature && await aiFeatureOff(env, feature)) return null;
   const col = provider === 'gemini' ? 'ai_gemini_enc' : 'ai_anthropic_enc';
   const enc = env.user && env.user[col];
   if (enc) { try { return await decryptSecret(env, enc); } catch {} }
