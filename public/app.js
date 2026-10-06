@@ -13540,16 +13540,19 @@ function renderGoalCard() {
   const numBar = numManual
     ? `<span class="glist-bar-wrap gc-slidebar" style="--h:${hueOf(a)}"><span class="glist-bar"><i data-goalnum-fill="${g.id}" style="width:${pctNum}%"></i></span><input type="range" class="gc-slider" min="0" max="100" step="1" value="${pctNum}" data-goal-numslide="${g.id}" aria-label="Progress: ${pctNum}%" title="Drag to set how far along - the number fills in to match"></span>`
     : `<div class="goal-bar gc-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div>`;
+  const trackbyRow = `<label class="gc-trackby"><span class="gc-trackby-l">How to track this</span><select class="sel gc-trackby-sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
   const progressBlock = gtype === 'number'
     ? `<div class="gc-prog">
         <div class="gc-prog-nums"><span class="gc-prog-cur"><b data-goalnum-cur="${g.id}">${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${unitLbl}</span><span class="gc-prog-pct" data-goalnum-pct="${g.id}">${pctNum}%</span></div>
         ${numBar}
+        ${trackbyRow}
         <div class="gc-metric-row"><span class="gc-metric-l">Measure by</span><select class="sel" id="gc-metric">${GMETRICS.map(([v, l]) => `<option value="${v}" ${metric === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         ${metricEditRow}
       </div>`
     : `<div class="gc-prog gc-prog-slide gc-progress">
         <div class="gc-prog-nums"><span class="gc-prog-cur">How far along</span><span class="gc-prog-pct gc-pct">${isDone ? '✓' : pctNum + '%'}</span></div>
         <span class="glist-bar-wrap gc-slidebar" style="--h:${hueOf(a)}"><span class="glist-bar"><i style="width:${isDone ? 100 : pctNum}%"></i></span>${isDone ? '' : `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%" title="Drag to set how far along this goal is">`}</span>
+        ${trackbyRow}
         <div class="gc-prog-done-row"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? t('goal.achieved') : t('goal.markachieved')}</button><span class="goal-done-note">${isDone ? t('goal.nicelydone') : t('goal.tickwhen')}</span></div>
       </div>`;
   const focusMins = focusMinsFor('goal', g.id);
@@ -13571,7 +13574,6 @@ function renderGoalCard() {
       <textarea class="note-title gc-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
       <div class="gc-areas"><span class="gc-areas-l">${t('nav.areas')}</span>${blockAreasControl('goal', g)}</div>
       ${progressBlock}
-      <label class="gc-trackby"><span class="gc-trackby-l">How to track this</span><select class="sel gc-trackby-sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="gc-why"><span class="gc-why-l">${t('goal.why')}</span><textarea class="sel" id="goalcard-why" rows="2" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea></label>
       <label class="gc-why"><span class="gc-why-l">${t('goal.how')}</span><textarea class="sel" id="goalcard-how" rows="2" placeholder="${t('goal.howph')}">${esc(p.how || '')}</textarea></label>
       ${(doneN || focusMins) ? `<div class="gc-hero-stats">${doneN ? `<span>✓ ${doneN} task${doneN === 1 ? '' : 's'} done</span>` : ''}${focusMins ? `<span>🍅 ${fmtMins(focusMins)} focused</span>` : ''}</div>` : ''}
