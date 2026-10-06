@@ -13594,9 +13594,7 @@ function renderGoalCard() {
 
         <label class="tf-field"><span class="tf-label">${t('goal.horizon')}</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="tf-field"><span class="tf-label">${t('goal.status')}</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-        ${(p.horizon === 'quarter' || p.horizon === 'year')
-          ? `<div class="tf-field"><span class="tf-label">${t('goal.bywhen')}</span><div class="gc-target-auto" title="Set by your horizon - change the horizon to change it">${esc(horizonDateLabel(p.horizon, p.targetDate || horizonTargetDate(p.horizon)))}</div></div>`
-          : `<label class="tf-field"><span class="tf-label">By when</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}</label>`}
+        <label class="tf-field"><span class="tf-label">Finish by</span>${dateFieldHtml('goalcard-target', p.targetDate || '')}${(!p.targetDate && (p.horizon === 'quarter' || p.horizon === 'year')) ? `<span class="gc-target-hint">Defaults to ${esc(horizonDateLabel(p.horizon, horizonTargetDate(p.horizon)))}</span>` : ''}</label>
       </div>
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     </details>
@@ -17925,7 +17923,7 @@ document.addEventListener('change', (e) => {
     else if (id === 'goalcard-why') patchGoal(gid, { why: e.target.value }, true);
     else if (id === 'goalcard-how') patchGoal(gid, { how: e.target.value }, true);
     else if (id === 'goalcard-area') patchGoal(gid, { area: e.target.value || null }, true);
-    else if (id === 'goalcard-horizon') { const hz = e.target.value; const patch = { horizon: hz }; const td = horizonTargetDate(hz); if (td) patch.targetDate = td; patchGoal(gid, patch, true); renderGoalCard(); }
+    else if (id === 'goalcard-horizon') { const hz = e.target.value; const patch = { horizon: hz }; const g = state.goal_open && state.goal_open.goal; const hadDate = g && g.props && g.props.targetDate; const td = horizonTargetDate(hz); if (td && !hadDate) patch.targetDate = td; patchGoal(gid, patch, true); renderGoalCard(); }
     else if (id === 'goalcard-gtype') patchGoal(gid, { gtype: e.target.value }, true).then(renderGoalCard);
     else if (id === 'gc-metric') patchGoal(gid, { metric: e.target.value }, true).then(renderGoalCard);
     else if (id === 'goalcard-status') patchGoal(gid, { status: e.target.value }, true);
