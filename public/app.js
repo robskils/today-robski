@@ -10946,6 +10946,9 @@ ${''/* The "older unread sits further down" banner is retired: the background
   // Keep keyboard focus on the reader (not the body iframe / a stale button) so
   // single-key shortcuts - R reply, E archive… - land every time you're reading.
   if (m.open && !m.composing) { const el = document.querySelector('.mail-msg'); if (el) { el.tabIndex = -1; setTimeout(() => { try { el.focus({ preventScroll: true }); } catch {} }, 0); } }
+  // The reader toolbar sticks below the sticky breadcrumb - measure the crumb so
+  // it pins just under it (desktop) rather than behind it. (See .mail-reader-head.)
+  requestAnimationFrame(() => { const cb = document.querySelector('#pane .note-crumbs'); document.documentElement.style.setProperty('--mail-crumbh', cb ? cb.offsetHeight + 'px' : '0px'); });
 }
 
 function showQuickTask() {

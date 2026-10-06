@@ -5675,6 +5675,9 @@ table.ttable tr:last-child td { border-bottom:0; }
    it. It must sit BELOW the 44px tab strip (sticky, z:25) - top:0 would pin it
    behind the tabs, which read as "not pinned at all". */
 .mail-reader-head { position:sticky; top:44px; z-index:8; background:var(--card); border-bottom:1px solid var(--line); padding-bottom:10px; }
+/* Desktop: pin the reader toolbar just BELOW the sticky breadcrumb (which also sits
+   at top:44px), so it isn't hidden behind it. --mail-crumbh is measured per render. */
+@media (min-width:821px){ .mail-reader-head { top:calc(44px + var(--mail-crumbh, 46px)); } }
 /* Compact, consistent icon buttons for the reader toolbar. */
 .mail-act-ic { display:inline-flex; align-items:center; justify-content:center; padding:8px; min-width:38px; height:38px; color:var(--ink-2); }
 .mail-act-ic svg { width:20px; height:20px; display:block; }
