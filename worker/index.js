@@ -3669,7 +3669,10 @@ export default {
       }
       if (path === '/sitemap.xml' && isApex) {
         const all = EN_PAGES.concat(Object.keys(LOCALE_PAGES));
-        const urls = all.map((p) => `<url><loc>https://daybook.fyi${p === '/' ? '/' : p}</loc></url>`).join('\n');
+        const lastmod = new Date().toISOString().slice(0, 10);
+        const pri = (p) => (p === '/' ? '1.0' : /^\/(pt|fr|es)$/.test(p) ? '0.9' : /\/(blog|jornal|journal|diario)$/.test(p) ? '0.7' : '0.6');
+        const freq = (p) => (/\/(blog|jornal|journal|diario)$/.test(p) || p === '/' ? 'weekly' : 'monthly');
+        const urls = all.map((p) => `<url><loc>https://daybook.fyi${p === '/' ? '/' : p}</loc><lastmod>${lastmod}</lastmod><changefreq>${freq(p)}</changefreq><priority>${pri(p)}</priority></url>`).join('\n');
         const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
         return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }

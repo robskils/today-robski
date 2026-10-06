@@ -714,34 +714,51 @@ const HELP = {
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
-  financial: { title: 'Money', tip: 'Track spending against your life areas, import statements, and watch your portfolio.',
-    body: `<p>Money is all your finances in one place. Your <b>life areas double as spending categories</b>, so where your money goes lines up with what your life is about.</p>
-      <ul><li><b>Import</b> a statement and Daybook sorts transactions into categories.</li>
-      <li>Add extra categories for spending that doesn’t fit an area.</li>
-      <li>It remembers the tab you were last on.</li></ul>` },
-  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each life area into goals and actions, and review your progress.',
-    body: `<p>Goals connect the big picture to daily action. For each life area you can write a <b>vision</b>, set <b>goals</b> under it, and break those into actions.</p>
-      <ul><li><b>Bucket list</b> - the things to do before you die.</li>
-      <li><b>Reviews</b> - weekly, monthly, quarterly and yearly check-ins, with reminders when one falls due.</li>
-      <li><b>Wheel of Life</b> and a <b>vision board</b> help you see the whole at a glance.</li></ul>` },
+  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your life areas double as spending categories.',
+    body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts, with a way through to each:</p>
+      <ul>
+      <li><b>Portfolio</b> - live total value, your gain, and how it’s split across holdings.</li>
+      <li><b>Spending</b> - this month’s spend, income and net, with your top categories. Your <b>life areas double as spending categories</b>, so where your money goes lines up with what your life is about. Import a statement (CSV or PDF) and Daybook sorts the transactions; add extra categories for anything that doesn’t fit an area.</li>
+      <li><b>Advice</b> - market trends and your watchlist, read by Claude.</li>
+      </ul>` },
+  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each life area into goals with deadlines, and review your progress weekly to yearly.',
+    body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a life area, set <b>goals</b> under it, and track them.</p>
+      <ul>
+      <li><b>How to track</b> each goal: a <b>number you set</b>, or <b>everything connected</b> to it - tasks ticked off, notes and events - against a target. A simpler goal gets a slider to set how far along it feels.</li>
+      <li><b>Deadline</b> - give a goal a finish-by date right on its card. It feeds <b>Deadlines approaching</b> in your reviews, and you can sort goals by due date.</li>
+      <li><b>This quarter</b> - star (★) the goals you’re focusing on now; they gather on the “This quarter” tab and on Home.</li>
+      <li><b>Completed goals</b> fold into their own section on each area, so you can look back on what you’ve done.</li>
+      <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
+      </ul>
+      <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
   areas: { title: 'Life areas', tip: 'The handful of areas your life orbits. Everything - tasks, notes, money, goals - hangs off them.',
     body: `<p>Life areas are the few domains that matter to you (Work, Health, Family…). They’re the backbone of Daybook: tasks, notes, goals and spending all attach to an area, so any area page gathers everything about that part of your life.</p>
       <ul><li>Give each area a colour so it reads at a glance across the app.</li>
       <li>An area page shows its starred notes, all its notes and tables, and its open tasks.</li>
       <li>Your <b>practices</b> group by area on the Today page, and a task or practice reads in its area's colour.</li></ul>
       <p>Rename, recolour or add areas any time - the whole app follows.</p>` },
-  reflect: { title: 'Well-being', tip: 'Journal, meditate, cast the I Ching, draw a card, read your horoscope - a quiet corner for reflection.',
-    body: `<p>Well-being gathers your reflective practices in one place: journalling (with a “dig deeper” question when you want to go further), a meditation timer with real bells, spirit cards, an I Ching reading, and a daily horoscope.</p>
-      <p><b>Dig deeper</b> asks you one thoughtful follow-up question about what you’ve written, to take a thought further.</p>` },
+  reflect: { title: 'Well-being', tip: 'A quiet corner: journal, coaching, dreams, meditation, spirit cards, I Ching, horoscope - each its own page.',
+    body: `<p><b>Well-being</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
+      <ul>
+      <li><b>Journal</b> - free-write or start from a prompt. <b>Morning Pages</b> (three stream-of-consciousness pages first thing) is one of the start options. <b>Dig deeper</b> asks one thoughtful follow-up question; <b>Empathy</b> offers a warm reflection; and you can <b>dictate</b> an entry by voice.</li>
+      <li><b>Coaching</b> - a running coaching conversation that builds over a session; past sessions are listed to read back.</li>
+      <li><b>Dreams</b> - write a dream and get a gentle interpretation; all your dreams gather on their own page.</li>
+      <li><b>Meditation</b> - a calm sit with real bells and optional interval gongs; each sit is logged, with room for a word about it.</li>
+      <li><b>Spirit cards</b> - draw a card for a moment’s reflection. Cards you keep are saved; tap any past card to see it again.</li>
+      <li><b>I Ching</b> - cast a real reading on a question, save it, and reopen any past reading in full.</li>
+      <li><b>Horoscope</b> - your <b>natal chart</b>, not just your sun sign. Add your birth time and place and it works out your <b>Moon</b> and <b>rising</b> signs too, then writes today’s reading from all three.</li>
+      <li><b>Insights</b> - reads back across your journal entries for the themes, what lifts you and what drains you. (Insights belong to the Journal.)</li>
+      </ul>
+      <p>A tool holding a live reading - I Ching, horoscope, spirit card - shows a dot on its tile; tap to reopen it.</p>` },
   saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
     body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
       <p>One-tap capture (a bookmarklet or an iOS Shortcut) saves a page straight to your list from any browser.</p>` },
-  timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, a meditation timer with real bells, and your practices - the small tools for doing the work.',
+  timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, and your practices - the small tools for doing the work.',
     body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
       <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its life area, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
       <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a life area and it keeps the same history.</li>
-      <li><b>Meditation</b> - a calm timer with real bells and optional interval gongs. Each sit is logged, and there's a place to jot a few words about the day's sitting.</li>
-      <li><b>Practices</b> - the things you do again and again, grouped by life area. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>` },
+      <li><b>Practices</b> - the things you do again and again, grouped by life area. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
+      <p>(The <b>meditation</b> timer now lives in <b>Well-being</b> as its own page.)</p>` },
   friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and chat.',
     body: `<p>Some of your contacts are on Daybook too, and you can connect with them. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
       <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
