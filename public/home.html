@@ -281,6 +281,17 @@ section { position: relative; }
 .af-arrow { color: var(--rust); font-size: 26px; line-height: 1; opacity: .75; }
 .af-area { display: inline-flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--rust-ink); background: var(--rust); border-radius: 14px; padding: 12px 22px; box-shadow: 0 16px 32px -16px rgba(196, 65, 46, 0.6); }
 .af-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; opacity: .9; }
+/* Sharing: the life-areas differentiator, use-cases as a filled grid of cards. */
+.areas-share { margin-top: 64px; text-align: center; max-width: 860px; margin-left: auto; margin-right: auto; }
+.areas-share-h { font-family: 'Fraunces', serif; font-size: clamp(24px, 3vw, 34px); font-weight: 400; letter-spacing: -0.01em; margin: 14px 0 14px; }
+.areas-share-lead { color: var(--ink-2); font-size: 19px; line-height: 1.55; max-width: 54ch; margin: 0 auto 36px; }
+.share-cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 16px; }
+.share-case { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 24px 18px; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: transform .16s, border-color .16s, box-shadow .16s; }
+.share-case:hover { transform: translateY(-2px); border-color: var(--line-2); box-shadow: var(--shadow); }
+.share-case .sc-ic { font-size: 30px; line-height: 1; margin-bottom: 5px; }
+.share-case b { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; color: var(--ink); }
+.share-case span:last-child { font-size: 14px; color: var(--ink-3); }
+@media (max-width: 560px) { .share-cases { grid-template-columns: 1fr 1fr; } .areas-share { margin-top: 48px; } }
 
 /* Well-being - a secondary story, set apart with a soft pine tint */
 .wellbeing-band { background: var(--pine-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -499,6 +510,17 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <div class="af-tools"><span class="af-chip">✉ Mail</span><span class="af-chip">◑ Event</span><span class="af-chip">✓ Task</span><span class="af-chip">▤ Note</span><span class="af-chip">💰 Spend</span></div>
       <div class="af-arrow">↓</div>
       <div class="af-area"><span class="af-dot"></span>Family</div>
+    </div>
+  </div>
+  <div class="wrap areas-share reveal">
+    <div class="eyebrow">Better together</div>
+    <h3 class="areas-share-h">Share an area with the people in it.</h3>
+    <p class="areas-share-lead">Open one part of your life to the people who live it with you - and only that part. Everyone sees what they should; nobody drowns in a group chat.</p>
+    <div class="share-cases">
+      <div class="share-case"><span class="sc-ic">👨‍👩‍👧</span><b>Co-parents</b><span>on “The kids”</span></div>
+      <div class="share-case"><span class="sc-ic">🏡</span><b>A family</b><span>on “The move”</span></div>
+      <div class="share-case"><span class="sc-ic">🎉</span><b>A group</b><span>on an event</span></div>
+      <div class="share-case"><span class="sc-ic">💞</span><b>A couple</b><span>on the money</span></div>
     </div>
   </div>
 </section>
