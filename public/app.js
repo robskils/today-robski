@@ -14600,8 +14600,9 @@ async function openReviewCard(id) {
   const p = r.props || {};
   state.review_open = { review: r, mode: p.status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview(); reviewScrollTop();
-  // Load goals (for the 'Deadlines approaching' block) if we don't have them yet.
+  // Load goals + tasks (for the 'Deadlines approaching' block) if not already held.
   if (state.goals === undefined) { state.goals = []; api('/api/blocks?kind=goal').then((gs) => { state.goals = gs || []; if (state.view.type === 'reviewcard') renderReviewCard(); }).catch(() => {}); }
+  if (state.tasks === undefined) { state.tasks = []; api('/api/blocks?kind=task').then((ts) => { state.tasks = ts || []; if (state.view.type === 'reviewcard') renderReviewCard(); }).catch(() => {}); }
   // Load tasks so the wins strip can enrich each done task (age, goal, priority,
   // day) and the deeper reviews can map tasks onto goals.
   api('/api/blocks?kind=task').then((tasks) => { if (state.review_open && state.review_open.review.id === id) { state.review_open.tasks = tasks; if (state.view.type === 'reviewcard') renderReviewCard(); } }).catch(() => {});
@@ -15072,18 +15073,24 @@ function reviewDeadlinesHtml(p) {
   const todayI = localISO(new Date());
   const win = { weekly: 21, monthly: 62, quarterly: 124, yearly: 366 }[rtype] || 62;
   const horizonI = localISO(new Date(Date.now() + win * 86400000));
-  const items = (state.goals || [])
+  const goalItems = (state.goals || [])
     .filter((g) => (gp(g).status || 'active') === 'active')
-    .map((g) => ({ g, due: goalDueISO(g) }))
+    .map((g) => ({ id: g.id, kind: 'goal', title: g.title || 'Goal', due: goalDueISO(g), area: gp(g).area }));
+  const taskItems = (state.tasks || [])
+    .filter((t) => t.props && t.props.due && !t.props.done)
+    .map((t) => ({ id: t.id, kind: 'task', title: t.title || 'Task', due: t.props.due, area: t.props.area }));
+  const items = [...goalItems, ...taskItems]
     .filter((x) => x.due && x.due <= horizonI)
     .sort((a, b) => a.due.localeCompare(b.due));
   if (!items.length) return '';
-  const rows = items.map(({ g, due }) => {
-    const a = goalArea(g);
-    const diff = Math.round((Date.parse(due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
+  const rows = items.map((x) => {
+    const a = x.area ? areaById(x.area) : null;
+    const diff = Math.round((Date.parse(x.due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
     const when = diff < 0 ? `${-diff}d overdue` : diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : `in ${diff}d`;
     const cls = diff < 0 ? 'over' : diff <= 7 ? 'soon' : '';
-    return `<button class="rv-dl-row ${cls}" data-open-goal="${g.id}"${a ? ` style="--h:${hueOf(a)}"` : ''}><span class="rv-dl-dot"></span><span class="rv-dl-t">${esc(g.title || 'Goal')}</span><span class="rv-dl-when">${esc(when)}</span></button>`;
+    const openAttr = x.kind === 'goal' ? `data-open-goal="${x.id}"` : `data-open-task="${x.id}"`;
+    const ic = x.kind === 'goal' ? '🎯' : '✓';
+    return `<button class="rv-dl-row ${cls}" ${openAttr}${a ? ` style="--h:${hueOf(a)}"` : ''}><span class="rv-dl-dot"></span><span class="rv-dl-ic">${ic}</span><span class="rv-dl-t">${esc(x.title)}</span><span class="rv-dl-when">${esc(when)}</span></button>`;
   }).join('');
   return `<section class="rv-deadlines">${rvSecH('deadlines', `⏳ Deadlines approaching · ${items.length}`)}${rvSecOpen('deadlines') ? `<div class="rv-dl-list">${rows}</div>` : ''}</section>`;
 }
@@ -17898,6 +17905,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
+  if (e.target.id === 'taskcard-due' && state.task_open) patchTaskProps(state.task_open.task.id, { due: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
   if (e.target.matches('[data-rvg-done]')) { const id = e.target.dataset.rvgDone; patchGoal(id, { status: e.target.checked ? 'done' : 'active' }, true).then(() => { if (state.view.type === 'reviewcard') renderReviewCard(); }); return; }
   if (e.target.matches('[data-surface-hide]')) { patchTaskProps(e.target.dataset.surfaceHide, { hideUntil: e.target.checked }); if (state.view.type === 'tasks') renderTasks(); }
@@ -19227,6 +19235,8 @@ function renderTaskCard() {
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="tf-field"><span class="tf-label">Due by</span>
+        ${dateFieldHtml('taskcard-due', t.props.due || '')}</label>
       <div class="tf-field"><span class="tf-label">Life areas</span>
         ${blockAreasControl('task', t)}</div>
     </div>
