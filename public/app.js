@@ -7706,7 +7706,7 @@ function snapshotCalForm() {
   const f = document.getElementById('cal-ev-form'); if (!f) return null;
   const v = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
   return { ev: f.dataset.ev || '', evgap: f.dataset.evgap, title: v('ce-title'), date: v('ce-date'), time: v('ce-time'), enddate: v('ce-enddate'), endtime: v('ce-endtime'),
-    allday: !!(document.getElementById('ce-allday') || {}).checked, loc: v('ce-loc'), url: v('ce-url'), alarm: v('ce-alarm'), alarmN: v('ce-alarm-n'), alarmU: v('ce-alarm-u'), alarmCh: v('ce-alarm-ch'),
+    allday: !!(document.getElementById('ce-allday') || {}).checked, loc: v('ce-loc'), url: v('ce-url'), alarms: v('ce-alarms'), alarmCh: v('ce-alarm-ch'),
     repeat: v('ce-repeat'), area: v('ce-area'), contact: v('ce-contact'), contactSearch: v('ce-contact-search'), notes: v('ce-notes') };
 }
 function restoreCalForm(s) {
@@ -7714,11 +7714,10 @@ function restoreCalForm(s) {
   if ((f.dataset.ev || '') !== s.ev) return;   // a different event opened - don't paste a stale draft onto it
   const set = (id, val) => { if (val === undefined) return; const el = document.getElementById(id); if (el) el.value = val; };
   if (s.evgap) f.dataset.evgap = s.evgap;
-  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes', 'ce-alarm:alarm', 'ce-alarm-n:alarmN', 'ce-alarm-u:alarmU', 'ce-alarm-ch:alarmCh'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
+  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes', 'ce-alarm-ch:alarmCh'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
   if (s.date !== undefined) setDateField('ce-date', s.date);
   if (s.enddate !== undefined) setDateField('ce-enddate', s.enddate);
-  if (s.alarm === 'custom') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) cc.hidden = false; }
-  if (s.alarm !== undefined && s.alarm !== '') { const chw = document.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = false; }
+  if (s.alarms !== undefined) { try { remSetSelected(f, JSON.parse(s.alarms || '[]')); } catch {} }
   const cb = document.getElementById('ce-allday'); if (cb) { cb.checked = s.allday; f.classList.toggle('allday-on', s.allday); }
 }
 // Any http(s) links inside an event's notes, rendered as tappable chips under the
@@ -7744,14 +7743,45 @@ function noteLinksHtml(notes) {
 // glance (tinted when set, showing their value), each a tap to jump to - and open
 // - that field. Delete sits here too. Fast on mobile and desktop, no scrolling to
 // find "add a reminder". (Robin.)
-const CE_ALARM_SHORT = { '0': 'At time', '5': '5 min', '10': '10 min', '15': '15 min', '30': '30 min', '60': '1 hr', '120': '2 hr', '1440': '1 day' };
+const CE_ALARM_SHORT = { '0': 'At time', '5': '5 min', '10': '10 min', '15': '15 min', '30': '30 min', '60': '1 hr', '120': '2 hr', '1440': '1 day', '10080': '1 wk', '43200': '1 mo' };
 // A compact label for any reminder value (presets plus custom minutes).
 function alarmChipLabel(mins) {
   const n = parseInt(mins, 10); if (!Number.isFinite(n)) return 'Reminder';
   if (CE_ALARM_SHORT[String(n)]) return CE_ALARM_SHORT[String(n)];
+  if (n % 43200 === 0) return `${n / 43200} mo`;
+  if (n % 10080 === 0) return `${n / 10080} wk`;
   if (n % 1440 === 0) return `${n / 1440} day${n / 1440 > 1 ? 's' : ''}`;
   if (n % 60 === 0) return `${n / 60} hr${n / 60 > 1 ? 's' : ''}`;
   return `${n} min`;
+}
+// An event can carry more than one reminder (a week before, a day before, 5 min
+// before…). Read any shape - new `alarms` array or a legacy single `alarm` - into
+// a sorted list of minutes-before.
+function eventAlarmList(ev) {
+  if (!ev) return [];
+  if (Array.isArray(ev.alarms)) return ev.alarms.map(Number).filter((n) => Number.isFinite(n) && n >= 0).sort((a, b) => b - a);
+  if (ev.alarm != null && ev.alarm !== '') { const n = Number(ev.alarm); return Number.isFinite(n) ? [n] : []; }
+  return [];
+}
+// The reminder-lead chips shown in the event editor (minutes-before + label).
+const REM_PRESETS = [[0, 'At the time'], [5, '5 min'], [30, '30 min'], [120, '2 hours'], [1440, '1 day'], [10080, '1 week'], [43200, '1 month']];
+function remChipsHtml(sel) {
+  const set = new Set((sel || []).map(Number));
+  const chip = (m, l) => `<button type="button" class="ce-rem-chip ${set.has(m) ? 'on' : ''}" data-alarm-toggle="${m}" aria-pressed="${set.has(m)}">${l}</button>`;
+  const extra = (sel || []).map(Number).filter((m) => !REM_PRESETS.some(([pm]) => pm === m)).sort((a, b) => a - b);
+  return REM_PRESETS.map(([m, l]) => chip(m, l)).join('')
+    + extra.map((m) => chip(m, alarmChipLabel(m))).join('')
+    + `<button type="button" class="ce-rem-chip ce-rem-add" data-alarm-addcustom>+ Custom</button>`;
+}
+function remSelected(form) { try { return JSON.parse((form && form.querySelector('#ce-alarms') || {}).value || '[]') || []; } catch { return []; } }
+// Write the chosen leads back to the hidden field + repaint the chips + show the
+// channel picker only when at least one reminder is set.
+function remSetSelected(form, arr) {
+  if (!form) return;
+  const u = [...new Set((arr || []).map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= 525600).map((n) => Math.round(n)))].sort((a, b) => b - a);
+  const h = form.querySelector('#ce-alarms'); if (h) h.value = JSON.stringify(u);
+  const box = form.querySelector('.ce-rem-chips'); if (box) box.innerHTML = remChipsHtml(u);
+  const chw = form.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = u.length === 0;
 }
 const CE_REPEAT_SHORT = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
 const DOW_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -7770,7 +7800,7 @@ function recurDescribe(ev) {
 }
 function ceQuickBar(ev) {
   const hasArea = !!(ev && ev.area);
-  const hasAlarm = !!(ev && ev.alarm != null && ev.alarm !== '');
+  const alist = eventAlarmList(ev); const hasAlarm = alist.length > 0;
   const hasRepeat = !!(ev && ((ev.repeat && ev.repeat !== 'none') || ev.recurringId));
   const hasContact = !!(ev && ev.contact);
   const noteN = (ev && Array.isArray(ev.noteLinks)) ? ev.noteLinks.length : 0;
@@ -7779,9 +7809,9 @@ function ceQuickBar(ev) {
   const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
   const out = [];
   out.push(chip('#ce-area', '◈', hasArea ? ((area && area.title) || 'Life area') : 'Life area', hasArea, (hasArea && area) ? hueOf(area) : null));
-  out.push(chip('#ce-alarm', '🔔', hasAlarm ? alarmChipLabel(ev.alarm) : 'Reminder', hasAlarm));
+  out.push(chip('.ce-rem-field', '🔔', hasAlarm ? alist.map(alarmChipLabel).join(' + ') : 'Reminder', hasAlarm));
   out.push(chip((ev && ev.recurringId) ? '.ce-repeat-info' : '#ce-repeat', '↻', hasRepeat ? (ev.recurringId ? 'Repeats' : (CE_REPEAT_SHORT[ev.repeat] || 'Repeat')) : 'Repeat', hasRepeat));
-  out.push(chip('#ce-url', '🔗', hasUrl ? 'Link' : 'Add link', hasUrl));
+  out.push(chip('#ce-url', '🔗', hasUrl ? 'Website' : 'Add website', hasUrl));
   out.push(chip('#ce-contact-search', '👤', hasContact ? ((findContact(ev.contact) || {}).title || 'Contact') : 'Contact', hasContact));
   if (ev && ev.id) out.push(chip('[data-ev-note-q]', '▤', noteN ? `${noteN} note${noteN > 1 ? 's' : ''}` : 'Link note', noteN > 0));
   if (ev && ev.id) out.push('<button type="button" class="ce-q ce-q-del" data-cal-del aria-label="Delete event" title="Delete event"><span class="ce-q-ic">🗑</span><span class="ce-q-l">Delete</span></button>');
@@ -7818,7 +7848,7 @@ function showCalView(ev) {
       ${loc ? row('📍', esc(loc)) : ''}
       ${area ? row('◈', `<span class="ce-view-area" style="--h:${hueOf(area)}"><span class="ce-view-dot"></span>${esc(area.title)}</span>`) : ''}
       ${contact ? row('👤', esc(contact.title || 'Contact')) : ''}
-      ${(ev.alarm != null && ev.alarm !== '') ? row('🔔', esc(alarmChipLabel(ev.alarm))) : ''}
+      ${(() => { const al = eventAlarmList(ev); return al.length ? row('🔔', esc(al.map((m) => m === 0 ? 'at the time' : `${alarmChipLabel(m)} before`).join(' · '))) : ''; })()}
       ${repeats ? row('↻', esc(recurDescribe(ev) || 'Repeats')) : ''}
       ${ev.url ? row('🔗', `<a href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">${esc(ev.url)}</a>`) : ''}
     </div>
@@ -7866,16 +7896,21 @@ function showCalForm(ev) {
     </div>
     <div class="ce-grid">
       <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location<button type="button" class="ce-directions" id="ce-directions" data-ce-directions ${loc ? '' : 'hidden'} title="Open directions in Google Maps">🧭 Directions</button></span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
-      ${(() => { const av = (ev && ev.alarm != null) ? String(ev.alarm) : ''; const presets = ['', '0', '5', '10', '15', '30', '60', '120', '1440']; const isCustom = av !== '' && !presets.includes(av); const opt = (v, l) => `<option value="${v}" ${(!isCustom && av === v) ? 'selected' : ''}>${l}</option>`; const mins = isCustom ? Math.max(1, parseInt(av, 10) || 1) : 0; const unit = isCustom ? (mins % 1440 === 0 ? 'd' : mins % 60 === 0 ? 'h' : 'm') : 'm'; const num = isCustom ? (unit === 'd' ? mins / 1440 : unit === 'h' ? mins / 60 : mins) : ''; const uOpt = (v, l) => `<option value="${v}" ${unit === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me</span><select id="ce-alarm" class="sel">${opt('', 'No reminder')}${opt('0', 'At the time')}${opt('5', '5 minutes before')}${opt('10', '10 minutes before')}${opt('15', '15 minutes before')}${opt('30', '30 minutes before')}${opt('60', '1 hour before')}${opt('120', '2 hours before')}${opt('1440', '1 day before')}<option value="custom" ${isCustom ? 'selected' : ''}>Custom…</option></select><div class="ce-alarm-custom" ${isCustom ? '' : 'hidden'}><input id="ce-alarm-n" class="sel" type="number" min="1" max="999" inputmode="numeric" value="${num}" placeholder="e.g. 45"><select id="ce-alarm-u" class="sel">${uOpt('m', 'minutes before')}${uOpt('h', 'hours before')}${uOpt('d', 'days before')}</select></div>${(() => { const ch = (ev && ev.alarmCh) || 'app'; const cOpt = (v, l) => `<option value="${v}" ${ch === v ? 'selected' : ''}>${l}</option>`; return `<div class="ce-alarm-ch" ${av === '' ? 'hidden' : ''}><select id="ce-alarm-ch" class="sel">${cOpt('app', 'In the app')}${cOpt('email', 'By email')}${cOpt('sms', 'By text')}${cOpt('both', 'Text &amp; email')}</select></div>`; })()}</label>`; })()}
+      ${(() => { const sel = eventAlarmList(ev); const ch = (ev && ev.alarmCh) || 'app'; const cOpt = (v, l) => `<option value="${v}" ${ch === v ? 'selected' : ''}>${l}</option>`; return `<div class="ce-field ce-rem-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
+        <input type="hidden" id="ce-alarms" value="${esc(JSON.stringify(sel))}">
+        <div class="ce-rem-chips">${remChipsHtml(sel)}</div>
+        <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric" placeholder="e.g. 45"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
+        <div class="ce-alarm-ch" ${sel.length ? '' : 'hidden'}><span class="ce-rem-chlbl">Notify me</span><select id="ce-alarm-ch" class="sel">${cOpt('app', 'In the app')}${cOpt('email', 'By email')}${cOpt('sms', 'By text')}${cOpt('both', 'Text &amp; email')}</select></div>
+      </div>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
     ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ ${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">📅 Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `⏹ Until ${esc(ends)}` : '∞ No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
     <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <details class="ce-links"${(ev && (ev.url || ev.contact)) ? ' open' : ''}>
-      <summary class="ce-links-h">Connected<span class="ce-links-hint">a link, a contact, notes</span></summary>
+      <summary class="ce-links-h">Connected<span class="ce-links-hint">a website, a contact, notes</span></summary>
       <div class="ce-links3">
-        <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Link</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
+        <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Website</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
         ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">👤</span>Contact</span><input id="ce-contact-search" class="sel" list="ce-contact-dl" placeholder="Search…" autocomplete="off" value="${esc(withName)}"><input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}"><datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist></label>`; })()}
         ${eventNoteSearchField(ev)}
       </div>
@@ -7937,7 +7972,7 @@ function onEventEndEdit(prefix) {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
 // Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
-function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, alarmCh, isNew, fallbackDate }) {
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
   // Send the repeat whenever the form supplied one (create OR edit) so you can
@@ -7947,7 +7982,7 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a life area
   const ur = url !== undefined ? { url: String(url || '').trim() } : {};   // a link to open in one tap (class, call, page)
   const co = contact !== undefined ? { contact: contact || null } : {};    // a person this event is with
-  const alrm = alarm !== undefined ? { alarm: (alarm === '' || alarm == null) ? '' : Number(alarm), ...(alarmCh ? { alarmCh } : {}) } : {};   // reminder: minutes before + channel (app/sms/email/both)
+  const alrm = alarms !== undefined ? { alarms: (Array.isArray(alarms) ? alarms : (alarms === '' || alarms == null ? [] : [alarms])).map(Number).filter((n) => Number.isFinite(n) && n >= 0), ...(alarmCh ? { alarmCh } : {}) } : {};   // reminders: one or more leads (minutes before) + channel (app/sms/email/both)
   if (allDay) {
     // Stored end is exclusive (the day after the last), so a multi-day trip pushes
     // the inclusive end date on by one.
@@ -7962,9 +7997,9 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   duration = Math.max(15, duration);
   return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co, ...alrm };
 }
-async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, alarmCh) {
-  if (alarm !== undefined && alarm !== '') ensureAlarmSetup();   // arming the first reminder: unlock sound + ask for notifications
-  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarm, alarmCh, isNew: !id, fallbackDate: state.cal.selected }));
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh) {
+  if (Array.isArray(alarms) ? alarms.length : (alarms !== undefined && alarms !== '')) ensureAlarmSetup();   // arming the first reminder: unlock sound + ask for notifications
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, isNew: !id, fallbackDate: state.cal.selected }));
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
@@ -8029,7 +8064,7 @@ function fireEventAlarm(e, mins) {
   } catch {}
 }
 async function refreshAlarmEvents() {
-  try { const d = await api('/api/day'); state.alarmEvents = (d.events || []).filter((e) => e.alarm != null && !e.allDay && e.start_min != null); state.alarmDay = d.today || dayKey(new Date()); } catch {}
+  try { const d = await api('/api/day'); state.alarmEvents = (d.events || []).filter((e) => Array.isArray(e.alarms) && e.alarms.length && !e.allDay && e.start_min != null); state.alarmDay = d.today || dayKey(new Date()); } catch {}
 }
 function checkAlarms() {
   const evs = state.alarmEvents || []; if (!evs.length) return;
@@ -8037,12 +8072,16 @@ function checkAlarms() {
   const fired = alarmFiredSet();
   const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
   for (const e of evs) {
-    const at = (e.start_min || 0) - (Number(e.alarm) || 0);
-    const key = String(e.id) + ':' + e.alarm;
-    if (fired.has(key)) continue;
-    // Fire when its moment arrives, within a 3-minute grace so opening the app a
-    // touch late still catches it - but a long-past one is left alone.
-    if (nowMin >= at && nowMin < at + 3) { markAlarmFired(key); fireEventAlarm(e, Number(e.alarm) || 0); }
+    // Each lead fires independently. Only same-day leads can land here (the engine
+    // loads today's events); longer leads arrive as a Web Push from the server.
+    for (const lead of (Array.isArray(e.alarms) ? e.alarms : [])) {
+      const at = (e.start_min || 0) - (Number(lead) || 0);
+      const key = String(e.id) + ':' + lead;
+      if (fired.has(key)) continue;
+      // Fire when its moment arrives, within a 3-minute grace so opening the app a
+      // touch late still catches it - but a long-past one is left alone.
+      if (nowMin >= at && nowMin < at + 3) { markAlarmFired(key); fireEventAlarm(e, Number(lead) || 0); }
+    }
   }
 }
 function startAlarmLoop() {
@@ -17903,6 +17942,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
+  // Reminder chips: toggle a lead, open the custom-lead row, or add a custom lead.
+  { const tg = t.closest('[data-alarm-toggle]'); if (tg) { const f = tg.closest('#cal-ev-form'); const m = Number(tg.dataset.alarmToggle); const cur = remSelected(f); const i = cur.indexOf(m); if (i >= 0) cur.splice(i, 1); else cur.push(m); remSetSelected(f, cur); return; } }
+  if (t.closest('[data-alarm-addcustom]')) { const f = t.closest('#cal-ev-form'); const c = f && f.querySelector('.ce-rem-custom'); if (c) { c.hidden = !c.hidden; if (!c.hidden) { const n = f.querySelector('#ce-rem-n'); if (n) { try { n.focus(); } catch {} } } } return; }
+  if (t.closest('[data-alarm-customadd]')) { const f = t.closest('#cal-ev-form'); if (!f) return; const n = Math.max(1, Math.min(999, parseInt((f.querySelector('#ce-rem-n') || {}).value, 10) || 0)); const u = (f.querySelector('#ce-rem-u') || {}).value || 'm'; if (n) { const mins = n * (u === 'd' ? 1440 : u === 'h' ? 60 : 1); const cur = remSelected(f); cur.push(mins); remSetSelected(f, cur); } const c = f.querySelector('.ce-rem-custom'); if (c) c.hidden = true; const ni = f.querySelector('#ce-rem-n'); if (ni) ni.value = ''; return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
   if (t.closest('[data-cal-agenda-more]')) { state.cal.agendaDays = (state.cal.agendaDays || 30) + 30; loadCalendar(); return; }
   if (t.closest('[data-cal-agenda-earlier]')) {
@@ -18196,7 +18239,6 @@ function openLinkMenu(x, y, href, view) {
 document.addEventListener('change', (e) => {
   if (e.target.matches && e.target.matches('[data-wheel-track]')) { setWheelTrack(e.target.dataset.wheelTrack, e.target.checked); return; }
   // Event reminder: reveal the number+unit inputs when "Custom…" is chosen.
-  if (e.target.id === 'ce-alarm') { const cc = document.querySelector('.ce-alarm-custom'); if (cc) { const on = e.target.value === 'custom'; cc.hidden = !on; if (on) { const n = document.getElementById('ce-alarm-n'); if (n) { n.focus(); n.select(); } } } const chw = document.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = (e.target.value === ''); return; }
   if (e.target.matches('[data-import-area]')) { importState().area = e.target.value || ''; renderSettings(); return; }
   if (e.target.matches('#imp-files')) { const fl = e.target.files; if (fl && fl.length) importReadFiles(fl); return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
@@ -18473,12 +18515,11 @@ document.addEventListener('submit', (e) => {
     const v = $('#qe-title').value.trim();
     if (v) homeAddEvent(buildEventBody({ title: v, startDate: $('#qe-date').value, startTime: ($('#qe-time') || {}).value, endDate: ($('#qe-enddate') || {}).value, endTime: ($('#qe-endtime') || {}).value, location: $('#qe-loc').value.trim(), allDay: $('#qe-allday').checked, repeat: ($('#qe-repeat') || {}).value, notes: ($('#qe-notes') || {}).value, area: ($('#qe-area') || {}).value, isNew: true }));
   }
-  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact'); const al = $('#ce-alarm');
-    // A "Custom…" reminder resolves to minutes-before from the number + unit.
-    let alarmVal = al ? al.value : undefined;
-    if (alarmVal === 'custom') { const n = Math.max(1, Math.min(999, parseInt(($('#ce-alarm-n') || {}).value, 10) || 0)); const u = (($('#ce-alarm-u') || {}).value) || 'm'; alarmVal = n ? String(n * (u === 'd' ? 1440 : u === 'h' ? 60 : 1)) : ''; }
-    const alarmChVal = (alarmVal === '' || alarmVal === undefined) ? 'app' : (($('#ce-alarm-ch') || {}).value || 'app');
-    if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmVal, alarmChVal); }
+  if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact');
+    // One or more reminder leads, chosen as chips (stored as a JSON array).
+    const alarmsVal = remSelected(e.target);
+    const alarmChVal = alarmsVal.length ? (($('#ce-alarm-ch') || {}).value || 'app') : 'app';
+    if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmsVal, alarmChVal); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';

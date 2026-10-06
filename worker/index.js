@@ -350,7 +350,7 @@ async function createEvent(request, env) {
     const r = await createNativeEvent(env, b);
     if (r.error) return err(r.error, request);
     if (b.area !== undefined) await setEventAreaFor(env, r.id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, r.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, r.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, r.id, b.alarm, b.alarmCh).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, r.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, r.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, r.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: r.id }, request, 201);
   }
 
@@ -400,7 +400,7 @@ async function createEvent(request, env) {
         const qRes = await fetch(q, { headers: { Authorization: `Bearer ${token}` } });
         if (qRes.ok) {
           const found = ((await qRes.json()).items || []).find((e) => e.status !== 'cancelled');
-          if (found) { if (b.area !== undefined) await setEventAreaFor(env, found.id, b.area).catch(() => {}); if (b.contact !== undefined) await setEventContactFor(env, found.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, found.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, found.id, b.alarm, b.alarmCh).catch(() => {}); return json({ ok: true, id: found.id, existed: true }, request, 200); }
+          if (found) { if (b.area !== undefined) await setEventAreaFor(env, found.id, b.area).catch(() => {}); if (b.contact !== undefined) await setEventContactFor(env, found.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, found.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, found.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {}); return json({ ok: true, id: found.id, existed: true }, request, 200); }
         }
       } catch { /* lookup is best-effort; fall through and create */ }
     }
@@ -436,7 +436,7 @@ async function createEvent(request, env) {
 
     const ev = await res.json();
     if (b.area !== undefined) await setEventAreaFor(env, ev.id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, ev.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, ev.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, ev.id, b.alarm, b.alarmCh).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, ev.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, ev.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, ev.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: ev.id }, request, 201);
   } catch (e) {
     console.error('createEvent:', e.message);
@@ -477,7 +477,7 @@ async function updateEvent(request, env, id) {
     await env.DB.prepare("UPDATE blocks SET title=?, props=?, updated_at=? WHERE id=? AND kind='event' AND user_id=?")
       .bind(title, JSON.stringify(p), new Date().toISOString(), native.id, env.uid).run();
     if (b.area !== undefined) await setEventAreaFor(env, native.id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, native.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, native.id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, native.id, b.alarm, b.alarmCh).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, native.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, native.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, native.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: native.id }, request);
   }
   if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
@@ -519,7 +519,7 @@ async function updateEvent(request, env, id) {
     if (!res.ok) { console.error('google update event:', res.status, await res.text()); return err('Google would not update that event.', request, 502); }
     const ev = await res.json();
     if (b.area !== undefined) await setEventAreaFor(env, id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, id, b.url).catch(() => {}); if (b.alarm !== undefined) await setEventAlarmFor(env, id, b.alarm, b.alarmCh).catch(() => {});
+    if (b.contact !== undefined) await setEventContactFor(env, id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: ev.id }, request);
   } catch (e) {
     console.error('updateEvent:', e.message);
@@ -1035,21 +1035,37 @@ function applyEventUrls(events, map) { if (!map) return events; for (const e of 
 // Side-mapped like the others so it works on the owner's Google events too. The
 // alarm itself fires client-side, so this just stores when.
 async function getEventAlarms(env) { const v = await getSetting(env, 'event_alarms'); try { return v ? JSON.parse(v) : {}; } catch { return {}; } }
-// A stored alarm is either a bare number (legacy: minutes-before, in-app only) or
-// { m: minutes, ch: 'app'|'sms'|'email'|'both' }. `ch` chooses how to remind -
-// in-app only (default), or also by text / email / both.
+// A stored alarm is one of: a bare number (legacy: single minutes-before, in-app),
+// { m, ch } (legacy single + channel), or { ms:[minutes…], ch } (one or more leads,
+// e.g. a week + a day + 5 min before, all on one channel). `ch` chooses how to
+// remind - in-app push (default), or by text / email / both.
 const ALARM_CHANNELS = ['app', 'sms', 'email', 'both'];
+const ALARM_MAX = 525600;   // a year in minutes - generous ceiling for a lead time
+// Normalise any stored shape to a sorted, de-duped array of minutes-before.
+function alarmMsList(v) {
+  let arr;
+  if (v == null) arr = [];
+  else if (Array.isArray(v)) arr = v;
+  else if (typeof v === 'object') arr = Array.isArray(v.ms) ? v.ms : (v.m != null ? [v.m] : []);
+  else arr = [v];
+  const out = [...new Set(arr.map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= ALARM_MAX).map((n) => Math.round(n)))];
+  return out.sort((a, b) => b - a);   // longest lead first
+}
 async function setEventAlarmFor(env, id, alarm, ch) {
   const key = String(id || '').split('::')[0]; if (!key) return;
   const map = await getEventAlarms(env);
-  const n = Number(alarm);
-  if (alarm === '' || alarm == null || Number.isNaN(n) || n < 0) { delete map[key]; }
-  else { const m = Math.min(1440, Math.round(n)); const channel = ALARM_CHANNELS.includes(ch) ? ch : 'app'; map[key] = channel === 'app' ? m : { m, ch: channel }; }
+  const ms = alarmMsList(alarm);
+  if (!ms.length) { delete map[key]; }
+  else { const channel = ALARM_CHANNELS.includes(ch) ? ch : 'app'; map[key] = { ms, ch: channel }; }
   await setSetting(env, 'event_alarms', JSON.stringify(map));
 }
 function applyEventAlarms(events, map) {
   if (!map) return events;
-  for (const e of (events || [])) { const k = String(e.id || '').split('::')[0]; const v = map[k]; if (v == null) continue; if (typeof v === 'object') { e.alarm = v.m; e.alarmCh = v.ch || 'app'; } else { e.alarm = v; e.alarmCh = 'app'; } }
+  for (const e of (events || [])) {
+    const k = String(e.id || '').split('::')[0]; const v = map[k]; if (v == null) continue;
+    const ms = alarmMsList(v); if (!ms.length) continue;
+    e.alarms = ms; e.alarmCh = (typeof v === 'object' && !Array.isArray(v) && v.ch) ? v.ch : 'app';
+  }
   return events;
 }
 // Notes connected to an event, side-mapped by base id like the rest so it works on
@@ -2162,13 +2178,19 @@ async function runEventRemindersForUser(env, user) {
   const uid = user.id;
   const uenv = { ...env, uid, user };
   const alarms = await getEventAlarms(uenv).catch(() => ({}));
-  // Only events you asked to hear about by text/email need any server work; a
-  // bare-number (in-app) alarm is handled client-side. No such alarm → no fetch.
-  const wantsExternal = Object.values(alarms).some((v) => v && typeof v === 'object' && (v.ch === 'sms' || v.ch === 'email' || v.ch === 'both'));
-  if (!wantsExternal) return 0;
+  // Any alarm needs server work now: 'app' reminders are delivered as a Web Push
+  // (so they fire with Daybook closed, which is the whole point of a reminder),
+  // and 'sms'/'email'/'both' as text/email. Only a user with zero alarms skips.
+  const alarmVals = Object.values(alarms);
+  if (!alarmVals.length) return 0;
 
   const now = localParts(new Date(), TZ);
-  const to = addDaysStr(now.date, 2);   // up to a day ahead (+crossing midnight) covers the 1-day-before max
+  // Look far enough ahead to actually SEE an event whose (start - lead) is now:
+  // a 1-month-before reminder sits ~30 days out. Size the window to the longest
+  // lead the user has set, +1 day for the midnight crossing.
+  const alarmMins = alarmVals.map((v) => (v && typeof v === 'object') ? Number(v.m) : Number(v)).filter((n) => Number.isFinite(n) && n >= 0);
+  const leadDays = Math.ceil((alarmMins.length ? Math.max(...alarmMins) : 0) / 1440);
+  const to = addDaysStr(now.date, Math.max(2, leadDays + 1));
   const native = await nativeRangeEvents(uenv, now.date, to).catch(() => []);
   const g = await calendarRange(uenv, now.date, to).catch(() => ({ events: [] }));
   const events = [...(g.events || []), ...native];
@@ -2178,21 +2200,25 @@ async function runEventRemindersForUser(env, user) {
   let sentMap = {};
   try { sentMap = JSON.parse((await getSetting(uenv, 'event_alarm_sent')) || '{}') || {}; } catch {}
   let changed = false;
-  for (const k of Object.keys(sentMap)) { const d = k.slice(k.lastIndexOf(':') + 1); if (d && d < now.date) { delete sentMap[k]; changed = true; } }
+  // Keys carry the occurrence date (YYYY-MM-DD); drop anything before today. The
+  // date may sit mid-key now (baseId:date:lead), so match it anywhere.
+  for (const k of Object.keys(sentMap)) { const m = k.match(/(\d{4}-\d{2}-\d{2})/); if (m && m[1] < now.date) { delete sentMap[k]; changed = true; } }
 
   const dayOffsetMin = (d) => Math.round((Date.parse(`${d}T00:00:00Z`) - Date.parse(`${now.date}T00:00:00Z`)) / 86400000) * 1440;
   const fired = [];
   for (const e of events) {
-    if (e.allDay || e.start_min == null || e.alarm == null) continue;   // timed events only
-    const ch = e.alarmCh; if (!(ch === 'sms' || ch === 'email' || ch === 'both')) continue;
+    if (e.allDay || e.start_min == null || !Array.isArray(e.alarms) || !e.alarms.length) continue;   // timed events with ≥1 reminder
+    const ch = e.alarmCh || 'app'; if (!(ch === 'app' || ch === 'sms' || ch === 'email' || ch === 'both')) continue;
     const minsUntil = dayOffsetMin(e.date) + e.start_min - now.min;
-    const alarm = Number(e.alarm) || 0;
-    // Fire once we've reached (start - alarm), with a short catch-up for a late tick.
-    if (!(minsUntil <= alarm && minsUntil >= alarm - EV_CATCHUP_MIN)) continue;
     const baseId = String(e.id || '').split(NATIVE_SEP)[0];
-    const key = `${baseId}:${e.date}`;
-    if (sentMap[key]) continue;
-    fired.push({ e, ch, minsUntil, key });
+    // Each lead fires independently (a week before, a day before, 5 min before…),
+    // deduped per occurrence+lead, with a short catch-up for a late cron tick.
+    for (const lead of e.alarms) {
+      if (!(minsUntil <= lead && minsUntil >= lead - EV_CATCHUP_MIN)) continue;
+      const key = `${baseId}:${e.date}:${lead}`;
+      if (sentMap[key]) continue;
+      fired.push({ e, ch, minsUntil, key });
+    }
   }
   if (!fired.length) { if (changed) await setSetting(uenv, 'event_alarm_sent', JSON.stringify(sentMap)).catch(() => {}); return 0; }
 
@@ -2205,8 +2231,15 @@ async function runEventRemindersForUser(env, user) {
     const e = f.e;
     const hh = `${String((e.start_min / 60) | 0).padStart(2, '0')}:${String(e.start_min % 60).padStart(2, '0')}`;
     const inMin = Math.max(0, f.minsUntil);
-    const whenPhrase = inMin <= 0 ? 'now' : inMin < 60 ? `in ${inMin} min` : `in ${Math.round(inMin / 60)} h`;
+    const whenPhrase = inMin <= 0 ? 'now' : inMin < 60 ? `in ${inMin} min` : inMin < 1440 ? `in ${Math.round(inMin / 60)} h` : `in ${Math.round(inMin / 1440)} day${Math.round(inMin / 1440) === 1 ? '' : 's'}`;
     let ok = false;
+    // 'In the app' = a Web Push to the user's installed Daybook(s). Fires with the
+    // app closed, unlike the client-side toast (which only runs while open).
+    if (f.ch === 'app') {
+      const r = await pushAll(env, { type: 'event', title: `⏰ ${e.title || 'Event'}`, body: `${hh}${e.location ? ` · ${e.location}` : ''} - ${whenPhrase}`, url: '/calendar' }, uid).catch(() => null);
+      ok = !!(r && r.sent);
+      if (r && r.total === 0) ok = true;   // no devices subscribed → nothing to retry, don't re-attempt every tick
+    }
     if ((f.ch === 'sms' || f.ch === 'both') && phone) {
       const body = `⏰ ${e.title || 'Event'} at ${hh}${e.location ? `, ${e.location}` : ''} - ${whenPhrase}. ${home}/calendar`;
       const r = await sendSms(env, body, phone).catch(() => ({ ok: false }));

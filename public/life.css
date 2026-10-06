@@ -2459,8 +2459,22 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .ce-alarm-custom { display:flex; gap:8px; margin-top:7px; }
 .ce-alarm-custom #ce-alarm-n { flex:none; width:84px; max-width:84px; }
 .ce-alarm-custom #ce-alarm-u { flex:1; min-width:0; }
-.ce-alarm-ch { margin-top:7px; }
-.ce-alarm-ch #ce-alarm-ch { width:100%; max-width:none; }
+.ce-alarm-ch { margin-top:9px; display:flex; align-items:center; gap:9px; }
+.ce-alarm-ch #ce-alarm-ch { flex:1; width:auto; max-width:none; }
+.ce-rem-chlbl { font-size:13px; color:var(--ink-3); white-space:nowrap; }
+/* Reminders: pick as many leads as you like (a week + a day + 5 min before…) as
+   toggle chips, then one channel for them all. */
+.ce-rem-sub { text-transform:none; letter-spacing:0; font-weight:400; font-size:12.5px; color:var(--ink-3); opacity:.85; margin-left:6px; }
+.ce-rem-chips { display:flex; flex-wrap:wrap; gap:7px; }
+.ce-rem-chip { display:inline-flex; align-items:center; gap:5px; padding:7px 13px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2,var(--ink)); font:inherit; font-size:14px; line-height:1; cursor:pointer; transition:background .12s, border-color .12s, color .12s; }
+.ce-rem-chip:hover { border-color:var(--accent); }
+.ce-rem-chip.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink,#fff); font-weight:600; }
+.ce-rem-chip.on::before { content:'✓'; font-size:12px; margin-right:1px; }
+.ce-rem-add { border-style:dashed; color:var(--ink-3); }
+.ce-rem-custom { display:flex; gap:8px; margin-top:9px; align-items:center; }
+.ce-rem-custom #ce-rem-n { flex:none; width:84px; max-width:84px; }
+.ce-rem-custom #ce-rem-u { flex:1; min-width:0; }
+.ce-rem-custom .ce-rem-addbtn { flex:none; width:auto; }
 /* The three ways to link an event out - a URL, a person, a note - grouped in one
    soft panel so they read as a set rather than scattered fields. (Robin.) */
 .ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:var(--paper-2); }
