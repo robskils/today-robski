@@ -803,6 +803,21 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </footer>
 
+<script>
+/* Homepage order: move the flow diagram, then the tools showcase, to just above the closing CTA */
+(function(){
+  try {
+    var invite = document.getElementById('invite');
+    var flow = document.getElementById('flow');
+    var tools = document.getElementById('tools');
+    if (invite && flow && tools && invite.parentNode) {
+      invite.parentNode.insertBefore(flow, invite);
+      invite.parentNode.insertBefore(tools, invite);
+    }
+  } catch (e) {}
+})();
+</script>
+
 <div class="signin-overlay" id="signin-modal" hidden>
   <div class="signin-box" role="dialog" aria-modal="true" aria-label="Sign in to your Daybook">
     <button class="signin-close" data-signin-close aria-label="Close">&times;</button>
