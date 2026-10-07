@@ -2944,11 +2944,27 @@ async function handleTasks(request, env, url) {
 
 async function createSlot(request, env) {
   const b = await request.json();
-  if (!b.title || !b.lane) return err('title and lane required', request);
+  if (!b.title) return err('title required', request);
   const day = b.day || todayStr(TZ);
   if (!isValidDay(day)) return err('bad date', request);
 
-  if (!(await isValidLane(env, b.lane))) return err('bad lane', request);
+  // A slot needs a lane, but a drag must NEVER hard-fail on a blank or stale one.
+  // Practices are grouped by life area now, so one can still carry a legacy lane
+  // key the user has since renamed or deleted - createSlot used to 400 on it, and
+  // the dropped practice "jumped back" off the day with nothing placed (Robin).
+  // Keep a valid lane as given; otherwise derive it from the practice's area, and
+  // fall back to the always-present 'other' catch-all.
+  const cfg = await getLaneConfig(env);
+  let lane = b.lane;
+  if (!cfg.laneKeys.has(lane)) {
+    let derived = null;
+    if (b.activity_id) {
+      const act = await env.DB.prepare('SELECT area FROM activities WHERE id = ? AND user_id = ?')
+        .bind(Number(b.activity_id), env.uid).first().catch(() => null);
+      if (act && act.area && cfg.areaMap) derived = cfg.areaMap[act.area];
+    }
+    lane = (derived && cfg.laneKeys.has(derived)) ? derived : 'other';
+  }
 
   // null start_min is legitimate: a floating block, to be placed when the day
   // actually decides where it goes.
@@ -2972,7 +2988,7 @@ async function createSlot(request, env) {
       `INSERT INTO slots (day, lane, tana_id, title, start_min, duration, note, url, event_id, activity_id, created_at, user_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
     ).bind(
-      day, b.lane, b.tana_id || null, b.title,
+      day, lane, b.tana_id || null, b.title,
       startMin, Math.round(duration), b.note || null, safeUrl(b.url), eventId,
       b.activity_id ? Number(b.activity_id) : null,
       new Date().toISOString(), env.uid,

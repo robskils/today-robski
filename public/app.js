@@ -11085,6 +11085,7 @@ const MAIL_ICO = {
   more: mIco('<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'),   // overflow
   vip: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>'),        // person outline
   vipOn: mIco('<circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/>', true), // filled = this sender is a VIP
+  share: mIco('<circle cx="17.5" cy="6" r="2.4"/><circle cx="6.5" cy="12" r="2.4"/><circle cx="17.5" cy="18" r="2.4"/><path d="M8.7 10.9l6.1-3.3M8.7 13.1l6.1 3.3"/>'),   // three-node share graph
 };
 // Recognised video-meeting links, so we can float a "Join" button.
 const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
@@ -16676,9 +16677,14 @@ function relatedNotesHtml(note) {
     <div class="star-grid">${shown.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">${NOTE_ICO}</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div>${list.length > 12 && a ? `<button class="rel-more" data-open-area="${a.id}">See all ${list.length} in ${esc(a.title)} →</button>` : ''}</details>`;
 }
 // A Share button for an owned note/task; the count shows when it's already out.
-function shareBtn(block, kind) {
+function shareBtn(block, kind, opts) {
   if (block.sharedBy) return '';   // a borrowed block: only its owner can share it
   const n = block.sharedWith || 0;
+  // icon variant (task card): a compact share glyph instead of the "Share" word,
+  // to save room on the crumb row. The count rides alongside when shared.
+  if (opts && opts.icon) {
+    return `<button class="note-share note-share-ic ghost ${n ? 'on' : ''}" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}" data-tip="Share with a friend" aria-label="Share with a friend">${MAIL_ICO.share}${n ? `<span class="ic-n">${n}</span>` : ''}</button>`;
+  }
   return `<button class="note-share ghost ${n ? 'on' : ''}" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}" data-tip="Share with a friend" aria-label="Share with a friend">Share${n ? ` · ${n}` : ''}</button>`;
 }
 // A banner on a block someone shared with me, noting who and whether I can edit.
@@ -20094,11 +20100,14 @@ function taskSurfaceHtml(t) {
 function renderTaskCard() {
   const t = state.task_open.task; migrateCards(t); const a = areaById(t.props.area); const p = t.props.priority;
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(t.title || 'Untitled')}</span>
-      <span class="crumb-tools">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button>
-      ${shareBtn(t, 'task')}
-      ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Daybook contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
-      ${t.sharedBy ? '' : '<button class="note-del ghost" data-del-task-cur title="Delete this task">Delete</button>'}</span></div>
+    <div class="note-crumbs note-crumbs-split">
+      <div class="nc-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
+      <div class="nc-actions">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite" aria-label="Favourite">${t.props.fav ? '★' : '☆'}</button>
+        <span class="nab-right">${shareBtn(t, 'task', { icon: true })}
+          ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Daybook contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
+          ${t.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-task-cur data-tip="Delete this task" aria-label="Delete this task">${MAIL_ICO.trash}</button>`}</span>
+      </div>
+    </div>
     ${sharedBanner(t)}
     <div class="task-focus">
       <button class="tf-check ${t.props.done ? 'done' : ''}" ${t.sharedBy ? `data-shared-check="${t.id}" data-done="${t.props.done ? 1 : 0}"` : `data-check="${t.id}"`} title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>

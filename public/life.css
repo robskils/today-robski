@@ -1984,8 +1984,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-crumbs-split { flex-direction:column; align-items:stretch; gap:10px; }
 .note-crumbs-split .nc-top { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
 .note-crumbs-split .nc-top .addnew { margin-left:auto; }
-.note-crumbs-split .nc-actions { display:flex; align-items:center; gap:8px; }
+.note-crumbs-split .nc-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 .note-crumbs-split .nc-actions .nab-right { margin-left:auto; display:flex; align-items:center; gap:6px; }
+/* The connected life-area chip sits left with the star, not auto-pushed right. */
+.note-crumbs-split .nc-actions .crumb-area { margin-left:0; }
 .note-areas-row { margin:2px 0 14px; }
 .note-areas-row:empty { display:none; }
 .crumb-back { flex:none; width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-2); font-size:18px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
@@ -2033,6 +2035,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-del-ic { display:inline-flex; align-items:center; justify-content:center; padding:6px 8px; color:var(--ink-3); }
 .note-del-ic:hover { color:var(--danger,#d9534f); border-color:color-mix(in srgb,var(--danger,#d9534f) 45%,var(--line)); }
 .note-del-ic svg { width:19px; height:19px; display:block; }
+/* Share-as-icon (task card): a compact share glyph beside the bin, accent (not
+   danger) on hover, with the share count tucked alongside when shared. */
+.note-share-ic { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:6px 8px; color:var(--ink-3); }
+.note-share-ic:hover { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); }
+.note-share-ic svg { width:19px; height:19px; display:block; }
+.note-share-ic.on { color:var(--accent); }
+.note-share-ic .ic-n { font-size:13px; font-weight:600; line-height:1; }
 
 .note-title { display:block; width:100%; font-family:'Cormorant Garamond',serif; font-size:clamp(30px,5vw,44px); font-weight:500; line-height:1.08; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; resize:none; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; }
 .note-title:focus-visible { outline:none; }
