@@ -188,6 +188,8 @@ nav {
 .hero-glow { position: absolute; inset: -30% 0 auto 0; height: 620px; z-index: 0; pointer-events: none;
   background: radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%), radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
 .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+.hero-copy { min-width: 0; }
+.hero h1, .hero-tag { padding-right: 0.12em; }
 .hero-badge { display: inline-flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); padding: 7px 15px 7px 12px; border-radius: 999px; margin-bottom: 26px; box-shadow: var(--shadow-sm); }
 .hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 0 var(--rust); animation: pulse 2.6s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rust) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
@@ -199,7 +201,7 @@ nav {
 .hero-note { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); }
 
 /* hero app-surface cluster */
-.cluster { position: relative; min-height: 470px; }
+.cluster { position: relative; min-height: 470px; min-width: 0; }
 .dcard { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 16px 18px; }
 .win-bar { display: flex; align-items: center; gap: 6px; padding-bottom: 11px; margin-bottom: 9px; border-bottom: 1px solid var(--line); }
 .win-bar .wd { width: 8px; height: 8px; border-radius: 50%; opacity: .6; }
@@ -334,6 +336,8 @@ section { position: relative; }
 @media (max-width: 520px) { .ts-tiles { gap: 9px; } .tstile { flex-basis: 98px; padding: 14px 8px; } }
 .flow-dia { max-width: 600px; margin: 46px auto 0; }
 .flow-dia svg { width: 100%; height: auto; display: block; }
+@keyframes flowDash { to { stroke-dashoffset: -110; } }
+@media (prefers-reduced-motion: no-preference) { .flow-dia .orbit { animation: flowDash 3.6s linear infinite; } }
 
 /* Tinted so the tool grid reads as its own band. */
 #tools { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -632,7 +636,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
         <defs>
           <marker id="fa" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9" fill="none" stroke="var(--rust)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
         </defs>
-        <circle cx="280" cy="230" r="175" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="2 8" stroke-linecap="round"/>
+        <circle class="orbit" cx="280" cy="230" r="175" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="2 8" stroke-linecap="round"/>
         <g stroke="var(--rust)" stroke-width="1.4" opacity="0.26">
           <line x1="280" y1="142" x2="280" y2="97"/>
           <line x1="364" y1="203" x2="407" y2="189"/>
