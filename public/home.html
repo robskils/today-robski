@@ -289,6 +289,47 @@ section { position: relative; }
 @media (max-width: 880px) { .tools-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .tools-grid { grid-template-columns: 1fr; } }
 
+/* interactive tools showcase */
+.ts-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.tstile { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 18px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); cursor: pointer; font: inherit; color: var(--ink); transition: transform .16s, border-color .16s, background .16s; }
+.tstile:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.tstile .tsi { font-size: 23px; line-height: 1; }
+.tstile .tsn { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+.tstile.on { border-color: var(--rust); background: var(--rust-soft); }
+.tstile.on .tsn { color: var(--rust); }
+.tspanel { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); padding: 32px 34px; }
+.tsp-ic { width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; font-size: 25px; background: var(--rust-soft); color: var(--rust); margin-bottom: 17px; }
+.tsp-name { font-family: 'Fraunces', serif; font-size: clamp(26px, 3vw, 34px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
+.tsp-tag { color: var(--rust); font-weight: 600; font-size: 14px; margin: 7px 0 15px; }
+.tsp-desc { color: var(--ink-2); font-size: 17px; line-height: 1.55; max-width: 44ch; }
+.tspv { background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+.pv-rows { display: flex; flex-direction: column; }
+.pv-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14.5px; color: var(--ink); }
+.pv-row + .pv-row { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.pv-ava { width: 26px; height: 26px; border-radius: 50%; background: var(--rust-soft); color: var(--rust); font-weight: 700; font-size: 12px; display: grid; place-items: center; flex: none; }
+.pv-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-t b { font-weight: 600; }
+.pv-chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--ink-2); flex: none; }
+.pv-time { width: 40px; font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; }
+.pv-amt { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; font-size: 13.5px; flex: none; }
+.pv-check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--line-2); flex: none; }
+.pv-check.on { background: var(--rust); border-color: var(--rust); position: relative; }
+.pv-check.on::after { content: '✓'; color: #fff; font-size: 11px; position: absolute; inset: 0; display: grid; place-items: center; }
+.pv-done { color: var(--ink-3); text-decoration: line-through; }
+.pv-area { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.pv-abar { flex: 1; }
+.pv-aname { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 6px; color: var(--ink); }
+.pv-apct { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pv-bar { height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.pv-bar > i { display: block; height: 100%; background: var(--rust); border-radius: 999px; }
+.pv-note-h { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+.pv-note-l { font-size: 14px; color: var(--ink-2); line-height: 1.5; margin-bottom: 11px; }
+.pv-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pv-tbl th { text-align: left; color: var(--ink-3); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.pv-tbl td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--ink); }
+@media (max-width: 820px) { .tspanel { grid-template-columns: 1fr; gap: 22px; padding: 26px; } .ts-tiles { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 520px) { .ts-tiles { grid-template-columns: repeat(3, 1fr); gap: 9px; } }
+
 /* Tinted so the tool grid reads as its own band. */
 #tools { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 
@@ -522,21 +563,45 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 <section class="band" id="tools">
   <div class="wrap">
     <div class="band-head center reveal">
-      <div class="eyebrow">Email · Calendar · Notes · Tasks</div>
-      <h2>The admin that makes you look good</h2>
-      <p>The bread and butter first - mail, calendar, notes and tasks under one roof, joined up so nothing slips. Then the rest that rounds it out: contacts, tables, money. The daily admin, handled quietly, so you stay on top of everything without looking like you're trying.</p>
+      <div class="eyebrow">Your whole suite</div>
+      <h2>The tool that makes you look good</h2>
+      <p>Everything in one place - mail, calendar, notes, tasks, money and people for the doing; well-being, goals and Life Areas for the inner life. Joined up so nothing slips, and handled quietly, so you stay on top of it all without looking like you're trying.</p>
     </div>
-    <div class="tools-grid">
-      <div class="tool reveal"><span class="tool-ic">✉</span><h3>Mail</h3><p>All your inboxes in one place - read, reply and search across every account, without breaking focus.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◑</span><h3>Calendar</h3><p>Month, week and agenda in one view. It reads and writes your Google calendar, and events can count as practice.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▤</span><h3>Notes</h3><p>Write freely - a scribbled idea, a longer thought, anything worth keeping. Link it up and nothing gets lost.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✓</span><h3>Tasks</h3><p>Your day as streams, not a nagging list. Work with the flow when you're in it; nothing turns red.</p></div>
-      <div class="tool reveal"><span class="tool-ic">☺</span><h3>Contacts</h3><p>The people in your life, with gentle keep-in-touch nudges - so you reach out when it matters, and nobody slips through the cracks.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▦</span><h3>Tables</h3><p>Turn notes into structure when you're ready - a proper table for whatever is worth tracking, right where you wrote it.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◈</span><h3>Life Areas</h3><p>The heart of Daybook. Your mail, tasks, notes and spending all organise around what matters most.</p></div>
-      <div class="tool reveal"><span class="tool-ic">💰</span><h3>Money</h3><p>See where the money goes, sorted by the areas of life you care about. Clear, quiet, no spreadsheets.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✎</span><h3>Well-being</h3><p>A home for the inner life - journalling, insights, dreams, meditation and gentle coaching when you want it.</p></div>
+    <div class="toolshow reveal">
+      <div class="ts-tiles" id="tsTiles">
+        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Life Areas</span></button>
+        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">Mail</span></button>
+        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Calendar</span></button>
+        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Tasks</span></button>
+        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notes</span></button>
+        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Well-being</span></button>
+        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Goals</span></button>
+        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Contacts</span></button>
+        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Money</span></button>
+        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tables</span></button>
+      </div>
+      <div class="tspanel" id="tsPanel"></div>
     </div>
+    <script>
+    (function(){
+      var T={
+        areas:{ic:'◈',name:'Life Areas',tag:'The heart of Daybook',desc:`Your mail, tasks, notes and spending gather around the real parts of your life - and each one shows where it stands at a glance.`,pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Sintra trip <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Health <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Home move <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
+        mail:{ic:'✉',name:'Mail',tag:'Every inbox, one room',desc:`Read, reply and search across every account without breaking focus - triaged by what matters, not just what's newest.`,pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: Sintra proposal</span><span class="pv-chip">Urgent</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Dojo schedule</span></div><div class="pv-row"><span class="pv-ava">N</span><span class="pv-t"><b>Newsletter</b> · Weekend in Lisbon</span><span class="pv-chip">Later</span></div></div>`},
+        calendar:{ic:'◑',name:'Calendar',tag:'Month, week, agenda',desc:`One view onto your days. It reads and writes your Google calendar, and events can even count as practice.`,pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Proposal review</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Lunch with Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga by the river</span></div></div>`},
+        tasks:{ic:'✓',name:'Tasks',tag:'Your day, flowing',desc:`A day of streams, not a nagging list. Work with the flow when you're in it - and nothing ever turns red.`,pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot gold"></span><span class="pv-t pv-done">Morning sit</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Draft the Sintra proposal</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Walk before the light goes</span></div></div>`},
+        notes:{ic:'▤',name:'Notes',tag:'Write freely, link it up',desc:`A scribbled idea or a longer thought - captured in seconds and joined to where it belongs, so nothing gets lost.`,pv:`<div class="pv-note-h">Spain trip</div><p class="pv-note-l">Book the coast road, find the place with the blue door, no rush.</p><span class="pv-chip">↳ Sintra trip</span>`},
+        wellbeing:{ic:'✎',name:'Well-being',tag:'The inner life, tended',desc:`Journalling, reviews, dreams, a daily reading, gentle coaching - the reflective half, right beside the doing.`,pv:`<p class="r-q" style="margin:0 0 12px">"What did today ask of me, and what did I give it?"</p><div class="mood" style="margin-bottom:13px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Steady this week</span></div><div class="chips"><span class="chip">Journal</span><span class="chip">Dreams</span><span class="chip">I Ching</span></div>`},
+        goals:{ic:'◎',name:'Goals',tag:'Intentions, made to happen',desc:`Set what matters, break it into steps, and watch it move - Daybook keeps you honest and nudges the next action.`,pv:`<div class="pv-aname">Run a half-marathon <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:60%;background:var(--pine)"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10k without stopping</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Book the race</span></div></div>`},
+        contacts:{ic:'☺',name:'Contacts',tag:'Keep the people close',desc:`Who they are, what matters to them, when you last spoke - with a gentle nudge when it's time to reach out.`,pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · last spoke 6 weeks</span><span class="pv-chip">Say hi</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · birthday Friday</span><span class="pv-chip">Nudge</span></div></div>`},
+        money:{ic:'€',name:'Money',tag:'Where it goes, by Life Area',desc:`See your spending sorted by the parts of life you care about. Clear and quiet - and no spreadsheets.`,pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Sintra trip</span><span class="pv-amt">€1,240</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Health</span><span class="pv-amt">€85</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Home</span><span class="pv-amt">€430</span></div></div>`},
+        tables:{ic:'▦',name:'Tables',tag:'Structure when you want it',desc:`Turn a note into a proper table for whatever's worth tracking - right where you wrote it.`,pv:`<table class="pv-tbl"><thead><tr><th>Place</th><th>Seen</th><th>Go?</th></tr></thead><tbody><tr><td>Blue door house</td><td>Yes</td><td>★</td></tr><tr><td>Coast road inn</td><td>Not yet</td><td>-</td></tr></tbody></table>`}
+      };
+      var tiles=document.getElementById('tsTiles'),panel=document.getElementById('tsPanel');
+      function render(k){var t=T[k];if(!t)return;panel.innerHTML=`<div class="tspanel-l"><div class="tsp-ic">${t.ic}</div><div class="tsp-name">${t.name}</div><div class="tsp-tag">${t.tag}</div><div class="tsp-desc">${t.desc}</div></div><div class="tspanel-r"><div class="tspv">${t.pv}</div></div>`;var bs=tiles.children;for(var i=0;i<bs.length;i++){bs[i].classList.toggle('on',bs[i].getAttribute('data-tool')===k);}}
+      tiles.addEventListener('click',function(e){var b=e.target.closest('.tstile');if(b)render(b.getAttribute('data-tool'));});
+      render('areas');
+    })();
+    </script>
   </div>
 </section>
 
@@ -607,7 +672,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap privacy-grid">
     <div class="reveal">
       <div class="eyebrow">Private by design</div>
-      <h2>Yours. Genuinely.</h2>
+      <h2>Yours. Securely.</h2>
       <p class="privacy-lead">Daybook holds the most personal parts of your life - your reflections, your relationships, your passwords. So it's locked down properly: <b>two-factor sign-in</b>, encrypted where it counts. This is safe.</p>
       <p class="privacy-lead">And your data? We don't want it. We're not into that. We're building a business on <b>trust and values</b>, not on selling you - so nothing of yours is mined, sold, or fed to anyone's model. It's yours. <b>End of.</b> Export the lot in one tap, keep it on your own storage if you'd rather, bring your own AI - the choice is always yours.</p>
     </div>
