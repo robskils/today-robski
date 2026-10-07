@@ -24,7 +24,7 @@
 <meta property="og:image" content="https://daybook.fyi/og-image.v2.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Daybook - para una vida bien vivida.">
+<meta property="og:image:alt" content="Daybook - para una vida bien vivida">
 <meta property="og:locale" content="es_ES">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
@@ -153,17 +153,20 @@ nav {
 .nav-cta { display: flex; align-items: center; gap: 14px; }
 .nav-cta .btn { padding: 10px 18px; font-size: 15px; border-radius: 11px; }
 @media (max-width: 1024px) { .nav-links { display: none; } }
-/* Phone header: the wordmark plus both CTAs overflowed and wrapped to two lines.
-   Tighten the gutter, shrink the wordmark, compact the buttons (never wrapping),
-   and let Sign in fall back to a borderless link so both sit on one clean row. */
+/* Phone header: the wordmark plus both CTAs crammed onto one row looked tight, so
+   give it two calm rows - the Daybook wordmark centred on top, the actions on
+   their own row beneath, each with room to breathe. (Robin.) */
 @media (max-width: 560px) {
   .wrap { padding: 0 20px; }
-  .nav-in { height: 62px; }
-  .brand { font-size: 19px; gap: 8px; }
-  .brand-mark { width: 22px; height: 22px; }
-  .nav-cta { gap: 6px; }
-  .nav-cta .btn { padding: 9px 14px; font-size: 13.5px; border-radius: 10px; white-space: nowrap; }
-  .nav-cta .btn-ghost { padding: 9px 8px; border-color: transparent; }
+  .nav-in { position: relative; flex-direction: column; align-items: center; height: auto; gap: 13px; padding: 14px 0 16px; }
+  .brand { font-size: 22px; gap: 9px; }
+  .brand-mark { width: 24px; height: 24px; }
+  /* Language chip tucked into the top-right corner so the wordmark stays centred.
+     Selector beats .lang-switch.lang-dd (0,2,0), which otherwise forces relative. */
+  .nav-cta .lang-switch.nav-lang { position: absolute; top: 16px; right: 0; margin: 0; }
+  .nav-cta { width: 100%; justify-content: center; gap: 12px; }
+  .nav-cta .btn { padding: 10px 18px; font-size: 14.5px; border-radius: 11px; white-space: nowrap; }
+  .nav-cta .btn-ghost { padding: 10px 14px; border-color: transparent; }
 }
 /* language switcher */
 .lang-switch { display: inline-flex; align-items: center; gap: 1px; }
@@ -184,42 +187,68 @@ nav {
 .lang-menu a.on { color: var(--rust); font-weight: 600; }
 
 /* ── hero ── */
-.hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
-.hero-glow { position: absolute; inset: -30% 0 auto 0; height: 620px; z-index: 0; pointer-events: none;
+.hero { position: relative; padding: 92px 0 60px; }
+.hero-glow { position: absolute; inset: 0 0 auto 0; height: 100%; z-index: 0; pointer-events: none;
   background: radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%), radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
 .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+.hero-copy { min-width: 0; }
+.hero h1, .hero-tag { padding-right: 0.12em; }
 .hero-badge { display: inline-flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); padding: 7px 15px 7px 12px; border-radius: 999px; margin-bottom: 26px; box-shadow: var(--shadow-sm); }
 .hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 0 var(--rust); animation: pulse 2.6s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rust) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .hero-tag { font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(19px, 2.3vw, 23px); line-height: 1.2; letter-spacing: -0.01em; color: var(--rust); margin-bottom: 15px; }
-.hero h1 { font-size: clamp(44px, 6.6vw, 74px); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; }
-.hero h1 em { font-style: italic; color: var(--rust); }
-.hero-sub { margin-top: 24px; font-size: clamp(18px, 2.1vw, 21px); color: var(--ink-2); max-width: 30ch; line-height: 1.55; }
+.hero h1 { font-size: clamp(42px, 6.4vw, 72px); line-height: 1.04; font-weight: 600; letter-spacing: -0.01em; }
+.hero h1 em { font-style: italic; color: var(--rust); padding-right: 0.16em; margin-right: -0.16em; }
+.hero-sub { margin-top: 24px; font-size: clamp(17px, 2vw, 20px); color: var(--ink-2); max-width: 48ch; line-height: 1.55; }
 .hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 .hero-note { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); }
 
-/* hero card cluster */
-.cluster { position: relative; min-height: 420px; }
-.dcard { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 17px 19px; width: 300px; }
-.dcard-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rust); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-.dcard-label .ic { font-size: 15px; }
-.d-row { display: flex; align-items: center; gap: 11px; padding: 6px 0; font-size: 15.5px; color: var(--ink); }
-.d-check { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--line-2); flex: none; }
-.d-check.on { background: var(--rust); border-color: var(--rust); position: relative; }
-.d-check.on::after { content: '✓'; color: #fff; font-size: 12px; position: absolute; inset: 0; display: grid; place-items: center; }
-.d-row.done { color: var(--ink-3); text-decoration: line-through; }
-.c1 { top: 8px; left: 0; z-index: 3; transform: rotate(-2.5deg); }
-.c2 { top: 150px; right: 0; z-index: 2; transform: rotate(2.5deg); width: 286px; }
-.c3 { bottom: 4px; left: 34px; z-index: 4; width: 292px; transform: rotate(-1deg); }
-.d-quote { font-family: 'Fraunces', serif; font-size: 19px; line-height: 1.4; color: var(--ink); font-style: italic; }
-.d-note { font-size: 15px; color: var(--ink-2); line-height: 1.5; }
-.d-pill { display: inline-block; margin-top: 10px; font-size: 12.5px; font-weight: 600; color: var(--pine); background: var(--pine-soft); padding: 3px 10px; border-radius: 999px; }
+/* hero app-surface cluster */
+.cluster { position: relative; min-height: 470px; min-width: 0; }
+.dcard { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 16px 18px; }
+.win-bar { display: flex; align-items: center; gap: 6px; padding-bottom: 11px; margin-bottom: 9px; border-bottom: 1px solid var(--line); }
+.win-bar .wd { width: 8px; height: 8px; border-radius: 50%; opacity: .6; }
+.wd.r { background: var(--rust); } .wd.a { background: #c2913a; } .wd.p { background: var(--pine); }
+.win-ttl { margin-left: 5px; font-size: 11.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.plan { display: flex; flex-direction: column; }
+.prow { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 15px; color: var(--ink); }
+.prow + .prow { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.pt { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-3); width: 36px; flex: none; }
+.adot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.adot.rust { background: var(--rust); } .adot.pine { background: var(--pine); } .adot.gold { background: #c2913a; } .adot.blue { background: #5f7e8c; }
+.plbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow.done .plbl { color: var(--ink-3); text-decoration: line-through; }
+.ptick { color: var(--rust); font-size: 13px; flex: none; }
+.pcal { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; flex: none; }
+.dc-area { width: 212px; }
+.area-top { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }
+.adot.big { width: 11px; height: 11px; }
+.area-name { font-weight: 600; font-size: 14.5px; color: var(--ink); flex: 1; }
+.area-days { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.area-ring { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; }
+.ring { width: 58px; height: 58px; flex: none; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--line); stroke-width: 4.5; }
+.ring-fg { fill: none; stroke: var(--rust); stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: 119.4; stroke-dashoffset: 38.2; }
+.ring-meta strong { display: block; font-family: 'Fraunces', serif; font-size: 22px; color: var(--ink); line-height: 1; }
+.ring-meta span { font-size: 11.5px; color: var(--ink-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 11px; font-weight: 600; color: var(--ink-2); background: var(--paper-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font-variant-numeric: tabular-nums; }
+.dc-reflect { width: 288px; }
+.r-lbl { font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--rust); margin-bottom: 9px; }
+.r-q { font-family: 'Fraunces', serif; font-style: italic; font-size: 16.5px; line-height: 1.4; color: var(--ink); margin-bottom: 13px; }
+.mood { display: flex; align-items: center; gap: 6px; }
+.md { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line-2); }
+.md.on { background: var(--pine); border-color: var(--pine); }
+.mood-l { margin-left: 5px; font-size: 12px; color: var(--ink-3); }
+.dc-plan { top: 0; left: 0; z-index: 2; width: 298px; transform: rotate(-1.5deg); }
+.dc-area { top: 150px; right: -8px; z-index: 4; transform: rotate(2deg); }
+.dc-reflect { bottom: 0; left: 22px; z-index: 3; transform: rotate(-1deg); }
 
 @media (max-width: 880px) {
   .hero-in { grid-template-columns: 1fr; gap: 30px; }
   .hero-sub { max-width: 46ch; }
-  .cluster { min-height: 380px; margin: 0 auto; max-width: 340px; }
-  .c2 { right: -6px; } .c3 { left: 10px; }
+  .cluster { min-height: 456px; margin: 0 auto; max-width: 330px; }
+  .dc-area { right: -4px; } .dc-reflect { left: 6px; }
 }
 
 /* ── section scaffolding ── */
@@ -228,6 +257,10 @@ section { position: relative; }
 .band-head { max-width: 640px; margin-bottom: 52px; }
 .band-head.center { margin-left: auto; margin-right: auto; text-align: center; }
 .band-head p { margin-top: 16px; font-size: 19px; color: var(--ink-2); line-height: 1.55; }
+/* The litany — the breadth of a life, ending on "your life". */
+.litany-band { padding: clamp(60px,9vw,104px) 0; border-bottom: 1px solid var(--line); background-image: radial-gradient(60% 80% at 8% 0%, rgba(196,65,46,.05), transparent 60%); }
+.litany { font-family: 'Fraunces', serif; font-weight: 400; font-size: clamp(27px,4.4vw,47px); line-height: 1.28; letter-spacing: -0.015em; color: var(--ink); max-width: 24ch; text-wrap: balance; }
+.litany em { color: var(--rust); font-style: italic; }
 
 /* concept */
 .concept { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -261,6 +294,62 @@ section { position: relative; }
 @media (max-width: 880px) { .tools-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .tools-grid { grid-template-columns: 1fr; } }
 
+/* interactive tools showcase */
+.ts-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.tstile { flex: 1 1 172px; max-width: 208px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 18px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); cursor: pointer; font: inherit; color: var(--ink); transition: transform .16s, border-color .16s, background .16s; }
+.tstile:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.tstile .tsi { font-size: 23px; line-height: 1; }
+.tstile .tsn { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+.tstile.on { border-color: var(--rust); background: var(--rust-soft); }
+.tstile.on .tsn { color: var(--rust); }
+.tspanel { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); padding: 32px 34px; }
+.tsp-ic { width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; font-size: 25px; background: var(--rust-soft); color: var(--rust); margin-bottom: 17px; }
+.tsp-name { font-family: 'Fraunces', serif; font-size: clamp(26px, 3vw, 34px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
+.tsp-tag { color: var(--rust); font-weight: 600; font-size: 14px; margin: 7px 0 14px; }
+.tsp-desc { color: var(--ink-2); font-size: 16px; line-height: 1.55; max-width: 46ch; }
+.tsp-feats { list-style: none; margin: 15px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.tsp-feats li { position: relative; padding-left: 24px; font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+.tsp-feats li::before { content: '✓'; position: absolute; left: 0; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--rust-soft); color: var(--rust); font-size: 9px; font-weight: 700; display: grid; place-items: center; }
+.tspv { background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+.pv-rows { display: flex; flex-direction: column; }
+.pv-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14.5px; color: var(--ink); }
+.pv-row + .pv-row { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.pv-ava { width: 26px; height: 26px; border-radius: 50%; background: var(--rust-soft); color: var(--rust); font-weight: 700; font-size: 12px; display: grid; place-items: center; flex: none; }
+.pv-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-t b { font-weight: 600; }
+.pv-chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--ink-2); flex: none; }
+.pv-chip.q-urgent { color: var(--rust); background: var(--rust-soft); border-color: color-mix(in srgb, var(--rust) 35%, var(--line)); }
+.pv-chip.q-important { color: #a9791f; background: color-mix(in srgb, #c2913a 13%, transparent); border-color: color-mix(in srgb, #c2913a 40%, var(--line)); }
+.pv-chip.q-chilled { color: var(--pine); background: var(--pine-soft); border-color: color-mix(in srgb, var(--pine) 35%, var(--line)); }
+.pv-chip.q-others { color: var(--ink-3); }
+.pv-quad { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; padding-top: 11px; border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.pv-quad .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-right: 2px; }
+.pv-time { width: 40px; font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; }
+.pv-amt { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; font-size: 13.5px; flex: none; }
+.pv-check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--line-2); flex: none; }
+.pv-check.on { background: var(--rust); border-color: var(--rust); position: relative; }
+.pv-check.on::after { content: '✓'; color: #fff; font-size: 11px; position: absolute; inset: 0; display: grid; place-items: center; }
+.pv-done { color: var(--ink-3); text-decoration: line-through; }
+.pv-area { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.pv-abar { flex: 1; }
+.pv-aname { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 6px; color: var(--ink); }
+.pv-apct { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pv-bar { height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.pv-bar > i { display: block; height: 100%; background: var(--rust); border-radius: 999px; }
+.pv-note-h { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+.pv-note-l { font-size: 14px; color: var(--ink-2); line-height: 1.5; margin-bottom: 11px; }
+.pv-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.pv-link { font-size: 11px; font-weight: 600; color: var(--rust); background: var(--rust-soft); border: 1px solid color-mix(in srgb, var(--rust) 22%, var(--line)); border-radius: 7px; padding: 3px 8px; }
+.pv-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pv-tbl th { text-align: left; color: var(--ink-3); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.pv-tbl td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--ink); }
+@media (max-width: 820px) { .tspanel { grid-template-columns: 1fr; gap: 22px; padding: 26px; } }
+@media (max-width: 520px) { .ts-tiles { gap: 9px; } .tstile { flex-basis: 98px; padding: 14px 8px; } }
+.flow-dia { max-width: 600px; margin: 46px auto 0; }
+.flow-dia svg { width: 100%; height: auto; display: block; }
+@keyframes flowDash { to { stroke-dashoffset: -110; } }
+@media (prefers-reduced-motion: no-preference) { .flow-dia .orbit { animation: flowDash 3.6s linear infinite; } }
+
 /* Tinted so the tool grid reads as its own band. */
 #tools { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 
@@ -281,6 +370,17 @@ section { position: relative; }
 .af-arrow { color: var(--rust); font-size: 26px; line-height: 1; opacity: .75; }
 .af-area { display: inline-flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--rust-ink); background: var(--rust); border-radius: 14px; padding: 12px 22px; box-shadow: 0 16px 32px -16px rgba(196, 65, 46, 0.6); }
 .af-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; opacity: .9; }
+/* Sharing: the life-areas differentiator, use-cases as a filled grid of cards. */
+.areas-share { margin-top: 64px; text-align: center; max-width: 860px; margin-left: auto; margin-right: auto; }
+.areas-share-h { font-family: 'Fraunces', serif; font-size: clamp(24px, 3vw, 34px); font-weight: 400; letter-spacing: -0.01em; margin: 14px 0 14px; }
+.areas-share-lead { color: var(--ink-2); font-size: 19px; line-height: 1.55; max-width: 54ch; margin: 0 auto 36px; }
+.share-cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 16px; }
+.share-case { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 24px 18px; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: transform .16s, border-color .16s, box-shadow .16s; }
+.share-case:hover { transform: translateY(-2px); border-color: var(--line-2); box-shadow: var(--shadow); }
+.share-case .sc-ic { font-size: 30px; line-height: 1; margin-bottom: 5px; }
+.share-case b { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; color: var(--ink); }
+.share-case span:last-child { font-size: 14px; color: var(--ink-3); }
+@media (max-width: 560px) { .share-cases { grid-template-columns: 1fr 1fr; } .areas-share { margin-top: 48px; } }
 
 /* Well-being - a secondary story, set apart with a soft pine tint */
 .wellbeing-band { background: var(--pine-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -438,8 +538,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap hero-in">
     <div class="hero-copy">
       <div class="hero-badge reveal"><span class="pulse"></span>Solo con invitación, en acceso anticipado</div>
-      <h1 class="reveal">Correo, calendario, notas<br>y tareas - que <em>conectan los puntos.</em></h1>
-      <p class="hero-sub reveal">Las cuatro herramientas en las que vives, por fin en un solo lugar y conectadas a través de las áreas de tu vida, para que la información fluya adonde hace falta en lugar de amontonarse. Sereno, no recargado.</p>
+      <p class="hero-tag reveal">day&middot;book, s. - el libro al que le traes tu día</p>
+      <h1 class="reveal">Para una vida<br><em>bien vivida</em></h1>
+      <p class="hero-sub reveal">Daybook reúne las dos caras de tu vida - la reflexión y la acción - en un conjunto conectado de herramientas que se hablan entre sí. Un daybook te ayuda a gestionar, manifestar y encontrar sentido en tu vida diaria.</p>
       <div class="hero-actions reveal">
         <a class="btn btn-primary" href="#invite">Solicitar una invitación →</a>
         <a class="btn btn-ghost" href="#" data-signin>Iniciar sesión</a>
@@ -447,42 +548,137 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <p class="hero-note reveal">Privado por diseño. Sin publicidad, sin venta de datos, sin ruido.</p>
     </div>
     <div class="cluster reveal">
-      <div class="dcard c1">
-        <div class="dcard-label"><span class="ic">☀</span>Hoy</div>
-        <div class="d-row done"><span class="d-check on"></span>Meditación matinal, 20 min</div>
-        <div class="d-row"><span class="d-check"></span>Redactar la propuesta de Sintra</div>
-        <div class="d-row"><span class="d-check"></span>Pasear antes de que se vaya la luz</div>
+      <div class="dcard dc-plan">
+        <div class="win-bar"><span class="wd r"></span><span class="wd a"></span><span class="wd p"></span><span class="win-ttl">Hoy &middot; mar 7 oct</span></div>
+        <div class="plan">
+          <div class="prow done"><span class="pt">07:30</span><span class="adot gold"></span><span class="plbl">Meditación matinal</span><span class="ptick">✓</span></div>
+          <div class="prow"><span class="pt">10:00</span><span class="adot rust"></span><span class="plbl">Redactar la propuesta de Sintra</span></div>
+          <div class="prow"><span class="pt">13:00</span><span class="adot blue"></span><span class="plbl">Comida con Marta</span><span class="pcal">cal</span></div>
+          <div class="prow"><span class="pt">18:00</span><span class="adot pine"></span><span class="plbl">Pasear antes de que se vaya la luz</span></div>
+        </div>
       </div>
-      <div class="dcard c2">
-        <div class="dcard-label"><span class="ic">✎</span>Reflexión</div>
-        <p class="d-quote">«¿Qué me pidió el día de hoy y qué le di yo?»</p>
-        <span class="d-pill">Diario · Percepciones · Sueños</span>
+      <div class="dcard dc-area">
+        <div class="area-top"><span class="adot rust big"></span><span class="area-name">Viaje a Frigiliana</span><span class="area-days">12 días</span></div>
+        <div class="area-ring">
+          <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="ring-bg" cx="22" cy="22" r="19"></circle><circle class="ring-fg" cx="22" cy="22" r="19"></circle></svg>
+          <div class="ring-meta"><strong>68%</strong><span>según el plan</span></div>
+        </div>
+        <div class="chips"><span class="chip">✉ 3</span><span class="chip">◷ 2</span><span class="chip">▤ 5</span><span class="chip">€ 1,2k</span></div>
       </div>
-      <div class="dcard c3">
-        <div class="dcard-label"><span class="ic">▤</span>Nota</div>
-        <p class="d-note">Viaje a España - reservar la carretera de la costa, encontrar el sitio de la puerta azul, sin prisa.</p>
+      <div class="dcard dc-reflect">
+        <div class="r-lbl">Bienestar</div>
+        <p class="r-q">«¿Qué me pidió el día de hoy y qué le di yo?»</p>
+        <div class="mood"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Estable esta semana</span></div>
       </div>
     </div>
   </div>
 </header>
 
+<section class="litany-band">
+  <div class="wrap reveal">
+    <p class="litany">Tu tiempo, tu gente, tus metas, tus ritmos, <em>tu vida</em> - y la vida digital que lo envuelve todo. Reunido en un solo lugar seguro, simplificado y mostrado para darte la máxima claridad.</p>
+  </div>
+</section>
+
 <section class="band" id="tools">
   <div class="wrap">
     <div class="band-head center reveal">
-      <div class="eyebrow">Correo · Calendario · Notas · Tareas</div>
-      <h2>Las herramientas en las que vives, conectadas</h2>
-      <p>Empieza por lo básico - tu correo, tu calendario, tus notas y tus tareas, por fin bajo un mismo techo. Después, las herramientas que lo completan: tablas, dinero y un conjunto sereno de herramientas de bienestar para la vida interior.</p>
+      <div class="eyebrow">Todo tu conjunto</div>
+      <h2>El libro que te hace quedar bien</h2>
+      <p>Todo en un solo lugar - correo, calendario, notas, tareas, dinero y personas para la acción; bienestar, metas y Áreas de Vida para la vida interior. Todo conectado para que nada se escape, y llevado con discreción, para que lo tengas todo bajo control sin aparentar esfuerzo.</p>
     </div>
-    <div class="tools-grid">
-      <div class="tool reveal"><span class="tool-ic">✉</span><h3>Correo</h3><p>Todas tus bandejas de entrada en una sala serena: lee, responde y busca en todas tus cuentas sin perder la concentración.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◑</span><h3>Calendario</h3><p>Mes, semana y agenda en una sola vista. Lee y escribe en tu calendario de Google, y los eventos pueden contar como práctica.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▤</span><h3>Notas</h3><p>Escribe con libertad: una idea garabateada, un pensamiento más largo, lo que merezca guardarse. Enlázalo y nada se pierde.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✓</span><h3>Tareas</h3><p>Tu día como corrientes serenas, no como una lista que te agobia. Sigue el flujo cuando estés en él; nada se pone en rojo.</p></div>
-      <div class="tool reveal"><span class="tool-ic">☺</span><h3>Contactos</h3><p>Las personas de tu vida, con suaves recordatorios para mantener el contacto: así te acuerdas cuando importa y nadie se queda por el camino.</p></div>
-      <div class="tool reveal"><span class="tool-ic">▦</span><h3>Tablas</h3><p>Convierte las notas en estructura cuando estés listo: una tabla de verdad para lo que merezca seguimiento, justo donde lo escribiste.</p></div>
-      <div class="tool reveal"><span class="tool-ic">◈</span><h3>Áreas de vida</h3><p>El corazón de Daybook. Tu correo, tus tareas, tus notas y tus gastos se organizan en torno a lo que más importa.</p></div>
-      <div class="tool reveal"><span class="tool-ic">💰</span><h3>Dinero</h3><p>Mira adónde va el dinero, ordenado por las áreas de la vida que te importan. Claro, silencioso, sin hojas de cálculo.</p></div>
-      <div class="tool reveal"><span class="tool-ic">✎</span><h3>Bienestar</h3><p>Un hogar para la vida interior: diario, percepciones, sueños, meditación y coaching suave cuando lo quieras.</p></div>
+    <div class="toolshow reveal">
+      <div class="ts-tiles" id="tsTiles">
+        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Áreas de Vida</span></button>
+        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">Correo</span></button>
+        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Calendario</span></button>
+        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Tareas</span></button>
+        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notas</span></button>
+        <button class="tstile" data-tool="readwatch" type="button"><span class="tsi">☆</span><span class="tsn">Leer y ver</span></button>
+        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Bienestar</span></button>
+        <button class="tstile" data-tool="journal" type="button"><span class="tsi">✒</span><span class="tsn">Diario</span></button>
+        <button class="tstile" data-tool="coaching" type="button"><span class="tsi">✦</span><span class="tsn">Coaching</span></button>
+        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Metas</span></button>
+        <button class="tstile" data-tool="reviews" type="button"><span class="tsi">↻</span><span class="tsn">Revisiones</span></button>
+        <button class="tstile" data-tool="bucket" type="button"><span class="tsi">⚑</span><span class="tsn">Lista de deseos</span></button>
+        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Contactos</span></button>
+        <button class="tstile" data-tool="sharing" type="button"><span class="tsi">⇄</span><span class="tsn">Compartir</span></button>
+        <button class="tstile" data-tool="messaging" type="button"><span class="tsi">❝</span><span class="tsn">Mensajes</span></button>
+        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Dinero</span></button>
+        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tablas</span></button>
+      </div>
+      <div class="tspanel" id="tsPanel"></div>
+    </div>
+    <script>
+    (function(){
+      var T={
+        areas:{ic:'◈',name:'Áreas de Vida',tag:'El corazón de Daybook',desc:`Tu correo, tu calendario, tus tareas, tus notas, tus metas, tus personas y tus gastos se reúnen en torno a las partes reales de tu vida - y cada una muestra cómo va de un vistazo.`,feats:["El correo, el calendario, las tareas, las notas, las metas, las personas y los gastos se reúnen por área","Ponle una fecha y se convierte en un proyecto, con su cuenta atrás","Comparte un área con las personas que la viven"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Viaje a Frigiliana <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Salud <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Mudanza <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
+        mail:{ic:'✉',name:'Correo',tag:'Cada bandeja, una sola sala',desc:`Reúne todas tus cuentas en un solo flujo - Gmail, Outlook, cualquier bandeja IMAP - y trabájalas todas como una.`,feats:["Todas tus cuentas unidas en una sola bandeja","Clasifica rápido: Urgente, Importante, Tranquilo","Archiva un correo en un Área de Vida y compártelo ahí"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: propuesta de Sintra</span><span class="pv-chip q-urgent">Urgente</span></div><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ayuntamiento</b> · IBI 2026</span><span class="pv-chip q-important">Importante</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>Juan</b> · Horario del dojo</span><span class="pv-chip q-chilled">Tranquilo</span></div></div><div class="pv-quad"><span class="lbl">Ordenar</span><span class="pv-chip q-urgent">Urgente</span><span class="pv-chip q-important">Importante</span><span class="pv-chip q-chilled">Tranquilo</span><span class="pv-chip q-others">Otros</span></div>`},
+        calendar:{ic:'◑',name:'Calendario',tag:'Mes, semana, agenda',desc:`Una sola vista de tus días - sincronizada con el calendario que ya usas.`,feats:["Mes, semana y agenda en una sola vista","Sincronización en ambos sentidos con tu calendario de Google","Un evento puede contar como práctica"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Revisión de la propuesta</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Comida con Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga junto al río</span></div></div>`},
+        tasks:{ic:'✓',name:'Tareas',tag:'Tu día, en flujo',desc:`Un día de corrientes, no una lista que te agobia - sigue el flujo cuando estés en él.`,feats:["Corrientes que fluyen, nunca un rojo de vencido dándote la lata","Reaparece justo cuando toca","Cada tarea lleva su Área de Vida"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot gold"></span><span class="pv-t pv-done">Meditación matinal</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Redactar la propuesta de Sintra</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Pasear antes de que se vaya la luz</span></div></div>`},
+        notes:{ic:'▤',name:'Notas',tag:'Escribe con libertad, enlázalo todo',desc:`Una idea garabateada, un pensamiento más largo o un plan con todo enlazado - captado en segundos y unido a donde pertenece.`,feats:["Capta en dos toques, desde donde estés","Enlaza una web, una tarea, un evento, una persona","Convierte cualquier nota en una tabla cuando quieras"],pv:`<div class="pv-note-h">Viaje a Frigiliana</div><p class="pv-note-l">La carretera de la costa, la casa de la puerta azul. Confirmar las fechas antes del día 20.</p><div class="pv-links"><span class="pv-link">↗ blue-door-house.pt</span><span class="pv-link">✓ Reservar el ferry</span><span class="pv-link">◷ vie 12</span><span class="pv-link">↳ Viaje a Frigiliana</span></div>`},
+        readwatch:{ic:'☆',name:'Leer y ver',tag:'Guárdalo para después',desc:`Guarda las webs, los artículos, los libros y las películas que quieres ver - a un toque, listos para cuando tengas tiempo.`,feats:["Captura a un toque - con un bookmarklet o un Atajo de iOS","Artículos, webs, libros y películas, todo ordenado","Saca uno cuando tengas una tarde libre"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">▷</span><span class="pv-t">Aftersun</span><span class="pv-chip">Película</span></div><div class="pv-row"><span class="pv-ava">❏</span><span class="pv-t">Cuatro mil semanas</span><span class="pv-chip">Libro</span></div><div class="pv-row"><span class="pv-ava">↗</span><span class="pv-t">monocle.com - el número de Lisboa</span><span class="pv-chip">Enlace</span></div></div>`},
+        wellbeing:{ic:'✎',name:'Bienestar',tag:'La vida interior, cuidada',desc:`La mitad reflexiva - diario, revisiones, sueños, lecturas y un coaching suave, justo al lado de la acción.`,feats:["Diario, revisiones, sueños y coaching suave","Herramientas de reflexión - el I Ching, el horóscopo, cartas espirituales - para encender una idea","Bien hechas: el horóscopo lee tu carta astral completa"],pv:`<p class="r-q" style="margin:0 0 12px">«¿Qué me pidió el día de hoy y qué le di yo?»</p><div class="mood" style="margin-bottom:13px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Estable esta semana</span></div><div class="chips"><span class="chip">Diario</span><span class="chip">Sueños</span><span class="chip">Lecturas</span></div>`},
+        journal:{ic:'✒',name:'Diario',tag:'Pensar sobre el papel',desc:`Elige una propuesta, escribe y profundiza con una pregunta de seguimiento siempre que quieras ir más allá.`,feats:["Un selector de propuestas para arrancar","'Profundizar' hace la siguiente pregunta","Las entradas quedan en tu historial de bienestar"],pv:`<p class="r-q" style="margin:0 0 10px">«¿A qué le hago sitio esta semana?»</p><p class="pv-note-l" style="margin:0">Menos ruido. Una conversación de verdad con Marta. Un paseo sin rumbo.</p>`},
+        coaching:{ic:'✦',name:'Coaching',tag:'Una pregunta, no un sermón',desc:`Un coaching suave y opcional que te pregunta lo justo en el momento justo, apoyándose en tus propias metas y revisiones.`,feats:["Partiendo de tus metas y revisiones","Pregunta; nunca da órdenes","Opcional, con tu propia clave de IA"],pv:`<p class="r-q" style="margin:0 0 11px">«Has movido el gimnasio tres veces - ¿qué se interpone de verdad?»</p><div class="chips"><span class="chip">Reflexiona</span><span class="chip">Replantea</span><span class="chip">Inténtalo de nuevo</span></div>`},
+        goals:{ic:'◎',name:'Metas',tag:'Intenciones que se hacen realidad',desc:`Define lo que importa, divídelo en pasos y mira cómo avanza.`,feats:["Divide una meta en próximas acciones reales","El progreso de un vistazo","Ligadas a las Áreas de Vida en las que viven"],pv:`<div class="pv-aname">Correr una media maratón <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:60%;background:var(--pine)"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10k sin parar</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Apuntarse a la carrera</span></div></div>`},
+        reviews:{ic:'↻',name:'Revisiones',tag:'Mirar atrás para avanzar',desc:`Un ritmo sereno de revisiones - semanal, mensual, por estaciones - para ver cómo va la vida de verdad y reajustar lo que importa.`,feats:["Recordatorios a tu propio ritmo","Saca cifras reales de tus Áreas de Vida","Ve tu progreso y luego reajusta tus intenciones"],pv:`<div class="pv-aname">Revisión semanal <span class="pv-apct">3 de 4 hechas</span></div><div class="pv-bar" style="margin-bottom:13px"><i style="width:75%"></i></div><div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Viaje a Frigiliana</span><span class="pv-amt">según el plan</span></div><div class="pv-row"><span class="pv-t">Próxima</span><span class="pv-amt">domingo</span></div></div>`},
+        bucket:{ic:'⚑',name:'Lista de deseos',tag:'La lista de la vida',desc:`Las experiencias, los lugares y los sueños que no quieres perderte - guardados, y empujados hacia planes reales cuando llega el momento.`,feats:["Sueños, viajes, habilidades, caprichos - todo en un solo lugar","Convierte cualquier línea en una meta con próximos pasos reales","Táchalos a medida que la vida sucede de verdad"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">Ver una aurora boreal</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Aprender a surfear</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Hacer el Camino</span></div></div>`},
+        contacts:{ic:'☺',name:'Contactos',tag:'Ten cerca a tu gente',desc:`Las personas de tu vida, cerca - quiénes son, qué les importa, cuándo hablasteis por última vez.`,feats:["Avisos para mantener el contacto cuando toca","Cumpleaños y lo que les importa","Viven en las Áreas de Vida a las que pertenecen"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · hablasteis hace 6 semanas</span><span class="pv-chip">Saludar</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · cumple el viernes</span><span class="pv-chip">Recordar</span></div></div>`},
+        sharing:{ic:'⇄',name:'Compartir',tag:'Comparte un área, no toda tu vida',desc:`Invita a las personas de una parte de tu vida solo a esa área - co-padres, familia, un viaje - y mantén en privado todo lo demás.`,feats:["Acceso por área - nada más se filtra","Un muro compartido para cada área","Solo ven lo que tú elijas"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t"><b>Los niños</b> · área compartida</span><span class="pv-chip">2 personas</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Tú</span><span class="pv-chip">propietario</span></div><div class="pv-row"><span class="pv-ava">X</span><span class="pv-t">Co-padre</span><span class="pv-chip">puede editar</span></div></div>`},
+        messaging:{ic:'❝',name:'Mensajes',tag:'Habla donde está la vida',desc:`Escribe a las personas de un área compartida, justo donde ya viven los planes, las fechas y los archivos - sin cambiar de aplicación.`,feats:["Enlazado al área de la que trata","Todos ven el mismo contexto","Se acabaron los grupos de chat dispersos"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t">¿El relevo sigue el viernes a las 18:00?</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Sí - yo llevo la bolsa del equipo.</span></div></div>`},
+        money:{ic:'€',name:'Dinero',tag:'Adónde va, por Área de Vida',desc:`Mira tus gastos ordenados por las partes de tu vida que te importan.`,feats:["Gastos ordenados por Área de Vida","Ve adónde va de verdad","Sin hojas de cálculo, sin líos"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Viaje a Frigiliana</span><span class="pv-amt">€1.240</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Salud</span><span class="pv-amt">€85</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Hogar</span><span class="pv-amt">€430</span></div></div>`},
+        tables:{ic:'▦',name:'Tablas',tag:'Estructura cuando la quieras',desc:`Convierte una nota en una tabla de verdad para lo que merezca seguimiento - justo donde la escribiste.`,feats:["Una tabla de verdad allí donde la necesites","Nace de una nota con un toque","Haz seguimiento de lo que merezca la pena"],pv:`<table class="pv-tbl"><thead><tr><th>Lugar</th><th>Visto</th><th>¿Vamos?</th></tr></thead><tbody><tr><td>Casa de la puerta azul</td><td>Sí</td><td>★</td></tr><tr><td>Posada de la carretera de la costa</td><td>Aún no</td><td>-</td></tr></tbody></table>`}
+      };
+      var tiles=document.getElementById('tsTiles'),panel=document.getElementById('tsPanel');
+      function render(k){var t=T[k];if(!t)return;var f=(t.feats||[]).map(function(x){return '<li>'+x+'</li>';}).join('');panel.innerHTML=`<div class="tspanel-l"><div class="tsp-ic">${t.ic}</div><div class="tsp-name">${t.name}</div><div class="tsp-tag">${t.tag}</div><div class="tsp-desc">${t.desc}</div><ul class="tsp-feats">${f}</ul></div><div class="tspanel-r"><div class="tspv">${t.pv}</div></div>`;var bs=tiles.children;for(var i=0;i<bs.length;i++){bs[i].classList.toggle('on',bs[i].getAttribute('data-tool')===k);}}
+      tiles.addEventListener('click',function(e){var b=e.target.closest('.tstile');if(b)render(b.getAttribute('data-tool'));});
+      render('areas');
+    })();
+    </script>
+  </div>
+</section>
+
+<section class="band flow-band" id="flow">
+  <div class="wrap">
+    <div class="band-head center reveal">
+      <div class="eyebrow">Cómo fluye</div>
+      <h2>Todo se habla con todo</h2>
+      <p>Un correo se convierte en evento; un evento, en nota; una nota, en tarea - la información fluye adonde hace falta. Todo se reúne en tus Áreas de Vida, con Daybook en el centro y tú en el mismísimo corazón.</p>
+    </div>
+    <div class="flow-dia reveal">
+      <svg viewBox="0 0 560 470" role="img" aria-label="La información fluye entre las herramientas de Daybook, se reúne en tus Áreas de Vida y tú estás en el centro">
+        <defs>
+          <marker id="fa" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9" fill="none" stroke="var(--rust)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+        </defs>
+        <circle class="orbit" cx="280" cy="230" r="175" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="2 8" stroke-linecap="round"/>
+        <g stroke="var(--rust)" stroke-width="1.4" opacity="0.26">
+          <line x1="280" y1="142" x2="280" y2="97"/>
+          <line x1="364" y1="203" x2="407" y2="189"/>
+          <line x1="332" y1="301" x2="358" y2="338"/>
+          <line x1="228" y1="301" x2="202" y2="338"/>
+          <line x1="196" y1="203" x2="154" y2="189"/>
+        </g>
+        <g fill="none" stroke="var(--rust)" stroke-width="2" stroke-linecap="round" marker-end="url(#fa)">
+          <path d="M328 62 A175 175 0 0 1 425 132"/>
+          <path d="M455 224 A175 175 0 0 1 418 338"/>
+          <path d="M340 394 A175 175 0 0 1 220 394"/>
+          <path d="M142 338 A175 175 0 0 1 105 224"/>
+        </g>
+        <circle cx="280" cy="230" r="86" fill="var(--rust-soft)" stroke="var(--rust)" stroke-width="1.5"/>
+        <text x="280" y="169" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="10" font-weight="700" letter-spacing="1.3" fill="var(--rust)">ÁREAS DE VIDA</text>
+        <circle cx="280" cy="230" r="56" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text x="280" y="199" text-anchor="middle" font-family="'Fraunces',serif" font-size="13.5" font-weight="600" fill="var(--ink)">Daybook</text>
+        <circle cx="280" cy="232" r="27" fill="var(--rust)"/>
+        <text x="280" y="237" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="12" font-weight="600" fill="var(--rust-ink)">Tú</text>
+        <g font-family="'Hanken Grotesk',sans-serif">
+          <g><circle cx="280" cy="55" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="280" y="51" text-anchor="middle" font-size="18" fill="var(--rust)">✉</text><text x="280" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Correo</text></g>
+          <g><circle cx="446" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="446" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">◑</text><text x="446" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Calendario</text></g>
+          <g><circle cx="383" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="383" y="368" text-anchor="middle" font-size="18" fill="var(--rust)">▤</text><text x="383" y="387" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Nota</text></g>
+          <g><circle cx="177" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="177" y="369" text-anchor="middle" font-size="17" fill="var(--rust)">☀</text><text x="177" y="388" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Hoy</text></g>
+          <g><circle cx="114" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="114" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">✓</text><text x="114" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Tarea</text></g>
+        </g>
+      </svg>
     </div>
   </div>
 </section>
@@ -491,9 +687,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap areas-grid">
     <div class="reveal">
       <div class="eyebrow">El ingrediente secreto</div>
-      <h2>Las áreas de vida conectan los puntos</h2>
+      <h2>Las Áreas de Vida conectan los puntos</h2>
       <p class="areas-lead">Las herramientas no están en cajas separadas. Asigna cualquier elemento a un <em>área de vida</em> - un proyecto, la familia, tu salud, el negocio - y el correo, los eventos, las tareas, las notas y los gastos de esa parte de tu vida se reúnen en un solo lugar.</p>
-      <p>Un correo se convierte en tarea. Una nota se convierte en tabla. Un pago se archiva solo en el área correcta. La información deja de amontonarse en compartimentos estancos y empieza a <em>fluir</em> adonde hace falta, para que puedas sostener toda tu vida con ligereza y esquivar el agobio digital.</p>
+      <p>Un correo se convierte en tarea. Una nota se convierte en tabla. Un pago se archiva solo en el área correcta. La información deja de amontonarse en compartimentos estancos y empieza a <em>fluir</em> adonde hace falta - para que puedas sostener toda tu vida con ligereza y esquivar el agobio digital.</p>
     </div>
     <div class="areas-flow reveal" aria-hidden="true">
       <div class="af-tools"><span class="af-chip">✉ Correo</span><span class="af-chip">◑ Evento</span><span class="af-chip">✓ Tarea</span><span class="af-chip">▤ Nota</span><span class="af-chip">💰 Gasto</span></div>
@@ -501,13 +697,24 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <div class="af-area"><span class="af-dot"></span>Familia</div>
     </div>
   </div>
+  <div class="wrap areas-share reveal">
+    <div class="eyebrow">Mejor juntos</div>
+    <h3 class="areas-share-h">Comparte un área con las personas que la viven.</h3>
+    <p class="areas-share-lead">Abre una parte de tu vida a las personas que la viven contigo - y solo esa parte. Cada cual ve lo que debe; nadie se ahoga en un grupo de chat.</p>
+    <div class="share-cases">
+      <div class="share-case"><span class="sc-ic">👨‍👩‍👧</span><b>Co-padres</b><span>en «Los niños»</span></div>
+      <div class="share-case"><span class="sc-ic">🏡</span><b>Una familia</b><span>en «La mudanza»</span></div>
+      <div class="share-case"><span class="sc-ic">🎉</span><b>Un grupo</b><span>en un evento</span></div>
+      <div class="share-case"><span class="sc-ic">💞</span><b>Una pareja</b><span>en el dinero</span></div>
+    </div>
+  </div>
 </section>
 
 <section class="band wellbeing-band" id="wellbeing">
   <div class="wrap band-head center reveal">
     <div class="eyebrow">Para la vida interior</div>
-    <h2>Bienestar, entretejido</h2>
-    <p>Junto a lo práctico discurre una historia más amable: diario y revisiones diarias, percepciones y sueños, meditación, cartas espirituales y el I Ching, y coaching cuando quieras una pista. Ahí cuando los necesitas, en silencio cuando no.</p>
+    <h2>Tus sueños y tus ilusiones, también sostenidos</h2>
+    <p>Un daybook siempre fue más que una agenda de quehaceres. Junto a lo práctico discurre una historia más amable - revisiones y reflexión, diario, sueños, un coaching suave y herramientas de reflexión pensadas para encender una idea - un horóscopo que lee tu carta astral completa, el I Ching, cartas espirituales. La vida exterior y la interior en un mismo lugar, cada una dando más sentido a la otra. Ahí cuando las necesitas, en silencio cuando no.</p>
   </div>
 </section>
 
@@ -515,7 +722,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap concept-grid">
     <div class="reveal">
       <div class="eyebrow">La idea de fondo</div>
-      <p class="concept-lead">Un daybook es un lugar donde <em>dejar lo que llevas</em> - para que puedas dejar de sostenerlo en la cabeza y seguir confiando en que volverá.</p>
+      <p class="concept-lead">Un daybook sostiene toda tu vida - lo de fuera y lo de dentro, el hacer y el soñar - y, en silencio, ayuda a que <em>funcione para ti.</em></p>
       <ul class="holds">
         <li><b>Tu día</b><span>Agenda, tareas y citas</span></li>
         <li><b>Tus hábitos</b><span>Las rutinas que mantienes</span></li>
@@ -535,7 +742,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap reveal">
     <div class="eyebrow" style="text-align:center">El espíritu de Daybook</div>
     <p class="ethos-line">Lo adecuado, en el lugar adecuado y en el <em>momento adecuado.</em></p>
-    <p class="ethos-sub">En sintonía con los ritmos de tu vida: nada reclama tu atención a gritos y nada que merezca recordarse se escapa.</p>
+    <p class="ethos-sub">En sintonía con los ritmos de tu vida - nada reclama tu atención a gritos y nada que merezca recordarse se escapa.</p>
   </div>
 </section>
 
@@ -543,15 +750,16 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap privacy-grid">
     <div class="reveal">
       <div class="eyebrow">Privado por diseño</div>
-      <h2>Tuyo. De verdad.</h2>
-      <p class="privacy-lead">Daybook guarda las partes más personales de tu vida, así que las trata como tales. Tus datos son <b>privados para ti</b>: ni se explotan, ni se venden, ni se dan de comer al modelo de nadie. Vender tus datos no es una línea de negocio que preferiríamos evitar; sencillamente <b>no es nuestro modelo de negocio</b>.</p>
-      <p class="privacy-lead">Y siempre puedes llevártelos. <b>Exporta todo con un toque</b> y guárdalo donde quieras: tu propia unidad, tus propias copias de seguridad, completamente fuera de nuestros servidores. ¿Quieres ejecutarlo todo en tu propio almacenamiento y encargarte tú? Nos alegra de verdad que lo hagas: son tus datos, nunca te encerraremos y, si nos lo pides, te indicaremos el camino. Trae también tu <b>propia</b> IA; la conexión va directamente entre tú y tu proveedor, y tu relación con él es cosa tuya.</p>
+      <h2>Tuyo. Y seguro.</h2>
+      <p class="privacy-lead">Daybook guarda las partes más personales de tu vida - tus reflexiones, tus relaciones, tus contraseñas. Por eso está bien protegido: <b>inicio de sesión en dos pasos</b>, cifrado donde importa. Esto es seguro.</p>
+      <p class="privacy-lead">¿Y tus datos? No los queremos. Eso no va con nosotros. Construimos un negocio sobre la <b>confianza y los valores</b>, no sobre venderte - así que nada de lo tuyo se explota, se vende ni se le da de comer al modelo de nadie. Es tuyo. <b>Y punto.</b> Expórtalo todo con un toque, guárdalo en tu propio almacenamiento si lo prefieres, trae tu propia IA - la decisión siempre es tuya.</p>
     </div>
     <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Tu Daybook es tuyo: exporta todo, cuando quieras, con un toque.</div></li>
-      <li><span class="tick">✓</span><div>Guárdalo en tu propio almacenamiento si lo prefieres: hazlo todo tú mismo, fuera de nuestros servidores. Estamos para ayudar, no para estorbar.</div></li>
-      <li><span class="tick">✓</span><div>Sin publicidad, sin rastreo, sin vender tus datos. No es nuestro modelo de negocio.</div></li>
-      <li><span class="tick">✓</span><div>La IA es opcional y con tu propia clave: un enlace seguro entre tú y tu proveedor de IA.</div></li>
+      <li><span class="tick">✓</span><div>Inicio de sesión en dos pasos - tu Daybook, bien cerrado.</div></li>
+      <li><span class="tick">✓</span><div>Nunca se explota, nunca se vende, nunca se usa para entrenar nada. Es tuyo. Y punto.</div></li>
+      <li><span class="tick">✓</span><div>Exporta todo, cuando quieras, con un toque - o guárdalo en tu propio almacenamiento.</div></li>
+      <li><span class="tick">✓</span><div>Cierra tu cuenta cuando quieras y llévatelo todo. Sin trabas, sin culpa.</div></li>
+      <li><span class="tick">✓</span><div>Un negocio construido sobre la confianza y los valores, no sobre tus datos.</div></li>
     </ul>
   </div>
 </section>
@@ -564,9 +772,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Captar debe ser sin esfuerzo, sobre todo en el móvil. Saca lo que llevas en la cabeza en segundos y ordénalo después, o deja que Daybook lo ordene por ti.</p></div>
     </div>
     <div class="steps reveal">
-      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Abre y apunta</b><span>Una tarea, una nota, una cifra, un sentimiento: lo que lleves encima.</span></div></div>
+      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Abre y apunta</b><span>Una tarea, una nota, una cifra, un sentimiento - lo que lleves encima.</span></div></div>
       <div class="step"><span class="step-n">2</span><div class="step-t"><b>Suéltalo</b><span>Cae en el lugar adecuado, asignado al área de vida a la que pertenece.</span></div></div>
-      <div class="step"><span class="step-n">3</span><div class="step-t"><b>Vuelve a ti</b><span>En el momento justo: en tu día, en tus planes o en tu revisión.</span></div></div>
+      <div class="step"><span class="step-n">3</span><div class="step-t"><b>Vuelve a ti</b><span>En el momento justo - en tu día, en tus planes o en tu revisión.</span></div></div>
     </div>
   </div>
 </section>
@@ -610,6 +818,24 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="foot-meta">¿Dudas? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
   </div>
 </footer>
+
+<script>
+/* Homepage order: move the flow diagram, then the tools showcase, to just above the closing CTA */
+(function(){
+  try {
+    var invite = document.getElementById('invite');
+    var flow = document.getElementById('flow');
+    var tools = document.getElementById('tools');
+    if (invite && flow && tools && invite.parentNode) {
+      invite.parentNode.insertBefore(flow, invite);
+      invite.parentNode.insertBefore(tools, invite);
+    }
+    var idea = document.getElementById('idea');
+    var connect = document.getElementById('connect');
+    if (idea && connect && connect.parentNode) { connect.parentNode.insertBefore(idea, connect); }
+  } catch (e) {}
+})();
+</script>
 
 <div class="signin-overlay" id="signin-modal" hidden>
   <div class="signin-box" role="dialog" aria-modal="true" aria-label="Iniciar sesión en tu Daybook">

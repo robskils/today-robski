@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Daybook - email, calendário, notas e tarefas num só lugar</title>
-<meta name="description" content="O Daybook reúne email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus; pertencem-lhe.">
-<link rel="canonical" href="https://daybook.fyi/pt">
+<title>Comment fonctionne Daybook</title>
+<meta name="description" content="Comment fonctionne Daybook : toute votre vie rassemblée autour des Domaines de vie, l'information qui circule là où l'on en a besoin, et le gros du travail fait pour vous - rendu sous forme de clarté et de plaisir.">
+<link rel="canonical" href="https://daybook.fyi/fr/comment-ca-marche">
 <link rel="alternate" hreflang="en" href="https://daybook.fyi/">
 <link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt">
 <link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr">
@@ -18,18 +18,18 @@
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Daybook">
-<meta property="og:title" content="Daybook - para uma vida bem vivida">
-<meta property="og:description" content="Email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus.">
-<meta property="og:url" content="https://daybook.fyi/pt">
+<meta property="og:title" content="Daybook - pour une vie bien vécue">
+<meta property="og:description" content="E-mails, agenda, tâches, notes, réflexions et budget dans un lieu calme et privé. Déposez ce que vous portez, et faites-lui confiance pour revenir. Vos données vous appartiennent.">
+<meta property="og:url" content="https://daybook.fyi/fr/comment-ca-marche">
 <meta property="og:image" content="https://daybook.fyi/og-image.v2.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Daybook - para uma vida bem vivida">
-<meta property="og:locale" content="pt_PT">
+<meta property="og:image:alt" content="Daybook - pour une vie bien vécue">
+<meta property="og:locale" content="fr_FR">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Daybook - para uma vida bem vivida">
-<meta name="twitter:description" content="Pouse, e confie que volta. Um lar calmo e privado para tudo o que carrega, trazido de volta quando precisa.">
+<meta name="twitter:title" content="Daybook - pour une vie bien vécue">
+<meta name="twitter:description" content="Déposez, puis faites confiance : tout revient. Un foyer calme et privé pour tout ce que vous portez, qui refait surface au moment voulu.">
 <meta name="twitter:image" content="https://daybook.fyi/og-image.v2.png">
 <!-- Structured data -->
 <script type="application/ld+json">
@@ -39,20 +39,20 @@
     {
       "@type": "WebSite",
       "@id": "https://daybook.fyi/#website",
-      "url": "https://daybook.fyi/pt",
+      "url": "https://daybook.fyi/fr",
       "name": "Daybook",
-      "slogan": "Para uma vida bem vivida",
-      "description": "Um lar calmo e privado para a sua vida - tarefas, notas, reflexões e finanças num só lugar.",
-      "inLanguage": "pt-PT"
+      "slogan": "Pour une vie bien vécue",
+      "description": "Un foyer calme et privé pour votre vie - tâches, notes, réflexions et budget réunis en un seul lieu.",
+      "inLanguage": "fr"
     },
     {
       "@type": "SoftwareApplication",
       "name": "Daybook",
-      "slogan": "Para uma vida bem vivida",
-      "url": "https://daybook.fyi/pt",
+      "slogan": "Pour une vie bien vécue",
+      "url": "https://daybook.fyi/fr",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "O Daybook é um lar calmo e privado para tudo o que carrega - tarefas, notas, reflexões e finanças - capturado em dois toques e trazido de volta quando precisa. Os seus dados são privados, só seus, e a IA é opcional, com a sua própria chave.",
+      "description": "Daybook est un foyer calme et privé pour tout ce que vous portez - tâches, notes, réflexions et budget - saisi en deux touches et remis sous vos yeux au moment voulu. Vos données ne regardent que vous, et l'IA est facultative, avec votre propre clé.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -187,24 +187,22 @@ nav {
 .lang-menu a.on { color: var(--rust); font-weight: 600; }
 
 /* ── hero ── */
-.hero { position: relative; padding: 92px 0 60px; }
-.hero-glow { position: absolute; inset: 0 0 auto 0; height: 100%; z-index: 0; pointer-events: none;
+.hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
+.hero-glow { position: absolute; inset: -30% 0 auto 0; height: 620px; z-index: 0; pointer-events: none;
   background: radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%), radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
 .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
-.hero-copy { min-width: 0; }
-.hero h1, .hero-tag { padding-right: 0.12em; }
 .hero-badge { display: inline-flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); padding: 7px 15px 7px 12px; border-radius: 999px; margin-bottom: 26px; box-shadow: var(--shadow-sm); }
 .hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 0 var(--rust); animation: pulse 2.6s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rust) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .hero-tag { font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(19px, 2.3vw, 23px); line-height: 1.2; letter-spacing: -0.01em; color: var(--rust); margin-bottom: 15px; }
-.hero h1 { font-size: clamp(42px, 6.4vw, 72px); line-height: 1.04; font-weight: 600; letter-spacing: -0.01em; }
-.hero h1 em { font-style: italic; color: var(--rust); padding-right: 0.16em; margin-right: -0.16em; }
-.hero-sub { margin-top: 24px; font-size: clamp(17px, 2vw, 20px); color: var(--ink-2); max-width: 48ch; line-height: 1.55; }
+.hero h1 { font-size: clamp(44px, 6.6vw, 74px); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; }
+.hero h1 em { font-style: italic; color: var(--rust); }
+.hero-sub { margin-top: 24px; font-size: clamp(18px, 2.1vw, 21px); color: var(--ink-2); max-width: 30ch; line-height: 1.55; }
 .hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 .hero-note { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); }
 
 /* hero app-surface cluster */
-.cluster { position: relative; min-height: 470px; min-width: 0; }
+.cluster { position: relative; min-height: 470px; }
 .dcard { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 16px 18px; }
 .win-bar { display: flex; align-items: center; gap: 6px; padding-bottom: 11px; margin-bottom: 9px; border-bottom: 1px solid var(--line); }
 .win-bar .wd { width: 8px; height: 8px; border-radius: 50%; opacity: .6; }
@@ -349,6 +347,13 @@ section { position: relative; }
 .flow-dia svg { width: 100%; height: auto; display: block; }
 @keyframes flowDash { to { stroke-dashoffset: -110; } }
 @media (prefers-reduced-motion: no-preference) { .flow-dia .orbit { animation: flowDash 3.6s linear infinite; } }
+.goals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 44px; margin-top: 8px; }
+.goals > div { padding: 18px 0; border-top: 1px solid var(--line); }
+.goals dt { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
+.goals dd { font-size: 16px; color: var(--ink-2); line-height: 1.5; }
+@media (max-width: 680px) { .goals { grid-template-columns: 1fr; } }
+.repl { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin-top: 26px; }
+.repl span { font-size: 14px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 7px 15px; }
 
 /* Tinted so the tool grid reads as its own band. */
 #tools { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -501,8 +506,8 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
-    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Escolhas de cookies');
-    b.innerHTML = '<p>O Daybook usa cookies de análise para perceber como o site é utilizado - nada pessoal, e nunca qualquer conteúdo do seu Daybook. Permite? <a href="/pt/privacidade">Privacidade</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Recusar</button><button class="dbk-accept" type="button">Aceitar</button></div>';
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Choix relatifs aux cookies');
+    b.innerHTML = '<p>Daybook utilise des cookies d\'analyse pour comprendre comment le site est utilisé - rien de personnel, et jamais le moindre contenu de votre Daybook. Y consentez-vous ? <a href="/fr/confidentialite">Confidentialité</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Refuser</button><button class="dbk-accept" type="button">Accepter</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -518,117 +523,78 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a>
+    <a class="brand" href="/fr"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a>
     <ul class="nav-links">
-      <li><a href="#idea">O seu Daybook</a></li>
-      <li><a href="#tools">Ferramentas</a></li>
-      <li><a href="#private">Privado por princípio</a></li>
-      <li><a href="/pt/jornal">Jornal</a></li>
+      <li><a href="/fr#idea">Votre Daybook</a></li>
+      <li><a href="/fr#tools">Outils</a></li>
+      <li><a href="/fr#private">Confidentialité</a></li>
+      <li><a href="/fr/journal">Journal</a></li>
     </ul>
     <div class="nav-cta">
       <div class="lang-switch nav-lang"></div>
-      <a class="btn btn-ghost" href="#" data-signin>Entrar</a>
-      <a class="btn btn-primary" href="#invite">Pedir um convite</a>
+      <a class="btn btn-ghost" href="#" data-signin>Se connecter</a>
+      <a class="btn btn-primary" href="#invite">Demander une invitation</a>
     </div>
   </div>
 </nav>
 
-<header class="hero">
-  <div class="hero-glow"></div>
-  <div class="wrap hero-in">
-    <div class="hero-copy">
-      <div class="hero-badge reveal"><span class="pulse"></span>Apenas por convite, em acesso antecipado</div>
-      <p class="hero-tag reveal">day&middot;book, s. - o livro onde pousa o seu dia</p>
-      <h1 class="reveal">Para uma vida<br><em>bem vivida</em></h1>
-      <p class="hero-sub reveal">O Daybook reúne os dois lados da sua vida - reflexão e ação - num conjunto de ferramentas ligadas que falam entre si. Um daybook ajuda-o a gerir, concretizar e encontrar sentido no seu dia a dia.</p>
-      <div class="hero-actions reveal">
-        <a class="btn btn-primary" href="#invite">Pedir um convite →</a>
-        <a class="btn btn-ghost" href="#" data-signin>Entrar</a>
-      </div>
-      <p class="hero-note reveal">Privado por princípio. Sem anúncios, sem vendas, sem ruído.</p>
-    </div>
-    <div class="cluster reveal">
-      <div class="dcard dc-plan">
-        <div class="win-bar"><span class="wd r"></span><span class="wd a"></span><span class="wd p"></span><span class="win-ttl">Hoje &middot; Ter 7 out</span></div>
-        <div class="plan">
-          <div class="prow done"><span class="pt">07:30</span><span class="adot gold"></span><span class="plbl">Sentar matinal</span><span class="ptick">✓</span></div>
-          <div class="prow"><span class="pt">10:00</span><span class="adot rust"></span><span class="plbl">Rascunhar a proposta de Sintra</span></div>
-          <div class="prow"><span class="pt">13:00</span><span class="adot blue"></span><span class="plbl">Almoço com a Marta</span><span class="pcal">cal</span></div>
-          <div class="prow"><span class="pt">18:00</span><span class="adot pine"></span><span class="plbl">Caminhar antes de a luz partir</span></div>
-        </div>
-      </div>
-      <div class="dcard dc-area">
-        <div class="area-top"><span class="adot rust big"></span><span class="area-name">Viagem a Frigiliana</span><span class="area-days">12 dias</span></div>
-        <div class="area-ring">
-          <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="ring-bg" cx="22" cy="22" r="19"></circle><circle class="ring-fg" cx="22" cy="22" r="19"></circle></svg>
-          <div class="ring-meta"><strong>68%</strong><span>no bom caminho</span></div>
-        </div>
-        <div class="chips"><span class="chip">✉ 3</span><span class="chip">◷ 2</span><span class="chip">▤ 5</span><span class="chip">€ 1,2k</span></div>
-      </div>
-      <div class="dcard dc-reflect">
-        <div class="r-lbl">Bem-estar</div>
-        <p class="r-q">"O que me pediu o dia de hoje, e o que lhe dei eu?"</p>
-        <div class="mood"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Estável esta semana</span></div>
-      </div>
-    </div>
-  </div>
-</header>
-
-<section class="litany-band">
-  <div class="wrap reveal">
-    <p class="litany">O seu tempo, as suas pessoas, os seus objetivos, os seus ritmos, <em>a sua vida</em> - e a vida digital que a tudo envolve. Tudo reunido num só lugar seguro, simplificado e trazido à superfície para o máximo discernimento.</p>
+<section class="band" style="padding-top:116px;padding-bottom:36px">
+  <div class="wrap band-head center reveal" style="max-width:820px">
+    <div class="eyebrow">Comment ça marche</div>
+    <h2 style="font-size:clamp(40px,6vw,66px);line-height:1.03;letter-spacing:-0.025em">Comment fonctionne Daybook</h2>
+    <p style="font-size:clamp(18px,2.1vw,21px);max-width:60ch;margin-left:auto;margin-right:auto">Daybook rassemble toute votre vie - l'action et la réflexion - et fait le gros du travail en arrière-plan, pour vous le rendre de façon éclairante et agréable. Voici comment.</p>
   </div>
 </section>
 
 <section class="band" id="tools">
   <div class="wrap">
     <div class="band-head center reveal">
-      <div class="eyebrow">Todo o seu conjunto</div>
-      <h2>O livro que o faz brilhar</h2>
-      <p>Tudo num só lugar - correio, calendário, notas, tarefas, finanças e pessoas para a ação; bem-estar, objetivos e Áreas da Vida para a vida interior. Ligado para que nada escape, e tratado com discrição, para que tenha tudo sob controlo sem parecer que se esforça.</p>
+      <div class="eyebrow">Toute votre suite</div>
+      <h2>Le carnet qui vous met en valeur</h2>
+      <p>Tout au même endroit - e-mails, agenda, notes, tâches, budget et contacts pour l'action ; bien-être, objectifs et Domaines de vie pour la vie intérieure. Reliés pour que rien ne vous échappe, gérés en toute discrétion, pour que vous gardiez la main sur l'ensemble sans en avoir l'air.</p>
     </div>
     <div class="toolshow reveal">
       <div class="ts-tiles" id="tsTiles">
-        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Áreas da Vida</span></button>
-        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">Correio</span></button>
-        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Calendário</span></button>
-        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Tarefas</span></button>
-        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notas</span></button>
-        <button class="tstile" data-tool="readwatch" type="button"><span class="tsi">☆</span><span class="tsn">Ler &amp; Ver</span></button>
-        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Bem-estar</span></button>
-        <button class="tstile" data-tool="journal" type="button"><span class="tsi">✒</span><span class="tsn">Diário</span></button>
-        <button class="tstile" data-tool="coaching" type="button"><span class="tsi">✦</span><span class="tsn">Acompanhamento</span></button>
-        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Objetivos</span></button>
-        <button class="tstile" data-tool="reviews" type="button"><span class="tsi">↻</span><span class="tsn">Revisões</span></button>
-        <button class="tstile" data-tool="bucket" type="button"><span class="tsi">⚑</span><span class="tsn">Lista de vida</span></button>
-        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Contactos</span></button>
-        <button class="tstile" data-tool="sharing" type="button"><span class="tsi">⇄</span><span class="tsn">Partilha</span></button>
-        <button class="tstile" data-tool="messaging" type="button"><span class="tsi">❝</span><span class="tsn">Mensagens</span></button>
-        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Finanças</span></button>
-        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tabelas</span></button>
+        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Domaines de vie</span></button>
+        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">Messagerie</span></button>
+        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Agenda</span></button>
+        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Tâches</span></button>
+        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notes</span></button>
+        <button class="tstile" data-tool="readwatch" type="button"><span class="tsi">☆</span><span class="tsn">À lire &amp; à voir</span></button>
+        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Bien-être</span></button>
+        <button class="tstile" data-tool="journal" type="button"><span class="tsi">✒</span><span class="tsn">Journal</span></button>
+        <button class="tstile" data-tool="coaching" type="button"><span class="tsi">✦</span><span class="tsn">Coaching</span></button>
+        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Objectifs</span></button>
+        <button class="tstile" data-tool="reviews" type="button"><span class="tsi">↻</span><span class="tsn">Bilans</span></button>
+        <button class="tstile" data-tool="bucket" type="button"><span class="tsi">⚑</span><span class="tsn">Liste de vie</span></button>
+        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Contacts</span></button>
+        <button class="tstile" data-tool="sharing" type="button"><span class="tsi">⇄</span><span class="tsn">Partage</span></button>
+        <button class="tstile" data-tool="messaging" type="button"><span class="tsi">❝</span><span class="tsn">Messages</span></button>
+        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Budget</span></button>
+        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tableaux</span></button>
       </div>
       <div class="tspanel" id="tsPanel"></div>
     </div>
     <script>
     (function(){
       var T={
-        areas:{ic:'◈',name:'Áreas da Vida',tag:'O coração do Daybook',desc:`O seu correio, calendário, tarefas, notas, objetivos, pessoas e despesas reúnem-se em torno das partes reais da sua vida - cada uma mostrando num relance como está.`,feats:["Correio, calendário, tarefas, notas, objetivos, pessoas e despesas reúnem-se por área","Defina uma data e torna-se um projeto, em contagem decrescente","Partilhe uma área com as pessoas que a vivem"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Viagem a Frigiliana <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Saúde <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Mudança de casa <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
-        mail:{ic:'✉',name:'Correio',tag:'Todas as caixas, uma sala',desc:`Junte todas as contas num só fluxo - Gmail, Outlook, qualquer caixa IMAP - e trate-as como uma só.`,feats:["Todas as suas contas reunidas numa só caixa de entrada","Triagem rápida: Urgente, Importante, Tranquilo","Arquive um email numa Área da Vida e partilhe-o aí"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: proposta Sintra</span><span class="pv-chip q-urgent">Urgente</span></div><div class="pv-row"><span class="pv-ava">C</span><span class="pv-t"><b>Câmara de Lisboa</b> · IMI 2026</span><span class="pv-chip q-important">Importante</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Horário do dojo</span><span class="pv-chip q-chilled">Tranquilo</span></div></div><div class="pv-quad"><span class="lbl">Ordenar</span><span class="pv-chip q-urgent">Urgente</span><span class="pv-chip q-important">Importante</span><span class="pv-chip q-chilled">Tranquilo</span><span class="pv-chip q-others">Outros</span></div>`},
-        calendar:{ic:'◑',name:'Calendário',tag:'Mês, semana, agenda',desc:`Uma só vista sobre os seus dias - em sincronia com o calendário que já usa.`,feats:["Mês, semana e agenda numa só vista","Sincronização nos dois sentidos com o seu calendário Google","Um evento pode contar como prática"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Revisão da proposta</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Almoço com a Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga à beira-rio</span></div></div>`},
-        tasks:{ic:'✓',name:'Tarefas',tag:'O seu dia, a fluir',desc:`Um dia de fluxos, não uma lista a importunar - siga a corrente quando estiver nela.`,feats:["Fluxos que correm, nunca um alerta vermelho de atraso","Ressurge exatamente quando é devido","Cada tarefa leva a sua Área da Vida"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot gold"></span><span class="pv-t pv-done">Sentar matinal</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Rascunhar a proposta de Sintra</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Caminhar antes de a luz partir</span></div></div>`},
-        notes:{ic:'▤',name:'Notas',tag:'Escreva livremente, ligue tudo',desc:`Uma ideia rabiscada, um pensamento mais longo, ou um plano com tudo ligado - capturado em segundos e associado ao lugar a que pertence.`,feats:["Capture em dois toques, a partir de qualquer lado","Ligue um site, uma tarefa, um evento, uma pessoa","Transforme qualquer nota numa tabela quando quiser"],pv:`<div class="pv-note-h">Viagem a Frigiliana</div><p class="pv-note-l">Estrada da costa, a casa da porta azul. Confirmar as datas antes do dia 20.</p><div class="pv-links"><span class="pv-link">↗ blue-door-house.pt</span><span class="pv-link">✓ Reservar o ferry</span><span class="pv-link">◷ Sex 12</span><span class="pv-link">↳ Viagem a Frigiliana</span></div>`},
-        readwatch:{ic:'☆',name:'Ler & Ver',tag:'Guardar para depois',desc:`Guarde os sites, artigos, livros e filmes a que tenciona chegar - guardados num toque, prontos para quando tiver tempo.`,feats:["Captura num toque - bookmarklet ou Atalho do iOS","Artigos, sites, livros e filmes, tudo organizado","Chame um deles quando tiver uma noite livre"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">▷</span><span class="pv-t">Aftersun</span><span class="pv-chip">Filme</span></div><div class="pv-row"><span class="pv-ava">❏</span><span class="pv-t">Four Thousand Weeks</span><span class="pv-chip">Livro</span></div><div class="pv-row"><span class="pv-ava">↗</span><span class="pv-t">monocle.com - a edição de Lisboa</span><span class="pv-chip">Site</span></div></div>`},
-        wellbeing:{ic:'✎',name:'Bem-estar',tag:'A vida interior, cuidada',desc:`A metade reflexiva - diário, revisões, sonhos, leituras e acompanhamento suave, mesmo ao lado da ação.`,feats:["Diário, revisões, sonhos e acompanhamento suave","Ferramentas de reflexão - I Ching, horóscopo, cartas do espírito - para despertar um pensamento","Bem construído: o horóscopo lê o seu mapa astral completo"],pv:`<p class="r-q" style="margin:0 0 12px">"O que me pediu o dia de hoje, e o que lhe dei eu?"</p><div class="mood" style="margin-bottom:13px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Estável esta semana</span></div><div class="chips"><span class="chip">Diário</span><span class="chip">Sonhos</span><span class="chip">Leituras</span></div>`},
-        journal:{ic:'✒',name:'Diário',tag:'Pensar no papel',desc:`Escolha um mote, escreva, e aprofunde com uma pergunta de seguimento sempre que quiser ir mais longe.`,feats:["Um seletor de motes para arrancar","O 'Aprofundar' faz a pergunta seguinte","As entradas vivem no seu histórico de bem-estar"],pv:`<p class="r-q" style="margin:0 0 10px">"A que estou a abrir espaço esta semana?"</p><p class="pv-note-l" style="margin:0">Menos ruído. Uma conversa verdadeira com a Marta. Um passeio sem destino.</p>`},
-        coaching:{ic:'✦',name:'Acompanhamento',tag:'Uma pergunta, não um sermão',desc:`Acompanhamento suave e opcional, que pergunta o que é preciso no momento certo, apoiado nos seus objetivos e revisões.`,feats:["Apoiado nos seus objetivos e revisões","Pergunta; nunca dá ordens","Opcional, com a sua própria chave de IA"],pv:`<p class="r-q" style="margin:0 0 11px">"Já adiou o ginásio três vezes - o que está mesmo a impedir?"</p><div class="chips"><span class="chip">Refletir</span><span class="chip">Reenquadrar</span><span class="chip">Tentar de novo</span></div>`},
-        goals:{ic:'◎',name:'Objetivos',tag:'Intenções que se concretizam',desc:`Defina o que importa, divida em passos, e veja-o avançar.`,feats:["Divida um objetivo em próximas ações concretas","O progresso num relance","Ligados às Áreas da Vida onde vivem"],pv:`<div class="pv-aname">Correr uma meia-maratona <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:60%;background:var(--pine)"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10 km sem parar</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Inscrever-se na corrida</span></div></div>`},
-        reviews:{ic:'↻',name:'Revisões',tag:'Olhar para trás para avançar',desc:`Um ritmo suave de revisões - semanais, mensais, por estação - para ver como a vida vai realmente e reajustar o que importa.`,feats:["Lembretes à sua própria cadência","Puxa números reais das suas Áreas da Vida","Veja o progresso e redefina as suas intenções"],pv:`<div class="pv-aname">Revisão semanal <span class="pv-apct">3 de 4 feitas</span></div><div class="pv-bar" style="margin-bottom:13px"><i style="width:75%"></i></div><div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Viagem a Frigiliana</span><span class="pv-amt">no bom caminho</span></div><div class="pv-row"><span class="pv-t">Próxima</span><span class="pv-amt">domingo</span></div></div>`},
-        bucket:{ic:'⚑',name:'Lista de vida',tag:'A lista da vida',desc:`As experiências, lugares e sonhos que não quer perder - guardados, e empurrados para planos reais quando chega o momento.`,feats:["Sonhos, viagens, competências, momentos únicos - tudo num só lugar","Transforme qualquer linha num objetivo com próximos passos concretos","Vá riscando à medida que a vida acontece"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">Ver a aurora boreal</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Aprender a surfar</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Fazer o Caminho de Santiago</span></div></div>`},
-        contacts:{ic:'☺',name:'Contactos',tag:'Manter as pessoas por perto',desc:`As pessoas da sua vida, por perto - quem são, o que lhes importa, quando falaram pela última vez.`,feats:["Lembretes para manter o contacto quando é altura","Aniversários e o que lhes importa","Vivem nas Áreas da Vida a que pertencem"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · última conversa há 6 semanas</span><span class="pv-chip">Dizer olá</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · anos na sexta</span><span class="pv-chip">Dar um toque</span></div></div>`},
-        sharing:{ic:'⇄',name:'Partilha',tag:'Partilhe uma área, não a sua vida',desc:`Convide as pessoas de uma parte da sua vida só para essa área - co-progenitores, família, uma viagem - e mantenha tudo o resto privado.`,feats:["Acesso por área - nada mais transparece","Um mural partilhado para cada área","Veem apenas o que escolher"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t"><b>Os miúdos</b> · área partilhada</span><span class="pv-chip">2 pessoas</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Você</span><span class="pv-chip">dono</span></div><div class="pv-row"><span class="pv-ava">X</span><span class="pv-t">Co-progenitor</span><span class="pv-chip">pode editar</span></div></div>`},
-        messaging:{ic:'❝',name:'Mensagens',tag:'Converse onde a vida acontece',desc:`Troque mensagens com as pessoas de uma área partilhada, mesmo onde já vivem os planos, as datas e os ficheiros - sem trocar de aplicação.`,feats:["Em conversa ligada à área a que diz respeito","Todos veem o mesmo contexto","Acabaram os grupos de conversa dispersos"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t">A entrega continua para sexta às 18h?</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Sim - levo o saco do material.</span></div></div>`},
-        money:{ic:'€',name:'Finanças',tag:'Para onde vai, por Área da Vida',desc:`Veja as suas despesas organizadas pelas partes da vida que lhe são caras.`,feats:["Despesas organizadas por Área da Vida","Veja para onde vai realmente","Sem folhas de cálculo, sem complicações"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Viagem a Frigiliana</span><span class="pv-amt">€1.240</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Saúde</span><span class="pv-amt">€85</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Casa</span><span class="pv-amt">€430</span></div></div>`},
-        tables:{ic:'▦',name:'Tabelas',tag:'Estrutura quando quiser',desc:`Transforme uma nota numa tabela como deve ser para tudo o que vale a pena acompanhar - mesmo onde a escreveu.`,feats:["Uma tabela como deve ser onde precisar dela","Nasce de uma nota num toque","Acompanhe tudo o que vale a pena"],pv:`<table class="pv-tbl"><thead><tr><th>Sítio</th><th>Visto</th><th>Ir?</th></tr></thead><tbody><tr><td>Casa da porta azul</td><td>Sim</td><td>★</td></tr><tr><td>Estalagem da estrada da costa</td><td>Ainda não</td><td>-</td></tr></tbody></table>`}
+        areas:{ic:'◈',name:'Domaines de vie',tag:'Le cœur de Daybook',desc:`Vos e-mails, votre agenda, vos tâches, vos notes, vos objectifs, vos contacts et vos dépenses se rassemblent autour des parts réelles de votre vie - chacune montrant où elle en est d'un coup d'œil.`,feats:["E-mails, agenda, tâches, notes, objectifs, contacts et dépenses se rassemblent par domaine","Ajoutez une date et le domaine devient un projet, avec son compte à rebours","Partagez un domaine avec les personnes qui le vivent"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Voyage à Frigiliana <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Santé <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Déménagement <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
+        mail:{ic:'✉',name:'Messagerie',tag:'Toutes vos boîtes, une seule pièce',desc:`Réunissez chaque compte dans un seul flux - Gmail, Outlook, n'importe quelle boîte IMAP - et traitez-les tous comme un seul.`,feats:["Tous vos comptes fondus dans une seule boîte de réception","Triez vite : Urgent, Important, Tranquille","Classez un e-mail dans un Domaine de vie, et partagez-le à cet endroit"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re : proposition Sintra</span><span class="pv-chip q-urgent">Urgent</span></div><div class="pv-row"><span class="pv-ava">C</span><span class="pv-t"><b>Commune de Lisbonne</b> · taxe foncière 2026</span><span class="pv-chip q-important">Important</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Horaires du dojo</span><span class="pv-chip q-chilled">Tranquille</span></div></div><div class="pv-quad"><span class="lbl">Trier</span><span class="pv-chip q-urgent">Urgent</span><span class="pv-chip q-important">Important</span><span class="pv-chip q-chilled">Tranquille</span><span class="pv-chip q-others">Autres</span></div>`},
+        calendar:{ic:'◑',name:'Agenda',tag:'Mois, semaine, ordre du jour',desc:`Une seule vue sur vos journées - synchronisée avec l'agenda que vous utilisez déjà.`,feats:["Mois, semaine et ordre du jour dans une seule vue","Synchronisation bidirectionnelle avec votre agenda Google","Un événement peut compter comme une pratique"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Revue de la proposition</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Déjeuner avec Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga au bord du fleuve</span></div></div>`},
+        tasks:{ic:'✓',name:'Tâches',tag:'Votre journée, au fil de l\'eau',desc:`Une journée faite de courants, non une liste qui vous harcèle - suivez le flux quand vous y êtes.`,feats:["Des courants qui s'écoulent, jamais de rappel en rouge pour du retard","Refait surface exactement au moment voulu","Chaque tâche porte son Domaine de vie"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot gold"></span><span class="pv-t pv-done">Méditation du matin</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Rédiger la proposition pour Sintra</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Marcher avant que la lumière ne tombe</span></div></div>`},
+        notes:{ic:'▤',name:'Notes',tag:'Écrivez librement, reliez le tout',desc:`Une idée griffonnée, une réflexion plus longue, ou un plan où tout est relié - saisi en quelques secondes et rattaché là où il a sa place.`,feats:["Saisissez en deux touches, où que vous soyez","Reliez un site web, une tâche, un événement, une personne","Transformez n'importe quelle note en tableau le moment venu"],pv:`<div class="pv-note-h">Voyage à Frigiliana</div><p class="pv-note-l">La route côtière, la maison à la porte bleue. Confirmer les dates avant le 20.</p><div class="pv-links"><span class="pv-link">↗ blue-door-house.pt</span><span class="pv-link">✓ Réserver le ferry</span><span class="pv-link">◷ ven. 12</span><span class="pv-link">↳ Voyage à Frigiliana</span></div>`},
+        readwatch:{ic:'☆',name:'À lire & à voir',tag:'À garder pour plus tard',desc:`Gardez les sites, articles, livres et films que vous comptez découvrir - enregistrés en une touche, prêts pour quand vous aurez le temps.`,feats:["Capture en une touche - bookmarklet ou raccourci iOS","Articles, sites web, livres et films, tout est trié","Ressortez-en un quand vous avez une soirée de libre"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">▷</span><span class="pv-t">Aftersun</span><span class="pv-chip">Film</span></div><div class="pv-row"><span class="pv-ava">❏</span><span class="pv-t">Quatre mille semaines</span><span class="pv-chip">Livre</span></div><div class="pv-row"><span class="pv-ava">↗</span><span class="pv-t">monocle.com - le numéro Lisbonne</span><span class="pv-chip">Lien</span></div></div>`},
+        wellbeing:{ic:'✎',name:'Bien-être',tag:'La vie intérieure, cultivée',desc:`La part réflexive - journal, bilans, rêves, tirages et accompagnement tout en douceur, juste à côté de l'action.`,feats:["Journal, bilans, rêves et accompagnement tout en douceur","Des outils de réflexion - Yi King, horoscope, cartes spirituelles - pour éveiller une pensée","Bien conçu : l'horoscope lit votre thème astral complet"],pv:`<p class="r-q" style="margin:0 0 12px">« Qu'a exigé de moi cette journée, et que lui ai-je donné ? »</p><div class="mood" style="margin-bottom:13px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Stable cette semaine</span></div><div class="chips"><span class="chip">Journal</span><span class="chip">Rêves</span><span class="chip">Tirages</span></div>`},
+        journal:{ic:'✒',name:'Journal',tag:'Penser sur la page',desc:`Choisissez une amorce, écrivez, et creusez avec une question de relance dès que vous voulez aller plus loin.`,feats:["Un choix d'amorces pour vous lancer","« Creuser » pose la question suivante","Vos entrées vivent dans votre historique de bien-être"],pv:`<p class="r-q" style="margin:0 0 10px">« À quoi est-ce que je fais de la place cette semaine ? »</p><p class="pv-note-l" style="margin:0">Moins de bruit. Une vraie conversation avec Marta. Une marche qui ne mène nulle part.</p>`},
+        coaching:{ic:'✦',name:'Coaching',tag:'Une question, pas un sermon',desc:`Un accompagnement doux et facultatif qui pose la bonne question au bon moment, en s'appuyant sur vos propres objectifs et bilans.`,feats:["Ancré dans vos objectifs et vos bilans","Il interroge ; il n'ordonne jamais","Facultatif, avec votre propre clé d'IA"],pv:`<p class="r-q" style="margin:0 0 11px">« Vous avez repoussé la salle de sport trois fois - qu'est-ce qui bloque vraiment ? »</p><div class="chips"><span class="chip">Réfléchir</span><span class="chip">Recadrer</span><span class="chip">Réessayer</span></div>`},
+        goals:{ic:'◎',name:'Objectifs',tag:'Des intentions qui se réalisent',desc:`Fixez ce qui compte, découpez-le en étapes, et regardez-le avancer.`,feats:["Découpez un objectif en prochaines actions concrètes","La progression d'un coup d'œil","Rattachés aux Domaines de vie où ils vivent"],pv:`<div class="pv-aname">Courir un semi-marathon <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:60%;background:var(--pine)"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10 km sans s'arrêter</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">S'inscrire à la course</span></div></div>`},
+        reviews:{ic:'↻',name:'Bilans',tag:'Regarder en arrière pour avancer',desc:`Un rythme doux de bilans - chaque semaine, chaque mois, au fil des saisons - pour voir où en est vraiment votre vie et redéfinir ce qui compte.`,feats:["Des rappels à votre propre cadence","Puise de vrais chiffres dans vos Domaines de vie","Voyez la progression, puis réajustez vos intentions"],pv:`<div class="pv-aname">Bilan hebdomadaire <span class="pv-apct">3 sur 4 faits</span></div><div class="pv-bar" style="margin-bottom:13px"><i style="width:75%"></i></div><div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Voyage à Frigiliana</span><span class="pv-amt">en bonne voie</span></div><div class="pv-row"><span class="pv-t">Prochain</span><span class="pv-amt">dimanche</span></div></div>`},
+        bucket:{ic:'⚑',name:'Liste de vie',tag:'La liste d\'une vie',desc:`Les expériences, les lieux et les rêves que vous ne voulez pas manquer - notés, puis amenés tout doucement vers de vrais projets quand le moment est venu.`,feats:["Rêves, voyages, savoir-faire, expériences uniques - tout au même endroit","Transformez n'importe quelle ligne en objectif, avec de vraies étapes","Cochez-les à mesure que la vie les réalise"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">Voir les aurores boréales</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Apprendre à surfer</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Faire le chemin de Compostelle</span></div></div>`},
+        contacts:{ic:'☺',name:'Contacts',tag:'Gardez vos proches près de vous',desc:`Les personnes de votre vie, tout près - qui elles sont, ce qui compte pour elles, la dernière fois que vous vous êtes parlé.`,feats:["Des rappels pour garder le lien quand c'est le moment","Les anniversaires et ce qui compte pour elles","Vivent dans les Domaines de vie où elles ont leur place"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · parlé il y a 6 semaines</span><span class="pv-chip">Faire signe</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · anniversaire vendredi</span><span class="pv-chip">Relancer</span></div></div>`},
+        sharing:{ic:'⇄',name:'Partage',tag:'Partagez un domaine, pas toute votre vie',desc:`Invitez les personnes d'une partie de votre vie dans ce seul domaine - coparents, famille, un voyage - et gardez tout le reste privé.`,feats:["Un accès par domaine - rien d'autre ne filtre","Un mur partagé pour chaque domaine","Ils ne voient que ce que vous choisissez"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t"><b>Les enfants</b> · domaine partagé</span><span class="pv-chip">2 personnes</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Vous</span><span class="pv-chip">propriétaire</span></div><div class="pv-row"><span class="pv-ava">X</span><span class="pv-t">Coparent</span><span class="pv-chip">peut modifier</span></div></div>`},
+        messaging:{ic:'❝',name:'Messages',tag:'Discutez là où se passe la vie',desc:`Écrivez aux personnes d'un domaine partagé, là même où vivent déjà les plans, les dates et les fichiers - sans changer d'application.`,feats:["Rattaché au domaine qu'il concerne","Tout le monde voit le même contexte","Fini les discussions de groupe éparpillées"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t">Le relais tient toujours, vendredi 18 h ?</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Oui - j'apporte le sac.</span></div></div>`},
+        money:{ic:'€',name:'Budget',tag:'Où il va, par Domaine de vie',desc:`Voyez vos dépenses classées selon les parts de votre vie qui vous tiennent à cœur.`,feats:["Les dépenses classées par Domaine de vie","Voyez où va vraiment l'argent","Pas de tableur, pas de tracas"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Voyage à Frigiliana</span><span class="pv-amt">1 240 €</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Santé</span><span class="pv-amt">85 €</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Maison</span><span class="pv-amt">430 €</span></div></div>`},
+        tables:{ic:'▦',name:'Tableaux',tag:'De la structure quand vous le voulez',desc:`Transformez une note en véritable tableau pour tout ce qui mérite un suivi - là même où vous l'avez écrite.`,feats:["Un vrai tableau partout où il en faut un","Naît d'une note en une touche","Suivez tout ce qui mérite de l'être"],pv:`<table class="pv-tbl"><thead><tr><th>Lieu</th><th>Vu</th><th>Y aller ?</th></tr></thead><tbody><tr><td>Maison à la porte bleue</td><td>Oui</td><td>★</td></tr><tr><td>Auberge de la route côtière</td><td>Pas encore</td><td>-</td></tr></tbody></table>`}
       };
       var tiles=document.getElementById('tsTiles'),panel=document.getElementById('tsPanel');
       function render(k){var t=T[k];if(!t)return;var f=(t.feats||[]).map(function(x){return '<li>'+x+'</li>';}).join('');panel.innerHTML=`<div class="tspanel-l"><div class="tsp-ic">${t.ic}</div><div class="tsp-name">${t.name}</div><div class="tsp-tag">${t.tag}</div><div class="tsp-desc">${t.desc}</div><ul class="tsp-feats">${f}</ul></div><div class="tspanel-r"><div class="tspv">${t.pv}</div></div>`;var bs=tiles.children;for(var i=0;i<bs.length;i++){bs[i].classList.toggle('on',bs[i].getAttribute('data-tool')===k);}}
@@ -642,12 +608,12 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 <section class="band flow-band" id="flow">
   <div class="wrap">
     <div class="band-head center reveal">
-      <div class="eyebrow">Como flui</div>
-      <h2>Tudo fala com tudo</h2>
-      <p>Um email torna-se um evento; um evento torna-se uma nota; uma nota torna-se uma tarefa - a informação flui até onde é precisa. Tudo se reúne nas suas Áreas da Vida, com o Daybook no centro, e você mesmo no coração de tudo.</p>
+      <div class="eyebrow">Comment tout circule</div>
+      <h2>Tout communique avec tout</h2>
+      <p>Un e-mail devient un événement ; un événement devient une note ; une note devient une tâche - l'information circule là où l'on en a besoin. Tout se rassemble dans vos Domaines de vie, avec Daybook au centre, et vous au cœur de tout.</p>
     </div>
     <div class="flow-dia reveal">
-      <svg viewBox="0 0 560 470" role="img" aria-label="Informação a fluir entre as ferramentas do Daybook, reunida nas suas Áreas da Vida, consigo no centro.">
+      <svg viewBox="0 0 560 470" role="img" aria-label="L'information circule entre les outils de Daybook, rassemblée dans vos Domaines de vie, avec vous au cœur">
         <defs>
           <marker id="fa" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9" fill="none" stroke="var(--rust)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
         </defs>
@@ -666,100 +632,125 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
           <path d="M142 338 A175 175 0 0 1 105 224"/>
         </g>
         <circle cx="280" cy="230" r="86" fill="var(--rust-soft)" stroke="var(--rust)" stroke-width="1.5"/>
-        <text x="280" y="169" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="10" font-weight="700" letter-spacing="1.3" fill="var(--rust)">ÁREAS DA VIDA</text>
+        <text x="280" y="169" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="10" font-weight="700" letter-spacing="1.3" fill="var(--rust)">DOMAINES DE VIE</text>
         <circle cx="280" cy="230" r="56" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
         <text x="280" y="199" text-anchor="middle" font-family="'Fraunces',serif" font-size="13.5" font-weight="600" fill="var(--ink)">Daybook</text>
         <circle cx="280" cy="232" r="27" fill="var(--rust)"/>
-        <text x="280" y="237" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="12" font-weight="600" fill="var(--rust-ink)">Você</text>
+        <text x="280" y="237" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="12" font-weight="600" fill="var(--rust-ink)">Vous</text>
         <g font-family="'Hanken Grotesk',sans-serif">
-          <g><circle cx="280" cy="55" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="280" y="51" text-anchor="middle" font-size="18" fill="var(--rust)">✉</text><text x="280" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Email</text></g>
-          <g><circle cx="446" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="446" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">◑</text><text x="446" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Calendário</text></g>
-          <g><circle cx="383" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="383" y="368" text-anchor="middle" font-size="18" fill="var(--rust)">▤</text><text x="383" y="387" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Nota</text></g>
-          <g><circle cx="177" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="177" y="369" text-anchor="middle" font-size="17" fill="var(--rust)">☀</text><text x="177" y="388" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Hoje</text></g>
-          <g><circle cx="114" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="114" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">✓</text><text x="114" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Tarefa</text></g>
+          <g><circle cx="280" cy="55" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="280" y="51" text-anchor="middle" font-size="18" fill="var(--rust)">✉</text><text x="280" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">E-mail</text></g>
+          <g><circle cx="446" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="446" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">◑</text><text x="446" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Agenda</text></g>
+          <g><circle cx="383" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="383" y="368" text-anchor="middle" font-size="18" fill="var(--rust)">▤</text><text x="383" y="387" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Note</text></g>
+          <g><circle cx="177" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="177" y="369" text-anchor="middle" font-size="17" fill="var(--rust)">☀</text><text x="177" y="388" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Aujourd'hui</text></g>
+          <g><circle cx="114" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="114" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">✓</text><text x="114" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Tâche</text></g>
         </g>
       </svg>
     </div>
   </div>
 </section>
 
+<section class="band" style="background:var(--paper-2);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="band-head center reveal"><div class="eyebrow">Notre raison d'être</div><h2>Aider votre vie à circuler</h2><p>Votre vie, et votre information, qui circulent librement - là où vous en avez besoin, quand vous en avez besoin.</p></div>
+    <dl class="goals reveal">
+      <div><dt>Être conscient</dt><dd>Remarquer ce qui compte, et lui accorder votre attention.</dd></div>
+      <div><dt>Présent quand vous en avez besoin</dt><dd>Ce dont vous avez besoin refait surface au moment voulu - pas avant, jamais enfoui.</dd></div>
+      <div><dt>Tout communique</dt><dd>Vos éléments se relient par les Domaines de vie et les projets, au lieu de rester en vase clos.</dd></div>
+      <div><dt>L'information circule</dt><dd>Un e-mail devient une note, une note rejoint un événement ; elle voyage là où l'on en a besoin.</dd></div>
+      <div><dt>Un second cerveau</dt><dd>Tenez tout cela d'une main légère. Déposez en confiance, retrouvez avec sérénité.</dd></div>
+      <div><dt>Des intentions qui ont du sens</dt><dd>Fixez ce qui compte pour votre vie, et nous vous aidons à rester sur la bonne voie.</dd></div>
+      <div><dt>Devenir la meilleure version de vous-même</dt><dd>Une main discrète vers la réalisation de soi, à votre rythme.</dd></div>
+      <div><dt>Une vie qui a du sens</dt><dd>Donnez la priorité à l'essentiel - et recevez l'aide pour le concrétiser.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap band-head center reveal">
+    <div class="eyebrow">Un seul endroit, pas dix</div>
+    <h2>Ce qu'il remplace</h2>
+    <p>Daybook prend la place des applications éparpillées entre lesquelles vous jonglez aujourd'hui - reliées entre elles, et synchronisées avec votre compte Google quand vous le souhaitez.</p>
+    <div class="repl"><span>Notes &amp; Evernote</span><span>Google Docs</span><span>Listes de tâches</span><span>Gestionnaires de tâches</span><span>Agendas</span><span>Journaux</span></div>
+  </div>
+</section>
+
 <section class="band areas-band" id="connect">
   <div class="wrap areas-grid">
     <div class="reveal">
-      <div class="eyebrow">O toque especial</div>
-      <h2>As Áreas da Vida ligam os pontos</h2>
-      <p class="areas-lead">As ferramentas não ficam em caixas separadas. Associe o que quiser a uma <em>área da vida</em> - um projeto, a Família, a sua saúde, o negócio - e o correio, os eventos, as tarefas, as notas e as despesas dessa parte da vida reúnem-se todos num só lugar.</p>
-      <p>Um email torna-se uma tarefa. Uma nota torna-se uma tabela. Um pagamento arquiva-se sozinho na área certa. A informação deixa de se acumular em silos e começa a <em>fluir</em> até onde é precisa - para que possa sustentar toda a sua vida com leveza, e contornar a sobrecarga digital.</p>
+      <div class="eyebrow">L'ingrédient secret</div>
+      <h2>Les Domaines de vie font le lien</h2>
+      <p class="areas-lead">Les outils ne vivent pas dans des cases séparées. Rattachez n'importe quel élément à un <em>domaine de vie</em> - un projet, la famille, votre santé, l'entreprise - et les e-mails, événements, tâches, notes et dépenses de cette part de votre vie se retrouvent au même endroit.</p>
+      <p>Un e-mail devient une tâche. Une note devient un tableau. Un paiement se range de lui-même dans le bon domaine. L'information cesse de s'empiler en vase clos et se met à <em>circuler</em> là où l'on en a besoin - pour que vous teniez toute votre vie d'une main légère, et échappiez au trop-plein numérique.</p>
     </div>
     <div class="areas-flow reveal" aria-hidden="true">
-      <div class="af-tools"><span class="af-chip">✉ Correio</span><span class="af-chip">◑ Evento</span><span class="af-chip">✓ Tarefa</span><span class="af-chip">▤ Nota</span><span class="af-chip">💰 Despesa</span></div>
+      <div class="af-tools"><span class="af-chip">✉ E-mail</span><span class="af-chip">◑ Événement</span><span class="af-chip">✓ Tâche</span><span class="af-chip">▤ Note</span><span class="af-chip">💰 Dépense</span></div>
       <div class="af-arrow">↓</div>
-      <div class="af-area"><span class="af-dot"></span>Família</div>
+      <div class="af-area"><span class="af-dot"></span>Famille</div>
     </div>
   </div>
   <div class="wrap areas-share reveal">
-    <div class="eyebrow">Melhor em conjunto</div>
-    <h3 class="areas-share-h">Partilhe uma área com as pessoas que a vivem.</h3>
-    <p class="areas-share-lead">Abra uma parte da sua vida às pessoas que a vivem consigo - e só essa parte. Cada um vê o que deve; ninguém se afoga num grupo de conversa.</p>
+    <div class="eyebrow">Mieux à plusieurs</div>
+    <h3 class="areas-share-h">Partagez un domaine avec ceux qui le vivent.</h3>
+    <p class="areas-share-lead">Ouvrez une partie de votre vie aux personnes qui la partagent avec vous - et cette partie seulement. Chacun voit ce qu'il doit voir ; personne ne se noie dans une discussion de groupe.</p>
     <div class="share-cases">
-      <div class="share-case"><span class="sc-ic">👨‍👩‍👧</span><b>Co-progenitores</b><span>em “Os miúdos”</span></div>
-      <div class="share-case"><span class="sc-ic">🏡</span><b>Uma família</b><span>em “A mudança”</span></div>
-      <div class="share-case"><span class="sc-ic">🎉</span><b>Um grupo</b><span>num evento</span></div>
-      <div class="share-case"><span class="sc-ic">💞</span><b>Um casal</b><span>nas finanças</span></div>
+      <div class="share-case"><span class="sc-ic">👨‍👩‍👧</span><b>Coparents</b><span>sur « Les enfants »</span></div>
+      <div class="share-case"><span class="sc-ic">🏡</span><b>Une famille</b><span>sur « Le déménagement »</span></div>
+      <div class="share-case"><span class="sc-ic">🎉</span><b>Un groupe</b><span>sur un événement</span></div>
+      <div class="share-case"><span class="sc-ic">💞</span><b>Un couple</b><span>sur le budget</span></div>
     </div>
   </div>
 </section>
 
 <section class="band wellbeing-band" id="wellbeing">
   <div class="wrap band-head center reveal">
-    <div class="eyebrow">Para a vida interior</div>
-    <h2>As suas esperanças e sonhos, também aqui</h2>
-    <p>Um daybook sempre foi mais do que um diário de tarefas. A par da parte prática corre uma história mais suave - revisões e reflexão, o diário, os sonhos, acompanhamento suave, e ferramentas de reflexão pensadas para despertar um pensamento - um horóscopo que lê o seu mapa astral completo, o I Ching, as cartas do espírito. A vida exterior e a vida interior num só lugar, cada uma dando mais sentido à outra. Presentes quando precisa, discretas quando não.</p>
+    <div class="eyebrow">Pour la vie intérieure</div>
+    <h2>Vos espoirs et vos rêves, eux aussi à l'abri</h2>
+    <p>Un daybook a toujours été plus qu'un carnet de corvées. À côté du pratique se déroule une histoire plus douce - bilans et réflexion, écriture de journal, vos rêves, un horoscope quotidien, un tirage de Yi King, et même un peu d'accompagnement quand vous souhaitez une piste. La vie extérieure et la vie intérieure au même endroit, chacune éclairant l'autre. Présents quand vous en avez besoin, silencieux quand vous n'en avez pas.</p>
   </div>
 </section>
 
 <section class="band concept" id="idea">
   <div class="wrap concept-grid">
     <div class="reveal">
-      <div class="eyebrow">A ideia maior</div>
-      <p class="concept-lead">Um daybook guarda a sua vida inteira - o exterior e o interior, o fazer e o sonhar - e ajuda-a discretamente a <em>trabalhar a seu favor.</em></p>
+      <div class="eyebrow">L'idée plus large</div>
+      <p class="concept-lead">Un daybook tient tout le contenu de votre vie - votre administratif quotidien et votre vie intérieure - et l'aide discrètement à <em>travailler pour vous.</em></p>
       <ul class="holds">
-        <li><b>O seu dia</b><span>Agenda, tarefas e compromissos</span></li>
-        <li><b>Os seus hábitos</b><span>As rotinas que vai mantendo</span></li>
-        <li><b>As suas reflexões</b><span>Pensamentos, sentimentos, lições</span></li>
-        <li><b>As suas tarefas</b><span>O urgente agora, e o jogo longo</span></li>
+        <li><b>Votre journée</b><span>Emploi du temps, tâches et rendez-vous</span></li>
+        <li><b>Vos habitudes</b><span>Les routines que vous entretenez</span></li>
+        <li><b>Vos réflexions</b><span>Pensées, émotions, enseignements</span></li>
+        <li><b>Vos à-faire</b><span>L'urgent du moment, et le long terme</span></li>
       </ul>
     </div>
     <div class="concept-body reveal">
-      <p>Carregamos demasiado de uma só vez. Tarefas meio lembradas, ideias que quisemos guardar, dinheiro que quisemos vigiar, sentimentos com que nunca nos sentámos. Por isso escapa - para post-its, para dez aplicações diferentes, ou simplesmente perde-se em silêncio.</p>
-      <p>O Daybook é um único lugar para pousar tudo isso. Captura depressa e larga, e o Daybook traz de volta a peça certa no momento certo - a tarefa quando o dia dela precisa, a nota quando está a planear, a reflexão quando faz uma pausa.</p>
-      <p>Pouse com confiança. Reencontre com tranquilidade. É essa a ideia toda.</p>
+      <p>Nous portons trop de choses à la fois. Des tâches à moitié retenues, des idées que nous voulions garder, un budget que nous voulions surveiller, des émotions que nous n'avons jamais accueillies. Alors tout déborde - sur des papillons adhésifs, dans dix applications différentes, ou se perd sans bruit.</p>
+      <p>Daybook est un seul lieu pour tout y déposer. Vous saisissez vite et vous lâchez prise, et Daybook vous rend la bonne pièce au bon moment - la tâche quand la journée l'exige, la note quand vous planifiez, la réflexion quand vous faites une pause.</p>
+      <p>Déposez en confiance. Retrouvez avec sérénité. Voilà toute l'idée.</p>
     </div>
   </div>
 </section>
 
 <section class="ethos">
   <div class="wrap reveal">
-    <div class="eyebrow" style="text-align:center">O espírito do Daybook</div>
-    <p class="ethos-line">Aquilo de que precisa, trazido ao lugar certo, no <em>momento certo.</em></p>
-    <p class="ethos-sub">Em sintonia com os ritmos da sua vida - nada grita por atenção, e nada que valha a pena recordar se perde.</p>
+    <div class="eyebrow" style="text-align:center">L'esprit de Daybook</div>
+    <p class="ethos-line">Le bon élément, au bon endroit, <em>au bon moment.</em></p>
+    <p class="ethos-sub">En accord avec les rythmes de votre vie - rien ne crie pour attirer votre attention, et rien de ce qui mérite d'être retenu ne vous échappe.</p>
   </div>
 </section>
 
 <section class="band privacy" id="private">
   <div class="wrap privacy-grid">
     <div class="reveal">
-      <div class="eyebrow">Privado por princípio</div>
-      <h2>Seu. Em segurança.</h2>
-      <p class="privacy-lead">O Daybook guarda as partes mais pessoais da sua vida - as suas reflexões, as suas relações, as suas palavras-passe. Por isso está devidamente protegido: <b>autenticação em dois passos</b>, encriptado onde importa. Isto é seguro.</p>
-      <p class="privacy-lead">E os seus dados? Não os queremos. Não é o nosso género. Estamos a construir um negócio assente em <b>confiança e valores</b>, não em vendê-lo a si - por isso nada do que é seu é explorado, vendido ou entregue ao modelo de alguém. É seu. <b>Ponto final.</b> Exporte tudo num toque, guarde no seu próprio armazenamento se preferir, traga a sua própria IA - a escolha é sempre sua.</p>
+      <div class="eyebrow">Confidentialité par conception</div>
+      <h2>À vous. En sécurité.</h2>
+      <p class="privacy-lead">Daybook renferme les parts les plus personnelles de votre vie - vos réflexions, vos relations, vos mots de passe. Alors tout est verrouillé comme il se doit : <b>connexion à deux facteurs</b>, chiffré là où ça compte. C'est sûr.</p>
+      <p class="privacy-lead">Et vos données ? Nous n'en voulons pas. Ce n'est pas notre genre. Nous bâtissons une entreprise sur la <b>confiance et des valeurs</b>, pas sur votre revente - rien de ce qui vous appartient n'est exploité, vendu, ni donné en pâture au modèle de quiconque. C'est à vous. <b>Point final.</b> Exportez tout en une touche, gardez-le sur votre propre stockage si vous préférez, apportez votre propre IA - le choix vous revient toujours.</p>
     </div>
     <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Autenticação em dois passos - o seu Daybook, bem trancado.</div></li>
-      <li><span class="tick">✓</span><div>Nunca explorado, nunca vendido, nunca usado para treinar seja o que for. É seu. Ponto final.</div></li>
-      <li><span class="tick">✓</span><div>Exporte tudo, a qualquer momento, num toque - ou guarde no seu próprio armazenamento.</div></li>
-      <li><span class="tick">✓</span><div>Feche a conta quando quiser, e leve tudo consigo. Sem obstáculos, sem culpa.</div></li>
-      <li><span class="tick">✓</span><div>Um negócio assente em confiança e valores, não nos seus dados.</div></li>
+      <li><span class="tick">✓</span><div>Connexion à deux facteurs - votre Daybook, bien verrouillé.</div></li>
+      <li><span class="tick">✓</span><div>Jamais exploité, jamais vendu, jamais utilisé pour entraîner quoi que ce soit. C'est à vous. Point final.</div></li>
+      <li><span class="tick">✓</span><div>Exportez tout, à tout moment, en une touche - ou gardez-le sur votre propre stockage.</div></li>
+      <li><span class="tick">✓</span><div>Fermez votre compte quand bon vous semble, et emportez tout avec vous. Sans obstacles, sans culpabilité.</div></li>
+      <li><span class="tick">✓</span><div>Une entreprise bâtie sur la confiance et des valeurs, pas sur vos données.</div></li>
     </ul>
   </div>
 </section>
@@ -767,33 +758,33 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 <section class="band">
   <div class="wrap capture-grid">
     <div class="reveal">
-      <div class="eyebrow">Feito para ser rápido</div>
-      <h2>Dois toques e está guardado</h2>
-      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">A captura foi pensada para não exigir esforço, sobretudo no telemóvel. Tire-o da cabeça em segundos, organize depois - ou deixe o Daybook organizar por si.</p></div>
+      <div class="eyebrow">Pensé pour la rapidité</div>
+      <h2>Deux touches et c'est en sécurité</h2>
+      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">La saisie doit être sans effort, surtout sur votre téléphone. Sortez-le de votre tête en quelques secondes, triez plus tard - ou laissez Daybook s'en charger.</p></div>
     </div>
     <div class="steps reveal">
-      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Abra e aponte</b><span>Uma tarefa, uma nota, um número, um sentimento - o que quer que esteja a carregar.</span></div></div>
-      <div class="step"><span class="step-n">2</span><div class="step-t"><b>Largue-o</b><span>Vai parar ao lugar certo, associado à área da vida a que pertence.</span></div></div>
-      <div class="step"><span class="step-n">3</span><div class="step-t"><b>Volta</b><span>No momento certo - no seu dia, nos seus planos, ou na sua revisão.</span></div></div>
+      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Ouvrez et notez</b><span>Une tâche, une note, un chiffre, une émotion - tout ce que vous portez.</span></div></div>
+      <div class="step"><span class="step-n">2</span><div class="step-t"><b>Lâchez prise</b><span>Tout se range au bon endroit, rattaché au domaine de vie auquel il appartient.</span></div></div>
+      <div class="step"><span class="step-n">3</span><div class="step-t"><b>Cela revient</b><span>Au bon moment - dans votre journée, vos projets ou votre bilan.</span></div></div>
     </div>
   </div>
 </section>
 
 <section class="closing" id="invite">
   <div class="wrap reveal">
-    <div class="eyebrow" style="text-align:center">Acesso antecipado</div>
-    <h2>Abra algum espaço na sua cabeça.</h2>
-    <p>O Daybook é apenas por convite enquanto é jovem, crescendo devagar e de boca em boca para se manter calmo e bem cuidado. Conte-nos um pouco sobre si e tratamos de tudo.</p>
+    <div class="eyebrow" style="text-align:center">Accès anticipé</div>
+    <h2>Faites un peu de place dans votre tête.</h2>
+    <p>Daybook est sur invitation tant qu'il est jeune, et grandit doucement par le bouche-à-oreille pour rester calme et soigné. Parlez-nous un peu de vous et nous vous accueillerons.</p>
     <form class="invite-form reveal" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="if-grid">
-        <input id="if-name" placeholder="O seu nome" autocomplete="name" required>
-        <input id="if-email" type="email" placeholder="O seu email" autocomplete="email" required>
+        <input id="if-name" placeholder="Votre nom" autocomplete="name" required>
+        <input id="if-email" type="email" placeholder="Votre adresse e-mail" autocomplete="email" required>
       </div>
-      <textarea id="if-why" placeholder="Para que usaria o Daybook? Uma linha chega." rows="2"></textarea>
+      <textarea id="if-why" placeholder="À quoi utiliseriez-vous Daybook ? Une ligne suffit." rows="2"></textarea>
       <div class="if-actions">
-        <button class="btn btn-primary" type="submit" id="if-submit">Pedir um convite →</button>
-        <a class="btn btn-ghost" href="#" data-signin>Já tenho conta</a>
+        <button class="btn btn-primary" type="submit" id="if-submit">Demander une invitation →</button>
+        <a class="btn btn-ghost" href="#" data-signin>J'ai déjà un compte</a>
       </div>
       <p class="if-note" id="if-note" hidden></p>
     </form>
@@ -802,60 +793,42 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <footer id="signin">
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a><span class="foot-tag">Para uma vida bem vivida</span></div>
+    <div class="foot-brand"><a class="brand" href="/fr"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a><span class="foot-tag">Pour une vie bien vécue</span></div>
     <ul class="foot-links">
-      <li><a href="#idea">O seu Daybook</a></li>
-      <li><a href="#tools">Ferramentas</a></li>
-      <li><a href="#private">Privado por princípio</a></li>
-      <li><a href="/pt/jornal">Jornal</a></li>
-      <li><a href="#invite">Pedir um convite</a></li>
-      <li><a href="/pt/privacidade">Privacidade</a></li>
-      <li><a href="/pt/termos">Termos</a></li>
-      <li><a href="#" data-cookie-settings>Definições de cookies</a></li>
-      <li><a href="mailto:contact@daybook.fyi">Contacto</a></li>
+      <li><a href="/fr#idea">Votre Daybook</a></li>
+      <li><a href="/fr#tools">Outils</a></li>
+      <li><a href="/fr#private">Confidentialité</a></li>
+      <li><a href="/fr/journal">Journal</a></li>
+      <li><a href="#invite">Demander une invitation</a></li>
+      <li><a href="/fr/confidentialite">Confidentialité</a></li>
+      <li><a href="/fr/conditions">Conditions</a></li>
+      <li><a href="#" data-cookie-settings>Paramètres des cookies</a></li>
+      <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
     </ul>
-    <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Dúvidas? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
+    <div class="foot-lang"><span class="foot-lang-label">Langue</span><div class="lang-switch"></div></div>
+    <div class="foot-meta">Des questions ? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
   </div>
 </footer>
 
-<script>
-/* Homepage order: move the flow diagram, then the tools showcase, to just above the closing CTA */
-(function(){
-  try {
-    var invite = document.getElementById('invite');
-    var flow = document.getElementById('flow');
-    var tools = document.getElementById('tools');
-    if (invite && flow && tools && invite.parentNode) {
-      invite.parentNode.insertBefore(flow, invite);
-      invite.parentNode.insertBefore(tools, invite);
-    }
-    var idea = document.getElementById('idea');
-    var connect = document.getElementById('connect');
-    if (idea && connect && connect.parentNode) { connect.parentNode.insertBefore(idea, connect); }
-  } catch (e) {}
-})();
-</script>
-
 <div class="signin-overlay" id="signin-modal" hidden>
-  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Entre no seu Daybook">
-    <button class="signin-close" data-signin-close aria-label="Fechar">&times;</button>
-    <div class="eyebrow">Bem-vindo de volta</div>
-    <h3 class="signin-h">Entre no seu Daybook</h3>
-    <p class="signin-p">Introduza o seu email e enviamos-lhe um código. A partir daí, levamo-lo ao seu próprio Daybook.</p>
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Se connecter à votre Daybook">
+    <button class="signin-close" data-signin-close aria-label="Fermer">&times;</button>
+    <div class="eyebrow">Content de vous revoir</div>
+    <h3 class="signin-h">Connectez-vous à votre Daybook</h3>
+    <p class="signin-p">Saisissez votre adresse e-mail et nous vous enverrons un code. Nous vous conduirons ensuite à votre propre Daybook.</p>
     <form id="signin-form">
-      <label class="signin-label" for="signin-email">O seu email</label>
+      <label class="signin-label" for="signin-email">Votre adresse e-mail</label>
       <div class="signin-field">
-        <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="voce@exemplo.com">
+        <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="vous@exemple.com">
       </div>
-      <button class="btn btn-primary signin-go" type="submit">Continuar →</button>
+      <button class="btn btn-primary signin-go" type="submit">Continuer →</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
-    <p class="signin-foot">Ainda não tem um Daybook? <a href="#invite" data-signin-close>Pedir um convite</a></p>
+    <p class="signin-foot">Vous n'avez pas encore de Daybook ? <a href="#invite" data-signin-close>Demander une invitation</a></p>
   </div>
 </div>
 
-<script>window.__lang='pt';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es'};</script>
+<script>window.__lang='fr';window.__alts={en:'/how',pt:'/pt/como-funciona',fr:'/fr/comment-ca-marche',es:'/es/como-funciona'};</script>
 <script src="/i18n.js" defer></script>
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
@@ -887,7 +860,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     e.preventDefault();
     const email = document.getElementById('signin-email').value.trim();
     const err = document.getElementById('signin-err');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Introduza o seu endereço de email.'; err.hidden = false; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Saisissez votre adresse e-mail.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
   });
   // Request-an-invite form: posts to the worker, which stores it and emails us.
@@ -900,14 +873,14 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     const hp = document.getElementById('if-hp').value;
     const note = document.getElementById('if-note');
     const btn = document.getElementById('if-submit');
-    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Pedir um convite →'; };
-    if (!name) return fail('Um nome, por favor.');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Um email válido, por favor.');
-    note.hidden = true; btn.disabled = true; btn.textContent = 'A enviar…';
+    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Demander une invitation →'; };
+    if (!name) return fail('Un nom, s\'il vous plaît.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Une adresse e-mail valide, s\'il vous plaît.');
+    note.hidden = true; btn.disabled = true; btn.textContent = 'Envoi en cours…';
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Obrigado 🌱</h3><p>Entraremos em contacto em breve. O Daybook cresce de boca em boca - se conhece alguém que o adorasse, mande-o ter connosco.</p></div>'; })
-      .catch(() => fail('Algo correu mal - escreva para contact@daybook.fyi e tratamos disso.'));
+      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Merci 🌱</h3><p>Nous vous répondrons très vite. Daybook grandit par le bouche-à-oreille - si vous connaissez quelqu\'un qui l\'aimerait, envoyez-le-nous.</p></div>'; })
+      .catch(() => fail('Un incident est survenu - écrivez à contact@daybook.fyi et nous réglerons cela.'));
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -921,3 +894,4 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 </script>
 </body>
 </html>
+

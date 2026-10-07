@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Daybook - email, calendário, notas e tarefas num só lugar</title>
-<meta name="description" content="O Daybook reúne email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus; pertencem-lhe.">
-<link rel="canonical" href="https://daybook.fyi/pt">
+<title>Como funciona o Daybook</title>
+<meta name="description" content="Como funciona o Daybook: a sua vida inteira reunida em torno das Áreas da Vida, a informação a fluir até onde é precisa, e o trabalho pesado feito por si - devolvido em forma de discernimento e encanto.">
+<link rel="canonical" href="https://daybook.fyi/pt/como-funciona">
 <link rel="alternate" hreflang="en" href="https://daybook.fyi/">
 <link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt">
 <link rel="alternate" hreflang="fr" href="https://daybook.fyi/fr">
@@ -20,7 +20,7 @@
 <meta property="og:site_name" content="Daybook">
 <meta property="og:title" content="Daybook - para uma vida bem vivida">
 <meta property="og:description" content="Email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus.">
-<meta property="og:url" content="https://daybook.fyi/pt">
+<meta property="og:url" content="https://daybook.fyi/pt/como-funciona">
 <meta property="og:image" content="https://daybook.fyi/og-image.v2.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -187,24 +187,22 @@ nav {
 .lang-menu a.on { color: var(--rust); font-weight: 600; }
 
 /* ── hero ── */
-.hero { position: relative; padding: 92px 0 60px; }
-.hero-glow { position: absolute; inset: 0 0 auto 0; height: 100%; z-index: 0; pointer-events: none;
+.hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
+.hero-glow { position: absolute; inset: -30% 0 auto 0; height: 620px; z-index: 0; pointer-events: none;
   background: radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%), radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
 .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
-.hero-copy { min-width: 0; }
-.hero h1, .hero-tag { padding-right: 0.12em; }
 .hero-badge { display: inline-flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); padding: 7px 15px 7px 12px; border-radius: 999px; margin-bottom: 26px; box-shadow: var(--shadow-sm); }
 .hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 0 var(--rust); animation: pulse 2.6s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rust) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .hero-tag { font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(19px, 2.3vw, 23px); line-height: 1.2; letter-spacing: -0.01em; color: var(--rust); margin-bottom: 15px; }
-.hero h1 { font-size: clamp(42px, 6.4vw, 72px); line-height: 1.04; font-weight: 600; letter-spacing: -0.01em; }
-.hero h1 em { font-style: italic; color: var(--rust); padding-right: 0.16em; margin-right: -0.16em; }
-.hero-sub { margin-top: 24px; font-size: clamp(17px, 2vw, 20px); color: var(--ink-2); max-width: 48ch; line-height: 1.55; }
+.hero h1 { font-size: clamp(44px, 6.6vw, 74px); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; }
+.hero h1 em { font-style: italic; color: var(--rust); }
+.hero-sub { margin-top: 24px; font-size: clamp(18px, 2.1vw, 21px); color: var(--ink-2); max-width: 30ch; line-height: 1.55; }
 .hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 .hero-note { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); }
 
 /* hero app-surface cluster */
-.cluster { position: relative; min-height: 470px; min-width: 0; }
+.cluster { position: relative; min-height: 470px; }
 .dcard { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 16px 18px; }
 .win-bar { display: flex; align-items: center; gap: 6px; padding-bottom: 11px; margin-bottom: 9px; border-bottom: 1px solid var(--line); }
 .win-bar .wd { width: 8px; height: 8px; border-radius: 50%; opacity: .6; }
@@ -349,6 +347,13 @@ section { position: relative; }
 .flow-dia svg { width: 100%; height: auto; display: block; }
 @keyframes flowDash { to { stroke-dashoffset: -110; } }
 @media (prefers-reduced-motion: no-preference) { .flow-dia .orbit { animation: flowDash 3.6s linear infinite; } }
+.goals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 44px; margin-top: 8px; }
+.goals > div { padding: 18px 0; border-top: 1px solid var(--line); }
+.goals dt { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
+.goals dd { font-size: 16px; color: var(--ink-2); line-height: 1.5; }
+@media (max-width: 680px) { .goals { grid-template-columns: 1fr; } }
+.repl { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin-top: 26px; }
+.repl span { font-size: 14px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 7px 15px; }
 
 /* Tinted so the tool grid reads as its own band. */
 #tools { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -520,9 +525,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap nav-in">
     <a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a>
     <ul class="nav-links">
-      <li><a href="#idea">O seu Daybook</a></li>
-      <li><a href="#tools">Ferramentas</a></li>
-      <li><a href="#private">Privado por princípio</a></li>
+      <li><a href="/pt#idea">O seu Daybook</a></li>
+      <li><a href="/pt#tools">Ferramentas</a></li>
+      <li><a href="/pt#private">Privado por princípio</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
     </ul>
     <div class="nav-cta">
@@ -533,50 +538,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </nav>
 
-<header class="hero">
-  <div class="hero-glow"></div>
-  <div class="wrap hero-in">
-    <div class="hero-copy">
-      <div class="hero-badge reveal"><span class="pulse"></span>Apenas por convite, em acesso antecipado</div>
-      <p class="hero-tag reveal">day&middot;book, s. - o livro onde pousa o seu dia</p>
-      <h1 class="reveal">Para uma vida<br><em>bem vivida</em></h1>
-      <p class="hero-sub reveal">O Daybook reúne os dois lados da sua vida - reflexão e ação - num conjunto de ferramentas ligadas que falam entre si. Um daybook ajuda-o a gerir, concretizar e encontrar sentido no seu dia a dia.</p>
-      <div class="hero-actions reveal">
-        <a class="btn btn-primary" href="#invite">Pedir um convite →</a>
-        <a class="btn btn-ghost" href="#" data-signin>Entrar</a>
-      </div>
-      <p class="hero-note reveal">Privado por princípio. Sem anúncios, sem vendas, sem ruído.</p>
-    </div>
-    <div class="cluster reveal">
-      <div class="dcard dc-plan">
-        <div class="win-bar"><span class="wd r"></span><span class="wd a"></span><span class="wd p"></span><span class="win-ttl">Hoje &middot; Ter 7 out</span></div>
-        <div class="plan">
-          <div class="prow done"><span class="pt">07:30</span><span class="adot gold"></span><span class="plbl">Sentar matinal</span><span class="ptick">✓</span></div>
-          <div class="prow"><span class="pt">10:00</span><span class="adot rust"></span><span class="plbl">Rascunhar a proposta de Sintra</span></div>
-          <div class="prow"><span class="pt">13:00</span><span class="adot blue"></span><span class="plbl">Almoço com a Marta</span><span class="pcal">cal</span></div>
-          <div class="prow"><span class="pt">18:00</span><span class="adot pine"></span><span class="plbl">Caminhar antes de a luz partir</span></div>
-        </div>
-      </div>
-      <div class="dcard dc-area">
-        <div class="area-top"><span class="adot rust big"></span><span class="area-name">Viagem a Frigiliana</span><span class="area-days">12 dias</span></div>
-        <div class="area-ring">
-          <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="ring-bg" cx="22" cy="22" r="19"></circle><circle class="ring-fg" cx="22" cy="22" r="19"></circle></svg>
-          <div class="ring-meta"><strong>68%</strong><span>no bom caminho</span></div>
-        </div>
-        <div class="chips"><span class="chip">✉ 3</span><span class="chip">◷ 2</span><span class="chip">▤ 5</span><span class="chip">€ 1,2k</span></div>
-      </div>
-      <div class="dcard dc-reflect">
-        <div class="r-lbl">Bem-estar</div>
-        <p class="r-q">"O que me pediu o dia de hoje, e o que lhe dei eu?"</p>
-        <div class="mood"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Estável esta semana</span></div>
-      </div>
-    </div>
-  </div>
-</header>
-
-<section class="litany-band">
-  <div class="wrap reveal">
-    <p class="litany">O seu tempo, as suas pessoas, os seus objetivos, os seus ritmos, <em>a sua vida</em> - e a vida digital que a tudo envolve. Tudo reunido num só lugar seguro, simplificado e trazido à superfície para o máximo discernimento.</p>
+<section class="band" style="padding-top:116px;padding-bottom:36px">
+  <div class="wrap band-head center reveal" style="max-width:820px">
+    <div class="eyebrow">Como funciona</div>
+    <h2 style="font-size:clamp(40px,6vw,66px);line-height:1.03;letter-spacing:-0.025em">Como funciona o Daybook</h2>
+    <p style="font-size:clamp(18px,2.1vw,21px);max-width:60ch;margin-left:auto;margin-right:auto">O Daybook reúne a sua vida inteira - o fazer e o refletir - e trata do trabalho pesado nos bastidores, devolvendo-lho de formas esclarecedoras e encantadoras. Eis como.</p>
   </div>
 </section>
 
@@ -683,6 +649,31 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </section>
 
+<section class="band" style="background:var(--paper-2);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="band-head center reveal"><div class="eyebrow">Para que servimos</div><h2>Ajudar a sua vida a fluir</h2><p>A sua vida, e a sua informação, a mover-se livremente - para onde precisa, quando precisa.</p></div>
+    <dl class="goals reveal">
+      <div><dt>Ser consciente</dt><dd>Repare no que importa, e dê-lhe a sua atenção.</dd></div>
+      <div><dt>Aqui quando precisa</dt><dd>O que precisa surge no momento devido - nem antes, nem soterrado.</dd></div>
+      <div><dt>Tudo fala</dt><dd>As suas peças ligam-se através das Áreas da Vida e dos projetos, em vez de ficarem em silos.</dd></div>
+      <div><dt>A informação flui</dt><dd>Um email torna-se uma nota, uma nota junta-se a um evento; viaja até onde é precisa.</dd></div>
+      <div><dt>Um segundo cérebro</dt><dd>Segure tudo, com leveza. Pouse com confiança, reencontre com tranquilidade.</dd></div>
+      <div><dt>Intenções com sentido</dt><dd>Defina o que importa para a sua vida, e ajudamo-lo a manter o rumo.</dd></div>
+      <div><dt>Tornar-se a sua melhor versão</dt><dd>Uma mão discreta rumo à realização pessoal, ao seu ritmo.</dd></div>
+      <div><dt>Uma vida que significa algo</dt><dd>Dê prioridade ao que é importante - e tenha a ajuda para o concretizar.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap band-head center reveal">
+    <div class="eyebrow">Um lugar, não dez</div>
+    <h2>O que substitui</h2>
+    <p>O Daybook ocupa o lugar das várias aplicações dispersas que hoje tem de equilibrar - ligadas entre si, e em sincronia com a sua conta Google quando quiser.</p>
+    <div class="repl"><span>Notas &amp; Evernote</span><span>Google Docs</span><span>Listas de tarefas</span><span>Gestores de tarefas</span><span>Aplicações de calendário</span><span>Diários</span></div>
+  </div>
+</section>
+
 <section class="band areas-band" id="connect">
   <div class="wrap areas-grid">
     <div class="reveal">
@@ -714,7 +705,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap band-head center reveal">
     <div class="eyebrow">Para a vida interior</div>
     <h2>As suas esperanças e sonhos, também aqui</h2>
-    <p>Um daybook sempre foi mais do que um diário de tarefas. A par da parte prática corre uma história mais suave - revisões e reflexão, o diário, os sonhos, acompanhamento suave, e ferramentas de reflexão pensadas para despertar um pensamento - um horóscopo que lê o seu mapa astral completo, o I Ching, as cartas do espírito. A vida exterior e a vida interior num só lugar, cada uma dando mais sentido à outra. Presentes quando precisa, discretas quando não.</p>
+    <p>Um daybook sempre foi mais do que um diário de tarefas. A par da parte prática corre uma história mais suave - revisões e reflexão, o diário, os seus sonhos, um horóscopo diário, uma leitura do I Ching, até um pouco de acompanhamento quando lhe apetecer um estímulo. A vida exterior e a vida interior num só lugar, cada uma dando mais sentido à outra. Presentes quando precisa, discretas quando não.</p>
   </div>
 </section>
 
@@ -722,7 +713,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap concept-grid">
     <div class="reveal">
       <div class="eyebrow">A ideia maior</div>
-      <p class="concept-lead">Um daybook guarda a sua vida inteira - o exterior e o interior, o fazer e o sonhar - e ajuda-a discretamente a <em>trabalhar a seu favor.</em></p>
+      <p class="concept-lead">Um daybook guarda todo o conteúdo da sua vida - a sua gestão do dia a dia e a sua vida interior - e ajuda-a discretamente a <em>trabalhar a seu favor.</em></p>
       <ul class="holds">
         <li><b>O seu dia</b><span>Agenda, tarefas e compromissos</span></li>
         <li><b>Os seus hábitos</b><span>As rotinas que vai mantendo</span></li>
@@ -804,9 +795,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap foot-in">
     <div class="foot-brand"><a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg>Daybook</a><span class="foot-tag">Para uma vida bem vivida</span></div>
     <ul class="foot-links">
-      <li><a href="#idea">O seu Daybook</a></li>
-      <li><a href="#tools">Ferramentas</a></li>
-      <li><a href="#private">Privado por princípio</a></li>
+      <li><a href="/pt#idea">O seu Daybook</a></li>
+      <li><a href="/pt#tools">Ferramentas</a></li>
+      <li><a href="/pt#private">Privado por princípio</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
       <li><a href="#invite">Pedir um convite</a></li>
       <li><a href="/pt/privacidade">Privacidade</a></li>
@@ -818,24 +809,6 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="foot-meta">Dúvidas? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
   </div>
 </footer>
-
-<script>
-/* Homepage order: move the flow diagram, then the tools showcase, to just above the closing CTA */
-(function(){
-  try {
-    var invite = document.getElementById('invite');
-    var flow = document.getElementById('flow');
-    var tools = document.getElementById('tools');
-    if (invite && flow && tools && invite.parentNode) {
-      invite.parentNode.insertBefore(flow, invite);
-      invite.parentNode.insertBefore(tools, invite);
-    }
-    var idea = document.getElementById('idea');
-    var connect = document.getElementById('connect');
-    if (idea && connect && connect.parentNode) { connect.parentNode.insertBefore(idea, connect); }
-  } catch (e) {}
-})();
-</script>
 
 <div class="signin-overlay" id="signin-modal" hidden>
   <div class="signin-box" role="dialog" aria-modal="true" aria-label="Entre no seu Daybook">
@@ -855,7 +828,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </div>
 
-<script>window.__lang='pt';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es'};</script>
+<script>window.__lang='pt';window.__alts={en:'/how',pt:'/pt/como-funciona',fr:'/fr/comment-ca-marche',es:'/es/como-funciona'};</script>
 <script src="/i18n.js" defer></script>
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
