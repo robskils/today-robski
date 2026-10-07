@@ -3496,6 +3496,14 @@ function withHsts(res) {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
+// Marketing HTML must never be cached, so a deploy reaches everyone at once
+// (a cached home.html once left the hero's copy stale for days).
+function noStore(res) {
+  const h = new Headers(res.headers);
+  h.set('Cache-Control', 'no-store');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 // ── Web Push: an icon badge when new mail arrives ────────────────────────
 // The public key is safe to ship; the private key is the VAPID_PRIVATE_JWK
 // secret. Regenerating the pair invalidates every existing subscription.
@@ -3917,7 +3925,7 @@ export default {
         if (lang && lang !== 'en') {
           return withHsts(new Response(null, { status: 302, headers: { location: '/' + lang, vary: 'Cookie, Accept-Language', 'cache-control': 'no-store' } }));
         }
-        return withHsts(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request)));
+        return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request))));
       }
       // Public legal pages (privacy required by Google's OAuth consent screen).
       if (isApex && (path === '/privacy' || path === '/privacy/')) {
@@ -3929,6 +3937,10 @@ export default {
       // Support page (App Store / Play require a support URL).
       if (isApex && (path === '/support' || path === '/support/')) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/support.html', url.origin), request)));
+      }
+      // How it works.
+      if (isApex && (path === '/how' || path === '/how/')) {
+        return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL('/how.html', url.origin), request))));
       }
       // The Daybook Journal (public blog). /blog is the index; /blog/<slug> is an
       // article, served from public/blog/<slug>.html so clean URLs stay clean.
