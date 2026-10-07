@@ -228,6 +228,10 @@ section { position: relative; }
 .band-head { max-width: 640px; margin-bottom: 52px; }
 .band-head.center { margin-left: auto; margin-right: auto; text-align: center; }
 .band-head p { margin-top: 16px; font-size: 19px; color: var(--ink-2); line-height: 1.55; }
+/* The litany — the breadth of a life, ending on "your life". */
+.litany-band { padding: clamp(60px,9vw,104px) 0; border-bottom: 1px solid var(--line); background-image: radial-gradient(60% 80% at 8% 0%, rgba(196,65,46,.05), transparent 60%); }
+.litany { font-family: 'Fraunces', serif; font-weight: 400; font-size: clamp(27px,4.4vw,47px); line-height: 1.28; letter-spacing: -0.015em; color: var(--ink); max-width: 24ch; text-wrap: balance; }
+.litany em { color: var(--rust); font-style: italic; }
 
 /* concept */
 .concept { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -476,6 +480,12 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     </div>
   </div>
 </header>
+
+<section class="litany-band">
+  <div class="wrap reveal">
+    <p class="litany">Your time. Your people. Your money. Your rhythms and your flows, your plans and your interruptions. Your highs, your lows, your hopes. <em>Your life</em> - all of it, in one calm place.</p>
+  </div>
+</section>
 
 <section class="band" id="tools">
   <div class="wrap">
