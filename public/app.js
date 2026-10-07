@@ -216,17 +216,23 @@ function mdToHtml(md) {
     .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-  const out = []; let para = [];
-  const flush = () => { if (para.length) { out.push(`<p>${para.join('<br>')}</p>`); para = []; } };
+  // One line, one paragraph. An ordinary newline is a normal line carrying the
+  // paragraph gap - NOT a tight <br>. Joining single-newline lines with <br> made
+  // a run of them sit jammed together while a blank-line-separated line got the
+  // gap, so a note's spacing looked random (tight at the top, loose below - the
+  // "first two lines closer, then bigger" bug). Every line now gets the same gap,
+  // matching the rich editor where Enter = a new block and only Shift+Enter makes
+  // a tight <br>. A blank line adds no extra gap; use a heading or --- for a real
+  // section break.
+  const out = [];
   for (const ln of s.split('\n')) {
     const h = ln.match(/^(#{1,3})\s+(.*)$/);
-    if (h) { flush(); const l = h[1].length + 1; out.push(`<h${l}>${h[2]}</h${l}>`); continue; }
-    if (/^>\s?/.test(ln)) { flush(); out.push(`<blockquote>${ln.replace(/^>\s?/, '')}</blockquote>`); continue; }
-    if (/^(-{3,}|_{3,})$/.test(ln.trim())) { flush(); out.push('<hr>'); continue; }
-    if (ln.trim() === '') { flush(); continue; }
-    para.push(ln);
+    if (h) { const l = h[1].length + 1; out.push(`<h${l}>${h[2]}</h${l}>`); continue; }
+    if (/^>\s?/.test(ln)) { out.push(`<blockquote>${ln.replace(/^>\s?/, '')}</blockquote>`); continue; }
+    if (/^(-{3,}|_{3,})$/.test(ln.trim())) { out.push('<hr>'); continue; }
+    if (ln.trim() === '') continue;
+    out.push(`<p>${ln}</p>`);
   }
-  flush();
   return out.join('');
 }
 // Turn any bare http(s) URL into a clickable link, without touching URLs that
