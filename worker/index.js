@@ -14,7 +14,7 @@ import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStat
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
-import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, sourceRangeEvents, sourceDayEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso, lookupPlace, suggestFeeds } from './feeds.js';
+import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso, lookupPlace, suggestFeeds } from './feeds.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -312,8 +312,6 @@ async function handleCalendar(request, env, url) {
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
     events.push(...feedRangeEvents(await userHolidays(env, feeds, from, to), await userFixtures(env, feeds), from, to));
   }
-  const srcEvs = await userSources(env, feeds);
-  if (srcEvs.length) events.push(...sourceRangeEvents(srcEvs, from, to));
   return json({ events, error: g.error || null }, request);
 }
 
@@ -1034,12 +1032,6 @@ async function getFeeds(env, uid = env.uid) {
 // worker keeps warm (kv_source_events). Shape per source: {url,label,events,fetched}.
 async function getSourceCache(env, uid = env.uid) {
   try { const v = await getSetting(env, 'kv_source_events', uid); return v ? JSON.parse(v) : {}; } catch { return {}; }
-}
-// Resolve the user's sources to [{id,label,color,events}] for the pure builders.
-async function userSources(env, feeds) {
-  const srcs = feedSources(feeds); if (!srcs.length) return [];
-  const cache = await getSourceCache(env);
-  return srcs.map((s) => ({ id: s.id, label: s.label || '', color: s.color || null, events: (cache[s.id] && cache[s.id].events) || [] }));
 }
 // The shared fixtures cache: a map of teamId -> { name, fixtures[], fetched }.
 // Kept under the owner (user 1) since fixtures are the same for every subscriber.
@@ -2496,8 +2488,6 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       if (feedCountries(feeds).length || feedTeams(feeds).length) {
         events = [...events, ...feedDayEvents(await userHolidays(env, feeds, now.date, now.date), await userFixtures(env, feeds), now.date)];
       }
-      const srcEvs = await userSources(env, feeds);
-      if (srcEvs.length) events = [...events, ...sourceDayEvents(srcEvs, now.date)];
     } catch {}
 
     // The label under a task is its life area. It used to be the practice LANE,
@@ -2829,8 +2819,6 @@ async function handleDay(request, env, url) {
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
     cal.events.push(...feedDayEvents(await userHolidays(env, feeds, day, day), await userFixtures(env, feeds), day));
   }
-  const srcEvs = await userSources(env, feeds);
-  if (srcEvs.length) cal.events.push(...sourceDayEvents(srcEvs, day));
 
   const byslot = new Map();
   for (const r of linksRes.results) {
