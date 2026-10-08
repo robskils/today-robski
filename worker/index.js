@@ -14,7 +14,7 @@ import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStat
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
-import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn } from './feeds.js';
+import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, sourceRangeEvents, sourceDayEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso } from './feeds.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -312,6 +312,8 @@ async function handleCalendar(request, env, url) {
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
     events.push(...feedRangeEvents(await userHolidays(env, feeds, from, to), await userFixtures(env, feeds), from, to));
   }
+  const srcEvs = await userSources(env, feeds);
+  if (srcEvs.length) events.push(...sourceRangeEvents(srcEvs, from, to));
   return json({ events, error: g.error || null }, request);
 }
 
@@ -704,65 +706,6 @@ async function importEvents(request, env, jsonR, errR) {
     return jsonR({ events: clean, source: 'ai' }, request);
   } catch (e) { console.error('importEvents:', e.message); return errR('Could not reach Claude.', request, 502); }
 }
-// ── Discover: local events from Ticketmaster (no AI needed) ────────────────
-// Structured data straight from the API - title, date, venue, category - so
-// everyone gets it, free tier and all. Inert until TICKETMASTER_KEY is set.
-function encodeGeohash(lat, lng, precision = 9) {
-  const base32 = '0123456789bcdefghjkmnpqrstuvwxyz';
-  let idx = 0, bit = 0, evenBit = true, hash = '';
-  let latMin = -90, latMax = 90, lngMin = -180, lngMax = 180;
-  while (hash.length < precision) {
-    if (evenBit) { const mid = (lngMin + lngMax) / 2; if (lng >= mid) { idx = idx * 2 + 1; lngMin = mid; } else { idx = idx * 2; lngMax = mid; } }
-    else { const mid = (latMin + latMax) / 2; if (lat >= mid) { idx = idx * 2 + 1; latMin = mid; } else { idx = idx * 2; latMax = mid; } }
-    evenBit = !evenBit;
-    if (++bit === 5) { hash += base32[idx]; bit = 0; idx = 0; }
-  }
-  return hash;
-}
-function normTmEvent(e) {
-  try {
-    const d = e.dates && e.dates.start; if (!d || !isValidDay(String(d.localDate || ''))) return null;
-    const start = (d.localTime && /^\d{2}:\d{2}/.test(d.localTime)) ? d.localTime.slice(0, 5) : null;
-    const ven = (e._embedded && e._embedded.venues && e._embedded.venues[0]) || null;
-    const location = ven ? [ven.name, ven.city && ven.city.name].filter(Boolean).join(', ') : '';
-    const cls = (e.classifications || [])[0] || null;
-    const cat = (cls && ((cls.genre && cls.genre.name !== 'Undefined' && cls.genre.name) || (cls.segment && cls.segment.name))) || '';
-    const img = (e.images || []).filter((i) => i.url).sort((a, b) => (b.width || 0) - (a.width || 0))[0];
-    const priceR = (e.priceRanges || [])[0];
-    const price = priceR ? `${priceR.currency || ''} ${priceR.min === priceR.max ? priceR.min : `${priceR.min}–${priceR.max}`}`.trim() : '';
-    return { id: 'tm_' + e.id, title: String(e.name || 'Event').slice(0, 200), date: d.localDate, start, allDay: !start, end: null, location, category: cat, price, url: e.url || '', image: img ? img.url : '', notes: '' };
-  } catch { return null; }
-}
-async function discoverEvents(request, env, jsonR, errR) {
-  if (!env.TICKETMASTER_KEY) return jsonR({ available: false }, request);
-  const q = new URL(request.url).searchParams;
-  const tm = new URL('https://app.ticketmaster.com/discovery/v2/events.json');
-  tm.searchParams.set('apikey', env.TICKETMASTER_KEY);
-  tm.searchParams.set('size', '40');
-  tm.searchParams.set('sort', 'date,asc');
-  const lat = parseFloat(q.get('lat')), lng = parseFloat(q.get('lng'));
-  const city = (q.get('city') || '').slice(0, 80).trim();
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    tm.searchParams.set('geoPoint', encodeGeohash(lat, lng));
-    tm.searchParams.set('radius', String(Math.min(500, Math.max(1, parseInt(q.get('radius'), 10) || 40))));
-    tm.searchParams.set('unit', 'km');
-  } else if (city) { tm.searchParams.set('city', city); }
-  else return errR('Where are you? Allow location or type a city.', request, 400);
-  const cat = (q.get('cat') || '').trim(); if (cat) tm.searchParams.set('classificationName', cat);
-  const kw = (q.get('q') || '').slice(0, 80).trim(); if (kw) tm.searchParams.set('keyword', kw);
-  if (q.get('start')) tm.searchParams.set('startDateTime', q.get('start'));
-  if (q.get('end')) tm.searchParams.set('endDateTime', q.get('end'));
-  const page = Math.min(4, Math.max(0, parseInt(q.get('page'), 10) || 0)); tm.searchParams.set('page', String(page));
-  try {
-    const res = await fetch(tm, { headers: { accept: 'application/json' } });
-    if (!res.ok) { const t = await res.text().catch(() => ''); console.error('discover', res.status, t.slice(0, 160)); return errR(res.status === 401 ? 'The events key looks wrong - check Settings.' : 'Could not reach the events service.', request, 502); }
-    const data = await res.json();
-    const events = ((data._embedded && data._embedded.events) || []).map(normTmEvent).filter(Boolean);
-    const pg = data.page || {};
-    return jsonR({ available: true, events, page, more: (pg.number != null && pg.totalPages != null) ? (pg.number + 1 < pg.totalPages) : false, total: pg.totalElements || events.length }, request);
-  } catch (e) { console.error('discover:', e.message); return errR('Could not reach the events service.', request, 502); }
-}
-
 // Daily review -> tasks. Given the reflection and a shortlist of the person's open
 // tasks (the client sends a prefiltered set), the AI says which look done and which
 // new tasks the entry implies. Strict JSON; ids are validated against the list we
@@ -1086,6 +1029,17 @@ async function getSetting(env, key, uid = env.uid) {
 // owner's settings since the fixtures are the same for everyone).
 async function getFeeds(env, uid = env.uid) {
   try { const v = await getSetting(env, 'kv_cal_feeds', uid); return v ? JSON.parse(v) : {}; } catch { return {}; }
+}
+// Parsed events for the user's subscribed sources, from the per-user cache the
+// worker keeps warm (kv_source_events). Shape per source: {url,label,events,fetched}.
+async function getSourceCache(env, uid = env.uid) {
+  try { const v = await getSetting(env, 'kv_source_events', uid); return v ? JSON.parse(v) : {}; } catch { return {}; }
+}
+// Resolve the user's sources to [{id,label,color,events}] for the pure builders.
+async function userSources(env, feeds) {
+  const srcs = feedSources(feeds); if (!srcs.length) return [];
+  const cache = await getSourceCache(env);
+  return srcs.map((s) => ({ id: s.id, label: s.label || '', color: s.color || null, events: (cache[s.id] && cache[s.id].events) || [] }));
 }
 // The shared fixtures cache: a map of teamId -> { name, fixtures[], fetched }.
 // Kept under the owner (user 1) since fixtures are the same for every subscriber.
@@ -2542,6 +2496,8 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       if (feedCountries(feeds).length || feedTeams(feeds).length) {
         events = [...events, ...feedDayEvents(await userHolidays(env, feeds, now.date, now.date), await userFixtures(env, feeds), now.date)];
       }
+      const srcEvs = await userSources(env, feeds);
+      if (srcEvs.length) events = [...events, ...sourceDayEvents(srcEvs, now.date)];
     } catch {}
 
     // The label under a task is its life area. It used to be the practice LANE,
@@ -2873,6 +2829,8 @@ async function handleDay(request, env, url) {
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
     cal.events.push(...feedDayEvents(await userHolidays(env, feeds, day, day), await userFixtures(env, feeds), day));
   }
+  const srcEvs = await userSources(env, feeds);
+  if (srcEvs.length) cal.events.push(...sourceDayEvents(srcEvs, day));
 
   const byslot = new Map();
   for (const r of linksRes.results) {
@@ -3634,9 +3592,13 @@ async function maybePushMail(env, res) {
     const sender = res.fromByUser && res.fromByUser[uid];
     const subj = (res.subjByUser && res.subjByUser[uid]) || '';
     const single = newUnread === 1 && sender;
+    // A Daybook-origin email (the brief, a login code, a notification) reads
+    // "via Daybook", not "from Daybook" - it came through Daybook, a person
+    // didn't send it. Real senders still read "from <name>". (Robin.)
+    const viaDaybook = single && /daybook/i.test(sender);
     await pushAll(env, {
       type: 'mail', unread: total,
-      title: single ? `New email from ${sender}` : 'New mail',
+      title: single ? (viaDaybook ? 'New email via Daybook' : `New email from ${sender}`) : 'New mail',
       body: single ? (subj || 'Tap to read it in your inbox') : `${newUnread} new emails in your inbox`,
     }, Number(uid)).catch((e) => console.error('maybePushMail', uid, e.message));
   }
@@ -3816,6 +3778,24 @@ async function maybeRefreshFixtures(env) {
   await setSetting(env, 'kv_team_fixtures', JSON.stringify(cache), 1);
 }
 
+// Re-fetch each active user's subscribed event sources ~every 6h, so browsed
+// listings stay fresh without hammering the origins. Per-user (sources are
+// per-user, unlike the shared fixtures cache). A failed fetch keeps the last
+// good events; the timestamp still advances so a hiccup doesn't retry every tick.
+async function maybeRefreshSources(env) {
+  const last = await getSetting(env, 'kv_source_fetched', 1);
+  const now = Date.now();
+  if (last && (now - Number(last)) < 6 * 3600 * 1000) return;
+  await setSetting(env, 'kv_source_fetched', String(now), 1);
+  for (const u of await activeUsers(env)) {
+    const feeds = await getFeeds(env, u.id); const srcs = feedSources(feeds);
+    if (!srcs.length) continue;
+    const cache = await getSourceCache(env, u.id);
+    for (const s of srcs) { const res = await fetchSourceEvents(s.url); if (res.ok) cache[s.id] = { url: s.url, label: s.label, events: res.events, fetched: now }; }
+    await setSetting(env, 'kv_source_events', JSON.stringify(cache), u.id);
+  }
+}
+
 export default {
   // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
   // keeps the isolate alive until the sends finish.
@@ -3840,6 +3820,7 @@ export default {
     ctx.waitUntil(runEventRemindersAll(env).catch((e) => console.error('eventReminders:', e.message)));
     // Keep the Fulham fixtures cache fresh (self-gated to ~12h).
     ctx.waitUntil(maybeRefreshFixtures(env).catch((e) => console.error('fixtures:', e.message)));
+    ctx.waitUntil(maybeRefreshSources(env).catch((e) => console.error('sources:', e.message)));
   },
 
   async fetch(request, env, ctx) {
@@ -4460,7 +4441,60 @@ export default {
       if (path === '/api/wellbeing/horoscope' && request.method === 'POST') return horoscopeReading(request, env, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
       if (path === '/api/import/events' && request.method === 'POST') return importEvents(request, env, json, err);
-      if (path === '/api/discover' && request.method === 'GET') return discoverEvents(request, env, json, err);
+      // Browse what's on: upcoming events merged across the user's subscribed
+      // sources (any .ics/webcal feed, or a page with schema.org/Event data).
+      if (path === '/api/discover' && request.method === 'GET') {
+        const feeds = await getFeeds(env);
+        const srcs = feedSources(feeds);
+        const cache = await getSourceCache(env);
+        const days = Math.min(180, Math.max(1, parseInt(url.searchParams.get('days'), 10) || 60));
+        const from = lisbonToday(); const to = addDaysIso(from, days);
+        let evs = [];
+        for (const sc of srcs) { const c = cache[sc.id]; if (!c) continue; for (const e of (c.events || [])) evs.push({ ...e, sourceId: sc.id, sourceLabel: sc.label || '', sourceColor: sc.color || null }); }
+        evs = evs.filter((e) => e.date >= from && e.date <= to).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : ((a.min == null ? 1440 : a.min) - (b.min == null ? 1440 : b.min))));
+        const sources = srcs.map((sc) => ({ id: sc.id, label: sc.label || '', color: sc.color || null, url: sc.url, count: ((cache[sc.id] && cache[sc.id].events) || []).length }));
+        return json({ available: srcs.length > 0, sources, events: evs.slice(0, 300) }, request);
+      }
+      // Subscribe to an events source. Validates by fetching it once, then
+      // stores the source and its parsed events. Any .ics/webcal link or page.
+      if (path === '/api/feeds/source' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const u = normFeedUrl(b.url);
+        if (!u) return err('Paste a valid link - an .ics or webcal calendar address, or an events page.', request, 400);
+        const res = await fetchSourceEvents(u);
+        if (!res.ok) return err(res.error || 'Could not read that link.', request, 400);
+        if (!res.events.length) return err('No events found at that link. It needs an .ics/webcal address, or a page that lists its events in a readable form.', request, 422);
+        const feeds = await getFeeds(env);
+        const sources = feedSources(feeds).slice();
+        const id = hashId(u);
+        const entry = { id, url: u, label: (String(b.label || '').trim().slice(0, 60)) || hostLabel(u), color: (String(b.color || '').trim().slice(0, 16)) || null };
+        const at = sources.findIndex((x) => x.id === id);
+        if (at >= 0) sources[at] = entry; else sources.push(entry);
+        feeds.sources = sources;
+        await setSetting(env, 'kv_cal_feeds', JSON.stringify(feeds), env.uid);
+        const cache = await getSourceCache(env); cache[id] = { url: u, label: entry.label, events: res.events, fetched: Date.now() };
+        await setSetting(env, 'kv_source_events', JSON.stringify(cache), env.uid);
+        return json({ ok: true, id, label: entry.label, count: res.events.length, sample: res.events.slice(0, 3) }, request);
+      }
+      // Remove a subscribed source.
+      if (path === '/api/feeds/source/remove' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const id = String(b.id || '');
+        const feeds = await getFeeds(env);
+        feeds.sources = feedSources(feeds).filter((x) => x.id !== id);
+        await setSetting(env, 'kv_cal_feeds', JSON.stringify(feeds), env.uid);
+        const cache = await getSourceCache(env); delete cache[id];
+        await setSetting(env, 'kv_source_events', JSON.stringify(cache), env.uid);
+        return json({ ok: true }, request);
+      }
+      // Re-fetch every subscribed source now (after adding one, or manually).
+      if (path === '/api/feeds/source/refresh' && request.method === 'POST') {
+        const feeds = await getFeeds(env); const srcs = feedSources(feeds);
+        const cache = await getSourceCache(env); let count = 0;
+        for (const sc of srcs) { const res = await fetchSourceEvents(sc.url); if (res.ok) { cache[sc.id] = { url: sc.url, label: sc.label, events: res.events, fetched: Date.now() }; count += res.events.length; } }
+        await setSetting(env, 'kv_source_events', JSON.stringify(cache), env.uid);
+        return json({ ok: true, count }, request);
+      }
       if (path === '/api/review/reconcile' && request.method === 'POST') return reviewReconcile(request, env, json, err);
       if (path === '/api/journal/coach' && request.method === 'POST') return journalCoach(request, env, json, err);
       if (path === '/api/journal/insights') return journalInsights(request, env, json, err);

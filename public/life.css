@@ -7355,7 +7355,41 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .dz-empty .add-btn { max-width:240px; }
 .dz-spin { width:26px; height:26px; border:3px solid color-mix(in srgb,var(--accent) 30%,transparent); border-top-color:var(--accent); border-radius:50%; animation:dz-spin .7s linear infinite; }
 @keyframes dz-spin { to { transform:rotate(360deg); } }
-@media (prefers-reduced-motion:reduce){ .dz-spin { animation:none; } .dz-card:hover { transform:none; } }
+@media (prefers-reduced-motion:reduce){ .dz-spin { animation:none; } .dz-card:hover { transform:none; } .src-seed:hover { transform:none; } }
+/* Discover: day grouping, run line, source chips, add panel, Lisbon seeds */
+.dz-daygroup { font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2,var(--ink)); margin:26px 0 13px; padding-bottom:8px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+.dz-daygroup:first-of-type { margin-top:6px; }
+.dz-run { font-size:12.5px; color:var(--muted); }
+.dz-metarow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:1px; }
+.dz-metarow .dz-price { color:var(--ink-2,var(--ink)); font-weight:600; }
+.dz-src { font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3,var(--muted)); background:var(--paper-2); border-radius:999px; padding:2px 9px; margin-left:auto; }
+.src-chips { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+.src-chip { display:inline-flex; align-items:stretch; border:1px solid var(--line-2); border-radius:999px; overflow:hidden; background:var(--card); transition:border-color .12s, box-shadow .12s; }
+.src-chip:hover { border-color:var(--accent); }
+.src-chip.on { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+.src-chip-name { display:inline-flex; align-items:center; gap:8px; padding:9px 7px 9px 15px; border:0; background:none; color:var(--ink); font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+.src-chip.on .src-chip-name { color:var(--accent); }
+.src-chip-n { font-size:12px; font-weight:600; color:var(--muted); background:var(--paper-2); border-radius:999px; padding:1px 8px; font-variant-numeric:tabular-nums; }
+.src-chip-x { border:0; background:none; color:var(--ink-3,var(--muted)); font-size:19px; line-height:1; padding:0 13px 0 9px; cursor:pointer; transition:color .12s; }
+.src-chip-x:hover { color:var(--accent); }
+.src-add { border:1px solid var(--line-2); border-radius:16px; background:var(--card); padding:17px; margin-bottom:24px; display:flex; flex-direction:column; gap:12px; box-shadow:var(--shadow); }
+.src-add .sel { max-width:none; width:100%; margin:0; font-size:15px; }
+.src-add-acts { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.src-add-cancel { border:0; background:none; color:var(--muted); font:inherit; font-size:14px; cursor:pointer; text-decoration:underline; padding:0; }
+.src-add-cancel:hover { color:var(--ink); }
+.src-err { margin:0; }
+.src-hint { font-size:13px; color:var(--muted); line-height:1.5; margin:0; max-width:64ch; }
+.src-hint b { color:var(--ink-2,var(--ink)); font-weight:600; }
+.src-seeds { display:flex; flex-direction:column; gap:10px; }
+.src-seeds-h { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3,var(--muted)); }
+.src-seeds-row { display:flex; flex-wrap:wrap; gap:10px; }
+.src-seed { flex:1 1 180px; display:flex; flex-direction:column; gap:3px; text-align:left; padding:11px 15px; border:1px solid var(--line-2); border-radius:13px; background:var(--card); cursor:pointer; transition:border-color .12s, transform .12s; }
+.src-seed:hover:not(:disabled) { border-color:var(--accent); transform:translateY(-1px); }
+.src-seed:disabled { opacity:.55; cursor:default; }
+.src-seed b { font-size:14px; font-weight:600; color:var(--ink); }
+.src-seed span { font-size:12.5px; color:var(--muted); }
+.dz-empty-lead { max-width:46ch; }
+.dz-empty .src-seeds { width:100%; max-width:560px; text-align:left; }
 
 /* ── Life area: quiet, premium, in good taste ────────────────────────────── */
 /* Restraint over wash: neutral soft depth, confident type and generous space do

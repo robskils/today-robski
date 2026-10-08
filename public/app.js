@@ -3022,99 +3022,127 @@ function flyerConfetti() {
   card.appendChild(layer); setTimeout(() => layer.remove(), 2000);
 }
 
-// ── Discover: what's on near you (Ticketmaster, no AI) ─────────────────────
-function discoverState() { if (!state.discover) state.discover = { cat: '', when: 'month', q: '', events: [], loading: false, err: '', available: true, city: '', page: 0, more: false, added: {} }; return state.discover; }
+// ── Discover: what's on, from the event feeds you subscribe to ─────────────
+// Browse upcoming events pulled from your subscribed sources (any .ics/webcal
+// calendar, or a listings page that publishes schema.org/Event data) and copy
+// any one onto your own calendar with a tap. The worker fetches + caches; this
+// view just reads /api/discover and posts the chosen event to /api/events.
+const DISCOVER_SEEDS = [
+  { label: 'Agenda Cultural de Lisboa', url: 'https://www.agendalx.pt/', note: "The city's official what's-on" },
+  { label: 'ViralAgenda Lisboa', url: 'https://www.viralagenda.com/pt/lisboa', note: 'Concerts, theatre, workshops' },
+  { label: 'CCB · Belém', url: 'https://www.ccb.pt/eventos/?ical=1', note: 'Centro Cultural de Belém' },
+  { label: 'Bilheteira Online', url: 'https://www.bol.pt/', note: 'Ticketed shows & venues' },
+];
+function discoverState() {
+  if (!state.discover) state.discover = { events: [], sources: [], loading: false, err: '', available: true, adding: false, addOpen: false, addUrl: '', addLabel: '', addErr: '', filter: '', added: {} };
+  return state.discover;
+}
 function openDiscover() {
   state.view = { type: 'discover' };
-  if (!cachedLoc()) { try { ensureLoc(); } catch {} }   // nudge for location; city input is the fallback
   renderNav(); renderDiscover(); discoverFetch();
   try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
 }
-// ISO window (UTC, no ms) for the chosen span - Ticketmaster wants startDateTime/
-// endDateTime like 2026-10-06T12:00:00Z.
-function discoverWindow(when) {
-  const now = new Date(); const iso = (dt) => dt.toISOString().slice(0, 19) + 'Z'; const start = iso(now);
-  if (when === 'week') return { start, end: iso(new Date(now.getTime() + 7 * 86400000)) };
-  if (when === 'weekend') { const day = now.getDay(); const fri = new Date(now); fri.setDate(now.getDate() + ((5 - day + 7) % 7)); fri.setHours(17, 0, 0, 0); const sun = new Date(fri); sun.setDate(fri.getDate() + 2); sun.setHours(23, 59, 0, 0); return { start: iso(now > fri ? now : fri), end: iso(sun) }; }
-  return { start, end: iso(new Date(now.getTime() + 31 * 86400000)) };
-}
-async function discoverFetch(append) {
-  const d = discoverState(); const loc = cachedLoc();
-  if (!loc && !d.city) { d.loading = false; renderDiscover(); return; }
-  d.loading = true; d.err = ''; if (!append) { d.page = 0; } renderDiscover();
-  const p = new URLSearchParams();
-  if (loc) { p.set('lat', loc.lat); p.set('lng', loc.lng); p.set('radius', '40'); } else { p.set('city', d.city); }
-  if (d.cat) p.set('cat', d.cat);
-  if (d.q) p.set('q', d.q);
-  const w = discoverWindow(d.when); if (w.start) p.set('start', w.start); if (w.end) p.set('end', w.end);
-  p.set('page', String(d.page || 0));
+function dzMin2hm(min) { if (min == null) return ''; const h = Math.floor(min / 60), m = min % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; }
+async function discoverFetch() {
+  const d = discoverState();
+  d.loading = true; d.err = ''; renderDiscover();
   try {
-    const r = await api('/api/discover?' + p.toString());
+    const r = await api('/api/discover?days=90');
     d.available = r.available !== false;
-    const incoming = r.events || [];
-    d.events = append ? d.events.concat(incoming) : incoming;
-    d.more = !!r.more;
+    d.sources = r.sources || [];
+    d.events = r.events || [];
+    if (d.filter && !d.sources.some((s) => s.id === d.filter)) d.filter = '';
   } catch (e) { d.err = (e && e.message) || 'Could not load events.'; }
   d.loading = false; renderDiscover();
 }
+// Subscribe to a source URL (shared by the paste box and the Lisbon seeds).
+async function discoverSubscribeUrl(url, label) {
+  const d = discoverState();
+  if (!url) { d.addErr = 'Paste a link first.'; renderDiscover(); return; }
+  d.adding = true; d.addErr = ''; renderDiscover();
+  try {
+    const r = await api('/api/feeds/source', { method: 'POST', body: JSON.stringify({ url, label: label || '' }) });
+    d.addUrl = ''; d.addLabel = ''; d.addOpen = false; d.adding = false;
+    if (state.cal) state.cal.events = null;   // the overlay changed, so the calendar refetches
+    toast(`Subscribed - ${r.count} event${r.count === 1 ? '' : 's'} from ${r.label} ✓`);
+    discoverFetch();
+  } catch (e) { d.adding = false; d.addErr = (e && e.message) || 'Could not add that source.'; renderDiscover(); }
+}
+function discoverSubscribe() { const d = discoverState(); discoverSubscribeUrl((d.addUrl || '').trim(), (d.addLabel || '').trim()); }
+async function discoverRemoveSource(id) {
+  const d = discoverState();
+  const s = (d.sources || []).find((x) => x.id === id);
+  if (s && !confirm(`Unsubscribe from ${s.label || 'this source'}? Its events stop showing - anything you already added to your calendar stays.`)) return;
+  try { await api('/api/feeds/source/remove', { method: 'POST', body: JSON.stringify({ id }) }); } catch {}
+  if (state.cal) state.cal.events = null;
+  discoverFetch();
+}
 function discoverCardHtml(e) {
-  const added = discoverState().added[e.id];
-  const when = (e.allDay || !e.start) ? dpLabel(e.date) : `${dpLabel(e.date)} · ${e.start}`;
+  const key = `${e.sourceId}::${e.id}`;
+  const added = discoverState().added[key];
+  const when = (e.allDay || e.min == null) ? (e.run ? '' : 'All day') : dzMin2hm(e.min);
+  const meta = [when, e.category].filter(Boolean).join(' · ');
+  const src = (e.sourceLabel || '').trim();
   return `<div class="dz-card">
     ${e.image ? `<div class="dz-img" style="background-image:url('${esc(e.image)}')"></div>` : '<div class="dz-img dz-img-none">🎫</div>'}
     <div class="dz-cbody">
-      <div class="dz-when">${esc(when)}${e.category ? ` · ${esc(e.category)}` : ''}</div>
+      ${meta ? `<div class="dz-when">${esc(meta)}</div>` : ''}
       <div class="dz-title">${esc(e.title)}</div>
+      ${e.run ? `<div class="dz-run">↻ ${esc(e.run)}</div>` : ''}
       ${e.location ? `<div class="dz-venue">📍 ${esc(e.location)}</div>` : ''}
-      ${e.price ? `<div class="dz-price">${esc(e.price)}</div>` : ''}
+      ${(e.price || src) ? `<div class="dz-metarow">${e.price ? `<span class="dz-price">${esc(e.price)}</span>` : ''}${src ? `<span class="dz-src">${esc(src)}</span>` : ''}</div>` : ''}
       <div class="dz-acts">
-        <button class="dz-add ${added ? 'done' : ''}" data-dz-add="${esc(e.id)}" ${added ? 'disabled' : ''}>${added ? '✓ Added' : '+ Add to calendar'}</button>
+        <button class="dz-add ${added ? 'done' : ''}" data-dz-add="${esc(key)}" ${added ? 'disabled' : ''}>${added ? '✓ On your calendar' : '+ Add to calendar'}</button>
         ${e.url ? `<a class="dz-link" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">Details ↗</a>` : ''}
       </div>
     </div>
   </div>`;
 }
-function renderDiscover() {
-  const d = discoverState(); const loc = cachedLoc();
-  const where = loc ? 'near you' : (d.city ? `in ${esc(d.city)}` : '');
-  const cats = [['', 'Everything'], ['Music', 'Music'], ['Arts & Theatre', 'Arts'], ['Sports', 'Sports'], ['Film', 'Film'], ['Miscellaneous', 'More']];
-  const whens = [['week', 'This week'], ['weekend', 'This weekend'], ['month', 'This month']];
-  const catChips = cats.map(([v, l]) => `<button class="dz-chip ${d.cat === v ? 'on' : ''}" data-dz-cat="${esc(v)}">${esc(l)}</button>`).join('');
-  const whenChips = whens.map(([v, l]) => `<button class="dz-chip ${d.when === v ? 'on' : ''}" data-dz-when="${v}">${esc(l)}</button>`).join('');
-  const owner = state.me && state.me.id === 1;
-  let body;
-  if (d.available === false) body = `<div class="dz-empty"><div class="dz-empty-ic">🎟️</div><p>Discover isn't switched on yet.${owner ? ' It needs a free Ticketmaster API key set on the worker as <code>TICKETMASTER_KEY</code> - once that\'s in, local events appear here automatically.' : ''}</p></div>`;
-  else if (!loc && !d.city) body = `<div class="dz-empty"><div class="dz-empty-ic">📍</div><p>Where shall I look? Allow location, or type a city above.</p><button class="add-btn" data-dz-useloc>Use my location</button></div>`;
-  else if (d.loading && !d.events.length) body = `<div class="dz-loading"><span class="dz-spin"></span>Finding what's on${where ? ' ' + where : ''}…</div>`;
-  else if (d.err) body = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn" data-dz-retry>Try again</button></div>`;
-  else if (!d.events.length) body = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing found for this filter. Try a wider window or another category${loc ? '' : ', or check the city spelling'}.</p></div>`;
-  else body = `<div class="dz-grid">${d.events.map(discoverCardHtml).join('')}</div>${d.more ? `<button class="dz-more" data-dz-more ${d.loading ? 'disabled' : ''}>${d.loading ? 'Loading…' : 'Show more'}</button>` : ''}`;
-  // "Also browse" - reliable links out to other listings for the city. RA and most
-  // cultural calendars have no usable public API, so we link rather than scrape.
-  // City = the typed city, else the first event's venue city. (Robin.)
-  const elseCity = (d.city || ((d.events[0] && d.events[0].location) || '').split(',').pop() || '').trim();
-  const gSearch = (query) => `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-  const RA_SLUG = { lisbon: 'pt/lisbon', porto: 'pt/porto', london: 'uk/london', manchester: 'uk/manchester', berlin: 'de/berlin', paris: 'fr/paris', madrid: 'es/madrid', barcelona: 'es/barcelona', amsterdam: 'nl/amsterdam', 'new york': 'us/newyork', 'los angeles': 'us/losangeles' };
-  const raSlug = elseCity ? RA_SLUG[elseCity.toLowerCase()] : '';
-  const elseLink = (label, href) => `<a class="dz-else" href="${href}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
-  const raHref = raSlug ? `https://ra.co/events/${raSlug}` : (elseCity ? gSearch('resident advisor ' + elseCity) : 'https://ra.co/events');
-  const skHref = elseCity ? `https://www.songkick.com/search?query=${encodeURIComponent(elseCity)}` : 'https://www.songkick.com';
-  const ebHref = elseCity ? gSearch('eventbrite ' + elseCity + ' events') : 'https://www.eventbrite.com';
-  const elsewhere = `<div class="dz-elsewhere"><span class="dz-else-h">Also browse${elseCity ? ` in ${esc(elseCity)}` : ''}</span><div class="dz-else-links">${elseLink('Resident Advisor', raHref)}${elseLink('Songkick', skHref)}${elseLink('Eventbrite', ebHref)}${elseLink("What's on ↗", gSearch((elseCity || 'events') + ' this week'))}</div></div>`;
-  $('#pane').innerHTML = `${pageCrumb(t('nav.discover'))}
-    <div class="pane-head home-head"><h1>${t('nav.discover')}</h1></div>
-    <p class="dz-lead">What's on${where ? ' ' + where : ' near you'} - tap any that take your fancy straight onto your calendar.${state.me && state.me.id === 1 ? '' : ''}</p>
-    <div class="dz-loc"><span class="dz-loc-pin">${loc ? '📍' : '🔎'}</span><input class="sel dz-city" id="dz-city" placeholder="${loc ? 'Using your location — or type a city' : 'Type a city (Lisbon, London, Berlin…)'}" value="${esc(d.city || '')}" data-dz-city autocomplete="off"><button class="dz-useloc" data-dz-useloc title="Use my current location">📍 Locate me</button></div>
-    <div class="dz-filters"><div class="dz-chips">${catChips}</div><div class="dz-chips dz-chips-when">${whenChips}</div></div>
-    ${body}
-    ${elsewhere}`;
+function discoverSeedsHtml(heading) {
+  const have = new Set((discoverState().sources || []).map((s) => s.url));
+  const chips = DISCOVER_SEEDS.map((s, i) => `<button class="src-seed" data-src-seed="${i}" ${have.has(s.url) ? 'disabled' : ''}><b>${esc(s.label)}</b><span>${have.has(s.url) ? '✓ Following' : esc(s.note)}</span></button>`).join('');
+  return `<div class="src-seeds"><span class="src-seeds-h">${esc(heading)}</span><div class="src-seeds-row">${chips}</div></div>`;
 }
-async function discoverAdd(id) {
-  const d = discoverState(); const e = (d.events || []).find((x) => x.id === id); if (!e || d.added[id]) return;
-  const allDay = e.allDay || !e.start;
-  const notes = [e.category, e.price ? `From ${e.price}` : '', e.url].filter(Boolean).join(' · ');
-  const body = buildEventBody({ title: e.title, startDate: e.date, startTime: e.start || '', endDate: e.date, endTime: '', location: e.location || '', allDay, notes, url: e.url || '', isNew: true });
-  try { await api('/api/events', { method: 'POST', body: JSON.stringify(body) }); d.added[id] = true; if (state.cal) state.cal.events = null; toast('Added to your calendar ✓'); renderDiscover(); }
+function renderDiscover() {
+  const d = discoverState();
+  const srcChips = (d.sources || []).map((s) => `<span class="src-chip ${d.filter === s.id ? 'on' : ''}"><button class="src-chip-name" data-src-filter="${esc(s.id)}">${esc(s.label || 'Source')}<span class="src-chip-n">${s.count}</span></button><button class="src-chip-x" data-src-remove="${esc(s.id)}" title="Unsubscribe">×</button></span>`).join('');
+  const addForm = d.addOpen ? `<div class="src-add">
+      <input class="sel src-url" id="src-url" placeholder="Paste a calendar link (.ics / webcal) or an events page" value="${esc(d.addUrl || '')}" data-src-url autocomplete="off" spellcheck="false">
+      <input class="sel src-label" id="src-label" placeholder="Give it a name (optional)" value="${esc(d.addLabel || '')}" data-src-label autocomplete="off">
+      <div class="src-add-acts">
+        <button class="add-btn wide" data-src-subscribe ${d.adding ? 'disabled' : ''}>${d.adding ? 'Checking…' : 'Subscribe'}</button>
+        <button class="src-add-cancel" data-src-addtoggle>Cancel</button>
+        ${d.addErr ? `<span class="imp-err src-err">${esc(d.addErr)}</span>` : ''}
+      </div>
+      ${discoverSeedsHtml('Suggested for Lisbon')}
+      <p class="src-hint">Any public calendar link works (an <b>.ics</b> or <b>webcal</b> address), or an events page that lists its happenings for search engines.</p>
+    </div>` : '';
+  const evs = d.filter ? d.events.filter((e) => e.sourceId === d.filter) : d.events;
+  let list;
+  if (d.loading && !d.events.length) list = `<div class="dz-loading"><span class="dz-spin"></span>Loading what's on…</div>`;
+  else if (d.err) list = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn wide" data-open-discover>Try again</button></div>`;
+  else if (!d.sources.length) list = `<div class="dz-empty"><div class="dz-empty-ic">📅</div><p class="dz-empty-lead">Follow an events calendar and what's on appears here - tap any one to drop it onto your own calendar.</p>${discoverSeedsHtml('Start with Lisbon')}<button class="src-add-cancel" data-src-addtoggle>or paste your own link</button></div>`;
+  else if (!evs.length) list = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing coming up from ${d.filter ? 'this source' : 'your sources'} in the next 90 days.</p></div>`;
+  else {
+    const groups = []; let cur = null;
+    for (const e of evs) { if (!cur || cur.date !== e.date) { cur = { date: e.date, items: [] }; groups.push(cur); } cur.items.push(e); }
+    list = groups.map((g) => `<h3 class="dz-daygroup">${esc(dpLabel(g.date))}</h3><div class="dz-grid">${g.items.map(discoverCardHtml).join('')}</div>`).join('');
+  }
+  $('#pane').innerHTML = `${pageCrumb(t('nav.discover'))}
+    <div class="pane-head home-head"><h1>${t('nav.discover')}</h1>${d.sources.length ? '<button class="add-btn wide" data-src-addtoggle>+ Add source</button>' : ''}</div>
+    <p class="dz-lead">What's on, from the event calendars you follow - tap any to add it to your own.</p>
+    ${d.sources.length ? `<div class="src-chips">${srcChips}</div>` : ''}
+    ${addForm}
+    ${list}`;
+}
+async function discoverAdd(key) {
+  const d = discoverState();
+  const e = (d.events || []).find((x) => `${x.sourceId}::${x.id}` === key);
+  if (!e || d.added[key]) return;
+  const allDay = e.allDay || e.min == null;
+  const notes = [e.run ? `Dates: ${e.run}` : '', e.category, e.price ? `Price: ${e.price}` : '', e.sourceLabel ? `via ${e.sourceLabel}` : '', e.url].filter(Boolean).join(' · ');
+  const body = buildEventBody({ title: e.title, startDate: e.date, startTime: allDay ? '' : dzMin2hm(e.min), endDate: e.endDate || e.date, endTime: (e.endMin != null) ? dzMin2hm(e.endMin) : '', location: e.location || '', allDay, notes, url: e.url || '', isNew: true });
+  try { await api('/api/events', { method: 'POST', body: JSON.stringify(body) }); d.added[key] = true; if (state.cal) state.cal.events = null; toast('Added to your calendar ✓'); renderDiscover(); }
   catch (err) { toast((err && err.message) || 'Could not add that one'); }
 }
 // Ask the worker to pull structured events out of the pasted text and/or image.
@@ -17999,12 +18027,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-feeds]')) { openSettings('feeds'); return; }
   if (t.closest('[data-open-ai]')) { openSettings('ai'); return; }
   if (t.closest('[data-open-discover]')) { openDiscover(); return; }
-  { const dc = t.closest('[data-dz-cat]'); if (dc) { const d = discoverState(); d.cat = dc.dataset.dzCat; discoverFetch(); return; } }
-  { const dw = t.closest('[data-dz-when]'); if (dw) { const d = discoverState(); d.when = dw.dataset.dzWhen; discoverFetch(); return; } }
   { const da = t.closest('[data-dz-add]'); if (da) { discoverAdd(da.dataset.dzAdd); return; } }
-  if (t.closest('[data-dz-more]')) { const d = discoverState(); d.page = (d.page || 0) + 1; discoverFetch(true); return; }
-  if (t.closest('[data-dz-retry]')) { discoverFetch(); return; }
-  if (t.closest('[data-dz-useloc]')) { if (!navigator.geolocation) { toast('Location is not available on this device - type a city instead'); return; } toast('Finding your location…'); navigator.geolocation.getCurrentPosition((pos) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })); } catch {} const d = discoverState(); d.city = ''; discoverFetch(); }, () => toast('Location unavailable - type a city instead'), { timeout: 9000, enableHighAccuracy: true, maximumAge: 300000 }); return; }
+  if (t.closest('[data-src-addtoggle]')) { const d = discoverState(); d.addOpen = !d.addOpen; d.addErr = ''; renderDiscover(); if (d.addOpen) setTimeout(() => { try { document.getElementById('src-url').focus(); } catch {} }, 30); return; }
+  if (t.closest('[data-src-subscribe]')) { discoverSubscribe(); return; }
+  { const sr = t.closest('[data-src-remove]'); if (sr) { discoverRemoveSource(sr.dataset.srcRemove); return; } }
+  { const sf = t.closest('[data-src-filter]'); if (sf) { const d = discoverState(); d.filter = (d.filter === sf.dataset.srcFilter) ? '' : sf.dataset.srcFilter; renderDiscover(); return; } }
+  { const sd = t.closest('[data-src-seed]'); if (sd) { const s = DISCOVER_SEEDS[+sd.dataset.srcSeed]; if (s) discoverSubscribeUrl(s.url, s.label); return; } }
   if (t.closest('[data-open-flyer]')) { openFlyerImport(); return; }
   if (t.closest('[data-flyer-close]')) { closeFlyer(); return; }
   if (t.closest('[data-flyer-find]')) { flyerFind(); return; }
@@ -18760,7 +18788,8 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('#fly-file')) { const file = e.target.files && e.target.files[0]; if (file) flyerSetImage(file); return; }
   if (e.target.matches('[data-flyer-area]')) { const f = flyerState(); const ta = document.getElementById('fly-text'); if (ta) f.text = ta.value; f.area = e.target.value || ''; return; }
   if (e.target.matches('[data-flyer-pick]')) { const f = flyerState(); const i = +e.target.dataset.flyerPick; if (f.events && f.events[i]) { f.events[i].pick = e.target.checked; renderFlyerImport(); } return; }
-  if (e.target.matches('[data-dz-city]')) { const d = discoverState(); d.city = (e.target.value || '').trim(); discoverFetch(); return; }
+  if (e.target.matches('[data-src-url]')) { discoverState().addUrl = e.target.value; return; }
+  if (e.target.matches('[data-src-label]')) { discoverState().addLabel = e.target.value; return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }
