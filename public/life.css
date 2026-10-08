@@ -7401,6 +7401,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .src-chip-n { font-size:12px; font-weight:600; color:var(--muted); background:var(--paper-2); border-radius:999px; padding:1px 8px; font-variant-numeric:tabular-nums; }
 .src-chip-x { border:0; background:none; color:var(--ink-3,var(--muted)); font-size:19px; line-height:1; padding:0 13px 0 9px; cursor:pointer; transition:color .12s; }
 .src-chip-x:hover { color:var(--accent); }
+.src-chip-name.src-chip-solo { padding-right:15px; }
 .src-add { border:1px solid var(--line-2); border-radius:16px; background:var(--card); padding:17px; margin-bottom:24px; display:flex; flex-direction:column; gap:12px; box-shadow:var(--shadow); }
 .src-add .sel { max-width:none; width:100%; margin:0; font-size:15px; }
 .src-add-acts { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }

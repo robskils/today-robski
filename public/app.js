@@ -3058,7 +3058,7 @@ const DISCOVER_SEEDS = [
   { label: 'Bilheteira Online', url: 'https://www.bol.pt/', note: 'Ticketed shows & venues' },
 ];
 function discoverState() {
-  if (!state.discover) state.discover = { events: [], sources: [], loading: false, err: '', available: true, adding: false, addOpen: false, addUrl: '', addLabel: '', addErr: '', filter: '', added: {} };
+  if (!state.discover) state.discover = { events: [], sources: [], loading: false, err: '', available: true, adding: false, addOpen: false, addUrl: '', addLabel: '', addErr: '', filters: [], added: {} };
   return state.discover;
 }
 function openDiscover() {
@@ -3075,7 +3075,7 @@ async function discoverFetch() {
     d.available = r.available !== false;
     d.sources = r.sources || [];
     d.events = r.events || [];
-    if (d.filter && !d.sources.some((s) => s.id === d.filter)) d.filter = '';
+    d.filters = (d.filters || []).filter((id) => d.sources.some((s) => s.id === id));
   } catch (e) { d.err = (e && e.message) || 'Could not load events.'; }
   d.loading = false; renderDiscover();
 }
@@ -3129,7 +3129,9 @@ function discoverSeedsHtml(heading) {
 }
 function renderDiscover() {
   const d = discoverState();
-  const srcChips = (d.sources || []).map((s) => `<span class="src-chip ${d.filter === s.id ? 'on' : ''}"><button class="src-chip-name" data-src-filter="${esc(s.id)}">${esc(s.label || 'Source')}<span class="src-chip-n">${s.count}</span></button><button class="src-chip-x" data-src-remove="${esc(s.id)}" title="Unsubscribe">×</button></span>`).join('');
+  const fils = d.filters || [];
+  const srcChips = (d.sources || []).map((s) => `<span class="src-chip ${fils.includes(s.id) ? 'on' : ''}"><button class="src-chip-name" data-src-filter="${esc(s.id)}">${esc(s.label || 'Source')}<span class="src-chip-n">${s.count}</span></button><button class="src-chip-x" data-src-remove="${esc(s.id)}" title="Unsubscribe">×</button></span>`).join('');
+  const allChip = (d.sources || []).length > 1 ? `<span class="src-chip ${!fils.length ? 'on' : ''}"><button class="src-chip-name src-chip-solo" data-src-all>All</button></span>` : '';
   const addForm = d.addOpen ? `<div class="src-add">
       <input class="sel src-url" id="src-url" placeholder="Paste a calendar link (.ics / webcal) or an events page" value="${esc(d.addUrl || '')}" data-src-url autocomplete="off" spellcheck="false">
       <input class="sel src-label" id="src-label" placeholder="Give it a name (optional)" value="${esc(d.addLabel || '')}" data-src-label autocomplete="off">
@@ -3141,12 +3143,12 @@ function renderDiscover() {
       ${discoverSeedsHtml('Suggested for Lisbon')}
       <p class="src-hint">Any public calendar link works (an <b>.ics</b> or <b>webcal</b> address), or an events page that lists its happenings for search engines.</p>
     </div>` : '';
-  const evs = d.filter ? d.events.filter((e) => e.sourceId === d.filter) : d.events;
+  const evs = fils.length ? d.events.filter((e) => fils.includes(e.sourceId)) : d.events;
   let list;
   if (d.loading && !d.events.length) list = `<div class="dz-loading"><span class="dz-spin"></span>Loading what's on…</div>`;
   else if (d.err) list = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn wide" data-open-discover>Try again</button></div>`;
   else if (!d.sources.length) list = `<div class="dz-empty"><div class="dz-empty-ic">📅</div><p class="dz-empty-lead">Follow an events calendar and what's on appears here - tap any one to drop it onto your own calendar.</p>${discoverSeedsHtml('Start with Lisbon')}<button class="src-add-cancel" data-src-addtoggle>or paste your own link</button></div>`;
-  else if (!evs.length) list = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing coming up from ${d.filter ? 'this source' : 'your sources'} in the next 90 days.</p></div>`;
+  else if (!evs.length) list = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing coming up from ${fils.length ? ('the selected source' + (fils.length > 1 ? 's' : '')) : 'your sources'} in the next 90 days.</p></div>`;
   else {
     const groups = []; let cur = null;
     for (const e of evs) { if (!cur || cur.date !== e.date) { cur = { date: e.date, items: [] }; groups.push(cur); } cur.items.push(e); }
@@ -3155,7 +3157,7 @@ function renderDiscover() {
   $('#pane').innerHTML = `${pageCrumb(t('nav.discover'))}
     <div class="pane-head home-head"><h1>${t('nav.discover')}</h1>${d.sources.length ? '<button class="add-btn wide" data-src-addtoggle>+ Add source</button>' : ''}</div>
     <p class="dz-lead">What's on, from the event calendars you follow - tap any to add it to your own.</p>
-    ${d.sources.length ? `<div class="src-chips">${srcChips}</div>` : ''}
+    ${d.sources.length ? `<div class="src-chips">${allChip}${srcChips}</div>` : ''}
     ${addForm}
     ${list}`;
 }
@@ -18055,7 +18057,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-src-addtoggle]')) { const d = discoverState(); d.addOpen = !d.addOpen; d.addErr = ''; renderDiscover(); if (d.addOpen) setTimeout(() => { try { document.getElementById('src-url').focus(); } catch {} }, 30); return; }
   if (t.closest('[data-src-subscribe]')) { discoverSubscribe(); return; }
   { const sr = t.closest('[data-src-remove]'); if (sr) { discoverRemoveSource(sr.dataset.srcRemove); return; } }
-  { const sf = t.closest('[data-src-filter]'); if (sf) { const d = discoverState(); d.filter = (d.filter === sf.dataset.srcFilter) ? '' : sf.dataset.srcFilter; renderDiscover(); return; } }
+  if (t.closest('[data-src-all]')) { const d = discoverState(); d.filters = []; renderDiscover(); return; }
+  { const sf = t.closest('[data-src-filter]'); if (sf) { const d = discoverState(); const id = sf.dataset.srcFilter; const set = new Set(d.filters || []); set.has(id) ? set.delete(id) : set.add(id); d.filters = [...set]; renderDiscover(); return; } }
   { const sd = t.closest('[data-src-seed]'); if (sd) { const s = DISCOVER_SEEDS[+sd.dataset.srcSeed]; if (s) discoverSubscribeUrl(s.url, s.label); return; } }
   if (t.closest('[data-open-flyer]')) { openFlyerImport(); return; }
   if (t.closest('[data-flyer-close]')) { closeFlyer(); return; }
