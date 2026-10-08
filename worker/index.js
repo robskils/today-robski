@@ -3592,12 +3592,14 @@ async function maybePushMail(env, res) {
     const sender = res.fromByUser && res.fromByUser[uid];
     const subj = (res.subjByUser && res.subjByUser[uid]) || '';
     const single = newUnread === 1 && sender;
-    // Name the sender, and tag it "via Daybook" (it reached you through Daybook,
-    // whoever sent it). So: title = who it's from, body = "via Daybook · subject".
+    // Title = who it's from, body = the subject. iOS appends its own "from
+    // Daybook" source line under the title (web-app attribution we can't reword),
+    // so we never say Daybook in our text - that only made it read "X from
+    // Daybook from Daybook". (Robin.)
     await pushAll(env, {
       type: 'mail', unread: total,
       title: single ? sender : `${newUnread} new emails`,
-      body: single ? `via Daybook${subj ? ` · ${subj}` : ''}` : 'via Daybook',
+      body: single ? (subj || 'Tap to read it in your inbox') : 'in your inbox',
     }, Number(uid)).catch((e) => console.error('maybePushMail', uid, e.message));
   }
 }
