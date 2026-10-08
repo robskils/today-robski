@@ -7421,6 +7421,7 @@ function renderArea() {
   const DASH_STATS = [
     [notes.length + tables.length, 'notes & tables', 'Notes and tables'],
     [openTs.length, 'open tasks', 'Tasks'],
+    [doneN, 'done', 'Tasks'],
     [activeGoals.length, 'goals', 'Goals'],
     [contacts.length, contacts.length === 1 ? 'person' : 'people', 'Contacts'],
     [bookmarks.length, 'saved', 'Saved links'],
@@ -7455,7 +7456,6 @@ function renderArea() {
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Pages', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-hero" style="--h:${h}">
       <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Page" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
-      <p class="area-meta">${(() => { const nt = notes.length + tables.length; const txt = `${nt} note${nt === 1 ? '' : 's'} &amp; table${nt === 1 ? '' : 's'}`; return (nt && !secHidden('Notes and tables')) ? `<button class="area-meta-link" data-area-goto="Notes and tables">${txt}</button>` : txt; })()} · ${(() => { const txt = `${openTs.length} open task${openTs.length === 1 ? '' : 's'}`; return secHidden('Tasks') ? txt : `<button class="area-meta-link" data-area-goto="Tasks">${txt}</button>`; })()}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
       ${areaSentimentHtml(area)}
       ${sharedBanner(area)}
