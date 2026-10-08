@@ -817,7 +817,7 @@ const HELP = {
   'settings-manage': { title: 'Manage', tip: 'Pages, mail accounts, spending categories and reminders.',
     body: `<p>Each tile opens a small subpage: <b>Pages</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
   'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
-    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>✨ Add from a flyer</b> button (on your Calendar and the + New menu) reads events from a <b>photo</b> or screenshot, pasted <b>text</b>, or an <b>event link</b> (Eventbrite, Meetup…). Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
+    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>Add from a file</b> button on your Calendar reads events out of a <b>flyer, photo or screenshot</b>, a <b>webpage link</b> (Eventbrite, Meetup…), or pasted <b>text</b>. Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -1128,7 +1128,7 @@ function addNewMenuHtml() {
     modOn('notes') ? item('note', '▤', 'Note') : '',
     modOn('tasks') ? item('task', '✓', 'Task') : '',
     modOn('calendar') ? item('event', '▦', 'Event') : '',
-    modOn('calendar') ? `<button class="addnew-item" data-open-flyer><span class="addnew-ic">✨</span>From a flyer</button>` : '',
+    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Page</button>` : '',
     modOn('goals') ? item('goal', '◎', 'Goal') : '',
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
@@ -2488,7 +2488,7 @@ const AI_USES = [
   ['reviews', 'Review help', 'matches your open tasks to a review and sums up the period', 'Claude'],
   ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
   ['money', 'Money', 'sums up the channels you follow, and turns a pasted or photographed statement into tidy transactions', 'Gemini'],
-  ['import', 'Event import', 'reads events off a flyer photo or pasted text so you can add them to your calendar', 'Claude'],
+  ['import', 'Event import', 'reads events off a file, flyer, photo or webpage so you can add them to your calendar', 'Claude'],
 ];
 const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([, f, why, prov]) =>
   `<li><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span></li>`).join('')}</ul>`;
@@ -2793,7 +2793,7 @@ function importPane() {
   const kind = imp.kind || 'notes';
   const switcher = `<div class="imp-kinds">
     <button class="imp-kind ${kind === 'notes' ? 'on' : ''}" data-import-kind="notes"><span class="imp-kind-ic">📄</span><span class="imp-kind-t">Notes</span><span class="imp-kind-s">Markdown &amp; text files</span></button>
-    <button class="imp-kind ${kind === 'events' ? 'on' : ''}" data-import-kind="events"><span class="imp-kind-ic">📅</span><span class="imp-kind-t">Events</span><span class="imp-kind-s">A flyer, photo or pasted text</span></button>
+    <button class="imp-kind ${kind === 'events' ? 'on' : ''}" data-import-kind="events"><span class="imp-kind-ic">📅</span><span class="imp-kind-t">Events</span><span class="imp-kind-s">A file, flyer, photo or link</span></button>
   </div>`;
   return `<div class="imp-card">${switcher}${kind === 'events' ? importEventsPaneHtml(imp) : importNotesPaneHtml(imp)}</div>`;
 }
@@ -2835,8 +2835,8 @@ function importEventsPaneHtml() {
   return `
       <div class="imp-flyer-teaser">
         <div class="imp-flyer-art">✨📸</div>
-        <p class="imp-lead">Got a flyer, a poster, an email - or an event link (Eventbrite, Meetup…)? Snap a photo, paste the text, or drop the link and Daybook reads the events straight out of it - you tick which ones land on your calendar.</p>
-        <button class="add-btn wide" data-open-flyer>✨ Add from a flyer</button>
+        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Daybook reads the dates straight out - you tick which ones land on your calendar.</p>
+        <button class="add-btn wide" data-open-flyer>Add from a file</button>
         <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
       </div>`;
 }
@@ -2963,8 +2963,8 @@ function renderFlyerImport() {
     </div>`;
   } else {
     const dropInner = f.image
-      ? `<img class="fly-prev" src="data:${f.mime};base64,${f.image}" alt="flyer preview">${f.finding ? '<span class="fly-scan" aria-hidden="true"></span>' : ''}<button class="fly-img-x" data-flyer-img-clear title="Remove photo" aria-label="Remove photo">×</button>`
-      : `<span class="fly-drop-ic">📸</span><span class="fly-drop-t">Drop a flyer photo here</span><span class="fly-drop-s">tap to choose · or press ${/Mac/i.test(navigator.platform) ? '⌘V' : 'Ctrl+V'} to paste one</span>`;
+      ? `<img class="fly-prev" src="data:${f.mime};base64,${f.image}" alt="file preview">${f.finding ? '<span class="fly-scan" aria-hidden="true"></span>' : ''}<button class="fly-img-x" data-flyer-img-clear title="Remove photo" aria-label="Remove photo">×</button>`
+      : `<span class="fly-drop-ic">📸</span><span class="fly-drop-t">Drop a file or photo here</span><span class="fly-drop-s">tap to choose · or press ${/Mac/i.test(navigator.platform) ? '⌘V' : 'Ctrl+V'} to paste one</span>`;
     const results = f.events.length ? (() => {
       const picks = f.events.filter((e) => e.pick).length;
       return `<div class="fly-results">
@@ -2976,15 +2976,15 @@ function renderFlyerImport() {
     inner = `
       <label class="fly-drop ${f.image ? 'has-img' : ''} ${f.finding ? 'scanning' : ''}" data-flyer-drop>${dropInner}<input type="file" id="fly-file" accept="image/*" hidden></label>
       <div class="fly-or">or paste text or a link</div>
-      <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste a flyer's text, an email — or an event link (Eventbrite, Meetup…)" data-flyer-text>${esc(f.text || '')}</textarea>
+      <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste some text, or a webpage link (Eventbrite, Meetup…)" data-flyer-text>${esc(f.text || '')}</textarea>
       <label class="fly-field"><span>File events into</span><select class="sel" data-flyer-area>${flyerAreaOpts(f)}</select></label>
       ${f.err ? `<p class="fly-err">${esc(f.err)}</p>` : ''}
-      ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading the flyer…' : '✨ Find the events'}</button>`}`;
+      ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading…' : '✨ Find the events'}</button>`}`;
   }
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
-    <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a flyer">
+    <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a file">
       <button class="fly-x" data-flyer-close aria-label="Close">×</button>
-      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a flyer</h2><p class="fly-sub">A screenshot, a photo, or an event link — Daybook reads the details out and you choose what lands on your calendar.</p></div>
+      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Daybook reads the dates out and you choose what lands on your calendar.</p></div>
       ${inner}
     </div>`;
   // Drag-and-drop onto the dropzone.
@@ -8170,11 +8170,11 @@ function renderCalendar() {
       <div class="cal-nav">
         ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Flow tool">☀ Plan day</button>' : ''}
         ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
+        ${modOn('calendar') ? '<button class="cal-btn ic cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link" aria-label="Add from a file">⤓</button>' : ''}
         <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
-        <button class="cal-btn ic cal-flyerbtn" data-open-flyer title="Add from a flyer - snap a flyer or paste a listing" aria-label="Add from a flyer">✨</button>
         <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
       </div>
     </div>

@@ -7279,7 +7279,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 
 /* ── "Add from a flyer" overlay — a little moment of magic ──────────────── */
 /* A quiet icon in the header - it's an occasional, edge tool (also in + New). */
-.cal-flyerbtn { color:var(--ink-3); }
+.cal-flyerbtn { color:var(--accent); }
 .cal-flyerbtn:hover { color:var(--accent); border-color:var(--accent); }
 .fly-bg { position:fixed; inset:0; z-index:240; background:color-mix(in srgb,var(--ink) 46%,transparent); backdrop-filter:blur(6px); animation:fly-fade .18s ease; }
 .fly-card { position:fixed; z-index:241; left:50%; top:50%; transform:translate(-50%,-50%); width:min(560px, calc(100vw - 32px)); max-height:min(92vh, 860px); overflow-y:auto; overflow-x:hidden; background:var(--paper); border:1px solid var(--line); border-radius:22px; box-shadow:0 40px 120px -30px rgba(0,0,0,.6); padding:26px 26px 30px; animation:fly-pop .24s cubic-bezier(.2,.9,.3,1.3); }
