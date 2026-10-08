@@ -7319,6 +7319,8 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .dz-loc-pin { flex:none; font-size:15px; }
 .dz-city { flex:1; max-width:none; border:0; background:none; margin:0; padding:12px 0; font-size:15px; }
 .dz-city:focus { outline:none; }
+.dz-useloc { flex:none; display:inline-flex; align-items:center; gap:6px; align-self:stretch; padding:0 10px 0 13px; border:0; border-left:1px solid var(--line); background:none; color:var(--accent); font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; transition:color .12s; }
+.dz-useloc:hover { color:var(--ink); }
 .dz-filters { display:flex; flex-direction:column; gap:9px; margin-bottom:22px; }
 .dz-chips { display:flex; flex-wrap:wrap; gap:8px; }
 .dz-chip { padding:7px 14px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2,var(--ink)); font:inherit; font-size:14px; cursor:pointer; transition:background .12s, border-color .12s, color .12s; }

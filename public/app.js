@@ -3092,7 +3092,7 @@ function renderDiscover() {
   $('#pane').innerHTML = `${pageCrumb(t('nav.discover'))}
     <div class="pane-head home-head"><h1>${t('nav.discover')}</h1></div>
     <p class="dz-lead">What's on${where ? ' ' + where : ' near you'} - tap any that take your fancy straight onto your calendar.${state.me && state.me.id === 1 ? '' : ''}</p>
-    <div class="dz-loc"><span class="dz-loc-pin">${loc ? '📍' : '🔎'}</span><input class="sel dz-city" id="dz-city" placeholder="${loc ? 'Using your location — or type a city' : 'Type a city (Lisbon, London, Berlin…)'}" value="${esc(d.city || '')}" data-dz-city autocomplete="off"></div>
+    <div class="dz-loc"><span class="dz-loc-pin">${loc ? '📍' : '🔎'}</span><input class="sel dz-city" id="dz-city" placeholder="${loc ? 'Using your location — or type a city' : 'Type a city (Lisbon, London, Berlin…)'}" value="${esc(d.city || '')}" data-dz-city autocomplete="off"><button class="dz-useloc" data-dz-useloc title="Use my current location">📍 Locate me</button></div>
     <div class="dz-filters"><div class="dz-chips">${catChips}</div><div class="dz-chips dz-chips-when">${whenChips}</div></div>
     ${body}`;
 }
@@ -17991,7 +17991,7 @@ document.addEventListener('click', (e) => {
   { const da = t.closest('[data-dz-add]'); if (da) { discoverAdd(da.dataset.dzAdd); return; } }
   if (t.closest('[data-dz-more]')) { const d = discoverState(); d.page = (d.page || 0) + 1; discoverFetch(true); return; }
   if (t.closest('[data-dz-retry]')) { discoverFetch(); return; }
-  if (t.closest('[data-dz-useloc]')) { try { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })); } catch {} discoverFetch(); }, () => { toast('Location unavailable - type a city instead'); }, { timeout: 8000 }); } catch {} return; }
+  if (t.closest('[data-dz-useloc]')) { if (!navigator.geolocation) { toast('Location is not available on this device - type a city instead'); return; } toast('Finding your location…'); navigator.geolocation.getCurrentPosition((pos) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })); } catch {} const d = discoverState(); d.city = ''; discoverFetch(); }, () => toast('Location unavailable - type a city instead'), { timeout: 9000, enableHighAccuracy: true, maximumAge: 300000 }); return; }
   if (t.closest('[data-open-flyer]')) { openFlyerImport(); return; }
   if (t.closest('[data-flyer-close]')) { closeFlyer(); return; }
   if (t.closest('[data-flyer-find]')) { flyerFind(); return; }
