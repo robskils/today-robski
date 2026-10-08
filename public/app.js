@@ -17631,14 +17631,25 @@ document.addEventListener('paste', (e) => {
   // like <strong>/&nbsp; into the body with no block wrapper, and bodyToHtml
   // (which only treats block-wrapped HTML as HTML) then re-renders them as
   // literal, escaped tag text on the next load. Plain text keeps the note clean.
+  const html = cd.getData('text/html');
   const text = cd.getData('text/plain');
-  if (!text) return;
+  if (!html && !text) return;
   e.preventDefault();
-  // Silently tidy on the way in - collapse the blank lines that would otherwise
-  // land as stray empty paragraphs (the double-spacing you'd have to fix by
-  // hand). The manual Tidy button does the same for anything already pasted.
-  if (looksMarkdown(text)) document.execCommand('insertHTML', false, tidyProseHtml(mdPasteHtml(text)));
-  else document.execCommand('insertText', false, tidyPasteText(text));
+  // Keep the formatting when you paste. Rich paste (from a doc, a web page or a
+  // rendered note) is sanitised down to our allowed block tags, and any stray
+  // inline run is wrapped in a paragraph - so bold, headings and lists survive
+  // AND the body stays clean. The old handler dropped every rich paste to plain
+  // text, which is exactly why pasting wiped all the formatting. Plain text that
+  // looks like Markdown is still converted to rich HTML; anything else goes in as
+  // plain text. (We also collapse stray blank lines, as the Tidy button does.)
+  if (html && /<(p|div|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|a|table|pre|code)[\s>]/i.test(html)) {
+    const stripped = html.replace(/<(style|script|head|title)[\s\S]*?<\/\1>/gi, '');
+    document.execCommand('insertHTML', false, tidyProseHtml(normalizeProseHtml(sanitizeProse(stripped))));
+  } else if (text && looksMarkdown(text)) {
+    document.execCommand('insertHTML', false, tidyProseHtml(mdPasteHtml(text)));
+  } else if (text) {
+    document.execCommand('insertText', false, tidyPasteText(text));
+  }
   prose.dispatchEvent(new Event('input', { bubbles: true }));   // trigger the debounced save
 });
 document.addEventListener('input', (e) => {
