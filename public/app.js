@@ -8835,9 +8835,11 @@ function homeMailAlertHtml() {
   if (!modOn('mail')) return '';
   const h = state.home || {};
   if (h.mailProblems === undefined) { loadHomeMail(); return ''; }
-  const probs = h.mailProblems || [];
+  // Only nag Home about a mailbox that genuinely needs the user to sign in
+  // again - a transient hiccup heals itself and shouldn't raise an alarm here.
+  const probs = (h.mailProblems || []).filter((p) => mailNeedsSignIn(p.msg));
   if (!probs.length) return '';
-  return `<div class="home-mailalert">${probs.map((p) => `<button class="home-mailalert-row" data-open-mailaccounts title="Fix in Mail accounts"><span class="hma-ic">⚠</span><span class="hma-t"><b>${esc(p.name)}</b> isn’t connecting${p.msg ? ` - ${esc(p.msg)}` : ''}</span><span class="hma-go">Fix →</span></button>`).join('')}</div>`;
+  return `<div class="home-mailalert">${probs.map((p) => `<button class="home-mailalert-row" data-open-mailaccounts title="Open Mail accounts"><span class="hma-ic">✉</span><span class="hma-t"><b>${esc(p.name)}</b> needs you to sign in again</span><span class="hma-go">Fix →</span></button>`).join('')}</div>`;
 }
 // The Tracker is its own tool now (its own view), not a tab of the planner.
 // Same t2TrackerHtml render, standalone with its own crumb.
@@ -10941,12 +10943,24 @@ function refreshAcctCrumb() {
   const tmp = document.createElement('div'); tmp.innerHTML = acctCrumbHtml(open);
   bar.replaceWith(tmp.firstElementChild);
 }
+// A mailbox problem is either a transient hiccup (dropped connection, timeout -
+// stays calm, self-heals on the next sync) or a credentials problem the user
+// must fix. Only the latter is worth surfacing loudly or on Home.
+function mailNeedsSignIn(msg) { return /auth|login|password|credential|535|invalid|denied|not authori/i.test(String(msg || '')); }
 function renderMailAccounts(note) {
   const statusPill = (a) => {
     const h = a.health;
-    if (!h) return '<span class="ma-status ma-status-unknown" title="Not checked yet - opens and the hourly sync will update this">● Not checked yet</span>';
+    if (!h) return '<span class="ma-status ma-status-unknown" title="The hourly sync will update this">Checking…</span>';
     if (h.ok) return `<span class="ma-status ma-status-ok" title="Last checked ${h.at ? esc(new Date(h.at).toLocaleString()) : ''}">✓ Connected</span>`;
-    return `<span class="ma-status ma-status-err" title="${esc(h.msg || '')}">⚠ Not connecting${h.msg ? ` - ${esc(h.msg)}` : ''}</span>`;
+    // Stay calm. Most failures are a transient server hiccup (a dropped
+    // connection or timeout - PurelyMail, Gmail et al. do this); only a
+    // credentials problem needs the user to do anything. The raw error lives in
+    // the tooltip, never shouted across the row. (Robin: stay a little calmer.)
+    const msg = String(h.msg || '');
+    const needsSignIn = mailNeedsSignIn(msg);
+    return needsSignIn
+      ? `<span class="ma-status ma-status-auth" title="${esc(msg)}">Sign-in needed</span>`
+      : `<span class="ma-status ma-status-wait" title="${esc(msg)}">Reconnecting…</span>`;
   };
   const rows = (state.mail.accounts || []).map((a) => `<div class="mail-acct-card${a.health && a.health.ok === false ? ' has-issue' : ''}">
     <div class="mail-acct"><span class="ma-dot" style="background:${a.color || 'var(--accent)'}"></span><span class="ma-e">${esc(a.email)}</span>${statusPill(a)}
@@ -11437,7 +11451,7 @@ function mailListInner(loading) {
       const vipRows = vipThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
       const restRows = restThreads.map((th) => mailRowHtml(th.latest, false, th.count)).join('');
       const errBanner0 = (!loading && (m.acctErrors || []).length)
-        ? m.acctErrors.map((e) => `<div class="mail-acct-err">⚠ <b>${esc(e.name)}</b> could not load: ${esc(e.msg)}</div>`).join('')
+        ? m.acctErrors.map((e) => `<div class="mail-acct-err${mailNeedsSignIn(e.msg) ? ' needs-signin' : ''}"><b>${esc(e.name)}</b> ${mailNeedsSignIn(e.msg) ? 'needs you to sign in again' : 'is reconnecting…'}</div>`).join('')
         : '';
       return `${errBanner0}<div class="mail-vip-box"><div class="mail-vip-h"><span>⭐ Important senders</span><button class="mail-vip-off" data-mail-vip-tog title="Turn important senders off">Turn off</button></div>${vipRows}</div>${restRows || `<div class="home-empty">Nothing else in your inbox.</div>`}${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}`;
     }

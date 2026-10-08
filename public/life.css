@@ -5750,7 +5750,8 @@ table.ttable tr:last-child td { border-bottom:0; }
 /* Which folder a cross-folder search hit lives in. */
 .mail-folder-chip { display:inline-block; vertical-align:middle; margin-right:7px; padding:1px 8px; border-radius:999px; background:color-mix(in srgb,var(--accent) 12%,transparent); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent); color:var(--accent); font-size:11.5px; font-weight:600; white-space:nowrap; }
 .mail-searching { font-style:italic; opacity:.75; }
-.mail-acct-err { margin:8px 10px; padding:10px 13px; border-radius:12px; background:#fdecec; border:1px solid #f3b6b6; color:#8a2020; font-size:14px; line-height:1.4; }
+.mail-acct-err { margin:8px 10px; padding:10px 13px; border-radius:12px; background:var(--paper-2); border:1px solid var(--line-2); color:var(--ink-2); font-size:14px; line-height:1.4; }
+.mail-acct-err.needs-signin { color:var(--gold); background:color-mix(in srgb,var(--gold) 12%,transparent); border-color:color-mix(in srgb,var(--gold) 30%,var(--line)); }
 /* Height is set by JS to the reported content height, so the whole reading pane
    scrolls as one rather than the body scrolling inside a fixed box. */
 .mail-body-frame { width:100%; height:340px; min-height:120px; border:0; border-radius:10px; background:#fff; display:block; }
@@ -5904,11 +5905,13 @@ table.ttable tr:last-child td { border-bottom:0; }
 .mail-acct { display:flex; align-items:center; gap:11px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
 .ma-dot { width:10px; height:10px; border-radius:50%; flex:none; }
 .ma-e { flex:1; color:var(--ink); font-size:16px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ma-status { flex:none; font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.ma-status { flex:none; max-width:170px; overflow:hidden; text-overflow:ellipsis; font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; white-space:nowrap; }
 .ma-status-ok { color:#2f7d46; background:color-mix(in srgb,#2f7d46 12%,transparent); }
 .ma-status-err { color:#b02020; background:color-mix(in srgb,#b02020 12%,transparent); }
 .ma-status-unknown { color:var(--ink-3); background:var(--paper-2); }
-.mail-acct-card.has-issue .mail-acct { border-color:#e2a0a0; }
+.ma-status-wait { color:var(--ink-2); background:var(--paper-2); }
+.ma-status-auth { color:var(--gold); background:color-mix(in srgb,var(--gold) 15%,transparent); }
+.mail-acct-card.has-issue .mail-acct { border-color:var(--line-2); }
 /* Home: a mail-account connection problem, surfaced in the today lead */
 .home-mailalert { display:flex; flex-direction:column; gap:6px; margin:0 0 12px; }
 .home-mailalert-row { display:flex; align-items:center; gap:10px; width:100%; text-align:left; font:inherit; cursor:pointer; padding:11px 13px; border:1px solid #f0c4c4; border-left:3px solid var(--danger,#c4412e); border-radius:12px; background:color-mix(in srgb,var(--danger,#c4412e) 7%,var(--card)); color:var(--ink); }
