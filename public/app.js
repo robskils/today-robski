@@ -683,7 +683,7 @@ const HELP = {
       <ul><li><b>Connected notes</b> - link notes to each other rather than burying one inside another. From any note, start a <b>new connected note</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
       <li><b>Related notes</b> appear on their own - any note sharing a page with this one is a tap away, so things find each other.</li>
       <li><b>Link</b> highlighted text to another note or even a table row, to weave your writing together.</li>
-      <li><b>Pages</b> - tag a note to one or several areas (the chips up top); it then shows on each of those area pages, in that area's colour.</li>
+      <li><b>Pages</b> - tag a note to one or several pages (the chips up top); it then shows on each of those pages, in that page's colour.</li>
       <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
       <p>Star a note to pin it to the sidebar; recently opened notes are always a click away there too.</p>` },
   calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
@@ -4704,7 +4704,7 @@ function practicesGroups(withWeek) {
 }
 function practiceAddForm() {
   const areas = state.areas || [];
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No page</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -4738,7 +4738,7 @@ function practiceEditorHtml() {
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <div class="pe-two">
-            <label class="pe-f pe-inline"><span>Page</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+            <label class="pe-f pe-inline"><span>Page</span><select class="sel" id="pe-area"><option value="">No page</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
             <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           </div>
         </section>
@@ -5431,7 +5431,7 @@ function renderNotesList() {
   const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
   const cards = (list) => list.map(noteCard).join('');
   const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
-  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this area')}` : '';
+  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this page')}` : '';
   // In "Page" order (unfiltered), split into a section per area.
   let listHtml;
   if (mode === 'area' && !q) {
@@ -6757,7 +6757,7 @@ function renderReadwatch() {
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No page</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
           <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
@@ -6938,7 +6938,7 @@ function renderBookmarkCard() {
         ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
-        <label class="rwc-row"><span class="rwc-lbl">Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No page</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
         ${openTop ? '' : openBtn}
@@ -7040,7 +7040,7 @@ function renderAreasList() {
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All Pages'} · ${ordered.length}</div>
-      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No areas shared yet.' : 'No pages yet.'}</div>`}</div></section>`;
+      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No pages shared yet.' : 'No pages yet.'}</div>`}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -7789,7 +7789,7 @@ function blockAreasControl(kind, b) {
   const id = b.id; const ids = blockAreas(b);
   const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
   const remaining = state.areas.filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add area' : '+ Page'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Page' : '+ Page'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
   return `<span class="note-areas">${chips}${add}</span>`;
 }
 // From a life-area page: create a task/note already tagged to this area, then
@@ -7839,7 +7839,7 @@ function openAreaColor() {
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box areacol-dialog" style="--h:${start}">
     <div class="recur-h">Area colour</div>
-    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this area')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
+    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this page')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
     <div class="areacol-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === start ? ' on' : ''}" style="--h:${hu}" data-areacol="${hu}" aria-label="Hue ${hu}"></button>`).join('')}</div>
     <label class="areacol-fine">Fine tune<input type="range" min="0" max="359" value="${start}" class="areacol-slider" data-areacol-slider></label>
     <div class="ui-dialog-btns"><button class="ui-btn cancel" data-areacol-cancel>Cancel</button><button class="ui-btn primary" data-areacol-done>Done</button></div>
@@ -8388,7 +8388,7 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Page</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Page</span><select id="ce-area" class="sel"><option value="">No page</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     </div>
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
@@ -9392,7 +9392,7 @@ function openTaskPopover(taskId, slotId) {
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
         </div>
-        <label class="pe-f"><span>Page</span><select class="sel" id="te-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Page</span><select class="sel" id="te-area"><option value="">No page</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
       </div>
       <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
@@ -11649,7 +11649,7 @@ ${''/* The "older unread sits further down" banner is retired: the background
 }
 
 function showQuickTask() {
-  const opts = `<option value="">No area</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No page</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
   // The full task options, matching the Tasks board's add form: area, priority,
   // duration, snooze (hide until), repeat and notes.
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
@@ -11785,7 +11785,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <label class="ce-field"><span class="ce-flbl">Page</span><select id="qe-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+    <label class="ce-field"><span class="ce-flbl">Page</span><select id="qe-area" class="sel"><option value="">No page</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -12025,7 +12025,7 @@ function taskTableHtml(list, emptyMsg) {
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
-      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Area</span>'}</span></td>
+      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Page</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button><button class="row-chev" data-open-task="${t.id}" title="Open" aria-label="Open task">›</button></td>
     </tr>`;
@@ -12171,7 +12171,7 @@ function renderTasks() {
     </div>` : ''}
   </div>`;
   const preArea = state.taskAddArea || '';   // set when + Task is used from a Page page
-  const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No page</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
   // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
   const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
   const qa = state.taskQuickArea || '';
@@ -12601,7 +12601,7 @@ function contactMenuHtml() {
   const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
   const areaSection = allAreas.length ? `<div class="ctx-lbl">Pages</div>
     ${currentAreas.map(curRow).join('')}
-    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No areas to add.</div>')}
+    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No pages to add.</div>')}
     ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
     <div class="ctx-sep"></div>` : '';
   // A few recently-opened contacts up top, most recent first - a quick hop to
@@ -12769,7 +12769,7 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${areas.length ? `<label class="atf atf-full"><span>Page</span><select id="ct-area" class="sel"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    ${areas.length ? `<label class="atf atf-full"><span>Page</span><select id="ct-area" class="sel"><option value="">No page</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
@@ -14444,7 +14444,7 @@ function goalsBody() {
   const done = state.goals.filter((g) => gp(g).status === 'done');
   const byArea = {};
   others.forEach((g) => { const k = gp(g).area || '_'; (byArea[k] = byArea[k] || []).push(g); });
-  const areaSection = Object.keys(byArea).map((k) => { const a = areaById(k); return `<div class="goal-group"><div class="goal-group-h">${a ? esc(a.title) : 'No area'}</div><div class="goal-grid">${byArea[k].map(goalCardMini).join('')}</div></div>`; }).join('');
+  const areaSection = Object.keys(byArea).map((k) => { const a = areaById(k); return `<div class="goal-group"><div class="goal-group-h">${a ? esc(a.title) : 'No page'}</div><div class="goal-grid">${byArea[k].map(goalCardMini).join('')}</div></div>`; }).join('');
   return `<div class="goals-actions"><button class="add-btn wide" data-new-goal>+ New goal</button></div>
     ${focus.length ? `<section class="home-sec"><div class="home-sec-h">★ Starred goals</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>` : '<div class="empty" style="padding:28px">Add a goal, then tap its ★ to star it - the ones you want front and centre.</div>'}
     ${areaSection ? `<section class="home-sec"><div class="home-sec-h">Active goals</div>${areaSection}</section>` : ''}
@@ -14486,7 +14486,7 @@ async function openGoalCard(id) {
 }
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
-  const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No page</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
   const metricRaw = gtype === 'number' ? (p.metric || 'manual') : 'manual';
@@ -14816,7 +14816,7 @@ async function newBucket() {
 async function openBucketCard(id) { const b = await api(`/api/blocks/${id}`); state.bucket_open = { item: b }; state.view = { type: 'bucketcard', id }; renderNav(); renderBucketCard(); }
 function renderBucketCard() {
   const b = state.bucket_open.item; const p = b.props || {};
-  const areaOpts = `<option value="">No area</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No page</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
@@ -16091,7 +16091,7 @@ function renderReviewCard() {
   // started one is 'inprogress' until you mark it done, so an unfinished review is
   // never mistaken for a lost one - it's waiting for you, clearly labelled.
   const st = p.status || 'done';
-  const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No area'; };
+  const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No page'; };
   const pill = (label, n, cls) => `<span class="rv-stat ${cls || ''}"><b>${n}</b> ${label}</span>`;
   const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
   const quiet = (m.quietAreas || []).map(areaName);
@@ -16312,7 +16312,7 @@ function goalReviewSection(r) {
   const groups = [...byArea.entries()].map(([aid, gs]) => {
     const a = aid === '_none' ? null : areaById(aid);
     const vision = a && a.props && a.props.vision ? String(a.props.vision).trim() : '';
-    const head = `<div class="gr-area"><span class="gr-area-n"><span class="ac-dot" style="--h:${a ? hueOf(a) : 220}"></span>${a ? esc(a.title) : 'No area'}</span>${vision ? `<span class="gr-vision">“${esc(vision.slice(0, 160))}${vision.length > 160 ? '…' : ''}”</span>` : ''}</div>`;
+    const head = `<div class="gr-area"><span class="gr-area-n"><span class="ac-dot" style="--h:${a ? hueOf(a) : 220}"></span>${a ? esc(a.title) : 'No page'}</span>${vision ? `<span class="gr-vision">“${esc(vision.slice(0, 160))}${vision.length > 160 ? '…' : ''}”</span>` : ''}</div>`;
     const rows = gs.map((g) => {
       const rv = gr[g.id] || {};
       const dn = doneForGoal(g.id); const op = openForGoal(g.id);
@@ -16468,7 +16468,7 @@ function reviewDoneCards(m) {
     const byArea = new Map();
     items.forEach((t) => { const k = t.area || '_none'; if (!byArea.has(k)) byArea.set(k, []); byArea.get(k).push(t); });
     groups = [...byArea.entries()].sort((a, b) => b[1].length - a[1].length).map(([aid, ts]) => {
-      const a = aid === '_none' ? null : areaById(aid); const name = a ? a.title : 'No area';
+      const a = aid === '_none' ? null : areaById(aid); const name = a ? a.title : 'No page';
       const cards = ts.map((t) => cardOf(t, a)).join('');
       return `<div class="rvd-group"><div class="rvd-group-h">${a ? `<span class="rvm-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span>` : ''}${esc(name)}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
     }).join('');
@@ -20185,7 +20185,7 @@ function editPrio(span) {
 }
 function editArea(span) {
   const id = span.dataset.editArea; const t = taskCopies(id)[0]; if (!t) return;
-  editInlineSelect(span, t.props.area, [{ value: '', label: 'No area' }, ...state.areas.map((a) => ({ value: a.id, label: a.title }))], (v) => patchTaskProps(id, { area: v }));
+  editInlineSelect(span, t.props.area, [{ value: '', label: 'No page' }, ...state.areas.map((a) => ({ value: a.id, label: a.title }))], (v) => patchTaskProps(id, { area: v }));
 }
 
 // ── view: task focus (open card) ─────────────────────
