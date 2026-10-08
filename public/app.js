@@ -7381,10 +7381,22 @@ function renderArea() {
   const linksSec = (canEditArea || blockLinks(area).length) ? `<section class="area-dash-links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
   const filesLinksRow = `<div class="area-dash-fl"><section class="area-dash-files" style="--h:${h}">${areaAttachHtml(area)}</section>${linksSec}</div>`;
   const sharedSec = memberCount ? `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : '';
+  // Connections: the one place to hook anything up to this Page - a note, task,
+  // goal, event, person or link. Whatever you add surfaces above as its own
+  // section. Collapsible, sitting at the very bottom. (Robin's Page revamp.)
+  const connOpen = areaSecOpen('Connections');
+  const connTiles = [['note', '▤', 'Note'], ['task', '✓', 'Task'], ...(secHidden('Goals') ? [] : [['goal', '🎯', 'Goal']]), ['event', '◑', 'Event'], ['contact', '👤', 'Contact'], ...(secHidden('Bucket list') ? [] : [['bucket', '✦', 'Bucket-list item']])]
+    .map(([k, ic, l]) => `<button class="conn-tile" data-area-add-${k}><span class="conn-ic">${ic}</span><span class="conn-l">${esc(l)}</span></button>`).join('')
+    + `<button class="conn-tile" data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"><span class="conn-ic">🔗</span><span class="conn-l">Web link</span></button>`;
+  const connectSec = area.sharedBy ? '' : `<section class="area-sec area-connect ${connOpen ? '' : 'area-sec-collapsed'}" data-aflow="Connections" style="--h:${h}">
+      <div class="area-sec-h"><button class="ash-toggle" data-area-sec="Connections" aria-expanded="${connOpen}" title="${connOpen ? 'Collapse' : 'Expand'}"><span class="acw-chev">${connOpen ? '▾' : '▸'}</span><span class="ash-ic">🔗</span><span class="ash-l">Connections</span></button></div>
+      ${connOpen ? `<div class="area-sec-body"><p class="conn-lead">Hook anything up to this Page - it appears above as its own section as you add.</p><div class="conn-grid">${connTiles}</div></div>` : ''}
+    </section>`;
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   ${wallSec}
   ${filesLinksRow}
-  ${sharedSec}`;
+  ${sharedSec}
+  ${connectSec}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
   const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>${canEditArea ? '<button class="add-btn wide area-tab-add area-addgoal-btn" data-area-add-goal>🎯 Add another goal</button>' : ''}` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals" open><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
   const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
