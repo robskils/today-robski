@@ -7420,6 +7420,23 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .src-seed span { font-size:12.5px; color:var(--muted); }
 .dz-empty-lead { max-width:46ch; }
 .dz-empty .src-seeds { width:100%; max-width:560px; text-align:left; }
+/* Discover: the location search bar + manual paste inside the find panel */
+.src-loc { display:flex; align-items:center; gap:8px; border:1px solid var(--line-2); border-radius:14px; background:var(--card); padding:5px 6px 5px 14px; }
+.src-loc-pin { flex:none; font-size:16px; opacity:.7; }
+.src-loc-input { flex:1; min-width:0; border:0; background:none; font:inherit; font-size:15px; color:var(--ink); padding:10px 2px; }
+.src-loc-input:focus { outline:none; }
+.src-loc-input::placeholder { color:var(--ink-3); }
+.src-loc-btn { flex:none; border:1px solid var(--line-2); background:var(--paper-2); color:var(--ink); font:inherit; font-size:13.5px; font-weight:600; padding:8px 13px; border-radius:10px; cursor:pointer; transition:border-color .12s, color .12s, filter .12s; white-space:nowrap; }
+.src-loc-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+.src-loc-me { background:var(--accent); border-color:var(--accent); color:var(--accent-ink,#fff); }
+.src-loc-me:hover:not(:disabled) { filter:brightness(1.07); color:var(--accent-ink,#fff); }
+.src-loc-btn:disabled { opacity:.55; cursor:default; }
+.src-loc-status { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; padding:6px 2px; }
+.src-manual { display:flex; flex-direction:column; gap:9px; border-top:1px solid var(--line); padding-top:14px; }
+.src-or { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); }
+.src-manual-row { display:flex; gap:10px; align-items:center; }
+.src-manual-row .src-url { flex:1; min-width:0; margin:0; max-width:none; }
+.src-manual-row .add-btn.wide { flex:none; }
 
 /* ── Life area: quiet, premium, in good taste ────────────────────────────── */
 /* Restraint over wash: neutral soft depth, confident type and generous space do

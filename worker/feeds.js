@@ -423,3 +423,52 @@ export async function fetchSourceEvents(url) {
     return { ok: true, events: events.slice(0, 250) };
   } catch { return { ok: false, error: 'Could not reach that link.' }; }
 }
+
+// ── Suggest feeds for a place ──────────────────────────────────────────────
+// Type a city or use your location; we resolve it (OpenStreetMap Nominatim,
+// free + keyless) and suggest event sources for it. Eventbrite works worldwide
+// (schema.org/Event in its city pages); Portugal adds ViralAgenda; Lisbon adds
+// the official city agenda, CCB and Bilheteira Online.
+export function slugify(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+export async function lookupPlace({ q, lat, lng }) {
+  try {
+    let u;
+    if (q && String(q).trim()) {
+      u = new URL('https://nominatim.openstreetmap.org/search');
+      u.searchParams.set('q', String(q).trim().slice(0, 120)); u.searchParams.set('format', 'json'); u.searchParams.set('limit', '1'); u.searchParams.set('addressdetails', '1');
+    } else if (Number.isFinite(+lat) && Number.isFinite(+lng)) {
+      u = new URL('https://nominatim.openstreetmap.org/reverse');
+      u.searchParams.set('lat', String(+lat)); u.searchParams.set('lon', String(+lng)); u.searchParams.set('format', 'json'); u.searchParams.set('addressdetails', '1'); u.searchParams.set('zoom', '10');
+    } else return null;
+    const r = await fetch(u.toString(), { headers: { 'User-Agent': 'Daybook/1.0 (+https://daybook.fyi)' } });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => null);
+    const row = Array.isArray(j) ? j[0] : j;
+    const a = row && row.address; if (!a) return null;
+    let city = a.city || a.town || a.village || a.municipality || a.city_district || (row && row.name) || a.county || a.state || '';
+    city = city.replace(/^(greater|grande|city of|cidade de)\s+/i, '').trim();
+    const country = a.country || '';
+    const countryCode = String(a.country_code || '').toLowerCase();
+    if (!city) return null;
+    return { city, country, countryCode, label: [city, country].filter(Boolean).join(', ') };
+  } catch { return null; }
+}
+export function suggestFeeds(place) {
+  if (!place || !place.city) return [];
+  const citySlug = slugify(place.city);
+  const countrySlug = slugify(place.country) || place.countryCode || 'events';
+  const out = [];
+  // Eventbrite - worldwide.
+  out.push({ label: `Eventbrite · ${place.city}`, url: `https://www.eventbrite.com/d/${countrySlug}--${citySlug}/all-events/`, note: 'Workshops, music, nightlife' });
+  // ViralAgenda - Portugal's cultural listings.
+  if (place.countryCode === 'pt') out.push({ label: `ViralAgenda · ${place.city}`, url: `https://www.viralagenda.com/pt/${citySlug}`, note: 'Concerts, theatre, exhibitions' });
+  // Lisbon's own, curated.
+  if (/lisbo/i.test(place.city)) {
+    out.unshift({ label: 'Agenda Cultural de Lisboa', url: 'https://www.agendalx.pt/', note: "The city's official what's-on" });
+    out.push({ label: 'CCB · Belém', url: 'https://www.ccb.pt/eventos/?ical=1', note: 'Centro Cultural de Belém' });
+    out.push({ label: 'Bilheteira Online', url: 'https://www.bol.pt/', note: 'Ticketed shows across Portugal' });
+  }
+  return out;
+}

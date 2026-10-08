@@ -3047,18 +3047,18 @@ function flyerConfetti() {
 }
 
 // ── Discover: what's on, from the event feeds you subscribe to ─────────────
-// Browse upcoming events pulled from your subscribed sources (any .ics/webcal
-// calendar, or a listings page that publishes schema.org/Event data) and copy
-// any one onto your own calendar with a tap. The worker fetches + caches; this
-// view just reads /api/discover and posts the chosen event to /api/events.
+// Search a city (or use your location), get suggested event feeds, follow the
+// ones you like, then browse what's on and tap any event onto your calendar.
+// Feeds are any .ics/webcal calendar or a page with schema.org/Event data; the
+// worker fetches + caches. This view reads /api/discover and posts to /api/events.
 const DISCOVER_SEEDS = [
   { label: 'Agenda Cultural de Lisboa', url: 'https://www.agendalx.pt/', note: "The city's official what's-on" },
-  { label: 'ViralAgenda Lisboa', url: 'https://www.viralagenda.com/pt/lisboa', note: 'Concerts, theatre, workshops' },
+  { label: 'ViralAgenda · Lisboa', url: 'https://www.viralagenda.com/pt/lisboa', note: 'Concerts, theatre, workshops' },
   { label: 'CCB · Belém', url: 'https://www.ccb.pt/eventos/?ical=1', note: 'Centro Cultural de Belém' },
   { label: 'Bilheteira Online', url: 'https://www.bol.pt/', note: 'Ticketed shows & venues' },
 ];
 function discoverState() {
-  if (!state.discover) state.discover = { events: [], sources: [], loading: false, err: '', available: true, adding: false, addOpen: false, addUrl: '', addLabel: '', addErr: '', filters: [], added: {} };
+  if (!state.discover) state.discover = { events: [], sources: [], loading: false, err: '', available: true, adding: false, addOpen: false, addUrl: '', addLabel: '', addErr: '', filters: [], added: {}, cityInput: '', place: '', suggests: [], locLoading: false };
   return state.discover;
 }
 function openDiscover() {
@@ -3079,16 +3079,39 @@ async function discoverFetch() {
   } catch (e) { d.err = (e && e.message) || 'Could not load events.'; }
   d.loading = false; renderDiscover();
 }
-// Subscribe to a source URL (shared by the paste box and the Lisbon seeds).
+// Suggest feeds for a typed city or the user's coordinates.
+async function discoverSuggest(params) {
+  const d = discoverState();
+  d.locLoading = true; renderDiscover();
+  try {
+    const qs = params.q ? ('q=' + encodeURIComponent(params.q)) : ('lat=' + params.lat + '&lng=' + params.lng);
+    const r = await api('/api/discover/suggest?' + qs);
+    d.place = r.place || ''; d.suggests = r.suggestions || [];
+    if (d.place && !d.suggests.length) toast('No feeds to suggest for ' + d.place + ' yet - paste a link instead');
+    else if (!d.place) toast("Couldn't place that - try the city name");
+  } catch (e) { toast('Could not look that up just now'); }
+  d.locLoading = false; renderDiscover();
+}
+function discoverLocate() {
+  const d = discoverState();
+  if (!navigator.geolocation) { toast('Location is not available here - type a city instead'); return; }
+  d.locLoading = true; renderDiscover();
+  navigator.geolocation.getCurrentPosition(
+    (p) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: p.coords.latitude, lng: p.coords.longitude })); } catch {} discoverSuggest({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+    () => { const dd = discoverState(); dd.locLoading = false; renderDiscover(); toast('Location unavailable - type a city instead'); },
+    { timeout: 9000, enableHighAccuracy: false, maximumAge: 600000 },
+  );
+}
+// Subscribe to a source URL (shared by the paste box and the suggestion cards).
 async function discoverSubscribeUrl(url, label) {
   const d = discoverState();
   if (!url) { d.addErr = 'Paste a link first.'; renderDiscover(); return; }
   d.adding = true; d.addErr = ''; renderDiscover();
   try {
     const r = await api('/api/feeds/source', { method: 'POST', body: JSON.stringify({ url, label: label || '' }) });
-    d.addUrl = ''; d.addLabel = ''; d.addOpen = false; d.adding = false;
-    if (state.cal) state.cal.events = null;   // the overlay changed, so the calendar refetches
-    toast(`Subscribed - ${r.count} event${r.count === 1 ? '' : 's'} from ${r.label} ✓`);
+    d.addUrl = ''; d.addLabel = ''; d.adding = false; d.addOpen = true;   // stay open so more can be added
+    if (state.cal) state.cal.events = null;   // the overlay changed; the calendar refetches
+    toast(`Following ${r.label} - ${r.count} event${r.count === 1 ? '' : 's'} ✓`);
     discoverFetch();
   } catch (e) { d.adding = false; d.addErr = (e && e.message) || 'Could not add that source.'; renderDiscover(); }
 }
@@ -3096,7 +3119,7 @@ function discoverSubscribe() { const d = discoverState(); discoverSubscribeUrl((
 async function discoverRemoveSource(id) {
   const d = discoverState();
   const s = (d.sources || []).find((x) => x.id === id);
-  if (s && !confirm(`Unsubscribe from ${s.label || 'this source'}? Its events stop showing - anything you already added to your calendar stays.`)) return;
+  if (s && !confirm(`Unfollow ${s.label || 'this feed'}? Its events stop showing - anything you already added to your calendar stays.`)) return;
   try { await api('/api/feeds/source/remove', { method: 'POST', body: JSON.stringify({ id }) }); } catch {}
   if (state.cal) state.cal.events = null;
   discoverFetch();
@@ -3122,43 +3145,57 @@ function discoverCardHtml(e) {
     </div>
   </div>`;
 }
-function discoverSeedsHtml(heading) {
+function discoverSeedsHtml(heading, list) {
   const have = new Set((discoverState().sources || []).map((s) => s.url));
-  const chips = DISCOVER_SEEDS.map((s, i) => `<button class="src-seed" data-src-seed="${i}" ${have.has(s.url) ? 'disabled' : ''}><b>${esc(s.label)}</b><span>${have.has(s.url) ? '✓ Following' : esc(s.note)}</span></button>`).join('');
+  const chips = (list || []).map((s) => `<button class="src-seed" data-sub-url="${esc(s.url)}" data-sub-label="${esc(s.label)}" ${have.has(s.url) ? 'disabled' : ''}><b>${esc(s.label)}</b><span>${have.has(s.url) ? '✓ Following' : esc(s.note || '')}</span></button>`).join('');
   return `<div class="src-seeds"><span class="src-seeds-h">${esc(heading)}</span><div class="src-seeds-row">${chips}</div></div>`;
+}
+function discoverFindPanel() {
+  const d = discoverState();
+  const sugg = (d.suggests && d.suggests.length) ? d.suggests : DISCOVER_SEEDS;
+  const heading = (d.suggests && d.suggests.length) ? `Suggested for ${d.place}` : 'Popular in Lisbon';
+  const suggHtml = sugg.length ? discoverSeedsHtml(heading, sugg)
+    : (d.place ? `<p class="src-hint">Nothing to suggest for ${esc(d.place)} yet - paste a calendar link below.</p>` : '');
+  return `<div class="src-add">
+    <div class="src-loc">
+      <span class="src-loc-pin">📍</span>
+      <input class="src-loc-input" id="src-loc" placeholder="Search a city - Lisbon, Porto, Paris…" value="${esc(d.cityInput || '')}" data-src-city autocomplete="off">
+      <button class="src-loc-btn" data-src-citysearch ${d.locLoading ? 'disabled' : ''}>Search</button>
+      <button class="src-loc-btn src-loc-me" data-src-locate ${d.locLoading ? 'disabled' : ''} title="Use my current location">Locate me</button>
+    </div>
+    ${d.locLoading ? '<div class="src-loc-status"><span class="dz-spin"></span>Looking…</div>' : suggHtml}
+    <div class="src-manual">
+      <span class="src-or">or paste a calendar link</span>
+      <div class="src-manual-row">
+        <input class="sel src-url" id="src-url" placeholder="An .ics / webcal address, or an events page" value="${esc(d.addUrl || '')}" data-src-url autocomplete="off" spellcheck="false">
+        <button class="add-btn wide" data-src-subscribe ${d.adding ? 'disabled' : ''}>${d.adding ? 'Checking…' : 'Add link'}</button>
+      </div>
+      ${d.addErr ? `<p class="imp-err src-err">${esc(d.addErr)}</p>` : ''}
+    </div>
+  </div>`;
 }
 function renderDiscover() {
   const d = discoverState();
   const fils = d.filters || [];
-  const srcChips = (d.sources || []).map((s) => `<span class="src-chip ${fils.includes(s.id) ? 'on' : ''}"><button class="src-chip-name" data-src-filter="${esc(s.id)}">${esc(s.label || 'Source')}<span class="src-chip-n">${s.count}</span></button><button class="src-chip-x" data-src-remove="${esc(s.id)}" title="Unsubscribe">×</button></span>`).join('');
+  const srcChips = (d.sources || []).map((s) => `<span class="src-chip ${fils.includes(s.id) ? 'on' : ''}"><button class="src-chip-name" data-src-filter="${esc(s.id)}">${esc(s.label || 'Source')}<span class="src-chip-n">${s.count}</span></button><button class="src-chip-x" data-src-remove="${esc(s.id)}" title="Unfollow">×</button></span>`).join('');
   const allChip = (d.sources || []).length > 1 ? `<span class="src-chip ${!fils.length ? 'on' : ''}"><button class="src-chip-name src-chip-solo" data-src-all>All</button></span>` : '';
-  const addForm = d.addOpen ? `<div class="src-add">
-      <input class="sel src-url" id="src-url" placeholder="Paste a calendar link (.ics / webcal) or an events page" value="${esc(d.addUrl || '')}" data-src-url autocomplete="off" spellcheck="false">
-      <input class="sel src-label" id="src-label" placeholder="Give it a name (optional)" value="${esc(d.addLabel || '')}" data-src-label autocomplete="off">
-      <div class="src-add-acts">
-        <button class="add-btn wide" data-src-subscribe ${d.adding ? 'disabled' : ''}>${d.adding ? 'Checking…' : 'Subscribe'}</button>
-        <button class="src-add-cancel" data-src-addtoggle>Cancel</button>
-        ${d.addErr ? `<span class="imp-err src-err">${esc(d.addErr)}</span>` : ''}
-      </div>
-      ${discoverSeedsHtml('Suggested for Lisbon')}
-      <p class="src-hint">Any public calendar link works (an <b>.ics</b> or <b>webcal</b> address), or an events page that lists its happenings for search engines.</p>
-    </div>` : '';
+  const showPanel = d.addOpen || !d.sources.length;
   const evs = fils.length ? d.events.filter((e) => fils.includes(e.sourceId)) : d.events;
   let list;
   if (d.loading && !d.events.length) list = `<div class="dz-loading"><span class="dz-spin"></span>Loading what's on…</div>`;
   else if (d.err) list = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn wide" data-open-discover>Try again</button></div>`;
-  else if (!d.sources.length) list = `<div class="dz-empty"><div class="dz-empty-ic">📅</div><p class="dz-empty-lead">Follow an events calendar and what's on appears here - tap any one to drop it onto your own calendar.</p>${discoverSeedsHtml('Start with Lisbon')}<button class="src-add-cancel" data-src-addtoggle>or paste your own link</button></div>`;
-  else if (!evs.length) list = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing coming up from ${fils.length ? ('the selected source' + (fils.length > 1 ? 's' : '')) : 'your sources'} in the next 90 days.</p></div>`;
+  else if (!d.sources.length) list = '';
+  else if (!evs.length) list = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing coming up from ${fils.length ? ('the selected feed' + (fils.length > 1 ? 's' : '')) : 'your feeds'} in the next 90 days.</p></div>`;
   else {
     const groups = []; let cur = null;
     for (const e of evs) { if (!cur || cur.date !== e.date) { cur = { date: e.date, items: [] }; groups.push(cur); } cur.items.push(e); }
     list = groups.map((g) => `<h3 class="dz-daygroup">${esc(dpLabel(g.date))}</h3><div class="dz-grid">${g.items.map(discoverCardHtml).join('')}</div>`).join('');
   }
   $('#pane').innerHTML = `${pageCrumb(t('nav.discover'))}
-    <div class="pane-head home-head"><h1>${t('nav.discover')}</h1>${d.sources.length ? '<button class="add-btn wide" data-src-addtoggle>+ Add source</button>' : ''}</div>
-    <p class="dz-lead">What's on, from the event calendars you follow - tap any to add it to your own.</p>
+    <div class="pane-head home-head"><h1>${t('nav.discover')}</h1>${d.sources.length ? `<button class="add-btn wide" data-src-addtoggle>${d.addOpen ? 'Done' : '+ Find feeds'}</button>` : ''}</div>
+    <p class="dz-lead">What's on, from the event calendars you follow. Search a city or use your location to find more, then tap any event straight onto your calendar.</p>
+    ${showPanel ? discoverFindPanel() : ''}
     ${d.sources.length ? `<div class="src-chips">${allChip}${srcChips}</div>` : ''}
-    ${addForm}
     ${list}`;
 }
 async function discoverAdd(key) {
@@ -17506,6 +17543,7 @@ document.addEventListener('keydown', (e) => {
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
   if (e.key === 'Enter' && e.target.id === 'adm-area-new') { e.preventDefault(); adminAreaAdd(); return; }
+  if (e.key === 'Enter' && e.target.id === 'src-loc') { e.preventDefault(); const d = discoverState(); const q = (d.cityInput || e.target.value || '').trim(); if (q) { d.cityInput = q; discoverSuggest({ q }); } return; }
   if (e.key === 'Enter' && (e.target.id === 'timer-min' || e.target.id === 'timer-sec')) { e.preventDefault(); timerSetCustom(); return; }
   // Tab in the rich prose editor indents rather than leaving the field. In a
   // bullet/numbered list it nests the item (up to ~7 levels); Shift+Tab pulls it
@@ -18054,12 +18092,14 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-ai]')) { openSettings('ai'); return; }
   if (t.closest('[data-open-discover]')) { openDiscover(); return; }
   { const da = t.closest('[data-dz-add]'); if (da) { discoverAdd(da.dataset.dzAdd); return; } }
-  if (t.closest('[data-src-addtoggle]')) { const d = discoverState(); d.addOpen = !d.addOpen; d.addErr = ''; renderDiscover(); if (d.addOpen) setTimeout(() => { try { document.getElementById('src-url').focus(); } catch {} }, 30); return; }
+  if (t.closest('[data-src-addtoggle]')) { const d = discoverState(); d.addOpen = !d.addOpen; d.addErr = ''; renderDiscover(); if (d.addOpen) setTimeout(() => { try { document.getElementById('src-loc').focus(); } catch {} }, 30); return; }
   if (t.closest('[data-src-subscribe]')) { discoverSubscribe(); return; }
   { const sr = t.closest('[data-src-remove]'); if (sr) { discoverRemoveSource(sr.dataset.srcRemove); return; } }
   if (t.closest('[data-src-all]')) { const d = discoverState(); d.filters = []; renderDiscover(); return; }
   { const sf = t.closest('[data-src-filter]'); if (sf) { const d = discoverState(); const id = sf.dataset.srcFilter; const set = new Set(d.filters || []); set.has(id) ? set.delete(id) : set.add(id); d.filters = [...set]; renderDiscover(); return; } }
-  { const sd = t.closest('[data-src-seed]'); if (sd) { const s = DISCOVER_SEEDS[+sd.dataset.srcSeed]; if (s) discoverSubscribeUrl(s.url, s.label); return; } }
+  if (t.closest('[data-src-locate]')) { discoverLocate(); return; }
+  if (t.closest('[data-src-citysearch]')) { const d = discoverState(); const q = (d.cityInput || '').trim(); if (q) discoverSuggest({ q }); else { try { document.getElementById('src-loc').focus(); } catch {} } return; }
+  { const sb = t.closest('[data-sub-url]'); if (sb) { discoverSubscribeUrl(sb.dataset.subUrl, sb.dataset.subLabel); return; } }
   if (t.closest('[data-open-flyer]')) { openFlyerImport(); return; }
   if (t.closest('[data-flyer-close]')) { closeFlyer(); return; }
   if (t.closest('[data-flyer-find]')) { flyerFind(); return; }
@@ -18818,6 +18858,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-flyer-pick]')) { const f = flyerState(); const i = +e.target.dataset.flyerPick; if (f.events && f.events[i]) { f.events[i].pick = e.target.checked; renderFlyerImport(); } return; }
   if (e.target.matches('[data-src-url]')) { discoverState().addUrl = e.target.value; return; }
   if (e.target.matches('[data-src-label]')) { discoverState().addLabel = e.target.value; return; }
+  if (e.target.matches('[data-src-city]')) { discoverState().cityInput = e.target.value; return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }

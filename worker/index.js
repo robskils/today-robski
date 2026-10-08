@@ -14,7 +14,7 @@ import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStat
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
-import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, sourceRangeEvents, sourceDayEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso } from './feeds.js';
+import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, sourceRangeEvents, sourceDayEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso, lookupPlace, suggestFeeds } from './feeds.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -3592,14 +3592,12 @@ async function maybePushMail(env, res) {
     const sender = res.fromByUser && res.fromByUser[uid];
     const subj = (res.subjByUser && res.subjByUser[uid]) || '';
     const single = newUnread === 1 && sender;
-    // A Daybook-origin email (the brief, a login code, a notification) reads
-    // "via Daybook", not "from Daybook" - it came through Daybook, a person
-    // didn't send it. Real senders still read "from <name>". (Robin.)
-    const viaDaybook = single && /daybook/i.test(sender);
+    // Name the sender, and tag it "via Daybook" (it reached you through Daybook,
+    // whoever sent it). So: title = who it's from, body = "via Daybook · subject".
     await pushAll(env, {
       type: 'mail', unread: total,
-      title: single ? (viaDaybook ? 'New email via Daybook' : `New email from ${sender}`) : 'New mail',
-      body: single ? (subj || 'Tap to read it in your inbox') : `${newUnread} new emails in your inbox`,
+      title: single ? sender : `${newUnread} new emails`,
+      body: single ? `via Daybook${subj ? ` · ${subj}` : ''}` : 'via Daybook',
     }, Number(uid)).catch((e) => console.error('maybePushMail', uid, e.message));
   }
 }
@@ -4454,6 +4452,11 @@ export default {
         evs = evs.filter((e) => e.date >= from && e.date <= to).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : ((a.min == null ? 1440 : a.min) - (b.min == null ? 1440 : b.min))));
         const sources = srcs.map((sc) => ({ id: sc.id, label: sc.label || '', color: sc.color || null, url: sc.url, count: ((cache[sc.id] && cache[sc.id].events) || []).length }));
         return json({ available: srcs.length > 0, sources, events: evs.slice(0, 300) }, request);
+      }
+      // Suggest event feeds for a place (typed city or geolocation).
+      if (path === '/api/discover/suggest' && request.method === 'GET') {
+        const place = await lookupPlace({ q: url.searchParams.get('q'), lat: url.searchParams.get('lat'), lng: url.searchParams.get('lng') });
+        return json({ place: place ? place.label : '', suggestions: place ? suggestFeeds(place) : [] }, request);
       }
       // Subscribe to an events source. Validates by fetching it once, then
       // stores the source and its parsed events. Any .ics/webcal link or page.
