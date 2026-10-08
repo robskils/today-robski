@@ -7378,16 +7378,39 @@ function renderArea() {
   // Order (Robin, 2026-09-28): the Wall sits above Files & photos and Links, and
   // those two share a row (half each), stacking on a narrow screen.
   const wallSec = secHidden('Wall') ? '' : `<section class="area-dash-wall" style="--h:${h}"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`;
-  const linksSec = (canEditArea || blockLinks(area).length) ? `<section class="area-dash-links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
-  const filesLinksRow = `<div class="area-dash-fl"><section class="area-dash-files" style="--h:${h}">${areaAttachHtml(area)}</section>${linksSec}</div>`;
+  // Files & photos and Web links only appear once they hold something - adding is
+  // done from the Connections hub below. Each carries an anchor so a populated
+  // Connections card can scroll to it.
+  const attList = (area.props && area.props.attachments) || [];
+  const linkN = blockLinks(area).length;
+  const linksSec = linkN ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
+  const filesSec = attList.length ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
+  const filesLinksRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
   const sharedSec = memberCount ? `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : '';
-  // Connections: the one place to hook anything up to this Page - a note, task,
-  // goal, event, person or link. Whatever you add surfaces above as its own
-  // section. Collapsible, sitting at the very bottom. (Robin's Page revamp.)
+  // Connections hub: a card per type. Populated ones carry a count, are highlighted
+  // and sort to the front, and click through to view their section (which surfaces
+  // above as you add). Empty ones are the add affordance for that type. (Robin.)
   const connOpen = areaSecOpen('Connections');
-  const connTiles = [['note', '▤', 'Note'], ['task', '✓', 'Task'], ...(secHidden('Goals') ? [] : [['goal', '🎯', 'Goal']]), ['event', '◑', 'Event'], ['contact', '👤', 'Contact'], ...(secHidden('Bucket list') ? [] : [['bucket', '✦', 'Bucket-list item']])]
-    .map(([k, ic, l]) => `<button class="conn-tile" data-area-add-${k}><span class="conn-ic">${ic}</span><span class="conn-l">${esc(l)}</span></button>`).join('')
-    + `<button class="conn-tile" data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"><span class="conn-ic">🔗</span><span class="conn-l">Web link</span></button>`;
+  const CONN = [
+    { ic: '▤', l: 'Note', n: notes.length + tables.length, go: 'Notes and tables', add: 'data-area-add-note' },
+    { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', add: 'data-area-add-task' },
+    ...(secHidden('Goals') ? [] : [{ ic: '🎯', l: 'Goal', n: activeGoals.length, go: 'Goals', add: 'data-area-add-goal' }]),
+    { ic: '👤', l: 'Contact', n: contacts.length, go: 'Contacts', add: 'data-area-add-contact' },
+    { ic: '🔗', l: 'Web link', n: linkN, go: 'Web links', add: `data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"` },
+    { ic: '📎', l: 'File', n: attList.filter((a) => !isImgType(a.type)).length, go: 'Files', file: '' },
+    { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' },
+    ...(secHidden('Bucket list') ? [] : [{ ic: '✦', l: 'Bucket-list', n: bucket.length, go: 'Bucket list', add: 'data-area-add-bucket' }]),
+    { ic: '◑', l: 'Event', n: 0, add: 'data-area-add-event' },
+  ];
+  const connCard = (c) => {
+    const has = c.n > 0;
+    const inner = `${has ? `<span class="conn-c">${c.n}</span>` : ''}<span class="conn-ic">${c.ic}</span><span class="conn-l">${esc(c.l)}</span>`;
+    const cls = `conn-tile${has ? ' has' : ''}`;
+    if (has && c.go) return `<button class="${cls}" data-area-goto="${esc(c.go)}" title="View ${esc(c.l.toLowerCase())}">${inner}</button>`;
+    if (c.file !== undefined) return `<label class="${cls}" title="Add a ${esc(c.l.toLowerCase())}"><input type="file" ${c.file ? `accept="${c.file}"` : ''} multiple hidden data-att-input="${area.id}">${inner}</label>`;
+    return `<button class="${cls}" ${c.add} title="Add a ${esc(c.l.toLowerCase())}">${inner}</button>`;
+  };
+  const connTiles = CONN.slice().sort((a, b) => (b.n > 0) - (a.n > 0)).map(connCard).join('');
   const connectSec = area.sharedBy ? '' : `<section class="area-sec area-connect ${connOpen ? '' : 'area-sec-collapsed'}" data-aflow="Connections" style="--h:${h}">
       <div class="area-sec-h"><button class="ash-toggle" data-area-sec="Connections" aria-expanded="${connOpen}" title="${connOpen ? 'Collapse' : 'Expand'}"><span class="acw-chev">${connOpen ? '▾' : '▸'}</span><span class="ash-ic">🔗</span><span class="ash-l">Connections</span></button></div>
       ${connOpen ? `<div class="area-sec-body"><p class="conn-lead">Hook anything up to this Page - it appears above as its own section as you add.</p><div class="conn-grid">${connTiles}</div></div>` : ''}

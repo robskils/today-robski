@@ -7421,6 +7421,12 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .conn-tile:hover { border-color:var(--c); background:var(--card); transform:translateY(-1px); }
 .conn-tile .conn-ic { font-size:23px; line-height:1; }
 .conn-tile .conn-l { font-size:14px; font-weight:600; }
+/* A type with content: highlighted in the Page's colour, a count badge, sorted to
+   the front; clicking it jumps to that section. (Robin.) */
+.conn-tile { position:relative; }
+.conn-tile.has { border-color:var(--c); background:color-mix(in srgb,var(--c) 10%, var(--card)); }
+.conn-tile.has .conn-ic { color:var(--c); }
+.conn-c { position:absolute; top:8px; right:10px; font-size:12.5px; font-weight:700; color:var(--c); line-height:1; }
 /* Vision reads as a pull-quote, not a panel: a quiet hue keyline, generous air. */
 .area-card.area-top-card {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
@@ -7468,13 +7474,12 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .area-recent-h { margin-bottom:9px; }
 .area-rv { flex-direction:row; flex-wrap:wrap; gap:8px; }
 .area-rv-item {
-  --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
-  width:auto; padding:7px 14px; border:1px solid var(--line); border-radius:999px;
-  background:none; box-shadow:none; font-size:14px; gap:8px;
+  width:auto; padding:11px 15px; border:1px solid var(--line); border-radius:12px;
+  background:var(--card); box-shadow:var(--shadow); font-size:15px; gap:10px;
 }
-.area-rv-item:hover { border-color:color-mix(in srgb,var(--c) 45%,var(--line)); color:var(--ink); transform:none; box-shadow:none; background:color-mix(in srgb,var(--c) 6%,transparent); }
+.area-rv-item:hover { border-color:var(--accent); }
+.area-rv-item .area-rv-ic { color:var(--ink-3); }
 .area-rv-item .area-rv-t { max-width:220px; }
-.area-rv-item:hover .area-rv-ic { color:color-mix(in srgb,var(--c) 70%,var(--ink)); }
 /* The dashboard stats + recents no longer need a divider from the hero. */
 .area-dash { margin:18px 0 8px; }
 /* "Add to this area" was a loud filled rectangle fighting the quiet page - make
