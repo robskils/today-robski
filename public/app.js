@@ -1103,14 +1103,18 @@ function areaLinkHtml(areaId) {
 }
 // A consistent breadcrumb bar: Back + Home › … › current, plus a link to the
 // connected page when there is one.
-function crumbNav(trail, areaId, backAttr) {
+function crumbNav(trail, areaId, backAttr, opts = {}) {
   // backAttr lets a caller pin the back arrow to a specific action (e.g. closing a
   // row card back to its table) rather than the generic view-history back, and
   // always shows it. Otherwise the arrow only appears when there's history to pop.
+  // opts.omitCurrent drops the final crumb (the current item's own title, which is
+  // shown as the editable heading below), leaving just its ancestors - all clickable.
+  // So a note/table doesn't repeat its own title in the breadcrumbs. (Robin.)
+  const items = opts.omitCurrent ? trail.slice(0, -1) : trail;
   const back = backAttr ? `<button class="crumb-back" ${backAttr} title="Back">←</button>`
     : (navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : '');
   const sep = '<span class="crumb-sep">›</span>';
-  const t = trail.map((c, i) => (i === trail.length - 1
+  const t = items.map((c, i) => ((i === items.length - 1 && !opts.omitCurrent)
     ? `<span class="crumb cur">${esc(c.label)}</span>`
     : `<button class="crumb" ${c.attr || ''}>${esc(c.label)}</button>`)).join(sep);
   return `<div class="crumbbar">${back}<div class="crumbs">${t}</div>${addNewMenuHtml()}${areaLinkHtml(areaId)}</div>`;
@@ -17169,7 +17173,7 @@ function renderTable() {
         ? `<input class="card-title card-title-ed" data-cell="${r.id}:${titleCol.id}" value="${esc(title)}" placeholder="Untitled" aria-label="${esc(titleCol.name || 'Title')}">`
         : `<h1 class="card-title">${esc(title)}</h1>`;
       const fieldCols = titleEditable ? c.slice(1) : c;
-      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table')}
+      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table', { omitCurrent: true })}
         <div class="card">
         <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col, true)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
@@ -17191,7 +17195,7 @@ function renderTable() {
   const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">page</span>' : col.type === 'currency' ? `<span class="th-type">${esc(curSym(col) || 'currency')}</span>` : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area, null, { omitCurrent: true })}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>
       ${noteTypeToggle(t.id, 'table')}
       ${blockAreasControl('table', t)}
