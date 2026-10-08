@@ -7321,6 +7321,12 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .dz-city:focus { outline:none; }
 .dz-useloc { flex:none; display:inline-flex; align-items:center; gap:6px; align-self:stretch; padding:0 10px 0 13px; border:0; border-left:1px solid var(--line); background:none; color:var(--accent); font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; transition:color .12s; }
 .dz-useloc:hover { color:var(--ink); }
+/* "Also browse" - links out to other listings (RA, Songkick…) for the city. */
+.dz-elsewhere { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); }
+.dz-else-h { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); font-weight:600; margin-bottom:11px; }
+.dz-else-links { display:flex; flex-wrap:wrap; gap:9px; }
+.dz-else { display:inline-flex; align-items:center; gap:6px; padding:9px 15px; border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--ink); font-size:14px; font-weight:600; text-decoration:none; transition:border-color .12s, color .12s; }
+.dz-else:hover { border-color:var(--accent); color:var(--accent); }
 .dz-filters { display:flex; flex-direction:column; gap:9px; margin-bottom:22px; }
 .dz-chips { display:flex; flex-wrap:wrap; gap:8px; }
 .dz-chip { padding:7px 14px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2,var(--ink)); font:inherit; font-size:14px; cursor:pointer; transition:background .12s, border-color .12s, color .12s; }

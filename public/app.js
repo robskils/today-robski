@@ -3089,12 +3089,25 @@ function renderDiscover() {
   else if (d.err) body = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn" data-dz-retry>Try again</button></div>`;
   else if (!d.events.length) body = `<div class="dz-empty"><div class="dz-empty-ic">🌙</div><p>Nothing found for this filter. Try a wider window or another category${loc ? '' : ', or check the city spelling'}.</p></div>`;
   else body = `<div class="dz-grid">${d.events.map(discoverCardHtml).join('')}</div>${d.more ? `<button class="dz-more" data-dz-more ${d.loading ? 'disabled' : ''}>${d.loading ? 'Loading…' : 'Show more'}</button>` : ''}`;
+  // "Also browse" - reliable links out to other listings for the city. RA and most
+  // cultural calendars have no usable public API, so we link rather than scrape.
+  // City = the typed city, else the first event's venue city. (Robin.)
+  const elseCity = (d.city || ((d.events[0] && d.events[0].location) || '').split(',').pop() || '').trim();
+  const gSearch = (query) => `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  const RA_SLUG = { lisbon: 'pt/lisbon', porto: 'pt/porto', london: 'uk/london', manchester: 'uk/manchester', berlin: 'de/berlin', paris: 'fr/paris', madrid: 'es/madrid', barcelona: 'es/barcelona', amsterdam: 'nl/amsterdam', 'new york': 'us/newyork', 'los angeles': 'us/losangeles' };
+  const raSlug = elseCity ? RA_SLUG[elseCity.toLowerCase()] : '';
+  const elseLink = (label, href) => `<a class="dz-else" href="${href}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
+  const raHref = raSlug ? `https://ra.co/events/${raSlug}` : (elseCity ? gSearch('resident advisor ' + elseCity) : 'https://ra.co/events');
+  const skHref = elseCity ? `https://www.songkick.com/search?query=${encodeURIComponent(elseCity)}` : 'https://www.songkick.com';
+  const ebHref = elseCity ? gSearch('eventbrite ' + elseCity + ' events') : 'https://www.eventbrite.com';
+  const elsewhere = `<div class="dz-elsewhere"><span class="dz-else-h">Also browse${elseCity ? ` in ${esc(elseCity)}` : ''}</span><div class="dz-else-links">${elseLink('Resident Advisor', raHref)}${elseLink('Songkick', skHref)}${elseLink('Eventbrite', ebHref)}${elseLink("What's on ↗", gSearch((elseCity || 'events') + ' this week'))}</div></div>`;
   $('#pane').innerHTML = `${pageCrumb(t('nav.discover'))}
     <div class="pane-head home-head"><h1>${t('nav.discover')}</h1></div>
     <p class="dz-lead">What's on${where ? ' ' + where : ' near you'} - tap any that take your fancy straight onto your calendar.${state.me && state.me.id === 1 ? '' : ''}</p>
     <div class="dz-loc"><span class="dz-loc-pin">${loc ? '📍' : '🔎'}</span><input class="sel dz-city" id="dz-city" placeholder="${loc ? 'Using your location — or type a city' : 'Type a city (Lisbon, London, Berlin…)'}" value="${esc(d.city || '')}" data-dz-city autocomplete="off"><button class="dz-useloc" data-dz-useloc title="Use my current location">📍 Locate me</button></div>
     <div class="dz-filters"><div class="dz-chips">${catChips}</div><div class="dz-chips dz-chips-when">${whenChips}</div></div>
-    ${body}`;
+    ${body}
+    ${elsewhere}`;
 }
 async function discoverAdd(id) {
   const d = discoverState(); const e = (d.events || []).find((x) => x.id === id); if (!e || d.added[id]) return;
