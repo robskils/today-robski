@@ -7386,6 +7386,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 @media (min-width:980px){
   .area-flow { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
   /* Wide, list-like sections take the full row; the rest pair up. */
+  .area-flow .area-sec[data-aflow="Notes and tables"],
   .area-flow .area-sec[data-aflow="Tasks"],
   .area-flow .area-sec[data-aflow="Emails"],
   .area-flow .area-sec[data-aflow="Wall"] { grid-column:1 / -1; }
