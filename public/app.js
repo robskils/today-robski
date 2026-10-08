@@ -26,7 +26,7 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><pa
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life areas'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Pages'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -35,26 +35,26 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Disco
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life areas', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Pages', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life areas, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Pages, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life areas', 'home.sec.favs': 'Starred Notes', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Pages', 'home.sec.favs': 'Starred Notes', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
-  'btn.newarea': '+ New area', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
-  'field.area': 'Life area', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
+  'btn.newarea': '+ New Page', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
+  'field.area': 'Page', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All areas', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life area', 'palette.search': 'Search notes, tables, tasks — or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Pages', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Page', 'palette.search': 'Search notes, tables, tasks — or type a command…',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Áreas da vida', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
@@ -672,18 +672,18 @@ const HELP = {
       <li><b>Starred</b> and <b>Recently viewed</b> - one tap back to the notes, tables and areas you keep returning to.</li></ul>
       <p>Drag sections’ tasks to reorder them, and collapse any section you don’t want with the arrow by its title. Choose which sections appear in <b>Settings › Sections</b>.</p>` },
   tasks: { title: 'Tasks', tip: 'A board of everything to do. Filter it your way, sort by any column, and tick things off.',
-    body: `<p>Every task lives here. A task has a title, a priority (P1-P4), an optional life area and an optional due date.</p>
+    body: `<p>Every task lives here. A task has a title, a priority (P1-P4), an optional page and an optional due date.</p>
       <ul><li><b>Add</b> one with <b>+ New</b> or the + by Tasks in the sidebar - it’s usable the instant you type it.</li>
       <li><b>Filter</b> builds your own view: add conditions (priority is P1, area is Work, due this week…) and stack as many as you like.</li>
       <li><b>Sort</b> by clicking a column header.</li>
       <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
       <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
-  notes: { title: 'Notes', tip: 'Free writing with headings and links. Connect notes to one another, and tag them to your life areas.',
+  notes: { title: 'Notes', tip: 'Free writing with headings and links. Connect notes to one another, and tag them to your pages.',
     body: `<p>Notes are for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse long notes), lists and links.</p>
       <ul><li><b>Connected notes</b> - link notes to each other rather than burying one inside another. From any note, start a <b>new connected note</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
-      <li><b>Related notes</b> appear on their own - any note sharing a life area with this one is a tap away, so things find each other.</li>
+      <li><b>Related notes</b> appear on their own - any note sharing a page with this one is a tap away, so things find each other.</li>
       <li><b>Link</b> highlighted text to another note or even a table row, to weave your writing together.</li>
-      <li><b>Life areas</b> - tag a note to one or several areas (the chips up top); it then shows on each of those area pages, in that area's colour.</li>
+      <li><b>Pages</b> - tag a note to one or several areas (the chips up top); it then shows on each of those area pages, in that area's colour.</li>
       <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
       <p>Star a note to pin it to the sidebar; recently opened notes are always a click away there too.</p>` },
   calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
@@ -702,7 +702,7 @@ const HELP = {
       <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent</b> · <b>Important</b> · <b>Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the Inbox queue. When the Inbox count hits zero, you're done.</p>
       <p><b>Filing an email.</b> Open it and use <b>File into ▾</b> to drop it in a bucket, tap the colour dot on any row, or drag a row onto a pot. The moment you file it, it's <b>archived off your inbox</b> - out of your face - while the bucket keeps hold of it, on any account (Gmail or IMAP alike). Change your mind? <b>File into ▾ → Back to Inbox</b> puts it back in the queue.</p>
       <p><b>Working a bucket.</b> Open a pot like Urgent, deal with each email, then <b>Archive</b> it (the archive button in the open email, or on the row) - it's already out of the inbox, so that just clears it from the bucket; it stays safe in your Archive folder. Trashing or moving an email clears its bucket too, so nothing lingers once you've actioned it.</p>
-      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life area</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block).</p>
+      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Page</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block).</p>
       <h4>Which email accounts can I add?</h4>
       <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
       <h4>How to add one</h4>
@@ -720,22 +720,22 @@ const HELP = {
         <li><b>Purelymail &amp; most others</b> - your normal mailbox password (or an app password if the provider uses two-factor).</li>
       </ul>
       <p>Sending, and anything that leaves your account, always waits for you to press the button.</p>` },
-  contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from life areas - and a nudge when it has been too long.',
-    body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a life area.</p>
+  contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from pages - and a nudge when it has been too long.',
+    body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a page.</p>
       <p>Contacts with an email are checked against Daybook, so you can see which of your people are here and connect with them.</p>
       <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
-  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your life areas double as spending categories.',
+  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your pages double as spending categories.',
     body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts, with a way through to each:</p>
       <ul>
       <li><b>Portfolio</b> - live total value, your gain, and how it’s split across holdings.</li>
-      <li><b>Spending</b> - this month’s spend, income and net, with your top categories. Your <b>life areas double as spending categories</b>, so where your money goes lines up with what your life is about. Import a statement (CSV or PDF) and Daybook sorts the transactions; add extra categories for anything that doesn’t fit an area.</li>
+      <li><b>Spending</b> - this month’s spend, income and net, with your top categories. Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is about. Import a statement (CSV or PDF) and Daybook sorts the transactions; add extra categories for anything that doesn’t fit an area.</li>
       <li><b>Advice</b> - market trends and your watchlist, read by Claude.</li>
       </ul>` },
-  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each life area into goals with deadlines, and review your progress weekly to yearly.',
-    body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a life area, set <b>goals</b> under it, and track them.</p>
+  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each page into goals with deadlines, and review your progress weekly to yearly.',
+    body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a page, set <b>goals</b> under it, and track them.</p>
       <ul>
       <li><b>How to track</b> each goal: a <b>number you set</b>, or <b>everything connected</b> to it - tasks ticked off, notes and events - against a target. A simpler goal gets a slider to set how far along it feels.</li>
       <li><b>Deadline</b> - give a goal a finish-by date right on its card. It feeds <b>Deadlines approaching</b> in your reviews, and you can sort goals by due date.</li>
@@ -744,8 +744,8 @@ const HELP = {
       <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
-  areas: { title: 'Life areas', tip: 'The handful of areas your life orbits. Everything - tasks, notes, money, goals - hangs off them.',
-    body: `<p>Life areas are the few domains that matter to you (Work, Health, Family…). They’re the backbone of Daybook: tasks, notes, goals and spending all attach to an area, so any area page gathers everything about that part of your life.</p>
+  areas: { title: 'Pages', tip: 'The handful of areas your life orbits. Everything - tasks, notes, money, goals - hangs off them.',
+    body: `<p>Pages are the few domains that matter to you (Work, Health, Family…). They’re the backbone of Daybook: tasks, notes, goals and spending all attach to an area, so any area page gathers everything about that part of your life.</p>
       <ul><li>Give each area a colour so it reads at a glance across the app.</li>
       <li>An area page shows its starred notes, all its notes and tables, and its open tasks.</li>
       <li>Your <b>practices</b> group by area on the Today page, and a task or practice reads in its area's colour.</li></ul>
@@ -768,9 +768,9 @@ const HELP = {
       <p>One-tap capture (a bookmarklet or an iOS Shortcut) saves a page straight to your list from any browser.</p>` },
   timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, and your practices - the small tools for doing the work.',
     body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
-      <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its life area, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
-      <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a life area and it keeps the same history.</li>
-      <li><b>Practices</b> - the things you do again and again, grouped by life area. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
+      <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
+      <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
+      <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
       <p>(The <b>meditation</b> timer now lives in <b>Well-being</b> as its own page.)</p>` },
   friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and chat.',
     body: `<p>Some of your contacts are on Daybook too, and you can connect with them. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
@@ -778,14 +778,14 @@ const HELP = {
       <li><b>Assign</b> a task to one of them.</li>
       <li>Keep <b>shared meeting notes</b>, chat, and start a call.</li></ul>` },
   today: { title: 'Flow', tip: 'The hub for planning and tracking your day - drag practices and tasks onto a timed day, tick them off, keep your streaks.',
-    body: `<p><b>Flow</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by life area and priority.</p>
+    body: `<p><b>Flow</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by page and priority.</p>
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
       <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
-      <li><b>Click a task</b> to open it and edit its name, priority, life area or length.</li>
-      <li><b>Practices are a palette, not a timetable.</b> They're your options, grouped by life area - the things you could do. Feel like something musical? Open Music, see your choices, and <b>drag</b> one onto the day or just <b>tick</b> what you did.</li>
+      <li><b>Click a task</b> to open it and edit its name, priority, page or length.</li>
+      <li><b>Practices are a palette, not a timetable.</b> They're your options, grouped by page - the things you could do. Feel like something musical? Open Music, see your choices, and <b>drag</b> one onto the day or just <b>tick</b> what you did.</li>
       <li>Got a calendar event that <b>is</b> a practice (a gym class that's your workout)? It shows a one-tap <b>＋ chip</b> to count it - the event then carries the practice's colour and tick, and ticking it feeds the streak. No need to add the practice twice.</li>
       <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
-      <li><b>Practices</b> are the things you do again and again. Add one to set a life area, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
+      <li><b>Practices</b> are the things you do again and again. Add one to set a page, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
     body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Daybook - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
@@ -796,7 +796,7 @@ const HELP = {
       <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Daybook.</li></ul>
       <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which tools show, invites, and everything that manages your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Daybook card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers life areas, mail accounts, spending categories and reminders.</p>` },
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Daybook card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
   'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Daybook card, and two-factor security - all in one place.',
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on.</p>
       <ul><li><b>Your Daybook card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
@@ -814,10 +814,10 @@ const HELP = {
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
   'settings-invites': { title: 'Invites', tip: 'Bring people onto Daybook.',
     body: `<p>Put in someone's email and a note, and Daybook emails them the invitation. They click one link, sign in and their own Daybook is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
-  'settings-manage': { title: 'Manage', tip: 'Life areas, mail accounts, spending categories and reminders.',
-    body: `<p>Each tile opens a small subpage: <b>Life areas</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
+  'settings-manage': { title: 'Manage', tip: 'Pages, mail accounts, spending categories and reminders.',
+    body: `<p>Each tile opens a small subpage: <b>Pages</b> (what Daybook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
   'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
-    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>✨ Add from a flyer</b> button (on your Calendar and the + New menu) reads events from a <b>photo</b> or screenshot, pasted <b>text</b>, or an <b>event link</b> (Eventbrite, Meetup…). Check the ones you want, pick a life area, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
+    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>✨ Add from a flyer</b> button (on your Calendar and the + New menu) reads events from a <b>photo</b> or screenshot, pasted <b>text</b>, or an <b>event link</b> (Eventbrite, Meetup…). Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
 // Cards and sub-pages fold into their tool's guide.
 function helpKey(v) {
@@ -942,7 +942,7 @@ function condShort(c) {
   return String(val || f.label);
 }
 // The tab title for a Tasks view reflects its filter, so two Tasks tabs (P1 vs a
-// life area) read differently in the strip instead of both saying "Tasks".
+// page) read differently in the strip instead of both saying "Tasks".
 function taskTabLabel(v) {
   const f = (v && v.filters) || [];
   if (!f.length) return 'Tasks';
@@ -1099,10 +1099,10 @@ function installBackTrap() {
 function areaLinkHtml(areaId) {
   if (!areaId) return '';
   const a = areaById(areaId); if (!a) return '';
-  return `<button class="crumb-area" data-open-area="${a.id}" title="Go to the ${esc(a.title)} life area"><span class="ca-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title)}</button>`;
+  return `<button class="crumb-area" data-open-area="${a.id}" title="Go to the ${esc(a.title)} page"><span class="ca-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title)}</button>`;
 }
 // A consistent breadcrumb bar: Back + Home › … › current, plus a link to the
-// connected life area when there is one.
+// connected page when there is one.
 function crumbNav(trail, areaId, backAttr) {
   // backAttr lets a caller pin the back arrow to a specific action (e.g. closing a
   // row card back to its table) rather than the generic view-history back, and
@@ -1329,13 +1329,13 @@ function navSection(key, v) {
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
     }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Daybook</button>');
   } else {
-    title = 'Life areas'; add = '<button class="nav-add" data-new-area title="New life area">+</button>';
+    title = 'Pages'; add = '<button class="nav-add" data-new-area title="New page">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
     // so the sidebar reads at a glance like the rest of the app.
     rows = state.areas.map((a) => {
       const on = v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id;
       return `<button class="nav-sub has-area${on ? ' on' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="i">◈</span><span class="t">${esc(a.title || 'Untitled')}</span></button>`;
-    }).join('') || '<div class="nav-sub muted">No life areas yet</div>';
+    }).join('') || '<div class="nav-sub muted">No pages yet</div>';
   }
   return `<div class="nav-sec" data-nav-sec="${key}">
     <div class="nav-sec-h" draggable="true" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">
@@ -1959,10 +1959,10 @@ function renderAdmin() {
       <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
     </div>
     <div class="set-card" style="margin-top:14px">
-      <div class="set-row-t">Default life areas</div>
+      <div class="set-row-t">Default pages</div>
       <p class="home-empty" style="margin:6px 0 14px">Every new account starts with these. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
-      <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no life areas.</span>'}</div>
-      <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a life area…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
+      <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no pages.</span>'}</div>
+      <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a page…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
     </div>`;
 
   const quotesPane = `<div class="set-card">
@@ -2365,7 +2365,7 @@ function renderShare() {
         <p class="onb-muted">Invite someone, then you can share this with them - and anything else you like.</p>
         <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
       </div>`);
-  const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'life area' : 'note';
+  const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'page' : 'note';
   el.innerHTML = `<div class="chat-bg" data-share-close></div><div class="chat-panel share-panel">
     <div class="chat-head"><span class="chat-title">Share this ${kindLabel}</span><button class="chat-x" data-share-close title="Close">×</button></div>
     <div class="share-note">People you share with can open and edit it. Switch anyone to view-only, or stop sharing anytime.</div>
@@ -2492,7 +2492,7 @@ const MOBILE_SECTIONS = [
   ['focus', 'home-sec-focus', 'Starred Goals'],
   ['notepad', 'home-sec-notepad', 'Notepad'],
   ['favs', 'home-sec-favs', 'Starred Notes'],
-  ['favareas', 'home-sec-favareas', 'Life areas'],
+  ['favareas', 'home-sec-favareas', 'Pages'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
   ['people', 'home-sec-people', 'People online'],
   ['toolbox', 'home-toolbox', 'Toolbox'],
@@ -2540,10 +2540,10 @@ function renderSettings() {
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
     `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
   state.settings = state.settings || {};
-  // The management tiles (Life areas, Mail accounts, ...) each open a small
+  // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Life areas', 'What your Daybook orbits', 'data-open-areas=""'],
+    ['◈', 'Pages', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -2757,7 +2757,7 @@ function renderSettings() {
 // family of importers (tasks CSV, calendar .ics, bookmarks next).
 function importState() { if (!state.import) state.import = { kind: 'notes', area: '', parsed: [], running: false, done: 0, err: '' }; return state.import; }
 function importAreaOpts(imp) {
-  return `<option value="">${imp.area ? 'No life area' : 'No life area (filed loose)'}</option>`
+  return `<option value="">${imp.area ? 'No page' : 'No page (filed loose)'}</option>`
     + (state.areas || []).map((a) => `<option value="${a.id}" ${imp.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
 }
 function importPane() {
@@ -2786,7 +2786,7 @@ function importNotesPaneHtml(imp) {
   return `
       <p class="imp-lead">Moving in from Obsidian, Bear, Apple Notes, Notion or anywhere else? Export your notes as <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>) and bring them straight in. Each file becomes its own note, headings and formatting kept.</p>
       <div class="imp-field">
-        <label class="imp-label" for="imp-area">File them into a life area</label>
+        <label class="imp-label" for="imp-area">File them into a page</label>
         <select class="sel imp-area" id="imp-area" data-import-area>${importAreaOpts(imp)}</select>
       </div>
       <div class="imp-field">
@@ -2916,7 +2916,7 @@ function openFlyerImport() {
 }
 function closeFlyer() { const el = document.getElementById('flyer'); if (el) el.remove(); }
 function flyerAreaOpts(f) {
-  return `<option value="">No life area</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  return `<option value="">No page</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
 }
 function flyerEvRowHtml(e, i) {
   const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
@@ -3267,7 +3267,7 @@ function mobileNavOrder() {
   saved = Array.isArray(saved) ? saved.filter((k) => MNAV_DEFAULT.includes(k)) : [];
   // Slot any default item missing from a saved order into its NATURAL place (just
   // after the previous default item that's present), rather than dumping newer
-  // tools at the very bottom - so e.g. Contacts sits right under Life areas.
+  // tools at the very bottom - so e.g. Contacts sits right under Pages.
   const order = [...saved];
   MNAV_DEFAULT.forEach((k, i) => {
     if (order.includes(k)) return;
@@ -3803,7 +3803,7 @@ async function loadWeather() {
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
 const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
-const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life areas' };
+const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Pages' };
 
 async function openHome() {
   const gen = bumpNav();
@@ -3913,7 +3913,7 @@ async function homeDaySet(off) {
 // updates just the digits each second.
 const POMO_MIN = { focus: 25, break: 5 };
 let pomo = (() => { try { const p = JSON.parse(localStorage.getItem('life.pomo')); if (p && p.mode) return p; } catch {} return { mode: 'focus', running: false, endAt: null, remaining: POMO_MIN.focus * 60, target: null }; })();
-// What you're focusing on: pick a type (Life area / Goal / Task), then the item.
+// What you're focusing on: pick a type (Page / Goal / Task), then the item.
 // Tasks lazy-load when you first pick that type (they're not on Home otherwise).
 function pomoTargetOptions(type) {
   const t = pomo.target || {};
@@ -4021,7 +4021,7 @@ function pomoHtml() {
       </div>
       <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
         <div class="pomo-cats">
-          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life areas</button>
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Pages</button>
           <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
           <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
         </div>
@@ -4048,7 +4048,7 @@ function pomoPanel() {
       </div>
       <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
         <div class="pomo-cats">
-          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life areas</button>
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Pages</button>
           <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
           <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
         </div>
@@ -4124,11 +4124,11 @@ function timerChime() {
 }
 function timerPanel() {
   const r = timerRemaining();
-  const areaOpts = `<option value="">No life area</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
+  const areaOpts = `<option value="">No page</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
   return `<div class="tbx-cols"><div class="tbx-main"><div class="tmr ${timerState.running ? 'running' : ''}">
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
-      <label class="tmr-area-l"><span>Life area</span><select class="sel" data-timer-area>${areaOpts}</select></label>
+      <label class="tmr-area-l"><span>Page</span><select class="sel" data-timer-area>${areaOpts}</select></label>
       <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
       <div class="tmr-custom"><span class="tmr-custom-l">Custom</span><input class="sel tmr-cnum" id="timer-min" type="number" min="0" max="1440" inputmode="numeric" value="${Math.floor(timerState.dur / 60)}" title="Minutes"><span class="tmr-colon">:</span><input class="sel tmr-cnum" id="timer-sec" type="number" min="0" max="59" inputmode="numeric" value="${String(timerState.dur % 60).padStart(2, '0')}" title="Seconds"><button class="ghost tmr-set" data-timer-custom>Set</button></div>
       <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
@@ -4325,9 +4325,9 @@ async function loadPractices(force) {
 }
 // ── practice scheduling helpers (Today redesign) ──────────────────────
 const prcHHMM = (m) => (m == null || m === '') ? '' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-// A practice's life area (by its stored area id), or null.
+// A practice's page (by its stored area id), or null.
 const practiceArea = (a) => a && a.area ? (state.areas || []).find((x) => x.id === a.area) : null;
-// ── cadence + tracking (per practice AND per life area) ───────────────
+// ── cadence + tracking (per practice AND per page) ───────────────
 // The one cadence list, shared by the area check-in and each practice's aim.
 const PRESET_CADS = [['1d', 'every day'], ['2d', 'every other day'], ['3d', 'every 3 days'], ['2w', 'twice a week'], ['1w', 'once a week'], ['14d', 'every 2 weeks']];
 const parseCadence = (c) => { const m = String(c || '').match(/^(\d+)([dw])$/); return m ? { n: Number(m[1]), unit: m[2], raw: c } : null; };
@@ -4340,7 +4340,7 @@ function prcMarkedDays(id) {
   for (const k in state.practices.marks) if (k.indexOf(pre) === 0 && state.practices.marks[k]) out.push(k.slice(pre.length));
   return out.sort().reverse();
 }
-// A life area counts as "kept alive" on any day ANY of its tracked practices was
+// A page counts as "kept alive" on any day ANY of its tracked practices was
 // ticked - so the union of its practices' marked days.
 function areaMarkedDays(areaId) {
   const set = new Set();
@@ -4368,7 +4368,7 @@ function cadenceStatus(daysDesc, cadence) {
   const status = weekCount >= cad.n ? 'ontrack' : (weekCount > 0 ? 'building' : 'slipping');
   return { status, label: `${weekCount} of ${cad.n} this week`, streak: weekCount };
 }
-// A life area's check-in status, said forwards: are you on track, and how many
+// A page's check-in status, said forwards: are you on track, and how many
 // days until you should do something in it next? ("3 days to do something", not
 // "3d ago"). daysDesc is the union of the area's practice ticks, newest first.
 function areaCheckin(daysDesc, cadence) {
@@ -4419,7 +4419,7 @@ function renderPractices() {
     <div class="pane-head home-head"><h1>${t('title.practices')}</h1>
       <div class="prac-head-act"><button class="ghost prac-track-link" data-open-tracker title="Open the Tracker to tick off practices and see your streaks">✓ Go to the Tracker →</button><button class="add-btn wide prac-new-top" data-prc-new>＋ New practice</button></div></div>
     <p class="t2-sub">Activities you want to repeat</p>
-    <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by life area. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it on the <b>Tracker</b>.</p>
+    <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by page. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it on the <b>Tracker</b>.</p>
     ${practicesManageHtml()}`;
 }
 // The Practices page as clean area cards (matching the Tracker). Each row opens
@@ -4565,7 +4565,7 @@ async function undoPracticeDelete(snap, keptDays) {
     toast('Restored');
   } catch (e) { toast(e.message); }
 }
-// Practices grouped by LIFE AREA (falling back to the legacy lane label for any
+// Practices grouped by Page (falling back to the legacy lane label for any
 // not yet filed under an area). withWeek adds the 7-day dot row + streak (Home);
 // the management list (withWeek=false) adds a schedule summary + an edit button.
 function practicesGroups(withWeek) {
@@ -4630,7 +4630,7 @@ function practiceEditorHtml() {
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <div class="pe-two">
-            <label class="pe-f pe-inline"><span>Life area</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+            <label class="pe-f pe-inline"><span>Page</span><select class="sel" id="pe-area"><option value="">No area</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
             <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           </div>
         </section>
@@ -4980,13 +4980,13 @@ function renderHome() {
   const ev = (state.home.events || []).slice().sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || (a.start_min ?? 0) - (b.start_min ?? 0));
   const todayItems = homeTodayItems();
   // Compact cards. Tasks stay their own group; notes and tables share one list,
-  // each with its own icon so you can tell them apart. Life areas are omitted -
+  // each with its own icon so you can tell them apart. Pages are omitted -
   // faved areas have their own section at the top of Home.
   const favIc = (k) => (k === 'note' ? NOTE_ICO : (KIND_IC[k] || '•'));
-  // A starred note/table tagged to a life area gets a left edge in that area's
+  // A starred note/table tagged to a page gets a left edge in that area's
   // colour, the same at-a-glance sorting the Priority Task cards carry.
   // One starred item per line (icon + title), like the Do-next rows. A note/table
-  // tagged to a life area gets a left edge in that area's colour.
+  // tagged to a page gets a left edge in that area's colour.
   const favLine = (f) => { const a = areaById(blockAreas(f)[0]); return `<div class="fav-line${a ? ' has-area' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} draggable="true" data-fav-id="${f.id}"><button class="fav-line-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-line-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`; };
   // Starred, most-recent first, one per line, capped at 12 with a "see more".
   const favListHtml = () => { if (!favs.length) return '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'; const shown = favs.slice(0, 12); return `<div class="fav-lines">${shown.map(favLine).join('')}</div><button class="p1-all" data-open-notes>${favs.length > 12 ? `See all ${favs.length} starred` : 'See all notes'} →</button>`; };
@@ -5015,7 +5015,7 @@ function renderHome() {
       <button class="ev-x" data-home-task-dismiss="${t.id}" title="Remove from Today (keeps the task; doesn't complete it)" aria-label="Remove from Today">×</button></div>`;
   }).join('');
   // Recently viewed hides the noise: an item with no real title (an empty card),
-  // a life area that's since been deleted, or a task that's been ticked off.
+  // a page that's since been deleted, or a task that's been ticked off.
   const recentLiveTitle = (r) => {
     if (r.kind === 'area') { const a = areaById(r.id); return a ? (a.title || '') : (r.title || ''); }
     const b = (state.favs || []).find((x) => x.id === r.id) || (state.tables || []).find((x) => x.id === r.id) || (state.noteTops || []).find((x) => x.id === r.id) || (state.allTasks || []).find((x) => String(x.id) === String(r.id));
@@ -5029,7 +5029,7 @@ function renderHome() {
     return false;
   };
   const recents = recentItems().filter((r) => r && RECENT_KINDS.has(r.kind) && !recentDead(r));
-  // Tint each icon in its life area's colour (an area item is its own area);
+  // Tint each icon in its page's colour (an area item is its own area);
   // with no area it falls back to the accent (terracotta by default) via CSS.
   const recentHue = (r) => {
     let aid = r.kind === 'area' ? r.id : r.area;
@@ -5079,7 +5079,7 @@ function renderHome() {
       <div id="qt-wrap"></div>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
-          // The Life areas tile lists ALL areas, starred first, then by a chosen
+          // The Pages tile lists ALL areas, starred first, then by a chosen
           // sort (name or recently viewed). The sort choice is remembered.
           const homeAreaSort = (() => { try { return localStorage.getItem('life.home.areaSort') || 'az'; } catch { return 'az'; } })();
           const areaRecentRank = {}; recentItems().forEach((r, i) => { if (r && r.kind === 'area' && areaRecentRank[r.id] === undefined) areaRecentRank[r.id] = i; });
@@ -5117,7 +5117,7 @@ function renderHome() {
             today: `${off === 0 ? homeMailAlertHtml() + homeReviewDueBanner() + homeDeadlinesHtml() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
-            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No life areas yet. Create one from Life areas.</div>',
+            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No pages yet. Create one from Pages.</div>',
             tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
             favs: favListHtml(),
@@ -5126,7 +5126,7 @@ function renderHome() {
             today: { ic: '☀', label: homeDayLabel(off), count: null, nav: dayNav },
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
-            favareas: { ic: '◈', label: 'Life areas', count: sortedAreas.length || null },
+            favareas: { ic: '◈', label: 'Pages', count: sortedAreas.length || null },
             tracker: { ic: '📊', label: 'Tracker', count: null },
             mail: { ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
@@ -5139,7 +5139,7 @@ function renderHome() {
             { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
-            { k: 'favareas', ic: '◈', label: 'Life areas', count: sortedAreas.length, on: modOn('areas') },
+            { k: 'favareas', ic: '◈', label: 'Pages', count: sortedAreas.length, on: modOn('areas') },
             { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
@@ -5216,7 +5216,7 @@ function openNotesList() {
   state.noteMenu = null;
   renderNav();
   renderNotesList();
-  // Areas power the right-click "file under life areas" menu and the area filter.
+  // Areas power the right-click "file under pages" menu and the area filter.
   if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'notes') renderNotesList(); } }).catch(() => {});
 }
 const NOTE_SORTS = [['added-desc', t('notes.sort.newest')], ['updated-desc', t('notes.sort.recent')], ['added-asc', t('notes.sort.oldest')], ['az', t('notes.sort.az')], ['za', t('notes.sort.za')], ['area', t('notes.sort.area')]];
@@ -5249,7 +5249,7 @@ function notesAreaMode() { return state.notesArea || (state.notesArea = ''); }
 function notesControlsHtml(full) {
   const type = notesTypeMode(); const mode = notesSortMode(); const fArea = notesAreaMode();
   const typeChips = `<div class="note-type-chips">${NOTE_TYPES.map(([v, l]) => `<button class="ntype ${type === v ? 'on' : ''}" data-notes-type="${v}">${l}</button>`).join('')}</div>`;
-  const areaSel = `<select class="sel notes-area" data-notes-area title="Filter by life area"><option value="">${t('filter.allareas')}</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
+  const areaSel = `<select class="sel notes-area" data-notes-area title="Filter by page"><option value="">${t('filter.allareas')}</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
   const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   const makeBtns = full ? `<button class="add-btn wide notes-new" data-new-note>${t('notes.newnote')}</button><button class="add-btn wide notes-new-table" data-new-table>${t('btn.newtable')}</button>` : '';
   // The make buttons ride inline on desktop (right of the search bar), but on
@@ -5262,7 +5262,7 @@ function notesControlsHtml(full) {
 }
 function noteCard(n) {
   const t = isTableNote(n);
-  // Life area as a slim, colour-coded subtitle bar ABOVE the name (never a pill
+  // Page as a slim, colour-coded subtitle bar ABOVE the name (never a pill
   // that eats half the card). Colour = the area; text = its name, so you get both.
   const areas = blockAreas(n).map((id) => areaById(id)).filter(Boolean);
   const a0 = areas[0];
@@ -5324,15 +5324,15 @@ function renderNotesList() {
   const cards = (list) => list.map(noteCard).join('');
   const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
   const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this area')}` : '';
-  // In "Life area" order (unfiltered), split into a section per area.
+  // In "Page" order (unfiltered), split into a section per area.
   let listHtml;
   if (mode === 'area' && !q) {
     const groups = new Map();
     // A note in several areas shows under each of them; one with none groups
-    // under "No life area".
+    // under "No page".
     for (const n of all) { const ks = blockAreas(n); (ks.length ? ks : ['']).forEach((k) => { if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }); }
     const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
-    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life area') : 'No life area'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
+    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Page') : 'No page'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
   } else {
     listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun}${areaLbl} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
   }
@@ -5349,7 +5349,7 @@ function renderNotesList() {
   // Measure the sticky breadcrumb so the toolbar pins just beneath it.
   requestAnimationFrame(() => { try { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--notes-crumbh', cb.offsetHeight + 'px'); } catch {} });
 }
-// Right-click a note (or table) in the list to file it into life areas - the same
+// Right-click a note (or table) in the list to file it into pages - the same
 // checkbox menu as contacts. Left-click still opens; this is the quick filer.
 function openNoteMenu(id, x, y) {
   const vh = window.innerHeight;
@@ -5369,8 +5369,8 @@ function noteMenuHtml() {
     <div class="ctx-h">${esc(n.title || 'Untitled')}</div>
     <button class="ctx-item" data-open-${isT ? 'table' : 'note'}="${n.id}">Open</button>
     <div class="ctx-sep"></div>
-    <div class="ctx-lbl">File under life areas</div>
-    ${allAreas.length ? allAreas.map(row).join('') : '<div class="ctx-empty">Create a life area first, then file notes into it.</div>'}
+    <div class="ctx-lbl">File under pages</div>
+    ${allAreas.length ? allAreas.map(row).join('') : '<div class="ctx-empty">Create a page first, then file notes into it.</div>'}
   </div></div>`;
 }
 function noteToggleArea(areaId) {
@@ -6614,7 +6614,7 @@ function renderReadwatch() {
   const rw = state.rw || { items: [] };
   const items = rw.items || [];
   const sort = rw.sort || 'added-desc';
-  // Life areas power the per-item area picker + colour; pull them in once if this
+  // Pages power the per-item area picker + colour; pull them in once if this
   // is a cold open straight onto Read & Watch.
   if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'readwatch') renderReadwatch(); } }).catch(() => {});
   // Type filter (All / Films / Books / Articles / Videos / Websites), so this can
@@ -6649,7 +6649,7 @@ function renderReadwatch() {
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Life area</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
           <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
@@ -6802,7 +6802,7 @@ async function rwSetNote(id, note) {
 }
 // Re-render whichever Read & Watch surface is showing (the list, or one item's card).
 function rwRerender() { if (state.view && state.view.type === 'bookmarkcard') renderBookmarkCard(); else if (state.view && state.view.type === 'readwatch') renderReadwatch(); }
-// The detail card for one saved item: cover, life area, big star rating, notes.
+// The detail card for one saved item: cover, page, big star rating, notes.
 function openBookmarkCard(id) {
   if (!state.rw || !state.rw.items) { return openReadwatch().then(() => { state.rw_open = { id }; state.view = { type: 'bookmarkcard', id }; renderNav(); renderBookmarkCard(); }); }
   state.rw_open = { id }; state.view = { type: 'bookmarkcard', id }; renderNav(); renderBookmarkCard(); return Promise.resolve();
@@ -6830,7 +6830,7 @@ function renderBookmarkCard() {
         ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
-        <label class="rwc-row"><span class="rwc-lbl">Life area</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No area</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
         ${openTop ? '' : openBtn}
@@ -6839,22 +6839,22 @@ function renderBookmarkCard() {
     </div>`;
 }
 
-// ── view: life areas ─────────────────────────────────
-// A small coloured tag showing a block's life area, if it has one.
+// ── view: pages ─────────────────────────────────
+// A small coloured tag showing a block's page, if it has one.
 function areaTag(b) {
   const tags = blockAreas(b).map((id) => areaById(id)).filter(Boolean)
     .map((a) => `<span class="area-tag" style="--h:${hueOf(a)}"><span class="cd"></span>${esc(a.title)}</span>`).join('');
   return tags ? `<span class="area-tags">${tags}</span>` : '';
 }
-// A picker to set a block's life area, used on note and table pages.
+// A picker to set a block's page, used on note and table pages.
 function areaSelect(cur, attr) {
-  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Life area</option>${
+  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Page</option>${
     state.areas.map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}</option>`).join('')
   }</select></span>`;
 }
-// A note can sit in several life areas. Each shows as a removable chip that also
+// A note can sit in several pages. Each shows as a removable chip that also
 // links to its area; the dropdown lists the areas it isn't in yet, so picking one
-// adds it. With none chosen it's just the familiar "+ Life area" control.
+// adds it. With none chosen it's just the familiar "+ Page" control.
 function noteAreasControl(n) { return blockAreasControl('note', n); }
 // Open-task count for an area, straight from the loaded task list (always there on
 // this page) - the headline metric on each area card.
@@ -6879,7 +6879,7 @@ function areaActivity(last) {
   if (d < 31) return { cls: 'mild', label: 'This month' };
   return { cls: 'quiet', label: `Quiet · ${Math.max(1, Math.round(d / 7))}w` };
 }
-// The Life areas page: a colourful, sortable board of area cards - each a monogram
+// The Pages page: a colourful, sortable board of area cards - each a monogram
 // in the area's colour, its vision, an "how active" indicator, and live counts
 // (open tasks, goals, notes, people). Clicks through to the area's dashboard.
 function renderAreasList() {
@@ -6931,8 +6931,8 @@ function renderAreasList() {
     <p class="t2-sub" style="font-style:normal">The few domains your life orbits. Open one for its whole dashboard.</p>
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All areas'} · ${ordered.length}</div>
-      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No areas shared yet.' : 'No life areas yet.'}</div>`}</div></section>`;
+    <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All Pages'} · ${ordered.length}</div>
+      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No areas shared yet.' : 'No pages yet.'}</div>`}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -6946,7 +6946,7 @@ async function openArea(id) {
     state.friends ? Promise.resolve() : api('/api/friends').then((f) => { state.friends = f; }).catch(() => {}),
   ]).then(([shares]) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.shares = shares; if (state.view.type === 'area') renderArea(); } });
 }
-// Contacts associated with a life area - the people tied to it (a vet, a landlord,
+// Contacts associated with a page - the people tied to it (a vet, a landlord,
 // a coach). It's just the ordinary contact→area link (props.areas), so no sharing or
 // access is implied; adding here files the contact under this area, and it shows on
 // the contact too. A picker adds; the × removes it from this area only.
@@ -6955,7 +6955,7 @@ function areaContactsPanel(area, contacts) {
   const q = ((state.area_open && state.area_open.contactQuery) || '').trim().toLowerCase();
   const inIds = new Set(contacts.map((c) => c.id));
   const results = q ? (state.contacts || []).filter((c) => !inIds.has(c.id) && ((c.title || '').toLowerCase().includes(q) || ((c.props && c.props.email) || '').toLowerCase().includes(q))).slice(0, 8) : [];
-  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this life area" aria-label="Remove from this life area">×</button></div>`).join('');
+  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this page" aria-label="Remove from this page">×</button></div>`).join('');
   return `<div class="area-contacts">
     ${contacts.length ? `<div class="contact-grid">${cards}</div>` : '<div class="home-empty">No contacts here yet - add the people tied to this area (a vet, a landlord, a coach…).</div>'}
     <div class="area-contact-add">
@@ -6971,7 +6971,7 @@ function addContactToArea(contactId) {
   const cur = blockAreas(c); if (cur.includes(area.id)) return;
   setBlockAreas('contact', contactId, [...cur, area.id]);
   if (state.area_open.blocks && !state.area_open.blocks.some((b) => b.id === contactId)) state.area_open.blocks.push(c);
-  state.area_open.contactQuery = ''; renderArea(); toast('Added to this life area');
+  state.area_open.contactQuery = ''; renderArea(); toast('Added to this page');
 }
 function removeContactFromArea(contactId) {
   const area = state.area_open && state.area_open.area; if (!area) return;
@@ -7077,7 +7077,7 @@ function areaWheelPanel(area) {
   </div>`;
 }
 const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') === '1'; } catch { return false; } };
-// Collapsible section headers on a life area page (open by default; collapse
+// Collapsible section headers on a page page (open by default; collapse
 // remembered per section label across areas).
 // Sections that start collapsed on a life-area overview (Vision is a quiet
 // backdrop, not the first thing you want to scroll past every visit).
@@ -7189,7 +7189,7 @@ function timeAgo(t) {
   const mo = Math.floor(d / 30); if (mo < 12) return mo + 'mo ago';
   return Math.floor(d / 365) + 'y ago';
 }
-// A "keep private" toggle for a block filed in a life area. When the area is
+// A "keep private" toggle for a block filed in a page. When the area is
 // shared, private items stay yours - members never see them, though they're still
 // filed here. Owner-only (a borrowed block can't be hidden by the borrower).
 function privateToggleHtml(kind, block) {
@@ -7197,21 +7197,21 @@ function privateToggleHtml(kind, block) {
   return `<label class="tf-toggle pv-toggle ${on ? 'on' : ''}"><input type="checkbox" data-block-private="${kind}:${block.id}" ${on ? 'checked' : ''}><span class="pv-lbl">${on ? '🔒' : '🔓'} Keep this private<small class="tf-hint">Only you can see it - hidden from anyone you share with</small></span></label>`;
 }
 // "Who can see this": a white box with a face per person who has access (you,
-// plus anyone via a direct share or a shared life area), a Share/Manage button,
+// plus anyone via a direct share or a shared page), a Share/Manage button,
 // and a private switch. Replaces the bare "Keep this private" toggle.
 function blockVisibilityHtml(kind, block, viewers) {
   const priv = !!(block.props && block.props.private);
   // Notes/tasks/tables/areas can be shared with a person directly; goals (and the
-  // like) get their audience only from the life area they're filed under.
+  // like) get their audience only from the page they're filed under.
   const shareable = kind === 'task' || kind === 'note' || kind === 'table' || kind === 'area';
   const meInit = esc(initial(firstName() || 'You'));
   const list = priv ? [] : (viewers || []);
-  const faces = list.slice(0, 14).map((v) => `<span class="tf-face" title="${esc(v.name)}${v.via === 'area' ? ' - via a shared life area' : ''}">${esc(initial(v.name || '?'))}</span>`).join('');
+  const faces = list.slice(0, 14).map((v) => `<span class="tf-face" title="${esc(v.name)}${v.via === 'area' ? ' - via a shared page' : ''}">${esc(initial(v.name || '?'))}</span>`).join('');
   const shareBtnInline = shareable ? `<button class="tf-vis-share" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}">${list.length ? 'Manage' : '＋ Share'}</button>` : '';
   let note;
-  if (priv) note = 'Private - only you can see this, even inside a shared life area.';
-  else if (!list.length) note = shareable ? "Only you can see this. Share it, or file it under a life area you've shared." : "Only you can see this. File it under a life area you've shared for others to see it.";
-  else { const n = list.length; const viaArea = list.some((v) => v.via === 'area'); note = `${n} ${n === 1 ? 'person' : 'people'} can see this${viaArea ? (shareable ? ' - through its life area and any direct shares' : ' - through its life area') : ''}.`; }
+  if (priv) note = 'Private - only you can see this, even inside a shared page.';
+  else if (!list.length) note = shareable ? "Only you can see this. Share it, or file it under a page you've shared." : "Only you can see this. File it under a page you've shared for others to see it.";
+  else { const n = list.length; const viaArea = list.some((v) => v.via === 'area'); note = `${n} ${n === 1 ? 'person' : 'people'} can see this${viaArea ? (shareable ? ' - through its page and any direct shares' : ' - through its page') : ''}.`; }
   const open = tfCardOpen('visible');
   const body = `<div class="tfs-cardbody">
     <div class="tf-vis-row">
@@ -7244,7 +7244,7 @@ async function setBlockNoSearch(kind, id, on) {
   try { await api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: { noSearch: on } }) }); toast(on ? '🙈 Hidden from search' : 'Back in search'); }
   catch (e) { toast(e.message); }
 }
-// A life area's sentiment, carried over from the last Wheel of Life score it was
+// A page's sentiment, carried over from the last Wheel of Life score it was
 // given in a review (area.props.wheelScore/wheelAt, denormalised by setWheel).
 const AREA_SENTIMENT = ['', 'Struggling', 'Finding its feet', 'Okay', 'Good', 'Thriving'];
 function areaSentimentHtml(area) {
@@ -7429,9 +7429,9 @@ function renderArea() {
       ${rvAreaHtml ? `<div class="area-recent"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></div>` : ''}
     </div>` : '';
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Life areas', attr: 'data-open-areas' }, { label: area.title }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Pages', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-hero" style="--h:${h}">
-      <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life area" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
+      <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Page" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
       <p class="area-meta">${(() => { const nt = notes.length + tables.length; const txt = `${nt} note${nt === 1 ? '' : 's'} &amp; table${nt === 1 ? '' : 's'}`; return (nt && !secHidden('Notes and tables')) ? `<button class="area-meta-link" data-area-goto="Notes and tables">${txt}</button>` : txt; })()} · ${(() => { const txt = `${openTs.length} open task${openTs.length === 1 ? '' : 's'}`; return secHidden('Tasks') ? txt : `<button class="area-meta-link" data-area-goto="Tasks">${txt}</button>`; })()}${activeGoals.length ? ` · ${activeGoals.length} goal${activeGoals.length === 1 ? '' : 's'}` : ''}${doneN ? ` · <span class="am-done">✓ ${doneN} done</span>` : ''}${(() => { const m = focusMinsFor('area', area.id); return m ? ` · 🍅 ${fmtMins(m)} focused` : ''; })()}</p>
       ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
       ${areaSentimentHtml(area)}
@@ -7524,7 +7524,7 @@ function areaOverviewHtml(area, c, blocks) {
     </div>
   </section>`;
 }
-// Members of a life area: the people it's shared with, as a horizontal row of
+// Members of a page: the people it's shared with, as a horizontal row of
 // cards under Goals. Tap one to message them. "+N more" expands the full list.
 function areaMembersHtml(area) {
   const shares = state.area_open && state.area_open.shares;
@@ -7587,10 +7587,10 @@ async function setBlockArea(kind, id, areaId) {
     if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
     if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
     if (kind === 'contact') { bump(state.contact_open && state.contact_open.contact); bump((state.contacts || []).find((x) => x.id === id)); }
-    toast(areaId ? 'Life area set' : 'Life area cleared');
+    toast(areaId ? 'Page set' : 'Page cleared');
   } catch (e) { toast(e.message); }
 }
-// Set a note's full list of life areas. props.area mirrors the first so any
+// Set a note's full list of pages. props.area mirrors the first so any
 // single-area reader (and older code) still works. Updates the in-memory copies
 // and re-renders before the save so the chips feel instant.
 async function setNoteAreas(id, ids) {
@@ -7601,10 +7601,10 @@ async function setNoteAreas(id, ids) {
   if (state.note && state.note.current && state.note.current.id === id) renderNote();
   try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props }) }); } catch (e) { toast(e.message); }
 }
-function addNoteArea(id, areaId) { if (!areaId) return; const cur = blockAreas(state.note && state.note.current); setNoteAreas(id, [...cur, areaId]); toast('Added to life area'); }
+function addNoteArea(id, areaId) { if (!areaId) return; const cur = blockAreas(state.note && state.note.current); setNoteAreas(id, [...cur, areaId]); toast('Added to page'); }
 function removeNoteArea(id, areaId) { const cur = blockAreas(state.note && state.note.current); setNoteAreas(id, cur.filter((x) => x !== areaId)); }
-// ── Life areas on any block ──────────────────────────────────────────
-// Every card that carries a life area lets you attach more than one. The list
+// ── Pages on any block ──────────────────────────────────────────
+// Every card that carries a page lets you attach more than one. The list
 // lives in props.areas; props.area mirrors the first so single-area readers - the
 // Today lane map, task filters, the ?area= listing, older code - keep working.
 // One control and one setter serve notes, tasks, contacts, tables, goals and
@@ -7630,12 +7630,12 @@ function addBlockArea(kind, id, areaId) { if (!areaId) return; setBlockAreas(kin
 function removeBlockArea(kind, id, areaId) { setBlockAreas(kind, id, blockAreas(areaHostBlock(kind, id)).filter((x) => x !== areaId)); }
 // The chip + picker. Each attached area is a chip that links through to its page
 // and carries an x to drop it; the dropdown offers the areas not yet attached.
-// With none chosen it reads as the familiar "+ Life area".
+// With none chosen it reads as the familiar "+ Page".
 function blockAreasControl(kind, b) {
   const id = b.id; const ids = blockAreas(b);
   const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
   const remaining = state.areas.filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add area' : '+ Life area'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add area' : '+ Page'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
   return `<span class="note-areas">${chips}${add}</span>`;
 }
 // From a life-area page: create a task/note already tagged to this area, then
@@ -7645,7 +7645,7 @@ async function areaNewEvent(id) {
   await openCalendar();
   state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = [];
   renderCalendar();
-  // Prefill the new event's life area with this one (the form reads ce-area).
+  // Prefill the new event's page with this one (the form reads ce-area).
   setTimeout(() => { const ar = document.getElementById('ce-area'); if (ar) ar.value = a.id; const ti = document.getElementById('ce-title'); if (ti) ti.focus(); }, 40);
 }
 async function areaAddTask() {
@@ -7665,7 +7665,7 @@ async function areaAddNote() {
     await openNote(n.id); setTimeout(() => $('#note-title') && $('#note-title').focus(), 30);
   } catch (e) { toast(e.message); }
 }
-// Customise a life area's colour. A hue is all an area stores (saturation and
+// Customise a page's colour. A hue is all an area stores (saturation and
 // lightness are fixed, so every area sits in the same tonal family); the picker
 // offers a spread of swatches plus a slider, previews live across the page, and
 // on Done saves props.hue - which the whole app then follows.
@@ -8158,7 +8158,7 @@ function ceQuickBar(ev) {
   const area = hasArea ? areaById(ev.area) : null;
   const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
   const out = [];
-  out.push(chip('#ce-area', '◈', hasArea ? ((area && area.title) || 'Life area') : 'Life area', hasArea, (hasArea && area) ? hueOf(area) : null));
+  out.push(chip('#ce-area', '◈', hasArea ? ((area && area.title) || 'Page') : 'Page', hasArea, (hasArea && area) ? hueOf(area) : null));
   out.push(chip('.ce-rem-field', '🔔', hasAlarm ? alist.map(alarmChipLabel).join(' + ') : 'Reminder', hasAlarm));
   out.push(chip((ev && ev.recurringId) ? '.ce-repeat-info' : '#ce-repeat', '↻', hasRepeat ? (ev.recurringId ? 'Repeats' : (CE_REPEAT_SHORT[ev.repeat] || 'Repeat')) : 'Repeat', hasRepeat));
   out.push(chip('#ce-url', '🔗', hasUrl ? 'Website' : 'Add website', hasUrl));
@@ -8234,7 +8234,7 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life area</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Page</span><select id="ce-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     </div>
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
@@ -8329,7 +8329,7 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   // add, change or stop recurrence on an existing event; 'none' clears it.
   const rep = (repeat !== undefined && repeat !== null && repeat !== '') ? { repeat } : {};
   const nt = (notes && String(notes).trim()) ? { notes: String(notes).trim() } : { notes: '' };
-  const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a life area
+  const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a page
   const ur = url !== undefined ? { url: String(url || '').trim() } : {};   // a link to open in one tap (class, call, page)
   const co = contact !== undefined ? { contact: contact || null } : {};    // a person this event is with
   const alrm = alarms !== undefined ? { alarms: (Array.isArray(alarms) ? alarms : (alarms === '' || alarms == null ? [] : [alarms])).map(Number).filter((n) => Number.isFinite(n) && n >= 0), ...(alarmCh ? { alarmCh } : {}) } : {};   // reminders: one or more leads (minutes before) + channel (app/sms/email/both)
@@ -8658,13 +8658,13 @@ function deadlineRel(iso, todayI) {
   return { d, t: `due in ${d} days`, c: d <= 3 ? 'soon' : '' };
 }
 // Deadlines landing within a week (or overdue) - goals with a finish-by date and
-// life areas with a deadline - surfaced in the Home "today" lead.
+// pages with a deadline - surfaced in the Home "today" lead.
 function homeDeadlinesHtml() {
   const todayI = localISO(new Date());
   const horizon = localISO(new Date(Date.now() + 7 * 86400000));
   const items = [];
   (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').forEach((g) => { const due = goalDueISO(g); if (due && due <= horizon) items.push({ kind: 'goal', id: g.id, title: g.title || 'Goal', due, area: gp(g).area }); });
-  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Life area', due, area: a.id }); });
+  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Page', due, area: a.id }); });
   if (!items.length) return '';
   items.sort((x, y) => x.due.localeCompare(y.due));
   const rows = items.slice(0, 5).map((x) => {
@@ -8763,9 +8763,9 @@ function sizeTodayGrid() {
   grid.style.height = Math.max(380, window.innerHeight - top - 14) + 'px';
 }
 window.addEventListener('resize', () => { if (state.view && state.view.type === 'today') sizeTodayGrid(); });
-// The Tracker tab: every tracked practice, grouped by life area, with today's
+// The Tracker tab: every tracked practice, grouped by page, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
-// Each life area can carry a check-in practice; the area then says, plainly and
+// Each page can carry a check-in practice; the area then says, plainly and
 // forwards, how many days until you should do something in it next. An area
 // counts a day done if you did ANY of its practices. Each practice shows its own
 // run + status against its own aim.
@@ -8965,11 +8965,11 @@ const T2_FILTER_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="no
 // A sticky one-row column header: name + count + a filter button that reveals a
 // life-area + priority bar. Shared by Tasks and Practices so they read the same.
 function t2ColHead(name, count, kind, active, open) {
-  return `<div class="t2-stickytop"><div class="t2-colh"><h2>${name}</h2><span class="t2-colcount">${count}</span><button class="t2-filterbtn ${active ? 'on' : ''} ${open ? 'open' : ''}" data-t2-filter="${kind}" title="Filter by life area and priority">${T2_FILTER_ICON}${active ? '<span class="t2-fdot"></span>' : ''}</button></div>`;
+  return `<div class="t2-stickytop"><div class="t2-colh"><h2>${name}</h2><span class="t2-colcount">${count}</span><button class="t2-filterbtn ${active ? 'on' : ''} ${open ? 'open' : ''}" data-t2-filter="${kind}" title="Filter by page and priority">${T2_FILTER_ICON}${active ? '<span class="t2-fdot"></span>' : ''}</button></div>`;
 }
 function t2FilterBar(areas, f, prios, selAttr, prioAttr) {
   return `<div class="t2-filterbar">
-    <select class="sel t2-tfilter" ${selAttr}><option value="">All life areas</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
+    <select class="sel t2-tfilter" ${selAttr}><option value="">All pages</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
     ${prioAttr ? `<div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" ${prioAttr}="${p}">${p}</button>`).join('')}</div>` : ''}
   </div>`;
 }
@@ -9185,7 +9185,7 @@ async function t2SlotNotify(slotId) {
   if (now) toast(phoneless ? 'Reminder set - add a phone number in Settings to receive it' : 'Reminder set - text 5 min before');
   try { await api('/api/slots/' + slotId, { method: 'PATCH', body: JSON.stringify({ notify: now }) }); } catch (e) { toast(e.message); }
 }
-// Set a life area's check-in practice (stored in the area block's props.cadence).
+// Set a page's check-in practice (stored in the area block's props.cadence).
 async function setAreaCadence(areaId, cadence) {
   const a = (state.areas || []).find((x) => x.id === areaId); if (!a) return;
   a.props = a.props || {}; a.props.cadence = cadence || null;
@@ -9236,7 +9236,7 @@ function openTaskPopover(taskId, slotId) {
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
         </div>
-        <label class="pe-f"><span>Life area</span><select class="sel" id="te-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Page</span><select class="sel" id="te-area"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
       </div>
       <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
@@ -9709,8 +9709,8 @@ function mailAreaMenuHtml() {
   const am = state.mail.areaMenu; if (!am) return '';
   const areas = state.areas || [];
   return `<div class="mail-movebg" data-mail-area-close><div class="mail-move" style="top:${am.y}px;left:${am.x}px" role="menu">
-    <div class="mail-move-h">File in a life area…</div>
-    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No life areas yet.</div>'}
+    <div class="mail-move-h">File in a page…</div>
+    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No pages yet.</div>'}
   </div></div>`;
 }
 async function openMailAreaMenu(anchor) {
@@ -9719,7 +9719,7 @@ async function openMailAreaMenu(anchor) {
   state.mail.areaMenu = { x: Math.min(r.left, window.innerWidth - 250), y: r.bottom + 6 };
   renderMail();
 }
-// File the open email in a life area: snapshot it as a note tagged to that area
+// File the open email in a page: snapshot it as a note tagged to that area
 // (the same shape "Make a task from this email" uses), so it shows on the area
 // page and stays readable even after the message leaves the inbox.
 async function mailToArea(areaId) {
@@ -9744,13 +9744,13 @@ async function mailToArea(areaId) {
       state.mailAreas[k] = list;
       api('/api/kv/mail_areas', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.mailAreas) }) }).catch(() => {});
     }
-    toast(`Filed in ${area ? area.title : 'life area'}`);
+    toast(`Filed in ${area ? area.title : 'page'}`);
   } catch (e) { toast(e.message); }
   renderMail();
 }
 // The stable key for an email: its Message-ID if present, else account:uid.
 function mailFileKey(o) { return (o && (o.messageId || o._key)) || ''; }
-// "Filed in <area>" chips for the open email: each opens that life area, and its ×
+// "Filed in <area>" chips for the open email: each opens that page, and its ×
 // removes the email from that area.
 function mailFiledHtml(o) {
   const list = (o && state.mailAreas && state.mailAreas[mailFileKey(o)]) || [];
@@ -9758,7 +9758,7 @@ function mailFiledHtml(o) {
   const chips = list.map((e) => { const a = areaById(e.a); return a ? `<span class="mail-filed-chip"><button class="mail-filed-open" data-open-area="${e.a}" title="Open ${esc(a.title)}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title)}</button><button class="mail-filed-x" data-mail-unfile-area="${esc(e.a)}" title="Remove from ${esc(a.title)}" aria-label="Remove from ${esc(a.title)}">×</button></span>` : ''; }).filter(Boolean).join('');
   return chips ? `<div class="mail-filed"><span class="mail-filed-l">📂 Filed in</span>${chips}</div>` : '';
 }
-// Remove the open email from a life area: drop the chip and delete the note the
+// Remove the open email from a page: drop the chip and delete the note the
 // filing created. Undo re-files it (recreating the note + chip).
 async function mailUnfileArea(areaId) {
   const o = state.mail && state.mail.open; if (!o) return;
@@ -9771,7 +9771,7 @@ async function mailUnfileArea(areaId) {
   if (entry.n) api(`/api/blocks/${entry.n}`, { method: 'DELETE' }).catch(() => {});
   const a = areaById(areaId);
   renderMail();
-  toast(`Removed from ${a ? a.title : 'life area'}`, () => mailToArea(areaId));
+  toast(`Removed from ${a ? a.title : 'page'}`, () => mailToArea(areaId));
 }
 async function mailMoveTargets(keys, target) {
   const list = [...keys]; state.mail.moveMenu = null;
@@ -10045,7 +10045,7 @@ async function openMail(openKey) {
     state.mailShowImages = false;
     api('/api/kv/mail_show_images').then((r) => { state.mailShowImages = r && r.value === '1'; if (state.view.type === 'mail' && state.mail && state.mail.open) renderMail(); }).catch(() => {});
   }
-  // Which emails you've filed into a life area, so the reader can say so. Keyed
+  // Which emails you've filed into a page, so the reader can say so. Keyed
   // by the stable Message-ID (falling back to the account:uid key).
   if (!state.mailAreas) {
     state.mailAreas = {};
@@ -11384,7 +11384,7 @@ function renderMail(loading) {
   } else if (m.open) {
     const o = m.open;
     // Order by how often it's reached for: respond, triage, flag, then the two
-    // "capture into Daybook" actions (file in a life area, make a task), the AI
+    // "capture into Daybook" actions (file in a page, make a task), the AI
     // draft, and the rare spam/block last. On mobile the whole bar wraps so none
     // of these hide off-screen (the life-area button used to scroll out of view).
     // Reply is a dropdown that defaults to Reply all, with "Reply to sender" and
@@ -11403,7 +11403,7 @@ function renderMail(loading) {
     const plainItem = o.html ? `<button class="mail-dd-item" data-mail-plain>${MAIL_ICO.note}<span>${state.mail.plain ? 'Formatted view' : 'Plain-text view (easier to read)'}</span></button>` : '';
     const vipItem = MAIL_VIP_ON ? `<button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button>` : '';
     const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu">${plainItem}${vipItem}<button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button><button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
-    const msgActs = `${replyDD}${fileDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - done with it, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a life area">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>${moreDD}`;
+    const msgActs = `${replyDD}${fileDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - done with it, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a page">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>${moreDD}`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
     const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
@@ -11487,7 +11487,7 @@ function showQuickTask() {
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
     <div class="atf-grid">
-      <label class="atf"><span>Life area</span><select id="qt-area" class="sel">${opts}</select></label>
+      <label class="atf"><span>Page</span><select id="qt-area" class="sel">${opts}</select></label>
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
@@ -11571,7 +11571,7 @@ function mailTaskMenuHtml() {
   return `<div class="mail-movebg" data-mail-task-bg><div class="mail-task-pop" style="top:${tm.y}px;left:${tm.x}px" role="dialog" aria-label="New task">
     <div class="mail-move-h">New task from this email</div>
     <input class="sel mtask-title" id="mtask-title" value="${esc(tm.title)}" placeholder="Task title" autocomplete="off">
-    <label class="mtask-field"><span>Life area</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
+    <label class="mtask-field"><span>Page</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
     <label class="mtask-field"><span>Priority</span><select class="sel" id="mtask-prio">${PRIOS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
     <div class="mtask-actions"><button class="ghost" data-mail-task-close>Cancel</button><button class="add-btn wide" data-mail-task-add>Add task</button></div>
   </div></div>`;
@@ -11617,7 +11617,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <label class="ce-field"><span class="ce-flbl">Life area</span><select id="qe-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+    <label class="ce-field"><span class="ce-flbl">Page</span><select id="qe-area" class="sel"><option value="">No area</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -11747,7 +11747,7 @@ function openFav(ref) {
 // ── view: tasks ──────────────────────────────────────
 const hueOf = (a) => (a && a.props && Number.isFinite(a.props.hue) ? a.props.hue : 220);
 const areaById = (id) => state.areas.find((a) => a.id === id);
-// A note can belong to several life areas: props.areas is the list. props.area
+// A note can belong to several pages: props.areas is the list. props.area
 // is kept as the first, for anything still reading a single area and for notes
 // written before multi-area. blockAreas gives the list from whichever is set.
 function blockAreas(b) { const p = (b && b.props) || {}; if (Array.isArray(p.areas)) return p.areas.filter(Boolean); return p.area ? [p.area] : []; }
@@ -11907,7 +11907,7 @@ function taskKanbanHtml(list) {
 // data-driven so a new filterable field is one entry here, not new UI code.
 const TASK_FIELDS = {
   priority: { label: 'Priority', ops: ['is', 'isnot'], choices: () => [['P1', 'P1'], ['P2', 'P2'], ['P3', 'P3'], ['P4', 'P4'], ['', 'None']], get: (t) => t.props.priority || '' },
-  area: { label: 'Life area', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
+  area: { label: 'Page', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
   duration: { label: 'Duration', ops: ['gte', 'lte', 'isset', 'notset'], kind: 'minutes', get: (t) => (t.props.duration != null && t.props.duration !== '' ? Number(t.props.duration) : null) },
   repeat: { label: 'Repeat', ops: ['isset', 'notset'], get: (t) => t.props.repeat || '' },
   snoozed: { label: 'Snoozed', ops: ['yes', 'no'], get: (t) => isSnoozed(t) },
@@ -12002,14 +12002,14 @@ function renderTasks() {
       <div class="tf-panel-acts"><button class="add-btn wide" data-tf-add>+ Add filter</button>${conds.length ? '<button class="ghost" data-tf-clear>Clear all</button>' : ''}</div>
     </div>` : ''}
   </div>`;
-  const preArea = state.taskAddArea || '';   // set when + Task is used from a Life Area page
+  const preArea = state.taskAddArea || '';   // set when + Task is used from a Page page
   const opts = `<option value="">No area</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
   // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
   const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
   const qa = state.taskQuickArea || '';
   const quickMatch = (t) => (!qp.size || qp.has(t.props.priority || '')) && (!qa || blockAreas(t).includes(qa));
   const quickBar = `<div class="tq-bar">
-    <select class="sel tq-area" data-task-qarea><option value="">All life areas</option>${state.areas.map((a) => `<option value="${a.id}" ${qa === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>
+    <select class="sel tq-area" data-task-qarea><option value="">All pages</option>${state.areas.map((a) => `<option value="${a.id}" ${qa === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>
     <div class="tq-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="tq-prio ${qp.has(p) ? 'on' : ''}" data-task-qprio="${p}">${p}</button>`).join('')}</div>
   </div>`;
   const inFilter = (t) => taskMatchesFilters(t) && quickMatch(t);
@@ -12131,8 +12131,8 @@ const contactsInGroup = (gid) => (state.contacts || []).filter((c) => groupsOf(c
 // Only groups that still exist, in name order - a deleted group's stale id on a
 // contact is simply ignored.
 const liveGroupsOf = (c) => groupsOf(c).map(groupById).filter(Boolean).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-// Group ↔ life area sync: a contact group and a life area that share a name are two
-// views of the same circle (a "Portugal" group and a "Portugal" life area), so
+// Group ↔ page sync: a contact group and a page that share a name are two
+// views of the same circle (a "Portugal" group and a "Portugal" page), so
 // filing a contact into one files it into the other automatically. Matched by name,
 // case-insensitively; add-only (removing one leaves the other, no surprise deletes).
 const normTitle = (s) => String(s || '').trim().toLowerCase();
@@ -12391,7 +12391,7 @@ function selfContactHtml() {
   return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Daybook card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
 }
 // The row of group chips: All, then each group (droppable + count), then + New.
-// Contacts are organised by LIFE AREA, not a separate "groups" concept. The bar
+// Contacts are organised by Page, not a separate "groups" concept. The bar
 // filters by area, showing only areas that actually hold contacts (plus All).
 function contactAreaBarHtml() {
   const inArea = (aid) => (state.contacts || []).filter((c) => blockAreas(c).includes(aid)).length;
@@ -12408,7 +12408,7 @@ function contactAreaBarHtml() {
 // of chips. (CSS shows chips on desktop, this select on mobile.)
 function contactAreaSelectHtml(areas) {
   if (!areas || !areas.length) return '';
-  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by life area"><option value="" ${!state.contactsArea ? 'selected' : ''}>All areas · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
+  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Pages · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
 const areaHiddenForContacts = (a) => !!(a && a.props && a.props.contactsHide);
@@ -12422,7 +12422,7 @@ function contactMenuHtml() {
   const available = allAreas.filter((a) => !curSet.has(a.id) && !areaHiddenForContacts(a));
   const hiddenAreas = allAreas.filter((a) => !curSet.has(a.id) && areaHiddenForContacts(a));
   const showHidden = !!m.showHidden;
-  // File under a life area: current areas (tap ✓ to remove), then the areas on offer
+  // File under a page: current areas (tap ✓ to remove), then the areas on offer
   // (tap to add; the 🚫 hides that area from this list). Hidden ones fold away behind
   // a "Show hidden" toggle so the everyday list stays short.
   // A checkbox metaphor: a filled tick-box for areas the contact is in (tap to
@@ -12431,7 +12431,7 @@ function contactMenuHtml() {
   const curRow = (a) => `<button class="ctx-item ctx-area ctx-area-on" data-ctx-unarea="${a.id}" style="--h:${hueOf(a)}"><span class="ctx-cb ctx-cb-on"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button>`;
   const addRow = (a) => `<div class="ctx-arearow" style="--h:${hueOf(a)}"><button class="ctx-item ctx-area" data-ctx-area="${a.id}"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button><button class="ctx-area-hide" data-ctx-area-hide="${a.id}" title="Hide ${esc(a.title)} from this list" aria-label="Hide ${esc(a.title)} from the contacts list">⊘</button></div>`;
   const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
-  const areaSection = allAreas.length ? `<div class="ctx-lbl">Life areas</div>
+  const areaSection = allAreas.length ? `<div class="ctx-lbl">Pages</div>
     ${currentAreas.map(curRow).join('')}
     ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No areas to add.</div>')}
     ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
@@ -12496,14 +12496,14 @@ function friendsPaneHtml(opts) {
   const showSuggest = !opts.skipSuggest && d.suggestions && d.suggestions.length;
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
-      <p class="fr-intro">Invite your friends to Daybook so you can share with them - a whole Life Area, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
+      <p class="fr-intro">Invite your friends to Daybook so you can share with them - a whole Page, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
       ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Daybook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Daybook</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Daybook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Daybook by email">✦ Invite to Daybook</button></div>
       <div id="friend-results" class="fr-results"></div>
       ${d.incoming.length ? `<div class="ppl-sub">Requests · ${d.incoming.length}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
       ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Daybook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
-      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life area' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
+      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Page' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
 // The Daybook people hub: your card, your friends on Daybook, and the invite +
@@ -12518,7 +12518,7 @@ function renderDaybookPeople() {
   $('#pane').innerHTML = `
     ${pageCrumb('Daybook Contacts')}
     <div class="pane-head"><h1>Daybook Contacts</h1></div>
-    <p class="t2-sub">Your people on Daybook - share a life area, a note or a few tasks with them.</p>
+    <p class="t2-sub">Your people on Daybook - share a page, a note or a few tasks with them.</p>
     <section class="home-sec"><div class="home-sec-h">Your Daybook card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
 }
@@ -12534,7 +12534,7 @@ function renderContacts() {
   const list = sortContacts((state.contacts || []).filter(match));
   const area = af && areaById(af);
   const emptyMsg = q ? 'No contacts match.'
-    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this life area.`
+    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this page.`
     : 'No contacts yet. Add one, or import your Apple Contacts .vcf.';
   // While searching, strip the page back to just the search box and the matching
   // contacts - no Add/Import, no "Contacts on Daybook", no group bar. Just results.
@@ -12601,7 +12601,7 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${areas.length ? `<label class="atf atf-full"><span>Life area</span><select id="ct-area" class="sel"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    ${areas.length ? `<label class="atf atf-full"><span>Page</span><select id="ct-area" class="sel"><option value="">No area</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
@@ -12620,7 +12620,7 @@ async function addContact(o) {
   state.contactAddArea = null;
   const props = { email: o.email || null, phone: o.phone || null, birthday: o.birthday || null, address: o.address || null };
   if (props.address && typeof props.address === 'object' && !Object.keys(props.address).length) props.address = null;
-  if (o.area) { props.area = o.area; props.areas = [o.area]; }   // life area, read by blockAreas
+  if (o.area) { props.area = o.area; props.areas = [o.area]; }   // page, read by blockAreas
   const notes = (o.notes || '').trim();
   const body = notes ? `<p>${esc(notes)}</p>` : '';   // the contact's notes live in its body prose
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: o.name, props, ...(body ? { body } : {}) }) });
@@ -12965,7 +12965,7 @@ function renderContactCard() {
     <div class="cc-sec">
       <div class="cc-sec-h">Organise</div>
       <div class="tf-meta">
-        <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('contact', c)}</div>
+        <div class="tf-field"><span class="tf-label">Pages</span>${blockAreasControl('contact', c)}</div>
       </div>
     </div>
     ${keepInTouchSection(c)}
@@ -13025,13 +13025,13 @@ async function mergeSelectedContacts() {
   list.sort((a, b) => score(b) - score(a));
   const primary = list[0]; const others = list.slice(1);
   const names = others.map((c) => c.title || 'Unnamed').join(', ');
-  if (!(await uiConfirm(`Merge ${others.length} contact${others.length > 1 ? 's' : ''} (${names}) into “${esc(primary.title || 'Unnamed')}”? Everything from both is kept - every email, phone, address, life area and note - with only exact duplicates removed. The merged-in cards are then removed.`, { title: 'Merge contacts', okLabel: 'Merge' }))) return;
+  if (!(await uiConfirm(`Merge ${others.length} contact${others.length > 1 ? 's' : ''} (${names}) into “${esc(primary.title || 'Unnamed')}”? Everything from both is kept - every email, phone, address, page and note - with only exact duplicates removed. The merged-in cards are then removed.`, { title: 'Merge contacts', okLabel: 'Merge' }))) return;
   const pp = { ...(primary.props || {}) };
   const all = [primary, ...others];
   const groups = new Set(groupsOf(primary));
   const bodyParts = [(primary.body || '').trim()].filter(Boolean);
   // Multi-value fields are UNIONED across every card, primary's first, dropping
-  // only exact duplicates - a second distinct email / phone / address / life area
+  // only exact duplicates - a second distinct email / phone / address / page
   // is always kept (Robin: merging only removes repetition, never data).
   const uniq = (arr, keyFn) => { const seen = new Set(); const out = []; for (const v of arr) { const k = keyFn(v); if (k && !seen.has(k)) { seen.add(k); out.push(v); } } return out; };
   const emails = uniq(all.flatMap((c) => contactEmails(c.props || {}).map((e) => e.trim())), (e) => e.toLowerCase());
@@ -13074,9 +13074,9 @@ async function delContact(id) {
   state.contacts = (state.contacts || []).filter((x) => x.id !== id);
   await openContacts(); if (gone) undoableBlockDelete(gone);
 }
-// New group: type a name, or spin one up from a life area. A group made from an
+// New group: type a name, or spin one up from a page. A group made from an
 // area is linked to it (props.area) and pulls in every contact already tagged to
-// that area, so "the Family group" and "the Family life area" line up.
+// that area, so "the Family group" and "the Family page" line up.
 async function newContactGroup() {
   await Promise.all([loadContacts(), loadContactGroups()]);
   if (!state.areas || !state.areas.length) { try { state.areas = await api('/api/blocks?kind=area'); } catch {} }
@@ -13109,8 +13109,8 @@ async function newContactGroup() {
     el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box cgm-dialog">
       <div class="recur-h">New group</div>
       <input class="ui-dialog-input" id="cgm-input" placeholder="e.g. Family, Clients, Forró" autocomplete="off">
-      <div class="cgm-or">Or create from a life area</div>
-      <div class="cgm-areas">${chips || '<span class="muted">No life areas yet.</span>'}</div>
+      <div class="cgm-or">Or create from a page</div>
+      <div class="cgm-areas">${chips || '<span class="muted">No pages yet.</span>'}</div>
       <div class="ui-dialog-btns">
         <button class="ui-btn cancel" data-cgm-close>Done</button>
         <button class="ui-btn primary" data-cgm-create>Create</button>
@@ -13161,9 +13161,9 @@ async function addContactToGroup(contactId, groupId) {
   if (!c || !g) return;
   if (groupsOf(c).includes(groupId)) { toast(`${c.title || 'Contact'} is already in ${g.title}`); return; }
   setContactGroups(c, [...groupsOf(c), groupId]);
-  // Mirror into a same-named life area, if there is one and it's not already set.
+  // Mirror into a same-named page, if there is one and it's not already set.
   const a = areaByTitle(g.title);
-  if (a && !blockAreas(c).includes(a.id)) { setBlockAreas('contact', c.id, [...blockAreas(c), a.id]); toast(`Added ${c.title || 'contact'} to ${g.title} - group + life area`); }
+  if (a && !blockAreas(c).includes(a.id)) { setBlockAreas('contact', c.id, [...blockAreas(c), a.id]); toast(`Added ${c.title || 'contact'} to ${g.title} - group + page`); }
   else toast(`Added ${c.title || 'contact'} to ${g.title}`);
 }
 function removeContactFromGroup(contactId, groupId) {
@@ -13363,7 +13363,7 @@ async function loadSpending() {
   } catch (e) { toast(e.message); f.txns = f.txns || []; }
   reFin();
 }
-// Only the EXTRAS are user-editable here; the Life Areas come from the Life Areas
+// Only the EXTRAS are user-editable here; the Pages come from the Pages
 // section, so renaming/removing one of those happens there, not on this page.
 async function saveSpendExtras(extras) {
   state.financial.spendExtras = extras;
@@ -13373,11 +13373,11 @@ async function saveSpendExtras(extras) {
 async function spendCatAdd() {
   const name = String(await uiPrompt('New spending category:', { placeholder: 'e.g. Savings' }) || '').trim();
   if (!name) return;
-  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Life Areas are categories too)'); return; }
+  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Pages are categories too)'); return; }
   saveSpendExtras([...spendExtras(), name]);
 }
 async function spendCatRename(oldName) {
-  if (spendIsArea(oldName)) { toast('This is a Life Area - rename it in the Life Areas section.'); return; }
+  if (spendIsArea(oldName)) { toast('This is a Page - rename it in the Pages section.'); return; }
   const name = String(await uiPrompt('Rename category:', { value: oldName }) || '').trim();
   if (!name || name === oldName) return;
   if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
@@ -13679,7 +13679,7 @@ async function advicePoll() {
   await loadAdvice();
 }
 // ── Spending ─────────────────────────────────────────────────────────────
-// Spending categories ARE the Life Areas by default: add a Life Area and it
+// Spending categories ARE the Pages by default: add a Page and it
 // becomes a spending category automatically. A few money-only buckets (income,
 // the catch-all) sit alongside, and the user can add extra one-off categories
 // that don't map to an area (stored in settings.kv_spend_categories).
@@ -13735,7 +13735,7 @@ function spendingBody() {
     return `<span class="trk-cat-chip ${area ? 'sp-cat-area' : ''}">${esc(c)}${tag}${cross}${edit}</span>`;
   };
   const catManage = f.spendCatsOpen ? `<div class="sp-catmanage"><div class="fin-sec-h"><span>Categories</span><button class="ghost" data-sp-cat-add>+ Extra category</button></div>
-    <p class="sp-cat-note">Your <b>Life Areas</b> are your spending categories. A category can be an <b>expense</b>, <b>income</b>, or both - use <b>＋inc</b> / <b>＋exp</b> to add one to the other column.</p>
+    <p class="sp-cat-note">Your <b>Pages</b> are your spending categories. A category can be an <b>expense</b>, <b>income</b>, or both - use <b>＋inc</b> / <b>＋exp</b> to add one to the other column.</p>
     <div class="sp-cat-cols">
       <div class="sp-cat-col sp-cat-col-exp"><div class="sp-cat-col-h">Expense categories</div><div class="trk-cats">${expenseCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
       <div class="sp-cat-col sp-cat-col-inc"><div class="sp-cat-col-h">Income categories</div><div class="trk-cats">${incomeCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
@@ -14227,14 +14227,14 @@ function goalsListBody() {
   }).join('');
   return `${controls}<div class="glist">${rows}</div>`;
 }
-// Each Life Area section on Goals collapses on a header tap (remembered per
+// Each Page section on Goals collapses on a header tap (remembered per
 // area), like every other titled section in the app. Default open.
 function goalAreaOpen(id) { try { const c = JSON.parse(localStorage.getItem('life.goals.acollapse') || '[]'); return !(Array.isArray(c) && c.includes(id)); } catch { return true; } }
 function toggleGoalArea(id) {
   try { let c = JSON.parse(localStorage.getItem('life.goals.acollapse') || '[]'); if (!Array.isArray(c)) c = []; const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); localStorage.setItem('life.goals.acollapse', JSON.stringify(c)); } catch {}
   renderGoals();
 }
-// Goals organised the way Robin thinks: for each Life Area, its Vision then its
+// Goals organised the way Robin thinks: for each Page, its Vision then its
 // Goals. ("This quarter's focus" is its own tab now, not the lead here.)
 function goalsByAreaBody() {
   const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
@@ -14253,7 +14253,7 @@ function goalsByAreaBody() {
     </section>`;
   }).join('');
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
-  const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No life area</span></div><div class="goal-grid">${noArea.map(goalCardMini).join('')}</div></section>` : '';
+  const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No page</span></div><div class="goal-grid">${noArea.map(goalCardMini).join('')}</div></section>` : '';
   // The "this quarter's focus" strip lives on its own tab now, not at the top here.
   return `${areaSections}${noAreaSec}
     ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
@@ -14313,7 +14313,7 @@ async function openGoalCard(id) {
   // logging back in) shouldn't grab focus and select the text every time; that
   // was only ever useful at the very start. (Robin.)
   if (!(g.title || '').trim()) setTimeout(() => { if (state.goal_open && state.goal_open.goal.id === id) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.select(); } catch {} autoGrowSoon(el); } } }, 0);
-  // Who can see this goal (via its shared life area). Owner only.
+  // Who can see this goal (via its shared page). Owner only.
   if (!g.sharedBy) api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {});
 }
 function renderGoalCard() {
@@ -14402,7 +14402,7 @@ function renderGoalCard() {
 
         <label class="tf-field"><span class="tf-label">${t('goal.horizon')}</span><select class="sel" id="goalcard-horizon">${HORIZONS.map(([v, l]) => `<option value="${v}" ${p.horizon === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="tf-field"><span class="tf-label">${t('goal.status')}</span><select class="sel" id="goalcard-status">${GSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'active') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-        <!-- Deadline now lives on the card face (under Life areas). -->
+        <!-- Deadline now lives on the card face (under Pages). -->
       </div>
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     </details>
@@ -14420,7 +14420,7 @@ function renderGoalCard() {
   autoGrowSoon($('#goalcard-title'));
   if (keepTitleFocus) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.setSelectionRange(selS, selE); } catch {} } }
 }
-// Every task already sitting in this goal's life area, so you can pull an
+// Every task already sitting in this goal's page, so you can pull an
 // existing one in rather than only ever adding fresh tasks. Linked tasks and
 // done ones drop out; a search narrows it.
 function goalAreaTasksHtml() {
@@ -14471,14 +14471,14 @@ function connectedNotesPickerInner() {
   const go = state.goal_open; if (!go) return '';
   const q = (go.noteQuery || '').trim().toLowerCase();
   const linked = new Set((go.notes || []).map((n) => n.id));
-  // Only offer notes in the goal's own life area(s) - a goal's notes belong to its
+  // Only offer notes in the goal's own page(s) - a goal's notes belong to its
   // area, so we don't drown the picker in everything.
   const gAreas = blockAreas(go.goal);
   let list = (go.allNotes || []).filter((n) => !linked.has(n.id));
   if (gAreas.length) list = list.filter((n) => blockAreas(n).some((aid) => gAreas.includes(aid)));
   if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q));
   list = list.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}notes${gAreas.length ? ' in this life area' : ''} to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}notes${gAreas.length ? ' in this page' : ''} to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
   return list.slice(0, 60).map((n) => `<div class="gal-row gal-row-link" data-goal-link-note="${n.id}" role="button" tabindex="0" title="Connect to this goal"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="gal-link gal-link-cue">＋ Link</span></div>`).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
@@ -14598,7 +14598,7 @@ function msText(mid, v) { const m = goalMs().find((x) => x.id === mid); if (m) {
 // A goal's task = a real task (kind='task') tagged to the goal (and a milestone).
 // It shows here AND in Tasks/Today - the same task, in context, never a copy.
 // A proper task card on the goal: tick it, tap the body to open it, and see its
-// priority, life area and surface/repeat at a glance.
+// priority, page and surface/repeat at a glance.
 const goalTaskRow = (t) => {
   const p = t.props || {}; const a = areaById(p.area);
   const meta = [];
@@ -14658,7 +14658,7 @@ function renderBucketCard() {
       <textarea class="note-title" id="bucketcard-title" rows="1" placeholder="Something to do before you die…">${esc(b.title || '')}</textarea>
     </div>
     <div class="tf-meta">
-      <div class="tf-field"><span class="tf-label">Life areas</span>${blockAreasControl('bucket', b)}</div>
+      <div class="tf-field"><span class="tf-label">Pages</span>${blockAreasControl('bucket', b)}</div>
       <label class="tf-field"><span class="tf-label">Stage</span><select class="sel" id="bucketcard-status">${BSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'someday') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Target year</span><input class="sel" id="bucketcard-year" value="${esc(p.targetYear || '')}" placeholder="e.g. 2030"></label>
     </div>
@@ -14817,7 +14817,7 @@ function reviewTaskStats(from) {
   return { done, openP1, quiet };
 }
 // The Wheel of Life on the Reviews landing page: a proper circular wheel of the
-// most recent score per life area (denormalised onto each area by setWheel), with
+// most recent score per page (denormalised onto each area by setWheel), with
 // a legend and the average over time. Collapsible; prominent, up top.
 function wheelOfLifeHtml() {
   // Areas turned off for reviews (props.reviewOff) don't appear in the wheel. The
@@ -14833,7 +14833,7 @@ function wheelOfLifeHtml() {
   const avgLabel = `${avg}/5 across ${scored.length} area${scored.length === 1 ? '' : 's'}`;
   const head = rvSecH('wol', 'Wheel of Life', avg ? `<span class="wol-avg">${avgLabel}</span>` : '');
   if (!rvSecOpen('wol')) return `<section class="home-sec wol-sec">${head}</section>`;
-  if (!avg) return `<section class="home-sec wol-sec">${head}<div class="home-empty" style="padding:14px 0">Rate your life areas in a review and your wheel takes shape here.</div></section>`;
+  if (!avg) return `<section class="home-sec wol-sec">${head}<div class="home-empty" style="padding:14px 0">Rate your pages in a review and your wheel takes shape here.</div></section>`;
   const N = data.length, cx = 120, cy = 120, R = 100, seg = 2 * Math.PI / N;
   const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
   const wedges = data.map((d, i) => {
@@ -14855,7 +14855,7 @@ function wheelOfLifeHtml() {
         <button class="wol-more" data-open-wheel>See trends &amp; insights →</button></div></div></section>`;
 }
 // The dedicated Wheel of Life page: the wheel large, the average over time, a
-// per-area trend for each life area, and an auto-written "what to know" read.
+// per-area trend for each page, and an auto-written "what to know" read.
 function wheelData() {
   return (state.areas || []).filter((a) => a && a.title && !(a.props && a.props.reviewOff))
     .map((a) => ({ a, score: Math.min((a.props && a.props.wheelScore) || 0, 5), star: !!(a.props && a.props.reviewStar) }));
@@ -14931,17 +14931,17 @@ function renderWheel() {
   }).join('');
   const avgTrendHtml = avgVals.length >= 2 ? `<div class="wol-trend wheel-avgtrend"><span class="wol-trend-h">Average over time</span>${spark(avgVals, (v) => `${v}/5`)}<span class="rv-trend-now">${avgVals[avgVals.length - 1]}/5 ${dTag(avgDelta)}</span></div>` : '';
   const body = !scored.length
-    ? '<div class="home-empty" style="padding:30px 0">Rate your life areas in a review and your Wheel of Life takes shape here.</div>'
+    ? '<div class="home-empty" style="padding:30px 0">Rate your pages in a review and your Wheel of Life takes shape here.</div>'
     : `<div class="wheelpage-hero"><div class="wol-chart">${wheelSvgHtml(data, 260)}<div class="wol-cap">Average <b>${avg}</b> / 5 · ${scored.length} area${scored.length === 1 ? '' : 's'} rated across ${revs.length} review${revs.length === 1 ? '' : 's'}</div></div>
         <div class="wheelpage-side">${keysHtml}${avgTrendHtml}</div></div>
       <section class="wheelpage-trends"><div class="home-sec-h">Each area over time</div><div class="wheeltrend-list">${rows}</div></section>`;
-  // The one obvious place to choose which life areas are in your wheel. Ticking one
+  // The one obvious place to choose which pages are in your wheel. Ticking one
   // off drops it from the wheel, your reviews and its own page - it stays an area,
   // just out of the wheel. (Robin, 2026-09-27.)
   const allAreas = (state.areas || []).filter((a) => a && a.title && !a.sharedBy).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   const trackHtml = allAreas.length ? `<section class="wheeltrack">
       <div class="home-sec-h">Which areas to track</div>
-      <p class="scope">Tick the areas you want in your Wheel of Life. Unticked ones drop off the wheel, out of your reviews, and off their own page - they stay as life areas, just not part of the wheel.</p>
+      <p class="scope">Tick the areas you want in your Wheel of Life. Unticked ones drop off the wheel, out of your reviews, and off their own page - they stay as pages, just not part of the wheel.</p>
       <div class="wheeltrack-list">${allAreas.map((a) => { const tracked = !(a.props && a.props.reviewOff); return `<div class="wheeltrack-row" style="--h:${hueOf(a)}"><span class="wt-dot"></span><span class="wheeltrack-n">${esc(a.title)}</span><label class="msec-switch" title="${tracked ? 'Tracked - tap to remove' : 'Not tracked - tap to add'}"><input type="checkbox" data-wheel-track="${a.id}" ${tracked ? 'checked' : ''}><span class="switch-sl"></span></label></div>`; }).join('')}</div>
     </section>` : '';
   $('#pane').innerHTML = `
@@ -15728,7 +15728,7 @@ function reviewKeyPoints(m, p, r) {
   const prevDone = prev ? (prev.tasksDone != null ? prev.tasksDone : ((prev.mirror || {}).tasksDone || []).length) : null;
   if (done.length) { const d = prevDone != null ? done.length - prevDone : null; pts.push(['✓', `<b>${done.length}</b> ticked off${ranked[0] ? `, most in ${nmLink(ranked[0][0])}` : ''}${d ? ` <span class="rr-key-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)} vs last ${period}</span>` : ''}`]); }
   // Spread: how many areas you actually touched this period.
-  if (ranked.length >= 3) pts.push(['🧭', `Active across <b>${ranked.length}</b> life areas`]);
+  if (ranked.length >= 3) pts.push(['🧭', `Active across <b>${ranked.length}</b> pages`]);
   // The standout win, in a line.
   const win = reviewTopWin(m);
   if (win && win.title) pts.push(['⭐', `Highlight: <b>${esc(String(win.title).slice(0, 60))}</b>${win.tag ? ` <span class="rr-key-sub">- ${esc(win.tag)}</span>` : ''}`]);
@@ -15788,7 +15788,7 @@ function renderReviewReport() {
   const hue = 40;
   const sib = reviewSiblings(r);
   const navHtml = sib.list.length > 1 ? `<span class="rv-cardnav"><button class="rv-navbtn" ${sib.prev ? `data-open-review="${sib.prev.id}"` : 'disabled'}>‹</button><span class="rv-navpos">${sib.i + 1} of ${sib.list.length}</span><button class="rv-navbtn" ${sib.next ? `data-open-review="${sib.next.id}"` : 'disabled'}>›</button></span>` : '';
-  // By life area: scores + the line you wrote, read-only.
+  // By page: scores + the line you wrote, read-only.
   const wheelAreas = state.areas.filter((a) => ((p.wheel || {})[a.id]) || ((p.areaNotes || {})[a.id] || '').trim());
   const wheelRows = wheelAreas.map((a) => { const sc = Math.min((p.wheel || {})[a.id] || 0, 5); const note = (p.areaNotes || {})[a.id] || ''; const dots = Array.from({ length: 5 }, (_, i) => `<span class="rr-dot ${i < sc ? 'on' : ''}" style="--h:${hueOf(a)}"></span>`).join(''); return `<div class="rr-area" style="--h:${hueOf(a)}"><div class="rr-area-h"><button class="rr-area-n" data-open-area="${a.id}">${esc(a.title)}</button><span class="rr-dots">${dots}</span><span class="rr-sc">${sc ? sc + '/5' : '–'}</span></div>${note.trim() ? `<div class="rr-area-note">${esc(note)}</div>` : ''}</div>`; }).join('');
   // Goals: scores + notes, read-only.
@@ -15836,11 +15836,11 @@ function renderReviewReport() {
   const prevWheel = prevRev ? Math.min(wheelAvg(prevRev.wheel), 5) : null;
   const figs = [doneN ? [doneN, 'ticked off', dTag(doneN, prevDone)] : null, nAreas > 1 ? [nAreas, 'areas moved', ''] : null, practicesK ? [practicesK, 'practices kept', ''] : null, goalMoved ? [goalMoved, 'toward goals', ''] : null, wAvg ? [`${wAvg}/5`, 'wheel of life', dTag(wAvg, prevWheel)] : null].filter(Boolean);
   const figsHtml = figs.length ? `<div class="rr-figs">${figs.map(([n, l, d]) => `<div class="rr-fig"><span class="rr-fig-n">${n}${d || ''}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
-  // The record - the fuel behind the report - as tabs (By life area / Goals / In
+  // The record - the fuel behind the report - as tabs (By page / Goals / In
   // your words), inside a collapsible section below the commentary.
   const recTabs = [];
   if (refl.trim() || free) recTabs.push(['words', 'In your words', `${refl}${free}`]);
-  if (wheelRows) recTabs.push(['areas', 'By life area', `<div class="rr-areas">${wheelRows}</div>`]);
+  if (wheelRows) recTabs.push(['areas', 'By page', `<div class="rr-areas">${wheelRows}</div>`]);
   if (goalRows) recTabs.push(['goals', 'Goals', `<div class="rr-areas">${goalRows}</div>`]);
   let recordHtml = '';
   if (recTabs.length) {
@@ -15889,7 +15889,7 @@ function reviewDeadlinesHtml(p) {
     .map((t) => ({ id: t.id, kind: 'task', title: t.title || 'Task', due: t.props.due, area: t.props.area }));
   const areaItems = (state.areas || [])
     .filter((a) => a.props && a.props.due)
-    .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Life area', due: a.props.due, area: a.id }));
+    .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Page', due: a.props.due, area: a.id }));
   const items = [...goalItems, ...taskItems, ...areaItems]
     .filter((x) => x.due && x.due <= horizonI)
     .sort((a, b) => a.due.localeCompare(b.due));
@@ -15929,7 +15929,7 @@ function renderReviewCard() {
   const quiet = (m.quietAreas || []).map(areaName);
   const wheelHiddenSet = new Set(p.wheelHidden || []);
   const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id) && !(a.props && a.props.reviewOff));
-  // By life area: a score /5 (draws the Wheel of Life) AND a line on how it went.
+  // By page: a score /5 (draws the Wheel of Life) AND a line on how it went.
   const areaBlock = wheelAreas.map((a) => {
     const sc = Math.min((p.wheel || {})[a.id] || 0, 5);
     const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-wheel="${a.id}:${i + 1}" style="--h:${hueOf(a)}"></button>`).join('');
@@ -16006,7 +16006,7 @@ function renderReviewCard() {
       <div class="rv-input-panel">${inputTab === 'wheel'
         ? `${reviewWheelPreview(p)}
            <p class="rva-intro">Score how each area went out of 5 and add a line on how it felt - your scores draw the <b>Wheel of Life</b>${wheelAreas.length >= 3 ? ', which takes shape above as you go' : ''}. Tap the × to leave an area out of this review, or set which areas you track everywhere on the <button class="linkish" data-open-wheel>Wheel of Life page</button>.</p>
-           <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Areas to reflect on them here.'}</div>`}</div>
+           <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Pages to reflect on them here.'}</div>`}</div>
            ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} left out · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}`
         : `<p class="rv-reflect-intro">A few prompts to get you going - answer what speaks to you, skip what doesn't.</p>
            <div class="rv-qa">${cfg.prompts.map((q, i) => { const has = String((p.answers || {})[i] || '').trim(); return `<div class="rv-q ${has ? 'answered' : ''}">
@@ -16054,7 +16054,7 @@ function bumpAreaSentiment(areaId, score, when) {
   a.props.wheelScore = score; a.props.wheelAt = when;
   api('/api/blocks/' + areaId, { method: 'PATCH', body: JSON.stringify({ props: { wheelScore: score, wheelAt: when } }) }).catch(() => {});
 }
-// Skip a life area for this review (no score asked). Stored per-review in
+// Skip a page for this review (no score asked). Stored per-review in
 // props.wheelHidden; clears any score it had so the average stays honest.
 function wheelHide(areaId) {
   const r = state.review_open.review; const p = r.props || {};
@@ -16129,7 +16129,7 @@ function rvgSetCurrent(id, val) {
 function goalReviewSection(r) {
   const p = r.props || {};
   const goals = p.snapshot || [];
-  if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Life Areas and they'll appear here next time.</div></section>`;
+  if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Pages and they'll appear here next time.</div></section>`;
   const gr = p.goalReview || {};
   // Map the tasks that fed each goal: done ones from the period's record, plus the
   // ones still open now - so a goal shows what actually moved it and what's left.
@@ -16203,7 +16203,7 @@ function reviewSummaryHtml(text) {
     .map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('');
 }
 // The "What you did" showcase: engaging metrics rather than a flat list - counts
-// by life area with a little bar chart, the standout area, your busiest day, work
+// by page with a little bar chart, the standout area, your busiest day, work
 // that moved a goal, plus a few highlighted wins (a long-awaited one, a goal
 // mover, a P1), and the full list one tap away. Each done task is enriched from
 // the live task blocks (age, goal, priority, completion day) so it works on older
@@ -16253,7 +16253,7 @@ function reviewWinsHtml(m, p, compact) {
 
   const chips = [];
   if (topArea) chips.push(`<button class="rvw-metric" data-open-area="${topArea.id}" style="--h:${hueOf(topArea)}"><span class="rvw-m-n">${maxCount}</span><span class="rvw-m-l">most in <b>${esc(topArea.title)}</b></span></button>`);
-  chips.push(`<div class="rvw-metric"><span class="rvw-m-n">${namedAreas.length || 1}</span><span class="rvw-m-l">life area${namedAreas.length === 1 ? '' : 's'} moved</span></div>`);
+  chips.push(`<div class="rvw-metric"><span class="rvw-m-n">${namedAreas.length || 1}</span><span class="rvw-m-l">page${namedAreas.length === 1 ? '' : 's'} moved</span></div>`);
   if (topDay) chips.push(`<div class="rvw-metric"><span class="rvw-m-n">${topDay[1]}</span><span class="rvw-m-l"><b>${DOWN[topDay[0]]}</b> was your busiest</span></div>`);
   if (goalDone.length) chips.push(`<div class="rvw-metric rvw-metric-goal"><span class="rvw-m-n">${goalDone.length}</span><span class="rvw-m-l">moved a <b>goal</b> forward</span></div>`);
   const metrics = `<div class="rvw-metrics">${chips.join('')}</div>`;
@@ -16274,7 +16274,7 @@ function reviewWinsHtml(m, p, compact) {
   return compact ? `${standouts}${full}` : `${metrics}${bars}${standouts}${full}`;
 }
 // Everything you ticked off, each a card you can click straight through to.
-// Grouped by life area or by priority - your choice, toggled at the top (Robin,
+// Grouped by page or by priority - your choice, toggled at the top (Robin,
 // 2026-09). Shown under the ✦ summary when "ticked off" is open. Area and
 // priority are enriched from the live task blocks so older reviews sort too.
 function reviewDoneCards(m) {
@@ -16305,7 +16305,7 @@ function reviewDoneCards(m) {
       return `<div class="rvd-group"><div class="rvd-group-h">${a ? `<span class="rvm-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span>` : ''}${esc(name)}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
     }).join('');
   }
-  const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Life area</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
+  const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Page</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
   return `<div class="rvd-list"><div class="rvd-total"><b>${done.length}</b> ticked off across <b>${nA}</b> area${nA === 1 ? '' : 's'} · tap any to open it</div>${toggle}${groups}</div>`;
 }
 // The compact record the summary is written from - the same mirror the card
@@ -16355,7 +16355,7 @@ function maybeAutoReadReview() {
 }
 
 // ── vision board ─────────────────────────────────────
-// A written vision + images per Life Area (stored on the area block: props.vision
+// A written vision + images per Page (stored on the area block: props.vision
 // + its attachments), and a whole-life 'wall' gathering every vision image and
 // the bucket-list moments you've lived.
 function visionBody() {
@@ -16367,7 +16367,7 @@ function visionBody() {
       ${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}
     </button>`;
   }).join('');
-  return `<div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Life Areas to build your vision.</div>'}</div>`;
+  return `<div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Pages to build your vision.</div>'}</div>`;
 }
 async function loadVisionThumbs() {
   for (const a of state.areas) for (const im of ((a.props && a.props.attachments) || [])) {
@@ -16662,8 +16662,8 @@ function noteExtLinksHtml(n) {
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No links yet.</div>'}</div>
     <button class="ghost nt-new" data-xlink-add data-xlink-kind="note" data-xlink-id="${n.id}">+ Add a web link</button></details>`;
 }
-// Related notes: other notes that share any life area with the one you're
-// viewing. Collapsed by default; nothing at all if this note has no life area.
+// Related notes: other notes that share any page with the one you're
+// viewing. Collapsed by default; nothing at all if this note has no page.
 // Up to 12, with a link through to the first shared area.
 function relatedNotesHtml(note) {
   const areas = blockAreas(note); if (!areas.length) return '';
@@ -16740,7 +16740,7 @@ function noteConnListRows() {
   const recent = new Map(recentItems().filter((r) => r && (r.kind === 'note' || r.kind === 'table')).map((r, i) => [r.id, i]));
   let list = (state.noteTops || []).filter((x) => x.id !== cur.id && !taken.has(x.id));
   if (q) list = list.filter((x) => (x.title || '').toLowerCase().includes(q));
-  // Rank: notes sharing this note's life area first, then recently-viewed, then
+  // Rank: notes sharing this note's page first, then recently-viewed, then
   // most-recently-updated. So the picker leads with the notes you'd most likely
   // want to connect - always be helpful.
   const rank = (x) => {
@@ -16850,7 +16850,7 @@ function renderNote() {
   autoGrowSoon($('#note-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
-// ── file a note in a life area ───────────────────────
+// ── file a note in a page ───────────────────────
 function openMoveNote() {
   const cur = state.note && state.note.current; if (!cur) return;
   Promise.resolve((state.areas && state.areas.length) ? state.areas : api('/api/blocks?kind=area').catch(() => []))
@@ -16864,9 +16864,9 @@ function renderMove() {
   let el = document.getElementById('move-overlay');
   if (!el) { el = document.createElement('div'); el.id = 'move-overlay'; document.body.appendChild(el); }
   const title = (state.note && state.note.current && state.note.current.title) || 'this note';
-  el.innerHTML = `<div class="mv-bg" data-move-bg><div class="mv-panel" role="dialog" aria-label="File note in a life area">
-    <div class="mv-head"><div class="mv-head-b"><div class="mv-title">Life area</div><div class="mv-sub">${esc(title)}</div></div><button class="mv-x" data-move-bg aria-label="Close">×</button></div>
-    <div class="mv-searchwrap"><span class="mv-search-ic">⌕</span><input id="move-input" class="mv-search" placeholder="Search life areas…" value="${esc(state.move.q)}" autocomplete="off"></div>
+  el.innerHTML = `<div class="mv-bg" data-move-bg><div class="mv-panel" role="dialog" aria-label="File note in a page">
+    <div class="mv-head"><div class="mv-head-b"><div class="mv-title">Page</div><div class="mv-sub">${esc(title)}</div></div><button class="mv-x" data-move-bg aria-label="Close">×</button></div>
+    <div class="mv-searchwrap"><span class="mv-search-ic">⌕</span><input id="move-input" class="mv-search" placeholder="Search pages…" value="${esc(state.move.q)}" autocomplete="off"></div>
     <div class="mv-scroll" id="move-list"></div>
   </div></div>`;
   renderMoveList();
@@ -16877,12 +16877,12 @@ function renderMoveList() {
   const q = state.move.q.trim().toLowerCase();
   const match = (s) => !q || (s || '').toLowerCase().includes(q);
   const here = '<span class="mv-cur">Here now</span>';
-  // Notes are a flat set - Move is now purely "which life area does this belong
+  // Notes are a flat set - Move is now purely "which page does this belong
   // to" (or none). No note-nesting. (Robin.)
   const noAreaSel = !state.move.curArea;
-  const noAreaHtml = (match('no area') || match('none')) ? `<div class="mv-group"><button class="mv-opt" data-move-area=""><span class="mv-ic mv-ic-top">◇</span><span class="mv-opt-b"><span class="mv-opt-t">No life area</span></span>${noAreaSel ? here : ''}</button></div>` : '';
+  const noAreaHtml = (match('no area') || match('none')) ? `<div class="mv-group"><button class="mv-opt" data-move-area=""><span class="mv-ic mv-ic-top">◇</span><span class="mv-opt-b"><span class="mv-opt-t">No page</span></span>${noAreaSel ? here : ''}</button></div>` : '';
   const areas = (state.move.areas || []).filter((a) => match(a.title));
-  const areasHtml = areas.length ? `<div class="mv-group"><div class="mv-glabel">Into a life area</div>${areas.map((a) => `<button class="mv-opt" data-move-area="${a.id}"><span class="mv-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span><span class="mv-opt-b"><span class="mv-opt-t">${esc(a.title || 'Untitled')}</span></span>${state.move.curArea === a.id ? here : ''}</button>`).join('')}</div>` : '';
+  const areasHtml = areas.length ? `<div class="mv-group"><div class="mv-glabel">Into a page</div>${areas.map((a) => `<button class="mv-opt" data-move-area="${a.id}"><span class="mv-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span><span class="mv-opt-b"><span class="mv-opt-t">${esc(a.title || 'Untitled')}</span></span>${state.move.curArea === a.id ? here : ''}</button>`).join('')}</div>` : '';
   const html = noAreaHtml + areasHtml;
   el.innerHTML = html || '<div class="mv-empty">Nothing matches.</div>';
 }
@@ -16897,7 +16897,7 @@ async function moveNote(targetId) {
     toast(targetId ? 'Note moved' : 'Moved to top level');
   } catch (e) { toast(e.message); }
 }
-// Move a note into a life area: it becomes a top-level note carrying that area,
+// Move a note into a page: it becomes a top-level note carrying that area,
 // so it surfaces on the area page. (Notes belong to an area by props.area, not by
 // nesting - so we clear the parent and set the area together.)
 async function moveNoteToArea(areaId) {
@@ -16910,13 +16910,13 @@ async function moveNoteToArea(areaId) {
     state.noteTops = await api('/api/blocks?kind=note').catch(() => state.noteTops);
     await openNote(cur);
     renderNav();
-    toast(areaId ? 'Filed in ' + ((a && a.title) || 'the area') : 'Removed from its life area');
+    toast(areaId ? 'Filed in ' + ((a && a.title) || 'the area') : 'Removed from its page');
   } catch (e) { toast(e.message); }
 }
 function closeMove() { const el = document.getElementById('move-overlay'); if (el) el.innerHTML = ''; state.move = null; }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Life area'], ['attach', 'Attachments']];
+const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Page'], ['attach', 'Attachments']];
 // The currency symbols a Currency column can carry (blank = a plain number with
 // two decimals). Stored on the column as `col.currency`.
 const CURRENCIES = [['€', '€ Euro'], ['$', '$ Dollar'], ['£', '£ Pound'], ['', 'No symbol']];
@@ -16937,7 +16937,7 @@ function cellInput(r, col, forCard) {
   if (col.type === 'currency') { const sym = curSym(col); return `<span class="cell-cur">${sym ? `<span class="cur-sym">${esc(sym)}</span>` : ''}<input type="text" class="cell cur-in" data-cell="${k}" inputmode="decimal" value="${esc(fmtMoney(v))}"></span>`; }
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
   if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
-  // Life area: a select whose options are the live Life Areas. Stores the area
+  // Page: a select whose options are the live Pages. Stores the area
   // id, shows its name; new areas appear automatically on the next render.
   if (col.type === 'area') return `<select class="cell cell-area" data-cell="${k}"><option value=""></option>${state.areas.map((a) => `<option value="${esc(a.id)}" ${a.id === v ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
   if (col.type === 'url') {
@@ -17142,7 +17142,7 @@ function renderTable() {
     : `<th class="th-add"><button data-add-col title="Add column">+</button></th>`;
   const sortSpec = vw.sorts || [];
   const sortOf = (id) => { const i = sortSpec.findIndex((s) => s.colId === id); return i < 0 ? null : { dir: sortSpec[i].dir, badge: sortSpec.length > 1 ? i + 1 : '' }; };
-  const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">life area</span>' : col.type === 'currency' ? `<span class="th-type">${esc(curSym(col) || 'currency')}</span>` : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
+  const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">page</span>' : col.type === 'currency' ? `<span class="th-type">${esc(curSym(col) || 'currency')}</span>` : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area)}
@@ -17227,7 +17227,7 @@ async function newNote(connectToId) {
   if (primer) primer.remove();
 }
 async function newArea() {
-  const name = ((await uiPrompt('New life area name:', { title: 'New life area', okLabel: 'Create', placeholder: 'e.g. Writing / Poetry' })) || '').trim(); if (!name) return;
+  const name = ((await uiPrompt('New page name:', { title: 'New page', okLabel: 'Create', placeholder: 'e.g. Writing / Poetry' })) || '').trim(); if (!name) return;
   // Spread hues by the golden angle so a new area reads distinct from its neighbours.
   const hue = Math.round((state.areas.length * 137.5) % 360);
   const a = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'area', title: name, props: { hue } }) });
@@ -17290,11 +17290,11 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Spirit cards', run: () => openSpiritCards() },
   { kind: 'action', title: 'Go to I Ching', run: () => openIChing() },
   { kind: 'action', title: 'Go to Horoscope', run: () => openHoroscope() },
-  { kind: 'action', title: 'Go to Life areas', run: () => openAreasList() },
+  { kind: 'action', title: 'Go to Pages', run: () => openAreasList() },
   { kind: 'action', title: 'Go to Saved', run: () => openReadwatch() },
   { kind: 'action', title: 'Money · Spending', run: () => openFinancial('spending') },
 ];
-// Search-result ordering by kind: life areas first, then goals, contacts and
+// Search-result ordering by kind: pages first, then goals, contacts and
 // the pages you actually keep; table rows last. Anything unlisted lands mid-pack.
 const SEARCH_KIND_RANK = { area: 0, goal: 1, contact: 2, note: 3, table: 4, task: 6, row: 9 };
 let palT;
@@ -17323,7 +17323,7 @@ function buildPalette() {
       // A slower earlier search must not overwrite the current query's results.
       if (state.pal.q.trim() !== q) return;
       const ql = q.toLowerCase();
-      // A life area is a whole corner of your life, so a matching one should always
+      // A page is a whole corner of your life, so a matching one should always
       // be near the top - even if the worker's row cap dropped it. Inject matching
       // areas locally (from state.areas) and merge with the worker hits, deduped.
       const areaHits = (state.areas || []).filter((a) => (a.title || '').toLowerCase().includes(ql)).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }));
@@ -18996,7 +18996,7 @@ document.addEventListener('submit', (e) => {
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
 let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null, dragArea = null, dragNoteOrd = null, dragKtask = null;
-// Reorder the note/table cards in a life area's panel; the order lives on the area
+// Reorder the note/table cards in a page's panel; the order lives on the area
 // (props.noteOrder) so it sticks. Mirrors areaDropTarget.
 function noteordDropTarget(container, x, y, draggedId) {
   clearDropMarks();
@@ -19019,7 +19019,7 @@ function reorderAreaNotes(draggedId, target) {
   renderArea();
   api('/api/blocks/' + area.id, { method: 'PATCH', body: JSON.stringify({ props: { noteOrder: ordered } }) }).catch(() => {});
 }
-// Life areas in the user's chosen order (props.rank), title as the tiebreak.
+// Pages in the user's chosen order (props.rank), title as the tiebreak.
 function areasByRank() { return state.areas.slice().sort((a, b) => { const ra = (a.props && a.props.rank), rb = (b.props && b.props.rank); return (ra == null ? 1e9 : ra) - (rb == null ? 1e9 : rb) || (a.title || '').localeCompare(b.title || ''); }); }
 // Drag reorder for area cards (a wrapping grid): snap to the nearest card, insert
 // on the side the cursor is on. Writes a rank onto every area so the order sticks.
@@ -19509,7 +19509,7 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('focusout', (e) => {
   const r = e.target.closest && e.target.closest('[data-prc-rename]'); if (r) renamePractice(r.dataset.prcRename, r.textContent);
 }, true);
-// Reassign positions to a life area's practices in the new order, persist each
+// Reassign positions to a page's practices in the new order, persist each
 // changed one, then re-sort so the page reflects it at once.
 function savePracticeOrder(orderedIds) {
   const acts = state.practices && state.practices.activities; if (!acts) return;
@@ -19875,7 +19875,7 @@ async function homeKitSnooze(taskId) {
 }
 // ── Connect ──────────────────────────────────────────────────────────────
 // Tending the people you keep in touch with, as its own thread - built on the
-// contact + cadence machinery (Keep in touch), NOT on life areas. Reads every
+// contact + cadence machinery (Keep in touch), NOT on pages. Reads every
 // kit person (not just the overdue few) so it can show the whole picture. A tap
 // on ✓ Spoke marks the kit task done, which rolls its next-due forward from today.
 async function openConnect() {
@@ -20025,7 +20025,7 @@ function taskGoalsHtml(t) {
   const byId = new Map(goals.map((g) => [g.id, g]));
   const attached = ids.map((id) => byId.get(id)).filter(Boolean);
   const chips = attached.map((g) => { const ga = goalArea(g); const hue = ga ? hueOf(ga) : 210; const meas = goalMeasure(g); return `<div class="tgoal-chip" style="--h:${hue}"><button class="tgoal-open" data-open-goal="${g.id}" title="Open this goal"><span class="tgoal-ic">🎯</span><span class="tgoal-t">${esc(g.title || 'Untitled goal')}</span>${meas ? `<span class="tgoal-m">${esc(meas)}</span>` : ''}</button><button class="tgoal-x" data-task-ungoal="${t.id}:${g.id}" title="Detach from this goal">×</button></div>`; }).join('');
-  // Only offer goals from the same life area(s) as the task, so the picker stays
+  // Only offer goals from the same page(s) as the task, so the picker stays
   // relevant - a work task shouldn't list your fitness goals. With no area on the
   // task there's nothing to match on, so fall back to showing them all.
   const tAreas = blockAreas(t);
@@ -20035,7 +20035,7 @@ function taskGoalsHtml(t) {
   const picker = opts
     ? `<select class="sel tgoal-add" data-task-addgoal="${t.id}"><option value="">＋ Attach to a goal…</option>${opts}</select>`
     : (!goals.length ? '<p class="tgoals-empty">No goals yet - create one in Goals, then attach it here.</p>'
-      : (tAreas.length && !attached.length ? '<p class="tgoals-empty">No goals in this life area yet.</p>' : ''));
+      : (tAreas.length && !attached.length ? '<p class="tgoals-empty">No goals in this page yet.</p>' : ''));
   return `<section class="focus-notes tgoals-sec">
     <div class="fn-h">Goals${attached.length ? ` · ${attached.length}` : ''}</div>
     ${attached.length ? `<div class="tgoals-grid">${chips}</div>` : '<p class="tgoals-empty">Not attached to a goal yet. Attach one and this task counts toward it.</p>'}
@@ -20133,7 +20133,7 @@ function renderTaskCard() {
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Due by</span>
         ${dateFieldHtml('taskcard-due', t.props.due || '')}</label>
-      <div class="tf-field"><span class="tf-label">Life areas</span>
+      <div class="tf-field"><span class="tf-label">Pages</span>
         ${blockAreasControl('task', t)}</div>
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
@@ -20165,7 +20165,7 @@ function notesSection(body, key, id, readOnly, title) {
 }
 
 // ── external links on a block ────────────────────────
-// Notes, tasks, contacts, life areas and goals can each carry a little list of
+// Notes, tasks, contacts, pages and goals can each carry a little list of
 // external links (a website, an online account, a doc). Stored as props.links:
 // an array of { url, title? }. One reusable section + handlers serves them all.
 const LINKABLE_HOST = {
@@ -21299,7 +21299,7 @@ function registerMailHandler() {
 // A gentle, skippable guide shown once when a new account first opens: orient
 // them, offer AI (optional), offer email (optional). Persisted per-user via
 // /api/kv/onboarded so it shows exactly once and never nags an existing member.
-const ONB_STEPS = ['Welcome', 'Life areas', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
+const ONB_STEPS = ['Welcome', 'Pages', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
 async function maybeOnboard() {
   if (!state.me || !state.me.subdomain) return;   // multi-tenant own account only
   let seen = true;
@@ -21316,7 +21316,7 @@ function showOnboarding(step) {
   if (!document.getElementById('onb')) { const d = document.createElement('div'); d.id = 'onb'; document.body.appendChild(d); }
   // Pull current key state so the AI step can show what's already added.
   if (!state.onb.account) api('/api/account').then((a) => { if (state.onb) { state.onb.account = a; renderOnboarding(); } }).catch(() => {});
-  // Load the starter life areas so the Life areas step can list them.
+  // Load the starter pages so the Pages step can list them.
   api('/api/blocks?kind=area').then((areas) => {
     if (!state.onb) return;
     const sorted = (areas || []).sort((x, y) => (x.title || '').localeCompare(y.title || ''));
@@ -21331,12 +21331,12 @@ function onbAreas() {
     ? '<p class="onb-p onb-muted">Loading your areas…</p>'
     : areas.length
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
-      : '<p class="onb-p onb-muted">No life areas yet - add a few below.</p>';
-  return `<h2 class="onb-h">Your life areas</h2>
-    <p class="onb-p">Life areas are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to an area, so each area gathers everything about that part of your life in one place.</p>
-    <p class="onb-p onb-muted">Here's a starter set. Remove any that don't fit you, and add your own - you can always change these later in Life areas.</p>
+      : '<p class="onb-p onb-muted">No pages yet - add a few below.</p>';
+  return `<h2 class="onb-h">Your pages</h2>
+    <p class="onb-p">Pages are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to an area, so each area gathers everything about that part of your life in one place.</p>
+    <p class="onb-p onb-muted">Here's a starter set. Remove any that don't fit you, and add your own - you can always change these later in Pages.</p>
     ${chips}
-    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a life area…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
+    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a page…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 async function onbDelArea(id) {
   if (!state.onb) return;
@@ -21365,7 +21365,7 @@ function onbWelcome() {
   return `<h2 class="onb-h">Welcome to Daybook${name ? `, ${name}` : ''}</h2>
     <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
     <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
-    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a life area - so Daybook helps you <b>join the dots across your life</b> without the overwhelm.</p>
+    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Daybook helps you <b>join the dots across your life</b> without the overwhelm.</p>
     <p class="onb-p">It lives at <b>${sub}.daybook.fyi</b>. Change your username anytime in <b>Settings → Account</b>.</p>
     <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
 }
@@ -21426,7 +21426,7 @@ function onbDone() {
     <ul class="onb-tips">
       <li><b>+ Task</b>, <b>+ Note</b> and <b>+ Event</b> on Home capture things fast.</li>
       <li>Press <b>⌘K</b> or the search box to jump anywhere.</li>
-      <li><b>Invite your friends</b> from <b>Contacts</b>, then share whatever you like - a Life Area, a note, a table, or a few tasks. Completely up to you.</li>
+      <li><b>Invite your friends</b> from <b>Contacts</b>, then share whatever you like - a Page, a note, a table, or a few tasks. Completely up to you.</li>
       <li>Change anything later in <b>Settings</b> - AI, mail, appearance and more.</li>
     </ul>
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
