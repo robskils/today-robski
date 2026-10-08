@@ -8,7 +8,7 @@
   --accent:#c4412e; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
-  --shadow:0 1px 2px rgba(27,24,32,.05),0 10px 26px -14px rgba(27,24,32,.24);
+  --shadow:0 1px 2px rgba(27,24,32,.05),0 5px 12px -4px rgba(27,24,32,.09),0 18px 34px -16px rgba(27,24,32,.16);
 }
 :root[data-theme='dark'] {
   --paper:#131019; --paper-2:#1b1824; --card:#1b1824;
@@ -17,7 +17,7 @@
   --accent:#d4553f; --accent-ink:#12100b; --gold:#b8945a; --done:#6fa877;
   --tbl-pink:#e888b4;
   --lane-s:48%; --lane-l:66%;
-  --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 34px -14px rgba(0,0,0,.7);
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 6px 16px -5px rgba(0,0,0,.5),0 22px 44px -18px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.045);
 }
 
 /* Daybook Pages read brighter: a near-white canvas and crisp pure-white panels
