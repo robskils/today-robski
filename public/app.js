@@ -3303,7 +3303,7 @@ function navItems(v) {
     meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'meditation' ? 'on' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
     spirit: modOn('reflect') ? `<button class="nav-item ${v.type === 'spirit' ? 'on' : ''}" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
     iching: modOn('reflect') ? `<button class="nav-item ${v.type === 'iching' ? 'on' : ''}" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
-    insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✨</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
+    insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? '<span class="nav-dot" title="New mail" aria-label="New mail"></span>' : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
@@ -6172,7 +6172,7 @@ function wbRecentItems() {
     const mode = (n.props && n.props.mode) || ''; const meta = journalModeMeta(mode);
     out.push({ ts: tm((n.props && n.props.date) || n.created_at), ic: meta ? meta.icon : '📓', label: meta ? meta.label : 'Journal', title: journalSnippet(n), attr: `data-open-jentry="${n.id}"` });
   });
-  (state.insightsAll || []).forEach((b) => out.push({ ts: tm((b.props && b.props.ts) || b.created_at), ic: '✨', label: 'Insight', title: (insParsed(b.props).text || 'Insight').slice(0, 80), attr: 'data-open-insights' }));
+  (state.insightsAll || []).forEach((b) => out.push({ ts: tm((b.props && b.props.ts) || b.created_at), ic: '✶', label: 'Insight', title: (insParsed(b.props).text || 'Insight').slice(0, 80), attr: 'data-open-insights' }));
   (state.ichingHistory || []).forEach((x, i) => out.push({ ts: Number(x.at) || 0, ic: '☯', label: 'I Ching', title: `${x.name || 'Reading'}${x.q ? ` · "${x.q}"` : ''}`, attr: (x.lines && x.lines.length) ? `data-iching-open-hist="${i}"` : 'data-open-iching' }));
   (state.spiritHistory || []).forEach((x, i) => out.push({ ts: Number(x.at) || 0, ic: '🃏', label: 'Spirit card', title: x.name || 'Card', attr: `data-spirit-open-hist="${i}"` }));
   const ho = currentHoro(); if (ho) out.push({ ts: Number(ho.at) || tm(ho.date), ic: '✶', label: 'Horoscope', title: ho.sign || 'Today', attr: 'data-horo-reopen' });
@@ -6206,7 +6206,7 @@ function wbToolTilesHtml(opts) {
       ${tile('data-spirit-open', '🃏', 'wb.spirit', liveSpirit ? 'Reopen your spirit card' : 'Draw a card for a moment of reflection', { live: liveSpirit, on: sel === 'spirit' })}
       ${tile(liveIch ? 'data-iching-reopen' : 'data-open-iching', '☯', 'wb.iching', liveIch ? 'Reopen your live reading' : 'Cast an I Ching reading', { live: liveIch, on: sel === 'iching' })}
       ${tile('data-open-horo', '✶', 'wb.horoscope', liveHoro ? 'Reopen today’s horoscope' : 'Your daily horoscope', { live: liveHoro, on: sel === 'horo' })}
-      ${tile('data-open-insights', '✨', 'wb.insights', 'What your entries reveal - themes, lifts and drains', { on: sel === 'insights' })}
+      ${tile('data-open-insights', '✶', 'wb.insights', 'What your entries reveal - themes, lifts and drains', { on: sel === 'insights' })}
     </div>`;
 }
 function renderWellbeing() {
