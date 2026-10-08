@@ -3079,7 +3079,7 @@ function renderDiscover() {
   const whenChips = whens.map(([v, l]) => `<button class="dz-chip ${d.when === v ? 'on' : ''}" data-dz-when="${v}">${esc(l)}</button>`).join('');
   const owner = state.me && state.me.id === 1;
   let body;
-  if (d.available === false) body = `<div class="dz-empty"><div class="dz-empty-ic">🎟️</div><p>Discover isn't switched on yet.${owner ? ' Add a free Ticketmaster key and local events show up here.' : ''}</p>${owner ? '<button class="add-btn" data-open-ai>Set it up</button>' : ''}</div>`;
+  if (d.available === false) body = `<div class="dz-empty"><div class="dz-empty-ic">🎟️</div><p>Discover isn't switched on yet.${owner ? ' Add a free Ticketmaster key and local events show up here.' : ''}</p>${owner ? '<button class="add-btn wide" data-open-ai>Set it up</button>' : ''}</div>`;
   else if (!loc && !d.city) body = `<div class="dz-empty"><div class="dz-empty-ic">📍</div><p>Where shall I look? Allow location, or type a city above.</p><button class="add-btn" data-dz-useloc>Use my location</button></div>`;
   else if (d.loading && !d.events.length) body = `<div class="dz-loading"><span class="dz-spin"></span>Finding what's on${where ? ' ' + where : ''}…</div>`;
   else if (d.err) body = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn" data-dz-retry>Try again</button></div>`;
@@ -3259,7 +3259,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved', 'timer'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -3301,7 +3301,7 @@ function navGridHtml(v) {
   // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
   // Home quick buttons; Today drops into the Daily group below.
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.reviews, NI.saved, NI.timer, NI.discover])}
+    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
