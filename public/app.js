@@ -6927,7 +6927,7 @@ function renderAreasList() {
   </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
-    <div class="pane-head home-head"><h1>${t('nav.areas')}</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
+    <div class="pane-head home-head"><h1>Daybook Pages</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
     <p class="t2-sub" style="font-style:normal">The few domains your life orbits. Open one for its whole dashboard.</p>
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
