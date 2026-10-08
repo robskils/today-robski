@@ -537,6 +537,52 @@ const JOURNAL_MODE_HINT = {
   'work-through': 'working through something that is bothering them',
   intention: 'setting an intention for tomorrow', free: 'free-writing',
 };
+// Voice journaling: Gemini transcribes a spoken entry and writes it up in the
+// person's own voice, addressing the entry's prompts. Audio needs an ear Claude
+// doesn't have, so this is the one feature that runs on Gemini. (Robin.)
+async function journalVoice(request, env, json, err) {
+  const b = await request.json().catch(() => ({}));
+  const audio = String(b.audio || '');
+  if (audio.length < 200) return err('No recording came through - try again.', request, 400);
+  if (audio.length > 30000000) return err('That recording is too long - keep it under about ten minutes.', request, 413);
+  const mime = (String(b.mime || 'audio/webm').split(';')[0].trim()) || 'audio/webm';
+  const key = await aiKey(env, 'gemini', 'journalvoice');
+  if (!key) return err(aiNeedsKey('gemini'), request, 402);
+  const questions = String(b.questions || '').replace(/\s+/g, ' ').trim().slice(0, 1600);
+  const prompt = String(b.prompt || '').replace(/\s+/g, ' ').trim().slice(0, 600);
+  const sys = "You transcribe and gently edit someone's private spoken journal. Use ONLY what they actually say - never invent, embellish, add advice or comment. Keep their voice, meaning and tone; just clear the filler, false starts and repetition and order it so it reads beautifully. Write in the first person, as them. Output clean simple HTML, paragraphs in <p>. If the entry is guided by questions, put each question in a <p><strong>…</strong></p> with its answer in the <p> below; omit any question they did not touch rather than inventing an answer. No preamble and no sign-off - only the entry.";
+  const ask = (questions || prompt)
+    ? `This spoken entry is guided by:\n${questions || prompt}\n\nTranscribe the recording, then write it up addressing these.`
+    : 'Transcribe the recording, then write it up as a clean, well-ordered first-person journal entry.';
+  const model = env.GEMINI_MODEL || 'gemini-2.0-flash';
+  let res;
+  try {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: sys }] },
+        contents: [{ role: 'user', parts: [{ text: ask }, { inlineData: { mimeType: mime, data: audio } }] }],
+        generationConfig: { temperature: 0.35, maxOutputTokens: 2048 },
+      }),
+    });
+  } catch { return err('Could not reach Gemini.', request, 502); }
+  if (!res.ok) {
+    const tx = await res.text().catch(() => ''); console.error('journalVoice', res.status, tx.slice(0, 240));
+    if (res.status === 400 || res.status === 415) return err('Gemini could not read that audio format. Your browser may be recording in a format it does not accept.', request, 502);
+    if (res.status === 401 || res.status === 403) return err('Your Gemini key was refused - check it in Settings → Plan.', request, 502);
+    if (res.status === 429) return err('Gemini is busy right now - try again in a moment.', request, 429);
+    return err('Gemini could not process the recording.', request, 502);
+  }
+  const data = await res.json().catch(() => null);
+  const cand = data && data.candidates && data.candidates[0];
+  const parts = cand && cand.content && cand.content.parts;
+  let html = (parts || []).map((p) => (p && p.text) || '').join('').trim();
+  html = html.replace(/^```+\s*html?/i, '').replace(/```+\s*$/, '').trim();
+  if (!html) return err('Nothing came back - the recording may have been silent.', request, 422);
+  const um = (data && data.usageMetadata) || {};
+  logAiUsage(env, 'gemini', 'journalvoice', model, um.promptTokenCount || 0, um.candidatesTokenCount || 0);
+  return json({ entry: html }, request);
+}
 async function journalDeepen(request, env, json, err) {
   const key = await aiKey(env, 'anthropic', 'wellbeing');
   if (!key) return err(aiNeedsKey('anthropic'), request, 503);
@@ -4428,6 +4474,7 @@ export default {
       if (path === '/api/wellbeing/iching' && request.method === 'POST') return ichingReflect(request, env, json, err);
       if (path === '/api/wellbeing/horoscope' && request.method === 'POST') return horoscopeReading(request, env, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
+      if (path === '/api/journal/voice' && request.method === 'POST') return journalVoice(request, env, json, err);
       if (path === '/api/import/events' && request.method === 'POST') return importEvents(request, env, json, err);
       // Browse what's on: upcoming events merged across the user's subscribed
       // sources (any .ics/webcal feed, or a page with schema.org/Event data).

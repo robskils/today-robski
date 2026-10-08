@@ -2499,6 +2499,7 @@ const AI_USES = [
   ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
   ['money', 'Money', 'sums up the channels you follow, and turns a pasted or photographed statement into tidy transactions', 'Gemini'],
   ['import', 'Event import', 'reads events off a file, flyer, photo or webpage so you can add them to your calendar', 'Claude'],
+  ['journalvoice', 'Voice journaling', 'turns a spoken recording into a written-up journal entry and fills your prompts', 'Gemini'],
 ];
 const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([, f, why, prov]) =>
   `<li><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span></li>`).join('')}</ul>`;
@@ -6469,7 +6470,7 @@ async function openJournalEntry(id) {
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
 function renderJournalEntry() {
   const n = state.journal.current;
-  if (dictation) stopDictation();   // never leave the mic running across a re-render
+  if (jrec) stopJournalRecord();   // never leave the mic running across a re-render
   const mode = journalModeMeta(n.props && n.props.mode);
   const rawMode = (n.props && n.props.mode) || '';
   const isDream = rawMode === 'dreams';
@@ -6483,7 +6484,7 @@ function renderJournalEntry() {
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
-      ${(n.sharedBy && !n.canEdit) ? '' : `<div class="j-voice"><button type="button" class="ghost j-rec-btn" data-journal-dictate title="Dictate - speak and it types into your entry"><span class="j-rec-dot"></span><span class="j-rec-lbl">Record</span></button><span class="j-voice-hint">Prefer to talk it out? Tap and speak - it types for you. Tap again to stop.</span></div>`}
+      ${(n.sharedBy && !n.canEdit) ? '' : `<div class="j-voice"><button type="button" class="ghost j-rec-btn" data-journal-dictate title="Record - speak and it is written up for you"><span class="j-rec-dot"></span><span class="j-rec-lbl">Record</span></button><span class="j-voice-hint">Prefer to talk it out? Tap, speak, then tap to stop - it transcribes and writes up your entry.</span></div>`}
       <div class="note-body">${proseEditor(n.body, 'journal', n.id)}</div>
       ${(n.props && n.props.mode) === 'dailyreview' ? '' : `<div class="j-deeper-bar">
         ${(n.props && n.props.mode) === 'coaching'
@@ -6509,54 +6510,92 @@ function renderJournalEntry() {
     } catch {}
   }, 0);
 }
-// Voice dictation for a journal/daily-review entry, using the browser's built-in
-// SpeechRecognition (works in Chrome/Brave, incl. the PWA). Speak and it types
-// final phrases into the prose editor at the caret; tap again to stop. A
-// server-side Whisper path (on the user's AI key) for other browsers is the next
-// step - this one needs no worker and no key.
-let dictation = null;
-function toggleDictation(btn) {
-  if (dictation) { stopDictation(); return; }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast('Voice input needs Chrome or Brave. Type your entry, or try from there.'); return; }
+// Voice journaling: record audio (works on iOS, unlike the old live
+// SpeechRecognition that never ran there), then Gemini transcribes it, writes it
+// up in the person's own voice and fills the entry's prompts. Tap to record, tap
+// to stop; the write-up drops into the entry. See /api/journal/voice.
+let jrec = null;
+async function toggleJournalRecord(btn) {
+  if (jrec) { stopJournalRecord(); return; }
   const ed = document.querySelector('.prose[data-prose="journal"]');
   if (!ed || ed.getAttribute('contenteditable') === 'false') return;
-  let rec; try { rec = new SR(); } catch { toast('Could not start voice input.'); return; }
-  rec.lang = locale() === 'pt' ? 'pt-PT' : 'en-GB';
-  rec.continuous = true; rec.interimResults = false;
-  rec.onresult = (e) => {
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) insertDictated(ed, e.results[i][0].transcript);
-    }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { toast('Recording is not available on this device.'); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { toast('Microphone blocked. Allow mic access to record.'); return; }
+  let mime = '';
+  for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/mpeg']) { try { if (window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) { mime = m; break; } } catch {} }
+  let mr;
+  try { mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+  catch { try { mr = new MediaRecorder(stream); } catch { stream.getTracks().forEach((t) => t.stop()); toast('Could not start recording.'); return; } }
+  const chunks = [];
+  mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = () => {
+    try { stream.getTracks().forEach((t) => t.stop()); } catch {}
+    const type = (mr.mimeType || mime || 'audio/webm').split(';')[0];
+    const blob = new Blob(chunks, { type });
+    jrec = null;
+    journalVoiceSend(blob, btn);
   };
-  rec.onerror = (e) => { if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) toast('Microphone blocked. Allow mic access to dictate.'); stopDictation(); };
-  // Chrome ends recognition after a pause; restart it so a long reflection keeps
-  // going until the user taps stop - but only while the entry (and its button)
-  // is still on screen, so navigating away releases the mic instead of looping.
-  rec.onend = () => { if (dictation && dictation.active && document.contains(dictation.btn)) { try { rec.start(); } catch {} } else { stopDictation(); } };
-  dictation = { rec, active: true, btn };
-  try { ed.focus(); } catch {}
-  try { rec.start(); } catch {}
-  if (btn) { btn.classList.add('rec-on'); const l = btn.querySelector('.j-rec-lbl'); if (l) l.textContent = 'Recording… tap to stop'; }
+  jrec = { mr, stream, btn, t0: Date.now(), timer: null };
+  try { mr.start(); } catch { try { stream.getTracks().forEach((t) => t.stop()); } catch {} jrec = null; toast('Could not start recording.'); return; }
+  jrecPaint(btn, 'rec');
+  jrec.timer = setInterval(() => jrecPaint(btn, 'rec'), 1000);
 }
-function insertDictated(ed, text) {
-  const t = (text || '').replace(/\s+/g, ' ').trim(); if (!t) return;
-  const sel = window.getSelection();
-  const focused = sel && sel.rangeCount && ed.contains(sel.anchorNode);
-  if (focused) {
-    // execCommand fires a native input event, so the prose autosave picks it up.
-    document.execCommand('insertText', false, t + ' ');
-  } else {
-    const last = ed.lastElementChild || ed; last.appendChild(document.createTextNode(t + ' '));
-    ed.dispatchEvent(new Event('input', { bubbles: true }));
-  }
+function stopJournalRecord() {
+  const d = jrec; if (!d) return;
+  if (d.timer) clearInterval(d.timer);
+  jrecPaint(d.btn, 'proc');
+  try { if (d.mr && d.mr.state !== 'inactive') d.mr.stop(); else { if (d.stream) d.stream.getTracks().forEach((t) => t.stop()); jrec = null; } } catch { jrec = null; }
 }
-function stopDictation() {
-  const d = dictation; if (!d) return;
-  d.active = false; try { d.rec.stop(); } catch {}
-  if (d.btn) { d.btn.classList.remove('rec-on'); const l = d.btn.querySelector('.j-rec-lbl'); if (l) l.textContent = 'Record'; }
-  dictation = null;
+function jrecPaint(btn, phase) {
+  if (!btn) return;
+  const l = btn.querySelector('.j-rec-lbl'); if (!l) return;
+  btn.classList.toggle('rec-on', phase === 'rec');
+  btn.classList.toggle('rec-proc', phase === 'proc');
+  if (phase === 'rec') { const s = Math.max(0, Math.floor((Date.now() - (jrec ? jrec.t0 : Date.now())) / 1000)); l.textContent = `Recording ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} - tap to stop`; }
+  else if (phase === 'proc') l.textContent = 'Writing it up…';
+  else l.textContent = 'Record';
 }
+async function journalVoiceSend(blob, btn) {
+  if (!blob || blob.size < 1400) { jrecPaint(btn, 'idle'); toast('That recording was too short.'); return; }
+  if (blob.size > 22 * 1024 * 1024) { jrecPaint(btn, 'idle'); toast('That recording is a bit long - keep it under about ten minutes.'); return; }
+  jrecPaint(btn, 'proc');
+  let b64; try { b64 = await audioToBase64(blob); } catch { jrecPaint(btn, 'idle'); toast('Could not read the recording.'); return; }
+  const n = state.journal && state.journal.current; if (!n) { jrecPaint(btn, 'idle'); return; }
+  const ed = document.querySelector('.prose[data-prose="journal"]');
+  const questions = ed ? (ed.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 1800) : '';
+  try {
+    const r = await api('/api/journal/voice', { method: 'POST', body: JSON.stringify({ audio: b64, mime: blob.type || 'audio/webm', prompt: (n.props && n.props.prompt) || '', mode: (n.props && n.props.mode) || '', questions }) });
+    if (r && r.entry) applyJournalVoice(r.entry);
+    else { jrecPaint(btn, 'idle'); toast('Nothing came back - try again.'); }
+  } catch (e) { jrecPaint(btn, 'idle'); toast((e && e.message) || 'Could not transcribe that recording.'); }
+}
+function applyJournalVoice(rawHtml) {
+  const ed = document.querySelector('.prose[data-prose="journal"]');
+  if (!ed) return;
+  let clean = ''; try { clean = normalizeProseHtml(sanitizeProse(rawHtml)); } catch { try { clean = sanitizeProse(rawHtml); } catch { clean = '<p>' + esc(String(rawHtml || '').replace(/<[^>]+>/g, ' ')) + '</p>'; } }
+  const n = state.journal && state.journal.current;
+  const promptText = ((n && n.props && n.props.prompt) || '').replace(/\s+/g, ' ').trim();
+  const curText = (ed.innerText || '').replace(/\s+/g, ' ').trim();
+  // Still basically just the prompt (or empty)? The write-up IS the entry. If
+  // they had already written, append below a divider so nothing is lost.
+  const basicallyEmpty = !curText || curText.length <= promptText.length + 24;
+  ed.innerHTML = basicallyEmpty ? clean : (ed.innerHTML + '<hr>' + clean);
+  try { saveProse('journal', ed.innerHTML, ed.dataset.blockId); } catch {}
+  if (state.journal && state.journal.current) state.journal.current.body = ed.innerHTML;
+  toast('Written up from your recording ✓');
+  renderJournalEntry();
+}
+function audioToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => { const s = String(fr.result || ''); const i = s.indexOf(','); resolve(i >= 0 ? s.slice(i + 1) : s); };
+    fr.onerror = reject;
+    fr.readAsDataURL(blob);
+  });
+}
+
 // ── Daily review · reconcile with tasks ─────────────────────────────────────
 // Reads the review, matches it against your open tasks, and offers a Done? list
 // (tick to close them off) plus an Add? list (turn "still needed" into tasks). We
@@ -18077,7 +18116,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-insights]')) { openInsights().catch((x) => toast(x.message)); return; }
   const jnew = t.closest('[data-journal-new]'); if (jnew) { newJournalEntry(jnew.dataset.journalNew, jnew.dataset.journalPrompt); return; }
   if (t.closest('[data-journal-pick-cancel]')) { if (state.journal) state.journal.picking = false; renderJournalList(); return; }
-  { const rb = t.closest('[data-journal-dictate]'); if (rb) { toggleDictation(rb); return; } }
+  { const rb = t.closest('[data-journal-dictate]'); if (rb) { toggleJournalRecord(rb); return; } }
   if (t.closest('[data-review-reconcile]')) { reviewReconcileRun(); return; }
   { const rt = t.closest('[data-rc-tick]'); if (rt) { reconcileTick(rt.dataset.rcTick); return; } }
   { const ra = t.closest('[data-rc-add]'); if (ra) { reconcileAdd(Number(ra.dataset.rcAdd)); return; } }
