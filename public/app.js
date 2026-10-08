@@ -3083,7 +3083,7 @@ function renderDiscover() {
   const whenChips = whens.map(([v, l]) => `<button class="dz-chip ${d.when === v ? 'on' : ''}" data-dz-when="${v}">${esc(l)}</button>`).join('');
   const owner = state.me && state.me.id === 1;
   let body;
-  if (d.available === false) body = `<div class="dz-empty"><div class="dz-empty-ic">🎟️</div><p>Discover isn't switched on yet.${owner ? ' Add a free Ticketmaster key and local events show up here.' : ''}</p>${owner ? '<button class="add-btn wide" data-open-ai>Set it up</button>' : ''}</div>`;
+  if (d.available === false) body = `<div class="dz-empty"><div class="dz-empty-ic">🎟️</div><p>Discover isn't switched on yet.${owner ? ' It needs a free Ticketmaster API key set on the worker as <code>TICKETMASTER_KEY</code> - once that\'s in, local events appear here automatically.' : ''}</p></div>`;
   else if (!loc && !d.city) body = `<div class="dz-empty"><div class="dz-empty-ic">📍</div><p>Where shall I look? Allow location, or type a city above.</p><button class="add-btn" data-dz-useloc>Use my location</button></div>`;
   else if (d.loading && !d.events.length) body = `<div class="dz-loading"><span class="dz-spin"></span>Finding what's on${where ? ' ' + where : ''}…</div>`;
   else if (d.err) body = `<div class="dz-empty"><p class="imp-err">${esc(d.err)}</p><button class="add-btn" data-dz-retry>Try again</button></div>`;
