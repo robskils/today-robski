@@ -1408,6 +1408,26 @@ async function syncAccentFromServer() {
   try { const r = await api('/api/kv/accent'); const hex = (r && r.value) || ''; if (hex !== savedAccent()) { try { hex ? localStorage.setItem('life.accent', hex) : localStorage.removeItem('life.accent'); } catch {} applyAccent(hex); renderNav(); } } catch {}
 }
 
+// ── background pattern (per-user) ──────────────────────────────────────
+// A faint, theme-aware texture over --paper, chosen in Settings › Appearance.
+// Cached in localStorage for instant paint and mirrored to kv_bgpattern so it
+// follows you across devices. 'none' = plain (no texture).
+const BG_PATTERNS = [['none', 'Plain'], ['dots', 'Dots'], ['grid', 'Grid'], ['diagonal', 'Lines'], ['waves', 'Waves'], ['tiles', 'Tiles'], ['paisley', 'Paisley']];
+function savedBgPattern() { try { return localStorage.getItem('life.bgpattern') || 'none'; } catch { return 'none'; } }
+function applyBgPattern(key) {
+  const k = BG_PATTERNS.some(([v]) => v === key) ? key : 'none';
+  if (k === 'none') delete document.body.dataset.bg; else document.body.dataset.bg = k;
+}
+async function setBgPattern(key) {
+  try { localStorage.setItem('life.bgpattern', key || 'none'); } catch {}
+  applyBgPattern(key);
+  if (state.view && state.view.type === 'settings') renderSettings();
+  try { await api('/api/kv/bgpattern', { method: 'PUT', body: JSON.stringify({ value: key || 'none' }) }); } catch {}
+}
+async function syncBgPatternFromServer() {
+  try { const r = await api('/api/kv/bgpattern'); const k = (r && r.value) || 'none'; if (k !== savedBgPattern()) { try { localStorage.setItem('life.bgpattern', k); } catch {} applyBgPattern(k); } } catch {}
+}
+
 // ── Settings hub ──────────────────────────────────────────────────────
 function openSettings(tab) { state.settings = state.settings || {}; if (tab) state.settings.tab = tab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 // 🇵🇹 from "PT" - two regional-indicator symbols (client mirror of the worker's).
@@ -2543,6 +2563,7 @@ function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
     `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
+  const bgSwatches = BG_PATTERNS.map(([k, l]) => `<button class="bg-swatch-btn ${savedBgPattern() === k ? 'on' : ''}" data-bgpat="${k}" title="${l}"><span class="bg-swatch" data-bg="${k}"></span><span class="bg-swatch-l">${l}</span></button>`).join('');
   state.settings = state.settings || {};
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
@@ -2648,6 +2669,9 @@ function renderSettings() {
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
+        </div>
+        <div class="set-block"><div class="set-row-t">Background</div><div class="set-row-s">A little texture behind everything - keep it plain, or pick a faint pattern.</div>
+          <div class="bg-swatches">${bgSwatches}</div>
         </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
         ${state.account ? `<label class="set-mod"><span>Default currency<small>The symbol your money, spending and portfolio are shown in</small></span><select class="sel" data-account-currency style="max-width:180px">${CURRENCIES_APP.map(([code, sym, , name]) => `<option value="${code}" ${appCurrencyCode() === code ? 'selected' : ''}>${sym} ${name} (${code})</option>`).join('')}</select></label>` : ''}
@@ -18168,6 +18192,7 @@ document.addEventListener('click', (e) => {
   { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
+  { const bp = t.closest('[data-bgpat]'); if (bp) { setBgPattern(bp.dataset.bgpat); return; } }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-spendcats]')) { state.financial = state.financial || {}; state.financial.spendCatsOpen = true; openFinancial('spending').catch((x) => toast(x.message)); return; }
   const fseg = t.closest('[data-fin-tab]'); if (fseg) { openFinancial(fseg.dataset.finTab).catch((x) => toast(x.message)); return; }
@@ -21570,6 +21595,7 @@ async function onbConnectGmail() {
 
 (async function boot() {
   initTheme();
+  applyBgPattern(savedBgPattern());
   // Session hand-off from the apex (see goToMyDaybook): #t=<jwt> signs this
   // origin in on arrival, then the fragment is wiped from the URL.
   let preEmail = '';
@@ -21681,6 +21707,8 @@ async function onbConnectGmail() {
     // gesture and a silent pending registration can stop the manual button's
     // address-bar icon from appearing. It's wired to the button in Accounts instead.
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
+    syncBgPatternFromServer();  // and the background pattern, likewise
+
     loadAccount();           // name, handle & contact details for the Daybook card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
     // Pinned I Ching / horoscope readings follow the account, so they surface on
