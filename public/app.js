@@ -7402,10 +7402,21 @@ function renderArea() {
   const areaTilesHtml = `${tabBar}<div class="area-tilepanel" style="--h:${h}">${topCard}${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
-  // Each stat is a shortcut: clicking it opens (and scrolls to) that part of the area.
-  const STAT_GOTO = { 'notes & tables': 'Notes and tables', 'open tasks': 'Tasks', goals: 'Goals', saved: 'Saved links', reflections: 'Reflections' };
-  const dashStats = [[notes.length + tables.length, 'notes & tables'], [openTs.length, 'open tasks'], [activeGoals.length, 'goals'], [bookmarks.length, 'saved'], [journals.length, 'reflections']]
-    .filter(([n]) => n).map(([n, l]) => { const g = STAT_GOTO[l]; const inner = `<b>${n}</b><span>${esc(l)}</span>`; return (g && !secHidden(g)) ? `<button class="area-stat area-stat-btn" data-area-goto="${esc(g)}">${inner}</button>` : `<div class="area-stat">${inner}</div>`; }).join('');
+  // The dashboard metrics double as a quick-jump section menu: each populated part
+  // of the Page is a chip showing its count, and tapping it scrolls to (and opens)
+  // that section - so the top of the Page reads like a one-page site's nav, quick
+  // metrics and all. Covers everything the Page holds. (Robin.)
+  const DASH_STATS = [
+    [notes.length + tables.length, 'notes & tables', 'Notes and tables'],
+    [openTs.length, 'open tasks', 'Tasks'],
+    [activeGoals.length, 'goals', 'Goals'],
+    [contacts.length, contacts.length === 1 ? 'person' : 'people', 'Contacts'],
+    [bookmarks.length, 'saved', 'Saved links'],
+    [journals.length, 'reflections', 'Reflections'],
+    [emails.length, 'emails', 'Emails'],
+    [bucket.length, 'bucket list', 'Bucket list'],
+  ];
+  const dashStats = DASH_STATS.filter(([n]) => n).map(([n, l, g]) => { const inner = `<b>${n}</b><span>${esc(l)}</span>`; return (g && !secHidden(g)) ? `<button class="area-stat area-stat-btn" data-area-goto="${esc(g)}">${inner}</button>` : `<div class="area-stat">${inner}</div>`; }).join('');
   const rvArea = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const RV_IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const rvAreaHtml = rvArea.map((x) => `<button class="area-rv-item" data-fav-open="${x.kind}:${x.id}"><span class="area-rv-ic">${RV_IC[x.kind] || '•'}</span><span class="area-rv-t">${esc(x.title || 'Untitled')}</span></button>`).join('');
