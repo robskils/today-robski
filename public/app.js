@@ -7804,7 +7804,9 @@ function renderArea() {
     }).join('');
     const bodyInner = !loaded
       ? '<div class="home-empty">Loading the week…</div>'
-      : `<div class="aweek">${rows}</div>${!total ? '<div class="awk-note">Nothing in this ledger for the week ahead.</div>' : ''}`;
+      : total
+        ? `<div class="aweek">${rows}</div>`
+        : '<div class="aweek aweek-empty"><div class="awk-note">Nothing in this ledger for the week ahead.</div></div>';
     const addBtn = canEditArea ? `<button class="awk-add add-btn" data-area-add-event title="Add an event to this ledger">＋</button>` : '';
     return `<section class="area-sec area-weeksec ${open ? '' : 'area-sec-collapsed'}" data-aflow="Week" style="--h:${h}">
       <div class="area-sec-h">
@@ -9578,7 +9580,7 @@ function t2ColHead(name, count, kind, active, open) {
 }
 function t2FilterBar(areas, f, prios, selAttr, prioAttr) {
   return `<div class="t2-filterbar">
-    <select class="sel t2-tfilter" ${selAttr}><option value="">All pages</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
+    <select class="sel t2-tfilter" ${selAttr}><option value="">${t('filter.allareas')}</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
     ${prioAttr ? `<div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" ${prioAttr}="${p}">${p}</button>`).join('')}</div>` : ''}
   </div>`;
 }
@@ -12631,7 +12633,7 @@ function renderTasks() {
   const qa = state.taskQuickArea || '';
   const quickMatch = (t) => (!qp.size || qp.has(t.props.priority || '')) && (!qa || blockAreas(t).includes(qa));
   const quickBar = `<div class="tq-bar">
-    <select class="sel tq-area" data-task-qarea><option value="">All pages</option>${state.areas.map((a) => `<option value="${a.id}" ${qa === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>
+    <select class="sel tq-area" data-task-qarea><option value="">${t('filter.allareas')}</option>${state.areas.map((a) => `<option value="${a.id}" ${qa === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>
     <div class="tq-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="tq-prio ${qp.has(p) ? 'on' : ''}" data-task-qprio="${p}">${p}</button>`).join('')}</div>
   </div>`;
   const inFilter = (t) => taskMatchesFilters(t) && quickMatch(t);
@@ -12687,6 +12689,9 @@ function renderTasks() {
       : `${taskTableHtml(open, (conds.length || tq || qp.size || qa) ? t('task.empty.filters') : t('task.empty.open'))}
     ${snoozedSection}
     ${completedSection}`}`;
+  // Pin the search row under the breadcrumb: measure the crumb (and the row) so the
+  // sticky offsets stack, and the table head clears both. (Robin: sticky search.)
+  requestAnimationFrame(() => { try { const root = document.documentElement; const cb = document.querySelector('#pane .crumbbar'); if (cb) root.style.setProperty('--tasks-crumbh', cb.offsetHeight + 'px'); const lh = document.querySelector('#pane .list-head'); if (lh) root.style.setProperty('--tasks-headh', lh.offsetHeight + 'px'); } catch {} });
   // Put the cursor in the new-task title whenever the add form is freshly opened -
   // and keep it there. openTasks re-renders again when assigned tasks load, which
   // would otherwise steal the focus; the short arming window re-focuses on every

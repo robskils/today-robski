@@ -1846,8 +1846,30 @@ function parseBlock(row) {
 function areaIdsFromProps(propsJson) {
   try { const p = JSON.parse(propsJson || '{}'); const ids = Array.isArray(p.areas) ? p.areas.slice() : []; if (p.area) ids.push(p.area); return [...new Set(ids.filter(Boolean))]; } catch { return []; }
 }
+// Opt-in ledger sharing. Each content block belongs to one shareable section;
+// an area carries props.shareMode ('optin' = choose what to share) and
+// props.shareSections { <Section>: 'all' | [memberId…] }. A ledger with no
+// shareMode is 'open' (legacy): membership shares everything (minus private),
+// exactly as before - so nothing a member already sees ever disappears.
+const BLOCK_SECTION = { note: 'Pages and tables', table: 'Pages and tables', task: 'Tasks', contact: 'Contacts', goal: 'Goals', bookmark: 'Saved links', journal: 'Reflections', bucket: 'Bucket list' };
+// Does this area (by its props) share `section` with member `uid`? 'open'
+// ledgers share everything; 'optin' only what's ticked ('all' or a member list).
+function areaSharesSection(areaProps, section, uid) {
+  if (!areaProps || areaProps.shareMode !== 'optin') return true;   // open/legacy: all shared
+  const cfg = (areaProps.shareSections || {})[section];
+  if (cfg === 'all' || cfg === true) return true;
+  if (Array.isArray(cfg)) return cfg.map(String).includes(String(uid));
+  return false;
+}
+async function areaPropsCached(env, id, cache) {
+  if (cache && cache.has(id)) return cache.get(id);
+  const row = await env.DB.prepare('SELECT props FROM blocks WHERE id = ?').bind(id).first().catch(() => null);
+  let p = {}; try { p = row && row.props ? JSON.parse(row.props) : {}; } catch {}
+  if (cache) cache.set(id, p);
+  return p;
+}
 async function blockAccess(env, id) {
-  const own = await env.DB.prepare('SELECT user_id, parent_id, props FROM blocks WHERE id = ?').bind(id).first().catch(() => null);
+  const own = await env.DB.prepare('SELECT user_id, parent_id, props, kind FROM blocks WHERE id = ?').bind(id).first().catch(() => null);
   if (!own) return null;
   if (own.user_id === env.uid) return { ownerId: env.uid, canEdit: true, mine: true };
   const sh = await env.DB.prepare('SELECT can_edit FROM shares WHERE block_id = ? AND friend_id = ?').bind(id, env.uid).first().catch(() => null);
@@ -1857,16 +1879,21 @@ async function blockAccess(env, id) {
     const psh = await env.DB.prepare('SELECT can_edit FROM shares WHERE block_id = ? AND friend_id = ?').bind(own.parent_id, env.uid).first().catch(() => null);
     if (psh) return { ownerId: own.user_id, canEdit: !!psh.can_edit, mine: false };
   }
-  // A block tagged to a life area that's shared with me is viewable (read-only):
-  // sharing an area shares everything filed under it - EXCEPT anything the owner
-  // marked private (props.private), which stays theirs alone even inside a shared
-  // area. An explicit per-block share (checked above) still overrides this.
+  // A block tagged to a life area shared with me is viewable (read-only) when the
+  // area shares that block's SECTION with me - EXCEPT anything the owner marked
+  // private. An 'open' (legacy) ledger shares every section, so this stays the old
+  // behaviour; an 'optin' ledger shares only ticked sections. An explicit per-block
+  // share (checked above) overrides, so a single piece can be shared regardless.
   let ownProps = {}; try { ownProps = own.props ? JSON.parse(own.props) : {}; } catch {}
   const areas = areaIdsFromProps(own.props);
   if (areas.length && !ownProps.private) {
     const ph = areas.map(() => '?').join(',');
-    const ash = await env.DB.prepare(`SELECT 1 FROM shares WHERE friend_id = ? AND block_id IN (${ph})`).bind(env.uid, ...areas).first().catch(() => null);
-    if (ash) return { ownerId: own.user_id, canEdit: false, mine: false };
+    const { results: mem } = await env.DB.prepare(`SELECT block_id FROM shares WHERE friend_id = ? AND block_id IN (${ph})`).bind(env.uid, ...areas).all().catch(() => ({ results: [] }));
+    const section = BLOCK_SECTION[own.kind] || null;
+    for (const r of (mem || [])) {
+      const ap = await areaPropsCached(env, r.block_id);
+      if (areaSharesSection(ap, section, env.uid)) return { ownerId: own.user_id, canEdit: false, mine: false };
+    }
   }
   return null;
 }
@@ -1980,12 +2007,22 @@ async function listBlocks(request, env, url) {
     const aid = url.searchParams.get('area');
     const acc = await blockAccess(env, aid);
     if (acc && !acc.mine) {
-      // A member sees the owner's blocks in this area, minus anything the owner
-      // kept private (props.private) - private to them, still filed in the area.
+      // A member sees the owner's blocks in this area, minus anything kept private.
       const cl = ['user_id = ?', "(json_extract(props,'$.area') = ? OR EXISTS (SELECT 1 FROM json_each(json_extract(props,'$.areas')) WHERE value = ?))", "IFNULL(json_extract(props,'$.private'),0) = 0"];
       const ar = [acc.ownerId, aid, aid];
       if (kind) { cl.push('kind = ?'); ar.push(kind); }
       if (!wantArchived) cl.push('archived = 0');
+      // Opt-in ledger: narrow to the sections shared with this member, plus any
+      // individual piece explicitly shared with them. An open/legacy ledger keeps
+      // showing everything (areaSharesSection returns true for every section).
+      const ap = await areaPropsCached(env, aid);
+      if (ap && ap.shareMode === 'optin') {
+        const kinds = Object.keys(BLOCK_SECTION).filter((k) => areaSharesSection(ap, BLOCK_SECTION[k], env.uid));
+        const kph = kinds.length ? kinds.map(() => '?').join(',') : null;
+        cl.push(`(${kph ? `kind IN (${kph})` : '0=1'} OR id IN (SELECT block_id FROM shares WHERE friend_id = ?))`);
+        if (kph) ar.push(...kinds);
+        ar.push(env.uid);
+      }
       const { results } = await env.DB.prepare(`SELECT * FROM blocks WHERE ${cl.join(' AND ')} ORDER BY position, created_at`).bind(...ar).all();
       return json(results.map(parseBlock), request);
     }
