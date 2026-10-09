@@ -7609,10 +7609,16 @@ function renderArea() {
   // other parts as its own collapsible card - notes & tables, tasks, contacts,
   // wheel, saved links, reflections, emails. (Robin, 2026-09-26: the tabs change
   // only the top bit; the rest of the cards always show.)
-  const areaBoardList = tasks.filter((tk) => !(tk.props.hideUntil && isSnoozed(tk) && !tk.props.done));
-  const tasksBody = `${tasksViewToggle('area')}${areaBoardOn()
+  // P1-P4 quick filter for this ledger's Tasks section, to the right of the
+  // List/Board switch. Narrows only what's shown, never the counts. (Robin.)
+  const aqp = state.areaTaskPrios instanceof Set ? state.areaTaskPrios : (state.areaTaskPrios = new Set());
+  const prioOk = (tk) => !aqp.size || aqp.has(tk.props.priority || '');
+  const areaBoardList = tasks.filter((tk) => !(tk.props.hideUntil && isSnoozed(tk) && !tk.props.done)).filter(prioOk);
+  const openTsShown = openTs.filter(prioOk);
+  const areaPrioChips = `<div class="tq-prios area-tq-prios">${['P1', 'P2', 'P3', 'P4'].map((pp) => `<button class="tq-prio ${aqp.has(pp) ? 'on' : ''}" data-area-qprio="${pp}">${pp}</button>`).join('')}</div>`;
+  const tasksBody = `<div class="area-tasks-head">${tasksViewToggle('area')}${areaPrioChips}</div>${areaBoardOn()
     ? taskKanbanHtml(areaBoardList)
-    : (openTs.length ? taskTableHtml(openTs, 'No open tasks here.') : '<div class="home-empty">No open tasks.</div>')}`;
+    : (openTsShown.length ? taskTableHtml(openTsShown, 'No open tasks here.') : `<div class="home-empty">No open tasks${aqp.size ? ' at that priority' : ''}.</div>`)}`;
   const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>';
   // [key, present?, count, body] - shown in your saved drag order; Tasks last.
   const restDefs = [
@@ -19248,6 +19254,7 @@ document.addEventListener('click', (e) => {
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
   { const sc = t.closest('[data-surface-ch]'); if (sc) { const [ch, id] = sc.dataset.surfaceCh.split(':'); const tk = taskCopies(id)[0]; if (tk) { const acctEmail = !(state.account && state.account.surfaceEmail === false); const acctSms = !!(state.account && state.account.surfaceSms); const cur = ch === 'email' ? (tk.props.surfaceEmail == null ? acctEmail : !!tk.props.surfaceEmail) : (tk.props.surfaceSms == null ? acctSms : !!tk.props.surfaceSms); patchTaskProps(id, ch === 'email' ? { surfaceEmail: !cur } : { surfaceSms: !cur }); } return; } }
   { const qpb = t.closest('[data-task-qprio]'); if (qpb) { const s = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set()); const p = qpb.dataset.taskQprio; if (s.has(p)) s.delete(p); else s.add(p); renderTasks(); return; } }
+  { const aqpb = t.closest('[data-area-qprio]'); if (aqpb) { const s = state.areaTaskPrios instanceof Set ? state.areaTaskPrios : (state.areaTaskPrios = new Set()); const p = aqpb.dataset.areaQprio; if (s.has(p)) s.delete(p); else s.add(p); renderArea(); return; } }
   if (t.closest('[data-tf-toggle]')) { state.taskFiltersOpen = !state.taskFiltersOpen; renderTasks(); return; }
   if (t.closest('[data-tf-add]')) { loadTaskFilters(); state.taskFilters.push({ field: 'priority', op: 'is', value: 'P1' }); state.taskFiltersOpen = true; saveTaskFilters(); renderTasks(); return; }
   if (t.closest('[data-tf-clear]')) { state.taskFilters = []; saveTaskFilters(); renderTasks(); return; }
