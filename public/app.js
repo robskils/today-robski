@@ -7914,21 +7914,26 @@ function areaOverviewHtml(area, c, blocks) {
   const optin = (area.props || {}).shareMode === 'optin';
   const scfg = (area.props || {}).shareSections || {};
   const memChips = (k, st) => `<span class="ovs-mems"><button class="ovs-mem ${st === 'all' ? 'on' : ''}" data-area-sec-mem="${esc(k)}::all">All</button>${(shares || []).map((s) => `<button class="ovs-mem ${Array.isArray(st) && st.map(String).includes(String(s.id)) ? 'on' : ''}" data-area-sec-mem="${esc(k)}::${s.id}" title="${esc(s.name || 'Someone')}">${esc(initial(s.name || '?'))}</button>`).join('')}</span>`;
+  // Each function is one of three states, spelled out: Off (neither of us),
+  // Only me (on for me, off for them) or Shared (on for me, on for them - all or
+  // some). Non-shareable parts, or a ledger with no members, are just Off/On.
+  const seg = (k, state, val, label) => `<button class="ovs-segb ${state === val ? 'on' : ''}" data-area-sec-state="${esc(k)}::${val}">${label}</button>`;
   const secRow = (k) => {
-    const on = !hidden.includes(k);
-    let share = '';
-    if (on && SHARE_KEYS.includes(k) && hasMembers) {
-      if (!optin) share = '<span class="ovs-sharenote">shared</span>';
-      else { const st = scfg[k]; const shared = st === 'all' || (Array.isArray(st) && st.length); share = `<button class="ovs-lock ${shared ? 'on' : ''}" data-area-sec-share="${esc(k)}" title="${shared ? 'Shared - tap to keep private' : 'Private - tap to share'}">${shared ? '🔓 Shared' : '🔒 Private'}</button>${shared ? memChips(k, st) : ''}`; }
+    const hiddenK = hidden.includes(k);
+    const shareable = SHARE_KEYS.includes(k) && hasMembers && optin;
+    if (!shareable) {
+      return `<div class="ovs-row"><label class="ovs-vis"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${esc(SEC_LABELS[k] || k)}</span></label></div>`;
     }
-    return `<div class="ovs-row"><label class="ovs-vis"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${on ? 'checked' : ''}><span>${esc(SEC_LABELS[k] || k)}</span></label>${share}</div>`;
+    const st = scfg[k]; const shared = st === 'all' || (Array.isArray(st) && st.length);
+    const state = hiddenK ? 'off' : (shared ? 'shared' : 'me');
+    return `<div class="ovs-row ovs-row-seg"><span class="ovs-name">${esc(SEC_LABELS[k] || k)}</span><div class="ovs-seg">${seg(k, state, 'off', 'Off')}${seg(k, state, 'me', 'Only me')}${seg(k, state, 'shared', 'Shared')}</div>${state === 'shared' ? memChips(k, st) : ''}</div>`;
   };
   const shareSwitch = !hasMembers ? '' : (!optin
     ? `<div class="ovs-switch"><span>This ledger shares everything with members.</span><button class="as-choose" data-area-share-optin>🔒 Make it private by default</button></div>`
     : `<button class="ghost ovs-shareall" data-area-share-open>Share everything instead</button>`);
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections &amp; sharing</span></div>
-      <div class="ov-muted" style="margin-bottom:11px">${hasMembers ? 'Switch a function on or off, and choose whether members see it - everything&rsquo;s private until you share it.' : 'Switch a function on or off. Who-can-see options appear once you invite someone.'}</div>
+      <div class="ov-muted" style="margin-bottom:11px">${hasMembers && optin ? 'For each function: <b>Off</b> (neither of you), <b>Only me</b>, or <b>Shared</b> (and with whom). Private until you share it.' : hasMembers ? 'Switch a function on or off. Choose what members see below.' : 'Switch a function on or off. Who-can-see options appear once you invite someone.'}</div>
       <div class="ovs-list">${AREA_SECS.map(secRow).join('')}</div>
       ${shareSwitch}
     </div>`;
@@ -8052,10 +8057,23 @@ function patchAreaShare(patch) {
 // so nothing a member already sees disappears - then the owner locks from there.
 function areaShareStartOptin() {
   const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
-  const blocks = (state.area_open && state.area_open.blocks) || [];
-  const cfg = {};
-  SHARE_SECS.forEach(([name, test]) => { if (blocks.some(test)) cfg[name] = 'all'; });
-  patchAreaShare({ shareMode: 'optin', shareSections: cfg });
+  // An explicit choice to go private by default: members now see nothing until
+  // you share a function. (Robin: by default all private unless actively shared.)
+  patchAreaShare({ shareMode: 'optin', shareSections: {} });
+  toast('Now private - share each function when you’re ready');
+}
+// One three-way control per function sets both axes at once: Off (hidden for
+// everyone), Only me (visible to you, private), or Shared (visible + shared).
+function areaSecState(k, stateVal) {
+  const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
+  a.props = a.props || {};
+  let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
+  const cfg = { ...(a.props.shareSections || {}) };
+  if (stateVal === 'off') { if (!hs.includes(k)) hs.push(k); delete cfg[k]; }
+  else { hs = hs.filter((x) => x !== k); if (stateVal === 'shared') { if (!(cfg[k] === 'all' || (Array.isArray(cfg[k]) && cfg[k].length))) cfg[k] = 'all'; } else delete cfg[k]; }
+  a.props.hiddenSecs = hs; a.props.shareSections = cfg;
+  api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs, shareSections: cfg } }) }).catch((e) => toast(e.message));
+  renderArea();
 }
 function areaSecShareToggle(name) {
   const a = state.area_open && state.area_open.area; if (!a) return;
@@ -19250,6 +19268,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-share-optin]')) { areaShareStartOptin(); return; }
   if (t.closest('[data-area-share-open]')) { patchAreaShare({ shareMode: 'open', shareSections: {} }); return; }
   { const ss = t.closest('[data-area-sec-share]'); if (ss) { areaSecShareToggle(ss.dataset.areaSecShare); return; } }
+  { const sst = t.closest('[data-area-sec-state]'); if (sst) { const [nm, stv] = sst.dataset.areaSecState.split('::'); areaSecState(nm, stv); return; } }
   { const sm = t.closest('[data-area-sec-mem]'); if (sm) { const [nm, who] = sm.dataset.areaSecMem.split('::'); areaSecMember(nm, who); return; } }
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-note-wall-toggle]')) { try { localStorage.setItem('life.note.wall', noteWallOpen() ? '0' : '1'); } catch {} renderNote(); return; }

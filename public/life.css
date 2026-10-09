@@ -5179,6 +5179,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ovs-lock { flex:none; cursor:pointer; font:inherit; font-size:12.5px; font-weight:600; padding:4px 11px; border-radius:999px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); transition:border-color .12s, background .12s, color .12s; }
 .ovs-lock.on { border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 13%,var(--card)); color:var(--ink); }
 .ovs-sharenote { flex:none; font-size:12px; color:var(--ink-3); font-style:italic; }
+.ovs-row-seg { gap:12px; }
+.ovs-name { flex:1; min-width:120px; font-size:14.5px; color:var(--ink); }
+.ovs-seg { flex:none; display:inline-flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--paper); }
+.ovs-segb { font:inherit; font-size:12.5px; font-weight:600; padding:5px 11px; border:0; border-left:1px solid var(--line); background:transparent; color:var(--ink-3); cursor:pointer; transition:background .12s, color .12s; }
+.ovs-segb:first-child { border-left:0; }
+.ovs-segb.on { background:color-mix(in srgb,var(--c,var(--accent)) 18%,var(--card)); color:var(--ink); }
+.ovs-segb:not(.on):hover { background:color-mix(in srgb,var(--ink) 5%,transparent); color:var(--ink-2); }
 .ovs-mems { display:flex; flex-wrap:wrap; gap:5px; }
 .ovs-mem { min-width:27px; height:27px; padding:0 8px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:12px; font-weight:700; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
 .ovs-mem.on { border-color:color-mix(in srgb,var(--c,var(--accent)) 50%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 16%,var(--card)); color:var(--ink); }
