@@ -7556,7 +7556,7 @@ function renderArea() {
   const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
   const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
   const filesLinksRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
-  const sharedSec = memberCount ? `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : '';
+  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Who has access${memberCount ? ` · ${memberCount + (area.sharedBy ? 0 : 1)}` : ''}</div>${areaMembersBody(area)}</section>`;
   // Connections hub: a card per type. Populated ones carry a count, are highlighted
   // and sort to the front, and click through to view their section (which surfaces
   // above as you add). Empty ones are the add affordance for that type. (Robin.)
@@ -7716,7 +7716,7 @@ function areaOverviewHtml(area, c, blocks) {
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections</span></div>
-      <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(k)}</span></label>`).join('')}</div>
+      <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(k === 'Shared with' ? 'Who has access' : k)}</span></label>`).join('')}</div>
       <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this ledger. Empty sections hide themselves.</div>
     </div>`;
   // How this area figures in reviews: a "key" star (the wheel average is taken from
@@ -7757,10 +7757,7 @@ function areaOverviewHtml(area, c, blocks) {
     ${deadlineBlock}
     ${sectionsBlock}
     ${reviewsBlock}
-    <div class="ov-cols">
-      <div class="ov-block"><div class="ov-h"><span>Who has access</span>${area.sharedBy ? '' : '<button class="ghost ov-invite" data-area-invite>✦ Invite</button>'}</div><div class="ov-people">${people}</div></div>
-      <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
-    </div>
+    <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
   </section>`;
 }
 // Members of a page: the people it's shared with, as a horizontal row of
@@ -7795,12 +7792,20 @@ function areaMembersBody(area) {
   if (shares == null) return '<div class="mem-empty">Loading…</div>';
   const friends = (state.friends && state.friends.friends) || [];
   const LIMIT = 8;
+  // The owner's own card leads "Who has access" (so a private ledger still reads
+  // as "you + invite", not an empty bar). (Robin.)
+  const ownerCard = area.sharedBy ? '' : (() => {
+    const a = state.account || {}; const nm = a.name || (state.me && state.me.name) || 'You';
+    const photo = state.card && state.card.photo;
+    const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(nm))}</span>`;
+    return `<button class="mem-card mem-card-me" data-open-card title="Your Daybook card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
+  })();
   const cards = shares.map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="mem-card" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''} title="Message ${esc(name)}"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="mem-name">${esc(name)}</span><span class="mem-msg">💬</span></button>`; });
   const exp = state.area_open.membersExpanded;
   const shown = exp ? cards : cards.slice(0, LIMIT);
   const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
-  return cards.length ? `<div class="mem-row">${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
+  return (ownerCard || cards.length) ? `<div class="mem-row">${ownerCard}${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
 }
 function areaWallBody(area) {
   const wall = (area.props && area.props.wall) || '';
