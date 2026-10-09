@@ -7553,8 +7553,8 @@ function renderArea() {
   // Connections card can scroll to it.
   const attList = (area.props && area.props.attachments) || [];
   const linkN = blockLinks(area).length;
-  const linksSec = linkN ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
-  const filesSec = attList.length ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
+  const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
+  const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
   const filesLinksRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
   const sharedSec = memberCount ? `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Shared with · ${memberCount}</div>${areaMembersBody(area)}</section>` : '';
   // Connections hub: a card per type. Populated ones carry a count, are highlighted
@@ -7570,9 +7570,8 @@ function renderArea() {
     { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', add: 'data-area-add-task' },
     ...(secHidden('Goals') ? [] : [{ ic: '🎯', l: 'Goal', n: activeGoals.length, go: 'Goals', add: 'data-area-add-goal' }]),
     { ic: '👤', l: 'Contact', n: contacts.length, go: 'Contacts', add: 'data-area-add-contact' },
-    { ic: '🔗', l: 'Web link', n: linkN, go: 'Web links', add: `data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"` },
-    { ic: '📎', l: 'File', n: attList.filter((a) => !isImgType(a.type)).length, go: 'Files', file: '' },
-    { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' },
+    ...(secHidden('Web links') ? [] : [{ ic: '🔗', l: 'Web link', n: linkN, go: 'Web links', add: `data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"` }]),
+    ...(secHidden('Files') ? [] : [{ ic: '📎', l: 'File', n: attList.filter((a) => !isImgType(a.type)).length, go: 'Files', file: '' }, { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' }]),
     ...(secHidden('Bucket list') ? [] : [{ ic: '✦', l: 'Bucket-list', n: bucket.length, go: 'Bucket list', add: 'data-area-add-bucket' }]),
     { ic: '◑', l: 'Event', n: 0, add: 'data-area-add-event' },
     { ic: '✎', l: 'Journal', n: journalN, go: 'Reflections', add: 'data-area-add-journal' },
@@ -7713,7 +7712,7 @@ function areaOverviewHtml(area, c, blocks) {
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
-  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections'];
+  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections'];
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections</span></div>
