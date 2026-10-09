@@ -7570,12 +7570,18 @@ function renderArea() {
   const ntCard = (n) => n.kind === 'table'
     ? `<button class="tbl-card noteord-card" draggable="true" data-noteord="${n.id}" data-open-table="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`
     : `<button class="tbl-card noteord-card${privCls(n)}" draggable="true" data-noteord="${n.id}" data-open-note="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span>${isFav(n) ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${privChip(n)}</button>`;
-  const orderedNoteCards = noteTblOrdered.map(ntCard).join('');
+  // Each tool shows at most SEC_CAP items, then a "See all N →" that expands in
+  // place - so a ledger full of pages never becomes an endless scroll. (Robin.)
+  const SEC_CAP = 8;
+  const secAllSet = (state.area_open.secAll instanceof Set) ? state.area_open.secAll : (state.area_open.secAll = new Set());
+  const capArr = (key, arr) => (secAllSet.has(key) ? arr : arr.slice(0, SEC_CAP));
+  const secMore = (key, total) => (total > SEC_CAP ? `<button class="area-seemore" data-area-secall="${esc(key)}">${secAllSet.has(key) ? '− Show fewer' : `See all ${total} →`}</button>` : '');
+  const orderedNoteCards = capArr('Pages and tables', noteTblOrdered).map(ntCard).join('');
   // Everything else that can carry this area, each linking to its own tool.
-  const emailCards = emails.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
-  const contactCards = contacts.map((c) => contactCardHtml(c)).join('');
-  const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card${privCls(bm)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span>${privChip(bm)}</a>` : `<button class="tbl-card${privCls(bm)}"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span>${privChip(bm)}</button>`; }).join('');
-  const journalCards = journals.map((j) => `<button class="tbl-card${privCls(j)}" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span>${privChip(j)}</button>`).join('');
+  const emailCards = capArr('Emails', emails).map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
+  const contactCards = capArr('Contacts', contacts).map((c) => contactCardHtml(c)).join('');
+  const bookmarkCards = capArr('Saved links', bookmarks).map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card${privCls(bm)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span>${privChip(bm)}</a>` : `<button class="tbl-card${privCls(bm)}"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span>${privChip(bm)}</button>`; }).join('');
+  const journalCards = capArr('Reflections', journals).map((j) => `<button class="tbl-card${privCls(j)}" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span>${privChip(j)}</button>`).join('');
   // Owner section control: the owner can hide any part of the page (Vision,
   // Goals, etc.) from area.props.hiddenSecs. Hidden sections vanish for everyone;
   // the owner turns them back on from the overview panel's "Sections" manager.
@@ -7638,14 +7644,14 @@ function renderArea() {
   const tasksBody = `<div class="area-tasks-head">${tasksViewToggle('area')}${areaPrioChips}</div>${areaBoardOn()
     ? taskKanbanHtml(areaBoardList)
     : (openTsShown.length ? taskTableHtml(openTsShown, 'No open tasks here.') : `<div class="home-empty">No open tasks${aqp.size ? ' at that priority' : ''}.</div>`)}`;
-  const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>';
+  const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>${secMore('Pages and tables', noteTblOrdered.length)}` : '<div class="home-empty">No notes or tables here yet.</div>';
   // [key, present?, count, body] - shown in your saved drag order; Tasks last.
   const restDefs = [
     ['Pages and tables', !!notesTotal, notesTotal, notesBody],
-    ['Contacts', !!contacts.length, contacts.length, `<div class="contact-grid">${contactCards}</div>`],
-    ['Saved links', !!bookmarks.length, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`],
-    ['Reflections', !!journals.length, journals.length, `<div class="tbl-cards">${journalCards}</div>`],
-    ['Emails', !!emails.length, emails.length, `<div class="tbl-cards">${emailCards}</div>`],
+    ['Contacts', !!contacts.length, contacts.length, `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}`],
+    ['Saved links', !!bookmarks.length, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}`],
+    ['Reflections', !!journals.length, journals.length, `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}`],
+    ['Emails', !!emails.length, emails.length, `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}`],
     ['Tasks', true, openTs.length, tasksBody],
   ];
   const flowOrder = areaFlowOrder();
@@ -7844,12 +7850,13 @@ function renderArea() {
   })();
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Ledgers', attr: 'data-open-areas' }, { label: area.title }])}
+    <div class="area-body" style="--h:${h}">
     <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
       ${cover ? `<div class="am-cover" style="background-image:url('${esc(cover.url)}')">
         <span class="am-cover-scrim"></span>
         ${canEditArea ? `<button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change cover</button>` : ''}
         ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Daybook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
-      </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
+      </div>` : `<div class="am-cover am-cover-blank">${canEditArea ? `<button class="am-cover-btn am-cover-btn-blank" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Add a cover</button>` : ''}</div>`}
       <div class="am-plate">
         <div class="am-kicker">Ledger</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this ledger colour" aria-label="Change ledger colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Ledger" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Ledger settings and overview" title="Settings & overview">▾</button></span></h1>
@@ -7865,7 +7872,8 @@ function renderArea() {
     ${lToday}
     ${quickRow}
     ${areaWeek}
-    ${areaRest}`;
+    ${areaRest}
+    </div>`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
   autoGrowSoon(document.querySelector('.area-vision-edit'));   // vision grows to fit, so it all reads
@@ -19273,6 +19281,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-note-wall-toggle]')) { try { localStorage.setItem('life.note.wall', noteWallOpen() ? '0' : '1'); } catch {} renderNote(); return; }
   { const ag = t.closest('[data-area-goto]'); if (ag) { areaGoto(ag.dataset.areaGoto); return; } }
+  { const sa = t.closest('[data-area-secall]'); if (sa) { const k = sa.dataset.areaSecall; const s = (state.area_open && state.area_open.secAll instanceof Set) ? state.area_open.secAll : null; if (s) { if (s.has(k)) s.delete(k); else s.add(k); renderArea(); } return; } }
   { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
   { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }

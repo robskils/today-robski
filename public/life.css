@@ -4783,6 +4783,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Inside a half-width ledger tool, cards fill the column (one per row) so they
    don't pack into a cramped, truncated sliver beside empty space. (Robin.) */
 .area-flow .area-sec .tbl-cards, .area-flow .area-sec .contact-grid { grid-template-columns:1fr; }
+/* "See all N →": caps a tool at a handful of items so a ledger never becomes an
+   endless scroll; expands in place. (Robin.) */
+.area-seemore { margin-top:12px; display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13.5px; font-weight:600; color:color-mix(in srgb,var(--c,var(--accent)) 60%,var(--ink-2)); background:none; border:0; padding:4px 2px; cursor:pointer; }
+.area-seemore:hover { color:var(--c,var(--accent)); text-decoration:underline; }
 .tbl-card { display:flex; align-items:center; gap:10px; text-align:left; padding:15px 16px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:16.5px; box-shadow:var(--shadow); overflow:hidden; min-width:0; }
 .tbl-card:hover { border-color:var(--accent); }
 /* Draggable note/table cards in a life area, with a drag handle + drop marks. */
@@ -4963,7 +4967,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    section labels (Recently viewed, Be ready…), rather than the flow sections'
    bolder accent caps - so it sits in the same voice as its neighbours. (Robin.) */
 .area-weeksec .ash-l { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; font-weight:400; letter-spacing:.08em; color:var(--ink-3); }
-.aweek { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+.aweek { display:flex; flex-direction:column; margin:0 -4px; }
 .awk-day { display:grid; grid-template-columns:48px 1fr; align-items:center; gap:12px; padding:5px 14px 5px 11px; border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); min-height:46px; }
 .awk-day:first-child { border-top:0; }
 .awk-today { background:color-mix(in srgb,var(--c) 9%,transparent); box-shadow:inset 3px 0 0 var(--c); }
@@ -7670,12 +7674,12 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   box-shadow:0 1px 2px rgba(0,0,0,.04), 0 26px 50px -34px rgba(0,0,0,.55);
 }
 .area-mast.no-cover .am-cover {
-  height:clamp(96px,14vw,146px);
+  height:clamp(118px,17vw,180px);
   background-image:
-    radial-gradient(color-mix(in srgb,var(--c) 24%,transparent) 1px, transparent 1.7px),
-    linear-gradient(118deg, color-mix(in srgb,var(--c) 15%,var(--card)), color-mix(in srgb,var(--c) 5%,var(--card)));
-  background-size:22px 22px, 100% 100%;
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 18%,var(--line));
+    radial-gradient(color-mix(in srgb,var(--c) 55%,transparent) 1px, transparent 1.9px),
+    linear-gradient(125deg, color-mix(in srgb,var(--c) 82%,var(--card)) 0%, color-mix(in srgb,var(--c) 44%,var(--card)) 52%, color-mix(in srgb,var(--c) 20%,var(--card)) 100%);
+  background-size:20px 20px, 100% 100%;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 30%,var(--line)), 0 22px 46px -30px color-mix(in srgb,var(--c) 62%,transparent);
 }
 .am-cover-scrim { position:absolute; inset:0; pointer-events:none; }
 .area-mast.has-cover .am-cover-scrim {
@@ -7777,23 +7781,35 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .area-flow { display:flex; flex-direction:column; gap:20px; }
 @media (min-width:980px){
   .area-flow { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
-  /* Wide, list-like sections take the full row; the rest pair up. */
-  .area-flow .area-sec[data-aflow="Notes and tables"],
-  .area-flow .area-sec[data-aflow="Tasks"],
-  .area-flow .area-sec[data-aflow="Emails"],
-  .area-flow .area-sec[data-aflow="Wall"] { grid-column:1 / -1; }
+  /* Only Tasks takes the full row; every other tool pairs up half-width. (Robin.) */
+  .area-flow .area-sec[data-aflow="Tasks"] { grid-column:1 / -1; }
 }
 .area-flow .area-sec,
+.area-weeksec,
+.area-today,
 .area-connect,
 .area-dash-wall, .area-dash-shared, .area-dash-files, .area-dash-links {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
-  background:var(--card);
-  border:1px solid var(--line);
+  background:linear-gradient(162deg, color-mix(in srgb,var(--c) 11%,var(--card)), color-mix(in srgb,var(--c) 3%,var(--card)) 72%);
+  border:1px solid color-mix(in srgb,var(--c) 24%,var(--line));
   border-radius:20px;
   padding:22px 24px;
-  box-shadow:0 1px 2px rgba(0,0,0,.03), 0 16px 36px -28px rgba(0,0,0,.16);
+  box-shadow:0 1px 2px rgba(0,0,0,.03), 0 20px 42px -30px color-mix(in srgb,var(--c) 50%,rgba(0,0,0,.4));
 }
 .area-flow .area-sec.area-sec-collapsed, .area-connect.area-sec-collapsed { padding:18px 24px; }
+/* ── Sexier ledger: the ledger's colour runs through it, warm not grey ────────
+   The section cards above now carry a tinted gradient + hue-glow; here the labels
+   and inner cards pick up the colour too, so nothing reads as a plain grey box. */
+.area-body { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.area-body .ash-l, .area-body .area-recent-h, .area-body .feed-grp-h, .area-body .home-sec-h { color:color-mix(in srgb,var(--c) 52%,var(--ink-2)); }
+.area-body .ash-ic { color:color-mix(in srgb,var(--c) 78%,var(--ink-2)); }
+/* Content cards sit a touch lighter/cleaner than their tinted section, so they lift. */
+.area-body .tbl-card, .area-body .area-rv-item { background:color-mix(in srgb,var(--c) 3%,var(--card)); border-color:color-mix(in srgb,var(--c) 17%,var(--line)); }
+.area-body .tbl-card:hover, .area-body .area-rv-item:hover { border-color:color-mix(in srgb,var(--c) 42%,var(--line)); }
+/* The at-a-glance strip + tab strip in the ledger's colour. */
+.area-body .area-tabs { background:color-mix(in srgb,var(--c) 7%,var(--card)); border:1px solid color-mix(in srgb,var(--c) 18%,var(--line)); border-radius:15px; padding:5px; }
+.area-body .area-tile.on { background:color-mix(in srgb,var(--c) 16%,var(--card)); box-shadow:0 1px 2px rgba(0,0,0,.05); }
+
 /* Connections: the Page's add/connect hub - a grid of connect-tiles, one per type.
    Sits at the very bottom; adding any type surfaces it as a section above. */
 .area-connect { margin-top:20px; }
