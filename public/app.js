@@ -7563,6 +7563,8 @@ function renderArea() {
   const connOpen = areaSecOpen('Connections');
   const dreamN = journals.filter((j) => (j.props || {}).mode === 'dreams').length;
   const journalN = journals.length - dreamN;
+  const bookN = bookmarks.filter((b) => (b.props || {}).media === 'book').length;
+  const filmN = bookmarks.filter((b) => (b.props || {}).media === 'film').length;
   const CONN = [
     { ic: '▤', l: 'Page', n: notes.length + tables.length, go: 'Pages and tables', add: 'data-area-add-note' },
     { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', add: 'data-area-add-task' },
@@ -7575,6 +7577,8 @@ function renderArea() {
     { ic: '◑', l: 'Event', n: 0, add: 'data-area-add-event' },
     { ic: '✎', l: 'Journal', n: journalN, go: 'Reflections', add: 'data-area-add-journal' },
     { ic: '☾', l: 'Dream', n: dreamN, go: 'Reflections', add: 'data-area-add-dream' },
+    { ic: '📖', l: 'Book', n: bookN, go: 'Saved links', add: 'data-area-add-book' },
+    { ic: '🎬', l: 'Film', n: filmN, go: 'Saved links', add: 'data-area-add-film' },
   ];
   const connCard = (c) => {
     const has = c.n > 0;
@@ -7905,6 +7909,17 @@ async function areaAddJournal(isDream) {
     await openJournalEntry(entry.id);
   } catch (e) { toast(e.message); }
 }
+// Add a Saved item (a book or film, via Read & Watch) filed to this ledger, then
+// open its card to name it. Shows in the ledger's Saved links. (Robin.)
+async function areaAddSaved(media) {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  try {
+    const bm = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: '', props: { area: area.id, media, status: 'todo', added: new Date().toISOString() } }) });
+    if (state.rw && state.rw.items) state.rw.items.unshift(bm);
+    await openBookmarkCard(bm.id);
+    setTimeout(() => { const i = document.querySelector('.rwc-title'); if (i) i.focus(); }, 40);
+  } catch (e) { toast(e.message); }
+}
 async function areaAddNote() {
   const area = state.area_open && state.area_open.area; if (!area) return;
   try {
@@ -7991,7 +8006,7 @@ function openAreaCover() {
   const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
   const el = uiDialogHost();
   const cur = (area.props && area.props.cover) || null;
-  el.innerHTML = `<div class="pal-bg"><div class="ui-dialog-box cover-dialog" style="--h:${hueOf(area)}">
+  el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog" style="--h:${hueOf(area)}">
     <div class="recur-h">Cover image</div>
     <p class="recur-p">Upload a photo from your computer, search free photos, or paste a link.</p>
     <div class="cv-actions">
@@ -18815,6 +18830,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-journal]')) { areaAddJournal(false); return; }
   if (t.closest('[data-area-add-dream]')) { areaAddJournal(true); return; }
+  if (t.closest('[data-area-add-book]')) { areaAddSaved('book'); return; }
+  if (t.closest('[data-area-add-film]')) { areaAddSaved('film'); return; }
   if (t.closest('[data-area-hideconn]')) {
     const a = state.area_open && state.area_open.area; if (!a) return;
     a.props = a.props || {}; let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];

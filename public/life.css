@@ -7551,6 +7551,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cover-dialog input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent); }
 .cv-q { flex:1 1 auto; min-width:0; }
 .cv-results { min-height:72px; margin-bottom:14px; }
+.cv-results:empty { display:none; }
 .cv-hint { color:var(--ink-3); font-size:14px; padding:16px 2px; }
 .cv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(102px,1fr)); gap:8px; }
 .cv-thumb { aspect-ratio:4/3; border-radius:11px; border:1px solid var(--line); background:var(--paper-2) center/cover no-repeat; cursor:pointer; transition:transform .1s, box-shadow .13s, border-color .12s; }
