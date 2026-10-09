@@ -14958,6 +14958,10 @@ async function openGoalCard(id) {
   // Who can see this goal (via its shared page). Owner only.
   if (!g.sharedBy) api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {});
 }
+// The goal card's Connections section (tasks / pages / contacts / links) folds
+// like every other section; state kept per-device. (Robin: a connections section
+// on everything.)
+const gcConnOpen = () => { try { return localStorage.getItem('life.goal.connOpen') !== '0'; } catch { return true; } };
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
   const areaOpts = `<option value="">No ledger</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
@@ -15048,7 +15052,9 @@ function renderGoalCard() {
       </div>
       ${g.sharedBy ? '' : blockVisibilityHtml('goal', g, state.goal_open && state.goal_open.viewers)}
     </details>
-    <div class="gc-conn-grid" style="--h:${hueOf(a)}">
+    <section class="gc-connections">
+      <div class="home-sec-h area-sec-h gc-conn-h" data-gc-conn-toggle role="button"><span class="acw-chev">${gcConnOpen() ? '▾' : '▸'}</span>Connections</div>
+      ${gcConnOpen() ? `<div class="gc-conn-grid" style="--h:${hueOf(a)}">
       <section class="focus-notes gc-tasks-sec">
         <div class="fn-h">${t('goal.tasks')}${gtasks.length ? ` · ${gtasks.length}` : ''}</div>
         <div class="ms-tasks">${gtasks.map(goalTaskRow).join('')}<button class="ghost gt-add-btn" data-goal-addtask="${g.id}:">+ Add task</button></div>
@@ -15057,7 +15063,8 @@ function renderGoalCard() {
       ${connectedNotesHtml()}
       ${connectedContactsHtml()}
       ${externalLinksHtml('goal', g)}
-    </div>
+    </div>` : ''}
+    </section>
     ${notesSection(g.body, 'goal', g.id, false, t('goal.noteswall'))}`;
   autoGrowSoon($('#goalcard-title'));
   if (keepTitleFocus) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.setSelectionRange(selS, selE); } catch {} } }
@@ -18849,6 +18856,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-goal-addnote]')) { addGoalNote(); return; }
   const clink = t.closest('[data-goal-link-contact]'); if (clink) { linkContactToGoal(clink.dataset.goalLinkContact); return; }
   const cunlink = t.closest('[data-goal-unlink-contact]'); if (cunlink) { unlinkContactFromGoal(cunlink.dataset.goalUnlinkContact); return; }
+  if (t.closest('[data-gc-conn-toggle]')) { try { localStorage.setItem('life.goal.connOpen', gcConnOpen() ? '0' : '1'); } catch {} renderGoalCard(); return; }
   const tgf = t.closest('[data-toggle-focus]'); if (tgf) { toggleGoalFocus(tgf.dataset.toggleFocus); return; }
   const bkd = t.closest('[data-bucket-done]'); if (bkd) { bucketToggleDone(bkd.dataset.bucketDone); return; }
   const sgt = t.closest('[data-set-gtype]'); if (sgt) { const g = state.goal_open && state.goal_open.goal; if (g) { patchGoal(g.id, { gtype: sgt.dataset.setGtype }, true); renderGoalCard(); } return; }
