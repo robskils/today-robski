@@ -5056,6 +5056,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    stack on a narrow screen. */
 .area-dash-fl { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:20px; align-items:stretch; }
 .area-dash-fl > .area-dash-files, .area-dash-fl > .area-dash-links, .area-dash-fl > .area-dash-shared { margin-top:0; }
+/* Recently viewed | Do next - two half-width panels sharing a row (stack on a
+   narrow screen via the auto-fit grid above). (Robin.) */
+.area-quickrow { margin-top:0; }
+.area-half { margin:0; padding:15px 17px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
+.area-half .area-recent-h, .area-half .feed-grp-h { margin-bottom:11px; }
+.area-half .area-rv { gap:8px; }
+.area-half .today-cal { display:flex; flex-direction:column; gap:5px; }
 /* One consistent heading style across the area's Wall / Files / Links / Shared
    panels, in the area's feature colour. (Links was a serif odd-one-out.) */
 .area-dash-wall > .home-sec-h,

@@ -7694,7 +7694,11 @@ function renderArea() {
   // The open tab's own name as a kicker above its card (Vision on Vision, Goals
   // on Goals, and so on) - mirrors the "Vision" label Robin liked. (Robin.)
   const topKick = (openTile && tops[openTile]) ? `<div class="area-recent-h area-tab-kick">${esc(openTile)}</div>` : '';
-  const areaTilesHtml = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}${restHtml}</div>`;
+  // Vision & Goals leads the ledger - the tab strip and the open tab's card sit
+  // right under the masthead. Everything else (dashboard, today, week, the flow
+  // sections) follows below. (Robin: Vision & Goals at the top.)
+  const areaVisionGoals = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>`;
+  const areaRest = `<div class="area-tilepanel area-restpanel" style="--h:${h}">${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // The dashboard metrics double as a quick-jump section menu: each populated part
@@ -7730,15 +7734,14 @@ function renderArea() {
       </div>`;
   // Quick jump to the Connections hub (the "inputs for everything") from the top.
   const areaConnBtn = (area.sharedBy || secHidden('Connections')) ? '' : '<button class="area-conn-link" data-area-goto="Connections" title="Jump to Connections">🔗 Connect</button>';
-  const areaDash = (areaAddBtn || areaConnBtn || dashStats || rvAreaHtml) ? `<div class="area-dash" style="--h:${h}">
+  const areaDash = (areaAddBtn || areaConnBtn || dashStats) ? `<div class="area-dash" style="--h:${h}">
       <div class="area-dash-top">
         <div class="area-stats">${dashStats}</div>
         <div class="area-dash-acts">${areaConnBtn}${areaAddBtn}</div>
       </div>
-      ${rvAreaHtml ? `<div class="area-recent"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></div>` : ''}
     </div>` : '';
-  // The ledger's own "Today" feed, near the top: the same idea as Home, filtered
-  // to this ledger - what's coming (deadline, birthdays) + do-next here. (Robin.)
+  // The ledger's own "Today" feed, near the top: what's coming here (a deadline,
+  // birthdays). "Do next" lives beside "Recently viewed" in the quick row. (Robin.)
   const lToday = (() => {
     const due = area.props && area.props.due;
     const dueRel = due ? deadlineRel(due) : null;
@@ -7746,12 +7749,18 @@ function renderArea() {
     const bdayRows = contacts.map((c) => { const d = bdayInDays(c.props && c.props.birthday); return (d >= 0 && d <= 7) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
       .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
     const beReady = dueRow + bdayRows;
-    const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
-    if (!beReady && !doNext) return '';
+    if (!beReady) return '';
     return `<section class="area-today" style="--h:${h}">
-      ${beReady ? `<div class="feed-grp feed-beready"><div class="feed-grp-h">Be ready</div>${beReady}</div>` : ''}
-      ${doNext ? `<div class="feed-grp"><div class="feed-grp-h">Do next here</div><div class="today-cal">${doNext}</div></div>` : ''}
+      <div class="feed-grp feed-beready"><div class="feed-grp-h">Be ready</div>${beReady}</div>
     </section>`;
+  })();
+  // "Recently viewed" and "Do next here" sit side by side, half a row each - what
+  // you were last in, and what to pick up next. Stacks on a narrow screen. (Robin.)
+  const quickRow = (() => {
+    const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
+    const rvHalf = rvAreaHtml ? `<section class="area-recent area-half"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></section>` : '';
+    const dnHalf = doNext ? `<section class="feed-grp area-half"><div class="feed-grp-h">Do next here</div><div class="today-cal">${doNext}</div></section>` : '';
+    return (rvHalf || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}${dnHalf}</div>` : '';
   })();
   // Week ahead: this ledger's key activities across today + the next six days,
   // laid out as a seven-day planner. Clear for co-parents - both see the same
@@ -7810,10 +7819,12 @@ function renderArea() {
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
     </header>
+    ${areaVisionGoals}
     ${areaDash}
     ${lToday}
+    ${quickRow}
     ${areaWeek}
-    ${areaTilesHtml}`;
+    ${areaRest}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
   autoGrowSoon(document.querySelector('.area-vision-edit'));   // vision grows to fit, so it all reads
