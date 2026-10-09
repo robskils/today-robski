@@ -213,6 +213,8 @@ button { cursor:pointer; background:none; border:0; }
 .cc-star:hover { color:var(--gold); transform:scale(1.15); }
 /* Associated contacts on a life area: the card, with a remove-from-area × (top-left,
    clear of the select tick and star), plus an add-a-contact picker below. */
+.area-contacts .contact-grid { grid-template-columns:repeat(2, minmax(0,1fr)); }
+@media (max-width:560px){ .area-contacts .contact-grid { grid-template-columns:1fr; } }
 .area-contact-wrap { position:relative; }
 .area-contact-wrap .contact-card { width:100%; }
 .area-contact-rm { position:absolute; top:6px; left:6px; z-index:3; width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:var(--card); color:var(--ink-3); font-size:15px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; opacity:.75; box-shadow:var(--shadow); }

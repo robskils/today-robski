@@ -26,7 +26,7 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><pa
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Pages'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Pages'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Ledgers'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -35,48 +35,48 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Disco
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Pages', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Pages', 'nav.areas': 'Ledgers', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Pages, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Ledgers, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your pages in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Pages', 'home.sec.favs': 'Starred Notes', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Ledgers', 'home.sec.favs': 'Starred Pages', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
-  'btn.newarea': '+ New Page', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
-  'field.area': 'Page', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
+  'btn.newarea': '+ New Ledger', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
+  'field.area': 'Ledger', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Pages', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Page', 'palette.search': 'Search notes, tables, tasks - or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected pages', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Pages wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search pages…', 'notes.newnote': '+ New page', 'filter.allareas': 'All Ledgers', 'notes.type.all': 'All', 'notes.type.note': 'Pages', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Ledger', 'palette.search': 'Search pages, tables, tasks - or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Páginas', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Páginas', 'nav.areas': 'Ledgers', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
   'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Páginas, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Ledgers, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas páginas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Páginas', 'home.sec.favs': 'Notas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Ledgers', 'home.sec.favs': 'Páginas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
-  'btn.newarea': '+ Nova área', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
-  'field.area': 'Página', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
+  'btn.newarea': '+ Novo Ledger', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
+  'field.area': 'Ledger', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todas as páginas', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Página', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Páginas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de páginas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar páginas…', 'notes.newnote': '+ Nova página', 'filter.allareas': 'Todos os Ledgers', 'notes.type.all': 'Todas', 'notes.type.note': 'Páginas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Ledger', 'palette.search': 'Pesquisar páginas, tabelas, tarefas - ou escrever um comando…',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -678,14 +678,14 @@ const HELP = {
       <li><b>Sort</b> by clicking a column header.</li>
       <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
       <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
-  notes: { title: 'Notes', tip: 'Free writing with headings and links. Connect notes to one another, and tag them to your pages.',
-    body: `<p>Notes are for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse long notes), lists and links.</p>
-      <ul><li><b>Connected notes</b> - link notes to each other rather than burying one inside another. From any note, start a <b>new connected note</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
-      <li><b>Related notes</b> appear on their own - any note sharing a page with this one is a tap away, so things find each other.</li>
-      <li><b>Link</b> highlighted text to another note or even a table row, to weave your writing together.</li>
-      <li><b>Pages</b> - tag a note to one or several pages (the chips up top); it then shows on each of those pages, in that page's colour.</li>
-      <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
-      <p>Star a note to pin it to the sidebar; recently opened notes are always a click away there too.</p>` },
+  notes: { title: 'Pages', tip: 'Free writing with headings and links. Connect pages to one another, and tag them to your ledgers.',
+    body: `<p>A page is for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse a long page), lists and links.</p>
+      <ul><li><b>Connected pages</b> - link pages to each other rather than burying one inside another. From any page, start a <b>new connected page</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
+      <li><b>Related pages</b> appear on their own - any page sharing a ledger with this one is a tap away, so they find each other.</li>
+      <li><b>Link</b> highlighted text to another page or even a table row, to weave your writing together.</li>
+      <li><b>Ledgers</b> - tag a page to one or several ledgers (the chips up top); it then shows on each of those ledgers, in that ledger's colour.</li>
+      <li>A page can become a <b>table</b> and back with the Page/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
+      <p>Star a page to pin it to the sidebar; recently opened pages are always a click away there too.</p>` },
   calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
     body: `<p>The calendar shows your events by month, with an agenda and search. It works on its own, and can also sync with your <b>Google Calendar</b> if you connect it.</p>
       <ul><li><b>Add</b> an event with a title, a start date and time (or All day), and a length. All-day events can span several days.</li>
@@ -727,14 +727,14 @@ const HELP = {
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
-  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your pages double as spending categories.',
+  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your ledgers double as spending categories.',
     body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts, with a way through to each:</p>
       <ul>
       <li><b>Portfolio</b> - live total value, your gain, and how it’s split across holdings.</li>
       <li><b>Spending</b> - this month’s spend, income and net, with your top categories. Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is about. Import a statement (CSV or PDF) and Daybook sorts the transactions; add extra categories for anything that doesn’t fit an area.</li>
       <li><b>Advice</b> - market trends and your watchlist, read by Claude.</li>
       </ul>` },
-  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each page into goals with deadlines, and review your progress weekly to yearly.',
+  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each ledger into goals with deadlines, and review your progress weekly to yearly.',
     body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a page, set <b>goals</b> under it, and track them.</p>
       <ul>
       <li><b>How to track</b> each goal: a <b>number you set</b>, or <b>everything connected</b> to it - tasks ticked off, notes and events - against a target. A simpler goal gets a slider to set how far along it feels.</li>
@@ -744,22 +744,22 @@ const HELP = {
       <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
-  areas: { title: 'Pages', tip: 'The pages of your life - an area, a project, a person. Each one gathers everything that belongs to it into a single place.',
-    body: `<p>Daybook is made up of the <b>pages of your life</b>. A Page can be an <b>area</b> (Work, Health, Home), a <b>project</b> (a house move, a wedding, a launch), even a <b>person</b> (a child, a parent, a client) - whatever matters enough to deserve its own place. Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
-      <p><b>One Page gathers that whole corner of your life:</b></p>
+  areas: { title: 'Ledgers', tip: 'The ledgers of your life - an area, a project, a person. Each gathers everything that belongs to it into one place.',
+    body: `<p>Daybook keeps a <b>ledger for each part of your life</b> - the way a book of accounts keeps a separate ledger for each domain. A ledger can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
+      <p><b>One ledger gathers that whole corner of your life:</b></p>
       <ul>
-      <li>Its <b>notes and tables</b>, <b>tasks</b>, <b>goals</b>, <b>events</b>, the <b>people</b> tied to it, <b>saved links</b>, and any <b>photos or files</b> you drop in.</li>
+      <li>Its <b>pages and tables</b>, <b>tasks</b>, <b>goals</b>, <b>events</b>, the <b>people</b> tied to it, <b>saved links</b>, and any <b>photos or files</b> you drop in.</li>
       <li>A dashboard across the top with quick jumps and live counts, so one glance tells you where that part of your life stands.</li>
       <li>Room for the bigger picture when you want it - a <b>vision</b>, a <b>Wheel of Life</b> and a <b>bucket list</b>.</li>
-      <li>Give each Page a <b>colour</b> and it reads at a glance everywhere: a task, an event or a practice shows in its Page's colour.</li>
-      <li><b>Share</b> a Page with the people in it, so a family or a team works off the same page.</li>
+      <li>Give each ledger a <b>colour</b> and it reads at a glance everywhere: a task, an event or a practice shows in its ledger's colour.</li>
+      <li><b>Share</b> a ledger with the people in it, so a family or a team work off the same one.</li>
       </ul>
-      <p><b>Notes or tables - reach for whichever fits the data:</b></p>
+      <p>Pages or tables - reach for whichever fits the material:</p>
       <ul>
-      <li>A <b>note</b> is for words: thoughts, plans, meeting notes, a checklist - anything you would write out. Notes take headings, lists, links and rich text, and one note can live on more than one Page.</li>
-      <li>A <b>table</b> is for rows and columns: a reading list, flats you are viewing, expenses, measurements - anything you would otherwise keep in a spreadsheet. Add the columns you need and fill it a row at a time.</li>
+      <li>A <b>page</b> is for words: thoughts, plans, meeting notes, a checklist - anything you would write out. Pages take headings, lists, links and rich text, and one page can live on more than one ledger.</li>
+      <li>A <b>table</b> is for rows and columns: a reading list, flats you are viewing, expenses, measurements - anything you would otherwise keep in a spreadsheet.</li>
       </ul>
-      <p>Make a note or table straight from a Page, or tag an existing one to it. Rename, recolour, share or add Pages whenever you like - the whole app follows.</p>` },
+      <p>Make a page or table straight from a ledger, or tag an existing one to it. Rename, recolour, share or add ledgers whenever you like - the whole app follows.</p>` },
   reflect: { title: 'Well-being', tip: 'A quiet corner: journal, coaching, dreams, meditation, spirit cards, I Ching, horoscope - each its own page.',
     body: `<p><b>Well-being</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
       <ul>
@@ -1135,10 +1135,10 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
 function addNewMenuHtml() {
   const item = (kind, ic, label) => `<button class="addnew-item" data-quick-add="${kind}"><span class="addnew-ic">${ic}</span>${esc(label)}</button>`;
   const items = [
-    modOn('notes') ? item('note', '▤', 'Note') : '',
+    modOn('notes') ? item('note', '▤', 'Page') : '',
     modOn('tasks') ? item('task', '✓', 'Task') : '',
     modOn('calendar') ? item('event', '▦', 'Event') : '',
-    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Page</button>` : '',
+    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Ledger</button>` : '',
     modOn('goals') ? item('goal', '◎', 'Goal') : '',
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
@@ -1314,7 +1314,7 @@ function navSection(key, v) {
     }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // Notes and tables are one list now; a table note carries the grid icon.
-    title = 'Recent Notes'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
+    title = 'Recent Pages'; add = '<button class="nav-add" data-new-note title="New page">+</button>';
     // The 20 most recently viewed notes / table-notes, newest first.
     rows = recentItems().filter((r) => r && (r.kind === 'note' || r.kind === 'table')).slice(0, 20).map((n) => {
       const isT = n.kind === 'table';
@@ -1343,13 +1343,13 @@ function navSection(key, v) {
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
     }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Daybook</button>');
   } else {
-    title = 'Pages'; add = '<button class="nav-add" data-new-area title="New page">+</button>';
+    title = 'Ledgers'; add = '<button class="nav-add" data-new-area title="New ledger">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
     // so the sidebar reads at a glance like the rest of the app.
     rows = state.areas.map((a) => {
       const on = v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id;
       return `<button class="nav-sub has-area${on ? ' on' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="i">◈</span><span class="t">${esc(a.title || 'Untitled')}</span></button>`;
-    }).join('') || '<div class="nav-sub muted">No pages yet</div>';
+    }).join('') || '<div class="nav-sub muted">No ledgers yet</div>';
   }
   return `<div class="nav-sec" data-nav-sec="${key}">
     <div class="nav-sec-h" draggable="true" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">
@@ -2526,7 +2526,7 @@ const MOBILE_SECTIONS = [
   ['priority', 'home-sec-p1', 'Priority Tasks'],
   ['focus', 'home-sec-focus', 'Starred Goals'],
   ['notepad', 'home-sec-notepad', 'Notepad'],
-  ['favs', 'home-sec-favs', 'Starred Notes'],
+  ['favs', 'home-sec-favs', 'Starred Pages'],
   ['favareas', 'home-sec-favareas', 'Pages'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
   ['people', 'home-sec-people', 'People online'],
@@ -2579,7 +2579,7 @@ function renderSettings() {
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Pages', 'What your Daybook orbits', 'data-open-areas=""'],
+    ['◈', 'Ledgers', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -2796,14 +2796,14 @@ function renderSettings() {
 // family of importers (tasks CSV, calendar .ics, bookmarks next).
 function importState() { if (!state.import) state.import = { kind: 'notes', area: '', parsed: [], running: false, done: 0, err: '' }; return state.import; }
 function importAreaOpts(imp) {
-  return `<option value="">${imp.area ? 'No page' : 'No page (filed loose)'}</option>`
+  return `<option value="">${imp.area ? 'No ledger' : 'No ledger (filed loose)'}</option>`
     + (state.areas || []).map((a) => `<option value="${a.id}" ${imp.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
 }
 function importPane() {
   const imp = importState();
   const kind = imp.kind || 'notes';
   const switcher = `<div class="imp-kinds">
-    <button class="imp-kind ${kind === 'notes' ? 'on' : ''}" data-import-kind="notes"><span class="imp-kind-ic">📄</span><span class="imp-kind-t">Notes</span><span class="imp-kind-s">Markdown &amp; text files</span></button>
+    <button class="imp-kind ${kind === 'notes' ? 'on' : ''}" data-import-kind="notes"><span class="imp-kind-ic">📄</span><span class="imp-kind-t">Pages</span><span class="imp-kind-s">Markdown &amp; text files</span></button>
     <button class="imp-kind ${kind === 'events' ? 'on' : ''}" data-import-kind="events"><span class="imp-kind-ic">📅</span><span class="imp-kind-t">Events</span><span class="imp-kind-s">A file, flyer, photo or link</span></button>
   </div>`;
   return `<div class="imp-card">${switcher}${kind === 'events' ? importEventsPaneHtml(imp) : importNotesPaneHtml(imp)}</div>`;
@@ -2823,7 +2823,7 @@ function importNotesPaneHtml(imp) {
       </div>
     </div>` : '';
   return `
-      <p class="imp-lead">Moving in from Obsidian, Bear, Apple Notes, Notion or anywhere else? Export your notes as <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>) and bring them straight in. Each file becomes its own note, headings and formatting kept.</p>
+      <p class="imp-lead">Moving in from Obsidian, Bear, Apple Notes, Notion or anywhere else? Export your notes as <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>) and bring them straight in. Each file becomes its own page, headings and formatting kept.</p>
       <div class="imp-field">
         <label class="imp-label" for="imp-area">File them into a page</label>
         <select class="sel imp-area" id="imp-area" data-import-area>${importAreaOpts(imp)}</select>
@@ -2878,7 +2878,7 @@ async function importReadFiles(fileList) {
     }
     const bodyMd = bodyLines.join('\n').trim();
     const snippet = bodyMd.replace(/[#>*`_~\-]+/g, ' ').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 110);
-    out.push({ title: title || 'Untitled note', body: bodyMd ? mdToHtml(bodyMd) : '', snippet: snippet || '(empty)' });
+    out.push({ title: title || 'Untitled page', body: bodyMd ? mdToHtml(bodyMd) : '', snippet: snippet || '(empty)' });
   }
   imp.parsed = out;
   if (!out.length && skipped) imp.err = 'Those files were too large or could not be read. Markdown and text files under 2MB each, please.';
@@ -2955,7 +2955,7 @@ function openFlyerImport() {
 }
 function closeFlyer() { const el = document.getElementById('flyer'); if (el) el.remove(); }
 function flyerAreaOpts(f) {
-  return `<option value="">No page</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  return `<option value="">No ledger</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
 }
 function flyerEvRowHtml(e, i) {
   const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
@@ -3335,7 +3335,7 @@ function navItems(v) {
     tasks: modOn('tasks') ? `<button class="nav-item ${v.type === 'tasks' || v.type === 'taskcard' ? 'on' : ''}" data-view-tasks><span class="nav-ic">✓</span><span class="nav-lbl">${t('nav.tasks')}</span><span class="nav-quick" data-quick-add="task" title="New task">+</span></button>` : '',
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
     discover: modOn('discover') ? `<button class="nav-item ${v.type === 'discover' ? 'on' : ''}" data-open-discover><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.discover')}</span></button>` : '',
-    notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
+    notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New page">+</span></button>` : '',
     saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
     // Capture is a verb, so its Well-being tools appear as actions you DO, not a
     // room you enter: a whole row that writes a journal entry or logs a dream in
@@ -3420,7 +3420,7 @@ function navGridHtml(v) {
   // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
   // Home quick buttons; Today drops into the Daily group below.
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
+    ${grp(t('nav.grp.main'), [NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
@@ -3574,7 +3574,7 @@ const SHORTCUTS = [
   ['General', [
     ['⌘K', 'Command palette'],
     ['⌘/', 'This shortcuts list'],
-    ['⌘N', 'New note'],
+    ['⌘N', 'New page'],
     ['⌥⌘N', 'New task'],
     ['⌘T', 'New tab'],
     ['⌥⌘W', 'Close tab'],
@@ -3922,7 +3922,7 @@ async function loadWeather() {
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
 const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
-const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Pages' };
+const KIND_LABEL = { task: 'Tasks', note: 'Pages', table: 'Tables', area: 'Ledgers' };
 
 async function openHome() {
   const gen = bumpNav();
@@ -4243,11 +4243,11 @@ function timerChime() {
 }
 function timerPanel() {
   const r = timerRemaining();
-  const areaOpts = `<option value="">No page</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
+  const areaOpts = `<option value="">No ledger</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
   return `<div class="tbx-cols"><div class="tbx-main"><div class="tmr ${timerState.running ? 'running' : ''}">
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
-      <label class="tmr-area-l"><span>Page</span><select class="sel" data-timer-area>${areaOpts}</select></label>
+      <label class="tmr-area-l"><span>Ledger</span><select class="sel" data-timer-area>${areaOpts}</select></label>
       <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
       <div class="tmr-custom"><span class="tmr-custom-l">Custom</span><input class="sel tmr-cnum" id="timer-min" type="number" min="0" max="1440" inputmode="numeric" value="${Math.floor(timerState.dur / 60)}" title="Minutes"><span class="tmr-colon">:</span><input class="sel tmr-cnum" id="timer-sec" type="number" min="0" max="59" inputmode="numeric" value="${String(timerState.dur % 60).padStart(2, '0')}" title="Seconds"><button class="ghost tmr-set" data-timer-custom>Set</button></div>
       <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
@@ -4715,7 +4715,7 @@ function practicesGroups(withWeek) {
 }
 function practiceAddForm() {
   const areas = state.areas || [];
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No page</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No ledger</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -4749,7 +4749,7 @@ function practiceEditorHtml() {
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <div class="pe-two">
-            <label class="pe-f pe-inline"><span>Page</span><select class="sel" id="pe-area"><option value="">No page</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+            <label class="pe-f pe-inline"><span>Ledger</span><select class="sel" id="pe-area"><option value="">No ledger</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
             <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           </div>
         </section>
@@ -4804,9 +4804,9 @@ function peAttachHtml() {
   return `<div class="pe-attach-sec">
       <div class="sub-h">Notes${m.notes.length ? ` · ${m.notes.length}` : ''}</div>
       <div class="ce-linked">${noteChips || '<div class="home-empty" style="padding:4px 0 2px">No notes linked yet.</div>'}</div>
-      <input class="sel nt-search" data-pe-note-q placeholder="Search a note to link…" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off">
+      <input class="sel nt-search" data-pe-note-q placeholder="Search a page to link…" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off">
       ${nres.length ? `<div class="nt-results">${nres.map((n) => `<button type="button" class="nt-result" data-pe-link-note="${n.id}" data-pe-note-title="${esc(n.title || 'Untitled')}"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join('')}</div>` : ''}
-      <button type="button" class="ghost nt-new" data-pe-new-note>+ New note for this practice</button>
+      <button type="button" class="ghost nt-new" data-pe-new-note>+ New page for this practice</button>
     </div>
     <div class="pe-attach-sec">
       <div class="sub-h">Contacts${m.contacts.length ? ` · ${m.contacts.length}` : ''}</div>
@@ -4822,7 +4822,7 @@ function peAttachHtml() {
 function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); }
 async function peNewNote() {
   const pe = state.practiceEdit; if (!pe) return;
-  const title = await uiPrompt('New note for this practice:', { placeholder: 'e.g. My routine' }); if (title == null) return;
+  const title = await uiPrompt('New page for this practice:', { placeholder: 'e.g. My routine' }); if (title == null) return;
   const t = (title.trim() || 'Untitled');
   const area = (document.getElementById('pe-area') || {}).value || '';
   try { const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: t, props: area ? { area } : {} }) }); peMeta().notes.push({ id: n.id, title: n.title || t }); if (Array.isArray(state.peNotePool)) state.peNotePool.push(n); renderPeAttach(); toast('Note created & linked'); }
@@ -5184,7 +5184,7 @@ function renderHome() {
             // dot, and only for new mail. The rest always have something going on, so a
             // dot says nothing - no badge at all. (Robin, 2026-09-27.)
             modOn('mail') ? ['✉︎', t('nav.mail'), 'data-open-mail', 'mail', 'New email', mailN, true] : null,
-            modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New note', 0, false] : null,
+            modOn('notes') ? ['▤', t('nav.notes'), 'data-open-notes', 'note', 'New page', 0, false] : null,
             modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event', 0, false] : null,
             modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', 0, false] : null,
           ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl, n, dot]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span>${n ? (dot ? '<span class="hqa-dot" title="You have open tasks" aria-label="You have open tasks"></span>' : `<span class="hqa-n">${n > 99 ? '99+' : n}</span>`) : ''}</button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('');
@@ -5236,7 +5236,7 @@ function renderHome() {
             today: `${off === 0 ? homeMailAlertHtml() + homeReviewDueBanner() + homeDeadlinesHtml() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
-            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No pages yet. Create one from Pages.</div>',
+            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No ledgers yet. Create one from Ledgers.</div>',
             tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
             favs: favListHtml(),
@@ -5245,7 +5245,7 @@ function renderHome() {
             today: { ic: '☀', label: homeDayLabel(off), count: null, nav: dayNav },
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
-            favareas: { ic: '◈', label: 'Pages', count: sortedAreas.length || null },
+            favareas: { ic: '◈', label: 'Ledgers', count: sortedAreas.length || null },
             tracker: { ic: '📊', label: 'Tracker', count: null },
             mail: { ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
@@ -5258,7 +5258,7 @@ function renderHome() {
             { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
-            { k: 'favareas', ic: '◈', label: 'Pages', count: sortedAreas.length, on: modOn('areas') },
+            { k: 'favareas', ic: '◈', label: 'Ledgers', count: sortedAreas.length, on: modOn('areas') },
             { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
@@ -5363,7 +5363,7 @@ function notesTypeMode() { return state.notesType || (state.notesType = localSto
 const NOTE_TYPES = [['all', t('notes.type.all')], ['note', t('notes.type.note')], ['table', t('notes.type.table')]];
 function notesAreaMode() { return state.notesArea || (state.notesArea = ''); }
 // The Notes controls - type, life-area filter, sort - reused at the top (with the
-// search + New note) and repeated just above the main list so they're never out
+// search + New page) and repeated just above the main list so they're never out
 // of reach by the time you've scrolled past Starred and Recent.
 function notesControlsHtml(full) {
   const type = notesTypeMode(); const mode = notesSortMode(); const fArea = notesAreaMode();
@@ -5442,7 +5442,7 @@ function renderNotesList() {
   const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
   const cards = (list) => list.map(noteCard).join('');
   const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
-  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this page')}` : '';
+  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this ledger')}` : '';
   // In "Page" order (unfiltered), split into a section per area.
   let listHtml;
   if (mode === 'area' && !q) {
@@ -6806,7 +6806,7 @@ function renderReadwatch() {
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No page</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Ledger</span><select class="sel" data-rw-area="${b.id}"><option value="">No ledger</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
           <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
@@ -6987,7 +6987,7 @@ function renderBookmarkCard() {
         ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
-        <label class="rwc-row"><span class="rwc-lbl">Page</span><select class="sel" data-rw-area="${b.id}"><option value="">No page</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Ledger</span><select class="sel" data-rw-area="${b.id}"><option value="">No ledger</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
         ${openTop ? '' : openBtn}
@@ -7005,7 +7005,7 @@ function areaTag(b) {
 }
 // A picker to set a block's page, used on note and table pages.
 function areaSelect(cur, attr) {
-  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Page</option>${
+  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Ledger</option>${
     state.areas.map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}</option>`).join('')
   }</select></span>`;
 }
@@ -7084,12 +7084,12 @@ function renderAreasList() {
   </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
-    <div class="pane-head home-head"><h1>Daybook Pages</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
+    <div class="pane-head home-head"><h1>Ledgers</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
     <p class="t2-sub" style="font-style:normal">The few domains your life orbits. Open one for its whole dashboard.</p>
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All Pages'} · ${ordered.length}</div>
-      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No pages shared yet.' : 'No pages yet.'}</div>`}</div></section>`;
+      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No ledgers shared yet.' : 'No ledgers yet.'}</div>`}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -7112,7 +7112,7 @@ function areaContactsPanel(area, contacts) {
   const q = ((state.area_open && state.area_open.contactQuery) || '').trim().toLowerCase();
   const inIds = new Set(contacts.map((c) => c.id));
   const results = q ? (state.contacts || []).filter((c) => !inIds.has(c.id) && ((c.title || '').toLowerCase().includes(q) || ((c.props && c.props.email) || '').toLowerCase().includes(q))).slice(0, 8) : [];
-  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this page" aria-label="Remove from this page">×</button></div>`).join('');
+  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this ledger" aria-label="Remove from this ledger">×</button></div>`).join('');
   return `<div class="area-contacts">
     ${contacts.length ? `<div class="contact-grid">${cards}</div>` : '<div class="home-empty">No contacts here yet - add the people tied to this area (a vet, a landlord, a coach…).</div>'}
     <div class="area-contact-add">
@@ -7128,7 +7128,7 @@ function addContactToArea(contactId) {
   const cur = blockAreas(c); if (cur.includes(area.id)) return;
   setBlockAreas('contact', contactId, [...cur, area.id]);
   if (state.area_open.blocks && !state.area_open.blocks.some((b) => b.id === contactId)) state.area_open.blocks.push(c);
-  state.area_open.contactQuery = ''; renderArea(); toast('Added to this page');
+  state.area_open.contactQuery = ''; renderArea(); toast('Added to this ledger');
 }
 function removeContactFromArea(contactId) {
   const area = state.area_open && state.area_open.area; if (!area) return;
@@ -7479,8 +7479,8 @@ function renderArea() {
   const notesTotal = starredNotes.length + otherNotes.length + tables.length;
   const memberCount = (state.area_open.shares && state.area_open.shares.length) || 0;
   const wheelNow = Math.min((area.props && area.props.wheelScore) || 0, 5) || null;
-  const TILE_META = { 'Overview': '▦', 'Vision': '🧭', 'Wheel of Life': '◍', 'Goals': '🎯', 'Notes and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Reflections': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
-  const counts = { 'Overview': null, 'Vision': null, 'Wheel of Life': wheelNow, 'Goals': activeGoals.length, 'Notes and tables': notesTotal, 'Tasks': openTs.length, 'Contacts': contacts.length, 'Saved links': bookmarks.length, 'Reflections': journals.length, 'Emails': emails.length, 'Bucket list': bucket.length, 'Shared with': memberCount || null, 'Wall': null };
+  const TILE_META = { 'Overview': '▦', 'Vision': '🧭', 'Wheel of Life': '◍', 'Goals': '🎯', 'Pages and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Reflections': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
+  const counts = { 'Overview': null, 'Vision': null, 'Wheel of Life': wheelNow, 'Goals': activeGoals.length, 'Pages and tables': notesTotal, 'Tasks': openTs.length, 'Contacts': contacts.length, 'Saved links': bookmarks.length, 'Reflections': journals.length, 'Emails': emails.length, 'Bucket list': bucket.length, 'Shared with': memberCount || null, 'Wall': null };
   // The landing dashboard: a card per populated part of this area, each showing a
   // count and a few items, and clicking its header drills into that section's tile.
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
@@ -7522,7 +7522,7 @@ function renderArea() {
   const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>` : '<div class="home-empty">No notes or tables here yet.</div>';
   // [key, present?, count, body] - shown in your saved drag order; Tasks last.
   const restDefs = [
-    ['Notes and tables', !!notesTotal, notesTotal, notesBody],
+    ['Pages and tables', !!notesTotal, notesTotal, notesBody],
     ['Contacts', !!contacts.length, contacts.length, `<div class="contact-grid">${contactCards}</div>`],
     ['Saved links', !!bookmarks.length, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>`],
     ['Reflections', !!journals.length, journals.length, `<div class="tbl-cards">${journalCards}</div>`],
@@ -7549,7 +7549,7 @@ function renderArea() {
   // above as you add). Empty ones are the add affordance for that type. (Robin.)
   const connOpen = areaSecOpen('Connections');
   const CONN = [
-    { ic: '▤', l: 'Note', n: notes.length + tables.length, go: 'Notes and tables', add: 'data-area-add-note' },
+    { ic: '▤', l: 'Page', n: notes.length + tables.length, go: 'Pages and tables', add: 'data-area-add-note' },
     { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', add: 'data-area-add-task' },
     ...(secHidden('Goals') ? [] : [{ ic: '🎯', l: 'Goal', n: activeGoals.length, go: 'Goals', add: 'data-area-add-goal' }]),
     { ic: '👤', l: 'Contact', n: contacts.length, go: 'Contacts', add: 'data-area-add-contact' },
@@ -7599,7 +7599,7 @@ function renderArea() {
   // that section - so the top of the Page reads like a one-page site's nav, quick
   // metrics and all. Covers everything the Page holds. (Robin.)
   const DASH_STATS = [
-    [notes.length + tables.length, 'notes & tables', 'Notes and tables'],
+    [notes.length + tables.length, 'notes & tables', 'Pages and tables'],
     [openTs.length, 'open tasks', 'Tasks'],
     [doneN, 'done', 'Tasks'],
     [activeGoals.length, 'goals', 'Goals'],
@@ -7618,7 +7618,7 @@ function renderArea() {
         <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
         <div class="addnew-menu" hidden>
           <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
-          <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Note</button>
+          <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Page</button>
           <button class="addnew-item" data-area-add-event><span class="addnew-ic">◑</span>Event</button>
           ${secHidden('Goals') ? '' : '<button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>'}
           ${secHidden('Bucket list') ? '' : '<button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>'}
@@ -7633,7 +7633,7 @@ function renderArea() {
       ${rvAreaHtml ? `<div class="area-recent"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></div>` : ''}
     </div>` : '';
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Pages', attr: 'data-open-areas' }, { label: area.title }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Ledgers', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-hero" style="--h:${h}">
       <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Page" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
       ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
@@ -7680,12 +7680,12 @@ function areaOverviewHtml(area, c, blocks) {
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
-  const AREA_SECS = ['Vision', 'Goals', 'Notes and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall', 'Tasks'];
+  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall', 'Tasks'];
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections</span></div>
       <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(k)}</span></label>`).join('')}</div>
-      <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this page. Empty sections hide themselves.</div>
+      <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this ledger. Empty sections hide themselves.</div>
     </div>`;
   // How this area figures in reviews: a "key" star (the wheel average is taken from
   // key areas when you have any), and a switch to keep it out of reviews entirely.
@@ -7838,7 +7838,7 @@ function blockAreasControl(kind, b) {
   const id = b.id; const ids = blockAreas(b);
   const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
   const remaining = state.areas.filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Page' : '+ Page'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Ledger' : '+ Ledger'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
   return `<span class="note-areas">${chips}${add}</span>`;
 }
 // From a life-area page: create a task/note already tagged to this area, then
@@ -7888,7 +7888,7 @@ function openAreaColor() {
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box areacol-dialog" style="--h:${start}">
     <div class="recur-h">Area colour</div>
-    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this page')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
+    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this ledger')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
     <div class="areacol-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === start ? ' on' : ''}" style="--h:${hu}" data-areacol="${hu}" aria-label="Hue ${hu}"></button>`).join('')}</div>
     <label class="areacol-fine">Fine tune<input type="range" min="0" max="359" value="${start}" class="areacol-slider" data-areacol-slider></label>
     <div class="ui-dialog-btns"><button class="ui-btn cancel" data-areacol-cancel>Cancel</button><button class="ui-btn primary" data-areacol-done>Done</button></div>
@@ -8437,7 +8437,7 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Page</span><select id="ce-area" class="sel"><option value="">No page</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Ledger</span><select id="ce-area" class="sel"><option value="">No ledger</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     </div>
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
@@ -9441,7 +9441,7 @@ function openTaskPopover(taskId, slotId) {
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
         </div>
-        <label class="pe-f"><span>Page</span><select class="sel" id="te-area"><option value="">No page</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Ledger</span><select class="sel" id="te-area"><option value="">No ledger</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
       </div>
       <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
@@ -9915,7 +9915,7 @@ function mailAreaMenuHtml() {
   const areas = state.areas || [];
   return `<div class="mail-movebg" data-mail-area-close><div class="mail-move" style="top:${am.y}px;left:${am.x}px" role="menu">
     <div class="mail-move-h">File in a page…</div>
-    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No pages yet.</div>'}
+    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No ledgers yet.</div>'}
   </div></div>`;
 }
 async function openMailAreaMenu(anchor) {
@@ -11698,13 +11698,13 @@ ${''/* The "older unread sits further down" banner is retired: the background
 }
 
 function showQuickTask() {
-  const opts = `<option value="">No page</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No ledger</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
   // The full task options, matching the Tasks board's add form: area, priority,
   // duration, snooze (hide until), repeat and notes.
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
     <div class="atf-grid">
-      <label class="atf"><span>Page</span><select id="qt-area" class="sel">${opts}</select></label>
+      <label class="atf"><span>Ledger</span><select id="qt-area" class="sel">${opts}</select></label>
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
@@ -11788,7 +11788,7 @@ function mailTaskMenuHtml() {
   return `<div class="mail-movebg" data-mail-task-bg><div class="mail-task-pop" style="top:${tm.y}px;left:${tm.x}px" role="dialog" aria-label="New task">
     <div class="mail-move-h">New task from this email</div>
     <input class="sel mtask-title" id="mtask-title" value="${esc(tm.title)}" placeholder="Task title" autocomplete="off">
-    <label class="mtask-field"><span>Page</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
+    <label class="mtask-field"><span>Ledger</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
     <label class="mtask-field"><span>Priority</span><select class="sel" id="mtask-prio">${PRIOS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
     <div class="mtask-actions"><button class="ghost" data-mail-task-close>Cancel</button><button class="add-btn wide" data-mail-task-add>Add task</button></div>
   </div></div>`;
@@ -11834,7 +11834,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <label class="ce-field"><span class="ce-flbl">Page</span><select id="qe-area" class="sel"><option value="">No page</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+    <label class="ce-field"><span class="ce-flbl">Ledger</span><select id="qe-area" class="sel"><option value="">No ledger</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -12074,7 +12074,7 @@ function taskTableHtml(list, emptyMsg) {
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
-      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Page</span>'}</span></td>
+      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Ledger</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button><button class="row-chev" data-open-task="${t.id}" title="Open" aria-label="Open task">›</button></td>
     </tr>`;
@@ -12220,7 +12220,7 @@ function renderTasks() {
     </div>` : ''}
   </div>`;
   const preArea = state.taskAddArea || '';   // set when + Task is used from a Page page
-  const opts = `<option value="">No page</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No ledger</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
   // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
   const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
   const qa = state.taskQuickArea || '';
@@ -12625,7 +12625,7 @@ function contactAreaBarHtml() {
 // of chips. (CSS shows chips on desktop, this select on mobile.)
 function contactAreaSelectHtml(areas) {
   if (!areas || !areas.length) return '';
-  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Pages · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
+  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Ledgers · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
 const areaHiddenForContacts = (a) => !!(a && a.props && a.props.contactsHide);
@@ -12650,7 +12650,7 @@ function contactMenuHtml() {
   const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
   const areaSection = allAreas.length ? `<div class="ctx-lbl">Pages</div>
     ${currentAreas.map(curRow).join('')}
-    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No pages to add.</div>')}
+    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No ledgers to add.</div>')}
     ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
     <div class="ctx-sep"></div>` : '';
   // A few recently-opened contacts up top, most recent first - a quick hop to
@@ -12720,7 +12720,7 @@ function friendsPaneHtml(opts) {
       ${d.incoming.length ? `<div class="ppl-sub">Requests · ${d.incoming.length}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
       ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Daybook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
-      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Page' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
+      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Ledger' : 'Page'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
 // The Daybook people hub: your card, your friends on Daybook, and the invite +
@@ -12751,7 +12751,7 @@ function renderContacts() {
   const list = sortContacts((state.contacts || []).filter(match));
   const area = af && areaById(af);
   const emptyMsg = q ? 'No contacts match.'
-    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this page.`
+    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this ledger.`
     : 'No contacts yet. Add one, or import your Apple Contacts .vcf.';
   // While searching, strip the page back to just the search box and the matching
   // contacts - no Add/Import, no "Contacts on Daybook", no group bar. Just results.
@@ -12818,7 +12818,7 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${areas.length ? `<label class="atf atf-full"><span>Page</span><select id="ct-area" class="sel"><option value="">No page</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    ${areas.length ? `<label class="atf atf-full"><span>Ledger</span><select id="ct-area" class="sel"><option value="">No ledger</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
@@ -12959,11 +12959,11 @@ function contactBoxesHtml(c) {
     ${search || ''}
     ${addBtn}
   </section>`;
-  const notesSearch = searchBox(co.cbNoteQ || '', 'data-cb-note-q', 'Search notes to connect…') + resList(nRes.map((n) => `<button type="button" class="nt-result" data-cb-link-note="${n.id}"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
+  const notesSearch = searchBox(co.cbNoteQ || '', 'data-cb-note-q', 'Search pages to connect…') + resList(nRes.map((n) => `<button type="button" class="nt-result" data-cb-link-note="${n.id}"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
   const tasksSearch = searchBox(co.cbTaskQ || '', 'data-cb-task-q', 'Search tasks to connect…') + resList(tRes.map((t) => `<button type="button" class="nt-result" data-cb-link-task="${t.id}"><span class="ga-t">✓ ${esc(t.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
   const eventsSearch = searchBox(co.cbEventQ || '', 'data-cb-event-q', 'Search events to connect…') + resList(eRes.map((e) => `<button type="button" class="nt-result" data-cb-link-event="${esc(String(e.id || '').split('::')[0])}"><span class="ga-t">◑ ${esc(e.title || 'Event')}${e.date ? ` <span class="ce-d">${esc(evShortDate(e.date))}</span>` : ''}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
   return `<div class="cc-boxes">
-    ${box('Notes', notes.length, noteChips, notesSearch, `<button type="button" class="cc-box-add" data-contact-new-note="${c.id}">＋ New note</button>`)}
+    ${box('Pages', notes.length, noteChips, notesSearch, `<button type="button" class="cc-box-add" data-contact-new-note="${c.id}">＋ New page</button>`)}
     ${box('Tasks', tasks.length, taskChips, tasksSearch, `<button type="button" class="cc-box-add" data-contact-new-task="${c.id}">＋ New task</button>`)}
     ${box('Links', links.length, linkChips, '', `<button type="button" class="cc-box-add" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">＋ Add link</button>`)}
     ${box('Events', events.length, eventChips, eventsSearch, `<button type="button" class="cc-box-add" data-contact-new-event="${c.id}">＋ New event</button>`)}
@@ -13005,7 +13005,7 @@ async function cbLinkEvent(baseId) {
 }
 async function contactNewNote(id) {
   const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
-  const title = await uiPrompt(`New note about ${c.title || 'this contact'}:`, { placeholder: 'e.g. Met at the conference' }); if (title == null) return;
+  const title = await uiPrompt(`New page about ${c.title || 'this contact'}:`, { placeholder: 'e.g. Met at the conference' }); if (title == null) return;
   const area = blockAreas(c)[0]; const props = { contacts: [c.id] }; if (area) props.area = area;
   try { const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: (title.trim() || 'Untitled'), props }) }); (state.contact_open.linkedNotes = state.contact_open.linkedNotes || []).unshift(n); openNote(n.id).catch(() => {}); }
   catch (e) { toast(e.message); }
@@ -13188,7 +13188,7 @@ function renderContactCard() {
     ${keepInTouchSection(c)}
     <div class="cc-group-h">Connect</div>
     ${contactBoxesHtml(c)}
-    <div class="cc-group-h">Notes</div>
+    <div class="cc-group-h">Pages</div>
     ${notesSection(c.body, 'contact', c.id, false, 'Notes to self')}`;
   autoGrowSoon($('#contactcard-name'));
 }
@@ -13327,7 +13327,7 @@ async function newContactGroup() {
       <div class="recur-h">New group</div>
       <input class="ui-dialog-input" id="cgm-input" placeholder="e.g. Family, Clients, Forró" autocomplete="off">
       <div class="cgm-or">Or create from a page</div>
-      <div class="cgm-areas">${chips || '<span class="muted">No pages yet.</span>'}</div>
+      <div class="cgm-areas">${chips || '<span class="muted">No ledgers yet.</span>'}</div>
       <div class="ui-dialog-btns">
         <button class="ui-btn cancel" data-cgm-close>Done</button>
         <button class="ui-btn primary" data-cgm-create>Create</button>
@@ -14535,7 +14535,7 @@ async function openGoalCard(id) {
 }
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
-  const areaOpts = `<option value="">No page</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No ledger</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
   const metricRaw = gtype === 'number' ? (p.metric || 'manual') : 'manual';
@@ -14680,7 +14680,7 @@ function connectedNotesHtml() {
         <input class="sel gal-search" data-goalnote-q placeholder="Connect an existing note…" value="${esc(go.noteQuery || '')}" autocomplete="off">
         <div class="gal-drop"><div class="gc-note-list">${connectedNotesPickerInner()}</div></div>
       </div>
-      <button class="add-btn wide gc-note-new" data-goal-addnote>＋ New note</button>
+      <button class="add-btn wide gc-note-new" data-goal-addnote>＋ New page</button>
     </div>
   </section>`;
 }
@@ -14695,7 +14695,7 @@ function connectedNotesPickerInner() {
   if (gAreas.length) list = list.filter((n) => blockAreas(n).some((aid) => gAreas.includes(aid)));
   if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q));
   list = list.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}notes${gAreas.length ? ' in this page' : ''} to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}pages${gAreas.length ? ' in this ledger' : ''} to connect${q ? '' : ' - write one with “+ New page”'}.</div>`;
   return list.slice(0, 60).map((n) => `<div class="gal-row gal-row-link" data-goal-link-note="${n.id}" role="button" tabindex="0" title="Connect to this goal"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="gal-link gal-link-cue">＋ Link</span></div>`).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
@@ -14719,7 +14719,7 @@ async function unlinkNoteFromGoal(noteId) {
 }
 async function addGoalNote() {
   const go = state.goal_open; if (!go) return;
-  const title = await uiPrompt('New note for this goal:', { placeholder: 'e.g. Research notes' }); if (title == null) return;
+  const title = await uiPrompt('New page for this goal:', { placeholder: 'e.g. Research notes' }); if (title == null) return;
   const g = go.goal; const p = gp(g);
   const props = { goal: g.id }; if (p.area) props.area = p.area;
   try {
@@ -14865,7 +14865,7 @@ async function newBucket() {
 async function openBucketCard(id) { const b = await api(`/api/blocks/${id}`); state.bucket_open = { item: b }; state.view = { type: 'bucketcard', id }; renderNav(); renderBucketCard(); }
 function renderBucketCard() {
   const b = state.bucket_open.item; const p = b.props || {};
-  const areaOpts = `<option value="">No page</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No ledger</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
     <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
@@ -16735,7 +16735,7 @@ function loadEvNotePool() {
 // beneath it via eventNotesHtml, so a busy note list never squeezes the row.
 function eventNoteSearchField(ev) {
   // Shown for a new event too - the picks are held as a draft until it's saved.
-  return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">▤</span>Note</span><input class="sel nt-search" data-ev-note-q placeholder="Search…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off"></label>`;
+  return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">▤</span>Page</span><input class="sel nt-search" data-ev-note-q placeholder="Search…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off"></label>`;
 }
 function eventNotesHtml(ev) {
   const isNew = !(ev && ev.id);   // a new event links via state.cal.draftNotes
@@ -16971,7 +16971,7 @@ function noteConnListRows() {
   return list.length ? list.map((x) => { const a = areaById(blockAreas(x)[0]); const hue = a ? hueOf(a) : null; const same = blockAreas(x).some((ar) => curAreas.has(ar)); return `<button class="nconn-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-note-connect="${x.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico">${NOTE_ICO}</span><span class="sp-t">${esc(x.title || 'Untitled')}</span>${same && a ? `<span class="nconn-area">${esc(a.title)}</span>` : ''}</button>`; }).join('') : `<div class="ov-muted" style="padding:6px 2px">${q ? 'No notes match.' : 'No other notes to connect.'}</div>`;
 }
 function noteConnectPickerHtml() {
-  return `<details class="nconn"><summary>🔗 Connect a note</summary><input class="sel nconn-q" data-note-conn-q placeholder="Search your notes…" value="${esc(state.note.connQuery || '')}" autocomplete="off"><div class="nconn-list" id="nconn-list">${noteConnListRows()}</div></details>`;
+  return `<details class="nconn"><summary>🔗 Connect a page</summary><input class="sel nconn-q" data-note-conn-q placeholder="Search your pages…" value="${esc(state.note.connQuery || '')}" autocomplete="off"><div class="nconn-list" id="nconn-list">${noteConnListRows()}</div></details>`;
 }
 async function connectExistingNote(id) {
   const cur = state.note && state.note.current; if (!cur || id === cur.id) return;
@@ -17023,7 +17023,7 @@ function renderNote() {
   const kids = connected.map(connItem).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split">
-      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
+      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Pages</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
       <div class="nc-actions">
         <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">
@@ -17050,7 +17050,7 @@ function renderNote() {
           // their add controls) sink below. Stable within each group so the order
           // is predictable. (Robin: a connected card must be top + open, not left
           // stranded at the bottom.)
-          const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Connected notes${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></details>`;
+          const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Connected pages${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New page</span></button></details>`;
           const secs = [
             { has: connected.length > 0, html: subHtml },
             { has: (state.allTasks || []).some((t) => t.props && t.props.note === n.id && !t.props.done), html: noteTasksHtml(n.id) },
@@ -17422,7 +17422,7 @@ async function newNote(connectToId) {
   // Every note is top-level (no parent). Start with an empty title (the field
   // shows its "Untitled" placeholder), cursor waiting - type the name straight in.
   const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: '', body: '', parent_id: null }) });
-  // Made from another note's "New note"? Connect the two as equal peers, not as
+  // Made from another note's "New page"? Connect the two as equal peers, not as
   // parent/child - a two-way link in props.links on each. (Robin.)
   if (connectToId && connectToId !== note.id) {
     try {
@@ -17476,7 +17476,7 @@ function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0 }; r
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
 const ACTIONS = [
   { kind: 'action', title: 'Keyboard shortcuts', run: () => openShortcuts() },
-  { kind: 'action', title: 'New note', run: () => newNote(null) },
+  { kind: 'action', title: 'New page', run: () => newNote(null) },
   { kind: 'action', title: 'New reflection', run: () => quickAdd('journal') },
   { kind: 'action', title: 'Go to Reflection', run: () => openJournal() },
   { kind: 'action', title: 'Settings', run: () => openSettings() },
@@ -21555,7 +21555,7 @@ function onbAreas() {
     ? '<p class="onb-p onb-muted">Loading your areas…</p>'
     : areas.length
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
-      : '<p class="onb-p onb-muted">No pages yet - add a few below.</p>';
+      : '<p class="onb-p onb-muted">No ledgers yet - add a few below.</p>';
   return `<h2 class="onb-h">Your pages</h2>
     <p class="onb-p">Pages are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to an area, so each area gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Here's a starter set. Remove any that don't fit you, and add your own - you can always change these later in Pages.</p>
