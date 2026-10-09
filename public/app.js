@@ -7659,7 +7659,7 @@ function renderArea() {
         </div>
       </div>`;
   // Quick jump to the Connections hub (the "inputs for everything") from the top.
-  const areaConnBtn = (area.sharedBy || secHidden('Connections')) ? '' : '<button class="add-btn wide area-conn-btn" data-area-goto="Connections" title="Jump to Connections"><span class="an-plus">🔗</span>Connect</button>';
+  const areaConnBtn = (area.sharedBy || secHidden('Connections')) ? '' : '<button class="area-conn-link" data-area-goto="Connections" title="Jump to Connections">🔗 Connect</button>';
   const areaDash = (areaAddBtn || areaConnBtn || dashStats || rvAreaHtml) ? `<div class="area-dash" style="--h:${h}">
       <div class="area-dash-top">
         <div class="area-stats">${dashStats}</div>
@@ -8423,7 +8423,7 @@ function calNowLabel() {
   try {
     const nowMin = d.getHours() * 60 + d.getMinutes();
     const evs = ((state.cal && state.cal.events) || []).filter((e) => e.date === todayISO() && !e.allDay && e.start_min != null && e.start_min >= nowMin).sort((a, b) => a.start_min - b.start_min);
-    if (evs.length) { const e = evs[0]; nextBit = ` <span class="cal-now-next">· next ${esc(minToLabel(e.start_min))} ${esc((e.title || '').slice(0, 26))}</span>`; }
+    if (evs.length) { const e = evs[0]; nextBit = `<span class="cal-now-next">next ${esc(minToLabel(e.start_min))} · ${esc((e.title || '').slice(0, 44))}</span>`; }
   } catch {}
   return `<b>${hm}</b>${nextBit}`;
 }

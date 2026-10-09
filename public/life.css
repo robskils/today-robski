@@ -4958,7 +4958,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-dash-top .area-stats { flex:1 1 auto; }
 .area-dash-top .area-addnew { flex:none; align-self:center; }
 .area-dash-acts { display:flex; gap:10px; align-items:center; flex:none; align-self:center; flex-wrap:wrap; justify-content:flex-end; }
-.area-conn-btn { white-space:nowrap; }
+.area-conn-link { background:none; border:0; color:var(--ink-3); font-size:13.5px; font-weight:600; cursor:pointer; padding:6px 6px; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; }
+.area-conn-link:hover { color:var(--accent); }
 /* Metric cards: one per metric, all the same size, each clicking through to its
    section. A tidy uniform grid, not a content-sized strip. (Robin.) */
 .area-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(122px,1fr)); gap:11px; }
@@ -7075,9 +7076,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cal-head { display:flex; align-items:center; justify-content:space-between; gap:12px 16px; margin-bottom:18px; flex-wrap:wrap; }
 .cal-head h1 { font-size:clamp(26px,4vw,38px); }
 .cal-head-l { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; min-width:0; }
-.cal-now { font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; color:var(--ink-3); font-variant-numeric:tabular-nums; white-space:nowrap; }
-.cal-now b { font-weight:600; color:var(--ink-2); }
-.cal-now-next { font-family:'IM Fell English SC',Georgia,serif; font-size:13px; letter-spacing:.04em; color:var(--ink-3); }
+.cal-now { font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+.cal-now b { display:block; font-weight:600; color:var(--ink-2); line-height:1.05; }
+.cal-now-next { display:block; font-family:'IM Fell English SC',Georgia,serif; font-size:14.5px; letter-spacing:.04em; color:var(--ink-3); margin-top:2px; }
 .cal-yr { color:var(--ink-3); font-weight:400; }
 .cal-nav { display:flex; gap:8px; flex-wrap:wrap; }
 /* Calendar follows the universal rule: the breadcrumb is the pinned anchor under
