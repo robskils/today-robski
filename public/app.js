@@ -17674,9 +17674,10 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Saved', run: () => openReadwatch() },
   { kind: 'action', title: 'Money · Spending', run: () => openFinancial('spending') },
 ];
-// Search-result ordering by kind: pages first, then goals, contacts and
-// the pages you actually keep; table rows last. Anything unlisted lands mid-pack.
-const SEARCH_KIND_RANK = { area: 0, goal: 1, contact: 2, note: 3, table: 4, task: 6, row: 9 };
+// Search-result ordering by kind, used ONLY to break ties within the same
+// relevance band (see titleRank). Rows sit mid-pack now, not dumped at the
+// bottom, so a strongly-matching table row mixes in with everything else. (Robin.)
+const SEARCH_KIND_RANK = { area: 0, goal: 1, contact: 2, note: 3, table: 4, row: 5, task: 6 };
 let palT;
 function buildPalette() {
   const q = state.pal.q.trim();
@@ -17712,7 +17713,7 @@ function buildPalette() {
       // Rank: an exact title match first, then a title that STARTS with what you
       // typed, then by kind (area, goal, contact, note, table, task, row). Stable
       // within a band, so the worker's relevance order still holds.
-      const titleRank = (b) => { const t0 = (b.title || '').toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
+      const titleRank = (b) => { const t0 = (b.kind === 'row' ? rowLabel(b) : (b.title || '')).toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
       const ranked = merged.slice().sort((a, b) => titleRank(a) - titleRank(b) || (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
       state.pal.items = [...acts, ...ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
       state.pal.sel = 0; renderPalItems();
