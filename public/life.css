@@ -4995,11 +4995,17 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Metric cards: one per metric, all the same size, each clicking through to its
    section. A tidy uniform grid, not a content-sized strip. (Robin.) */
 .area-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(122px,1fr)); gap:11px; }
-.area-stat { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:4px; padding:16px 12px; min-height:86px; border:1px solid var(--line); border-radius:15px; background:var(--card); box-shadow:var(--shadow); }
-.area-stat b { font-family:'Cormorant Garamond',Georgia,serif; font-size:27px; font-weight:600; color:var(--ink); line-height:1; }
-.area-stat span { font-size:12.5px; color:var(--ink-3); }
-.area-stat-btn { cursor:pointer; font:inherit; text-align:left; transition:border-color .12s, transform .08s, box-shadow .12s; }
-.area-stat-btn:hover { border-color:hsl(var(--h,4) 60% 52%); transform:translateY(-1px); }
+.area-stat { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:4px; padding:16px 12px; min-height:86px; border:1px solid var(--line); border-radius:15px; background:var(--card); box-shadow:var(--shadow); }
+.area-stat .as-n { font-family:'Cormorant Garamond',Georgia,serif; font-size:28px; font-weight:600; color:var(--ink); line-height:1; font-variant-numeric:lining-nums tabular-nums; font-feature-settings:'lnum' 1,'tnum' 1; }
+.area-stat .as-l { font-size:12.5px; font-weight:600; color:var(--ink-2); letter-spacing:.01em; }
+/* The metric is a button that jumps to its section: a faint hue wash + a corner
+   chevron make it read as tappable, not a static figure, and the label names
+   where it goes. (Robin.) */
+.area-stat-btn { cursor:pointer; font:inherit; background:color-mix(in srgb,var(--c) 6%,var(--card)); border-color:color-mix(in srgb,var(--c) 22%,var(--line)); transition:border-color .12s, transform .08s, box-shadow .12s, background .12s; }
+.area-stat-btn .as-n { color:color-mix(in srgb,var(--c) 70%,var(--ink)); }
+.area-stat-btn .as-go { position:absolute; top:7px; right:10px; font-size:15px; font-weight:700; line-height:1; color:color-mix(in srgb,var(--c) 55%,var(--ink-3)); opacity:.6; transition:transform .12s, opacity .12s; }
+.area-stat-btn:hover { border-color:color-mix(in srgb,var(--c) 55%,var(--line)); background:color-mix(in srgb,var(--c) 13%,var(--card)); transform:translateY(-1px); box-shadow:0 8px 20px -12px rgba(0,0,0,.34); }
+.area-stat-btn:hover .as-go { opacity:1; transform:translateX(2px); }
 .area-stat-btn:active { transform:none; }
 .area-recent-h { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:400; margin-bottom:11px; }
 /* Almanac voice: the main section labels across the app wear the antique Fell

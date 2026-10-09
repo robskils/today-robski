@@ -7705,18 +7705,23 @@ function renderArea() {
   // of the Page is a chip showing its count, and tapping it scrolls to (and opens)
   // that section - so the top of the Page reads like a one-page site's nav, quick
   // metrics and all. Covers everything the Page holds. (Robin.)
+  // Each metric is a button that jumps to its section, so it's labelled by where
+  // it goes (Tasks, Goals, Pages…) with a chevron, not by a vague descriptor. The
+  // two Tasks figures read as "Tasks" (open) and "Done". (Robin.)
   const DASH_STATS = [
-    [notes.length + tables.length, 'notes & tables', 'Pages and tables'],
-    [openTs.length, 'open tasks', 'Tasks'],
-    [doneN, 'done', 'Tasks'],
-    [activeGoals.length, 'goals', 'Goals'],
-    [contacts.length, contacts.length === 1 ? 'person' : 'people', 'Contacts'],
-    [bookmarks.length, 'saved', 'Saved links'],
-    [journals.length, 'reflections', 'Reflections'],
-    [emails.length, 'emails', 'Emails'],
-    [bucket.length, 'bucket list', 'Bucket list'],
+    [notes.length + tables.length, 'Pages & tables', 'Pages and tables'],
+    [openTs.length, 'Tasks', 'Tasks'],
+    [doneN, 'Done', 'Tasks'],
+    [activeGoals.length, 'Goals', 'Goals'],
+    [contacts.length, 'Contacts', 'Contacts'],
+    [bookmarks.length, 'Saved links', 'Saved links'],
+    [journals.length, 'Reflections', 'Reflections'],
+    [emails.length, 'Emails', 'Emails'],
+    [bucket.length, 'Bucket list', 'Bucket list'],
   ];
-  const dashStats = DASH_STATS.filter(([n]) => n).map(([n, l, g]) => { const inner = `<b>${n}</b><span>${esc(l)}</span>`; return (g && !secHidden(g)) ? `<button class="area-stat area-stat-btn" data-area-goto="${esc(g)}">${inner}</button>` : `<div class="area-stat">${inner}</div>`; }).join('');
+  const dashStats = DASH_STATS.filter(([n]) => n).map(([n, l, g]) => (g && !secHidden(g))
+    ? `<button class="area-stat area-stat-btn" data-area-goto="${esc(g)}" title="Go to ${esc(l)}"><span class="as-n">${n}</span><span class="as-l">${esc(l)}</span><span class="as-go" aria-hidden="true">›</span></button>`
+    : `<div class="area-stat"><span class="as-n">${n}</span><span class="as-l">${esc(l)}</span></div>`).join('');
   const rvArea = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const RV_IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const rvAreaHtml = rvArea.map((x) => `<button class="area-rv-item" data-fav-open="${x.kind}:${x.id}"><span class="area-rv-ic">${RV_IC[x.kind] || '•'}</span><span class="area-rv-t">${esc(x.title || 'Untitled')}</span></button>`).join('');
