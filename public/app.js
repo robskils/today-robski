@@ -8369,7 +8369,7 @@ function renderCalendar() {
   $('#pane').innerHTML = `
     ${pageCrumb('Calendar')}
     <div class="cal-head">
-      <h1>${title}</h1>
+      <div class="cal-head-l"><h1>${title}</h1><span class="cal-now" id="cal-now"></span></div>
       <div class="cal-nav">
         ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Flow tool">☀ Plan day</button>' : ''}
         ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
@@ -8402,6 +8402,25 @@ function renderCalendar() {
   restoreCalForm(_calFormSnap); _calFormSnap = null;
   // Measure the breadcrumb so the sticky day-header (mobile) pins right below it.
   { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--cal-crumbh', cb.offsetHeight + 'px'); }
+  startCalClock();
+}
+// A live clock on the calendar, in relation to the day's agenda: the time, and
+// the next timed event still to come today. (Robin: time is important.)
+function calNowLabel() {
+  const d = new Date();
+  const hm = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  let nextBit = '';
+  try {
+    const nowMin = d.getHours() * 60 + d.getMinutes();
+    const evs = ((state.cal && state.cal.events) || []).filter((e) => e.date === todayISO() && !e.allDay && e.start_min != null && e.start_min >= nowMin).sort((a, b) => a.start_min - b.start_min);
+    if (evs.length) { const e = evs[0]; nextBit = ` <span class="cal-now-next">· next ${esc(minToLabel(e.start_min))} ${esc((e.title || '').slice(0, 26))}</span>`; }
+  } catch {}
+  return `<b>${hm}</b>${nextBit}`;
+}
+function startCalClock() {
+  clearInterval(window.__calClock);
+  const upd = () => { const el = document.getElementById('cal-now'); if (!el) { clearInterval(window.__calClock); return; } el.innerHTML = calNowLabel(); };
+  upd(); window.__calClock = setInterval(upd, 10000);
 }
 // A background re-render (contacts loading, Google-status landing, an events
 // refetch) rebuilds the open event form from scratch, which used to wipe whatever
